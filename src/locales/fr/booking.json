@@ -1,0 +1,13 @@
+{
+  "title": "Réserver une place à l'hôpital",
+  "availableDays": "Jours disponibles",
+  "noSchedule": "Aucun horaire pour cet hôpital.",
+  "serviceLabel": "Service / département",
+  "selectService": "Sélectionner un service",
+  "reason": "Motif de la visite",
+  "reasonPlaceholder": "ex. Suivi des résultats",
+  "spotReserved": "Place réservée",
+  "confirmBooking": "Confirmer la réservation",
+  "spotsLeft": "{{count}} restantes",
+  "closed": "Fermé"
+}

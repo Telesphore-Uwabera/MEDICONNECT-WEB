@@ -1,0 +1,95 @@
+{
+  "dashboard": "Dashboard",
+  "profile": "Profile",
+  "settings": "Settings",
+  "myProfile": "My Profile",
+  "switchRole": "Switch Role",
+
+  "patientPortal": "Patient Portal",
+  "doctorWorkspace": "Doctor Workspace",
+  "hospitalAdmin": "Hospital Admin",
+  "pharmacyConsole": "Pharmacy Console",
+  "adminConsole": "Admin Console",
+
+  "patient": "Patient",
+  "doctor": "Doctor",
+  "hospital": "Hospital",
+  "pharmacy": "Pharmacy",
+  "admin": "Admin",
+
+  "group": {
+    "account": "Account",
+    "people": "People",
+    "facilities": "Facilities",
+    "medical": "Medical",
+    "finance": "Finance",
+    "system": "System",
+    "myProfile": "My Profile",
+    "schedule": "Schedule",
+    "clinical": "Clinical",
+    "ourFacility": "Our Facility",
+    "operations": "Operations",
+    "activity": "Activity",
+    "myHealth": "My Health",
+    "findCare": "Find Care",
+    "appointments": "Appointments",
+    "records": "Records",
+    "ourStore": "Our Store",
+    "inventory": "Inventory",
+    "orders": "Orders",
+    "prescriptions": "Prescriptions"
+  },
+
+  "users": "Users",
+  "patients": "Patients",
+  "doctors": "Doctors",
+  "hospitals": "Hospitals",
+  "pharmacies": "Pharmacies",
+
+  "appointments": "Appointments",
+  "myAppointments": "My Appointments",
+  "quickAppointment": "Quick Appointment",
+  "serviceBookings": "Service Bookings",
+  "availability": "Availability",
+
+  "specializations": "Specializations",
+  "checklistQuestions": "Checklist Questions",
+  "insurances": "Insurances",
+  "insurance": "Insurance",
+  "reviews": "Reviews",
+  "myReviews": "My Reviews",
+
+  "servicePricing": "Service Pricing",
+
+  "auditLogs": "Audit Logs",
+  "maintenance": "Maintenance",
+
+  "education": "Education",
+  "experience": "Experience",
+  "qualifications": "Qualifications",
+  "socialLinks": "Social Links",
+
+  "prescriptions": "Prescriptions",
+  "fitnessCertificates": "Fitness Certificates",
+  "referrals": "Referrals",
+
+  "workingHours": "Working Hours",
+  "gallery": "Gallery",
+  "departments": "Departments",
+  "services": "Services",
+
+  "medicalInfo": "Medical Info",
+  "searchDoctors": "Search Doctors",
+  "searchHospitals": "Search Hospitals",
+
+  "medicines": "Medicines",
+  "categories": "Categories",
+  "lowStockAlerts": "Low Stock Alerts",
+  "restockRequests": "Restock Requests",
+
+  "incomingPrescriptions": "Incoming Prescriptions",
+  "dispensed": "Dispensed",
+
+  "orders": "Orders",
+  "deliveries": "Deliveries"
+}

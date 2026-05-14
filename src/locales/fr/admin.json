@@ -1,0 +1,114 @@
+{
+  "portal": "Console d'administration",
+  "nav": {
+    "overview": "Aperçu",
+    "approvals": "Approbations",
+    "users": "Utilisateurs",
+    "analytics": "Analytique",
+    "moderation": "Modération"
+  },
+  "overview": {
+    "title": "Aperçu admin",
+    "subtitle": "État du système et actions en attente",
+    "total_users": "Total utilisateurs",
+    "pending_approvals": "Approbations en attente",
+    "active_users": "Utilisateurs actifs",
+    "open_flags": "Signalements ouverts",
+    "by_role": "Utilisateurs par rôle",
+    "recent_signups": "Inscriptions récentes",
+    "go_to_approvals": "Voir les approbations"
+  },
+  "approvals": {
+    "title": "File d'approbation",
+    "subtitle": "{{count}} demande à examiner",
+    "subtitle_plural": "{{count}} demandes à examiner",
+    "empty": "Aucune demande. Tout est à jour.",
+    "view": "Voir les détails",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "drawer_title": "Examiner l'inscription",
+    "drawer_sub": "Vérifiez le candidat avant d'approuver l'accès.",
+    "confirm_approve_title": "Approuver ce compte ?",
+    "confirm_approve_desc": "Il obtiendra immédiatement l'accès complet au portail {{role}}.",
+    "confirm_reject_title": "Rejeter ce compte ?",
+    "confirm_reject_desc": "Il sera notifié et pourra postuler à nouveau plus tard.",
+    "approved_toast": "{{name}} approuvé",
+    "rejected_toast": "{{name}} rejeté"
+  },
+  "users": {
+    "title": "Gestion des utilisateurs",
+    "subtitle": "Rechercher, filtrer et gérer tous les comptes",
+    "search": "Rechercher par nom, email ou téléphone",
+    "filter_role": "Rôle",
+    "filter_status": "Statut",
+    "all": "Tous",
+    "name": "Nom",
+    "contact": "Contact",
+    "role": "Rôle",
+    "status": "Statut",
+    "joined": "Inscrit",
+    "actions": "Actions",
+    "manage": "Gérer",
+    "suspend": "Suspendre",
+    "reactivate": "Réactiver",
+    "delete": "Supprimer",
+    "drawer_title": "Gérer l'utilisateur",
+    "drawer_sub": "Mettre à jour l'accès et consulter les détails.",
+    "delete_title": "Supprimer cet utilisateur ?",
+    "delete_desc": "Cette action supprime définitivement le compte.",
+    "deleted_toast": "Utilisateur supprimé",
+    "status_changed": "Statut mis à jour"
+  },
+  "analytics": {
+    "title": "Analytique système",
+    "subtitle": "Tendances sur toute la plateforme",
+    "signups": "Nouvelles inscriptions",
+    "appointments": "Rendez-vous",
+    "prescriptions": "Ordonnances",
+    "orders": "Commandes pharmacie",
+    "revenue": "Revenus",
+    "growth": "Croissance (6 derniers mois)",
+    "role_distribution": "Répartition par rôle"
+  },
+  "moderation": {
+    "title": "Modération du contenu",
+    "subtitle": "{{count}} élément signalé",
+    "subtitle_plural": "{{count}} éléments signalés",
+    "kind": "Type",
+    "subject": "Objet",
+    "reported_by": "Signalé par",
+    "reason": "Raison",
+    "status": "Statut",
+    "open": "Ouvert",
+    "approved": "Approuvé",
+    "removed": "Supprimé",
+    "review": "Examiner",
+    "approve": "Approuver",
+    "remove": "Supprimer",
+    "drawer_title": "Détails de modération",
+    "drawer_sub": "Décidez de conserver ou de supprimer ce contenu.",
+    "approved_toast": "Élément approuvé",
+    "removed_toast": "Élément supprimé"
+  },
+  "roles": {
+    "doctor": "Médecin",
+    "hospital": "Hôpital",
+    "pharmacy": "Pharmacie",
+    "patient": "Patient"
+  },
+  "status": {
+    "active": "Actif",
+    "pending": "En attente",
+    "suspended": "Suspendu",
+    "rejected": "Rejeté"
+  },
+  "common": {
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "close": "Fermer"
+  },
+  "landing_tile": {
+    "title": "Admin",
+    "desc": "Approuvez les prestataires, gérez les utilisateurs, supervisez la plateforme."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "signIn": "Se connecter",
+  "getStarted": "Commencer",
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "back": "Retour",
+  "next": "Suivant",
+  "done": "Terminé",
+  "save": "Enregistrer",
+  "delete": "Supprimer",
+  "edit": "Modifier",
+  "close": "Fermer",
+  "search": "Rechercher…",
+  "book": "Réserver",
+  "viewSchedule": "Voir l'horaire",
+  "bookSpot": "Réserver une place",
+  "language": "Langue",
+  "loading": "Chargement…",
+  "optional": "facultatif",
+  "required": "requis"
+}

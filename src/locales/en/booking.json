@@ -1,0 +1,13 @@
+{
+  "title": "Book a hospital spot",
+  "availableDays": "Available days",
+  "noSchedule": "No service schedule yet for this hospital.",
+  "serviceLabel": "Service / department",
+  "selectService": "Select a service",
+  "reason": "Reason for visit",
+  "reasonPlaceholder": "e.g. Follow-up on results",
+  "spotReserved": "Spot reserved",
+  "confirmBooking": "Confirm booking",
+  "spotsLeft": "{{count}} left",
+  "closed": "Closed"
+}

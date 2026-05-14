@@ -1,0 +1,23 @@
+{
+  "title": "Smart prescription",
+  "stepOf": "Step {{step}} of {{total}}",
+  "stepPatient": "Patient & medications",
+  "stepPharmacy": "Choose pharmacy",
+  "stepRoute": "Confirm route",
+  "stepChannels": "Delivery channels",
+  "patientName": "Patient name",
+  "phone": "Phone",
+  "email": "Email",
+  "diagnosis": "Diagnosis",
+  "medications": "Medications",
+  "add": "Add",
+  "notes": "Notes for patient",
+  "forwardPharmacy": "Forward to pharmacy now",
+  "sendPatient": "Send to patient only",
+  "sendPatientDesc": "Patient decides where to fill it later.",
+  "inAppRecord": "In-app record",
+  "inAppDesc": "Always included — appears in patient's Prescriptions tab",
+  "summary": "Summary",
+  "forwardNotify": "Forward & notify patient",
+  "sendToPatient": "Send to patient"
+}

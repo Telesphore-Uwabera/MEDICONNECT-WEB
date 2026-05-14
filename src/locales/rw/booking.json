@@ -1,0 +1,13 @@
+{
+  "title": "Andikisha umwanya mu bitaro",
+  "availableDays": "Iminsi iboneka",
+  "noSchedule": "Nta gahunda iri muri iki gitaro.",
+  "serviceLabel": "Serivisi / ishami",
+  "selectService": "Hitamo serivisi",
+  "reason": "Impamvu yo gusura",
+  "reasonPlaceholder": "urugero: Gukurikirana ibisubizo",
+  "spotReserved": "Umwanya wabitswe",
+  "confirmBooking": "Emeza ukwandikisha",
+  "spotsLeft": "{{count}} bisigaye",
+  "closed": "Birafunze"
+}

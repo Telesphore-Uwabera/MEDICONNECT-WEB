@@ -1,0 +1,23 @@
+{
+  "title": "Ordonnance intelligente",
+  "stepOf": "Étape {{step}} sur {{total}}",
+  "stepPatient": "Patient et médicaments",
+  "stepPharmacy": "Choisir la pharmacie",
+  "stepRoute": "Confirmer l'envoi",
+  "stepChannels": "Canaux de livraison",
+  "patientName": "Nom du patient",
+  "phone": "Téléphone",
+  "email": "E-mail",
+  "diagnosis": "Diagnostic",
+  "medications": "Médicaments",
+  "add": "Ajouter",
+  "notes": "Notes pour le patient",
+  "forwardPharmacy": "Transférer à la pharmacie",
+  "sendPatient": "Envoyer au patient uniquement",
+  "sendPatientDesc": "Le patient décide où le remplir plus tard.",
+  "inAppRecord": "Dossier in-app",
+  "inAppDesc": "Toujours inclus — apparaît dans l'onglet Ordonnances",
+  "summary": "Résumé",
+  "forwardNotify": "Transférer et notifier",
+  "sendToPatient": "Envoyer au patient"
+}

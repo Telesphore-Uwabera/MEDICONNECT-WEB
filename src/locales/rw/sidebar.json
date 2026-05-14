@@ -1,0 +1,26 @@
+{
+  "overview": "Incamake",
+  "findDoctors": "Shaka Umuganga",
+  "findHospitals": "Shaka Ibitaro",
+  "instantConsult": "Inama y'ako kanya",
+  "appointments": "Gahunda",
+  "prescriptions": "Imiti yanditswe",
+  "pharmacy": "Farumasi",
+  "availability": "Iboneka",
+  "patients": "Abarwayi",
+  "analytics": "Imibare",
+  "serviceSchedule": "Gahunda y'ibikorwa",
+  "departments": "Amashami",
+  "orders": "Ibyatumijwe",
+  "inventory": "Ububiko",
+  "patientPortal": "Urubuga rw'umurwayi",
+  "doctorWorkspace": "Akazi k'umuganga",
+  "hospitalAdmin": "Ubuyobozi bw'ibitaro",
+  "pharmacyConsole": "Konsole ya farumasi",
+  "patient": "Umurwayi",
+  "doctor": "Umuganga",
+  "hospital": "Ibitaro",
+  "admin": "Umuyobozi",
+
+  "profile": "Umwirondoro"
+}

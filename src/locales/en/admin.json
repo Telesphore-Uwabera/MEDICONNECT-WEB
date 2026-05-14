@@ -1,0 +1,114 @@
+{
+  "portal": "Admin Console",
+  "nav": {
+    "overview": "Overview",
+    "approvals": "Approvals",
+    "users": "Users",
+    "analytics": "Analytics",
+    "moderation": "Moderation"
+  },
+  "overview": {
+    "title": "Admin overview",
+    "subtitle": "System health and pending actions at a glance",
+    "total_users": "Total users",
+    "pending_approvals": "Pending approvals",
+    "active_users": "Active users",
+    "open_flags": "Open flags",
+    "by_role": "Users by role",
+    "recent_signups": "Recent signups",
+    "go_to_approvals": "Review approvals"
+  },
+  "approvals": {
+    "title": "Approval queue",
+    "subtitle": "{{count}} request awaiting review",
+    "subtitle_plural": "{{count}} requests awaiting review",
+    "empty": "Nothing to review. You're all caught up.",
+    "view": "View details",
+    "approve": "Approve",
+    "reject": "Reject",
+    "drawer_title": "Review registration",
+    "drawer_sub": "Verify the applicant before approving access.",
+    "confirm_approve_title": "Approve this account?",
+    "confirm_approve_desc": "They will gain full access to the {{role}} portal immediately.",
+    "confirm_reject_title": "Reject this account?",
+    "confirm_reject_desc": "They will be notified and can re-apply later.",
+    "approved_toast": "{{name}} approved",
+    "rejected_toast": "{{name}} rejected"
+  },
+  "users": {
+    "title": "User management",
+    "subtitle": "Search, filter and manage every account",
+    "search": "Search by name, email or phone",
+    "filter_role": "Role",
+    "filter_status": "Status",
+    "all": "All",
+    "name": "Name",
+    "contact": "Contact",
+    "role": "Role",
+    "status": "Status",
+    "joined": "Joined",
+    "actions": "Actions",
+    "manage": "Manage",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "delete": "Delete",
+    "drawer_title": "Manage user",
+    "drawer_sub": "Update access and review account details.",
+    "delete_title": "Delete this user?",
+    "delete_desc": "This permanently removes the account from the system.",
+    "deleted_toast": "User deleted",
+    "status_changed": "Status updated"
+  },
+  "analytics": {
+    "title": "System analytics",
+    "subtitle": "Trends across the entire platform",
+    "signups": "New signups",
+    "appointments": "Appointments",
+    "prescriptions": "Prescriptions",
+    "orders": "Pharmacy orders",
+    "revenue": "Revenue",
+    "growth": "Growth (last 6 months)",
+    "role_distribution": "Role distribution"
+  },
+  "moderation": {
+    "title": "Content moderation",
+    "subtitle": "{{count}} item flagged for review",
+    "subtitle_plural": "{{count}} items flagged for review",
+    "kind": "Type",
+    "subject": "Subject",
+    "reported_by": "Reported by",
+    "reason": "Reason",
+    "status": "Status",
+    "open": "Open",
+    "approved": "Approved",
+    "removed": "Removed",
+    "review": "Review",
+    "approve": "Approve",
+    "remove": "Remove",
+    "drawer_title": "Moderation details",
+    "drawer_sub": "Decide whether to keep or remove this content.",
+    "approved_toast": "Item approved",
+    "removed_toast": "Item removed"
+  },
+  "roles": {
+    "doctor": "Doctor",
+    "hospital": "Hospital",
+    "pharmacy": "Pharmacy",
+    "patient": "Patient"
+  },
+  "status": {
+    "active": "Active",
+    "pending": "Pending",
+    "suspended": "Suspended",
+    "rejected": "Rejected"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close"
+  },
+  "landing_tile": {
+    "title": "Admin",
+    "desc": "Approve providers, manage users, monitor the platform."
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "signIn": "Sign in",
+  "getStarted": "Get Started",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "back": "Back",
+  "next": "Next",
+  "done": "Done",
+  "save": "Save",
+  "delete": "Delete",
+  "edit": "Edit",
+  "close": "Close",
+  "search": "Search…",
+  "book": "Book",
+  "viewSchedule": "View schedule",
+  "bookSpot": "Book a spot",
+  "language": "Language",
+  "loading": "Loading…",
+  "optional": "optional",
+  "required": "required"
+}

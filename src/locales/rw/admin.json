@@ -1,0 +1,114 @@
+{
+  "portal": "Konsole y'Ubuyobozi",
+  "nav": {
+    "overview": "Incamake",
+    "approvals": "Kwemeza",
+    "users": "Abakoresha",
+    "analytics": "Imibare",
+    "moderation": "Igenzura"
+  },
+  "overview": {
+    "title": "Incamake y'ubuyobozi",
+    "subtitle": "Imimerere ya sisitemu n'ibikorwa bitegerejwe",
+    "total_users": "Abakoresha bose",
+    "pending_approvals": "Bisabwa kwemezwa",
+    "active_users": "Abakora",
+    "open_flags": "Ibyatanzwe biracyari",
+    "by_role": "Abakoresha ku ruhare",
+    "recent_signups": "Iyandikisha riheruka",
+    "go_to_approvals": "Reba ibyemezwa"
+  },
+  "approvals": {
+    "title": "Urutonde rw'ibyo kwemeza",
+    "subtitle": "Hari icyifuzo {{count}} gisabwa",
+    "subtitle_plural": "Hari ibyifuzo {{count}} bisabwa",
+    "empty": "Nta cyo gisuzumwa. Ibintu byose biri ku murongo.",
+    "view": "Reba ibisobanuro",
+    "approve": "Emeza",
+    "reject": "Hakana",
+    "drawer_title": "Suzuma iyandikisha",
+    "drawer_sub": "Suzuma usaba mbere yo kwemerera kwinjira.",
+    "confirm_approve_title": "Wemeza iyi konti?",
+    "confirm_approve_desc": "Bazahabwa uburenganzira bwose bwo kwinjira muri {{role}} ako kanya.",
+    "confirm_reject_title": "Wanga iyi konti?",
+    "confirm_reject_desc": "Bazamenyeshwa kandi bashobora gusaba nyuma.",
+    "approved_toast": "{{name}} yemejwe",
+    "rejected_toast": "{{name}} yanzwe"
+  },
+  "users": {
+    "title": "Gucunga abakoresha",
+    "subtitle": "Shakisha, hitamo no gucunga konti zose",
+    "search": "Shakisha izina, email cyangwa telefone",
+    "filter_role": "Uruhare",
+    "filter_status": "Imimerere",
+    "all": "Byose",
+    "name": "Izina",
+    "contact": "Aho kugera",
+    "role": "Uruhare",
+    "status": "Imimerere",
+    "joined": "Yiyandikishije",
+    "actions": "Ibikorwa",
+    "manage": "Cunga",
+    "suspend": "Hagarika",
+    "reactivate": "Subizamo",
+    "delete": "Siba",
+    "drawer_title": "Cunga umukoresha",
+    "drawer_sub": "Hindura uburenganzira urebe amakuru.",
+    "delete_title": "Siba uyu mukoresha?",
+    "delete_desc": "Ibi bivanaho konti burundu muri sisitemu.",
+    "deleted_toast": "Umukoresha yasibwe",
+    "status_changed": "Imimerere yavuguruwe"
+  },
+  "analytics": {
+    "title": "Imibare ya sisitemu",
+    "subtitle": "Imigendekere muri sisitemu yose",
+    "signups": "Iyandikisha rishya",
+    "appointments": "Gahunda",
+    "prescriptions": "Imiti yanditswe",
+    "orders": "Ibyatumijwe muri farumasi",
+    "revenue": "Inyungu",
+    "growth": "Iterambere (amezi 6 ashize)",
+    "role_distribution": "Igabanya ry'inshingano"
+  },
+  "moderation": {
+    "title": "Igenzura ry'ibikubiyemo",
+    "subtitle": "Hari ikintu {{count}} cyatanzwe",
+    "subtitle_plural": "Hari ibintu {{count}} byatanzwe",
+    "kind": "Ubwoko",
+    "subject": "Ikiganiro",
+    "reported_by": "Watanze",
+    "reason": "Impamvu",
+    "status": "Imimerere",
+    "open": "Bifunguye",
+    "approved": "Byemejwe",
+    "removed": "Byavanyweho",
+    "review": "Suzuma",
+    "approve": "Emeza",
+    "remove": "Vanaho",
+    "drawer_title": "Ibisobanuro by'igenzura",
+    "drawer_sub": "Hitamo niba ugumana cyangwa uvanaho ibi.",
+    "approved_toast": "Ikintu cyemejwe",
+    "removed_toast": "Ikintu cyavanyweho"
+  },
+  "roles": {
+    "doctor": "Umuganga",
+    "hospital": "Ibitaro",
+    "pharmacy": "Farumasi",
+    "patient": "Umurwayi"
+  },
+  "status": {
+    "active": "Bikora",
+    "pending": "Bitegerejwe",
+    "suspended": "Byahagaritswe",
+    "rejected": "Byanzwe"
+  },
+  "common": {
+    "cancel": "Hagarika",
+    "confirm": "Emeza",
+    "close": "Funga"
+  },
+  "landing_tile": {
+    "title": "Admin",
+    "desc": "Emeza abatanga serivisi, cunga abakoresha, kurikirana sisitemu."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Imiti yanditswe yubwenge",
+  "stepOf": "Intambwe {{step}} muri {{total}}",
+  "stepPatient": "Umurwayi & imiti",
+  "stepPharmacy": "Hitamo farumasi",
+  "stepRoute": "Emeza inzira",
+  "stepChannels": "Uburyo bwo kohereza",
+  "patientName": "Izina ry'umurwayi",
+  "phone": "Telefone",
+  "email": "Imeyili",
+  "diagnosis": "Isuzuma",
+  "medications": "Imiti",
+  "add": "Ongeraho",
+  "notes": "Inyandiko ku murwayi",
+  "forwardPharmacy": "Ohereza muri farumasi nonaha",
+  "sendPatient": "Ohereza ku murwayi gusa",
+  "sendPatientDesc": "Umurwayi azahitamo aho azayuzuza nyuma.",
+  "inAppRecord": "Inyandiko muri app",
+  "inAppDesc": "Buri gihe iherekejwe — igaragara ku murwayi",
+  "summary": "Incamake",
+  "forwardNotify": "Ohereza & menyesha",
+  "sendToPatient": "Ohereza ku murwayi"
+}
