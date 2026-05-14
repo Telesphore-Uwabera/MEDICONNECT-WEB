@@ -1,8 +1,8 @@
 // export default Index;
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
@@ -17,8 +17,8 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  Moon,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { doctors } from "@/lib/mock-data";
@@ -50,6 +50,8 @@ const Index = () => {
   const activeHash = location.hash || "#features";
 
   const [activeSlide, setActiveSlide] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
     { href: "#features", label: t("nav.features") },
@@ -76,6 +78,28 @@ const Index = () => {
     const timer = setInterval(nextSlide, 4000);
     return () => clearInterval(timer);
   }, [nextSlide]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
+
+  // Close menu on route hash change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.hash]);
+
+  // Lock body scroll when menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
 
   const features = [
     {
@@ -133,14 +157,41 @@ const Index = () => {
     },
   ];
 
+  const footerPlatformLinks = [
+    { label: "Doctors", to: "/patient/doctors" },
+    { label: "Hospitals", to: "/patient/hospitals" },
+    { label: "Pharmacy", to: "/patient/pharmacy" },
+    { label: "Sign in", to: "/auth" },
+  ];
+
+  const footerForLinks = [
+    { label: "Patient", to: "/patient" },
+    { label: "Doctor", to: "/doctor" },
+    { label: "Hospital", to: "/hospital" },
+    { label: "Pharmacy", to: "/pharmacy" },
+    { label: "Admin", to: "/admin" },
+  ];
+
+  const footerLegalLinks = [
+    { label: "Privacy", href: "#" },
+    { label: "Terms", href: "#" },
+    { label: "Cookies", href: "#" },
+  ];
+
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Nav ── */}
-      <header className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50">
-        <div className="container flex items-center justify-between py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="MEDICONNECT logo" className="h-9 w-auto " />
+      <header
+        ref={menuRef}
+        className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50"
+      >
+        <div className="container flex items-center justify-between py-3 md:py-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img src={logo} alt="MEDICONNECT logo" className="h-8 w-auto" />
           </Link>
+
+          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1 text-xs font-medium">
             {navLinks.map((l) => {
               const active = activeHash === l.href;
@@ -163,7 +214,9 @@ const Index = () => {
               );
             })}
           </nav>
-          <div className="flex items-center gap-2">
+
+          {/* Desktop right actions */}
+          <div className="hidden md:flex items-center gap-2">
             <ThemeToggle />
             <LanguageSwitcher />
             <Link to="/auth">
@@ -172,20 +225,91 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/auth?mode=signup">
-              <Button
-                size="sm"
-                className="bg-gradient-primary hover:opacity-90"
-              >
+              <Button size="sm" className="bg-gradient-primary hover:opacity-90">
                 {t("common.getStarted")}
               </Button>
             </Link>
           </div>
+
+          {/* Mobile right: theme + lang + hamburger */}
+          <div className="flex md:hidden items-center gap-1">
+            <ThemeToggle />
+            <LanguageSwitcher />
+            <button
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              className="ml-1 w-9 h-9 rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
+
+        {/* ── Mobile drawer ── */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              key="mobile-menu"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="md:hidden border-t border-border bg-background/95 backdrop-blur"
+            >
+              {/* Nav links */}
+              <nav className="container py-3 flex flex-col gap-0.5">
+                {navLinks.map((l) => {
+                  const active = activeHash === l.href;
+                  return (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition-smooth",
+                        active
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                      )}
+                    >
+                      {active && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      )}
+                      {!active && <span className="h-1.5 w-1.5 shrink-0" />}
+                      {l.label}
+                    </a>
+                  );
+                })}
+              </nav>
+
+              {/* Divider */}
+              <div className="border-t border-border mx-4" />
+
+              {/* Auth buttons */}
+              <div className="container py-4 flex flex-col gap-2">
+                <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full" size="sm">
+                    {t("common.signIn")}
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-primary hover:opacity-90"
+                  >
+                    {t("common.getStarted")}
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-hero">
-        <div className="container py-6 lg:py-12 grid lg:grid-cols-12 gap-12 items-center">
+        <div className="container py-6 lg:py-12 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           {/* Left copy */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -201,8 +325,8 @@ const Index = () => {
               </span>
             </div>
 
-            {/* Heading */}
-            <h1 className="mt-6 font-display text-4xl lg:text-5xl font-bold tracking-tight leading-[1.05]">
+            {/* Heading — FIXED: smaller on mobile */}
+            <h1 className="mt-5 font-display text-[1.65rem] sm:text-3xl lg:text-5xl font-bold tracking-tight leading-[1.1]">
               {t("pages.landing.hero_title_1")}{" "}
               <span className="text-primary">
                 {t("pages.landing.hero_title_2")}
@@ -213,11 +337,11 @@ const Index = () => {
             </p>
 
             {/* CTA block */}
-            <div className="mt-8 flex flex-col gap-3 max-w-sm">
+            <div className="mt-7 flex flex-col gap-3 max-w-sm">
               <Link to="/patient/instant" className="w-full">
-                <button className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+                <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-md bg-white/15">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-md bg-white/15 shrink-0">
                       <Video className="h-4 w-4" />
                     </span>
                     <div className="text-left">
@@ -229,37 +353,38 @@ const Index = () => {
                       </p>
                     </div>
                   </div>
-                  <ArrowRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="h-4 w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </button>
               </Link>
 
+              {/* FIXED: buttons no longer truncate */}
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/patient/doctors" className="group">
-                  <button className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
+                <Link to="/patient/search-doctors" className="group">
+                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
                     <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent text-primary shrink-0">
                       <Stethoscope className="h-3.5 w-3.5" />
                     </span>
-                    <div className="text-left min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">
+                    <div className="text-left">
+                      <p className="text-[11px] font-semibold text-foreground leading-tight">
                         {t("pages.landing.browse_doctors")}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">
                         500+ specialists
                       </p>
                     </div>
                   </button>
                 </Link>
 
-                <Link to="/patient/hospitals" className="group">
-                  <button className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
+                <Link to="/patient/search-hospitals" className="group">
+                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
                     <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent text-primary shrink-0">
                       <Hospital className="h-3.5 w-3.5" />
                     </span>
-                    <div className="text-left min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">
+                    <div className="text-left">
+                      <p className="text-[11px] font-semibold text-foreground leading-tight">
                         {t("pages.landing.see_all_hospitals")}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">
                         Top-rated near you
                       </p>
                     </div>
@@ -269,7 +394,7 @@ const Index = () => {
             </div>
 
             {/* Trust bar */}
-            <div className="mt-8 flex items-center gap-1 flex-wrap">
+            <div className="mt-7 flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground">
                 <Shield className="h-3 w-3 text-primary" />{" "}
                 {t("pages.landing.security")}
@@ -288,8 +413,7 @@ const Index = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-5"
           >
-            {/* REPLACED: bg-charcoal → bg-card with dark override */}
-            <div className="rounded-md bg-card dark:bg-secondary/30 border border-border p-6 ">
+            <div className="rounded-md bg-card dark:bg-secondary/30 border border-border p-6">
               {/* Panel header */}
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -416,21 +540,21 @@ const Index = () => {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" className="py-24 border-t border-border">
+      <section id="features" className="py-16 md:py-24 border-t border-border">
         <div className="container">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               {t("pages.landing.what_we_do")}
             </p>
-            <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-3 font-display text-2xl lg:text-4xl font-bold tracking-tight text-foreground">
               {t("pages.landing.features_title")}
             </h2>
           </div>
-          <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="mt-10 md:mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {features.map((f) => (
               <div
                 key={f.title}
-                className="p-6 rounded-md border border-border bg-card hover:shadow-medium transition-smooth"
+                className="p-5 md:p-6 rounded-md border border-border bg-card hover:shadow-medium transition-smooth"
               >
                 <div className="h-10 w-10 rounded-sm bg-accent text-primary flex items-center justify-center mb-4">
                   <f.icon className="h-5 w-5" />
@@ -450,26 +574,26 @@ const Index = () => {
       {/* ── Available doctors ── */}
       <section
         id="doctors"
-        className="py-24 bg-gradient-soft border-t border-border"
+        className="py-16 md:py-24 bg-gradient-soft border-t border-border"
       >
         <div className="container">
-          <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
+          <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
                 {t("pages.landing.available_now")}
               </p>
-              <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground">
+              <h2 className="mt-3 font-display text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                 {t("pages.landing.doctors_ready")}
               </h2>
             </div>
             <Link to="/patient/doctors">
-              <Button variant="outline">
+              <Button variant="outline" size="sm">
                 {t("pages.landing.see_all_doctors")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {doctors.slice(0, 6).map((d) => (
               <DoctorCard key={d.id} doctor={d} />
             ))}
@@ -478,14 +602,14 @@ const Index = () => {
       </section>
 
       {/* ── Hospitals ── */}
-      <section id="hospitals" className="py-24 border-t border-border">
+      <section id="hospitals" className="py-16 md:py-24 border-t border-border">
         <div className="container">
-          <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
+          <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
                 {t("pages.landing.partner_network")}
               </p>
-              <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground">
+              <h2 className="mt-3 font-display text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                 {t("pages.landing.hospitals_near_you")}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground max-w-xl">
@@ -493,13 +617,13 @@ const Index = () => {
               </p>
             </div>
             <Link to="/patient/hospitals">
-              <Button variant="outline">
+              <Button variant="outline" size="sm">
                 {t("pages.landing.see_all_hospitals")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {hospitals.slice(0, 3).map((h) => (
               <HospitalCard key={h.name} hospital={h} />
             ))}
@@ -508,17 +632,17 @@ const Index = () => {
       </section>
 
       {/* ── Pharmacy teaser ── */}
-      {/* ── Pharmacy teaser ── */}
       <section
         id="pharmacy"
-        className="py-24 bg-gradient-soft border-t border-border"
+        className="py-16 md:py-24 bg-gradient-soft border-t border-border"
       >
-        <div className="container grid lg:grid-cols-2 gap-12 items-center">
+        <div className="container grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               {t("pages.landing.pharmacy_marketplace")}
             </p>
-            <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+            {/* FIXED: smaller on mobile */}
+            <h2 className="mt-3 font-display text-2xl lg:text-4xl font-bold tracking-tight text-foreground">
               {t("pages.landing.pharmacy_title")}
             </h2>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xl">
@@ -535,7 +659,7 @@ const Index = () => {
                 </Button>
               </Link>
             </div>
-            <div className="mt-8 grid grid-cols-3 gap-4 max-w-md">
+            <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
               {[
                 { v: "200+", l: t("pages.landing.stat_products") },
                 { v: "4", l: t("pages.landing.stat_pharmacies") },
@@ -554,8 +678,7 @@ const Index = () => {
             </div>
           </div>
 
-          {/* 40% smaller emoji card */}
-          <div className="rounded-md bg-card border border-border  p-5  ">
+          <div className="rounded-md bg-card border border-border p-5">
             <div className="grid grid-cols-3 gap-2.5">
               {["💊", "🧴", "🌿", "💉", "👶", "🩹"].map((e, i) => (
                 <div
@@ -571,22 +694,22 @@ const Index = () => {
       </section>
 
       {/* ── Roles ── */}
-      <section id="roles" className="py-24 border-t border-border">
+      <section id="roles" className="py-16 md:py-24 border-t border-border">
         <div className="container">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               {t("pages.landing.for_everyone")}
             </p>
-            <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
+            <h2 className="mt-3 font-display text-2xl lg:text-4xl font-bold tracking-tight text-foreground">
               {t("pages.landing.roles_title")}
             </h2>
           </div>
-          <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="mt-10 md:mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
             {roles.map((r) => (
               <Link
                 key={r.title}
                 to={r.to}
-                className="group p-6 rounded-md border border-border bg-card hover:bg-secondary hover:border-primary/30 transition-smooth"
+                className="group p-5 md:p-6 rounded-md border border-border bg-card hover:bg-secondary hover:border-primary/30 transition-smooth"
               >
                 <div className="h-10 w-10 rounded-sm bg-accent text-primary group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center mb-4 transition-smooth">
                   <r.icon className="h-5 w-5" />
@@ -607,148 +730,144 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ── Footer — fully redesigned for mobile ── */}
       <footer className="border-t border-border bg-card">
-        <div className="container py-5">
-          {/* Row 1: Brand + tagline + socials */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="MEDICONNECT" className="h-6 w-auto" />
-              <span className="text-[11px] text-muted-foreground max-w-[200px] truncate">
+        <div className="container py-6 md:py-5">
+
+          {/* ── Brand row ── */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
+            <div className="flex items-center gap-3 min-w-0">
+              <img src={logo} alt="MEDICONNECT" className="h-6 w-auto shrink-0" />
+              <span className="text-[11px] text-muted-foreground hidden sm:block">
                 Connecting patients, doctors, hospitals, and pharmacies
               </span>
             </div>
+            {/* Social icons */}
             <div className="flex items-center gap-2">
-              <a
-                href="#"
-                className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
+              {[
+                {
+                  label: "Twitter",
+                  path: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
+                },
+                {
+                  label: "Instagram",
+                  path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
+                },
+                {
+                  label: "LinkedIn",
+                  path: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z",
+                },
+              ].map((s) => (
+                <a
+                  key={s.label}
+                  href="#"
+                  aria-label={s.label}
+                  className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                 >
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-              >
-                <svg
-                  className="h-3.5 w-3.5"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
-                </svg>
-              </a>
+                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d={s.path} />
+                  </svg>
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Row 2: All links in one line */}
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-3 text-[11px]">
+          {/* ── Mobile: stacked link groups | Desktop: single row ── */}
+
+          {/* Mobile layout (< md) */}
+          <div className="md:hidden py-4 space-y-4 border-b border-border">
+            {/* Platform */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Platform
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {footerPlatformLinks.map((l) => (
+                  <Link
+                    key={l.label}
+                    to={l.to}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* For */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                For
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {footerForLinks.map((l) => (
+                  <Link
+                    key={l.label}
+                    to={l.to}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Legal
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                {footerLegalLinks.map((l) => (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {l.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Contact
+              </p>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground">support@mediconnect.com</span>
+                <span className="text-xs text-muted-foreground">+250 788 123 456</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop layout (≥ md) — original single row */}
+          <div className="hidden md:flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-3 border-b border-border text-[11px]">
             <span className="text-muted-foreground font-medium">Platform:</span>
-            <Link
-              to="/patient/doctors"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Doctors
-            </Link>
-            <Link
-              to="/patient/hospitals"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Hospitals
-            </Link>
-            <Link
-              to="/patient/pharmacy"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pharmacy
-            </Link>
-            <Link
-              to="/auth"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
+            {footerPlatformLinks.map((l) => (
+              <Link key={l.label} to={l.to} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
+            ))}
             <span className="text-border">|</span>
             <span className="text-muted-foreground font-medium">For:</span>
-            <Link
-              to="/patient"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Patient
-            </Link>
-            <Link
-              to="/doctor"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Doctor
-            </Link>
-            <Link
-              to="/hospital"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Hospital
-            </Link>
-            <Link
-              to="/pharmacy"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pharmacy
-            </Link>
-            <Link
-              to="/admin"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Admin
-            </Link>
+            {footerForLinks.map((l) => (
+              <Link key={l.label} to={l.to} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
+            ))}
             <span className="text-border">|</span>
             <span className="text-muted-foreground font-medium">Legal:</span>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Privacy
-            </a>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Terms
-            </a>
-            <a
-              href="#"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Cookies
-            </a>
+            {footerLegalLinks.map((l) => (
+              <a key={l.label} href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</a>
+            ))}
             <span className="text-border">|</span>
             <span className="text-muted-foreground font-medium">Contact:</span>
-            <span className="text-muted-foreground">
-              support@mediconnect.com
-            </span>
+            <span className="text-muted-foreground">support@mediconnect.com</span>
             <span className="text-muted-foreground">+250 788 123 456</span>
           </div>
 
-          {/* Row 3: Copyright + status */}
-          <div className="flex items-center justify-between pt-3 border-t border-border">
+          {/* ── Copyright row ── */}
+          <div className="flex items-center justify-between pt-4 gap-3 flex-wrap">
             <span className="text-[10px] text-muted-foreground">
-              © {new Date().getFullYear()} MEDICONNECT.{" "}
-              {t("pages.landing.footer")}
+              © {new Date().getFullYear()} MEDICONNECT. Bringing care to your fingertips.
             </span>
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
@@ -757,6 +876,7 @@ const Index = () => {
               </span>
             </div>
           </div>
+
         </div>
       </footer>
     </div>
