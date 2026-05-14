@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Welcome to Mediconnect Project Improvement
 
-TODO: Document your project here
+
