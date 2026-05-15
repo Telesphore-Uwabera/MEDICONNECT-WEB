@@ -193,10 +193,10 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
         ref={menuRef}
         className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50"
       >
-        <div className="container flex items-center justify-between py-3 md:py-4">
+        <div className="container flex items-center justify-between py-1 md:py-1">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-       <img src={logo} alt="MEDICONNECT logo" className="h-8 w-auto rounded-sm" />
+       <img src={logo} alt="MEDICONNECT logo" className="h-12 w-auto rounded-sm" />
           </Link>
 
           {/* Desktop nav */}

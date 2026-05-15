@@ -296,7 +296,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-7 w-auto flex-shrink-0 rounded-sm"
+            className="h-12 w-auto flex-shrink-0 rounded-sm"
           />
        
         </NavLink>
