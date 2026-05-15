@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { dashboardPath, onboardingPath, currentUser } from "@/lib/auth-store";
-import logo from "@/assets/mediconnect-logo.png";
+import LOGODARK from "@/assets/LOGODARK.png";
+import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import { useTheme } from "@/context/ThemeContext";
 import doctors from "@/assets/images/doctors.png";
 import SignUpForm from "@/components/auth/SignUpForm";
 import SignInForm from "@/components/auth/SignInForm";
@@ -16,6 +18,9 @@ const Auth = () => {
   const [params] = useSearchParams();
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
+
+  const { resolvedTheme, theme } = useTheme();
+  const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
   const goAfterAuth = () => {
     const u = currentUser();
@@ -37,7 +42,7 @@ const Auth = () => {
             <img
               src={logo}
               alt="MEDICONNECT"
-              className="h-7 w-auto transition-transform duration-300 group-hover:scale-105"
+              className="h-7 w-auto rounded-md transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
           <div className="flex items-center gap-2">
