@@ -11,6 +11,7 @@ import enRx from "@/locales/en/rx.json";
 import enPages from "@/locales/en/pages.json";
 import enAdmin from "@/locales/en/admin.json";
 import enAuth from "@/locales/en/auth.json";
+import enHeader from "@/locales/en/header.json";
 
 import frCommon from "@/locales/fr/common.json";
 import frNav from "@/locales/fr/nav.json";
@@ -21,6 +22,7 @@ import frRx from "@/locales/fr/rx.json";
 import frPages from "@/locales/fr/pages.json";
 import frAdmin from "@/locales/fr/admin.json";
 import frAuth from "@/locales/fr/auth.json";
+import frHeader from "@/locales/fr/header.json";
 
 import rwCommon from "@/locales/rw/common.json";
 import rwNav from "@/locales/rw/nav.json";
@@ -31,10 +33,11 @@ import rwRx from "@/locales/rw/rx.json";
 import rwPages from "@/locales/rw/pages.json";
 import rwAdmin from "@/locales/rw/admin.json";
 import rwAuth from "@/locales/rw/auth.json";
+import rwHeader from "@/locales/rw/header.json";
 
 const bundle = (
-  common: any, nav: any, sidebar: any, hero: any, booking: any, rx: any, pages: any, admin: any, auth: any,
-) => ({ common, nav, sidebar, hero, booking, rx, pages, admin, auth });
+  common: any, nav: any, sidebar: any, hero: any, booking: any, rx: any, pages: any, admin: any, auth: any, header: any,
+) => ({ common, nav, sidebar, hero, booking, rx, pages, admin, auth, header });
 
 export const SUPPORTED_LANGUAGES = [
   { code: "en", label: "English", nativeLabel: "English" },
@@ -47,9 +50,9 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      en: { translation: bundle(enCommon, enNav, enSidebar, enHero, enBooking, enRx, enPages, enAdmin, enAuth) },
-      fr: { translation: bundle(frCommon, frNav, frSidebar, frHero, frBooking, frRx, frPages, frAdmin, frAuth) },
-      rw: { translation: bundle(rwCommon, rwNav, rwSidebar, rwHero, rwBooking, rwRx, rwPages, rwAdmin, rwAuth) },
+      en: { translation: bundle(enCommon, enNav, enSidebar, enHero, enBooking, enRx, enPages, enAdmin, enAuth, enHeader) },
+      fr: { translation: bundle(frCommon, frNav, frSidebar, frHero, frBooking, frRx, frPages, frAdmin, frAuth, frHeader) },
+      rw: { translation: bundle(rwCommon, rwNav, rwSidebar, rwHero, rwBooking, rwRx, rwPages, rwAdmin, rwAuth, rwHeader) },
     },
     fallbackLng: "en",
     supportedLngs: ["en", "fr", "rw"],

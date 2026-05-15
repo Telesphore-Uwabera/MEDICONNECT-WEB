@@ -1,4 +1,3 @@
-import { Languages } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -10,10 +9,40 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const LANGS = [
-  { code: "en", label: "English", short: "EN" },
-  { code: "fr", label: "Français", short: "FR" },
-  { code: "rw", label: "Kinyarwanda", short: "RW" },
+  {
+    code: "en",
+    label: "English",
+    short: "ENG",
+    flag: "https://upload.wikimedia.org/wikipedia/en/a/ae/Flag_of_the_United_Kingdom.svg",
+  },
+  {
+    code: "fr",
+    label: "Français",
+    short: "FRE",
+    flag: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/960px-Flag_of_France.svg.png",
+  },
+  {
+    code: "rw",
+    label: "Kinyarwanda",
+    short: "KINY",
+    flag: "https://upload.wikimedia.org/wikipedia/commons/1/17/Flag_of_Rwanda.svg",
+  },
 ] as const;
+
+const FlagCircle = ({ flag, label, className }: { flag: string; label: string; className?: string }) => (
+  <span
+    className={cn(
+      "rounded-full overflow-hidden w-5 h-5 inline-flex items-center justify-center shrink-0 border-2 border-border",
+      className
+    )}
+  >
+    <img
+      src={flag}
+      alt={label}
+      className="w-full h-full object-cover"
+    />
+  </span>
+);
 
 export const LanguageSwitcher = ({
   variant = "ghost",
@@ -29,7 +58,7 @@ export const LanguageSwitcher = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant={variant} size="sm" className="gap-1.5" aria-label={t("common.language")}>
-          <Languages className="h-4 w-4" />
+          <FlagCircle flag={current.flag} label={current.label} />
           {!compact && <span className="text-xs font-semibold">{current.short}</span>}
         </Button>
       </DropdownMenuTrigger>
@@ -38,9 +67,9 @@ export const LanguageSwitcher = ({
           <DropdownMenuItem
             key={l.code}
             onClick={() => i18n.changeLanguage(l.code)}
-            className={cn("cursor-pointer", current.code === l.code && "bg-primary-soft text-primary")}
+            className={cn("cursor-pointer gap-2", current.code === l.code && "bg-primary-soft text-primary")}
           >
-            <span className="font-mono text-xs w-7 opacity-60">{l.short}</span>
+            <FlagCircle flag={l.flag} label={l.label} />
             {l.label}
           </DropdownMenuItem>
         ))}

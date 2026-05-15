@@ -71,6 +71,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const set =
     (k: keyof SignUpFormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -102,10 +103,10 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   const inputCls =
-    "h-10 rounded-xl border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
   const inputNoIconCls =
-    "h-10 rounded-xl border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground";
 
   return (
     <motion.form
@@ -131,7 +132,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               return (
                 <label
                   key={r}
-                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${
+                  className={`flex items-center gap-2 rounded-sm px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${
                     isSelected
                       ? `${config.color} shadow-sm`
                       : "border-border bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted"
@@ -293,10 +294,29 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
         </div>
       </div>
 
+      <label className="flex items-start gap-2.5 cursor-pointer group">
+        <input
+          type="checkbox"
+          checked={acceptedTerms}
+          onChange={(e) => setAcceptedTerms(e.target.checked)}
+          className="mt-0.5 accent-primary shrink-0 cursor-pointer"
+        />
+        <span className="text-xs text-muted-foreground leading-relaxed">
+          {t("auth.terms_prefix")}{" "}
+          <a href="#" className="text-primary font-semibold no-underline hover:text-primary/80 transition-colors">
+            {t("auth.terms_link")}
+          </a>{" "}
+          {t("auth.terms_and")}{" "}
+          <a href="#" className="text-primary font-semibold no-underline hover:text-primary/80 transition-colors">
+            {t("auth.privacy_link")}
+          </a>
+        </span>
+      </label>
+
       <button
         type="submit"
-        disabled={isLoading}
-        className="w-full h-10 mt-1 rounded-xl font-semibold text-primary-foreground text-xs transition-all duration-200 hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+        disabled={isLoading || !acceptedTerms}
+        className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
       >
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />

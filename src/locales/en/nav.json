@@ -1,6 +1,7 @@
 {
   "features": "Features",
   "doctors": "Doctors",
+  "available_doctors": "Available Doctors",
   "hospitals": "Hospitals",
   "pharmacy": "Pharmacy",
   "forYou": "For You"
