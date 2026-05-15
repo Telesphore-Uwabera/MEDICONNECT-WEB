@@ -346,7 +346,7 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
             {/* CTA block */}
             <div className="mt-7 flex flex-col gap-3 max-w-sm">
-              <Link to="/patient/instant" className="w-full">
+              <Link to="/patient/search-doctors" className="w-full">
                 <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center justify-center w-8 h-8 rounded-sm bg-white/15 shrink-0">
