@@ -343,7 +343,7 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
             <p className="mt-4 text-sm text-muted-foreground max-w-lg leading-relaxed">
               {t("pages.landing.hero_subtitle")}
             </p>
-
+auth
             {/* CTA block */}
             <div className="mt-7 flex flex-col gap-3 max-w-sm">
               <Link to="/patient/search-doctors" className="w-full">
