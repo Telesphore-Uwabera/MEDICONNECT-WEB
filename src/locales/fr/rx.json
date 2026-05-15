@@ -14,7 +14,7 @@
   "notes": "Notes pour le patient",
   "forwardPharmacy": "Transférer à la pharmacie",
   "sendPatient": "Envoyer au patient uniquement",
-  "sendPatientDesc": "Le patient décide où le remplir plus tard.",
+  "sendPatientDesc": "Le patient décide où le remplir plus tard",
   "inAppRecord": "Dossier in-app",
   "inAppDesc": "Toujours inclus — apparaît dans l'onglet Ordonnances",
   "summary": "Résumé",

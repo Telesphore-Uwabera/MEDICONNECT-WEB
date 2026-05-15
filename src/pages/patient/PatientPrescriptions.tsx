@@ -56,15 +56,22 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 const STATUS_STYLES: Record<RxStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
   "sent-to-patient": "bg-primary/10 text-primary border-primary/20",
-  "sent-to-pharmacy": "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  filled: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  "sent-to-pharmacy":
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  filled:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  cancelled:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
   active: "bg-primary/10 text-primary border-primary/20",
-  pending: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  dispensed: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  pending:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  dispensed:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   expired: "bg-muted text-muted-foreground border-border",
-  completed: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  rejected: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  completed:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  rejected:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
   returned: "bg-muted text-muted-foreground border-border",
 };
 
@@ -168,10 +175,16 @@ function PrescriptionCard({
           variant="outline"
           className={cn(
             "shrink-0 text-[9px] px-1.5 py-0 gap-1",
-            STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground border-border",
+            STATUS_STYLES[p.status] ??
+              "bg-muted text-muted-foreground border-border",
           )}
         >
-          <span className={cn("w-1 h-1 rounded-full", STATUS_DOT[p.status] ?? "bg-muted-foreground")} />
+          <span
+            className={cn(
+              "w-1 h-1 rounded-full",
+              STATUS_DOT[p.status] ?? "bg-muted-foreground",
+            )}
+          />
           {statusLabel[p.status] ?? p.status}
         </Badge>
       </div>
@@ -341,8 +354,12 @@ const PatientPrescriptions = () => {
     (p) => p.status === "sent-to-patient" || p.status === "sent-to-pharmacy",
   ).length;
   const pendingCount = filtered.filter((p) => p.status === "pending").length;
-  const filledCount = filtered.filter((p) => p.status === "filled" || p.status === "dispensed").length;
-  const cancelledCount = filtered.filter((p) => p.status === "cancelled").length;
+  const filledCount = filtered.filter(
+    (p) => p.status === "filled" || p.status === "dispensed",
+  ).length;
+  const cancelledCount = filtered.filter(
+    (p) => p.status === "cancelled",
+  ).length;
 
   const handleAction = useCallback(
     (_p: Prescription, _action: "pdf" | "send" | "status") => {
@@ -358,7 +375,9 @@ const PatientPrescriptions = () => {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
           <button
@@ -515,7 +534,7 @@ const PatientPrescriptions = () => {
                     type="text"
                     value={filters.search}
                     onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search doctor or patient..."
+                    placeholder="Search doctor or patient.."
                     className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
@@ -528,7 +547,9 @@ const PatientPrescriptions = () => {
                     className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                   >
                     {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
@@ -678,10 +699,16 @@ const PatientPrescriptions = () => {
                               variant="outline"
                               className={cn(
                                 "text-[9px] px-1.5 py-0 gap-1",
-                                STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground border-border",
+                                STATUS_STYLES[p.status] ??
+                                  "bg-muted text-muted-foreground border-border",
                               )}
                             >
-                              <span className={cn("w-1 h-1 rounded-full", STATUS_DOT[p.status] ?? "bg-muted-foreground")} />
+                              <span
+                                className={cn(
+                                  "w-1 h-1 rounded-full",
+                                  STATUS_DOT[p.status] ?? "bg-muted-foreground",
+                                )}
+                              />
                               {statusLabel[p.status] ?? p.status}
                             </Badge>
                           </td>

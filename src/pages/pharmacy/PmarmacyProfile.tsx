@@ -19,11 +19,43 @@ import {
   Pencil,
   Trash2,
   Check,
+  Share2,
+  Calendar,
+  Facebook,
+  Twitter,
+  Instagram,
+  Globe,
+  Linkedin,
+  X,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
+interface WorkingHoursDay {
+  enabled: boolean;
+  opens_at: string;
+  closes_at: string;
+}
+
+interface WorkingHours {
+  monday: WorkingHoursDay;
+  tuesday: WorkingHoursDay;
+  wednesday: WorkingHoursDay;
+  thursday: WorkingHoursDay;
+  friday: WorkingHoursDay;
+  saturday: WorkingHoursDay;
+  sunday: WorkingHoursDay;
+}
+
+interface SocialLinks {
+  website: string;
+  facebook: string;
+  twitter: string;
+  instagram: string;
+  linkedin: string;
+}
+
 interface PharmacyProfileData {
   name_en: string;
   name_fr: string;
@@ -46,11 +78,86 @@ interface PharmacyProfileData {
   delivery_currency: string;
   delivery_radius_km: string;
   estimated_delivery_minutes: string;
+  working_hours: WorkingHours;
+  social_links: SocialLinks;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
+const DAYS_OF_WEEK = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+type DayKey = (typeof DAYS_OF_WEEK)[number];
+
+const DAY_LABELS: Record<DayKey, string> = {
+  monday: "Monday",
+  tuesday: "Tuesday",
+  wednesday: "Wednesday",
+  thursday: "Thursday",
+  friday: "Friday",
+  saturday: "Saturday",
+  sunday: "Sunday",
+};
+
+const SOCIAL_PLATFORMS = [
+  {
+    key: "website" as const,
+    label: "Website",
+    icon: Globe,
+    placeholder: "https://medipharm.rw",
+  },
+  {
+    key: "facebook" as const,
+    label: "Facebook",
+    icon: Facebook,
+    placeholder: "https://facebook.com/medipharm",
+  },
+  {
+    key: "twitter" as const,
+    label: "Twitter / X",
+    icon: Twitter,
+    placeholder: "https://twitter.com/medipharm",
+  },
+  {
+    key: "instagram" as const,
+    label: "Instagram",
+    icon: Instagram,
+    placeholder: "https://instagram.com/medipharm",
+  },
+  {
+    key: "linkedin" as const,
+    label: "LinkedIn",
+    icon: Linkedin,
+    placeholder: "https://linkedin.com/company/medipharm",
+  },
+];
+
+const DEFAULT_WORKING_HOURS: WorkingHours = {
+  monday: { enabled: true, opens_at: "08:00", closes_at: "18:00" },
+  tuesday: { enabled: true, opens_at: "08:00", closes_at: "18:00" },
+  wednesday: { enabled: true, opens_at: "08:00", closes_at: "18:00" },
+  thursday: { enabled: true, opens_at: "08:00", closes_at: "18:00" },
+  friday: { enabled: true, opens_at: "08:00", closes_at: "18:00" },
+  saturday: { enabled: true, opens_at: "09:00", closes_at: "15:00" },
+  sunday: { enabled: false, opens_at: "09:00", closes_at: "13:00" },
+};
+
+const DEFAULT_SOCIAL_LINKS: SocialLinks = {
+  website: "",
+  facebook: "",
+  twitter: "",
+  instagram: "",
+  linkedin: "",
+};
+
 const STEPS = [
   {
     id: "general" as const,
@@ -102,6 +209,22 @@ const STEPS = [
       "estimated_delivery_minutes",
     ] as (keyof PharmacyProfileData)[],
   },
+  {
+    id: "working_hours" as const,
+    label: "Working Hours",
+    icon: Calendar,
+    sectionTitle: "Weekly working hours",
+    description: "Per-day open/close schedule",
+    fields: [] as (keyof PharmacyProfileData)[],
+  },
+  {
+    id: "social_links" as const,
+    label: "Social Links",
+    icon: Share2,
+    sectionTitle: "Social media & web",
+    description: "Website, Facebook, Instagram…",
+    fields: [] as (keyof PharmacyProfileData)[],
+  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,7 +275,7 @@ function FormField({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// StatCard — mirrors DoctorProfile
+// StatCard
 // ─────────────────────────────────────────────────────────────────────────────
 function StatCard({
   label,
@@ -184,7 +307,7 @@ function StatCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Unified Sidebar — mirrors DoctorProfile's UnifiedSidebar
+// Unified Sidebar
 // ─────────────────────────────────────────────────────────────────────────────
 function UnifiedSidebar({
   currentStep,
@@ -209,7 +332,7 @@ function UnifiedSidebar({
 
   return (
     <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
-      {/* ── Profile mini-card (view mode) or progress header (form mode) ── */}
+      {/* Header */}
       <div className="px-4 pt-5 pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
@@ -273,7 +396,7 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* ── Step nav ── */}
+      {/* Step nav */}
       <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
@@ -294,7 +417,6 @@ function UnifiedSidebar({
                     : "text-muted-foreground cursor-default",
               )}
             >
-              {/* Step indicator */}
               <div
                 className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-semibold border transition-all",
@@ -312,7 +434,6 @@ function UnifiedSidebar({
                 )}
               </div>
 
-              {/* Label + description */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
                   <span
@@ -337,7 +458,6 @@ function UnifiedSidebar({
                 <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
-                {/* Per-step fill bar — only in form mode */}
                 {isForm && (
                   <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                     <div
@@ -358,7 +478,7 @@ function UnifiedSidebar({
         })}
       </div>
 
-      {/* ── Footer actions (view mode only) ── */}
+      {/* Footer actions (view mode) */}
       {!isForm && profileData && (
         <div className="p-3 border-t border-border space-y-2">
           <Button
@@ -379,13 +499,13 @@ function UnifiedSidebar({
         </div>
       )}
 
-      {/* ── Footer hint (form mode) ── */}
+      {/* Footer hint (form mode) */}
       {isForm && (
         <div className="px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
-              ? "Click any section to jump directly."
-              : "Jump between sections freely — no order needed."}
+              ? "Click any section to jump directly"
+              : "Jump between sections freely — no order needed"}
           </p>
         </div>
       )}
@@ -394,7 +514,174 @@ function UnifiedSidebar({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Multi-step Pharmacy Form — no inner sidebar (sidebar is unified above)
+// Working Hours Form Step
+// ─────────────────────────────────────────────────────────────────────────────
+function WorkingHoursStep({
+  value,
+  onChange,
+}: {
+  value: WorkingHours;
+  onChange: (v: WorkingHours) => void;
+}) {
+  const updateDay = (day: DayKey, patch: Partial<WorkingHoursDay>) => {
+    onChange({ ...value, [day]: { ...value[day], ...patch } });
+  };
+
+  const applyToAll = (day: DayKey) => {
+    const source = value[day];
+    const updated = { ...value };
+    DAYS_OF_WEEK.forEach((d) => {
+      if (d !== day) {
+        updated[d] = {
+          ...updated[d],
+          opens_at: source.opens_at,
+          closes_at: source.closes_at,
+        };
+      }
+    });
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-2">
+      {/* Header legend */}
+      <div className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center px-1 mb-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Day
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Opens at
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Closes at
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Copy
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Open
+        </span>
+      </div>
+
+      {DAYS_OF_WEEK.map((day) => {
+        const dayData = value[day];
+        const isWeekend = day === "saturday" || day === "sunday";
+        return (
+          <div
+            key={day}
+            className={cn(
+              "grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center rounded-md px-3 py-2.5 border transition-colors",
+              dayData.enabled
+                ? "border-border bg-card"
+                : "border-border/40 bg-muted/30 opacity-60",
+              isWeekend && dayData.enabled && "border-primary/20 bg-primary/5",
+            )}
+          >
+            {/* Day label */}
+            <span
+              className={cn(
+                "text-xs font-medium capitalize",
+                !dayData.enabled && "text-muted-foreground",
+                isWeekend && dayData.enabled && "text-primary",
+              )}
+            >
+              {DAY_LABELS[day].slice(0, 3)}
+            </span>
+
+            {/* Opens at */}
+            <Input
+              type="time"
+              value={dayData.opens_at}
+              onChange={(e) => updateDay(day, { opens_at: e.target.value })}
+              disabled={!dayData.enabled}
+              className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
+            />
+
+            {/* Closes at */}
+            <Input
+              type="time"
+              value={dayData.closes_at}
+              onChange={(e) => updateDay(day, { closes_at: e.target.value })}
+              disabled={!dayData.enabled}
+              className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
+            />
+
+            {/* Copy to all */}
+            <button
+              onClick={() => applyToAll(day)}
+              disabled={!dayData.enabled}
+              title="Copy hours to all days"
+              className="text-[10px] text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors px-1 font-medium"
+            >
+              ↓ All
+            </button>
+
+            {/* Toggle */}
+            <Switch
+              checked={dayData.enabled}
+              onCheckedChange={(v) => updateDay(day, { enabled: v })}
+            />
+          </div>
+        );
+      })}
+
+      <p className="text-[10px] text-muted-foreground pt-1 pl-1">
+        Use "↓ All" to copy a day's hours across the full week.
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Social Links Form Step
+// ─────────────────────────────────────────────────────────────────────────────
+function SocialLinksStep({
+  value,
+  onChange,
+}: {
+  value: SocialLinks;
+  onChange: (v: SocialLinks) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {SOCIAL_PLATFORMS.map(({ key, label, icon: Icon, placeholder }) => (
+        <div
+          key={key}
+          className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 focus-within:border-primary/50 focus-within:bg-primary/5 transition-colors"
+        >
+          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+            <Icon size={13} />
+          </div>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              {label}
+            </span>
+            <Input
+              value={value[key]}
+              onChange={(e) => onChange({ ...value, [key]: e.target.value })}
+              placeholder={placeholder}
+              className="h-8 text-xs border-0 p-0 bg-transparent focus-visible:ring-0 shadow-none placeholder:text-muted-foreground/50"
+            />
+          </div>
+          {value[key] && (
+            <button
+              onClick={() => onChange({ ...value, [key]: "" })}
+              className="text-muted-foreground/60 hover:text-destructive transition-colors shrink-0"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      ))}
+      <p className="text-[10px] text-muted-foreground pt-1 pl-1">
+        All fields are optional. Leave blank to hide from your public profile.
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Multi-step Pharmacy Form
 // ─────────────────────────────────────────────────────────────────────────────
 function PharmacyForm({
   mode,
@@ -428,12 +715,16 @@ function PharmacyForm({
       offers_delivery: true,
       offers_pickup: true,
       delivery_currency: "RWF",
+      working_hours: DEFAULT_WORKING_HOURS,
+      social_links: DEFAULT_SOCIAL_LINKS,
       ...defaultValues,
     },
   });
 
   const is24h = watch("is_open_24h");
   const offersDelivery = watch("offers_delivery");
+  const workingHours = watch("working_hours");
+  const socialLinks = watch("social_links");
 
   const step = STEPS[currentStep];
   const isLast = currentStep === STEPS.length - 1;
@@ -626,7 +917,6 @@ function PharmacyForm({
         {/* ── Step 4: Hours & Delivery ── */}
         {step.id === "hours" && (
           <div className="grid grid-cols-2 gap-4">
-            {/* Open 24h toggle */}
             <div className="col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
               <div>
                 <p className="text-xs font-medium text-foreground">
@@ -660,7 +950,6 @@ function PharmacyForm({
               />
             </FormField>
 
-            {/* Service toggles */}
             <div className="col-span-2 grid grid-cols-2 gap-3">
               {(
                 [
@@ -727,9 +1016,25 @@ function PharmacyForm({
             )}
           </div>
         )}
+
+        {/* ── Step 5: Working Hours ── */}
+        {step.id === "working_hours" && (
+          <WorkingHoursStep
+            value={workingHours ?? DEFAULT_WORKING_HOURS}
+            onChange={(v) => setValue("working_hours", v)}
+          />
+        )}
+
+        {/* ── Step 6: Social Links ── */}
+        {step.id === "social_links" && (
+          <SocialLinksStep
+            value={socialLinks ?? DEFAULT_SOCIAL_LINKS}
+            onChange={(v) => setValue("social_links", v)}
+          />
+        )}
       </div>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
@@ -750,7 +1055,7 @@ function PharmacyForm({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// View mode — inline detail panels (mirrors DoctorProfile view)
+// View helpers
 // ─────────────────────────────────────────────────────────────────────────────
 function ViewField({
   label,
@@ -778,10 +1083,108 @@ function ViewField({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Working Hours View
+// ─────────────────────────────────────────────────────────────────────────────
+function WorkingHoursView({ hours }: { hours: WorkingHours }) {
+  return (
+    <div className="space-y-1">
+      {DAYS_OF_WEEK.map((day) => {
+        const dayData = hours[day];
+        const isWeekend = day === "saturday" || day === "sunday";
+        return (
+          <div
+            key={day}
+            className={cn(
+              "flex items-center justify-between rounded-md px-3 py-2 border text-[11px]",
+              dayData.enabled
+                ? isWeekend
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-card"
+                : "border-border/30 bg-muted/20 opacity-50",
+            )}
+          >
+            <span
+              className={cn(
+                "font-medium w-24",
+                !dayData.enabled && "text-muted-foreground",
+                isWeekend && dayData.enabled && "text-primary",
+              )}
+            >
+              {DAY_LABELS[day]}
+            </span>
+            {dayData.enabled ? (
+              <span className="font-mono text-foreground">
+                {formatTime(dayData.opens_at)} – {formatTime(dayData.closes_at)}
+              </span>
+            ) : (
+              <span className="text-muted-foreground italic">Closed</span>
+            )}
+            <span
+              className={cn(
+                "text-[10px] font-semibold rounded-full px-2 py-0.5",
+                dayData.enabled
+                  ? "bg-primary/15 text-primary"
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {dayData.enabled ? "Open" : "Closed"}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Social Links View
+// ─────────────────────────────────────────────────────────────────────────────
+function SocialLinksView({ links }: { links: SocialLinks }) {
+  const activeLinks = SOCIAL_PLATFORMS.filter(({ key }) => links[key]);
+
+  if (activeLinks.length === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground italic py-2">
+        No social links added.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {activeLinks.map(({ key, label, icon: Icon }) => (
+        <a
+          key={key}
+          href={links[key]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 rounded-md border border-border bg-card hover:border-primary/40 hover:bg-primary/5 px-3 py-2 transition-colors group"
+        >
+          <div className="w-7 h-7 rounded-full bg-muted group-hover:bg-primary/15 flex items-center justify-center shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+            <Icon size={13} />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {label}
+            </span>
+            <span className="text-[11px] font-medium text-foreground group-hover:text-primary truncate transition-colors">
+              {links[key].replace(/^https?:\/\/(www\.)?/, "")}
+            </span>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profile view
+// ─────────────────────────────────────────────────────────────────────────────
 function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
   return (
     <div className="flex-1 overflow-y-auto p-5 space-y-5">
-      {/* ── General ── */}
+      {/* General */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Building2 size={15} className="text-primary" />
@@ -809,7 +1212,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
         )}
       </div>
 
-      {/* ── Location ── */}
+      {/* Location */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <MapPin size={15} className="text-primary" />
@@ -829,7 +1232,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
         </div>
       </div>
 
-      {/* ── Contact ── */}
+      {/* Contact */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Phone size={15} className="text-primary" />
@@ -855,7 +1258,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
         </div>
       </div>
 
-      {/* ── Hours & Delivery ── */}
+      {/* Hours & Delivery */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Clock size={15} className="text-primary" />
@@ -915,6 +1318,28 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
           </div>
         </div>
       </div>
+
+      {/* Weekly Working Hours */}
+      {profile.working_hours && (
+        <div className="border-t border-border pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Calendar size={15} className="text-primary" />
+            Weekly working hours
+          </h3>
+          <WorkingHoursView hours={profile.working_hours} />
+        </div>
+      )}
+
+      {/* Social Links */}
+      {profile.social_links && (
+        <div className="border-t border-border pt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Share2 size={15} className="text-primary" />
+            Social media & web
+          </h3>
+          <SocialLinksView links={profile.social_links} />
+        </div>
+      )}
     </div>
   );
 }
@@ -956,7 +1381,6 @@ const PharmacyProfile = () => {
   const [profile, setProfile] = useState<PharmacyProfileData | null>(null);
   const [mode, setMode] = useState<Mode>("create");
 
-  // Unified sidebar state — hoisted to page level (mirrors DoctorProfile)
   const [currentStep, setCurrentStep] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
 
@@ -982,7 +1406,6 @@ const PharmacyProfile = () => {
     setMode("edit");
   };
 
-  // Stats derived from profile (view mode only)
   const stats = profile
     ? {
         city: profile.city,
@@ -1016,7 +1439,7 @@ const PharmacyProfile = () => {
       />
 
       <div className="px-6 py-8 space-y-5">
-        {/* ── Stats bar (view mode only) ── */}
+        {/* Stats bar (view mode only) */}
         {stats && !isForm && (
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
             <StatCard label="City" value={stats.city} />
@@ -1028,9 +1451,8 @@ const PharmacyProfile = () => {
           </div>
         )}
 
-        {/* ── Single unified card with sidebar + content ── */}
+        {/* Unified card */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
-          {/* ── Unified Sidebar ── */}
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}
@@ -1045,7 +1467,6 @@ const PharmacyProfile = () => {
             onDelete={handleDelete}
           />
 
-          {/* ── Right content area ── */}
           {isForm ? (
             <PharmacyForm
               mode={mode === "edit" ? "edit" : "create"}

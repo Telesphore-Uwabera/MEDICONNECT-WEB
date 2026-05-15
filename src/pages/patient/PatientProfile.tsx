@@ -375,8 +375,8 @@ function UnifiedSidebar({
         <div className="px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
-              ? "Click any section to jump directly."
-              : "Jump between sections freely — no order needed."}
+              ? "Click any section to jump directly"
+              : "Jump between sections freely — no order needed"}
           </p>
         </div>
       ) : null}

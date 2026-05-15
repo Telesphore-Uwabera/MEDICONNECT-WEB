@@ -45,7 +45,9 @@ import {
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import logo from "@/assets/mediconnect-logo.png";
+import LOGODARK from "@/assets/LOGODARK.png";
+import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import { useTheme } from "@/context/ThemeContext";
 import { useState, useCallback } from "react";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
@@ -60,25 +62,25 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.people"),
       items: [
         { to: "/admin/users", label: t("sidebar.users"), icon: Users },
-        { to: "/admin/patients", label: t("sidebar.patients"), icon: User },
-        { to: "/admin/doctors", label: t("sidebar.doctors"), icon: Stethoscope },
+        { to: "/admin/manage-patients", label: t("sidebar.patients"), icon: User },
+        { to: "/admin/manage-doctors", label: t("sidebar.doctors"), icon: Stethoscope },
       ],
     },
     {
       heading: t("sidebar.group.facilities"),
       items: [
-        { to: "/admin/hospitals", label: t("sidebar.hospitals"), icon: Building2 },
-        { to: "/admin/pharmacies", label: t("sidebar.pharmacies"), icon: Pill },
+        { to: "/admin/manage-hospitals", label: t("sidebar.hospitals"), icon: Building2 },
+        { to: "/admin/manage-pharmacies", label: t("sidebar.pharmacies"), icon: Pill },
       ],
     },
     {
       heading: t("sidebar.group.medical"),
       items: [
-        { to: "/admin/appointments", label: t("sidebar.appointments"), icon: Calendar },
+        { to: "/admin/manage-appointments", label: t("sidebar.appointments"), icon: Calendar },
         { to: "/admin/specializations", label: t("sidebar.specializations"), icon: FlaskConical },
         { to: "/admin/checklist-questions", label: t("sidebar.checklistQuestions"), icon: HelpCircle },
-        { to: "/admin/insurances", label: t("sidebar.insurances"), icon: Shield },
-        { to: "/admin/reviews", label: t("sidebar.reviews"), icon: Star },
+        { to: "/admin/manage-insurances", label: t("sidebar.insurances"), icon: Shield },
+        { to: "/admin/manage-reviews", label: t("sidebar.reviews"), icon: Star },
       ],
     },
     {
@@ -109,11 +111,6 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.myProfile"),
       items: [
         { to: "/doctor/profile", label: t("sidebar.profile"), icon: User },
-        { to: "/doctor/specializations", label: t("sidebar.specializations"), icon: FlaskConical },
-        { to: "/doctor/education", label: t("sidebar.education"), icon: GraduationCap },
-        { to: "/doctor/experience", label: t("sidebar.experience"), icon: Briefcase },
-        { to: "/doctor/qualifications", label: t("sidebar.qualifications"), icon: Award },
-        { to: "/doctor/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
       ],
     },
     {
@@ -128,7 +125,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/doctor/prescriptions", label: t("sidebar.prescriptions"), icon: FileText },
         { to: "/doctor/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
-        { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
+        // { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
       ],
     },
     {
@@ -145,9 +142,9 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.ourFacility"),
       items: [
         { to: "/hospital/profile", label: t("sidebar.profile"), icon: Building2 },
-        { to: "/hospital/schedule", label: t("sidebar.workingHours"), icon: Clock },
-        { to: "/hospital/gallery", label: t("sidebar.gallery"), icon: Image },
-        { to: "/hospital/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
+        { to: "/hospital/schedule", label: t("sidebar.schedule"), icon: Clock },
+        // { to: "/hospital/gallery", label: t("sidebar.gallery"), icon: Image },
+        // { to: "/hospital/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
       ],
     },
     {
@@ -164,7 +161,6 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings"), icon: Calendar },
         { to: "/hospital/prescriptions", label: t("sidebar.prescriptions"), icon: Send },
-
       ],
     },
     {
@@ -190,24 +186,22 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/patient/search-doctors", label: t("sidebar.searchDoctors"), icon: Search },
         { to: "/patient/search-hospitals", label: t("sidebar.searchHospitals"), icon: Building2 },
-        // PatientFitnessCertificates
         { to: "/patient/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
       ],
     },
     {
       heading: t("sidebar.group.appointments"),
       items: [
-        { to: "/patient/quick-appointment", label: t("sidebar.quickAppointment"), icon: Zap },
+        // { to: "/patient/quick-appointment", label: t("sidebar.quickAppointment"), icon: Zap },
         { to: "/patient/appointments", label: t("sidebar.myAppointments"), icon: Calendar },
         { to: "/patient/service-bookings", label: t("sidebar.serviceBookings"), icon: ClipboardList },
-
       ],
     },
     {
       heading: t("sidebar.group.records"),
       items: [
         { to: "/patient/prescriptions", label: t("sidebar.prescriptions"), icon: FileText },
-        { to: "/patient/reviews", label: t("sidebar.myReviews"), icon: Star },
+        { to: "/patient/my-reviews", label: t("sidebar.myReviews"), icon: Star },
       ],
     },
     {
@@ -219,14 +213,13 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
   ],
 
   pharmacy: [
-    { items: [{ to: "/pharmacy/orders", label: t("sidebar.dashboard"), icon: Home }] },
+    { items: [{ to: "/pharmacy/overview", label: t("sidebar.dashboard"), icon: Home }] },
     {
       heading: t("sidebar.group.ourStore"),
       items: [
         { to: "/pharmacy/profile", label: t("sidebar.profile"), icon: Building2 },
-        { to: "/pharmacy/working-hours", label: t("sidebar.workingHours"), icon: Clock },
-        { to: "/pharmacy/prescriptions", label: t("sidebar.prescriptions"), icon: Image },
-        { to: "/pharmacy/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
+        // { to: "/pharmacy/working-hours", label: t("sidebar.workingHours"), icon: Clock },
+        // { to: "/pharmacy/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
       ],
     },
     {
@@ -234,22 +227,22 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/pharmacy/inventory", label: t("sidebar.medicines"), icon: Pill },
         { to: "/pharmacy/categories", label: t("sidebar.categories"), icon: Tag },
-        { to: "/pharmacy/orders", label: t("sidebar.orders"), icon: AlertTriangle },
+        // { to: "/pharmacy/orders", label: t("sidebar.orders"), icon: AlertTriangle },
         { to: "/pharmacy/restock-requests", label: t("sidebar.restockRequests"), icon: Package },
       ],
     },
     {
       heading: t("sidebar.group.prescriptions"),
       items: [
-        { to: "/pharmacy/incoming-prescriptions", label: t("sidebar.incomingPrescriptions"), icon: FileText },
-        { to: "/pharmacy/dispensed", label: t("sidebar.dispensed"), icon: CheckCircle },
+        { to: "/pharmacy/prescriptions", label: t("sidebar.prescriptions"), icon: Image },
+        // { to: "/pharmacy/dispensed", label: t("sidebar.dispensed"), icon: CheckCircle },
       ],
     },
     {
       heading: t("sidebar.group.orders"),
       items: [
         { to: "/pharmacy/orders", label: t("sidebar.orders"), icon: ShoppingCart },
-        { to: "/pharmacy/deliveries", label: t("sidebar.deliveries"), icon: Truck },
+        // { to: "/pharmacy/deliveries", label: t("sidebar.deliveries"), icon: Truck },
       ],
     },
     {
@@ -277,6 +270,9 @@ interface Props {
 export const DashboardLayout = ({ role, children }: Props) => {
   const location = useLocation();
   const { t } = useTranslation();
+  const { resolvedTheme, theme } = useTheme();
+  const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>({});
 
@@ -300,11 +296,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-7 w-auto flex-shrink-0"
+            className="h-7 w-auto flex-shrink-0 rounded-sm"
           />
-          <span className="text-[12px] font-bold tracking-widest text-sidebar-foreground truncate hidden xl:block">
-            MEDICONNECT
-          </span>
+       
         </NavLink>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <ThemeToggle />
@@ -468,7 +462,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
             <Menu className="h-4 w-4" />
           </button>
           <NavLink to="/" className="flex items-center gap-2">
-            <img src={logo} alt="MEDICONNECT" className="h-6 w-auto" />
+            <img src={logo} alt="MEDICONNECT" className="h-6 w-auto rounded-sm" />
             <span className="text-[12px] font-bold tracking-widest text-foreground">
               MEDICONNECT
             </span>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -31,6 +31,14 @@ import {
   Pill,
   Send,
   Smartphone,
+  Link2,
+  Images,
+  Upload,
+  X,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
+  ImageOff,
 } from "lucide-react";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
 import { cn } from "@/lib/utils";
@@ -59,10 +67,92 @@ interface HospitalData {
   is_open_24h: boolean;
 }
 
+interface SocialLinksInfo {
+  linkedin: string;
+  twitter: string;
+  facebook: string;
+  instagram: string;
+  youtube: string;
+  whatsapp: string;
+  tiktok: string;
+  website: string;
+}
+
+export interface GalleryImage {
+  id: string;
+  dataUrl: string;
+  caption: string;
+  uploadedAt: string;
+}
+
+interface HospitalProfileData {
+  hospital: HospitalData;
+  linksSection: SocialLinksInfo;
+  gallery: GalleryImage[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 const HOSPITAL_TYPES = ["hospital", "clinic", "health_center", "dispensary"];
+
+const SOCIAL_PLATFORMS: Array<{
+  key: keyof SocialLinksInfo;
+  label: string;
+  placeholder: string;
+}> = [
+  {
+    key: "linkedin",
+    label: "LinkedIn",
+    placeholder: "https://linkedin.com/company/your-hospital",
+  },
+  {
+    key: "twitter",
+    label: "X / Twitter",
+    placeholder: "https://x.com/your-handle",
+  },
+  {
+    key: "facebook",
+    label: "Facebook",
+    placeholder: "https://facebook.com/your-page",
+  },
+  {
+    key: "instagram",
+    label: "Instagram",
+    placeholder: "https://instagram.com/your-handle",
+  },
+  {
+    key: "youtube",
+    label: "YouTube",
+    placeholder: "https://youtube.com/@your-channel",
+  },
+  {
+    key: "whatsapp",
+    label: "WhatsApp",
+    placeholder: "https://wa.me/250788000001",
+  },
+  {
+    key: "tiktok",
+    label: "TikTok",
+    placeholder: "https://tiktok.com/@your-handle",
+  },
+  {
+    key: "website",
+    label: "Official website",
+    placeholder: "https://yourhospital.rw",
+  },
+];
+
+const DEFAULT_SOCIAL_LINKS: SocialLinksInfo = {
+  linkedin: "",
+  twitter: "",
+  facebook: "",
+  instagram: "",
+  youtube: "",
+  whatsapp: "",
+  tiktok: "",
+  website: "",
+};
 
 const STEPS = [
   {
@@ -111,10 +201,27 @@ const STEPS = [
     description: "Opening hours & availability",
     fields: ["opens_at", "closes_at", "is_open_24h"] as (keyof HospitalData)[],
   },
+  {
+    id: "linksSection" as const,
+    label: "Social Links",
+    icon: Link2,
+    sectionTitle: "Social & online presence",
+    description: "Facebook, LinkedIn, WhatsApp & more",
+    fields: [] as (keyof HospitalData)[],
+  },
+  {
+    id: "gallery" as const,
+    label: "Gallery",
+    icon: Images,
+    sectionTitle: "Photo gallery",
+    description: "Facility photos & images",
+    fields: [] as (keyof HospitalData)[],
+  },
 ];
 
 const channelIcon = { app: User, email: Mail, sms: Smartphone } as const;
 const HOSPITAL_CONST = "King Faisal Hospital";
+const MAX_GALLERY_IMAGES = 12;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -131,6 +238,15 @@ function isOpenNow(opens: string, closes: string, open24h: boolean): boolean {
 
 const humanType = (t: string) =>
   t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared sub-components
@@ -155,9 +271,6 @@ function FormField({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StatCard — mirrors DoctorProfile
-// ─────────────────────────────────────────────────────────────────────────────
 function StatCard({
   label,
   value,
@@ -188,7 +301,461 @@ function StatCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Unified Sidebar — mirrors DoctorProfile's UnifiedSidebar exactly
+// SocialLinksStep
+// ─────────────────────────────────────────────────────────────────────────────
+function SocialLinksStep({
+  data,
+  onChange,
+}: {
+  data: SocialLinksInfo;
+  onChange: (v: SocialLinksInfo) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] text-muted-foreground -mt-1 mb-2">
+        Add your hospital's social media and online profiles. All fields are
+        optional.
+      </p>
+      <div className="grid grid-cols-1 gap-3">
+        {SOCIAL_PLATFORMS.map(({ key, label, placeholder }) => (
+          <FormField key={key} label={label}>
+            <div className="flex items-center gap-2">
+              <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Input
+                value={data[key]}
+                onChange={(e) => onChange({ ...data, [key]: e.target.value })}
+                placeholder={placeholder}
+                className="border-border focus-visible:ring-primary text-xs h-9"
+                type="url"
+              />
+            </div>
+          </FormField>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GalleryStep — used inside the multi-step form
+// ─────────────────────────────────────────────────────────────────────────────
+function GalleryStep({
+  images,
+  onChange,
+}: {
+  images: GalleryImage[];
+  onChange: (imgs: GalleryImage[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [editingCaption, setEditingCaption] = useState<string | null>(null);
+
+  const canAddMore = images.length < MAX_GALLERY_IMAGES;
+
+  const processFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const remaining = MAX_GALLERY_IMAGES - images.length;
+    const toProcess = Array.from(files).slice(0, remaining);
+    const newImgs: GalleryImage[] = await Promise.all(
+      toProcess.map(async (file) => ({
+        id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        dataUrl: await readFileAsDataUrl(file),
+        caption: file.name.replace(/\.[^.]+$/, ""),
+        uploadedAt: new Date().toLocaleDateString(),
+      })),
+    );
+    onChange([...images, ...newImgs]);
+  };
+
+  const removeImage = (id: string) =>
+    onChange(images.filter((img) => img.id !== id));
+
+  const updateCaption = (id: string, caption: string) =>
+    onChange(images.map((img) => (img.id === id ? { ...img, caption } : img)));
+
+  return (
+    <div className="space-y-4">
+      <p className="text-[11px] text-muted-foreground -mt-1">
+        Upload up to {MAX_GALLERY_IMAGES} photos of your facility — wards,
+        reception, equipment, etc.
+      </p>
+
+      {/* Drop zone */}
+      {canAddMore && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={async (e) => {
+            e.preventDefault();
+            setDragging(false);
+            await processFiles(e.dataTransfer.files);
+          }}
+          className={cn(
+            "w-full rounded-lg border-2 border-dashed transition-all duration-200 py-8 flex flex-col items-center gap-2 cursor-pointer",
+            dragging
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50 hover:bg-muted/50",
+          )}
+        >
+          <div
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+              dragging
+                ? "bg-primary/15 text-primary"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            <Upload className="h-4 w-4" />
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-medium text-foreground">
+              {dragging ? "Drop images here" : "Click or drag & drop"}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              PNG, JPG, WEBP up to 10 MB each · {images.length}/
+              {MAX_GALLERY_IMAGES} uploaded
+            </p>
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => processFiles(e.target.files)}
+          />
+        </button>
+      )}
+
+      {/* Thumbnail grid */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 gap-2.5">
+          {images.map((img, idx) => (
+            <div
+              key={img.id}
+              className="group relative rounded-md overflow-hidden border border-border bg-muted aspect-video"
+            >
+              <img
+                src={img.dataUrl}
+                alt={img.caption}
+                className="w-full h-full object-cover"
+              />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-200 flex flex-col justify-between p-1.5">
+                {/* Top-right: remove */}
+                <button
+                  type="button"
+                  onClick={() => removeImage(img.id)}
+                  className="self-end opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 rounded-full bg-destructive/90 text-white flex items-center justify-center"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+
+                {/* Bottom: caption edit */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  {editingCaption === img.id ? (
+                    <input
+                      autoFocus
+                      value={img.caption}
+                      onChange={(e) => updateCaption(img.id, e.target.value)}
+                      onBlur={() => setEditingCaption(null)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && setEditingCaption(null)
+                      }
+                      className="w-full text-[10px] bg-black/60 text-white rounded px-1.5 py-0.5 outline-none border-0"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingCaption(img.id)}
+                      className="w-full text-left text-[10px] text-white/80 truncate hover:text-white transition-colors"
+                    >
+                      {img.caption || "Add caption…"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Index badge */}
+              <span className="absolute top-1 left-1 text-[9px] font-bold tabular-nums bg-black/50 text-white rounded px-1 py-0.5 leading-none">
+                {idx + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {images.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-6 gap-1.5 rounded-md border border-dashed border-border text-center">
+          <ImageOff className="h-6 w-6 text-muted-foreground/40" />
+          <p className="text-[11px] text-muted-foreground">
+            No images uploaded yet
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gallery Lightbox
+// ─────────────────────────────────────────────────────────────────────────────
+function GalleryLightbox({
+  images,
+  initialIndex,
+  onClose,
+}: {
+  images: GalleryImage[];
+  initialIndex: number;
+  onClose: () => void;
+}) {
+  const [current, setCurrent] = useState(initialIndex);
+
+  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
+  const next = () => setCurrent((c) => (c + 1) % images.length);
+
+  // Keyboard navigation
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const img = images[current];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
+      {/* Nav */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              prev();
+            }}
+            className="absolute left-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              next();
+            }}
+            className="absolute right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </>
+      )}
+
+      {/* Image */}
+      <div
+        className="max-w-3xl w-full mx-16 flex flex-col gap-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={img.dataUrl}
+          alt={img.caption}
+          className="w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+        />
+        <div className="flex items-center justify-between px-1">
+          <div>
+            {img.caption && (
+              <p className="text-sm font-medium text-white">{img.caption}</p>
+            )}
+            <p className="text-[11px] text-white/50 mt-0.5">
+              Uploaded {img.uploadedAt}
+            </p>
+          </div>
+          <span className="text-[11px] text-white/40 tabular-nums">
+            {current + 1} / {images.length}
+          </span>
+        </div>
+
+        {/* Thumbnails strip */}
+        {images.length > 1 && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 justify-center">
+            {images.map((img, i) => (
+              <button
+                key={img.id}
+                onClick={() => setCurrent(i)}
+                className={cn(
+                  "w-10 h-10 rounded shrink-0 overflow-hidden border-2 transition-all",
+                  i === current
+                    ? "border-white scale-105"
+                    : "border-white/20 opacity-60 hover:opacity-90",
+                )}
+              >
+                <img
+                  src={img.dataUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GalleryView — shown in the profile view
+// ─────────────────────────────────────────────────────────────────────────────
+function GalleryView({
+  images,
+  onEdit,
+}: {
+  images: GalleryImage[];
+  onEdit?: () => void;
+}) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  return (
+    <div className="border-t border-border pt-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Images size={15} className="text-primary" />
+          Photo gallery
+          {images.length > 0 && (
+            <span className="text-[10px] font-normal text-muted-foreground">
+              ({images.length} photo{images.length !== 1 ? "s" : ""})
+            </span>
+          )}
+        </h3>
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="text-[10px] text-primary hover:underline flex items-center gap-1"
+          >
+            <Pencil className="h-2.5 w-2.5" /> Manage
+          </button>
+        )}
+      </div>
+
+      {images.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-md border border-dashed border-border text-center">
+          <ImageOff className="h-6 w-6 text-muted-foreground/30" />
+          <p className="text-xs text-muted-foreground">No photos added yet.</p>
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="text-[11px] text-primary hover:underline mt-0.5"
+            >
+              Add photos
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Masonry-style grid */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {/* Featured first image */}
+            {images[0] && (
+              <button
+                onClick={() => setLightboxIndex(0)}
+                className="col-span-2 row-span-2 relative group rounded-md overflow-hidden aspect-video"
+              >
+                <img
+                  src={images[0].dataUrl}
+                  alt={images[0].caption}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                  <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                {images[0].caption && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2.5 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[11px] text-white font-medium truncate">
+                      {images[0].caption}
+                    </p>
+                  </div>
+                )}
+              </button>
+            )}
+
+            {/* Remaining images */}
+            {images.slice(1, 5).map((img, i) => {
+              const realIdx = i + 1;
+              const isLast = realIdx === 4 && images.length > 5;
+              return (
+                <button
+                  key={img.id}
+                  onClick={() => setLightboxIndex(realIdx)}
+                  className="relative group rounded-md overflow-hidden aspect-square"
+                >
+                  <img
+                    src={img.dataUrl}
+                    alt={img.caption}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {isLast ? (
+                    <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-0.5">
+                      <span className="text-lg font-bold text-white tabular-nums">
+                        +{images.length - 4}
+                      </span>
+                      <span className="text-[10px] text-white/70">more</span>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+                      <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* See all strip when >5 */}
+          {images.length > 5 && (
+            <button
+              onClick={() => setLightboxIndex(0)}
+              className="w-full text-[11px] text-primary hover:underline text-center py-1"
+            >
+              View all {images.length} photos
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <GalleryLightbox
+          images={images}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unified Sidebar
 // ─────────────────────────────────────────────────────────────────────────────
 function UnifiedSidebar({
   currentStep,
@@ -203,7 +770,7 @@ function UnifiedSidebar({
   visited: Set<number>;
   onSelect: (i: number) => void;
   mode: "create" | "edit" | "view";
-  hospitalData: HospitalData | null;
+  hospitalData: HospitalProfileData | null;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -213,7 +780,7 @@ function UnifiedSidebar({
 
   return (
     <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
-      {/* ── Profile mini-card (view) or progress header (form) ── */}
+      {/* Header */}
       <div className="px-4 pt-5 pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
@@ -243,17 +810,17 @@ function UnifiedSidebar({
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-foreground truncate leading-tight">
-                  {hospitalData.name_en}
+                  {hospitalData.hospital.name_en}
                 </p>
                 <p className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
-                  {hospitalData.registration_number}
+                  {hospitalData.hospital.registration_number}
                 </p>
               </div>
             </div>
             <div className="space-y-1">
               {[
-                { label: "Type", value: humanType(hospitalData.type) },
-                { label: "City", value: hospitalData.city },
+                { label: "Type", value: humanType(hospitalData.hospital.type) },
+                { label: "City", value: hospitalData.hospital.city },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-[10px] text-muted-foreground">
@@ -269,7 +836,7 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* ── Step nav ── */}
+      {/* Step nav */}
       <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
@@ -351,34 +918,32 @@ function UnifiedSidebar({
         })}
       </div>
 
-      {/* ── Footer actions (view mode) ── */}
+      {/* Footer actions (view mode) */}
       {!isForm && hospitalData && (
         <div className="p-3 border-t border-border space-y-2">
           <Button
             onClick={onEdit}
             className="w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
-            <Pencil size={12} />
-            Edit profile
+            <Pencil size={12} /> Edit profile
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
             className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
-            <Trash2 size={12} />
-            Delete profile
+            <Trash2 size={12} /> Delete profile
           </Button>
         </div>
       )}
 
-      {/* ── Footer hint (form mode) ── */}
+      {/* Footer hint (form mode) */}
       {isForm && (
         <div className="px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
-              ? "Click any section to jump directly."
-              : "Jump between sections freely — no order needed."}
+              ? "Click any section to jump directly"
+              : "Jump between sections freely — no order needed"}
           </p>
         </div>
       )}
@@ -387,7 +952,7 @@ function UnifiedSidebar({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Multi-step Hospital Form — no inner sidebar
+// Multi-step Hospital Form
 // ─────────────────────────────────────────────────────────────────────────────
 function HospitalForm({
   mode,
@@ -400,8 +965,8 @@ function HospitalForm({
   onVisitedChange,
 }: {
   mode: "create" | "edit";
-  defaultValues?: Partial<HospitalData>;
-  onSubmit: (data: HospitalData) => void;
+  defaultValues?: Partial<HospitalProfileData>;
+  onSubmit: (data: HospitalProfileData) => void;
   onCancel: () => void;
   currentStep: number;
   onStepChange: (i: number) => void;
@@ -409,7 +974,15 @@ function HospitalForm({
   onVisitedChange: (v: Set<number>) => void;
 }) {
   const { t } = useTranslation();
-  const [open24h, setOpen24h] = useState(defaultValues?.is_open_24h ?? false);
+  const [open24h, setOpen24h] = useState(
+    defaultValues?.hospital?.is_open_24h ?? false,
+  );
+  const [linksSection, setLinksSection] = useState<SocialLinksInfo>(
+    defaultValues?.linksSection ?? DEFAULT_SOCIAL_LINKS,
+  );
+  const [gallery, setGallery] = useState<GalleryImage[]>(
+    defaultValues?.gallery ?? [],
+  );
 
   const {
     register,
@@ -417,7 +990,7 @@ function HospitalForm({
     trigger,
     setValue,
     formState: { errors },
-  } = useForm<HospitalData>({ defaultValues });
+  } = useForm<HospitalData>({ defaultValues: defaultValues?.hospital });
 
   const step = STEPS[currentStep];
   const isLast = currentStep === STEPS.length - 1;
@@ -430,10 +1003,14 @@ function HospitalForm({
   };
 
   const goNext = async () => {
-    const valid = await trigger(step.fields);
-    if (!valid) return;
+    if (step.id !== "linksSection" && step.id !== "gallery") {
+      const valid = await trigger(step.fields);
+      if (!valid) return;
+    }
     if (isLast) {
-      handleSubmit(onSubmit)();
+      handleSubmit((hospital) => {
+        onSubmit({ hospital, linksSection, gallery });
+      })();
       return;
     }
     goTo(currentStep + 1);
@@ -516,7 +1093,7 @@ function HospitalForm({
               error={errors.type?.message}
             >
               <Select
-                defaultValue={defaultValues?.type}
+                defaultValue={defaultValues?.hospital?.type}
                 onValueChange={(v) => setValue("type", v)}
               >
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
@@ -729,9 +1306,19 @@ function HospitalForm({
             )}
           </div>
         )}
+
+        {/* ── Step 5: Social Links ── */}
+        {step.id === "linksSection" && (
+          <SocialLinksStep data={linksSection} onChange={setLinksSection} />
+        )}
+
+        {/* ── Step 6: Gallery ── */}
+        {step.id === "gallery" && (
+          <GalleryStep images={gallery} onChange={setGallery} />
+        )}
       </div>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
@@ -781,7 +1368,7 @@ function ViewField({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Prescription status styles (theme-aware)
+// Prescription status styles
 // ─────────────────────────────────────────────────────────────────────────────
 const statusStyle = {
   pending: {
@@ -802,27 +1389,31 @@ const statusStyle = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hospital view — inline panels (mirrors DoctorProfile view)
+// Hospital Profile View
 // ─────────────────────────────────────────────────────────────────────────────
 function HospitalProfileView({
-  hospital,
+  profileData,
   rxList,
   onNewRx,
+  onEditGallery,
 }: {
-  hospital: HospitalData;
+  profileData: HospitalProfileData;
   rxList: ReturnType<typeof usePrescriptions>;
   onNewRx: () => void;
+  onEditGallery: () => void;
 }) {
   const { t } = useTranslation();
+  const { hospital, linksSection, gallery } = profileData;
   const currentlyOpen = isOpenNow(
     hospital.opens_at,
     hospital.closes_at,
     hospital.is_open_24h,
   );
+  const socialLinksCount = Object.values(linksSection).filter(Boolean).length;
 
   return (
     <div className="flex-1 overflow-y-auto p-5 space-y-5">
-      {/* ── Identity ── */}
+      {/* Identity */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Building2 size={15} className="text-primary" />
@@ -851,7 +1442,7 @@ function HospitalProfileView({
         )}
       </div>
 
-      {/* ── Location ── */}
+      {/* Location */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <MapPin size={15} className="text-primary" />
@@ -869,7 +1460,7 @@ function HospitalProfileView({
         </div>
       </div>
 
-      {/* ── Contact ── */}
+      {/* Contact */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Phone size={15} className="text-primary" />
@@ -885,7 +1476,7 @@ function HospitalProfileView({
             </span>
           </div>
           <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground text-[10px] font-bold">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
               <Mail size={13} />
             </div>
             <span className="text-[11px] font-medium text-foreground truncate">
@@ -905,7 +1496,7 @@ function HospitalProfileView({
         </div>
       </div>
 
-      {/* ── Hours ── */}
+      {/* Hours */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Clock size={15} className="text-primary" />
@@ -938,7 +1529,43 @@ function HospitalProfileView({
         </div>
       </div>
 
-      {/* ── Prescriptions ── */}
+      {/* Social Links */}
+      <div className="border-t border-border pt-4 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Link2 size={15} className="text-primary" />
+          Social & online presence
+        </h3>
+        {socialLinksCount === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No social links added.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {SOCIAL_PLATFORMS.filter(({ key }) => !!linksSection[key]).map(
+              ({ key, label }) => (
+                <a
+                  key={key}
+                  href={linksSection[key]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[11px] text-primary hover:underline truncate"
+                >
+                  <Link2 className="h-3 w-3 shrink-0" />
+                  <span className="font-medium text-muted-foreground w-20 shrink-0">
+                    {label}
+                  </span>
+                  <span className="truncate">{linksSection[key]}</span>
+                </a>
+              ),
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Gallery ── */}
+      <GalleryView images={gallery} onEdit={onEditGallery} />
+
+      {/* Prescriptions */}
       <div className="border-t border-border pt-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -950,8 +1577,7 @@ function HospitalProfileView({
             className="text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-7"
             onClick={onNewRx}
           >
-            <Plus className="h-3.5 w-3.5" />
-            New
+            <Plus className="h-3.5 w-3.5" /> New
           </Button>
         </div>
 
@@ -967,8 +1593,7 @@ function HospitalProfileView({
               className="mt-1 text-xs"
               onClick={onNewRx}
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Issue first prescription
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Issue first prescription
             </Button>
           </div>
         ) : (
@@ -1035,7 +1660,7 @@ function EmptyHospital({ onCreate }: { onCreate: () => void }) {
       <p className="text-[11px] text-muted-foreground mb-5 max-w-xs">
         {t(
           "hospital.empty.sub",
-          "Create your hospital profile to manage contact details, location, and operating hours.",
+          "Create your hospital profile to manage contact details, location, and operating hours",
         )}
       </p>
       <Button
@@ -1054,13 +1679,16 @@ function EmptyHospital({ onCreate }: { onCreate: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 type Mode = "view" | "create" | "edit";
 
+const GALLERY_STEP_INDEX = STEPS.findIndex((s) => s.id === "gallery");
+
 const HospitalProfile = () => {
   const { t } = useTranslation();
-  const [hospital, setHospital] = useState<HospitalData | null>(null);
+  const [profileData, setProfileData] = useState<HospitalProfileData | null>(
+    null,
+  );
   const [mode, setMode] = useState<Mode>("create");
   const [rxOpen, setRxOpen] = useState(false);
 
-  // Unified sidebar state — hoisted to page level (mirrors DoctorProfile)
   const [currentStep, setCurrentStep] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
 
@@ -1069,21 +1697,19 @@ const HospitalProfile = () => {
   const rxList = usePrescriptions().filter(
     (p) =>
       p.issuer === "hospital" &&
-      p.issuerOrg === (hospital?.name_en ?? HOSPITAL_CONST),
+      p.issuerOrg === (profileData?.hospital.name_en ?? HOSPITAL_CONST),
   );
 
-  const handleSubmit = (data: HospitalData) => {
-    setHospital(data);
+  const handleSubmit = (data: HospitalProfileData) => {
+    setProfileData(data);
     setMode("view");
-    // TODO: POST /hospital or PATCH /hospital
   };
 
   const handleDelete = () => {
-    setHospital(null);
+    setProfileData(null);
     setCurrentStep(0);
     setVisited(new Set([0]));
     setMode("create");
-    // TODO: DELETE /hospital
   };
 
   const openEdit = () => {
@@ -1092,23 +1718,30 @@ const HospitalProfile = () => {
     setMode("edit");
   };
 
-  // Stats derived from profile (view mode only)
-  const stats = hospital
+  /** Jump directly to the Gallery step in edit mode */
+  const openGalleryEdit = () => {
+    setCurrentStep(GALLERY_STEP_INDEX);
+    setVisited(new Set(STEPS.map((_, i) => i))); // mark all visited so user can jump freely
+    setMode("edit");
+  };
+
+  const stats = profileData
     ? {
-        type: humanType(hospital.type),
-        city: hospital.city,
-        hours: hospital.is_open_24h
+        type: humanType(profileData.hospital.type),
+        city: profileData.hospital.city,
+        hours: profileData.hospital.is_open_24h
           ? "24 hours"
-          : `${hospital.opens_at} – ${hospital.closes_at}`,
+          : `${profileData.hospital.opens_at} – ${profileData.hospital.closes_at}`,
         status: isOpenNow(
-          hospital.opens_at,
-          hospital.closes_at,
-          hospital.is_open_24h,
+          profileData.hospital.opens_at,
+          profileData.hospital.closes_at,
+          profileData.hospital.is_open_24h,
         )
           ? "Open"
           : "Closed",
         prescriptions: rxList.length,
-        country: hospital.country,
+        country: profileData.hospital.country,
+        photos: profileData.gallery.length,
       }
     : null;
 
@@ -1125,15 +1758,15 @@ const HospitalProfile = () => {
                   : "Fill in the details below to register your hospital",
               )
             : t("pages.hospital.rx_sub", {
-                name: hospital?.name_en ?? HOSPITAL_CONST,
+                name: profileData?.hospital.name_en ?? HOSPITAL_CONST,
               })
         }
       />
 
       <div className="px-6 py-8 space-y-5">
-        {/* ── Stats bar (view mode only) ── */}
+        {/* Stats bar (view mode only) */}
         {stats && !isForm && (
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
             <StatCard label="Type" value={stats.type} />
             <StatCard label="City" value={stats.city} />
             <StatCard label="Country" value={stats.country} />
@@ -1144,12 +1777,12 @@ const HospitalProfile = () => {
               value={stats.prescriptions}
               sub="issued"
             />
+            <StatCard label="Photos" value={stats.photos} sub="in gallery" />
           </div>
         )}
 
-        {/* ── Single unified card with sidebar + content ── */}
+        {/* Unified card */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
-          {/* ── Unified Sidebar ── */}
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}
@@ -1159,30 +1792,33 @@ const HospitalProfile = () => {
               setCurrentStep(i);
             }}
             mode={mode}
-            hospitalData={hospital}
+            hospitalData={profileData}
             onEdit={openEdit}
             onDelete={handleDelete}
           />
 
-          {/* ── Right content area ── */}
+          {/* Right content area */}
           {isForm ? (
             <HospitalForm
               mode={mode === "edit" ? "edit" : "create"}
-              defaultValues={mode === "edit" && hospital ? hospital : undefined}
+              defaultValues={
+                mode === "edit" && profileData ? profileData : undefined
+              }
               onSubmit={handleSubmit}
               onCancel={() => {
-                if (hospital) setMode("view");
+                if (profileData) setMode("view");
               }}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               visited={visited}
               onVisitedChange={setVisited}
             />
-          ) : hospital ? (
+          ) : profileData ? (
             <HospitalProfileView
-              hospital={hospital}
+              profileData={profileData}
               rxList={rxList}
               onNewRx={() => setRxOpen(true)}
+              onEditGallery={openGalleryEdit}
             />
           ) : (
             <EmptyHospital onCreate={() => setMode("create")} />

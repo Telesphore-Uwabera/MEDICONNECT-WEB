@@ -46,6 +46,29 @@ import DoctorProfile from "./pages/doctor/DoctorProfile.tsx";
 import DoctorFitnessCertificates from "./pages/doctor/FitnessCertificates.tsx";
 import HospitalFitnessCertificates from "./pages/patient/FitnessCertificates.tsx";
 import PatientFitnessCertificates from "./pages/patient/FitnessCertificates.tsx";
+import MedicalInfo from "./pages/patient/MedicalInfo.tsx";
+import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
+import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
+import MyReviews from "./pages/patient/MyReviews.tsx";
+import Settings from "./pages/doctor/Settings.tsx";
+import Gallery from "./pages/hospital/HospitalInsurances.tsx";
+import HospitalInsurances from "./pages/hospital/HospitalInsurances.tsx";
+import HospitalServiceBookings from "./pages/hospital/HospitalServiceBookings.tsx";
+import HospitalSettings from "./pages/hospital/HospitalSettings.tsx";
+import PharmacyOverview from "./pages/pharmacy/PharmacyOverview.tsx";
+import PharmacyDashboard from "./pages/pharmacy/PharmacyOverview.tsx";
+import PharmacyCategories from "./pages/pharmacy/PharmacyCategories.tsx";
+import PharmacyDeliveries from "./pages/pharmacy/PharmacyDeliveries.tsx";
+import PharmacySettings from "./pages/pharmacy/PharmacySettings.tsx";
+import RestockRequests from "./pages/pharmacy/RestockRequests.tsx";
+import ManageDoctors from "./pages/admin/ManageDoctors.tsx";
+import ManagePatients from "./pages/admin/ManagePatients.tsx";
+import ManagePharmacies from "./pages/admin/ManagePharmacies.tsx";
+import ManageHospitals from "./pages/admin/ManageHospitals.tsx";
+import ManageApointments from "./pages/admin/ManageApointments.tsx";
+import ManageReviews from "./pages/admin/ManageReviews.tsx";
+import ManageInsurances from "./pages/admin/ManageInsurances.tsx";
+import ManageAppointments from "./pages/admin/ManageApointments.tsx";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +92,10 @@ const App = () => (
           <Route path="/patient/fitness-certificates" element={<PatientFitnessCertificates />} />
           <Route path="/patient/pharmacy" element={<PatientPharmacy />} />
           <Route path="/patient/profile" element={<PatientProfile />} />
+          <Route path="/patient/medical-info" element={<MedicalInfo />} />
+          <Route path="/patient/insurance" element={<PatientInsurence />} />
+          <Route path="/patient/service-bookings" element={<ServiceBookings />} />
+          <Route path="/patient/my-reviews" element={<MyReviews />} />
 
           <Route path="/doctor" element={<DoctorOverview />} />
           <Route path="/doctor/availability" element={<DoctorAvailability />} />
@@ -77,6 +104,8 @@ const App = () => (
           <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
           <Route path="/doctor/fitness-certificates" element={<DoctorFitnessCertificates />} />
           <Route path="/doctor/profile" element={<DoctorProfile/>} />
+          {/* Settings */}
+          <Route path="/doctor/settings" element={<Settings />} />
 
           <Route path="/hospital" element={<HospitalAnalytics />} />
           <Route path="/hospital/appointments" element={<HospitalAppointments />} />
@@ -85,11 +114,25 @@ const App = () => (
           <Route path="/hospital/schedule" element={<HospitalSchedule />} />
           <Route path="/hospital/prescriptions" element={<HospitalPrescriptions />} />
           <Route path="/hospital/profile" element={<HospitalProfile />} />
+          <Route path="/hospital/insurances" element={<HospitalInsurances/>} />
+          {/* ServiceBookings */}
+          <Route path="/hospital/service-bookings" element={<HospitalServiceBookings />} />
+          {/* HospitalSettings */}
+          <Route path="/hospital/settings" element={<HospitalSettings/>} />
 
           <Route path="/pharmacy/orders" element={<PharmacyOrders />} />
           <Route path="/pharmacy/inventory" element={<PharmacyInventory />} />
           <Route path="/pharmacy/prescriptions" element={<PharmacyPrescriptions />} />
-          <Route path="/pharmacy/profile" element={<PharmacyProfile/>} />
+          <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
+          <Route path="/pharmacy/overview" element={<PharmacyDashboard/>} />
+          {/* PharmacyCategories */}
+          <Route path="/pharmacy/categories" element={<PharmacyCategories />} />
+          {/* PharmacyDeliveries */}
+          <Route path="/pharmacy/deliveries" element={<PharmacyDeliveries />} />
+          {/* PharmacySettings */}
+          <Route path="/pharmacy/settings" element={<PharmacySettings />} />
+          {/* RestockRequests */}
+          <Route path="/pharmacy/restock-requests" element={<RestockRequests />} />
 
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/approvals" element={<AdminApprovals />} />
@@ -97,6 +140,14 @@ const App = () => (
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/moderation" element={<AdminModeration />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
+
+          <Route path="/admin/manage-doctors" element={<ManageDoctors />} />
+          <Route path="/admin/manage-patients" element={<ManagePatients />} />
+          <Route path="/admin/manage-hospitals" element={<ManageHospitals />} />
+          <Route path="/admin/manage-pharmacies" element={<ManagePharmacies />} />
+          <Route path="/admin/manage-appointments" element={<ManageAppointments />} />
+          <Route path="/admin/manage-insurances" element={<ManageInsurances />} />
+          <Route path="/admin/manage-reviews" element={<ManageReviews />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

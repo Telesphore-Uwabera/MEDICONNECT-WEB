@@ -22,16 +22,16 @@
     "title": "Urutonde rw'ibyo kwemeza",
     "subtitle": "Hari icyifuzo {{count}} gisabwa",
     "subtitle_plural": "Hari ibyifuzo {{count}} bisabwa",
-    "empty": "Nta cyo gisuzumwa. Ibintu byose biri ku murongo.",
+    "empty": "Nta cyo gisuzumwa. Ibintu byose biri ku murongo",
     "view": "Reba ibisobanuro",
     "approve": "Emeza",
     "reject": "Hakana",
     "drawer_title": "Suzuma iyandikisha",
-    "drawer_sub": "Suzuma usaba mbere yo kwemerera kwinjira.",
+    "drawer_sub": "Suzuma usaba mbere yo kwemerera kwinjira",
     "confirm_approve_title": "Wemeza iyi konti?",
-    "confirm_approve_desc": "Bazahabwa uburenganzira bwose bwo kwinjira muri {{role}} ako kanya.",
+    "confirm_approve_desc": "Bazahabwa uburenganzira bwose bwo kwinjira muri {{role}} ako kanya",
     "confirm_reject_title": "Wanga iyi konti?",
-    "confirm_reject_desc": "Bazamenyeshwa kandi bashobora gusaba nyuma.",
+    "confirm_reject_desc": "Bazamenyeshwa kandi bashobora gusaba nyuma",
     "approved_toast": "{{name}} yemejwe",
     "rejected_toast": "{{name}} yanzwe"
   },
@@ -53,9 +53,9 @@
     "reactivate": "Subizamo",
     "delete": "Siba",
     "drawer_title": "Cunga umukoresha",
-    "drawer_sub": "Hindura uburenganzira urebe amakuru.",
+    "drawer_sub": "Hindura uburenganzira urebe amakuru",
     "delete_title": "Siba uyu mukoresha?",
-    "delete_desc": "Ibi bivanaho konti burundu muri sisitemu.",
+    "delete_desc": "Ibi bivanaho konti burundu muri sisitemu",
     "deleted_toast": "Umukoresha yasibwe",
     "status_changed": "Imimerere yavuguruwe"
   },
@@ -86,7 +86,7 @@
     "approve": "Emeza",
     "remove": "Vanaho",
     "drawer_title": "Ibisobanuro by'igenzura",
-    "drawer_sub": "Hitamo niba ugumana cyangwa uvanaho ibi.",
+    "drawer_sub": "Hitamo niba ugumana cyangwa uvanaho ibi",
     "approved_toast": "Ikintu cyemejwe",
     "removed_toast": "Ikintu cyavanyweho"
   },
@@ -109,6 +109,6 @@
   },
   "landing_tile": {
     "title": "Admin",
-    "desc": "Emeza abatanga serivisi, cunga abakoresha, kurikirana sisitemu."
+    "desc": "Emeza abatanga serivisi, cunga abakoresha, kurikirana sisitemu"
   }
 }

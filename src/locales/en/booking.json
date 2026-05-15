@@ -1,7 +1,7 @@
 {
   "title": "Book a hospital spot",
   "availableDays": "Available days",
-  "noSchedule": "No service schedule yet for this hospital.",
+  "noSchedule": "No service schedule yet for this hospital",
   "serviceLabel": "Service / department",
   "selectService": "Select a service",
   "reason": "Reason for visit",

@@ -28,7 +28,13 @@ import { HospitalCard } from "@/components/HospitalCard";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/mediconnect-logo.png";
+// import logo from "@/assets/mediconnect-logo.png";
+// LOGODARK
+import LOGODARK from "@/assets/LOGODARK.png";
+// LOGOLIGHT.png
+import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import { useTheme } from "@/context/ThemeContext";
+
 
 const DOCTOR_IMAGES: Record<string, string> = {
   d1: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&q=80",
@@ -46,6 +52,8 @@ const getImageUrl = (d: { id: string; imageUrl?: string }) =>
 
 const Index = () => {
   const { t } = useTranslation();
+  const { resolvedTheme, theme } = useTheme();
+const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const location = useLocation();
   const activeHash = location.hash || "#features";
 
@@ -188,7 +196,7 @@ const Index = () => {
         <div className="container flex items-center justify-between py-3 md:py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src={logo} alt="MEDICONNECT logo" className="h-8 w-auto" />
+       <img src={logo} alt="MEDICONNECT logo" className="h-8 w-auto rounded-sm" />
           </Link>
 
           {/* Desktop nav */}
@@ -239,7 +247,7 @@ const Index = () => {
               onClick={() => setMobileMenuOpen((o) => !o)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
-              className="ml-1 w-9 h-9 rounded-md flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+              className="ml-1 w-9 h-9 rounded-sm flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
@@ -267,7 +275,7 @@ const Index = () => {
                       href={l.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition-smooth",
+                        "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth",
                         active
                           ? "bg-accent text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -338,10 +346,10 @@ const Index = () => {
 
             {/* CTA block */}
             <div className="mt-7 flex flex-col gap-3 max-w-sm">
-              <Link to="/patient/instant" className="w-full">
+              <Link to="/patient/search-doctors" className="w-full">
                 <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                   <div className="flex items-center gap-3">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-md bg-white/15 shrink-0">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-sm bg-white/15 shrink-0">
                       <Video className="h-4 w-4" />
                     </span>
                     <div className="text-left">
@@ -361,7 +369,7 @@ const Index = () => {
               <div className="grid grid-cols-2 gap-3">
                 <Link to="/patient/search-doctors" className="group">
                   <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent text-primary shrink-0">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-sm bg-accent text-primary shrink-0">
                       <Stethoscope className="h-3.5 w-3.5" />
                     </span>
                     <div className="text-left">
@@ -377,7 +385,7 @@ const Index = () => {
 
                 <Link to="/patient/search-hospitals" className="group">
                   <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent text-primary shrink-0">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-sm bg-accent text-primary shrink-0">
                       <Hospital className="h-3.5 w-3.5" />
                     </span>
                     <div className="text-left">
@@ -413,7 +421,7 @@ const Index = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-5"
           >
-            <div className="rounded-md bg-card dark:bg-secondary/30 border border-border p-6">
+            <div className="rounded-sm bg-card dark:bg-secondary/30 border border-border p-6">
               {/* Panel header */}
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -471,7 +479,7 @@ const Index = () => {
                           </span>
                         </div>
                       </div>
-                      <button className="shrink-0 text-xs px-3 py-2 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
+                      <button className="shrink-0 text-xs px-3 py-2 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
                         {t("pages.landing.connect")}
                       </button>
                     </div>
@@ -554,7 +562,7 @@ const Index = () => {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="p-5 md:p-6 rounded-md border border-border bg-card hover:shadow-medium transition-smooth"
+                className="p-5 md:p-6 rounded-sm border border-border bg-card hover:shadow-medium transition-smooth"
               >
                 <div className="h-10 w-10 rounded-sm bg-accent text-primary flex items-center justify-center mb-4">
                   <f.icon className="h-5 w-5" />
@@ -667,7 +675,7 @@ const Index = () => {
               ].map((s) => (
                 <div
                   key={s.l}
-                  className="rounded-md border border-border bg-card p-4"
+                  className="rounded-sm border border-border bg-card p-4"
                 >
                   <div className="font-display text-xl font-bold tabular-nums text-foreground">
                     {s.v}
@@ -678,12 +686,12 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="rounded-md bg-card border border-border p-5">
+          <div className="rounded-sm bg-card border border-border p-5">
             <div className="grid grid-cols-3 gap-2.5">
               {["💊", "🧴", "🌿", "💉", "👶", "🩹"].map((e, i) => (
                 <div
                   key={i}
-                  className="aspect-square rounded-md bg-accent flex items-center justify-center text-[2.5rem]"
+                  className="aspect-square rounded-sm bg-accent flex items-center justify-center text-[2.5rem]"
                 >
                   {e}
                 </div>
@@ -709,7 +717,7 @@ const Index = () => {
               <Link
                 key={r.title}
                 to={r.to}
-                className="group p-5 md:p-6 rounded-md border border-border bg-card hover:bg-secondary hover:border-primary/30 transition-smooth"
+                className="group p-5 md:p-6 rounded-sm border border-border bg-card hover:bg-secondary hover:border-primary/30 transition-smooth"
               >
                 <div className="h-10 w-10 rounded-sm bg-accent text-primary group-hover:bg-primary group-hover:text-primary-foreground flex items-center justify-center mb-4 transition-smooth">
                   <r.icon className="h-5 w-5" />
@@ -737,7 +745,7 @@ const Index = () => {
           {/* ── Brand row ── */}
           <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
             <div className="flex items-center gap-3 min-w-0">
-              <img src={logo} alt="MEDICONNECT" className="h-6 w-auto shrink-0" />
+           <img src={logo} alt="MEDICONNECT" className="h-6 w-auto shrink-0 rounded-sm" />
               <span className="text-[11px] text-muted-foreground hidden sm:block">
                 Connecting patients, doctors, hospitals, and pharmacies
               </span>
