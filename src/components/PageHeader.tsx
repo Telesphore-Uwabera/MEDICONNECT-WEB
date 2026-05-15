@@ -94,7 +94,7 @@
 //             {profileOpen && (
 //               <>
 //                 <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
-//                 <div className="absolute right-0 top-full mt-2 w-52 z-20 bg-card border border-border/60 rounded-xl shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-100">
+//                 <div className="absolute right-0 top-full mt-2 w-52 z-20 bg-card border border-border/60 rounded-sm shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-100">
 
 //                   {/* User info */}
 //                   <div className="px-3.5 py-3 border-b border-border/50">
@@ -177,6 +177,8 @@ import { Input } from "@/components/ui/input";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
 
 interface Props {
   title: string;
@@ -235,7 +237,7 @@ export const PageHeader = ({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder={t("pages.header.search")}
-              className="pl-9 pr-4 h-9 text-sm rounded-xl border-transparent bg-secondary focus:bg-background focus:border-primary/30 transition-all shadow-sm"
+              className="pl-9 pr-4 h-9 text-sm rounded-sm border-transparent bg-secondary focus:bg-background focus:border-primary/30 transition-all shadow-sm"
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
@@ -244,11 +246,15 @@ export const PageHeader = ({
           {/* Custom actions */}
           {actions}
 
-          {/* Theme Toggle */}
-          <ThemeToggle />
+      {/* Theme Toggle */}
+      <ThemeToggle />
+
+      {/* Language */}
+      <LanguageSwitcher />
+
 
           {/* Bell */}
-          <button className="relative p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
+          <button className="relative p-2.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
             <Bell className="h-4 w-4" />
             {notificationCount > 0 && (
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary ring-2 ring-card animate-pulse" />
@@ -260,7 +266,7 @@ export const PageHeader = ({
             <button
               onClick={() => setProfileOpen((o) => !o)}
               className={cn(
-                "flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-xl transition-all border",
+                "flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-sm transition-all border",
                 profileOpen
                   ? "bg-secondary border-border text-foreground"
                   : "border-transparent hover:bg-secondary hover:border-border/50 text-muted-foreground hover:text-foreground",
@@ -308,11 +314,6 @@ export const PageHeader = ({
                         </p>
                       </div>
                     </div>
-                    {user.role && (
-                      <span className="mt-2.5 inline-flex items-center px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold">
-                        {user.role}
-                      </span>
-                    )}
                   </div>
 
                   {/* Menu items */}
@@ -340,7 +341,7 @@ export const PageHeader = ({
                   {/* Sign out */}
                   <div className="p-2 border-t border-border">
                     <button
-                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-colors font-medium"
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-destructive hover:bg-destructive/10 transition-colors font-medium"
                       onClick={() => {
                         setProfileOpen(false); /* trigger logout */
                       }}
@@ -373,7 +374,7 @@ const PopItem = ({
   <NavLink
     to={to}
     onClick={onClick}
-    className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
+    className="flex items-center gap-3 px-3 py-2 rounded-sm text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors font-medium"
   >
     <Icon className="h-4 w-4" />
     {label}

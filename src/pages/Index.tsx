@@ -62,8 +62,8 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const menuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
-    { href: "#features", label: t("nav.features") },
-    { href: "#doctors", label: t("nav.doctors") },
+    { href: "#features", label: t("pages.landing.what_we_do")},
+    { href: "#doctors", label: t("nav.available_doctors") },
     { href: "#hospitals", label: t("nav.hospitals") },
     { href: "#pharmacy", label: t("nav.pharmacy") },
     { href: "#roles", label: t("nav.forYou") },
@@ -347,7 +347,7 @@ auth
             {/* CTA block */}
             <div className="mt-7 flex flex-col gap-3 max-w-sm">
               <Link to="/patient/search-doctors" className="w-full">
-                <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+                <button className="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                   <div className="flex items-center gap-3">
                     <span className="flex items-center justify-center w-8 h-8 rounded-sm bg-white/15 shrink-0">
                       <Video className="h-4 w-4" />
@@ -357,7 +357,7 @@ auth
                         {t("pages.landing.instant_cta")}
                       </p>
                       <p className="text-[11px] text-primary-foreground/70 mt-0.5">
-                        Connect in under 5 minutes
+                      {t("pages.landing.connect_under_minutes")}
                       </p>
                     </div>
                   </div>
@@ -368,7 +368,7 @@ auth
               {/* FIXED: buttons no longer truncate */}
               <div className="grid grid-cols-2 gap-3">
                 <Link to="/patient/search-doctors" className="group">
-                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
+                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
                     <span className="flex items-center justify-center w-7 h-7 rounded-sm bg-accent text-primary shrink-0">
                       <Stethoscope className="h-3.5 w-3.5" />
                     </span>
@@ -384,7 +384,7 @@ auth
                 </Link>
 
                 <Link to="/patient/search-hospitals" className="group">
-                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
+                  <button className="w-full flex items-center gap-2 px-3 py-3 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
                     <span className="flex items-center justify-center w-7 h-7 rounded-sm bg-accent text-primary shrink-0">
                       <Hospital className="h-3.5 w-3.5" />
                     </span>
@@ -440,7 +440,7 @@ auth
 
               {/* Image slider */}
               <div
-                className="relative rounded-xl overflow-hidden"
+                className="relative rounded-sm overflow-hidden"
                 style={{ aspectRatio: "4/3" }}
               >
                 {availableNow.map((d, i) => (

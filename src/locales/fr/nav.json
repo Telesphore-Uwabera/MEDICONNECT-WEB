@@ -1,6 +1,7 @@
 {
   "features": "Fonctionnalités",
   "doctors": "Médecins",
+  "available_doctors": "Médecins disponibles",
   "hospitals": "Hôpitaux",
   "pharmacy": "Pharmacie",
   "forYou": "Pour vous"
