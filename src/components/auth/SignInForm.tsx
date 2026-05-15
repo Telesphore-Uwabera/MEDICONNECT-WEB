@@ -216,7 +216,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+250788..."
+                    placeholder="+250788.."
                     className={inputCls}
                     required
                   />

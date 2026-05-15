@@ -22,16 +22,16 @@
     "title": "Approval queue",
     "subtitle": "{{count}} request awaiting review",
     "subtitle_plural": "{{count}} requests awaiting review",
-    "empty": "Nothing to review. You're all caught up.",
+    "empty": "Nothing to review. You're all caught up",
     "view": "View details",
     "approve": "Approve",
     "reject": "Reject",
     "drawer_title": "Review registration",
-    "drawer_sub": "Verify the applicant before approving access.",
+    "drawer_sub": "Verify the applicant before approving access",
     "confirm_approve_title": "Approve this account?",
-    "confirm_approve_desc": "They will gain full access to the {{role}} portal immediately.",
+    "confirm_approve_desc": "They will gain full access to the {{role}} portal immediately",
     "confirm_reject_title": "Reject this account?",
-    "confirm_reject_desc": "They will be notified and can re-apply later.",
+    "confirm_reject_desc": "They will be notified and can re-apply later",
     "approved_toast": "{{name}} approved",
     "rejected_toast": "{{name}} rejected"
   },
@@ -53,9 +53,9 @@
     "reactivate": "Reactivate",
     "delete": "Delete",
     "drawer_title": "Manage user",
-    "drawer_sub": "Update access and review account details.",
+    "drawer_sub": "Update access and review account details",
     "delete_title": "Delete this user?",
-    "delete_desc": "This permanently removes the account from the system.",
+    "delete_desc": "This permanently removes the account from the system",
     "deleted_toast": "User deleted",
     "status_changed": "Status updated"
   },
@@ -86,7 +86,7 @@
     "approve": "Approve",
     "remove": "Remove",
     "drawer_title": "Moderation details",
-    "drawer_sub": "Decide whether to keep or remove this content.",
+    "drawer_sub": "Decide whether to keep or remove this content",
     "approved_toast": "Item approved",
     "removed_toast": "Item removed"
   },
@@ -109,6 +109,6 @@
   },
   "landing_tile": {
     "title": "Admin",
-    "desc": "Approve providers, manage users, monitor the platform."
+    "desc": "Approve providers, manage users, monitor the platform"
   }
 }

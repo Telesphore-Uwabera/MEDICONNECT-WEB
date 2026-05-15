@@ -283,11 +283,11 @@ const DoctorAvailability = () => {
     setScheduleDisabled(disabled);
     if (disabled) {
       toast.warning("Schedule disabled", {
-        description: "You are now hidden from all patient booking flows.",
+        description: "You are now hidden from all patient booking flows",
       });
     } else {
       toast.success("Schedule enabled", {
-        description: "Patients can book appointments again.",
+        description: "Patients can book appointments again",
       });
     }
   };
@@ -319,7 +319,10 @@ const DoctorAvailability = () => {
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
               <div className="flex items-center gap-3 rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
-                <AlertTriangle size={14} className="flex-shrink-0 text-red-500" />
+                <AlertTriangle
+                  size={14}
+                  className="flex-shrink-0 text-red-500"
+                />
                 <span className="font-medium">
                   Schedule hidden from patients. New bookings are paused.
                 </span>
@@ -391,28 +394,56 @@ const DoctorAvailability = () => {
             {schedule && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <div className="rounded-sm bg-card border border-border/70 p-3 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">Total slots</p>
-                  <p className="text-lg font-semibold text-foreground mt-0.5">{stats.total}</p>
-                  <p className="text-[10px] text-muted-foreground/60">{schedule.days.length} days</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    Total slots
+                  </p>
+                  <p className="text-lg font-semibold text-foreground mt-0.5">
+                    {stats.total}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    {schedule.days.length} days
+                  </p>
                 </div>
                 <div className="rounded-sm bg-card border border-border/70 p-3 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">Available</p>
-                  <p className="text-lg font-semibold text-primary mt-0.5">{stats.available}</p>
-                  <p className="text-[10px] text-muted-foreground/60">open for booking</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    Available
+                  </p>
+                  <p className="text-lg font-semibold text-primary mt-0.5">
+                    {stats.available}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    open for booking
+                  </p>
                 </div>
                 <div className="rounded-sm bg-card border border-border/70 p-3 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">Booked</p>
-                  <p className="text-lg font-semibold text-foreground mt-0.5">{stats.booked}</p>
-                  <p className="text-[10px] text-muted-foreground/60">confirmed</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    Booked
+                  </p>
+                  <p className="text-lg font-semibold text-foreground mt-0.5">
+                    {stats.booked}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    confirmed
+                  </p>
                 </div>
                 <div className="rounded-sm bg-card border border-border/70 p-3 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">Blocked</p>
-                  <p className="text-lg font-semibold text-foreground mt-0.5">{stats.blocked}</p>
-                  <p className="text-[10px] text-muted-foreground/60">unavailable</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    Blocked
+                  </p>
+                  <p className="text-lg font-semibold text-foreground mt-0.5">
+                    {stats.blocked}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    unavailable
+                  </p>
                 </div>
                 <div className="rounded-sm bg-card border border-border/70 p-3 shadow-sm">
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">Reserved</p>
-                  <p className="text-lg font-semibold text-foreground mt-0.5">{stats.reserved}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    Reserved
+                  </p>
+                  <p className="text-lg font-semibold text-foreground mt-0.5">
+                    {stats.reserved}
+                  </p>
                   <p className="text-[10px] text-muted-foreground/60">held</p>
                 </div>
               </div>
@@ -443,10 +474,13 @@ const DoctorAvailability = () => {
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             {range?.from && range?.to ? (
                               <span className="font-medium text-foreground">
-                                {moment(range.from).format("MMM D")} → {moment(range.to).format("MMM D, YYYY")}
+                                {moment(range.from).format("MMM D")} →{" "}
+                                {moment(range.to).format("MMM D, YYYY")}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">{t("pages.doctor.select_range")}</span>
+                              <span className="text-muted-foreground">
+                                {t("pages.doctor.select_range")}
+                              </span>
                             )}
                           </div>
                           {dayCount !== null && (
@@ -477,7 +511,10 @@ const DoctorAvailability = () => {
                         {t("pages.doctor.start_time")}
                       </Label>
                       <div className="relative">
-                        <Clock size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
+                        <Clock
+                          size={12}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
+                        />
                         <Input
                           type="time"
                           value={startTime}
@@ -491,7 +528,10 @@ const DoctorAvailability = () => {
                         {t("pages.doctor.end_time")}
                       </Label>
                       <div className="relative">
-                        <Clock size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
+                        <Clock
+                          size={12}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
+                        />
                         <Input
                           type="time"
                           value={endTime}
@@ -540,11 +580,25 @@ const DoctorAvailability = () => {
                     {t("pages.doctor.legend")}
                   </h4>
                   <div className="space-y-1.5">
-                    {(Object.entries(slotConfig) as [SlotStatus, (typeof slotConfig)[SlotStatus]][]).map(([key, cfg]) => (
+                    {(
+                      Object.entries(slotConfig) as [
+                        SlotStatus,
+                        (typeof slotConfig)[SlotStatus],
+                      ][]
+                    ).map(([key, cfg]) => (
                       <div key={key} className="flex items-center gap-2">
-                        <span className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0", cfg.dot)} />
-                        <span className="text-[11px] text-foreground capitalize">{cfg.label}</span>
-                        <span className="ml-auto text-[10px] text-muted-foreground/60">click to change</span>
+                        <span
+                          className={cn(
+                            "h-2.5 w-2.5 rounded-full flex-shrink-0",
+                            cfg.dot,
+                          )}
+                        />
+                        <span className="text-[11px] text-foreground capitalize">
+                          {cfg.label}
+                        </span>
+                        <span className="ml-auto text-[10px] text-muted-foreground/60">
+                          click to change
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -569,15 +623,24 @@ const DoctorAvailability = () => {
 
                   {days.length === 0 ? (
                     <div className="text-center py-8 space-y-2">
-                      <CalendarIcon size={24} className="mx-auto text-muted-foreground/30" />
-                      <p className="text-[11px] text-muted-foreground">{t("pages.doctor.generate_hint")}</p>
+                      <CalendarIcon
+                        size={24}
+                        className="mx-auto text-muted-foreground/30"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("pages.doctor.generate_hint")}
+                      </p>
                     </div>
                   ) : (
                     <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border">
                       {days.map((d, i) => {
                         const m = moment(d.date);
-                        const dayAvail = d.slots.filter((s) => s.status === "available").length;
-                        const dayBooked = d.slots.filter((s) => s.status === "booked").length;
+                        const dayAvail = d.slots.filter(
+                          (s) => s.status === "available",
+                        ).length;
+                        const dayBooked = d.slots.filter(
+                          (s) => s.status === "booked",
+                        ).length;
                         const isSelected = selectedDay === i;
                         return (
                           <button
@@ -590,32 +653,48 @@ const DoctorAvailability = () => {
                                 : "border-border/60 hover:border-primary/40 hover:bg-primary/5",
                             )}
                           >
-                            <div className={cn(
-                              "text-[9px] uppercase tracking-wider font-medium",
-                              isSelected ? "text-primary-foreground/80" : "text-muted-foreground/70",
-                            )}>
+                            <div
+                              className={cn(
+                                "text-[9px] uppercase tracking-wider font-medium",
+                                isSelected
+                                  ? "text-primary-foreground/80"
+                                  : "text-muted-foreground/70",
+                              )}
+                            >
                               {m.format("ddd")}
                             </div>
-                            <div className={cn(
-                              "text-base font-bold leading-tight",
-                              isSelected ? "text-primary-foreground" : "text-foreground",
-                            )}>
+                            <div
+                              className={cn(
+                                "text-base font-bold leading-tight",
+                                isSelected
+                                  ? "text-primary-foreground"
+                                  : "text-foreground",
+                              )}
+                            >
                               {m.format("D")}
                             </div>
                             <div className="mt-1 flex gap-0.5 justify-center">
                               {dayBooked > 0 && (
-                                <span className={cn(
-                                  "text-[8px] font-semibold px-1 rounded-sm",
-                                  isSelected ? "bg-primary-foreground/30 text-primary-foreground" : "bg-primary/10 text-primary",
-                                )}>
+                                <span
+                                  className={cn(
+                                    "text-[8px] font-semibold px-1 rounded-sm",
+                                    isSelected
+                                      ? "bg-primary-foreground/30 text-primary-foreground"
+                                      : "bg-primary/10 text-primary",
+                                  )}
+                                >
                                   {dayBooked}
                                 </span>
                               )}
                               {dayAvail > 0 && (
-                                <span className={cn(
-                                  "text-[8px] font-semibold px-1 rounded-sm",
-                                  isSelected ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
-                                )}>
+                                <span
+                                  className={cn(
+                                    "text-[8px] font-semibold px-1 rounded-sm",
+                                    isSelected
+                                      ? "bg-primary-foreground/20 text-primary-foreground"
+                                      : "bg-muted text-muted-foreground",
+                                  )}
+                                >
                                   {dayAvail}
                                 </span>
                               )}
@@ -637,29 +716,42 @@ const DoctorAvailability = () => {
                           {moment(currentDay.date).format("dddd, MMMM D")}
                         </h3>
                         <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                          {currentDay.slots.length} slots · {schedule?.interval ?? 30} min each
+                          {currentDay.slots.length} slots ·{" "}
+                          {schedule?.interval ?? 30} min each
                         </p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5">
                         {dayStats.available > 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary gap-1"
+                          >
                             <span className="h-1 w-1 rounded-full bg-primary" />
                             {dayStats.available} avail
                           </Badge>
                         )}
                         {dayStats.booked > 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-foreground/20 bg-foreground text-background gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 border-foreground/20 bg-foreground text-background gap-1"
+                          >
                             {dayStats.booked} booked
                           </Badge>
                         )}
                         {dayStats.blocked > 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-muted bg-muted text-muted-foreground gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 border-muted bg-muted text-muted-foreground gap-1"
+                          >
                             {dayStats.blocked} blocked
                           </Badge>
                         )}
                         {dayStats.reserved > 0 && (
-                          <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] px-1.5 py-0 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
+                          >
                             {dayStats.reserved} reserved
                           </Badge>
                         )}
@@ -668,7 +760,9 @@ const DoctorAvailability = () => {
 
                     {/* Bulk actions */}
                     <div className="flex flex-wrap items-center gap-1.5 mb-3 pb-3 border-b border-border/60">
-                      <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wide font-medium mr-1">Bulk:</span>
+                      <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wide font-medium mr-1">
+                        Bulk:
+                      </span>
                       <button
                         onClick={() => bulkSetDay("available")}
                         className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-1 rounded-sm border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors"
@@ -705,7 +799,9 @@ const DoctorAvailability = () => {
                         <SlotChip
                           key={s.time}
                           slot={s}
-                          onSetStatus={(status) => setSlotStatus(selectedDay, i, status)}
+                          onSetStatus={(status) =>
+                            setSlotStatus(selectedDay, i, status)
+                          }
                         />
                       ))}
                     </div>
@@ -719,13 +815,18 @@ const DoctorAvailability = () => {
                             Utilisation
                           </span>
                           <span className="text-[10px] font-semibold text-foreground">
-                            {Math.round((dayStats.booked / currentDay.slots.length) * 100)}%
+                            {Math.round(
+                              (dayStats.booked / currentDay.slots.length) * 100,
+                            )}
+                            %
                           </span>
                         </div>
                         <div className="h-1 rounded-full bg-muted overflow-hidden">
                           <div
                             className="h-full rounded-full bg-primary transition-all duration-500"
-                            style={{ width: `${(dayStats.booked / currentDay.slots.length) * 100}%` }}
+                            style={{
+                              width: `${(dayStats.booked / currentDay.slots.length) * 100}%`,
+                            }}
                           />
                         </div>
                       </div>

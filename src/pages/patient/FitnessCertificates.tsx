@@ -160,7 +160,13 @@ const FORM_STEPS = [
     label: "Functional",
     icon: User,
     description: "Daily ability & vitals",
-    fields: ["walk_ok", "climb_ok", "lift_ok", "sleep_ok", "appetite_ok"] as (keyof CertificateRequest)[],
+    fields: [
+      "walk_ok",
+      "climb_ok",
+      "lift_ok",
+      "sleep_ok",
+      "appetite_ok",
+    ] as (keyof CertificateRequest)[],
   },
 ];
 
@@ -212,11 +218,30 @@ const fmtDate = (d: string) =>
     day: "numeric",
   });
 
-const STATUS_META: Record<CertStatus, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "bg-amber-500/15 text-amber-600 border-amber-400/30", icon: Clock },
-  in_review: { label: "In Review", color: "bg-blue-500/15 text-blue-600 border-blue-400/30", icon: Eye },
-  approved: { label: "Approved", color: "bg-emerald-500/15 text-emerald-600 border-emerald-400/30", icon: ShieldCheck },
-  rejected: { label: "Rejected", color: "bg-destructive/15 text-destructive border-destructive/25", icon: XCircle },
+const STATUS_META: Record<
+  CertStatus,
+  { label: string; color: string; icon: React.ElementType }
+> = {
+  pending: {
+    label: "Pending",
+    color: "bg-amber-500/15 text-amber-600 border-amber-400/30",
+    icon: Clock,
+  },
+  in_review: {
+    label: "In Review",
+    color: "bg-blue-500/15 text-blue-600 border-blue-400/30",
+    icon: Eye,
+  },
+  approved: {
+    label: "Approved",
+    color: "bg-emerald-500/15 text-emerald-600 border-emerald-400/30",
+    icon: ShieldCheck,
+  },
+  rejected: {
+    label: "Rejected",
+    color: "bg-destructive/15 text-destructive border-destructive/25",
+    icon: XCircle,
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,8 +298,8 @@ function YesNoField({
                 ? opt === "Yes" && warning
                   ? "bg-destructive text-destructive-foreground border-destructive"
                   : opt === "Yes"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-muted text-foreground border-border"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted text-foreground border-border"
                 : "bg-transparent text-muted-foreground border-border hover:bg-muted",
             )}
           >
@@ -350,8 +375,8 @@ function FormSidebar({
                   isActive
                     ? "bg-primary border-primary text-primary-foreground"
                     : isDone
-                    ? "bg-primary/20 border-primary/40 text-primary"
-                    : "bg-muted border-border text-muted-foreground",
+                      ? "bg-primary/20 border-primary/40 text-primary"
+                      : "bg-muted border-border text-muted-foreground",
                 )}
               >
                 {isDone ? (
@@ -362,7 +387,12 @@ function FormSidebar({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <span className={cn("text-xs font-medium leading-tight truncate", isActive ? "text-primary" : "")}>
+                  <span
+                    className={cn(
+                      "text-xs font-medium leading-tight truncate",
+                      isActive ? "text-primary" : "",
+                    )}
+                  >
                     {step.label}
                   </span>
                   {isActive && (
@@ -383,7 +413,11 @@ function FormSidebar({
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
-                      isActive ? "bg-primary w-1/2" : isDone ? "bg-primary w-full" : "bg-transparent w-0",
+                      isActive
+                        ? "bg-primary w-1/2"
+                        : isDone
+                          ? "bg-primary w-full"
+                          : "bg-transparent w-0",
                     )}
                   />
                 </div>
@@ -411,8 +445,13 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
   const [formData, setFormData] = useState<Partial<CertificateRequest>>({});
   const [submitted, setSubmitted] = useState(false);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } =
-    useForm<CertificateRequest>({ defaultValues: formData });
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CertificateRequest>({ defaultValues: formData });
 
   const watchedPurpose = watch("purpose");
   const watchedJobType = watch("job_type");
@@ -442,9 +481,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
   const yesNoWatch = (field: keyof CertificateRequest) =>
     watch(field) as string;
 
-  const highRiskJob =
-    watchedJobType &&
-    watchedJobType !== "None of the above";
+  const highRiskJob = watchedJobType && watchedJobType !== "None of the above";
 
   const redFlagSymptoms =
     yesNoWatch("chest_pain") === "Yes" ||
@@ -458,8 +495,12 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
           <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
             <Check className="h-7 w-7 text-emerald-600" />
           </div>
-          <p className="text-sm font-semibold text-foreground">Request submitted!</p>
-          <p className="text-xs text-muted-foreground">A doctor will review your request shortly.</p>
+          <p className="text-sm font-semibold text-foreground">
+            Request submitted!
+          </p>
+          <p className="text-xs text-muted-foreground">
+            A doctor will review your request shortly.
+          </p>
         </div>
       </div>
     );
@@ -467,7 +508,11 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
 
   return (
     <div className="flex flex-1 min-h-0">
-      <FormSidebar currentStep={currentStep} visited={visited} onSelect={goTo} />
+      <FormSidebar
+        currentStep={currentStep}
+        visited={visited}
+        onSelect={goTo}
+      />
 
       <div className="flex flex-col flex-1 min-h-0">
         {/* Section label bar */}
@@ -483,11 +528,13 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
 
         {/* Body */}
         <div key={currentStep} className="flex-1 overflow-y-auto p-5 space-y-5">
-
           {/* ── Purpose ── */}
           {step.id === "purpose" && (
             <div className="space-y-4">
-              <FormField label="Certificate purpose" error={errors.purpose?.message}>
+              <FormField
+                label="Certificate purpose"
+                error={errors.purpose?.message}
+              >
                 <Select
                   defaultValue={formData.purpose}
                   onValueChange={(v) => setValue("purpose", v)}
@@ -497,14 +544,19 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                   </SelectTrigger>
                   <SelectContent>
                     {PURPOSES.map((p) => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </FormField>
 
               {watchedPurpose === "Other" && (
-                <FormField label="Please specify" error={errors.other_purpose?.message}>
+                <FormField
+                  label="Please specify"
+                  error={errors.other_purpose?.message}
+                >
                   <Input
                     {...register("other_purpose", { required: "Required" })}
                     placeholder="Describe the purpose"
@@ -513,7 +565,10 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                 </FormField>
               )}
 
-              <FormField label="Job / activity type" error={errors.job_type?.message}>
+              <FormField
+                label="Job / activity type"
+                error={errors.job_type?.message}
+              >
                 <Select
                   defaultValue={formData.job_type}
                   onValueChange={(v) => setValue("job_type", v)}
@@ -523,7 +578,9 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                   </SelectTrigger>
                   <SelectContent>
                     {JOB_TYPES.map((j) => (
-                      <SelectItem key={j} value={j}>{j}</SelectItem>
+                      <SelectItem key={j} value={j}>
+                        {j}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -533,7 +590,9 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                 <div className="flex items-start gap-2.5 p-3 rounded-md border border-amber-400/40 bg-amber-500/10">
                   <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    This job type typically requires an <strong>in-person physical examination</strong>. Your request will be reviewed and you may be referred.
+                    This job type typically requires an{" "}
+                    <strong>in-person physical examination</strong>. Your
+                    request will be reviewed and you may be referred.
                   </p>
                 </div>
               )}
@@ -544,19 +603,38 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
           {step.id === "symptoms" && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground mb-3">
-                Answer honestly about symptoms in the <strong>past 72 hours</strong>.
+                Answer honestly about symptoms in the{" "}
+                <strong>past 72 hours</strong>.
               </p>
               {[
                 { label: "Any fever in the past 72 hours?", field: "fever" },
-                { label: "Any current headache or dizziness?", field: "headache" },
-                { label: "Any shortness of breath?", field: "shortness_of_breath", warning: true },
-                { label: "Any chest pain?", field: "chest_pain", warning: true },
+                {
+                  label: "Any current headache or dizziness?",
+                  field: "headache",
+                },
+                {
+                  label: "Any shortness of breath?",
+                  field: "shortness_of_breath",
+                  warning: true,
+                },
+                {
+                  label: "Any chest pain?",
+                  field: "chest_pain",
+                  warning: true,
+                },
                 { label: "Any palpitations?", field: "palpitations" },
                 { label: "Any cough?", field: "cough" },
                 { label: "Any vomiting or diarrhea?", field: "vomiting" },
                 { label: "Any body weakness or fatigue?", field: "fatigue" },
-                { label: "Any visual disturbances?", field: "visual_disturbances" },
-                { label: "Any recent fainting episodes?", field: "fainting", warning: true },
+                {
+                  label: "Any visual disturbances?",
+                  field: "visual_disturbances",
+                },
+                {
+                  label: "Any recent fainting episodes?",
+                  field: "fainting",
+                  warning: true,
+                },
               ].map(({ label, field, warning }) => (
                 <YesNoField
                   key={field}
@@ -570,7 +648,9 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                 <div className="flex items-start gap-2.5 p-3 rounded-md border border-destructive/30 bg-destructive/10 mt-3">
                   <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                   <p className="text-xs text-destructive">
-                    You have reported a <strong>red flag symptom</strong>. A physical examination may be required. You can still submit and a doctor will decide.
+                    You have reported a <strong>red flag symptom</strong>. A
+                    physical examination may be required. You can still submit
+                    and a doctor will decide.
                   </p>
                 </div>
               )}
@@ -581,13 +661,32 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
           {step.id === "history" && (
             <div className="space-y-2">
               {[
-                { label: "Any chronic illnesses? (HTN, diabetes, asthma, epilepsy, heart disease)", field: "chronic_illness" },
-                { label: "Any hospitalization in the last 3 months?", field: "recent_hospitalization" },
-                { label: "Any surgery in the last 6 months?", field: "recent_surgery" },
+                {
+                  label:
+                    "Any chronic illnesses? (HTN, diabetes, asthma, epilepsy, heart disease)",
+                  field: "chronic_illness",
+                },
+                {
+                  label: "Any hospitalization in the last 3 months?",
+                  field: "recent_hospitalization",
+                },
+                {
+                  label: "Any surgery in the last 6 months?",
+                  field: "recent_surgery",
+                },
                 { label: "Any psychiatric conditions?", field: "psychiatric" },
-                { label: "Any known allergies (drug/food)?", field: "allergies" },
-                { label: "Any chronic medication currently used?", field: "chronic_medication" },
-                { label: "Any disability or mobility limitations?", field: "disability" },
+                {
+                  label: "Any known allergies (drug/food)?",
+                  field: "allergies",
+                },
+                {
+                  label: "Any chronic medication currently used?",
+                  field: "chronic_medication",
+                },
+                {
+                  label: "Any disability or mobility limitations?",
+                  field: "disability",
+                },
               ].map(({ label, field }) => (
                 <YesNoField
                   key={field}
@@ -634,11 +733,20 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                   Daily functional ability
                 </p>
                 {[
-                  { label: "Can you walk without difficulty?", field: "walk_ok" },
+                  {
+                    label: "Can you walk without difficulty?",
+                    field: "walk_ok",
+                  },
                   { label: "Can you climb stairs?", field: "climb_ok" },
-                  { label: "Can you lift light objects without pain?", field: "lift_ok" },
+                  {
+                    label: "Can you lift light objects without pain?",
+                    field: "lift_ok",
+                  },
                   { label: "Do you sleep well?", field: "sleep_ok" },
-                  { label: "Do you have a normal appetite?", field: "appetite_ok" },
+                  {
+                    label: "Do you have a normal appetite?",
+                    field: "appetite_ok",
+                  },
                 ].map(({ label, field }) => (
                   <YesNoField
                     key={field}
@@ -654,14 +762,31 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                   Vitals (optional — if home devices available)
                 </p>
                 <p className="text-[10px] text-muted-foreground mb-3">
-                  If you have a thermometer, BP cuff, or pulse oximeter, enter readings below.
+                  If you have a thermometer, BP cuff, or pulse oximeter, enter
+                  readings below.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Temperature (°C)", field: "temperature", placeholder: "e.g. 36.6" },
-                    { label: "Blood pressure", field: "blood_pressure", placeholder: "e.g. 120/80" },
-                    { label: "Pulse (bpm)", field: "pulse", placeholder: "e.g. 72" },
-                    { label: "O₂ saturation (%)", field: "oxygen_saturation", placeholder: "e.g. 98" },
+                    {
+                      label: "Temperature (°C)",
+                      field: "temperature",
+                      placeholder: "e.g. 36.6",
+                    },
+                    {
+                      label: "Blood pressure",
+                      field: "blood_pressure",
+                      placeholder: "e.g. 120/80",
+                    },
+                    {
+                      label: "Pulse (bpm)",
+                      field: "pulse",
+                      placeholder: "e.g. 72",
+                    },
+                    {
+                      label: "O₂ saturation (%)",
+                      field: "oxygen_saturation",
+                      placeholder: "e.g. 98",
+                    },
                   ].map(({ label, field, placeholder }) => (
                     <FormField key={field} label={label}>
                       <Input
@@ -678,7 +803,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                 <textarea
                   {...register("notes")}
                   rows={3}
-                  placeholder="Any other relevant information..."
+                  placeholder="Any other relevant information.."
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               </FormField>
@@ -690,7 +815,9 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
         <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
           <Button
             variant="outline"
-            onClick={() => (currentStep > 0 ? goTo(currentStep - 1) : undefined)}
+            onClick={() =>
+              currentStep > 0 ? goTo(currentStep - 1) : undefined
+            }
             disabled={currentStep === 0}
             className="border-border text-xs"
           >
@@ -722,8 +849,12 @@ function SentCertificates() {
       <div className="flex-1 flex items-center justify-center p-10">
         <div className="text-center space-y-2">
           <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="text-sm font-medium text-foreground">No certificates yet</p>
-          <p className="text-xs text-muted-foreground">Submit a request to get started.</p>
+          <p className="text-sm font-medium text-foreground">
+            No certificates yet
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Submit a request to get started.
+          </p>
         </div>
       </div>
     );
@@ -846,16 +977,29 @@ const PatientFitnessCertificates = () => {
     setActiveTab("certificates");
   };
 
-  const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
+  const tabs: {
+    id: Tab;
+    label: string;
+    icon: React.ElementType;
+    badge?: number;
+  }[] = [
     { id: "request", label: "New Request", icon: FilePlus2 },
-    { id: "certificates", label: "My Certificates", icon: ClipboardList, badge: certCount },
+    {
+      id: "certificates",
+      label: "My Certificates",
+      icon: ClipboardList,
+      badge: certCount,
+    },
   ];
 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.fitness_certificates.title", "Fitness Certificates")}
+          title={t(
+            "pages.patient.fitness_certificates.title",
+            "Fitness Certificates",
+          )}
           subtitle={t(
             "pages.patient.fitness_certificates.subtitle",
             "Request and manage your medical fitness certificates",
@@ -864,7 +1008,6 @@ const PatientFitnessCertificates = () => {
 
         <div className="px-6 py-8">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col min-h-[560px]">
-
             {/* Tab bar */}
             <div className="flex items-center border-b border-border bg-muted/30 px-4">
               {tabs.map((tab) => {

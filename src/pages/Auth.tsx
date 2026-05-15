@@ -103,7 +103,7 @@ const Auth = () => {
                 <p className="text-xs text-white/60 leading-relaxed max-w-[260px]">
                   {t(
                     "auth.hero_sub",
-                    "Connect with top medical professionals and manage your health journey seamlessly.",
+                    "Connect with top medical professionals and manage your health journey seamlessly",
                   )}
                 </p>
               </motion.div>

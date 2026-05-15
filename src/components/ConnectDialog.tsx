@@ -5,9 +5,25 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { Doctor } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import {
-  Maximize2, Minimize2, Minus, X, Mic, MicOff, Video, VideoOff,
-  PhoneOff, Phone, ShieldCheck, Loader2, CheckCircle2, AlertCircle,
-  MessageSquare, Wifi, ArrowRight, Sparkles, Activity,
+  Maximize2,
+  Minimize2,
+  Minus,
+  X,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  PhoneOff,
+  Phone,
+  ShieldCheck,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  MessageSquare,
+  Wifi,
+  ArrowRight,
+  Sparkles,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -17,7 +33,7 @@ import { useCallStore } from "@/context/CallStore";
 
 type CallPhase =
   | "idle"
-  | "setup"       // user configures mic/video before joining
+  | "setup"
   | "checking"
   | "permissions"
   | "connecting"
@@ -48,10 +64,7 @@ interface ChartInstance {
 }
 
 interface ChartConstructor {
-  new (
-    canvas: HTMLCanvasElement,
-    config: object
-  ): ChartInstance;
+  new (canvas: HTMLCanvasElement, config: object): ChartInstance;
 }
 
 interface WindowWithChart extends Window {
@@ -71,7 +84,9 @@ const SignalBars = ({ strength }: { strength: number }) => (
         style={{ height: `${b * 4}px` }}
         className={cn(
           "w-1 rounded-sm transition-colors",
-          b <= strength ? "bg-emerald-400" : "bg-white/20"
+          b <= strength
+            ? "bg-emerald-500 dark:bg-emerald-400"
+            : "bg-foreground/10",
         )}
       />
     ))}
@@ -79,20 +94,57 @@ const SignalBars = ({ strength }: { strength: number }) => (
 );
 
 const StatusBadge = ({ phase }: { phase: CallPhase }) => {
-  const map: Record<string, { icon: React.ReactNode; text: string; cls: string }> = {
-    checking: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Checking...", cls: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
-    permissions: { icon: <ShieldCheck className="h-3 w-3" />, text: "Setting up...", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-    connecting: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Connecting...", cls: "bg-violet-500/15 text-violet-400 border-violet-500/30" },
-    ringing: { icon: <Phone className="h-3 w-3 animate-pulse" />, text: "Ringing...", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-    connected: { icon: <CheckCircle2 className="h-3 w-3" />, text: "Connected", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-    failed: { icon: <AlertCircle className="h-3 w-3" />, text: "Failed", cls: "bg-red-500/15 text-red-400 border-red-500/30" },
-    ended: { icon: <PhoneOff className="h-3 w-3" />, text: "Ended", cls: "bg-white/10 text-white/50 border-white/20" },
+  const map: Record<
+    string,
+    { icon: React.ReactNode; text: string; cls: string }
+  > = {
+    checking: {
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      text: "Checking..",
+      cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
+    },
+    permissions: {
+      icon: <ShieldCheck className="h-3 w-3" />,
+      text: "Setting up..",
+      cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
+    },
+    connecting: {
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      text: "Connecting..",
+      cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25",
+    },
+    ringing: {
+      icon: <Phone className="h-3 w-3 animate-pulse" />,
+      text: "Ringing..",
+      cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+    },
+    connected: {
+      icon: <CheckCircle2 className="h-3 w-3" />,
+      text: "Connected",
+      cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+    },
+    failed: {
+      icon: <AlertCircle className="h-3 w-3" />,
+      text: "Failed",
+      cls: "bg-destructive/10 text-destructive border-destructive/25",
+    },
+    ended: {
+      icon: <PhoneOff className="h-3 w-3" />,
+      text: "Ended",
+      cls: "bg-muted text-muted-foreground border-border",
+    },
   };
   const c = map[phase];
   if (!c) return null;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border", c.cls)}>
-      {c.icon}{c.text}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border",
+        c.cls,
+      )}
+    >
+      {c.icon}
+      {c.text}
     </span>
   );
 };
@@ -110,9 +162,15 @@ const VitalsChart = () => {
     const Chart = (window as WindowWithChart).Chart;
     if (!Chart) return;
 
-    const hrData = Array.from({ length: 20 }, () => Math.round(68 + Math.random() * 20));
-    const spo2Data = Array.from({ length: 20 }, () => Math.round(95 + Math.random() * 4));
-    const labels = Array.from({ length: 20 }, (_, i) => i === 19 ? "now" : `${19 - i}s`);
+    const hrData = Array.from({ length: 20 }, () =>
+      Math.round(68 + Math.random() * 20),
+    );
+    const spo2Data = Array.from({ length: 20 }, () =>
+      Math.round(95 + Math.random() * 4),
+    );
+    const labels = Array.from({ length: 20 }, (_, i) =>
+      i === 19 ? "now" : `${19 - i}s`,
+    );
 
     if (chartRef.current) chartRef.current.destroy();
 
@@ -163,20 +221,28 @@ const VitalsChart = () => {
         },
         scales: {
           x: {
-            ticks: { color: "rgba(255,255,255,0.25)", font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 4 },
-            grid: { color: "rgba(255,255,255,0.04)" },
+            ticks: {
+              color: "rgba(128,128,128,0.5)",
+              font: { size: 9 },
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 4,
+            },
+            grid: { color: "rgba(128,128,128,0.08)" },
             border: { display: false },
           },
           y: {
             position: "left" as const,
-            min: 50, max: 110,
+            min: 50,
+            max: 110,
             ticks: { color: "#f87171", font: { size: 9 }, stepSize: 30 },
-            grid: { color: "rgba(255,255,255,0.04)" },
+            grid: { color: "rgba(128,128,128,0.08)" },
             border: { display: false },
           },
           y2: {
             position: "right" as const,
-            min: 90, max: 100,
+            min: 90,
+            max: 100,
             ticks: { color: "#34d399", font: { size: 9 }, stepSize: 5 },
             grid: { display: false },
             border: { display: false },
@@ -191,7 +257,7 @@ const VitalsChart = () => {
       c.data.labels.shift();
       c.data.labels.push("now");
       c.data.labels = c.data.labels.map((_: string, i: number, a: string[]) =>
-        i === a.length - 1 ? "now" : `${a.length - 1 - i}s`
+        i === a.length - 1 ? "now" : `${a.length - 1 - i}s`,
       );
       c.data.datasets[0].data.shift();
       c.data.datasets[0].data.push(Math.round(68 + Math.random() * 20));
@@ -207,31 +273,42 @@ const VitalsChart = () => {
     } else if (!scriptLoadedRef.current) {
       scriptLoadedRef.current = true;
       const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
       script.onload = initChart;
       document.head.appendChild(script);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
+      if (chartRef.current) {
+        chartRef.current.destroy();
+        chartRef.current = null;
+      }
     };
   }, []);
 
   return (
-    <div className="rounded-xl bg-black/50 border border-white/10 p-2.5 space-y-1.5">
+    <div className="rounded-xl bg-muted/60 border border-border p-2.5 space-y-1.5">
       <div className="flex items-center justify-between px-0.5">
         <div className="flex items-center gap-1.5">
-          <Activity className="h-3 w-3 text-white/30" />
-          <span className="text-[9px] text-white/40 font-medium tracking-wide uppercase">Live vitals</span>
+          <Activity className="h-3 w-3 text-muted-foreground/50" />
+          <span className="text-[9px] text-muted-foreground/60 font-medium tracking-wide uppercase">
+            Live vitals
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1 text-[10px]">
             <span className="w-3 h-px bg-red-400 inline-block rounded" />
-            <span className="text-red-400 font-mono">HR</span>
+            <span className="text-red-500 dark:text-red-400 font-mono">HR</span>
           </span>
           <span className="flex items-center gap-1 text-[10px]">
-            <span className="inline-block w-3" style={{ borderTop: "1.5px dashed #34d399" }} />
-            <span className="text-emerald-400 font-mono">SpO₂</span>
+            <span
+              className="inline-block w-3"
+              style={{ borderTop: "1.5px dashed #34d399" }}
+            />
+            <span className="text-emerald-600 dark:text-emerald-400 font-mono">
+              SpO₂
+            </span>
           </span>
         </div>
       </div>
@@ -254,15 +331,20 @@ interface ConnectDialogProps {
   onOpenChange: (v: boolean) => void;
 }
 
-export const ConnectDialog = ({ doctor, open, onOpenChange }: ConnectDialogProps) => {
+export const ConnectDialog = ({
+  doctor,
+  open,
+  onOpenChange,
+}: ConnectDialogProps) => {
   const call = useCallStore();
   const [fullscreen, setFullscreen] = useState(false);
 
-  useEffect(() => { if (!open) setFullscreen(false); }, [open]);
+  useEffect(() => {
+    if (!open) setFullscreen(false);
+  }, [open]);
 
   const handleClose = () => {
     onOpenChange(false);
-    // If ending from the "ended" screen, fully reset the store so next open is fresh
     if (call.phase === "ended") {
       call.setDialogOpen(false);
     }
@@ -275,7 +357,7 @@ export const ConnectDialog = ({ doctor, open, onOpenChange }: ConnectDialogProps
     <>
       {!fullscreen && (
         <div
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
           onClick={handleClose}
         />
       )}
@@ -285,12 +367,12 @@ export const ConnectDialog = ({ doctor, open, onOpenChange }: ConnectDialogProps
           fullscreen
             ? "inset-0 rounded-none"
             : [
-                "rounded-2xl shadow-2xl shadow-black/60",
+                "rounded-2xl shadow-large",
                 "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
                 call.phase === "connected"
                   ? "w-[760px] max-w-[95vw]"
                   : "w-[400px] max-w-[95vw]",
-              ]
+              ],
         )}
       >
         {call.phase !== "connected" ? (
@@ -316,17 +398,16 @@ export const ConnectDialog = ({ doctor, open, onOpenChange }: ConnectDialogProps
         )}
       </div>
     </>,
-    document.body
+    document.body,
   );
 };
 
 // ─── Shared device toggle strip ───────────────────────────────────────────────
-// Shown both on the setup screen and during the connecting progress phases.
 
 const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
   const call = useCallStore();
+
   if (compact) {
-    // Small pill-style toggles for the progress screen
     return (
       <div className="flex gap-2">
         <button
@@ -335,10 +416,14 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
             "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
             call.videoEnabled
               ? "bg-primary/10 text-primary border-primary/25"
-              : "bg-white/5 text-white/35 border-white/10 hover:border-white/20 hover:text-white/50"
+              : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          {call.videoEnabled ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+          {call.videoEnabled ? (
+            <Video className="h-3.5 w-3.5" />
+          ) : (
+            <VideoOff className="h-3.5 w-3.5" />
+          )}
           {call.videoEnabled ? "Camera on" : "Camera off"}
         </button>
         <button
@@ -347,17 +432,20 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
             "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
             call.audioEnabled
               ? "bg-primary/10 text-primary border-primary/25"
-              : "bg-white/5 text-white/35 border-white/10 hover:border-white/20 hover:text-white/50"
+              : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          {call.audioEnabled ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+          {call.audioEnabled ? (
+            <Mic className="h-3.5 w-3.5" />
+          ) : (
+            <MicOff className="h-3.5 w-3.5" />
+          )}
           {call.audioEnabled ? "Mic on" : "Mic off"}
         </button>
       </div>
     );
   }
 
-  // Large card-style toggles for the setup screen
   return (
     <>
       <div className="flex gap-2">
@@ -367,18 +455,31 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
             "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
             call.videoEnabled
               ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
-              : "bg-white/4 text-white/35 border-white/10 hover:border-white/20 hover:text-white/50"
+              : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          <div className={cn(
-            "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
-            call.videoEnabled ? "bg-primary/20" : "bg-white/8"
-          )}>
-            {call.videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+          <div
+            className={cn(
+              "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
+              call.videoEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
+            )}
+          >
+            {call.videoEnabled ? (
+              <Video className="h-5 w-5" />
+            ) : (
+              <VideoOff className="h-5 w-5" />
+            )}
           </div>
           <div className="text-center space-y-0.5">
             <p className="text-[11px] font-semibold leading-none">Camera</p>
-            <p className={cn("text-[10px] leading-none", call.videoEnabled ? "text-primary/70" : "text-white/25")}>
+            <p
+              className={cn(
+                "text-[10px] leading-none",
+                call.videoEnabled
+                  ? "text-primary/70"
+                  : "text-muted-foreground/50",
+              )}
+            >
               {call.videoEnabled ? "On" : "Off"}
             </p>
           </div>
@@ -390,32 +491,45 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
             "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
             call.audioEnabled
               ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
-              : "bg-white/4 text-white/35 border-white/10 hover:border-white/20 hover:text-white/50"
+              : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          <div className={cn(
-            "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
-            call.audioEnabled ? "bg-primary/20" : "bg-white/8"
-          )}>
-            {call.audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+          <div
+            className={cn(
+              "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
+              call.audioEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
+            )}
+          >
+            {call.audioEnabled ? (
+              <Mic className="h-5 w-5" />
+            ) : (
+              <MicOff className="h-5 w-5" />
+            )}
           </div>
           <div className="text-center space-y-0.5">
             <p className="text-[11px] font-semibold leading-none">Microphone</p>
-            <p className={cn("text-[10px] leading-none", call.audioEnabled ? "text-primary/70" : "text-white/25")}>
+            <p
+              className={cn(
+                "text-[10px] leading-none",
+                call.audioEnabled
+                  ? "text-primary/70"
+                  : "text-muted-foreground/50",
+              )}
+            >
               {call.audioEnabled ? "On" : "Off"}
             </p>
           </div>
         </button>
       </div>
 
-      <p className="text-[10px] text-white/25 text-center">
+      <p className="text-[10px] text-muted-foreground/60 text-center">
         {!call.videoEnabled && !call.audioEnabled
           ? "⚠ Camera and mic are both off"
           : !call.videoEnabled
-          ? "Camera off · Mic on"
-          : !call.audioEnabled
-          ? "Camera on · Mic off — others won't hear you"
-          : "Camera and mic are ready"}
+            ? "Camera off · Mic on"
+            : !call.audioEnabled
+              ? "Camera on · Mic off — others won't hear you"
+              : "Camera and mic are ready"}
       </p>
     </>
   );
@@ -436,43 +550,67 @@ interface PreCallViewProps {
 }
 
 const PreCallView = ({
-  doctor, phase, fullscreen, setFullscreen, onClose, onSetup, onStart, onConfirmJoin, onRetry,
+  doctor,
+  phase,
+  fullscreen,
+  setFullscreen,
+  onClose,
+  onSetup,
+  onStart,
+  onConfirmJoin,
+  onRetry,
 }: PreCallViewProps) => {
-  // Progress values — ringing is 100 to signal "ready"
   const progressMap: Record<string, number> = {
-    checking: 20, permissions: 50, connecting: 75, ringing: 100,
+    checking: 20,
+    permissions: 50,
+    connecting: 75,
+    ringing: 100,
   };
-  const inProgress = ["checking", "permissions", "connecting", "ringing"].includes(phase);
-  const isConnecting = ["checking", "permissions", "connecting"].includes(phase);
+  const inProgress = [
+    "checking",
+    "permissions",
+    "connecting",
+    "ringing",
+  ].includes(phase);
+  const isConnecting = ["checking", "permissions", "connecting"].includes(
+    phase,
+  );
 
   const titleText = () => {
-    if (phase === "idle")    return "Instant consult";
-    if (phase === "setup")   return "Set up your devices";
+    if (phase === "idle") return "Instant consult";
+    if (phase === "setup") return "Set up your devices";
     if (phase === "ringing") return "Doctor is ready";
-    if (isConnecting)        return "Connecting to doctor";
-    if (phase === "failed")  return "Connection failed";
-    if (phase === "ended")   return "Call ended";
+    if (isConnecting) return "Connecting to doctor";
+    if (phase === "failed") return "Connection failed";
+    if (phase === "ended") return "Call ended";
     return "Instant consult";
   };
 
   return (
-    <div className="bg-[#141414] border border-white/10 rounded-2xl overflow-hidden">
+    // Uses card background token — white in light, elevated dark in dark mode
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
       {/* Title bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[12px] font-semibold text-white/80">{titleText()}</span>
+          <span className="text-[12px] font-semibold text-foreground/80">
+            {titleText()}
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setFullscreen(!fullscreen)}
-            className="h-7 w-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
+            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            {fullscreen ? (
+              <Minimize2 className="h-3.5 w-3.5" />
+            ) : (
+              <Maximize2 className="h-3.5 w-3.5" />
+            )}
           </button>
           <button
             onClick={onClose}
-            className="h-7 w-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 hover:bg-white/8 transition-colors"
+            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -481,88 +619,107 @@ const PreCallView = ({
 
       <div className="p-5 space-y-4">
         {/* Doctor card */}
-        <div className={cn(
-          "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
-          inProgress ? "border-primary/15 bg-primary/5" : "border-white/8 bg-white/4"
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
+            inProgress
+              ? "border-primary/20 bg-primary/5"
+              : "border-border bg-muted/50",
+          )}
+        >
           <div className="relative shrink-0">
             <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold">
               {doctor.avatar}
             </div>
             {inProgress && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#141414] bg-amber-400 animate-pulse" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-white/90 truncate">{doctor.name}</p>
-            <p className="text-[11px] text-white/40 truncate mt-0.5">{doctor.specialty} · {doctor.hospital}</p>
+            <p className="text-[13px] font-semibold text-foreground truncate">
+              {doctor.name}
+            </p>
+            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+              {doctor.specialty} · {doctor.hospital}
+            </p>
           </div>
-          {phase !== "idle" && phase !== "setup" && <StatusBadge phase={phase} />}
+          {phase !== "idle" && phase !== "setup" && (
+            <StatusBadge phase={phase} />
+          )}
         </div>
 
-        {/* ── Setup phase: large device cards + confirm ── */}
+        {/* ── Setup phase ── */}
         {phase === "setup" && (
           <>
-            <p className="text-[11px] text-white/40 text-center -mt-1">
+            <p className="text-[11px] text-muted-foreground text-center -mt-1">
               Configure your devices, then join when ready.
             </p>
             <DeviceToggles compact={false} />
             <div className="space-y-2">
-              <Button onClick={onStart} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+              <Button
+                onClick={onStart}
+                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+              >
                 <Phone className="h-4 w-4" />
                 Start connecting
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" onClick={onClose} className="w-full h-9 text-[11px] rounded-xl border-white/10 text-white/50 hover:text-white/80 bg-transparent hover:bg-white/5">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full h-9 text-[11px] rounded-xl"
+              >
                 Cancel
               </Button>
             </div>
           </>
         )}
 
-        {/* ── Progress bar (checking / permissions / connecting) ── */}
+        {/* ── Progress bar phases ── */}
         {isConnecting && (
           <div className="space-y-3">
             <div className="space-y-2">
               <Progress
                 value={progressMap[phase] ?? 0}
-                className="h-[3px] bg-white/8 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
+                className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
               />
-              <p className="text-[10px] text-white/30 text-center">
-                {phase === "checking"    && "Verifying availability..."}
-                {phase === "permissions" && "Requesting camera & microphone..."}
-                {phase === "connecting"  && "Establishing secure connection..."}
+              <p className="text-[10px] text-muted-foreground text-center">
+                {phase === "checking" && "Verifying availability.."}
+                {phase === "permissions" && "Requesting camera & microphone.."}
+                {phase === "connecting" && "Establishing secure connection.."}
               </p>
             </div>
-            {/* Device toggles available throughout — compact pill style */}
             <DeviceToggles compact={true} />
           </div>
         )}
 
-        {/* ── Ringing: progress complete, user confirms to enter call ── */}
+        {/* ── Ringing ── */}
         {phase === "ringing" && (
           <div className="space-y-3">
             <div className="space-y-2">
               <Progress
                 value={100}
-                className="h-[3px] bg-white/8 [&>div]:bg-emerald-400 [&>div]:transition-all [&>div]:duration-700"
+                className="h-[3px] bg-muted [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-700"
               />
-              <p className="text-[10px] text-emerald-400/70 text-center font-medium">
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 text-center font-medium">
                 Doctor is available — ready to join
               </p>
             </div>
-            {/* Still let user adjust devices before entering */}
             <DeviceToggles compact={true} />
             <div className="space-y-2 pt-1">
               <Button
                 onClick={onConfirmJoin}
-                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white"
+                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white"
               >
                 <Phone className="h-4 w-4" />
                 Join call
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" onClick={onClose} className="w-full h-9 text-[11px] rounded-xl border-white/10 text-white/50 hover:text-white/80 bg-transparent hover:bg-white/5">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full h-9 text-[11px] rounded-xl"
+              >
                 Cancel
               </Button>
             </div>
@@ -572,12 +729,19 @@ const PreCallView = ({
         {/* ── Idle CTA ── */}
         {phase === "idle" && (
           <div className="space-y-2 pt-1">
-            <Button onClick={onSetup} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+            <Button
+              onClick={onSetup}
+              className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+            >
               <Wifi className="h-4 w-4" />
               Start instant consultation
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="outline" onClick={onClose} className="w-full h-9 text-[11px] rounded-xl border-white/10 text-white/50 hover:text-white/80 bg-transparent hover:bg-white/5">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full h-9 text-[11px] rounded-xl"
+            >
               Cancel
             </Button>
           </div>
@@ -586,28 +750,47 @@ const PreCallView = ({
         {/* ── Failed ── */}
         {phase === "failed" && (
           <div className="space-y-2 pt-1">
-            <Button onClick={onRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-              <Phone className="h-4 w-4" />Retry connection
+            <Button
+              onClick={onRetry}
+              className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+            >
+              <Phone className="h-4 w-4" />
+              Retry connection
             </Button>
-            <Button variant="outline" onClick={onClose} className="w-full h-9 text-[11px] rounded-xl border-white/10 bg-transparent text-white/50 hover:bg-white/5">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="w-full h-9 text-[11px] rounded-xl"
+            >
               Close
             </Button>
           </div>
         )}
 
-        {/* ── Ended: keep modal open, offer reconnect or close ── */}
+        {/* ── Ended ── */}
         {phase === "ended" && (
           <div className="space-y-3">
-            <div className="rounded-xl bg-white/4 border border-white/8 px-4 py-3 text-center space-y-1">
-              <p className="text-[12px] font-medium text-white/60">Your consultation has ended</p>
-              <p className="text-[10px] text-white/30">Duration: {/* elapsed displayed by parent via call.elapsed */} session complete</p>
+            <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
+              <p className="text-[12px] font-medium text-foreground/60">
+                Your consultation has ended
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                Duration: session complete
+              </p>
             </div>
             <div className="space-y-2">
-              <Button onClick={onRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+              <Button
+                onClick={onRetry}
+                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+              >
                 <Phone className="h-4 w-4" />
                 Reconnect with {doctor.name}
               </Button>
-              <Button variant="outline" onClick={onClose} className="w-full h-9 text-[11px] rounded-xl border-white/10 bg-transparent text-white/50 hover:text-white/80 hover:bg-white/5">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="w-full h-9 text-[11px] rounded-xl"
+              >
                 Close
               </Button>
             </div>
@@ -615,8 +798,11 @@ const PreCallView = ({
         )}
 
         {/* Footer trust badge */}
-        {(phase === "idle" || phase === "setup" || isConnecting || phase === "ringing") && (
-          <div className="flex items-center justify-center gap-1.5 text-[9px] text-white/20 pt-1">
+        {(phase === "idle" ||
+          phase === "setup" ||
+          isConnecting ||
+          phase === "ringing") && (
+          <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
             <ShieldCheck className="h-3 w-3" />
             HIPAA compliant · End-to-end encrypted
           </div>
@@ -636,17 +822,23 @@ interface CtrlBtnProps {
   danger?: boolean;
 }
 
-const CtrlBtn = ({ active, icon, onClick, label, danger = false }: CtrlBtnProps) => (
+const CtrlBtn = ({
+  active,
+  icon,
+  onClick,
+  label,
+  danger = false,
+}: CtrlBtnProps) => (
   <button
     onClick={onClick}
     title={label}
     className={cn(
       "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90",
       danger
-        ? "bg-red-500 hover:bg-red-400 text-white shadow-lg shadow-red-500/30"
+        ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/30"
         : active
-          ? "bg-white/15 hover:bg-white/22 text-white"
-          : "bg-red-500/75 hover:bg-red-500/90 text-white"
+          ? "bg-white/20 hover:bg-white/30 text-white"
+          : "bg-destructive/75 hover:bg-destructive/90 text-white",
     )}
   >
     {icon}
@@ -654,6 +846,9 @@ const CtrlBtn = ({ active, icon, onClick, label, danger = false }: CtrlBtnProps)
 );
 
 // ─── In-call view ─────────────────────────────────────────────────────────────
+// The in-call screen is intentionally always dark (it's a video call UI).
+// We keep it using explicit dark values for the immersive feel,
+// but use CSS variables for the chat panel that slides in.
 
 interface InCallViewProps {
   doctor: Doctor;
@@ -663,10 +858,15 @@ interface InCallViewProps {
   onEnd: () => void;
 }
 
-const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: InCallViewProps) => {
+const InCallView = ({
+  doctor,
+  fullscreen,
+  setFullscreen,
+  onMinimize,
+  onEnd,
+}: InCallViewProps) => {
   const call = useCallStore();
   const [controlsVisible, setControlsVisible] = useState(true);
-  // Vitals hidden by default; user can toggle on
   const [showVitals, setShowVitals] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -685,7 +885,9 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
 
   useEffect(() => {
     scheduleHide();
-    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
   }, [chatOpen]);
 
   const handleChatToggle = () => {
@@ -697,51 +899,60 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
   const chatWidth = chatOpen ? 288 : 0;
 
   return (
+    // The video call area is always dark — it's an immersive media surface.
+    // We scope it with `dark` class so inner elements use dark tokens too.
     <div
       className={cn(
-        "relative flex bg-[#0c0c0c] overflow-hidden",
-        fullscreen ? "h-screen w-screen" : "h-[480px]"
+        "relative flex bg-[#0c0c0c] overflow-hidden dark",
+        fullscreen ? "h-screen w-screen" : "h-[480px]",
       )}
       onMouseMove={handleMouseMove}
       onTouchStart={handleMouseMove}
     >
-      {/* ── Video area (shrinks when chat open) ── */}
+      {/* ── Video area ── */}
       <div
         className="relative flex-1 flex flex-col transition-all duration-300 min-w-0"
         style={{ marginRight: chatWidth }}
       >
-        {/* Doctor feed */}
+        {/* Doctor feed placeholder */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="relative mx-auto w-[88px] h-[88px]">
-              <div className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping" style={{ animationDuration: "2s" }} />
+              <div
+                className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping"
+                style={{ animationDuration: "2s" }}
+              />
               <div className="relative h-[88px] w-[88px] rounded-full bg-[#1e2a26] text-white/85 flex items-center justify-center text-3xl font-bold ring-[1.5px] ring-emerald-500/30">
                 {doctor.avatar}
               </div>
             </div>
             <div className="space-y-0.5">
-              <p className="text-[14px] font-semibold text-white/90">{doctor.name}</p>
+              <p className="text-[14px] font-semibold text-white/90">
+                {doctor.name}
+              </p>
               <p className="text-[11px] text-white/35">{doctor.specialty}</p>
             </div>
           </div>
         </div>
 
-        {/* Vitals overlay — bottom-left, above controls */}
+        {/* Vitals overlay */}
         {showVitals && (
           <div className="absolute bottom-[72px] left-3 right-3 z-10">
             <VitalsChart />
           </div>
         )}
 
-        {/* Self PiP — bottom-right, moves up when vitals shown */}
+        {/* Self PiP */}
         <div
           className={cn(
             "absolute right-3 w-[108px] rounded-xl bg-[#1a1a1a] border border-white/10 overflow-hidden flex items-center justify-center shadow-xl transition-all duration-300",
-            showVitals ? "bottom-[calc(72px+100px+12px)]" : "bottom-[72px]"
+            showVitals ? "bottom-[calc(72px+100px+12px)]" : "bottom-[72px]",
           )}
           style={{ aspectRatio: "16/9" }}
         >
-          <div className="text-[10px] text-white/30 font-medium select-none">You</div>
+          <div className="text-[10px] text-white/30 font-medium select-none">
+            You
+          </div>
           {!call.videoEnabled && (
             <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
               <VideoOff className="h-3.5 w-3.5 text-white/25" />
@@ -755,7 +966,7 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
             "absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20",
             "bg-gradient-to-b from-black/55 to-transparent",
             "transition-opacity duration-500",
-            controlsVisible ? "opacity-100" : "opacity-0"
+            controlsVisible ? "opacity-100" : "opacity-0",
           )}
         >
           <div className="flex items-center gap-2">
@@ -779,35 +990,50 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
                 title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-colors"
               >
-                {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                {fullscreen ? (
+                  <Minimize2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize2 className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom controls bar */}
+        {/* Bottom controls */}
         <div
           className={cn(
             "absolute bottom-0 inset-x-0 flex items-center justify-center gap-2.5 px-4 py-3 z-20",
             "bg-gradient-to-t from-black/65 to-transparent",
             "transition-opacity duration-500",
-            controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+            controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
         >
           <CtrlBtn
             active={call.audioEnabled}
-            icon={call.audioEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+            icon={
+              call.audioEnabled ? (
+                <Mic className="h-4 w-4" />
+              ) : (
+                <MicOff className="h-4 w-4" />
+              )
+            }
             onClick={call.toggleAudio}
             label={call.audioEnabled ? "Mute" : "Unmute"}
           />
           <CtrlBtn
             active={call.videoEnabled}
-            icon={call.videoEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+            icon={
+              call.videoEnabled ? (
+                <Video className="h-4 w-4" />
+              ) : (
+                <VideoOff className="h-4 w-4" />
+              )
+            }
             onClick={call.toggleVideo}
             label={call.videoEnabled ? "Stop video" : "Start video"}
           />
 
-          {/* Chat with unread badge */}
           <div className="relative">
             <CtrlBtn
               active={chatOpen}
@@ -829,7 +1055,6 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
             label={showVitals ? "Hide vitals" : "Show vitals"}
           />
 
-          {/* End call — larger */}
           <button
             onClick={onEnd}
             title="End call"
@@ -840,13 +1065,14 @@ const InCallView = ({ doctor, fullscreen, setFullscreen, onMinimize, onEnd }: In
         </div>
       </div>
 
-      {/* ── Chat panel — rendered as a sibling, slides in from right ── */}
+      {/* ── Chat panel ── */}
+      {/* Uses bg-card so it follows the light/dark theme of the rest of the app */}
       <div
         className={cn(
           "absolute top-0 right-0 h-full flex flex-col z-30",
-          "bg-[#161616] border-l border-white/8",
+          "bg-card border-l border-border",
           "transition-all duration-300 ease-in-out",
-          chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden"
+          chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden",
         )}
       >
         {chatOpen && (

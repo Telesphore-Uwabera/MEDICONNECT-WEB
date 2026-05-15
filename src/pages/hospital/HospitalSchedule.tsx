@@ -61,7 +61,8 @@ function UtilBar({
   capacity: number;
   active: boolean;
 }) {
-  const pct = capacity > 0 ? Math.min(100, Math.round((booked / capacity) * 100)) : 0;
+  const pct =
+    capacity > 0 ? Math.min(100, Math.round((booked / capacity) * 100)) : 0;
   const overbooked = booked > capacity;
   return (
     <div className="flex-1 min-w-0">
@@ -72,7 +73,11 @@ function UtilBar({
         <span
           className={cn(
             "text-[10px] font-semibold tabular-nums",
-            overbooked ? "text-red-600" : pct > 85 ? "text-amber-600" : "text-foreground",
+            overbooked
+              ? "text-red-600"
+              : pct > 85
+                ? "text-amber-600"
+                : "text-foreground",
           )}
         >
           {overbooked ? "Over capacity" : `${pct}%`}
@@ -82,7 +87,11 @@ function UtilBar({
         <div
           className={cn(
             "h-full rounded-full transition-all duration-500",
-            overbooked ? "bg-red-500" : pct > 85 ? "bg-amber-500" : "bg-primary",
+            overbooked
+              ? "bg-red-500"
+              : pct > 85
+                ? "bg-amber-500"
+                : "bg-primary",
             !active && "opacity-30",
           )}
           style={{ width: `${Math.min(pct, 100)}%` }}
@@ -235,11 +244,11 @@ const HospitalSchedule = () => {
     setHospitalDisabled(v);
     if (v) {
       toast.warning("Hospital hidden from patients", {
-        description: "New bookings are paused. You can still edit the schedule.",
+        description: "New bookings are paused. You can still edit the schedule",
       });
     } else {
       toast.success("Hospital schedule enabled", {
-        description: "Patients can book appointments again.",
+        description: "Patients can book appointments again",
       });
     }
   };
@@ -308,7 +317,10 @@ const HospitalSchedule = () => {
             {/* ── Disable banner ── */}
             {hospitalDisabled && (
               <div className="flex items-center gap-3 rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
-                <AlertTriangle size={14} className="flex-shrink-0 text-red-500" />
+                <AlertTriangle
+                  size={14}
+                  className="flex-shrink-0 text-red-500"
+                />
                 <span className="font-medium">
                   Schedule hidden from patients. New bookings are paused.
                 </span>
@@ -318,9 +330,13 @@ const HospitalSchedule = () => {
             {/* ── Overbooked warning ── */}
             {totals.overbooked > 0 && (
               <div className="flex items-center gap-3 rounded-sm border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[11px] text-amber-700 dark:text-amber-400">
-                <AlertTriangle size={14} className="flex-shrink-0 text-amber-500" />
+                <AlertTriangle
+                  size={14}
+                  className="flex-shrink-0 text-amber-500"
+                />
                 <span className="font-medium">
-                  {totals.overbooked} day{totals.overbooked > 1 ? "s" : ""} over capacity.
+                  {totals.overbooked} day{totals.overbooked > 1 ? "s" : ""} over
+                  capacity.
                 </span>
               </div>
             )}
@@ -381,10 +397,13 @@ const HospitalSchedule = () => {
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             {range?.from && range?.to ? (
                               <span className="font-medium text-foreground">
-                                {format(range.from, "MMM d")} → {format(range.to, "MMM d, yyyy")}
+                                {format(range.from, "MMM d")} →{" "}
+                                {format(range.to, "MMM d, yyyy")}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">{t("pages.doctor.select_range")}</span>
+                              <span className="text-muted-foreground">
+                                {t("pages.doctor.select_range")}
+                              </span>
                             )}
                           </div>
                           {dayCount !== null && (
@@ -513,35 +532,37 @@ const HospitalSchedule = () => {
                     {/* Filter pills */}
                     {days.length > 0 && (
                       <div className="flex items-center gap-1 p-0.5 rounded-sm bg-secondary/50 border border-border/40">
-                        {(["all", "active", "closed"] as DayFilter[]).map((f) => (
-                          <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={cn(
-                              "px-2.5 py-1 text-[10px] font-medium rounded-sm transition-all",
-                              filter === f
-                                ? "bg-card text-foreground shadow-sm border border-border/60"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                          >
-                            {f.charAt(0).toUpperCase() + f.slice(1)}
-                            {f === "active" && (
-                              <span className="ml-1 text-[9px] text-primary">
-                                {totals.activeDays}
-                              </span>
-                            )}
-                            {f === "closed" && (
-                              <span className="ml-1 text-[9px] text-muted-foreground">
-                                {totals.offDays}
-                              </span>
-                            )}
-                            {f === "all" && (
-                              <span className="ml-1 text-[9px] text-muted-foreground">
-                                {totals.totalDays}
-                              </span>
-                            )}
-                          </button>
-                        ))}
+                        {(["all", "active", "closed"] as DayFilter[]).map(
+                          (f) => (
+                            <button
+                              key={f}
+                              onClick={() => setFilter(f)}
+                              className={cn(
+                                "px-2.5 py-1 text-[10px] font-medium rounded-sm transition-all",
+                                filter === f
+                                  ? "bg-card text-foreground shadow-sm border border-border/60"
+                                  : "text-muted-foreground hover:text-foreground",
+                              )}
+                            >
+                              {f.charAt(0).toUpperCase() + f.slice(1)}
+                              {f === "active" && (
+                                <span className="ml-1 text-[9px] text-primary">
+                                  {totals.activeDays}
+                                </span>
+                              )}
+                              {f === "closed" && (
+                                <span className="ml-1 text-[9px] text-muted-foreground">
+                                  {totals.offDays}
+                                </span>
+                              )}
+                              {f === "all" && (
+                                <span className="ml-1 text-[9px] text-muted-foreground">
+                                  {totals.totalDays}
+                                </span>
+                              )}
+                            </button>
+                          ),
+                        )}
                       </div>
                     )}
                   </div>
@@ -573,7 +594,10 @@ const HospitalSchedule = () => {
                   {/* Day list */}
                   {filteredDays.length === 0 ? (
                     <div className="text-center py-16 space-y-2">
-                      <CalendarIcon size={24} className="mx-auto text-muted-foreground/30" />
+                      <CalendarIcon
+                        size={24}
+                        className="mx-auto text-muted-foreground/30"
+                      />
                       <p className="text-[11px] text-muted-foreground">
                         {days.length === 0
                           ? t("pages.hospital.no_schedule_hint")
@@ -604,7 +628,9 @@ const HospitalSchedule = () => {
                               <div
                                 className={cn(
                                   "text-base font-bold leading-tight",
-                                  d.active ? "text-foreground" : "text-muted-foreground/40",
+                                  d.active
+                                    ? "text-foreground"
+                                    : "text-muted-foreground/40",
                                 )}
                               >
                                 {format(parseISO(d.date), "d")}

@@ -14,7 +14,7 @@
   "notes": "Notes for patient",
   "forwardPharmacy": "Forward to pharmacy now",
   "sendPatient": "Send to patient only",
-  "sendPatientDesc": "Patient decides where to fill it later.",
+  "sendPatientDesc": "Patient decides where to fill it later",
   "inAppRecord": "In-app record",
   "inAppDesc": "Always included — appears in patient's Prescriptions tab",
   "summary": "Summary",

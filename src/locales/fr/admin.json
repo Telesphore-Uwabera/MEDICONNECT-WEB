@@ -22,16 +22,16 @@
     "title": "File d'approbation",
     "subtitle": "{{count}} demande à examiner",
     "subtitle_plural": "{{count}} demandes à examiner",
-    "empty": "Aucune demande. Tout est à jour.",
+    "empty": "Aucune demande. Tout est à jour",
     "view": "Voir les détails",
     "approve": "Approuver",
     "reject": "Rejeter",
     "drawer_title": "Examiner l'inscription",
-    "drawer_sub": "Vérifiez le candidat avant d'approuver l'accès.",
+    "drawer_sub": "Vérifiez le candidat avant d'approuver l'accès",
     "confirm_approve_title": "Approuver ce compte ?",
-    "confirm_approve_desc": "Il obtiendra immédiatement l'accès complet au portail {{role}}.",
+    "confirm_approve_desc": "Il obtiendra immédiatement l'accès complet au portail {{role}}",
     "confirm_reject_title": "Rejeter ce compte ?",
-    "confirm_reject_desc": "Il sera notifié et pourra postuler à nouveau plus tard.",
+    "confirm_reject_desc": "Il sera notifié et pourra postuler à nouveau plus tard",
     "approved_toast": "{{name}} approuvé",
     "rejected_toast": "{{name}} rejeté"
   },
@@ -53,9 +53,9 @@
     "reactivate": "Réactiver",
     "delete": "Supprimer",
     "drawer_title": "Gérer l'utilisateur",
-    "drawer_sub": "Mettre à jour l'accès et consulter les détails.",
+    "drawer_sub": "Mettre à jour l'accès et consulter les détails",
     "delete_title": "Supprimer cet utilisateur ?",
-    "delete_desc": "Cette action supprime définitivement le compte.",
+    "delete_desc": "Cette action supprime définitivement le compte",
     "deleted_toast": "Utilisateur supprimé",
     "status_changed": "Statut mis à jour"
   },
@@ -86,7 +86,7 @@
     "approve": "Approuver",
     "remove": "Supprimer",
     "drawer_title": "Détails de modération",
-    "drawer_sub": "Décidez de conserver ou de supprimer ce contenu.",
+    "drawer_sub": "Décidez de conserver ou de supprimer ce contenu",
     "approved_toast": "Élément approuvé",
     "removed_toast": "Élément supprimé"
   },
@@ -109,6 +109,6 @@
   },
   "landing_tile": {
     "title": "Admin",
-    "desc": "Approuvez les prestataires, gérez les utilisateurs, supervisez la plateforme."
+    "desc": "Approuvez les prestataires, gérez les utilisateurs, supervisez la plateforme"
   }
 }
