@@ -4,5 +4,10 @@
   "available_doctors": "Available Doctors",
   "hospitals": "Hospitals",
   "pharmacy": "Pharmacy",
-  "forYou": "For You"
+  "forYou": "For You",
+  "topnav": {
+  "email": "admin@mediconnect.rw",
+  "phone": "+250 782 168 650",
+  "support": "Support"
+}
 }
