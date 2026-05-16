@@ -4,5 +4,10 @@
   "doctors": "Abaganga",
   "hospitals": "Ibitaro",
   "pharmacy": "Farumasi",
-  "forYou": "Kuri Wowe"
+  "forYou": "Kuri Wowe",
+  "topnav": {
+    "email": "admin@mediconnect.rw",
+    "phone": "+250 782 168 650",
+    "support": "Ubufasha"
+  }
 }

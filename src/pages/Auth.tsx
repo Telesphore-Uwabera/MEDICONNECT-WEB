@@ -37,12 +37,12 @@ const Auth = () => {
     <div className="min-h-dvh bg-background flex flex-col">
       {/* ── Header ── */}
       <header className="border-b border-border bg-card/70 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container flex items-center justify-between py-3">
+        <div className="container flex items-center justify-between px-1 py-1">
           <Link to="/" className="flex items-center gap-2 group">
             <img
               src={logo}
               alt="MEDICONNECT"
-              className="h-7 w-auto rounded-md transition-transform duration-300 group-hover:scale-105"
+              className="h-12 w-auto rounded-md transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
           <div className="flex items-center gap-2">
