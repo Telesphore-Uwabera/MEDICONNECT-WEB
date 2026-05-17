@@ -345,9 +345,9 @@ function UnifiedSidebar({
   const pct = Math.round((visitedCount / STEPS.length) * 100);
 
   return (
-    <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
+    <div className="w-full sm:w-56 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4 border-b border-border">
+      <div className="px-4 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -408,8 +408,8 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* Step nav */}
-      <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+      {/* Step nav — horizontal scroll on mobile, vertical on sm+ */}
+      <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           const isActive = i === currentStep && isForm;
@@ -421,7 +421,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -445,7 +445,9 @@ function UnifiedSidebar({
                   <Icon className="h-3 w-3" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
+
+              {/* Labels and meta — hidden on mobile, visible sm+ */}
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={cn(
@@ -456,21 +458,21 @@ function UnifiedSidebar({
                     {step.label}
                   </span>
                   {isActive && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
                       editing
                     </span>
                   )}
                   {isDone && isForm && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
                 {isForm && (
-                  <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
@@ -491,26 +493,26 @@ function UnifiedSidebar({
 
       {/* Footer actions (view mode) */}
       {!isForm && profileData && (
-        <div className="p-3 border-t border-border space-y-2">
+        <div className="p-2 sm:p-3 border-t border-border flex flex-row sm:flex-col gap-2">
           <Button
             onClick={onEdit}
-            className="w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
             <Pencil size={12} /> Edit profile
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
             <Trash2 size={12} /> Delete profile
           </Button>
         </div>
       )}
 
-      {/* Footer hint (form mode) */}
+      {/* Footer hint (form mode) — hidden on mobile */}
       {isForm && (
-        <div className="px-3.5 py-3 border-t border-border">
+        <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
               ? "Click any section to jump directly"
@@ -613,7 +615,7 @@ function SpecializationsStep({
           placeholder="10"
           min={0}
           max={60}
-          className="border-border focus-visible:ring-primary text-xs h-9 w-40"
+          className="border-border focus-visible:ring-primary text-xs h-9 w-full sm:w-40"
         />
       </FormField>
 
@@ -736,7 +738,7 @@ function EducationStep({
           key={entry.id}
           onRemove={() => onChange(entries.filter((e) => e.id !== entry.id))}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Degree">
               <Input
                 value={entry.degree}
@@ -828,7 +830,7 @@ function ExperienceStep({
           key={entry.id}
           onRemove={() => onChange(entries.filter((e) => e.id !== entry.id))}
         >
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField label="Job title">
               <Input
                 value={entry.job_title}
@@ -867,7 +869,7 @@ function ExperienceStep({
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
-            <div className="col-span-2 flex items-center gap-2">
+            <div className="col-span-1 sm:col-span-2 flex items-center gap-2">
               <input
                 type="checkbox"
                 id={`current-${entry.id}`}
@@ -926,8 +928,8 @@ function QualificationsStep({
           key={entry.id}
           onRemove={() => onChange(entries.filter((e) => e.id !== entry.id))}
         >
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Certification title" className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Certification title" className="col-span-1 sm:col-span-2">
               <Input
                 value={entry.title}
                 onChange={(e) => update(entry.id, { title: e.target.value })}
@@ -935,7 +937,7 @@ function QualificationsStep({
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
-            <FormField label="Issuing body" className="col-span-2">
+            <FormField label="Issuing body" className="col-span-1 sm:col-span-2">
               <Input
                 value={entry.issuing_body}
                 onChange={(e) =>
@@ -1170,7 +1172,7 @@ function DoctorProfileForm({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Section label bar */}
-      <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-border">
+      <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           {step.sectionTitle}
@@ -1181,10 +1183,10 @@ function DoctorProfileForm({
       </div>
 
       {/* Scrollable step body */}
-      <div key={currentStep} className="flex-1 overflow-y-auto p-5">
+      <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
         {/* Step 1: Personal */}
         {step.id === "personal" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label="Specialization"
               error={errors.specialization?.message}
@@ -1225,7 +1227,7 @@ function DoctorProfileForm({
             <FormField
               label="Bio (English)"
               error={errors.bio_en?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Textarea
                 {...register("bio_en", { required: "Required" })}
@@ -1234,7 +1236,7 @@ function DoctorProfileForm({
                 rows={2}
               />
             </FormField>
-            <FormField label="Bio (French)" className="col-span-2">
+            <FormField label="Bio (French)" className="col-span-1 sm:col-span-2">
               <Textarea
                 {...register("bio_fr")}
                 placeholder="Médecin expérimenté avec 10 ans en médecine générale"
@@ -1242,7 +1244,7 @@ function DoctorProfileForm({
                 rows={2}
               />
             </FormField>
-            <FormField label="Bio (Kinyarwanda)" className="col-span-2">
+            <FormField label="Bio (Kinyarwanda)" className="col-span-1 sm:col-span-2">
               <Textarea
                 {...register("bio_kiny")}
                 placeholder="Umuganga w'inzobere ufite imyaka 10"
@@ -1381,7 +1383,7 @@ function DoctorProfileForm({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
           onClick={goBack}
@@ -1389,6 +1391,9 @@ function DoctorProfileForm({
         >
           {currentStep === 0 ? "Cancel" : "← Back"}
         </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Step {currentStep + 1} of {STEPS.length}
+        </span>
         <Button
           onClick={goNext}
           className="text-primary-foreground text-xs bg-primary hover:bg-primary/90"
@@ -1469,10 +1474,10 @@ const DoctorProfile = () => {
         }
       />
 
-      <div className="px-6 py-8 space-y-5">
+      <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
         {/* Stats bar (view mode only) */}
         {stats && !isForm && (
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
             <StatCard label="Degree" value={stats.degree} />
             <StatCard label="License" value={stats.license} />
             <StatCard label="Education" value={stats.education} sub="entries" />
@@ -1491,7 +1496,7 @@ const DoctorProfile = () => {
         )}
 
         {/* Unified card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}
@@ -1523,14 +1528,14 @@ const DoctorProfile = () => {
               onVisitedChange={setVisited}
             />
           ) : profileData ? (
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-5">
               {/* Professional information */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <User size={15} className="text-primary" /> Professional
                   information
                 </h3>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                   {[
                     {
                       label: "Specialization",
@@ -1669,22 +1674,24 @@ const DoctorProfile = () => {
                     No education entries added.
                   </p>
                 ) : (
-                  profileData.education.map((edu) => (
-                    <div
-                      key={edu.id}
-                      className="flex flex-col gap-0.5 border-l-2 border-primary/20 pl-3"
-                    >
-                      <p className="text-[11px] font-medium text-foreground">
-                        {edu.degree}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {edu.institution}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {edu.country} · {edu.start_year}–{edu.end_year}
-                      </p>
-                    </div>
-                  ))
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {profileData.education.map((edu) => (
+                      <div
+                        key={edu.id}
+                        className="flex flex-col gap-0.5 border-l-2 border-primary/20 pl-3"
+                      >
+                        <p className="text-[11px] font-medium text-foreground">
+                          {edu.degree}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {edu.institution}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {edu.country} · {edu.start_year}–{edu.end_year}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -1699,29 +1706,31 @@ const DoctorProfile = () => {
                     No experience entries added.
                   </p>
                 ) : (
-                  profileData.experience.map((exp) => (
-                    <div
-                      key={exp.id}
-                      className="flex flex-col gap-0.5 border-l-2 border-primary/20 pl-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <p className="text-[11px] font-medium text-foreground">
-                          {exp.job_title}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {profileData.experience.map((exp) => (
+                      <div
+                        key={exp.id}
+                        className="flex flex-col gap-0.5 border-l-2 border-primary/20 pl-3"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[11px] font-medium text-foreground">
+                            {exp.job_title}
+                          </p>
+                          {exp.is_current && (
+                            <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-primary/15 text-primary">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {exp.workplace}
                         </p>
-                        {exp.is_current && (
-                          <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-primary/15 text-primary">
-                            Current
-                          </span>
-                        )}
+                        <p className="text-[11px] text-muted-foreground">
+                          {exp.country} · from {formatDateDisplay(exp.start_date)}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        {exp.workplace}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {exp.country} · from {formatDateDisplay(exp.start_date)}
-                      </p>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -1756,7 +1765,7 @@ const DoctorProfile = () => {
                           <p className="text-[11px] text-muted-foreground mt-0.5">
                             {q.issuing_body}
                           </p>
-                          <div className="flex gap-3 mt-1.5">
+                          <div className="flex gap-3 mt-1.5 flex-wrap">
                             <span className="text-[10px] text-muted-foreground">
                               Issued: {formatDateDisplay(q.issued_at)}
                             </span>
