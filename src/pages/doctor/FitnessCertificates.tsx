@@ -14,14 +14,11 @@ import {
   XCircle,
   Eye,
   Search,
-  Filter,
   ChevronRight,
   User,
   FileText,
   Activity,
   HeartPulse,
-  MapPin,
-  Phone,
   AlertTriangle,
   Check,
   X,
@@ -42,23 +39,18 @@ type CertStatus = "pending" | "in_review" | "approved" | "rejected";
 interface CertRequest {
   id: string;
   cert_number: string;
-  // Patient info
   patient_name: string;
   patient_id: string;
   patient_age: number;
   patient_gender: string;
   patient_blood_type: string;
   patient_city: string;
-  // Request details
   purpose: string;
   job_type: string;
   requested_at: string;
   status: CertStatus;
-  // Symptoms
   symptoms: Record<string, boolean>;
-  // History
   history: Record<string, string>;
-  // Functional
   functional: Record<string, boolean>;
   vitals?: {
     temperature?: string;
@@ -67,7 +59,6 @@ interface CertRequest {
     oxygen_saturation?: string;
   };
   notes?: string;
-  // Doctor review
   doctor_notes?: string;
   decision?: string;
   reviewed_at?: string;
@@ -91,39 +82,16 @@ const MOCK_REQUESTS: CertRequest[] = [
     requested_at: "2025-05-13T08:30:00",
     status: "pending",
     symptoms: {
-      fever: false,
-      headache: false,
-      shortness_of_breath: false,
-      chest_pain: false,
-      palpitations: false,
-      cough: false,
-      vomiting: false,
-      fatigue: false,
-      visual_disturbances: false,
-      fainting: false,
+      fever: false, headache: false, shortness_of_breath: false,
+      chest_pain: false, palpitations: false, cough: false,
+      vomiting: false, fatigue: false, visual_disturbances: false, fainting: false,
     },
     history: {
-      chronic_illness: "No",
-      recent_hospitalization: "No",
-      recent_surgery: "No",
-      psychiatric: "No",
-      allergies: "No",
-      chronic_medication: "No",
-      disability: "No",
+      chronic_illness: "No", recent_hospitalization: "No", recent_surgery: "No",
+      psychiatric: "No", allergies: "No", chronic_medication: "No", disability: "No",
     },
-    functional: {
-      walk_ok: true,
-      climb_ok: true,
-      lift_ok: true,
-      sleep_ok: true,
-      appetite_ok: true,
-    },
-    vitals: {
-      temperature: "36.5",
-      blood_pressure: "118/76",
-      pulse: "72",
-      oxygen_saturation: "99",
-    },
+    functional: { walk_ok: true, climb_ok: true, lift_ok: true, sleep_ok: true, appetite_ok: true },
+    vitals: { temperature: "36.5", blood_pressure: "118/76", pulse: "72", oxygen_saturation: "99" },
   },
   {
     id: "2",
@@ -139,39 +107,16 @@ const MOCK_REQUESTS: CertRequest[] = [
     requested_at: "2025-05-12T14:10:00",
     status: "in_review",
     symptoms: {
-      fever: false,
-      headache: false,
-      shortness_of_breath: false,
-      chest_pain: false,
-      palpitations: false,
-      cough: true,
-      vomiting: false,
-      fatigue: true,
-      visual_disturbances: false,
-      fainting: false,
+      fever: false, headache: false, shortness_of_breath: false,
+      chest_pain: false, palpitations: false, cough: true,
+      vomiting: false, fatigue: true, visual_disturbances: false, fainting: false,
     },
     history: {
-      chronic_illness: "No",
-      recent_hospitalization: "Yes",
-      recent_surgery: "No",
-      psychiatric: "No",
-      allergies: "No",
-      chronic_medication: "Yes",
-      disability: "No",
+      chronic_illness: "No", recent_hospitalization: "Yes", recent_surgery: "No",
+      psychiatric: "No", allergies: "No", chronic_medication: "Yes", disability: "No",
     },
-    functional: {
-      walk_ok: true,
-      climb_ok: true,
-      lift_ok: false,
-      sleep_ok: false,
-      appetite_ok: true,
-    },
-    vitals: {
-      temperature: "37.1",
-      blood_pressure: "110/70",
-      pulse: "88",
-      oxygen_saturation: "97",
-    },
+    functional: { walk_ok: true, climb_ok: true, lift_ok: false, sleep_ok: false, appetite_ok: true },
+    vitals: { temperature: "37.1", blood_pressure: "110/70", pulse: "88", oxygen_saturation: "97" },
     notes: "Recently recovered from pneumonia. Currently on Amoxicillin course",
   },
   {
@@ -188,33 +133,15 @@ const MOCK_REQUESTS: CertRequest[] = [
     requested_at: "2025-05-11T09:00:00",
     status: "pending",
     symptoms: {
-      fever: false,
-      headache: false,
-      shortness_of_breath: false,
-      chest_pain: false,
-      palpitations: false,
-      cough: false,
-      vomiting: false,
-      fatigue: false,
-      visual_disturbances: false,
-      fainting: false,
+      fever: false, headache: false, shortness_of_breath: false,
+      chest_pain: false, palpitations: false, cough: false,
+      vomiting: false, fatigue: false, visual_disturbances: false, fainting: false,
     },
     history: {
-      chronic_illness: "Yes",
-      recent_hospitalization: "No",
-      recent_surgery: "No",
-      psychiatric: "No",
-      allergies: "No",
-      chronic_medication: "Yes",
-      disability: "No",
+      chronic_illness: "Yes", recent_hospitalization: "No", recent_surgery: "No",
+      psychiatric: "No", allergies: "No", chronic_medication: "Yes", disability: "No",
     },
-    functional: {
-      walk_ok: true,
-      climb_ok: true,
-      lift_ok: true,
-      sleep_ok: true,
-      appetite_ok: true,
-    },
+    functional: { walk_ok: true, climb_ok: true, lift_ok: true, sleep_ok: true, appetite_ok: true },
     notes: "Patient has controlled hypertension. On Amlodipine 5mg",
   },
   {
@@ -231,39 +158,16 @@ const MOCK_REQUESTS: CertRequest[] = [
     requested_at: "2025-05-02T10:30:00",
     status: "approved",
     symptoms: {
-      fever: false,
-      headache: false,
-      shortness_of_breath: false,
-      chest_pain: false,
-      palpitations: false,
-      cough: false,
-      vomiting: false,
-      fatigue: false,
-      visual_disturbances: false,
-      fainting: false,
+      fever: false, headache: false, shortness_of_breath: false,
+      chest_pain: false, palpitations: false, cough: false,
+      vomiting: false, fatigue: false, visual_disturbances: false, fainting: false,
     },
     history: {
-      chronic_illness: "No",
-      recent_hospitalization: "No",
-      recent_surgery: "No",
-      psychiatric: "No",
-      allergies: "No",
-      chronic_medication: "No",
-      disability: "No",
+      chronic_illness: "No", recent_hospitalization: "No", recent_surgery: "No",
+      psychiatric: "No", allergies: "No", chronic_medication: "No", disability: "No",
     },
-    functional: {
-      walk_ok: true,
-      climb_ok: true,
-      lift_ok: true,
-      sleep_ok: true,
-      appetite_ok: true,
-    },
-    vitals: {
-      temperature: "36.6",
-      blood_pressure: "120/80",
-      pulse: "68",
-      oxygen_saturation: "99",
-    },
+    functional: { walk_ok: true, climb_ok: true, lift_ok: true, sleep_ok: true, appetite_ok: true },
+    vitals: { temperature: "36.6", blood_pressure: "120/80", pulse: "68", oxygen_saturation: "99" },
     decision: "Fit",
     doctor_notes: "Patient is in excellent health. No contraindications found",
     reviewed_at: "2025-05-02T11:00:00",
@@ -282,36 +186,17 @@ const MOCK_REQUESTS: CertRequest[] = [
     requested_at: "2025-04-15T09:00:00",
     status: "rejected",
     symptoms: {
-      fever: false,
-      headache: true,
-      shortness_of_breath: true,
-      chest_pain: false,
-      palpitations: true,
-      cough: false,
-      vomiting: false,
-      fatigue: true,
-      visual_disturbances: false,
-      fainting: false,
+      fever: false, headache: true, shortness_of_breath: true,
+      chest_pain: false, palpitations: true, cough: false,
+      vomiting: false, fatigue: true, visual_disturbances: false, fainting: false,
     },
     history: {
-      chronic_illness: "Yes",
-      recent_hospitalization: "No",
-      recent_surgery: "No",
-      psychiatric: "No",
-      allergies: "No",
-      chronic_medication: "Yes",
-      disability: "No",
+      chronic_illness: "Yes", recent_hospitalization: "No", recent_surgery: "No",
+      psychiatric: "No", allergies: "No", chronic_medication: "Yes", disability: "No",
     },
-    functional: {
-      walk_ok: true,
-      climb_ok: false,
-      lift_ok: false,
-      sleep_ok: false,
-      appetite_ok: true,
-    },
+    functional: { walk_ok: true, climb_ok: false, lift_ok: false, sleep_ok: false, appetite_ok: true },
     decision: "Needs physical examination",
-    doctor_notes:
-      "High-risk job type combined with reported cardiac symptoms requires in-person examination",
+    doctor_notes: "High-risk job type combined with reported cardiac symptoms requires in-person examination",
     reviewed_at: "2025-04-15T10:30:00",
   },
 ];
@@ -363,29 +248,19 @@ const FILTER_TABS: { id: CertStatus | "all"; label: string }[] = [
 
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+    year: "numeric", month: "short", day: "numeric",
   });
 const fmtDateTime = (d: string) =>
   new Date(d).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    year: "numeric", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit",
   });
 const formatId = (id: string) => id.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
 const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Symptom / history labels
+// Labels
 // ─────────────────────────────────────────────────────────────────────────────
 const SYMPTOM_LABELS: Record<string, string> = {
   fever: "Fever (72h)",
@@ -431,15 +306,15 @@ function SectionCard({
 }) {
   return (
     <div className="rounded-md border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-primary/10">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border">
+        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-primary/10 shrink-0">
           <Icon size={13} className="text-primary" />
         </div>
         <h3 className="text-xs font-semibold tracking-tight text-foreground">
           {title}
         </h3>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-3 sm:p-4">{children}</div>
     </div>
   );
 }
@@ -458,7 +333,7 @@ function BoolRow({
     <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
       <span
         className={cn(
-          "text-xs",
+          "text-xs leading-snug pr-2",
           flagged ? "text-destructive font-medium" : "text-foreground",
         )}
       >
@@ -466,7 +341,7 @@ function BoolRow({
       </span>
       <div
         className={cn(
-          "flex items-center gap-1 text-[11px] font-medium",
+          "flex items-center gap-1 text-[11px] font-medium shrink-0",
           value
             ? flagged
               ? "text-destructive"
@@ -504,9 +379,11 @@ function VitalChip({ label, value }: { label: string; value: string }) {
 function RequestCard({
   req,
   onOpen,
+  compact,
 }: {
   req: CertRequest;
   onOpen: () => void;
+  compact?: boolean;
 }) {
   const meta = STATUS_META[req.status];
   const StatusIcon = meta.icon;
@@ -516,63 +393,75 @@ function RequestCard({
   return (
     <div
       onClick={onOpen}
-      className="rounded-lg border border-border bg-card p-4 flex items-start gap-4 cursor-pointer hover:border-primary/40 hover:bg-card/80 transition-all group"
+      className="rounded-lg border border-border bg-card p-3 sm:p-4 flex items-start gap-3 cursor-pointer hover:border-primary/40 hover:bg-card/80 transition-all group"
     >
-      {/* Avatar */}
-      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
+      {/* Avatar — hidden in compact mode on mobile */}
+      <div className={cn(
+        "w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0",
+        compact && "hidden sm:flex",
+      )}>
         {getInitials(req.patient_name)}
       </div>
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 flex-wrap">
-          <span className="text-xs font-semibold text-foreground">
+        <div className="flex items-start gap-1.5 flex-wrap">
+          <span className="text-xs font-semibold text-foreground leading-tight">
             {req.patient_name}
           </span>
           <Badge
             className={cn(
-              "text-[10px] font-medium rounded-full px-2 py-0 border flex items-center gap-1 h-5",
+              "text-[10px] font-medium rounded-full px-2 py-0 border flex items-center gap-1 h-5 shrink-0",
               meta.color,
             )}
           >
             <StatusIcon className="h-2.5 w-2.5" />
             {meta.label}
           </Badge>
-          {redFlags.length > 0 && (
-            <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-5 bg-destructive/15 text-destructive border-destructive/25 flex items-center gap-1">
-              <AlertTriangle className="h-2.5 w-2.5" />
-              {redFlags.length} red flag{redFlags.length > 1 ? "s" : ""}
-            </Badge>
-          )}
-          {highRisk && (
-            <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-5 bg-amber-500/15 text-amber-600 border-amber-400/30 flex items-center gap-1">
-              <AlertTriangle className="h-2.5 w-2.5" />
-              High-risk job
-            </Badge>
-          )}
         </div>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
-          <span className="text-[11px]  text-muted-foreground">
+
+        {/* Flags row */}
+        {(redFlags.length > 0 || highRisk) && (
+          <div className="flex gap-1.5 mt-1 flex-wrap">
+            {redFlags.length > 0 && (
+              <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-4 bg-destructive/15 text-destructive border-destructive/25 flex items-center gap-1">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                {redFlags.length} red flag{redFlags.length > 1 ? "s" : ""}
+              </Badge>
+            )}
+            {highRisk && (
+              <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-4 bg-amber-500/15 text-amber-600 border-amber-400/30 flex items-center gap-1">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                High-risk
+              </Badge>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+          <span className="text-[11px] font-mono text-muted-foreground">
             {req.cert_number}
           </span>
-          <span className="text-[10px] text-muted-foreground">·</span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">·</span>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">
             {req.purpose}
           </span>
-          <span className="text-[10px] text-muted-foreground">·</span>
+        </div>
+
+        <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-[10px] text-muted-foreground">
-            {fmtDateTime(req.requested_at)}
+            {req.patient_gender} · {req.patient_age} yrs · {req.patient_blood_type}
+            {!compact && ` · ${req.patient_city}`}
           </span>
         </div>
-        <div className="flex items-center gap-3 mt-1.5">
-          <span className="text-[10px] text-muted-foreground">
-            {req.patient_gender} · {req.patient_age} yrs ·{" "}
-            {req.patient_blood_type} · {req.patient_city}
-          </span>
-        </div>
+
+        {/* Date — always shown */}
+        <p className="text-[10px] text-muted-foreground mt-0.5">
+          {fmtDate(req.requested_at)}
+        </p>
       </div>
 
-      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-1" />
+      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-0.5" />
     </div>
   );
 }
@@ -613,37 +502,40 @@ function RequestDetail({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-5 py-3.5 border-b border-border bg-muted/30">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onBack}
-          className="h-7 text-xs border-border gap-1.5"
-        >
-          <ArrowLeft className="h-3 w-3" /> Back
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-foreground">
-              {req.patient_name}
-            </span>
-            <span className="text-[11px]  text-muted-foreground">
-              {req.cert_number}
-            </span>
-            <Badge
-              className={cn(
-                "text-[10px] font-medium rounded-full px-2.5 border flex items-center gap-1",
-                meta.color,
-              )}
-            >
-              <meta.icon className="h-2.5 w-2.5" />
-              {meta.label}
-            </Badge>
+      {/* Top bar — responsive: stacks on mobile */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+            className="h-7 text-xs border-border gap-1.5 shrink-0"
+          >
+            <ArrowLeft className="h-3 w-3" /> Back
+          </Button>
+          <div className="flex-1 min-w-0 sm:flex-none">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-foreground truncate">
+                {req.patient_name}
+              </span>
+              <span className="text-[11px] font-mono text-muted-foreground hidden sm:inline">
+                {req.cert_number}
+              </span>
+              <Badge
+                className={cn(
+                  "text-[10px] font-medium rounded-full px-2.5 border flex items-center gap-1",
+                  meta.color,
+                )}
+              >
+                <meta.icon className="h-2.5 w-2.5" />
+                {meta.label}
+              </Badge>
+            </div>
           </div>
         </div>
+
         {isApproved && (
-          <div className="flex gap-1.5 shrink-0">
+          <div className="flex gap-1.5 sm:ml-auto shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -663,7 +555,7 @@ function RequestDetail({
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
         {/* Flags */}
         {(redFlags.length > 0 || highRisk) && (
           <div className="flex flex-col gap-2">
@@ -689,18 +581,18 @@ function RequestDetail({
           </div>
         )}
 
-        {/* Patient info + request meta */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Patient info + request meta — 1 col mobile, 2 col sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <SectionCard icon={User} title="Patient Information">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
                 {getInitials(req.patient_name)}
               </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
                   {req.patient_name}
                 </p>
-                <p className="text-[11px]  text-muted-foreground mt-0.5">
+                <p className="text-[11px] font-mono text-muted-foreground mt-0.5 truncate">
                   {formatId(req.patient_id)}
                 </p>
               </div>
@@ -747,34 +639,28 @@ function RequestDetail({
           </SectionCard>
         </div>
 
-        {/* Vitals */}
+        {/* Vitals — 2 col mobile, 4 col sm+ */}
         {req.vitals && Object.values(req.vitals).some(Boolean) && (
           <SectionCard icon={HeartPulse} title="Reported Vitals">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {req.vitals.temperature && (
                 <VitalChip label="Temp (°C)" value={req.vitals.temperature} />
               )}
               {req.vitals.blood_pressure && (
-                <VitalChip
-                  label="Blood pressure"
-                  value={req.vitals.blood_pressure}
-                />
+                <VitalChip label="Blood pressure" value={req.vitals.blood_pressure} />
               )}
               {req.vitals.pulse && (
                 <VitalChip label="Pulse (bpm)" value={req.vitals.pulse} />
               )}
               {req.vitals.oxygen_saturation && (
-                <VitalChip
-                  label="O₂ sat (%)"
-                  value={req.vitals.oxygen_saturation}
-                />
+                <VitalChip label="O₂ sat (%)" value={req.vitals.oxygen_saturation} />
               )}
             </div>
           </SectionCard>
         )}
 
-        {/* Symptoms + History */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Symptoms + History — 1 col mobile, 2 col sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <SectionCard icon={Activity} title="Symptom Screening">
             <div>
               {Object.entries(req.symptoms).map(([key, val]) => (
@@ -801,13 +687,13 @@ function RequestDetail({
           </SectionCard>
         </div>
 
-        {/* Functional */}
+        {/* Functional — 1 col mobile, 2-col grid sm+ */}
         <SectionCard icon={User} title="Functional Assessment">
-          <div className="grid grid-cols-2 gap-x-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-x-8">
             {Object.entries(req.functional).map(([key, val]) => (
               <div
                 key={key}
-                className="flex items-center justify-between py-1.5 border-b border-border last:border-0"
+                className="flex items-center justify-between py-1.5 border-b border-border last:border-0 sm:[&:nth-last-child(2)]:border-0"
               >
                 <span className="text-xs text-foreground">
                   {FUNCTIONAL_LABELS[key]}
@@ -833,9 +719,7 @@ function RequestDetail({
         {/* Patient notes */}
         {req.notes && (
           <SectionCard icon={FileText} title="Patient Notes">
-            <p className="text-xs text-foreground leading-relaxed">
-              {req.notes}
-            </p>
+            <p className="text-xs text-foreground leading-relaxed">{req.notes}</p>
           </SectionCard>
         )}
 
@@ -895,21 +779,17 @@ function RequestDetail({
                 )}
               >
                 {saved ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" /> Saved
-                  </>
+                  <><Check className="h-3.5 w-3.5" /> Saved</>
                 ) : saving ? (
                   "Saving.."
                 ) : (
-                  <>
-                    <Pencil className="h-3.5 w-3.5" /> Submit decision
-                  </>
+                  <><Pencil className="h-3.5 w-3.5" /> Submit decision</>
                 )}
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Decision:
                 </span>
@@ -955,38 +835,22 @@ function DoctorFitnessCertificates() {
   const [selected, setSelected] = useState<CertRequest | null>(null);
 
   const handleUpdate = (id: string, decision: string, notes: string) => {
+    const newStatus: CertStatus =
+      decision === "Fit"
+        ? "approved"
+        : decision === "Temporarily unfit"
+          ? "in_review"
+          : "rejected";
     setRequests((prev) =>
       prev.map((r) =>
         r.id === id
-          ? {
-              ...r,
-              decision,
-              doctor_notes: notes,
-              status:
-                decision === "Fit"
-                  ? "approved"
-                  : decision === "Temporarily unfit"
-                    ? "in_review"
-                    : "rejected",
-              reviewed_at: new Date().toISOString(),
-            }
+          ? { ...r, decision, doctor_notes: notes, status: newStatus, reviewed_at: new Date().toISOString() }
           : r,
       ),
     );
     setSelected((prev) =>
       prev?.id === id
-        ? {
-            ...prev,
-            decision,
-            doctor_notes: notes,
-            status:
-              decision === "Fit"
-                ? "approved"
-                : decision === "Temporarily unfit"
-                  ? "in_review"
-                  : "rejected",
-            reviewed_at: new Date().toISOString(),
-          }
+        ? { ...prev, decision, doctor_notes: notes, status: newStatus, reviewed_at: new Date().toISOString() }
         : prev,
     );
   };
@@ -1015,33 +879,37 @@ function DoctorFitnessCertificates() {
     <DashboardLayout role="doctor">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t(
-            "pages.doctor.fitness_certificates.title",
-            "Fitness Certificates",
-          )}
+          title={t("pages.doctor.fitness_certificates.title", "Fitness Certificates")}
           subtitle={t(
             "pages.doctor.fitness_certificates.subtitle",
             "Review and manage patient certificate requests",
           )}
         />
 
-        <div className="px-6 py-8">
+        {/* Matches PharmacyProfile outer padding */}
+        <div className="px-3 py-4 sm:px-6 sm:py-8">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[580px]">
-            {/* ── Left panel: list ── */}
+
+            {/* ── Left panel: list
+                Mobile: full width when no selection, hidden when detail open
+                sm+: fixed width sidebar when detail open, full width otherwise
+            ── */}
             <div
               className={cn(
-                "flex flex-col border-r border-border",
-                selected ? "w-80 shrink-0" : "flex-1",
+                "flex flex-col border-border",
+                selected
+                  ? "hidden sm:flex sm:w-72 sm:border-r lg:w-80 shrink-0"
+                  : "flex-1",
               )}
             >
-              {/* Filter tabs */}
-              <div className="flex items-center border-b border-border bg-muted/30 px-3 overflow-x-auto">
+              {/* Filter tabs — horizontal scroll on all sizes */}
+              <div className="flex items-center border-b border-border bg-muted/30 px-2 sm:px-3 overflow-x-auto">
                 {FILTER_TABS.map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setActiveFilter(id)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
+                      "flex items-center gap-1.5 px-2.5 sm:px-3 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
                       activeFilter === id
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
@@ -1076,13 +944,11 @@ function DoctorFitnessCertificates() {
               </div>
 
               {/* List */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2">
                 {filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 gap-2">
                     <ClipboardList className="h-6 w-6 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
-                      No requests found.
-                    </p>
+                    <p className="text-xs text-muted-foreground">No requests found.</p>
                   </div>
                 ) : (
                   filtered.map((req) => (
@@ -1090,13 +956,17 @@ function DoctorFitnessCertificates() {
                       key={req.id}
                       req={req}
                       onOpen={() => setSelected(req)}
+                      compact={!!selected}
                     />
                   ))
                 )}
               </div>
             </div>
 
-            {/* ── Right panel: detail ── */}
+            {/* ── Right panel: detail
+                Mobile: full width, replaces list
+                sm+: flex-1 alongside sidebar
+            ── */}
             {selected ? (
               <div className="flex-1 flex flex-col min-h-0">
                 <RequestDetail
@@ -1106,7 +976,8 @@ function DoctorFitnessCertificates() {
                 />
               </div>
             ) : (
-              <div className="hidden lg:flex flex-1 items-center justify-center text-center p-10">
+              /* Empty state — hidden on mobile (list already shows), visible sm+ */
+              <div className="hidden sm:flex flex-1 items-center justify-center text-center p-10">
                 <div className="space-y-2">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                     <Stethoscope className="h-6 w-6 text-primary" />
@@ -1114,9 +985,8 @@ function DoctorFitnessCertificates() {
                   <p className="text-sm font-medium text-foreground">
                     Select a request
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Click any request on the left to review it and issue a
-                    decision.
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Click any request on the left to review it and issue a decision.
                   </p>
                 </div>
               </div>
