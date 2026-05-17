@@ -27,6 +27,7 @@ import {
   Globe,
   Linkedin,
   X,
+  Link2,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,7 +308,7 @@ function StatCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Unified Sidebar
+// Unified Sidebar — fully responsive (matches DoctorProfile pattern)
 // ─────────────────────────────────────────────────────────────────────────────
 function UnifiedSidebar({
   currentStep,
@@ -331,9 +332,9 @@ function UnifiedSidebar({
   const pct = Math.round((visitedCount / STEPS.length) * 100);
 
   return (
-    <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
+    <div className="w-full sm:w-56 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4 border-b border-border">
+      <div className="px-4 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -396,8 +397,8 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* Step nav */}
-      <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+      {/* Step nav — horizontal scroll on mobile, vertical on sm+ */}
+      <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           const isActive = i === currentStep && isForm;
@@ -409,7 +410,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -434,7 +435,8 @@ function UnifiedSidebar({
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
+              {/* Labels — hidden on mobile, visible sm+ */}
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={cn(
@@ -445,21 +447,21 @@ function UnifiedSidebar({
                     {step.label}
                   </span>
                   {isActive && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
                       editing
                     </span>
                   )}
                   {isDone && isForm && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
                 {isForm && (
-                  <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
@@ -480,28 +482,26 @@ function UnifiedSidebar({
 
       {/* Footer actions (view mode) */}
       {!isForm && profileData && (
-        <div className="p-3 border-t border-border space-y-2">
+        <div className="p-2 sm:p-3 border-t border-border flex flex-row sm:flex-col gap-2">
           <Button
             onClick={onEdit}
-            className="w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
-            <Pencil size={12} />
-            Edit profile
+            <Pencil size={12} /> Edit profile
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
-            <Trash2 size={12} />
-            Delete profile
+            <Trash2 size={12} /> Delete profile
           </Button>
         </div>
       )}
 
-      {/* Footer hint (form mode) */}
+      {/* Footer hint (form mode) — hidden on mobile */}
       {isForm && (
-        <div className="px-3.5 py-3 border-t border-border">
+        <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
               ? "Click any section to jump directly"
@@ -544,8 +544,8 @@ function WorkingHoursStep({
 
   return (
     <div className="space-y-2">
-      {/* Header legend */}
-      <div className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center px-1 mb-1">
+      {/* Header legend — hidden on mobile */}
+      <div className="hidden sm:grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center px-1 mb-1">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Day
         </span>
@@ -570,57 +570,101 @@ function WorkingHoursStep({
           <div
             key={day}
             className={cn(
-              "grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center rounded-md px-3 py-2.5 border transition-colors",
+              "rounded-md border transition-colors",
               dayData.enabled
                 ? "border-border bg-card"
                 : "border-border/40 bg-muted/30 opacity-60",
               isWeekend && dayData.enabled && "border-primary/20 bg-primary/5",
             )}
           >
-            {/* Day label */}
-            <span
-              className={cn(
-                "text-xs font-medium capitalize",
-                !dayData.enabled && "text-muted-foreground",
-                isWeekend && dayData.enabled && "text-primary",
+            {/* Desktop layout */}
+            <div className="hidden sm:grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2 items-center px-3 py-2.5">
+              <span
+                className={cn(
+                  "text-xs font-medium capitalize",
+                  !dayData.enabled && "text-muted-foreground",
+                  isWeekend && dayData.enabled && "text-primary",
+                )}
+              >
+                {DAY_LABELS[day].slice(0, 3)}
+              </span>
+              <Input
+                type="time"
+                value={dayData.opens_at}
+                onChange={(e) => updateDay(day, { opens_at: e.target.value })}
+                disabled={!dayData.enabled}
+                className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
+              />
+              <Input
+                type="time"
+                value={dayData.closes_at}
+                onChange={(e) => updateDay(day, { closes_at: e.target.value })}
+                disabled={!dayData.enabled}
+                className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
+              />
+              <button
+                onClick={() => applyToAll(day)}
+                disabled={!dayData.enabled}
+                title="Copy hours to all days"
+                className="text-[10px] text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors px-1 font-medium"
+              >
+                ↓ All
+              </button>
+              <Switch
+                checked={dayData.enabled}
+                onCheckedChange={(v) => updateDay(day, { enabled: v })}
+              />
+            </div>
+
+            {/* Mobile layout */}
+            <div className="sm:hidden px-3 py-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span
+                  className={cn(
+                    "text-xs font-semibold capitalize",
+                    !dayData.enabled && "text-muted-foreground",
+                    isWeekend && dayData.enabled && "text-primary",
+                  )}
+                >
+                  {DAY_LABELS[day]}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => applyToAll(day)}
+                    disabled={!dayData.enabled}
+                    className="text-[10px] text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors font-medium"
+                  >
+                    ↓ All
+                  </button>
+                  <Switch
+                    checked={dayData.enabled}
+                    onCheckedChange={(v) => updateDay(day, { enabled: v })}
+                  />
+                </div>
+              </div>
+              {dayData.enabled && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-muted-foreground">Opens at</span>
+                    <Input
+                      type="time"
+                      value={dayData.opens_at}
+                      onChange={(e) => updateDay(day, { opens_at: e.target.value })}
+                      className="h-8 text-xs border-border focus-visible:ring-primary"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-muted-foreground">Closes at</span>
+                    <Input
+                      type="time"
+                      value={dayData.closes_at}
+                      onChange={(e) => updateDay(day, { closes_at: e.target.value })}
+                      className="h-8 text-xs border-border focus-visible:ring-primary"
+                    />
+                  </div>
+                </div>
               )}
-            >
-              {DAY_LABELS[day].slice(0, 3)}
-            </span>
-
-            {/* Opens at */}
-            <Input
-              type="time"
-              value={dayData.opens_at}
-              onChange={(e) => updateDay(day, { opens_at: e.target.value })}
-              disabled={!dayData.enabled}
-              className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
-            />
-
-            {/* Closes at */}
-            <Input
-              type="time"
-              value={dayData.closes_at}
-              onChange={(e) => updateDay(day, { closes_at: e.target.value })}
-              disabled={!dayData.enabled}
-              className="h-8 text-xs border-border focus-visible:ring-primary disabled:opacity-30"
-            />
-
-            {/* Copy to all */}
-            <button
-              onClick={() => applyToAll(day)}
-              disabled={!dayData.enabled}
-              title="Copy hours to all days"
-              className="text-[10px] text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors px-1 font-medium"
-            >
-              ↓ All
-            </button>
-
-            {/* Toggle */}
-            <Switch
-              checked={dayData.enabled}
-              onCheckedChange={(v) => updateDay(day, { enabled: v })}
-            />
+            </div>
           </div>
         );
       })}
@@ -643,39 +687,26 @@ function SocialLinksStep({
   onChange: (v: SocialLinks) => void;
 }) {
   return (
-    <div className="space-y-3">
-      {SOCIAL_PLATFORMS.map(({ key, label, icon: Icon, placeholder }) => (
-        <div
-          key={key}
-          className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 focus-within:border-primary/50 focus-within:bg-primary/5 transition-colors"
-        >
-          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
-            <Icon size={13} />
-          </div>
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-              {label}
-            </span>
-            <Input
-              value={value[key]}
-              onChange={(e) => onChange({ ...value, [key]: e.target.value })}
-              placeholder={placeholder}
-              className="h-8 text-xs border-0 p-0 bg-transparent focus-visible:ring-0 shadow-none placeholder:text-muted-foreground/50"
-            />
-          </div>
-          {value[key] && (
-            <button
-              onClick={() => onChange({ ...value, [key]: "" })}
-              className="text-muted-foreground/60 hover:text-destructive transition-colors shrink-0"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      ))}
-      <p className="text-[10px] text-muted-foreground pt-1 pl-1">
-        All fields are optional. Leave blank to hide from your public profile.
+    <div className="space-y-4">
+      <p className="text-[11px] text-muted-foreground -mt-1 mb-2">
+        Add your pharmacy's social media and online profiles. All fields are optional.
       </p>
+      <div className="grid grid-cols-1 gap-3">
+        {SOCIAL_PLATFORMS.map(({ key, label, placeholder }) => (
+          <FormField key={key} label={label}>
+            <div className="flex items-center gap-2">
+              <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <Input
+                value={value[key]}
+                onChange={(e) => onChange({ ...value, [key]: e.target.value })}
+                placeholder={placeholder}
+                className="border-border focus-visible:ring-primary text-xs h-9"
+                type="url"
+              />
+            </div>
+          </FormField>
+        ))}
+      </div>
     </div>
   );
 }
@@ -759,7 +790,7 @@ function PharmacyForm({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Section label bar */}
-      <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-border">
+      <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           {step.sectionTitle}
@@ -770,10 +801,10 @@ function PharmacyForm({
       </div>
 
       {/* Scrollable step body */}
-      <div key={currentStep} className="flex-1 overflow-y-auto p-5">
+      <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
         {/* ── Step 1: General ── */}
         {step.id === "general" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Name (English)" error={errors.name_en?.message}>
               <Input
                 {...register("name_en", { required: "Required" })}
@@ -793,7 +824,7 @@ function PharmacyForm({
             <FormField
               label="Registration Number"
               error={errors.registration_number?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("registration_number", { required: "Required" })}
@@ -805,7 +836,7 @@ function PharmacyForm({
             <FormField
               label="Description"
               error={errors.description_en?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("description_en", { required: "Required" })}
@@ -818,11 +849,11 @@ function PharmacyForm({
 
         {/* ── Step 2: Location ── */}
         {step.id === "location" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label="Street Address"
               error={errors.address?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("address", { required: "Required" })}
@@ -850,7 +881,7 @@ function PharmacyForm({
             <FormField
               label="Country"
               error={errors.country?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("country", { required: "Required" })}
@@ -879,11 +910,11 @@ function PharmacyForm({
 
         {/* ── Step 3: Contact ── */}
         {step.id === "contact" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label="Phone Number"
               error={errors.phone?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="tel"
@@ -896,7 +927,7 @@ function PharmacyForm({
             <FormField
               label="Email Address"
               error={errors.email?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="email"
@@ -916,8 +947,8 @@ function PharmacyForm({
 
         {/* ── Step 4: Hours & Delivery ── */}
         {step.id === "hours" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
               <div>
                 <p className="text-xs font-medium text-foreground">
                   Open 24 hours
@@ -950,7 +981,7 @@ function PharmacyForm({
               />
             </FormField>
 
-            <div className="col-span-2 grid grid-cols-2 gap-3">
+            <div className="col-span-1 sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {(
                 [
                   { key: "offers_delivery", label: "Offers Delivery" },
@@ -1001,7 +1032,7 @@ function PharmacyForm({
                 <FormField
                   label="Est. Delivery Time (min)"
                   error={errors.estimated_delivery_minutes?.message}
-                  className="col-span-2"
+                  className="col-span-1 sm:col-span-2"
                 >
                   <Input
                     type="number"
@@ -1035,7 +1066,7 @@ function PharmacyForm({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
           onClick={goBack}
@@ -1043,6 +1074,9 @@ function PharmacyForm({
         >
           {currentStep === 0 ? "Cancel" : "← Back"}
         </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Step {currentStep + 1} of {STEPS.length}
+        </span>
         <Button
           onClick={goNext}
           className="text-primary-foreground text-xs bg-primary hover:bg-primary/90"
@@ -1096,7 +1130,7 @@ function WorkingHoursView({ hours }: { hours: WorkingHours }) {
           <div
             key={day}
             className={cn(
-              "flex items-center justify-between rounded-md px-3 py-2 border text-[11px]",
+              "flex items-center justify-between rounded-md px-3 py-2 border text-[11px] flex-wrap gap-y-1",
               dayData.enabled
                 ? isWeekend
                   ? "border-primary/20 bg-primary/5"
@@ -1106,7 +1140,7 @@ function WorkingHoursView({ hours }: { hours: WorkingHours }) {
           >
             <span
               className={cn(
-                "font-medium w-24",
+                "font-medium w-20 sm:w-24",
                 !dayData.enabled && "text-muted-foreground",
                 isWeekend && dayData.enabled && "text-primary",
               )}
@@ -1114,7 +1148,7 @@ function WorkingHoursView({ hours }: { hours: WorkingHours }) {
               {DAY_LABELS[day]}
             </span>
             {dayData.enabled ? (
-              <span className="font-mono text-foreground">
+              <span className="font-mono text-foreground text-[11px]">
                 {formatTime(dayData.opens_at)} – {formatTime(dayData.closes_at)}
               </span>
             ) : (
@@ -1183,14 +1217,14 @@ function SocialLinksView({ links }: { links: SocialLinks }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-5">
       {/* General */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Building2 size={15} className="text-primary" />
           General information
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           <ViewField label="Name (EN)" value={profile.name_en} />
           <ViewField label="Name (FR)" value={profile.name_fr} />
           <ViewField
@@ -1218,8 +1252,8 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
           <MapPin size={15} className="text-primary" />
           Location
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          <div className="col-span-1 sm:col-span-2">
             <ViewField label="Street" value={profile.address} />
           </div>
           <ViewField label="City" value={profile.city} />
@@ -1251,7 +1285,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground text-[10px] font-bold">
               @
             </div>
-            <span className="text-[11px] font-medium text-foreground">
+            <span className="text-[11px] font-medium text-foreground truncate">
               {profile.email}
             </span>
           </div>
@@ -1264,9 +1298,9 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
           <Clock size={15} className="text-primary" />
           Hours & delivery
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           {profile.is_open_24h ? (
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <ViewField label="Hours" value="Open 24 hours" />
             </div>
           ) : (
@@ -1295,7 +1329,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
                 label="Radius"
                 value={`${profile.delivery_radius_km} km`}
               />
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <ViewField
                   label="Est. delivery time"
                   value={`${profile.estimated_delivery_minutes} minutes`}
@@ -1304,7 +1338,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
             </>
           )}
 
-          <div className="col-span-2 flex gap-2 mt-1 flex-wrap">
+          <div className="col-span-1 sm:col-span-2 flex gap-2 mt-1 flex-wrap">
             {profile.offers_delivery && (
               <span className="text-[11px] font-medium rounded-full px-3 py-0.5 bg-primary/15 text-primary">
                 ✓ Delivery
@@ -1349,7 +1383,7 @@ function PharmacyProfileView({ profile }: { profile: PharmacyProfileData }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyPharmacyProfile({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+    <div className="flex-1 flex flex-col items-center justify-center py-16 sm:py-20 text-center px-4">
       <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center mb-3">
         <Building2 className="h-7 w-7 text-muted-foreground" />
       </div>
@@ -1389,7 +1423,6 @@ const PharmacyProfile = () => {
   const handleSubmit = (data: PharmacyProfileData) => {
     setProfile(data);
     setMode("view");
-    // TODO: POST /pharmacy/profile or PATCH /pharmacy/profile
   };
 
   const handleDelete = () => {
@@ -1397,7 +1430,6 @@ const PharmacyProfile = () => {
     setCurrentStep(0);
     setVisited(new Set([0]));
     setMode("create");
-    // TODO: DELETE /pharmacy/profile
   };
 
   const openEdit = () => {
@@ -1438,10 +1470,10 @@ const PharmacyProfile = () => {
         }
       />
 
-      <div className="px-6 py-8 space-y-5">
+      <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
         {/* Stats bar (view mode only) */}
         {stats && !isForm && (
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
             <StatCard label="City" value={stats.city} />
             <StatCard label="Registration" value={stats.registration} />
             <StatCard label="Hours" value={stats.hours} />
@@ -1452,7 +1484,7 @@ const PharmacyProfile = () => {
         )}
 
         {/* Unified card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}

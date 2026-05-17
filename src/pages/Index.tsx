@@ -232,8 +232,8 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
       <span className="text-white/30">|</span>
 
-      {/* Support — text always visible */}
-      <Link to="/support" className="text-white/90 hover:text-white font-medium transition-colors">
+{/* Support — text always visible */}
+      <Link to="/support" target="_blank" rel="noopener noreferrer" className="text-white/90 hover:text-white font-medium transition-colors">
         {t("nav.topnav.support")}
       </Link>
 

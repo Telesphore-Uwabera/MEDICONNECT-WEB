@@ -29,8 +29,6 @@ import {
   Globe,
   Mail,
   Phone,
-  Clock,
-  ActivitySquare,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,7 +173,7 @@ function FormField({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Toggle row (used for permissions & notifications)
+// Toggle row
 // ─────────────────────────────────────────────────────────────────────────────
 function ToggleRow({
   label,
@@ -263,7 +261,7 @@ function ViewField({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Unified Sidebar — mirrors DoctorProfile / PharmacyProfile / HospitalProfile
+// Unified Sidebar — fully responsive
 // ─────────────────────────────────────────────────────────────────────────────
 function UnifiedSidebar({
   currentStep,
@@ -287,9 +285,9 @@ function UnifiedSidebar({
   const pct = Math.round((visitedCount / STEPS.length) * 100);
 
   return (
-    <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
-      {/* ── Progress header (form) or mini-card (view) ── */}
-      <div className="px-4 pt-5 pb-4 border-b border-border">
+    <div className="w-full sm:w-56 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
+      {/* Header */}
+      <div className="px-4 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -331,7 +329,10 @@ function UnifiedSidebar({
             </div>
             <div className="space-y-1">
               {[
-                { label: "Department", value: profileData.personal.department },
+                {
+                  label: "Department",
+                  value: profileData.personal.department,
+                },
                 {
                   label: "2FA",
                   value: profileData.security.two_factor_enabled
@@ -353,8 +354,8 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* ── Step nav ── */}
-      <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+      {/* Step nav — horizontal scroll on mobile, vertical on sm+ */}
+      <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           const isActive = i === currentStep && isForm;
@@ -366,7 +367,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -391,7 +392,8 @@ function UnifiedSidebar({
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
+              {/* Labels — hidden on mobile, visible sm+ */}
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={cn(
@@ -402,21 +404,21 @@ function UnifiedSidebar({
                     {step.label}
                   </span>
                   {isActive && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
                       editing
                     </span>
                   )}
                   {isDone && isForm && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
                 {isForm && (
-                  <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
@@ -435,30 +437,28 @@ function UnifiedSidebar({
         })}
       </div>
 
-      {/* ── Footer actions (view) ── */}
+      {/* Footer actions (view mode) */}
       {!isForm && profileData && (
-        <div className="p-3 border-t border-border space-y-2">
+        <div className="p-2 sm:p-3 border-t border-border flex flex-row sm:flex-col gap-2">
           <Button
             onClick={onEdit}
-            className="w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
-            <Pencil size={12} />
-            Edit profile
+            <Pencil size={12} /> Edit profile
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
-            <Trash2 size={12} />
-            Delete profile
+            <Trash2 size={12} /> Delete profile
           </Button>
         </div>
       )}
 
-      {/* ── Footer hint (form) ── */}
+      {/* Footer hint (form mode) — hidden on mobile */}
       {isForm && (
-        <div className="px-3.5 py-3 border-t border-border">
+        <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
               ? "Click any section to jump directly"
@@ -471,7 +471,7 @@ function UnifiedSidebar({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Admin Form — step bodies
+// Admin Form
 // ─────────────────────────────────────────────────────────────────────────────
 function AdminForm({
   mode,
@@ -495,7 +495,6 @@ function AdminForm({
   const [showPw, setShowPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
 
-  // Permissions state
   const [permissions, setPermissions] = useState<PermissionsInfo>({
     role: "admin",
     can_manage_users: true,
@@ -507,7 +506,6 @@ function AdminForm({
     ...defaultData?.permissions,
   });
 
-  // Notifications state
   const [notifications, setNotifications] = useState<NotificationsInfo>({
     email_alerts: true,
     sms_alerts: false,
@@ -518,7 +516,6 @@ function AdminForm({
     ...defaultData?.notifications,
   });
 
-  // Security toggles
   const [twoFactor, setTwoFactor] = useState(
     defaultData?.security?.two_factor_enabled ?? false,
   );
@@ -598,7 +595,7 @@ function AdminForm({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Section label bar */}
-      <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-border">
+      <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           {step.sectionTitle}
@@ -608,10 +605,10 @@ function AdminForm({
         </span>
       </div>
 
-      <div key={currentStep} className="flex-1 overflow-y-auto p-5">
+      <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
         {/* ── Step 1: Personal ── */}
         {step.id === "personal" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="First name" error={errors.first_name?.message}>
               <Input
                 {...register("first_name", { required: "Required" })}
@@ -631,7 +628,7 @@ function AdminForm({
             <FormField
               label="Email address"
               error={errors.email?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="email"
@@ -650,7 +647,7 @@ function AdminForm({
             <FormField
               label="Phone number"
               error={errors.phone?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="tel"
@@ -718,8 +715,11 @@ function AdminForm({
 
         {/* ── Step 2: Security ── */}
         {step.id === "security" && (
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Current password" className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              label="Current password"
+              className="col-span-1 sm:col-span-2"
+            >
               <div className="relative">
                 <Input
                   type={showPw ? "text" : "password"}
@@ -789,7 +789,7 @@ function AdminForm({
               />
             </FormField>
 
-            <div className="col-span-2 border-t border-border pt-4 space-y-3">
+            <div className="col-span-1 sm:col-span-2 border-t border-border pt-4 space-y-3">
               <ToggleRow
                 label="Two-factor authentication"
                 sub="Require a verification code on login"
@@ -798,7 +798,10 @@ function AdminForm({
               />
             </div>
 
-            <FormField label="Session timeout" className="col-span-2">
+            <FormField
+              label="Session timeout"
+              className="col-span-1 sm:col-span-2"
+            >
               <Select
                 defaultValue={
                   defaultData?.security?.session_timeout_minutes ?? "60"
@@ -961,8 +964,8 @@ function AdminForm({
         )}
       </div>
 
-      {/* ── Footer ── */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
+      {/* Footer */}
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
           onClick={goBack}
@@ -970,6 +973,9 @@ function AdminForm({
         >
           {currentStep === 0 ? "Cancel" : "← Back"}
         </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Step {currentStep + 1} of {STEPS.length}
+        </span>
         <Button
           onClick={goNext}
           className="text-primary-foreground text-xs bg-primary hover:bg-primary/90"
@@ -982,7 +988,7 @@ function AdminForm({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// View mode — inline panels
+// View mode
 // ─────────────────────────────────────────────────────────────────────────────
 function AdminProfileView({ profile }: { profile: AdminProfileData }) {
   const activePermissions = Object.entries(profile.permissions)
@@ -1001,14 +1007,14 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
     );
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-5">
-      {/* ── Personal ── */}
+    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-5">
+      {/* Personal */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <User size={15} className="text-primary" />
           Personal information
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           <ViewField label="First name" value={profile.personal.first_name} />
           <ViewField label="Last name" value={profile.personal.last_name} />
           <ViewField label="Job title" value={profile.personal.job_title} />
@@ -1027,7 +1033,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
               <Phone size={13} />
             </div>
-            <span className="text-[11px] font-medium text-foreground font-mono">
+            <span className="text-[11px] font-medium text-foreground font-mono truncate">
               {profile.personal.phone}
             </span>
           </div>
@@ -1035,11 +1041,11 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
               <Globe size={13} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] font-medium text-foreground">
                 {profile.personal.language.toUpperCase()}
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground truncate">
                 {profile.personal.timezone}
               </p>
             </div>
@@ -1047,13 +1053,13 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
         </div>
       </div>
 
-      {/* ── Security ── */}
+      {/* Security */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <KeyRound size={15} className="text-primary" />
           Security
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               Two-factor auth
@@ -1076,13 +1082,14 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
             <span className="text-[11px] font-medium text-foreground">
               {SESSION_TIMEOUTS.find(
                 (s) => s.value === profile.security.session_timeout_minutes,
-              )?.label ?? `${profile.security.session_timeout_minutes} min`}
+              )?.label ??
+                `${profile.security.session_timeout_minutes} min`}
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── Permissions ── */}
+      {/* Permissions */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <ShieldCheck size={15} className="text-primary" />
@@ -1111,7 +1118,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
         </div>
       </div>
 
-      {/* ── Notifications ── */}
+      {/* Notifications */}
       <div className="border-t border-border pt-4 space-y-3">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Bell size={15} className="text-primary" />
@@ -1143,7 +1150,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyAdminProfile({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+    <div className="flex-1 flex flex-col items-center justify-center py-16 sm:py-20 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center mb-3">
         <User className="h-7 w-7 text-muted-foreground" />
       </div>
@@ -1173,8 +1180,6 @@ const AdminProfile = () => {
   const { t } = useTranslation();
   const [profileData, setProfileData] = useState<AdminProfileData | null>(null);
   const [mode, setMode] = useState<Mode>("create");
-
-  // Hoisted sidebar state — mirrors DoctorProfile
   const [currentStep, setCurrentStep] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
 
@@ -1183,7 +1188,6 @@ const AdminProfile = () => {
   const handleSubmit = (data: AdminProfileData) => {
     setProfileData(data);
     setMode("view");
-    // TODO: POST /admin/profile or PATCH /admin/profile
   };
 
   const handleDelete = () => {
@@ -1191,7 +1195,6 @@ const AdminProfile = () => {
     setCurrentStep(0);
     setVisited(new Set([0]));
     setMode("create");
-    // TODO: DELETE /admin/profile
   };
 
   const openEdit = () => {
@@ -1205,7 +1208,9 @@ const AdminProfile = () => {
         name: `${profileData.personal.first_name} ${profileData.personal.last_name}`,
         role: humanRole(profileData.permissions.role),
         department: profileData.personal.department,
-        twoFa: profileData.security.two_factor_enabled ? "Enabled" : "Disabled",
+        twoFa: profileData.security.two_factor_enabled
+          ? "Enabled"
+          : "Disabled",
         permissions: Object.entries(profileData.permissions).filter(
           ([k, v]) => k !== "role" && v === true,
         ).length,
@@ -1230,10 +1235,10 @@ const AdminProfile = () => {
         }
       />
 
-      <div className="px-6 py-8 space-y-5">
-        {/* ── Stats bar (view mode only) ── */}
+      <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
+        {/* Stats bar (view mode only) */}
         {stats && !isForm && (
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
             <StatCard label="Name" value={stats.name} />
             <StatCard label="Role" value={stats.role} accent />
             <StatCard label="Department" value={stats.department} />
@@ -1251,9 +1256,8 @@ const AdminProfile = () => {
           </div>
         )}
 
-        {/* ── Unified card: sidebar + content ── */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
-          {/* ── Sidebar ── */}
+        {/* Unified card */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}
@@ -1267,7 +1271,6 @@ const AdminProfile = () => {
             onDelete={handleDelete}
           />
 
-          {/* ── Content area ── */}
           {isForm ? (
             <AdminForm
               mode={mode === "edit" ? "edit" : "create"}

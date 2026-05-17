@@ -434,7 +434,7 @@ function GalleryStep({
 
       {/* Thumbnail grid */}
       {images.length > 0 && (
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {images.map((img, idx) => (
             <div
               key={img.id}
@@ -521,7 +521,6 @@ function GalleryLightbox({
   const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
   const next = () => setCurrent((c) => (c + 1) % images.length);
 
-  // Keyboard navigation
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -555,7 +554,7 @@ function GalleryLightbox({
               e.stopPropagation();
               prev();
             }}
-            className="absolute left-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+            className="absolute left-2 sm:left-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -564,7 +563,7 @@ function GalleryLightbox({
               e.stopPropagation();
               next();
             }}
-            className="absolute right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
+            className="absolute right-2 sm:right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors z-10"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -573,7 +572,7 @@ function GalleryLightbox({
 
       {/* Image */}
       <div
-        className="max-w-3xl w-full mx-16 flex flex-col gap-3"
+        className="max-w-3xl w-full mx-6 sm:mx-16 flex flex-col gap-3"
         onClick={(e) => e.stopPropagation()}
       >
         <img
@@ -779,9 +778,9 @@ function UnifiedSidebar({
   const pct = Math.round((visitedCount / STEPS.length) * 100);
 
   return (
-    <div className="w-56 shrink-0 flex flex-col border-r border-border bg-card/50">
+    <div className="w-full sm:w-56 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4 border-b border-border">
+      <div className="px-4 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         {isForm ? (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -836,8 +835,8 @@ function UnifiedSidebar({
         ) : null}
       </div>
 
-      {/* Step nav */}
-      <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+      {/* Step nav — horizontal scroll on mobile, vertical on sm+ */}
+      <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
           const isActive = i === currentStep && isForm;
@@ -849,7 +848,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -874,7 +873,8 @@ function UnifiedSidebar({
                 )}
               </div>
 
-              <div className="flex-1 min-w-0">
+              {/* Labels hidden on mobile — icon-only strip */}
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={cn(
@@ -885,21 +885,21 @@ function UnifiedSidebar({
                     {step.label}
                   </span>
                   {isActive && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
                       editing
                     </span>
                   )}
                   {isDone && isForm && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
                 {isForm && (
-                  <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                  <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
@@ -920,26 +920,26 @@ function UnifiedSidebar({
 
       {/* Footer actions (view mode) */}
       {!isForm && hospitalData && (
-        <div className="p-3 border-t border-border space-y-2">
+        <div className="p-2 sm:p-3 border-t border-border flex flex-row sm:flex-col gap-2">
           <Button
             onClick={onEdit}
-            className="w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
             <Pencil size={12} /> Edit profile
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
+            className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
             <Trash2 size={12} /> Delete profile
           </Button>
         </div>
       )}
 
-      {/* Footer hint (form mode) */}
+      {/* Footer hint (form mode) — hidden on mobile */}
       {isForm && (
-        <div className="px-3.5 py-3 border-t border-border">
+        <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
               ? "Click any section to jump directly"
@@ -1027,7 +1027,7 @@ function HospitalForm({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* Section label bar */}
-      <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-border">
+      <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
           {step.sectionTitle}
@@ -1038,14 +1038,14 @@ function HospitalForm({
       </div>
 
       {/* Scrollable step body */}
-      <div key={currentStep} className="flex-1 overflow-y-auto p-5">
+      <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
         {/* ── Step 1: Identity ── */}
         {step.id === "identity" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label={t("hospital.field.name_en", "Name (English)")}
               error={errors.name_en?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("name_en", { required: "Required" })}
@@ -1079,7 +1079,7 @@ function HospitalForm({
             <FormField
               label={t("hospital.field.description", "Description")}
               error={errors.description_en?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("description_en", { required: "Required" })}
@@ -1124,11 +1124,11 @@ function HospitalForm({
 
         {/* ── Step 2: Location ── */}
         {step.id === "location" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label={t("hospital.field.address", "Street address")}
               error={errors.address?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("address", { required: "Required" })}
@@ -1162,7 +1162,7 @@ function HospitalForm({
             <FormField
               label={t("hospital.field.country", "Country")}
               error={errors.country?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 {...register("country", { required: "Required" })}
@@ -1203,11 +1203,11 @@ function HospitalForm({
 
         {/* ── Step 3: Contact ── */}
         {step.id === "contact" && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               label={t("hospital.field.phone", "Phone number")}
               error={errors.phone?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="tel"
@@ -1220,7 +1220,7 @@ function HospitalForm({
             <FormField
               label={t("hospital.field.email", "Email address")}
               error={errors.email?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="email"
@@ -1239,7 +1239,7 @@ function HospitalForm({
             <FormField
               label={t("hospital.field.website", "Website")}
               error={errors.website?.message}
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
             >
               <Input
                 type="url"
@@ -1253,8 +1253,8 @@ function HospitalForm({
 
         {/* ── Step 4: Hours ── */}
         {step.id === "hours" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
               <div>
                 <p className="text-xs font-medium text-foreground">
                   {t("hospital.field.open_24h", "Open 24 hours")}
@@ -1297,7 +1297,7 @@ function HospitalForm({
             </FormField>
 
             {open24h && (
-              <div className="col-span-2 flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-3 py-2">
+              <div className="col-span-1 sm:col-span-2 flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-3 py-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <p className="text-[11px] text-primary">
                   This facility is available around the clock.
@@ -1319,7 +1319,7 @@ function HospitalForm({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
         <Button
           variant="outline"
           onClick={goBack}
@@ -1327,6 +1327,9 @@ function HospitalForm({
         >
           {currentStep === 0 ? "Cancel" : "← Back"}
         </Button>
+        <span className="text-[11px] text-muted-foreground">
+          Step {currentStep + 1} of {STEPS.length}
+        </span>
         <Button
           onClick={goNext}
           className="text-primary-foreground text-xs bg-primary hover:bg-primary/90"
@@ -1412,14 +1415,14 @@ function HospitalProfileView({
   const socialLinksCount = Object.values(linksSection).filter(Boolean).length;
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-5">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-5">
       {/* Identity */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Building2 size={15} className="text-primary" />
           {t("hospital.section.identity", "Identity")}
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
           <ViewField label="Name (EN)" value={hospital.name_en} />
           <ViewField label="Name (FR)" value={hospital.name_fr} />
           <ViewField label="Kinyarwanda" value={hospital.name_kiny} />
@@ -1448,8 +1451,8 @@ function HospitalProfileView({
           <MapPin size={15} className="text-primary" />
           {t("hospital.section.location", "Location")}
         </h3>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          <div className="col-span-1 sm:col-span-2">
             <ViewField
               label="Address"
               value={`${hospital.address}, ${hospital.city}, ${hospital.province}, ${hospital.country}`}
@@ -1471,7 +1474,7 @@ function HospitalProfileView({
             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-primary">
               <Phone size={13} />
             </div>
-            <span className="text-[11px] font-medium font-mono text-primary">
+            <span className="text-[11px] font-medium font-mono text-primary truncate">
               {hospital.phone}
             </span>
           </div>
@@ -1502,7 +1505,7 @@ function HospitalProfileView({
           <Clock size={15} className="text-primary" />
           {t("hospital.section.hours", "Operating Hours")}
         </h3>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div
             className={cn(
               "w-12 h-12 rounded-full flex items-center justify-center text-[10px] font-semibold text-primary-foreground shrink-0",
@@ -1522,7 +1525,7 @@ function HospitalProfileView({
             </p>
           </div>
           {hospital.is_open_24h && (
-            <span className="ml-auto text-[11px] font-medium rounded-full px-3 py-0.5 bg-primary/15 text-primary">
+            <span className="text-[11px] font-medium rounded-full px-3 py-0.5 bg-primary/15 text-primary">
               ✓ 24 hours
             </span>
           )}
@@ -1562,7 +1565,7 @@ function HospitalProfileView({
         )}
       </div>
 
-      {/* ── Gallery ── */}
+      {/* Gallery */}
       <GalleryView images={gallery} onEdit={onEditGallery} />
 
       {/* Prescriptions */}
@@ -1650,7 +1653,7 @@ function HospitalProfileView({
 function EmptyHospital({ onCreate }: { onCreate: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
+    <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center mb-3">
         <Building2 className="h-7 w-7 text-muted-foreground" />
       </div>
@@ -1718,10 +1721,9 @@ const HospitalProfile = () => {
     setMode("edit");
   };
 
-  /** Jump directly to the Gallery step in edit mode */
   const openGalleryEdit = () => {
     setCurrentStep(GALLERY_STEP_INDEX);
-    setVisited(new Set(STEPS.map((_, i) => i))); // mark all visited so user can jump freely
+    setVisited(new Set(STEPS.map((_, i) => i)));
     setMode("edit");
   };
 
@@ -1763,10 +1765,10 @@ const HospitalProfile = () => {
         }
       />
 
-      <div className="px-6 py-8 space-y-5">
+      <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
         {/* Stats bar (view mode only) */}
         {stats && !isForm && (
-          <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
             <StatCard label="Type" value={stats.type} />
             <StatCard label="City" value={stats.city} />
             <StatCard label="Country" value={stats.country} />
@@ -1782,7 +1784,7 @@ const HospitalProfile = () => {
         )}
 
         {/* Unified card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}

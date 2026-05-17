@@ -80,9 +80,12 @@ const INITIAL_FILTERS: FilterState = {
 // ─── Style maps ────────────────────────────────────────────────────────────────
 
 const statusStyle: Record<AdminUser["status"], string> = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  pending: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  suspended: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  active:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  pending:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  suspended:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
   rejected: "bg-muted text-muted-foreground border-border",
 };
 
@@ -94,9 +97,11 @@ const STATUS_DOT: Record<AdminUser["status"], string> = {
 };
 
 const roleStyle: Record<string, string> = {
-  doctor: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+  doctor:
+    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
   hospital: "bg-primary/10 text-primary border-primary/20",
-  pharmacy: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  pharmacy:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   patient: "bg-secondary text-foreground border-border",
 };
 
@@ -167,7 +172,7 @@ function PillGroup<T extends string>({
   );
 }
 
-// ─── User row ─────────────────────────────────────────────────────────────────
+// ─── Desktop User row ──────────────────────────────────────────────────────────
 
 function UserRow({
   u,
@@ -192,8 +197,12 @@ function UserRow({
               .toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-[11px] text-foreground truncate">{u.name}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{u.email}</p>
+            <p className="font-semibold text-[11px] text-foreground truncate">
+              {u.name}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">
+              {u.email}
+            </p>
           </div>
         </div>
       </td>
@@ -214,9 +223,14 @@ function UserRow({
       <td className="px-4 py-3">
         <Badge
           variant="outline"
-          className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize", statusStyle[u.status])}
+          className={cn(
+            "border text-[9px] px-1.5 py-0 font-medium capitalize",
+            statusStyle[u.status],
+          )}
         >
-          <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[u.status])} />
+          <span
+            className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[u.status])}
+          />
           {t(`admin.status.${u.status}`)}
         </Badge>
       </td>
@@ -234,6 +248,89 @@ function UserRow({
         </Button>
       </td>
     </tr>
+  );
+}
+
+// ─── Mobile User card ──────────────────────────────────────────────────────────
+
+function UserCard({
+  u,
+  onManage,
+}: {
+  u: AdminUser;
+  onManage: (u: AdminUser) => void;
+}) {
+  const { t } = useTranslation();
+  const Icon = roleIcon[u.role] ?? UserCircle;
+
+  return (
+    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      {/* Avatar */}
+      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
+        {u.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-[12px] text-foreground truncate">
+              {u.name}
+            </p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">
+              {u.email}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={cn(
+              "border text-[9px] px-1.5 py-0 font-medium capitalize shrink-0",
+              statusStyle[u.status],
+            )}
+          >
+            <span
+              className={cn(
+                "w-1 h-1 rounded-full mr-1",
+                STATUS_DOT[u.status],
+              )}
+            />
+            {t(`admin.status.${u.status}`)}
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm border font-medium",
+              roleStyle[u.role],
+            )}
+          >
+            <Icon className="h-3 w-3" />
+            {t(`admin.roles.${u.role}`)}
+          </span>
+          <span className="text-[10px] text-muted-foreground/60">
+            {u.phone}
+          </span>
+          <span className="text-[10px] text-muted-foreground/50">
+            {new Date(u.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          onClick={() => onManage(u)}
+        >
+          {t("admin.users.manage")}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -346,7 +443,9 @@ const AdminUsers = () => {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
           <button
@@ -484,7 +583,7 @@ const AdminUsers = () => {
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto">
             {/* Stats strip */}
-            <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
                 label="Total users"
                 value={users.length}
@@ -511,34 +610,56 @@ const AdminUsers = () => {
               />
             </div>
 
+            {/* Mobile search bar — below stats, above meta bar */}
+            <div className="sm:hidden px-3 pt-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search name, email, phone…"
+                  className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+                {filters.search && (
+                  <button
+                    onClick={() => set("search", "")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Meta bar */}
-            <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  <span className="font-bold text-foreground">{filtered.length}</span>{" "}
+            <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <p className="text-[11px] text-muted-foreground shrink-0">
+                  <span className="font-bold text-foreground">
+                    {filtered.length}
+                  </span>{" "}
                   {filtered.length === 1 ? "user" : "users"}
                   {hasActiveFilters && (
                     <button
                       onClick={clearAll}
                       className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                     >
-                      Reset filters
+                      Reset
                     </button>
                   )}
                 </p>
 
-                <div className="hidden lg:flex items-center gap-2">
-                  {pendingCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      {pendingCount} pending review
-                    </span>
-                  )}
-                </div>
+                {pendingCount > 0 && (
+                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    {pendingCount} pending
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Search */}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Search — desktop only */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
@@ -554,28 +675,32 @@ const AdminUsers = () => {
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+                    onChange={(e) =>
+                      set("sort", e.target.value as SortOption)
+                    }
+                    className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
                   >
                     {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+                  <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
                 {/* Filters button — mobile only */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
+                    "md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
                     hasActiveFilters
                       ? "bg-primary text-white border-primary"
                       : "border-border/60 text-muted-foreground bg-card",
                   )}
                 >
                   <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Filters
+                  <span className="hidden xs:inline">Filters</span>
                   {hasActiveFilters && (
                     <span className="w-1.5 h-1.5 rounded-full bg-white" />
                   )}
@@ -583,10 +708,10 @@ const AdminUsers = () => {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="p-4">
+            {/* Content */}
+            <div className="p-3 sm:p-4">
               {filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
                   <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
                     <Users className="w-6 h-6 text-muted-foreground/50" />
                   </div>
@@ -606,35 +731,45 @@ const AdminUsers = () => {
                   </button>
                 </div>
               ) : (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          {t("admin.users.name")}
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          {t("admin.users.contact")}
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          {t("admin.users.role")}
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          {t("admin.users.status")}
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          {t("admin.users.joined")}
-                        </th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((u) => (
-                        <UserRow key={u.id} u={u} onManage={setSelected} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                    <table className="w-full text-[11px]">
+                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            {t("admin.users.name")}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            {t("admin.users.contact")}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            {t("admin.users.role")}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            {t("admin.users.status")}
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            {t("admin.users.joined")}
+                          </th>
+                          <th className="px-4 py-3" />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((u) => (
+                          <UserRow key={u.id} u={u} onManage={setSelected} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile card list */}
+                  <div className="md:hidden flex flex-col gap-2">
+                    {filtered.map((u) => (
+                      <UserCard key={u.id} u={u} onManage={setSelected} />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </main>
@@ -654,8 +789,8 @@ const AdminUsers = () => {
 
             {selected && (
               <div className="px-4 pb-4 space-y-4">
-                <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-secondary/30">
-                  <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-border bg-secondary/30">
+                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-base sm:text-lg shrink-0">
                     {selected.name
                       .split(" ")
                       .map((n) => n[0])
@@ -663,14 +798,14 @@ const AdminUsers = () => {
                       .slice(0, 2)
                       .toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold text-foreground text-base">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                       {selected.name}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       {selected.email}
                     </p>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                       <span
                         className={cn(
                           "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
@@ -685,7 +820,10 @@ const AdminUsers = () => {
                       </span>
                       <Badge
                         variant="outline"
-                        className={cn("border text-xs", statusStyle[selected.status])}
+                        className={cn(
+                          "border text-xs",
+                          statusStyle[selected.status],
+                        )}
                       >
                         {t(`admin.status.${selected.status}`)}
                       </Badge>
@@ -693,7 +831,7 @@ const AdminUsers = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <Field
                     label={t("admin.users.contact")}
                     value={selected.phone}
@@ -705,7 +843,7 @@ const AdminUsers = () => {
                 </div>
 
                 {selected.meta && Object.keys(selected.meta).length > 0 && (
-                  <div className="rounded-xl border border-border p-4 bg-secondary/30 space-y-2">
+                  <div className="rounded-xl border border-border p-3 sm:p-4 bg-secondary/30 space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
                       Additional Info
                     </p>
@@ -727,7 +865,7 @@ const AdminUsers = () => {
 
             <DrawerFooter>
               {selected && (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     className="flex-1"
@@ -769,7 +907,9 @@ const AdminUsers = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("admin.users.delete_title")}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("admin.users.delete_title")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {t("admin.users.delete_desc")}
             </AlertDialogDescription>
