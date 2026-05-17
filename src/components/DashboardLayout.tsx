@@ -152,14 +152,14 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/hospital/departments", label: t("sidebar.departments"), icon: Building },
         { to: "/hospital/appointments", label: t("sidebar.appointments"), icon: HeartPulse },
-        { to: "/hospital/doctors", label: t("sidebar.doctors"), icon: Stethoscope },
+        // { to: "/hospital/doctors", label: t("sidebar.doctors"), icon: Stethoscope },
         { to: "/hospital/insurances", label: t("sidebar.insurances"), icon: Shield },
       ],
     },
     {
       heading: t("sidebar.group.activity"),
       items: [
-        { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings"), icon: Calendar },
+        // { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings"), icon: Calendar },
         { to: "/hospital/prescriptions", label: t("sidebar.prescriptions"), icon: Send },
       ],
     },

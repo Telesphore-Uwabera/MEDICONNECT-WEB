@@ -533,7 +533,7 @@ auth
                           </span>
                         </div>
                       </div>
-                      <button  className="shrink-0 text-xs px-3 py-2 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
+                      <button className="shrink-0 text-xs px-3 py-2 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
                         {t("pages.landing.connect")}
                       </button>
                     </div>
