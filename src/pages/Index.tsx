@@ -533,7 +533,7 @@ auth
                           </span>
                         </div>
                       </div>
-                      <button className="shrink-0 text-xs px-3 py-2 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
+                      <button  className="shrink-0 text-xs px-3 py-2 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth font-medium">
                         {t("pages.landing.connect")}
                       </button>
                     </div>
@@ -792,155 +792,123 @@ auth
         </div>
       </section>
 
-      {/* ── Footer — fully redesigned for mobile ── */}
-      <footer className="border-t border-border bg-card">
-        <div className="container py-6 md:py-5">
+{/* ── Footer ── */}
+<footer className="border-t border-border bg-card">
+  <div className="container py-10 md:py-14">
 
-          {/* ── Brand row ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
-            <div className="flex items-center gap-3 min-w-0">
-           <img src={logo} alt="MEDICONNECT" className="h-6 w-auto shrink-0 rounded-sm" />
-              <span className="text-[11px] text-muted-foreground hidden sm:block">
-                Connecting patients, doctors, hospitals, and pharmacies
-              </span>
-            </div>
-            {/* Social icons */}
-            <div className="flex items-center gap-2">
-              {[
-                {
-                  label: "Twitter",
-                  path: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
-                },
-                {
-                  label: "Instagram",
-                  path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
-                },
-                {
-                  label: "LinkedIn",
-                  path: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z",
-                },
-              ].map((s) => (
-                <a
-                  key={s.label}
-                  href="#"
-                  aria-label={s.label}
-                  className="w-7 h-7 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d={s.path} />
-                  </svg>
-                </a>
-              ))}
-            </div>
-          </div>
+    {/* ── Top grid: brand col + link cols ── */}
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-10 pb-10 border-b border-border">
 
-          {/* ── Mobile: stacked link groups | Desktop: single row ── */}
-
-          {/* Mobile layout (< md) */}
-          <div className="md:hidden py-4 space-y-4 border-b border-border">
-            {/* Platform */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                Platform
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {footerPlatformLinks.map((l) => (
-                  <Link
-                    key={l.label}
-                    to={l.to}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* For */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                For
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {footerForLinks.map((l) => (
-                  <Link
-                    key={l.label}
-                    to={l.to}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                Legal
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                {footerLegalLinks.map((l) => (
-                  <a
-                    key={l.label}
-                    href={l.href}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
-                Contact
-              </p>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-muted-foreground">support@mediconnect.com</span>
-                <span className="text-xs text-muted-foreground">+250 788 123 456</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop layout (≥ md) — original single row */}
-          <div className="hidden md:flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-3 border-b border-border text-[11px]">
-            <span className="text-muted-foreground font-medium">Platform:</span>
-            {footerPlatformLinks.map((l) => (
-              <Link key={l.label} to={l.to} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
-            ))}
-            <span className="text-border">|</span>
-            <span className="text-muted-foreground font-medium">For:</span>
-            {footerForLinks.map((l) => (
-              <Link key={l.label} to={l.to} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</Link>
-            ))}
-            <span className="text-border">|</span>
-            <span className="text-muted-foreground font-medium">Legal:</span>
-            {footerLegalLinks.map((l) => (
-              <a key={l.label} href={l.href} className="text-muted-foreground hover:text-foreground transition-colors">{l.label}</a>
-            ))}
-            <span className="text-border">|</span>
-            <span className="text-muted-foreground font-medium">Contact:</span>
-            <span className="text-muted-foreground">support@mediconnect.com</span>
-            <span className="text-muted-foreground">+250 788 123 456</span>
-          </div>
-
-          {/* ── Copyright row ── */}
-          <div className="flex items-center justify-between pt-4 gap-3 flex-wrap">
-            <span className="text-[10px] text-muted-foreground">
-              © {new Date().getFullYear()} MEDICONNECT. Bringing care to your fingertips.
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="text-[10px] text-muted-foreground">
-                All systems operational
-              </span>
-            </div>
-          </div>
-
+      {/* Brand — full width on mobile, 2 cols on desktop */}
+      <div className="col-span-2 md:col-span-2 flex flex-col gap-4">
+        <img src={logo} alt="MEDICONNECT" className="h-14 w-32 rounded-sm" />
+        <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
+          {t("pages.landing.footer_desc")}
+        </p>
+        <div className="flex items-center gap-2 mt-1">
+          {[
+            { label: "Twitter", path: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" },
+            { label: "Instagram", path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" },
+            { label: "LinkedIn", path: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" },
+            { label: "Facebook", path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" },
+          ].map((s) => (
+            <a
+              key={s.label}
+              href="#"
+              aria-label={s.label}
+              className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+            >
+              <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d={s.path} />
+              </svg>
+            </a>
+          ))}
         </div>
-      </footer>
+      </div>
+
+      {/* Platform */}
+      <div className="flex flex-col gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Platform
+        </p>
+        <div className="flex flex-col gap-2">
+          {footerPlatformLinks.map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* For */}
+      <div className="flex flex-col gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          For
+        </p>
+        <div className="flex flex-col gap-2">
+          {footerForLinks.map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="col-span-2 md:col-span-1 flex flex-col gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Contact
+        </p>
+        <div className="flex flex-col gap-2">
+          <a
+            href="mailto:support@mediconnect.com"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            support@mediconnect.com
+          </a>
+          <a
+            href="tel:+250788123456"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            +250 788 123 456
+          </a>
+          <div className="flex items-center gap-1.5 mt-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse shrink-0" />
+            <span className="text-[10px] text-muted-foreground">All systems operational</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {/* ── Bottom bar ── */}
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6">
+      <span className="text-[10px] text-muted-foreground text-center sm:text-left">
+        © {new Date().getFullYear()} MEDICONNECT. Bringing care to your fingertips.
+      </span>
+      <div className="flex items-center gap-4">
+        {footerLegalLinks.map((l) => (
+          <a
+            key={l.label}
+            href={l.href}
+            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {l.label}
+          </a>
+        ))}
+      </div>
+    </div>
+
+  </div>
+</footer>
     </div>
   );
 };

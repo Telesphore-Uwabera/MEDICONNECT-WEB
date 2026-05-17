@@ -38,11 +38,9 @@ import {
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 interface CertificateRequest {
-  // Purpose
   purpose: string;
   other_purpose?: string;
   job_type: string;
-  // Symptoms
   fever: string;
   headache: string;
   shortness_of_breath: string;
@@ -53,7 +51,6 @@ interface CertificateRequest {
   fatigue: string;
   visual_disturbances: string;
   fainting: string;
-  // Medical history
   chronic_illness: string;
   chronic_illness_detail?: string;
   recent_hospitalization: string;
@@ -64,18 +61,15 @@ interface CertificateRequest {
   chronic_medication: string;
   medication_detail?: string;
   disability: string;
-  // Functional
   walk_ok: string;
   climb_ok: string;
   lift_ok: string;
   sleep_ok: string;
   appetite_ok: string;
-  // Vitals (optional)
   temperature?: string;
   blood_pressure?: string;
   pulse?: string;
   oxygen_saturation?: string;
-  // Additional notes
   notes?: string;
 }
 
@@ -170,7 +164,6 @@ const FORM_STEPS = [
   },
 ];
 
-// Mock sent certificates
 const MOCK_CERTIFICATES: IssuedCertificate[] = [
   {
     id: "1",
@@ -284,8 +277,8 @@ function YesNoField({
   warning?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
-      <span className="text-xs text-foreground pr-4">{label}</span>
+    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0 gap-3">
+      <span className="text-xs text-foreground leading-snug">{label}</span>
       <div className="flex gap-1.5 shrink-0">
         {YES_NO.map((opt) => (
           <button
@@ -312,7 +305,7 @@ function YesNoField({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sidebar (mirrors PatientProfile pattern)
+// Sidebar — fully responsive (mirrors PharmacyProfile UnifiedSidebar pattern)
 // ─────────────────────────────────────────────────────────────────────────────
 function FormSidebar({
   currentStep,
@@ -327,9 +320,9 @@ function FormSidebar({
   const pct = Math.round((visitedCount / FORM_STEPS.length) * 100);
 
   return (
-    <div className="w-52 shrink-0 flex flex-col border-r border-border bg-card/50">
+    <div className="w-full sm:w-52 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
       {/* Progress header */}
-      <div className="px-4 pt-5 pb-4 border-b border-border">
+      <div className="px-4 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -351,8 +344,8 @@ function FormSidebar({
         </div>
       </div>
 
-      {/* Step nav */}
-      <div className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
+      {/* Step nav — horizontal scroll on mobile, vertical on sm+ */}
+      <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {FORM_STEPS.map((step, i) => {
           const Icon = step.icon;
           const isActive = i === currentStep;
@@ -363,7 +356,7 @@ function FormSidebar({
               key={step.id}
               onClick={() => onSelect(i)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer",
@@ -371,7 +364,7 @@ function FormSidebar({
             >
               <div
                 className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all border",
+                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all border text-[10px] font-semibold",
                   isActive
                     ? "bg-primary border-primary text-primary-foreground"
                     : isDone
@@ -385,7 +378,9 @@ function FormSidebar({
                   <Icon className="h-3 w-3" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
+
+              {/* Labels — hidden on mobile, visible sm+ */}
+              <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span
                     className={cn(
@@ -396,20 +391,20 @@ function FormSidebar({
                     {step.label}
                   </span>
                   {isActive && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
                       editing
                     </span>
                   )}
                   {isDone && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
                 </p>
-                <div className="h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
+                <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
@@ -427,7 +422,8 @@ function FormSidebar({
         })}
       </div>
 
-      <div className="px-3.5 py-3 border-t border-border">
+      {/* Footer hint — hidden on mobile */}
+      <div className="hidden sm:block px-3.5 py-3 border-t border-border">
         <p className="text-[10px] text-muted-foreground leading-relaxed">
           Jump between sections freely — no order needed.
         </p>
@@ -442,7 +438,7 @@ function FormSidebar({
 function RequestForm({ onSubmit }: { onSubmit: () => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
-  const [formData, setFormData] = useState<Partial<CertificateRequest>>({});
+  const [formData] = useState<Partial<CertificateRequest>>({});
   const [submitted, setSubmitted] = useState(false);
 
   const {
@@ -490,7 +486,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
 
   if (submitted) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
             <Check className="h-7 w-7 text-emerald-600" />
@@ -507,7 +503,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
   }
 
   return (
-    <div className="flex flex-1 min-h-0">
+    <div className="flex flex-col sm:flex-row flex-1 min-h-0">
       <FormSidebar
         currentStep={currentStep}
         visited={visited}
@@ -516,7 +512,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
 
       <div className="flex flex-col flex-1 min-h-0">
         {/* Section label bar */}
-        <div className="flex items-center gap-2 px-5 pt-5 pb-4 border-b border-border">
+        <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
             {step.label}
@@ -527,7 +523,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
         </div>
 
         {/* Body */}
-        <div key={currentStep} className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
           {/* ── Purpose ── */}
           {step.id === "purpose" && (
             <div className="space-y-4">
@@ -765,7 +761,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
                   If you have a thermometer, BP cuff, or pulse oximeter, enter
                   readings below.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     {
                       label: "Temperature (°C)",
@@ -812,7 +808,7 @@ function RequestForm({ onSubmit }: { onSubmit: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-muted/50 border-t border-border">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
           <Button
             variant="outline"
             onClick={() =>
@@ -861,7 +857,7 @@ function SentCertificates() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 space-y-3">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3">
       {certs.map((cert) => {
         const meta = STATUS_META[cert.status];
         const StatusIcon = meta.icon;
@@ -869,10 +865,10 @@ function SentCertificates() {
         return (
           <div
             key={cert.id}
-            className="rounded-lg border border-border bg-card p-4 flex items-start gap-4 group hover:border-primary/30 transition-colors"
+            className="rounded-lg border border-border bg-card p-3 sm:p-4 flex items-start gap-3 sm:gap-4 group hover:border-primary/30 transition-colors"
           >
-            {/* Icon */}
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 border border-primary/20 shrink-0">
+            {/* Icon — hidden on very small screens, shown sm+ */}
+            <div className="hidden sm:flex w-10 h-10 rounded-lg items-center justify-center bg-primary/10 border border-primary/20 shrink-0">
               <FileText className="h-4 w-4 text-primary" />
             </div>
 
@@ -893,22 +889,29 @@ function SentCertificates() {
                 </Badge>
               </div>
 
-              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              <div className="flex items-center gap-2 sm:gap-3 mt-1.5 flex-wrap">
                 <span className="text-[11px] font-mono text-muted-foreground">
                   {cert.cert_number}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
-                  Requested {fmtDate(cert.requested_at)}
+                  {fmtDate(cert.requested_at)}
                 </span>
                 {cert.doctor && (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-[10px] text-muted-foreground hidden sm:inline">
                     · {cert.doctor}
                   </span>
                 )}
               </div>
 
+              {/* Doctor on mobile — own line */}
+              {cert.doctor && (
+                <p className="sm:hidden text-[10px] text-muted-foreground mt-0.5">
+                  {cert.doctor}
+                </p>
+              )}
+
               {cert.decision && (
-                <div className="mt-2 flex items-center gap-1.5">
+                <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Decision:
                   </span>
@@ -932,7 +935,7 @@ function SentCertificates() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
               {cert.status === "approved" && (
                 <>
                   <Button
@@ -946,7 +949,7 @@ function SentCertificates() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-7 w-7 border-border text-muted-foreground hover:text-foreground"
+                    className="h-7 w-7 border-border text-muted-foreground hover:text-foreground hidden sm:flex"
                     title="Download PDF"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -1006,10 +1009,11 @@ const PatientFitnessCertificates = () => {
           )}
         />
 
-        <div className="px-6 py-8">
+        {/* Matches PharmacyProfile: px-3 py-4 sm:px-6 sm:py-8 */}
+        <div className="px-3 py-4 sm:px-6 sm:py-8">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col min-h-[560px]">
             {/* Tab bar */}
-            <div className="flex items-center border-b border-border bg-muted/30 px-4">
+            <div className="flex items-center border-b border-border bg-muted/30 px-3 sm:px-4">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -1018,14 +1022,18 @@ const PatientFitnessCertificates = () => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-3.5 text-xs font-medium border-b-2 transition-all duration-150 -mb-px",
+                      "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 sm:py-3.5 text-xs font-medium border-b-2 transition-all duration-150 -mb-px",
                       isActive
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                    {tab.label}
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    {/* Full label on sm+, short label on mobile */}
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">
+                      {tab.id === "request" ? "Request" : "Certificates"}
+                    </span>
                     {tab.badge !== undefined && (
                       <span
                         className={cn(
@@ -1044,7 +1052,7 @@ const PatientFitnessCertificates = () => {
             </div>
 
             {/* Tab content */}
-            <div className="flex flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-h-0">
               {activeTab === "request" ? (
                 <RequestForm onSubmit={handleRequestSubmit} />
               ) : (
