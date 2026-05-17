@@ -166,8 +166,8 @@ const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   ];
 
   const footerPlatformLinks = [
-    { label: "Doctors", to: "/patient/doctors" },
-    { label: "Hospitals", to: "/patient/hospitals" },
+    { label: "Doctors", to: "/patient/search-doctors" },
+    { label: "Hospitals", to: "/patient/search-hospitals" },
     { label: "Pharmacy", to: "/patient/pharmacy" },
     { label: "Sign in", to: "/auth" },
   ];
@@ -648,7 +648,7 @@ auth
                 {t("pages.landing.doctors_ready")}
               </h2>
             </div>
-            <Link to="/patient/doctors">
+            <Link to="/patient/search-doctors">
               <Button variant="outline" size="sm">
                 {t("pages.landing.see_all_doctors")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -678,7 +678,7 @@ auth
                 {t("pages.landing.hospitals_sub")}
               </p>
             </div>
-            <Link to="/patient/hospitals">
+            <Link to="/patient/search-doctors">
               <Button variant="outline" size="sm">
                 {t("pages.landing.see_all_hospitals")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
