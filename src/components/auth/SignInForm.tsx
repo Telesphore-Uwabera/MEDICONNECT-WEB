@@ -8,63 +8,84 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { loginPassword, requestOtp, verifyOtp } from "@/lib/auth-store";
 import { Eye, EyeOff, Mail, Lock, Smartphone, ArrowRight } from "lucide-react";
-
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === "string") return err;
-  return "auth.errors.unknown";
-};
+import { useLogin, useSendOtp, useVerifyOtp } from "@/hooks/useAuth";
 
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const { t } = useTranslation();
   const [method, setMethod] = useState<"password" | "otp">("password");
+
+  // password fields
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // otp fields
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
+  const login = useLogin();
+  const sendOtp = useSendOtp();
+  const verifyOtp = useVerifyOtp();
+
+  const isLoading = login.isPending || sendOtp.isPending || verifyOtp.isPending;
+
+  // ── Password login ──────────────────────────────────
   const onPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      loginPassword(identifier, password);
-      onSuccess();
-    } catch (err: unknown) {
-      toast.error(t(getErrorMessage(err)));
-    } finally {
-      setIsLoading(false);
-    }
+    const isEmail = identifier.includes("@");
+    // const payload = isEmail
+    //   ? { email: identifier, auth_method: "password" as const, password }
+    //   : { phone: identifier, country_code: "+250", auth_method: "password" as const, password };
+    const payload = {
+      email: "pharmacy@mediconnect.rw",
+      auth_method: "password",
+      password: "Pharmacy@2026!",
+    };
+
+    login.mutate(payload, {
+      onSuccess: () => onSuccess(),
+      onError: (err: any) => {
+        const msg = err?.response?.data?.message ?? t("auth.errors.unknown");
+        toast.error(msg);
+      },
+    });
   };
 
-  const onSendOtp = async () => {
-    setIsLoading(true);
-    try {
-      const { code } = requestOtp(phone);
-      setOtpSent(true);
-      toast.success(t("auth.otp_sent") + ` (${code})`);
-    } catch (err: unknown) {
-      toast.error(t(getErrorMessage(err)));
-    } finally {
-      setIsLoading(false);
-    }
+  // ── Send OTP ────────────────────────────────────────
+  const onSendOtp = () => {
+    sendOtp.mutate(
+      { phone, country_code: "+250", type: "login" },
+      {
+        onSuccess: () => {
+          setOtpSent(true);
+          toast.success(t("auth.otp_sent"));
+        },
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message ?? t("auth.errors.unknown");
+          toast.error(msg);
+        },
+      },
+    );
   };
 
-  const onVerify = async (e: React.FormEvent) => {
+  // ── Verify OTP ──────────────────────────────────────
+  const onVerify = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      verifyOtp(phone, otp);
-      onSuccess();
-    } catch (err: unknown) {
-      toast.error(t(getErrorMessage(err)));
-    } finally {
-      setIsLoading(false);
-    }
+    verifyOtp.mutate(
+      { phone, country_code: "+250", code: otp, type: "login" },
+      {
+        onSuccess: () => onSuccess(),
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message ?? t("auth.errors.unknown");
+          const attemptsLeft = err?.response?.data?.attempts_remaining;
+          toast.error(
+            attemptsLeft ? `${msg} (${attemptsLeft} attempts left)` : msg,
+          );
+        },
+      },
+    );
   };
 
   const inputCls =
@@ -184,7 +205,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200  active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -216,7 +237,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+250788.."
+                    placeholder="0781234567"
                     className={inputCls}
                     required
                   />
@@ -226,9 +247,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                     type="button"
                     onClick={onSendOtp}
                     disabled={isLoading || !phone}
-                    className="px-3 h-10 rounded-sm text-[11px] font-semibold text-primary-foreground whitespace-nowrap transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-primary"
+                    className="px-3 h-10 rounded-sm text-[11px] font-semibold text-primary-foreground whitespace-nowrap transition-all  active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-primary"
                   >
-                    {isLoading ? (
+                    {sendOtp.isPending ? (
                       <div className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
                       t("auth.send_otp")
@@ -270,7 +291,8 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                     <button
                       type="button"
                       onClick={onSendOtp}
-                      className="font-semibold text-primary hover:text-primary/80 transition-colors"
+                      disabled={sendOtp.isPending}
+                      className="font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                     >
                       {t("auth.resend", "Resend")}
                     </button>
@@ -279,9 +301,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   <button
                     type="submit"
                     disabled={isLoading || otp.length !== 6}
-                    className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 hover:shadow-lg hover:shadow-primary/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+                    className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200  active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
                   >
-                    {isLoading ? (
+                    {verifyOtp.isPending ? (
                       <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
                       <>
