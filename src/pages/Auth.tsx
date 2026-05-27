@@ -4,13 +4,16 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { dashboardPath, onboardingPath, currentUser } from "@/lib/auth-store";
+import { dashboardPath } from "@/lib/auth-store";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
 import doctors from "@/assets/images/doctors.png";
 import SignUpForm from "@/components/auth/SignUpForm";
 import SignInForm from "@/components/auth/SignInForm";
+import { useMe } from "@/hooks/useAuth";
+import TopBar from "@/components/landing/TopBar";
+import Navbar from "@/components/landing/Navbar";
 
 const Auth = () => {
   const { t } = useTranslation();
@@ -18,14 +21,15 @@ const Auth = () => {
   const [params] = useSearchParams();
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
+  const { data: user } = useMe();
+
   const goAfterAuth = () => {
-    const u = currentUser();
-    if (!u) return;
-    navigate(u.profileComplete ? dashboardPath(u.role) : dashboardPath(u.role));
+    if (!user) return;
+    navigate(dashboardPath(user.role));
   };
 
   const tabs = [
@@ -35,22 +39,8 @@ const Auth = () => {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      {/* ── Header ── */}
-      <header className="border-b border-border bg-card/70 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container flex items-center justify-between px-1 py-1">
-          <Link to="/" className="flex items-center gap-2 group">
-            <img
-              src={logo}
-              alt="MEDICONNECT"
-              className="h-12 w-auto rounded-md transition-transform duration-300 group-hover:scale-105"
-            />
-          </Link>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <LanguageSwitcher />
-          </div>
-        </div>
-      </header>
+       <TopBar />
+      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center p-4 md:p-6">
@@ -62,7 +52,7 @@ const Auth = () => {
             w-full max-w-6xl rounded-[2rem] overflow-hidden
             bg-card ring-1 ring-border
             flex flex-col
-            md:grid md:grid-cols-[640px_1fr] 
+            md:grid md:grid-cols-[640px_1fr]
             md:h-[720px] md:max-h-[87vh]
           "
         >
@@ -118,7 +108,7 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 shadow-lg"
+                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 "
                 >
                   <div className="w-7 h-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
                     <span className="text-sm">💉</span>
@@ -137,7 +127,7 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.75, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 shadow-lg"
+                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 "
                 >
                   <div className="w-7 h-7 rounded-md bg-teal-500/20 flex items-center justify-center">
                     <span className="text-sm">🩺</span>
