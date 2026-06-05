@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Zap,
 } from "lucide-react";
+import echo from '@/lib/echo';
 import { Button } from "@/components/ui/button";
 import { DoctorCard } from "@/components/DoctorCard";
 import { HospitalCard } from "@/components/HospitalCard";
@@ -60,6 +61,12 @@ interface ApiDoctor {
   };
   hospitals: { id: number; name: string; city?: string }[];
   specializations: { id: number; name: string }[];
+}
+
+  interface DoctorAvailabilityEvent {
+    doctor_id: number;
+    instant_consultation: boolean;
+    bookings_paused: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -112,7 +119,6 @@ const Index = () => {
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
   const { data: instantDoctorsData, isLoading: instantLoading } =
     useGetSearchDoctors({ instant: true });
-  console.log("Instant doctors fetched:", instantDoctorsData);
 
   const { data: hospitalsData, isLoading: hospitalsLoading } =
     useGetSearchHospitals();
@@ -129,6 +135,19 @@ const Index = () => {
   useEffect(() => {
     setActiveSlide(0);
   }, [instantDoctors.length]);
+
+
+
+useEffect(() => {
+    const channel = echo.channel('doctors.availability');
+
+    channel.listen('.availability.changed', (data: DoctorAvailabilityEvent) => {
+    });
+
+    return () => {
+        echo.leaveChannel('doctors.availability');
+    };
+}, []);
 
   const prevSlide = useCallback(() => {
     if (!instantDoctors.length) return;
