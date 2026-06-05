@@ -119,6 +119,7 @@ const Index = () => {
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
   const { data: instantDoctorsData, isLoading: instantLoading } =
     useGetSearchDoctors({ instant: true });
+  console.log("Instant doctors fetched:", instantDoctorsData);
 
   const { data: hospitalsData, isLoading: hospitalsLoading } =
     useGetSearchHospitals();
@@ -142,6 +143,7 @@ useEffect(() => {
     const channel = echo.channel('doctors.availability');
 
     channel.listen('.availability.changed', (data: DoctorAvailabilityEvent) => {
+        console.log('Doctor availability changed:', data);
     });
 
     return () => {
