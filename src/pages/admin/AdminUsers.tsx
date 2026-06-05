@@ -1,18 +1,9 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,18 +30,26 @@ import {
   X,
   Search,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Phone,
+  Calendar,
+  Globe,
+  Hash,
 } from "lucide-react";
 import {
-  useAdminUsers,
-  setUserStatus,
-  deleteUser,
-  type AdminUser,
-} from "@/lib/admin-store";
+  useGetAdminUsers,
+  useSuspendUser,
+  useActivateUser,
+  useDeleteUser,
+  type ApiUser,
+} from "@/hooks/admin/use-admin-users";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type RoleFilter = "all" | "doctor" | "hospital" | "pharmacy" | "patient";
 type StatusFilter = "all" | "active" | "pending" | "suspended" | "rejected";
@@ -68,6 +67,7 @@ interface FilterState {
   role: RoleFilter;
   status: StatusFilter;
   sort: SortOption;
+  page: number;
 }
 
 const INITIAL_FILTERS: FilterState = {
@@ -75,11 +75,12 @@ const INITIAL_FILTERS: FilterState = {
   role: "all",
   status: "all",
   sort: "joined-desc",
+  page: 1,
 };
 
-// ─── Style maps ────────────────────────────────────────────────────────────────
+// ─── Style maps ───────────────────────────────────────────────────────────────
 
-const statusStyle: Record<AdminUser["status"], string> = {
+const statusStyle: Record<string, string> = {
   active:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   pending:
@@ -89,7 +90,7 @@ const statusStyle: Record<AdminUser["status"], string> = {
   rejected: "bg-muted text-muted-foreground border-border",
 };
 
-const STATUS_DOT: Record<AdminUser["status"], string> = {
+const STATUS_DOT: Record<string, string> = {
   active: "bg-emerald-500",
   pending: "bg-amber-500",
   suspended: "bg-red-500",
@@ -103,6 +104,8 @@ const roleStyle: Record<string, string> = {
   pharmacy:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   patient: "bg-secondary text-foreground border-border",
+  admin:
+    "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900",
 };
 
 const roleIcon: Record<string, React.ElementType> = {
@@ -110,9 +113,25 @@ const roleIcon: Record<string, React.ElementType> = {
   hospital: Building2,
   pharmacy: Pill,
   patient: UserCircle,
+  admin: ShieldCheck,
 };
 
-// ─── Sidebar atoms ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getRole(u: ApiUser): string {
+  return u.roles?.[0]?.name ?? "patient";
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function FilterSection({
   title,
@@ -172,30 +191,32 @@ function PillGroup<T extends string>({
   );
 }
 
-// ─── Desktop User row ──────────────────────────────────────────────────────────
-
 function UserRow({
   u,
   onManage,
 }: {
-  u: AdminUser;
-  onManage: (u: AdminUser) => void;
+  u: ApiUser;
+  onManage: (u: ApiUser) => void;
 }) {
   const { t } = useTranslation();
-  const Icon = roleIcon[u.role] ?? UserCircle;
+  const role = getRole(u);
+  const Icon = roleIcon[role] ?? UserCircle;
 
   return (
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
-            {u.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </div>
+          {u.avatar ? (
+            <img
+              src={u.avatar}
+              alt={u.name}
+              className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/40"
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
+              {getInitials(u.name)}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">
               {u.name}
@@ -213,11 +234,11 @@ function UserRow({
         <span
           className={cn(
             "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm border font-medium",
-            roleStyle[u.role],
+            roleStyle[role],
           )}
         >
           <Icon className="h-3 w-3" />
-          {t(`admin.roles.${u.role}`)}
+          {t(`admin.roles.${role}`)}
         </span>
       </td>
       <td className="px-4 py-3">
@@ -235,7 +256,7 @@ function UserRow({
         </Badge>
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(u.createdAt).toLocaleDateString()}
+        {new Date(u.created_at).toLocaleDateString()}
       </td>
       <td className="px-4 py-3 text-right">
         <Button
@@ -251,31 +272,30 @@ function UserRow({
   );
 }
 
-// ─── Mobile User card ──────────────────────────────────────────────────────────
-
 function UserCard({
   u,
   onManage,
 }: {
-  u: AdminUser;
-  onManage: (u: AdminUser) => void;
+  u: ApiUser;
+  onManage: (u: ApiUser) => void;
 }) {
   const { t } = useTranslation();
-  const Icon = roleIcon[u.role] ?? UserCircle;
+  const role = getRole(u);
+  const Icon = roleIcon[role] ?? UserCircle;
 
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      {/* Avatar */}
-      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
-        {u.name
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .slice(0, 2)
-          .toUpperCase()}
-      </div>
-
-      {/* Info */}
+      {u.avatar ? (
+        <img
+          src={u.avatar}
+          alt={u.name}
+          className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5 border border-border/40"
+        />
+      ) : (
+        <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
+          {getInitials(u.name)}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -294,33 +314,28 @@ function UserCard({
             )}
           >
             <span
-              className={cn(
-                "w-1 h-1 rounded-full mr-1",
-                STATUS_DOT[u.status],
-              )}
+              className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[u.status])}
             />
             {t(`admin.status.${u.status}`)}
           </Badge>
         </div>
-
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span
             className={cn(
               "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm border font-medium",
-              roleStyle[u.role],
+              roleStyle[role],
             )}
           >
             <Icon className="h-3 w-3" />
-            {t(`admin.roles.${u.role}`)}
+            {t(`admin.roles.${role}`)}
           </span>
           <span className="text-[10px] text-muted-foreground/60">
             {u.phone}
           </span>
           <span className="text-[10px] text-muted-foreground/50">
-            {new Date(u.createdAt).toLocaleDateString()}
+            {new Date(u.created_at).toLocaleDateString()}
           </span>
         </div>
-
         <Button
           size="sm"
           variant="outline"
@@ -334,31 +349,408 @@ function UserCard({
   );
 }
 
+function SkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <tr key={i} className="border-t border-border/40">
+          {Array.from({ length: 6 }).map((_, j) => (
+            <td key={j} className="px-4 py-3">
+              <div
+                className="h-4 bg-muted/60 rounded animate-pulse"
+                style={{
+                  width: j === 0 ? "140px" : j === 5 ? "60px" : "80px",
+                }}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+// ─── Right-side User Panel ────────────────────────────────────────────────────
+
+function UserPanel({
+  user,
+  onClose,
+  onToggleStatus,
+  onDelete,
+  isActing,
+  isDeleting,
+}: {
+  user: ApiUser | null;
+  onClose: () => void;
+  onToggleStatus: (u: ApiUser) => void;
+  onDelete: (u: ApiUser) => void;
+  isActing: boolean;
+  isDeleting: boolean;
+}) {
+  const { t } = useTranslation();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const open = !!user;
+
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  const role = user ? getRole(user) : "";
+  const RoleIcon = roleIcon[role] ?? UserCircle;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
+        )}
+      />
+
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        className={cn(
+          "fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] lg:w-[440px]",
+          "bg-card border-l border-border/60 flex flex-col",
+          "transition-transform duration-300 ease-out",
+          "shadow-[−8px_0_32px_rgba(0,0,0,0.08)]",
+          open ? "translate-x-0" : "translate-x-full",
+        )}
+      >
+        {user && (
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
+              <div>
+                <p className="text-[14px] font-semibold text-foreground leading-tight">
+                  Manage user
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Review account details & update access
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full border border-border/60 bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
+                aria-label="Close panel"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-5 py-5 space-y-4">
+                {/* ── Identity card ── */}
+                <div className="rounded-xl border border-border/60 bg-secondary/20 overflow-hidden">
+                  {/* Top accent strip using role color */}
+                  <div
+                    className={cn(
+                      "h-1 w-full",
+                      role === "doctor"
+                        ? "bg-sky-400"
+                        : role === "hospital"
+                          ? "bg-primary"
+                          : role === "pharmacy"
+                            ? "bg-emerald-400"
+                            : role === "admin"
+                              ? "bg-purple-400"
+                              : "bg-border",
+                    )}
+                  />
+
+                  <div className="p-4 flex items-start gap-4">
+                    {/* Avatar */}
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="h-16 w-16 rounded-full object-cover flex-shrink-0 border-2 border-background ring-1 ring-border/40"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg flex-shrink-0 border-2 border-background ring-1 ring-border/40">
+                        {getInitials(user.name)}
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className="font-semibold text-[15px] text-foreground leading-tight truncate">
+                        {user.name}
+                      </p>
+                      <p className="text-[12px] text-muted-foreground truncate mt-0.5">
+                        {user.email}
+                      </p>
+
+                      {/* Badges */}
+                      <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                            roleStyle[role],
+                          )}
+                        >
+                          <RoleIcon className="h-3 w-3" />
+                          {t(`admin.roles.${role}`)}
+                        </span>
+
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
+                            statusStyle[user.status],
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              STATUS_DOT[user.status],
+                            )}
+                          />
+                          {t(`admin.status.${user.status}`)}
+                        </span>
+
+                        {user.is_verified && (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium bg-secondary text-muted-foreground border-border/60">
+                            <ShieldCheck className="h-3 w-3" />
+                            Verified
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Info grid ── */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <InfoTile
+                    icon={<Phone className="w-3.5 h-3.5" />}
+                    label="Contact"
+                    value={`${user.country_code ?? ""} ${user.phone}`.trim()}
+                  />
+                  <InfoTile
+                    icon={<Calendar className="w-3.5 h-3.5" />}
+                    label="Joined"
+                    value={new Date(user.created_at).toLocaleDateString()}
+                  />
+                  <InfoTile
+                    icon={<Globe className="w-3.5 h-3.5" />}
+                    label="Language"
+                    value={
+                      user.preferred_language === "en"
+                        ? "English"
+                        : (user.preferred_language ?? "—")
+                    }
+                  />
+                  <InfoTile
+                    icon={<Hash className="w-3.5 h-3.5" />}
+                    label="User ID"
+                    value={`#${user.id}`}
+                  />
+                </div>
+
+                {/* ── Activity strip ── */}
+                <div className="rounded-xl border border-border/60 bg-secondary/20 divide-y divide-border/40">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Phone verified
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px] font-medium",
+                        user.phone_verified_at
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground/50",
+                      )}
+                    >
+                      {user.phone_verified_at
+                        ? new Date(user.phone_verified_at).toLocaleDateString()
+                        : "Not verified"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Email verified
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px] font-medium",
+                        user.email_verified_at
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-muted-foreground/50",
+                      )}
+                    >
+                      {user.email_verified_at
+                        ? new Date(user.email_verified_at).toLocaleDateString()
+                        : "Not verified"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Footer actions ── */}
+            <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-10 text-[12px] rounded-lg gap-2"
+                  disabled={isActing}
+                  onClick={() => onToggleStatus(user)}
+                >
+                  {isActing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : user.status === "active" ? (
+                    <ShieldOff className="h-4 w-4" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4" />
+                  )}
+                  {user.status === "active"
+                    ? t("admin.users.suspend")
+                    : t("admin.users.reactivate")}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="h-10 text-[12px] rounded-lg gap-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+                  disabled={isDeleting}
+                  onClick={() => onDelete(user)}
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  {t("admin.users.delete")}
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                onClick={onClose}
+              >
+                {t("admin.common.close")}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AdminUsers = () => {
   const { t } = useTranslation();
-  const users = useAdminUsers();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [selected, setSelected] = useState<AdminUser | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<AdminUser | null>(null);
+  const [selected, setSelected] = useState<ApiUser | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ApiUser | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const { toast } = useToast();
 
+  // Debounced search
+  const [searchInput, setSearchInput] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => set("search", searchInput), 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // ── API ──
+  const { data, isLoading, isError } = useGetAdminUsers({
+    role: filters.role !== "all" ? filters.role : undefined,
+    status: filters.status !== "all" ? filters.status : undefined,
+    search: filters.search || undefined,
+    page: filters.page,
+  });
+
+  const suspendMutation = useSuspendUser();
+  const activateMutation = useActivateUser();
+  const deleteMutation = useDeleteUser();
+
+  const users = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const perPage = data?.per_page ?? 20;
+  const totalPages = Math.ceil(total / perPage);
+
+  const roleCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: total };
+    users.forEach((u) => {
+      const r = getRole(u);
+      counts[r] = (counts[r] ?? 0) + 1;
+    });
+    return counts;
+  }, [users, total]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: total };
+    users.forEach((u) => {
+      counts[u.status] = (counts[u.status] ?? 0) + 1;
+    });
+    return counts;
+  }, [users, total]);
+
+  // Client-side sort
+  const sorted = useMemo(() => {
+    return [...users].sort((a, b) => {
+      switch (filters.sort) {
+        case "joined-asc":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "role":
+          return getRole(a).localeCompare(getRole(b));
+        default:
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+      }
+    });
+  }, [users, filters.sort]);
+
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+        ...(key !== "page" ? { page: 1 } : {}),
+      }));
     },
     [],
   );
 
-  const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
+  const clearAll = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+    setSearchInput("");
+  }, []);
 
   const hasActiveFilters = useMemo(
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
     [filters],
   );
 
+  // Lock body scroll when mobile filter open
   useEffect(() => {
     if (filterOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
@@ -367,74 +759,45 @@ const AdminUsers = () => {
     };
   }, [filterOpen]);
 
-  const roleCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: users.length };
-    users.forEach((u) => {
-      counts[u.role] = (counts[u.role] ?? 0) + 1;
-    });
-    return counts;
-  }, [users]);
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: users.length };
-    users.forEach((u) => {
-      counts[u.status] = (counts[u.status] ?? 0) + 1;
-    });
-    return counts;
-  }, [users]);
-
-  const filtered = useMemo(() => {
-    const q = filters.search.toLowerCase().trim();
-    return users
-      .filter((u) => {
-        if (filters.role !== "all" && u.role !== filters.role) return false;
-        if (filters.status !== "all" && u.status !== filters.status)
-          return false;
-        if (
-          q &&
-          ![u.name, u.email, u.phone].some((v) => v.toLowerCase().includes(q))
-        )
-          return false;
-        return true;
-      })
-      .sort((a, b) => {
-        switch (filters.sort) {
-          case "joined-asc":
-            return (
-              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-            );
-          case "name":
-            return a.name.localeCompare(b.name);
-          case "role":
-            return a.role.localeCompare(b.role);
-          default:
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-        }
-      });
-  }, [users, filters]);
-
+  function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    return "Something went wrong";
+  }
+  // ── Actions ──
   const toggleStatus = useCallback(
-    (u: AdminUser) => {
-      const next: AdminUser["status"] =
-        u.status === "active" ? "suspended" : "active";
-      setUserStatus(u.id, next);
-      toast({ title: t("admin.users.status_changed") });
-      setSelected({ ...u, status: next });
+    async (u: ApiUser) => {
+      try {
+        if (u.status === "active") {
+          await suspendMutation.mutateAsync(u.id);
+          setSelected((prev) =>
+            prev ? { ...prev, status: "suspended" } : null,
+          );
+        } else {
+          await activateMutation.mutateAsync(u.id);
+          setSelected((prev) => (prev ? { ...prev, status: "active" } : null));
+        }
+        toast({ title: t("admin.users.status_changed") });
+      } catch (error: unknown) {
+        toast({ title: getErrorMessage(error), variant: "destructive" });
+      }
     },
-    [t, toast],
+    [suspendMutation, activateMutation, t, toast],
   );
 
-  const removeUser = useCallback(() => {
+  const removeUser = useCallback(async () => {
     if (!confirmDelete) return;
-    deleteUser(confirmDelete.id);
-    toast({ title: t("admin.users.deleted_toast") });
-    setConfirmDelete(null);
-    setSelected(null);
-  }, [confirmDelete, t, toast]);
+    try {
+      await deleteMutation.mutateAsync(confirmDelete.id);
+      toast({ title: t("admin.users.deleted_toast") });
+      setConfirmDelete(null);
+      setSelected(null);
+    } catch (error: unknown) {
+      toast({ title: getErrorMessage(error), variant: "destructive" });
+    }
+  }, [confirmDelete, deleteMutation, t, toast]);
 
   const pendingCount = statusCounts["pending"] ?? 0;
+  const isActing = suspendMutation.isPending || activateMutation.isPending;
 
   const sidebarContent = (
     <>
@@ -464,11 +827,7 @@ const AdminUsers = () => {
             value={filters.role}
             onChange={(v) => set("role", v)}
             options={[
-              {
-                value: "all",
-                label: t("admin.users.all"),
-                count: roleCounts["all"],
-              },
+              { value: "all", label: t("admin.users.all"), count: total },
               {
                 value: "doctor",
                 label: t("admin.roles.doctor"),
@@ -498,11 +857,7 @@ const AdminUsers = () => {
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              {
-                value: "all",
-                label: t("admin.users.all"),
-                count: statusCounts["all"],
-              },
+              { value: "all", label: t("admin.users.all"), count: total },
               {
                 value: "active",
                 label: t("admin.status.active"),
@@ -538,14 +893,13 @@ const AdminUsers = () => {
           subtitle={t("pages.doctor.overview_sub")}
         />
 
-        {/* ── Body ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Desktop sidebar */}
           <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile overlay: backdrop */}
+          {/* Mobile backdrop */}
           <div
             onClick={() => setFilterOpen(false)}
             className={cn(
@@ -556,7 +910,7 @@ const AdminUsers = () => {
             )}
           />
 
-          {/* Mobile overlay: bottom-sheet drawer */}
+          {/* Mobile bottom-sheet */}
           <div
             className={cn(
               "fixed bottom-0 left-0 right-0 z-50 md:hidden",
@@ -580,13 +934,13 @@ const AdminUsers = () => {
             </div>
           </div>
 
-          {/* ── Results ── */}
+          {/* ── Main content ── */}
           <main className="flex-1 overflow-y-auto">
-            {/* Stats strip */}
+            {/* Stats */}
             <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
                 label="Total users"
-                value={users.length}
+                value={total}
                 icon={Users}
                 accent="primary"
               />
@@ -610,21 +964,21 @@ const AdminUsers = () => {
               />
             </div>
 
-            {/* Mobile search bar — below stats, above meta bar */}
+            {/* Mobile search */}
             <div className="sm:hidden px-3 pt-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                 <input
                   type="text"
-                  value={filters.search}
-                  onChange={(e) => set("search", e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name, email, phone…"
                   className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
-                {filters.search && (
+                {searchInput && (
                   <button
-                    onClick={() => set("search", "")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -636,10 +990,14 @@ const AdminUsers = () => {
             <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <p className="text-[11px] text-muted-foreground shrink-0">
-                  <span className="font-bold text-foreground">
-                    {filtered.length}
-                  </span>{" "}
-                  {filtered.length === 1 ? "user" : "users"}
+                  {isLoading ? (
+                    <span className="text-muted-foreground/50">Loading…</span>
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{total}</span>{" "}
+                      {total === 1 ? "user" : "users"}
+                    </>
+                  )}
                   {hasActiveFilters && (
                     <button
                       onClick={clearAll}
@@ -659,13 +1017,13 @@ const AdminUsers = () => {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Search — desktop only */}
+                {/* Desktop search */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
                     type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search name, email, phone…"
                     className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
@@ -675,9 +1033,7 @@ const AdminUsers = () => {
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) =>
-                      set("sort", e.target.value as SortOption)
-                    }
+                    onChange={(e) => set("sort", e.target.value as SortOption)}
                     className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
                   >
                     {SORT_OPTIONS.map((o) => (
@@ -689,7 +1045,7 @@ const AdminUsers = () => {
                   <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
-                {/* Filters button — mobile only */}
+                {/* Mobile filter button */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
@@ -710,7 +1066,16 @@ const AdminUsers = () => {
 
             {/* Content */}
             <div className="p-3 sm:p-4">
-              {filtered.length === 0 ? (
+              {isError ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                  <p className="text-[12px] font-semibold text-destructive">
+                    Failed to load users
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70">
+                    Check your connection and try again
+                  </p>
+                </div>
+              ) : !isLoading && sorted.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
                   <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
                     <Users className="w-6 h-6 text-muted-foreground/50" />
@@ -756,19 +1121,62 @@ const AdminUsers = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {filtered.map((u) => (
-                          <UserRow key={u.id} u={u} onManage={setSelected} />
-                        ))}
+                        {isLoading ? (
+                          <SkeletonRows />
+                        ) : (
+                          sorted.map((u) => (
+                            <UserRow key={u.id} u={u} onManage={setSelected} />
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
 
                   {/* Mobile card list */}
                   <div className="md:hidden flex flex-col gap-2">
-                    {filtered.map((u) => (
-                      <UserCard key={u.id} u={u} onManage={setSelected} />
-                    ))}
+                    {isLoading
+                      ? Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-24 rounded-sm border border-border/60 bg-card animate-pulse"
+                          />
+                        ))
+                      : sorted.map((u) => (
+                          <UserCard key={u.id} u={u} onManage={setSelected} />
+                        ))}
                   </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                      <p className="text-[11px] text-muted-foreground">
+                        Page{" "}
+                        <span className="font-semibold text-foreground">
+                          {filters.page}
+                        </span>{" "}
+                        of{" "}
+                        <span className="font-semibold text-foreground">
+                          {totalPages}
+                        </span>
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={filters.page <= 1}
+                          onClick={() => set("page", filters.page - 1)}
+                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          disabled={filters.page >= totalPages}
+                          onClick={() => set("page", filters.page + 1)}
+                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -776,129 +1184,15 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* ── Manage drawer ── */}
-      <Drawer open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DrawerContent>
-          <div className="mx-auto w-full max-w-2xl">
-            <DrawerHeader>
-              <DrawerTitle>{t("admin.users.drawer_title")}</DrawerTitle>
-              <DrawerDescription>
-                {t("admin.users.drawer_sub")}
-              </DrawerDescription>
-            </DrawerHeader>
-
-            {selected && (
-              <div className="px-4 pb-4 space-y-4">
-                <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-border bg-secondary/30">
-                  <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-base sm:text-lg shrink-0">
-                    {selected.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-foreground text-sm sm:text-base truncate">
-                      {selected.name}
-                    </p>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                      {selected.email}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium",
-                          roleStyle[selected.role],
-                        )}
-                      >
-                        {(() => {
-                          const I = roleIcon[selected.role] ?? UserCircle;
-                          return <I className="h-3 w-3" />;
-                        })()}
-                        {t(`admin.roles.${selected.role}`)}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "border text-xs",
-                          statusStyle[selected.status],
-                        )}
-                      >
-                        {t(`admin.status.${selected.status}`)}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <Field
-                    label={t("admin.users.contact")}
-                    value={selected.phone}
-                  />
-                  <Field
-                    label={t("admin.users.joined")}
-                    value={new Date(selected.createdAt).toLocaleDateString()}
-                  />
-                </div>
-
-                {selected.meta && Object.keys(selected.meta).length > 0 && (
-                  <div className="rounded-xl border border-border p-3 sm:p-4 bg-secondary/30 space-y-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-                      Additional Info
-                    </p>
-                    {Object.entries(selected.meta).map(([k, v]) => (
-                      <div
-                        key={k}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <span className="text-muted-foreground capitalize">
-                          {k}
-                        </span>
-                        <span className="font-medium text-foreground">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <DrawerFooter>
-              {selected && (
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => toggleStatus(selected)}
-                  >
-                    {selected.status === "active" ? (
-                      <>
-                        <ShieldOff className="h-4 w-4 mr-1.5" />
-                        {t("admin.users.suspend")}
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="h-4 w-4 mr-1.5" />
-                        {t("admin.users.reactivate")}
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setConfirmDelete(selected)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1.5" />
-                    {t("admin.users.delete")}
-                  </Button>
-                </div>
-              )}
-              <DrawerClose asChild>
-                <Button variant="ghost">{t("admin.common.close")}</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </div>
-        </DrawerContent>
-      </Drawer>
+      {/* ── Right-side user panel ── */}
+      <UserPanel
+        user={selected}
+        onClose={() => setSelected(null)}
+        onToggleStatus={toggleStatus}
+        onDelete={(u) => setConfirmDelete(u)}
+        isActing={isActing}
+        isDeleting={deleteMutation.isPending}
+      />
 
       {/* ── Delete confirm ── */}
       <AlertDialog
@@ -907,9 +1201,7 @@ const AdminUsers = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("admin.users.delete_title")}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.users.delete_title")}</AlertDialogTitle>
             <AlertDialogDescription>
               {t("admin.users.delete_desc")}
             </AlertDialogDescription>
@@ -926,12 +1218,23 @@ const AdminUsers = () => {
   );
 };
 
-const Field = ({ label, value }: { label: string; value: string }) => (
-  <div>
-    <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const InfoTile = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) => (
+  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
+      {icon}
       {label}
     </div>
-    <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+    <p className="text-[13px] font-medium text-foreground truncate">{value}</p>
   </div>
 );
 

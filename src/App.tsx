@@ -69,6 +69,11 @@ import ManageApointments from "./pages/admin/ManageApointments.tsx";
 import ManageReviews from "./pages/admin/ManageReviews.tsx";
 import ManageInsurances from "./pages/admin/ManageInsurances.tsx";
 import ManageAppointments from "./pages/admin/ManageApointments.tsx";
+import MyReferrals from "./pages/doctor/MyReferrals.tsx";
+import ManageServicePricing from "./pages/admin/ManageServicePricing.tsx";
+import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
+import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
+import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 
 const queryClient = new QueryClient();
 
@@ -90,7 +95,7 @@ const App = () => (
           <Route path="/patient/appointments" element={<PatientAppointments />} />
           <Route path="/patient/prescriptions" element={<PatientPrescriptions />} />
           <Route path="/patient/fitness-certificates" element={<PatientFitnessCertificates />} />
-          <Route path="/patient/pharmacy" element={<PatientPharmacy />} />
+          <Route path="/patient/search-pharmacy" element={<PatientPharmacy />} />
           <Route path="/patient/profile" element={<PatientProfile />} />
           <Route path="/patient/medical-info" element={<MedicalInfo />} />
           <Route path="/patient/insurance" element={<PatientInsurence />} />
@@ -104,6 +109,8 @@ const App = () => (
           <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
           <Route path="/doctor/fitness-certificates" element={<DoctorFitnessCertificates />} />
           <Route path="/doctor/profile" element={<DoctorProfile/>} />
+          <Route path="/doctor/referrals" element={<MyReferrals />} />
+          
           {/* Settings */}
           <Route path="/doctor/settings" element={<Settings />} />
 
@@ -140,14 +147,16 @@ const App = () => (
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/moderation" element={<AdminModeration />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
-
+          <Route path="/admin/service-pricing" element={<ManageServicePricing />} />
           <Route path="/admin/manage-doctors" element={<ManageDoctors />} />
           <Route path="/admin/manage-patients" element={<ManagePatients />} />
           <Route path="/admin/manage-hospitals" element={<ManageHospitals />} />
           <Route path="/admin/manage-pharmacies" element={<ManagePharmacies />} />
           <Route path="/admin/manage-appointments" element={<ManageAppointments />} />
           <Route path="/admin/manage-insurances" element={<ManageInsurances />} />
-          <Route path="/admin/manage-reviews" element={<ManageReviews />} />
+          <Route path="/admin/manage-instant-doctors" element={<ManageInstantDoctors />} />
+          <Route path="/admin/manage-specializations" element={<ManageSpecializations />} />
+          <Route path="/admin/manage-checklist-questions" element={<ChecklistQuestions />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

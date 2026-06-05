@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -9,42 +10,80 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Check, Clock, Video, ChevronLeft, ChevronRight,
-  CalendarDays, Stethoscope, AlertTriangle,
+  CalendarDays, Stethoscope, AlertTriangle, Loader2,
 } from "lucide-react";
-import {
-  format, parseISO, addMonths, subMonths,
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, isSameMonth, isSameDay, isToday,
-} from "date-fns";
+import moment from "moment";
 import { cn } from "@/lib/utils";
-import { Doctor } from "@/lib/mock-data";
-import { useSchedule, bookSlot } from "@/lib/schedule-store";
-import {
-  checkHospitalAvailability,
-  incrementHospitalBooked,
-  useHospitalSchedule,
-} from "@/lib/hospital-store";
 import { toast } from "sonner";
+import {
+  useGetSlots,
+  useGetSlotsByDate,
+  useBookAppointment,
+  useGetDoctorBySlug,        // ← NEW
+  type ApiSlot,
+} from "@/hooks/patient/use-patient-booking";
 
-// ─── Inline mini-calendar ─────────────────────────────────────────────────────
+// ─── Doctor type ───────────────────────────────────────────────────────────────
+
+export interface Doctor {
+  id: number;
+  slug: string;
+  specialization: string;
+  doctor_degree: string;
+  consultation_fee: string | number;
+  currency?: string;
+  consultation_type?: "online" | "in_person" | "both";
+  image?: string | null;
+  user: {
+    id: number;
+    name: string;
+    avatar?: string | null;
+  };
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+/** "11:00:00" → "11:00" */
+function toTimeLabel(time: string) {
+  return time.slice(0, 5);
+}
+
+/** Map an ApiSlot array to the shape TimeSlotGrid expects */
+function mapSlots(slots: ApiSlot[]) {
+  return slots.map((s) => ({
+    id: s.id,
+    time: toTimeLabel(s.start_time),
+    rawTime: s.start_time,
+    status: s.status,
+    type: s.type,
+    duration: s.duration_minutes,
+  }));
+}
+
+type MappedSlot = ReturnType<typeof mapSlots>[number];
+
+// ─── MiniCalendar ──────────────────────────────────────────────────────────────
 
 function MiniCalendar({
   selected,
   onSelect,
   allowedDates,
-  hospitalCheck,
 }: {
   selected: Date | undefined;
   onSelect: (d: Date) => void;
   allowedDates: Set<string>;
-  hospitalCheck: (k: string) => { ok: boolean; reason?: string } | null;
 }) {
   const [cursor, setCursor] = useState(() => selected ?? new Date());
 
   const weeks = useMemo(() => {
-    const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
-    const end   = endOfWeek(endOfMonth(cursor),     { weekStartsOn: 1 });
-    const days  = eachDayOfInterval({ start, end });
+    const start = moment(cursor).startOf("month").startOf("isoWeek");
+    const end   = moment(cursor).endOf("month").endOf("isoWeek");
+    const days: Date[] = [];
+    const cur = start.clone();
+    while (cur.isSameOrBefore(end, "day")) {
+      days.push(cur.toDate());
+      cur.add(1, "day");
+    }
     const rows: Date[][] = [];
     for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
     return rows;
@@ -54,26 +93,24 @@ function MiniCalendar({
 
   return (
     <div className="select-none">
-      {/* Month nav */}
       <div className="flex items-center justify-between mb-3">
         <button
-          onClick={() => setCursor(subMonths(cursor, 1))}
+          onClick={() => setCursor(moment(cursor).subtract(1, "month").toDate())}
           className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-[12px] font-semibold text-foreground tracking-wide">
-          {format(cursor, "MMMM yyyy")}
+          {moment(cursor).format("MMMM YYYY")}
         </span>
         <button
-          onClick={() => setCursor(addMonths(cursor, 1))}
+          onClick={() => setCursor(moment(cursor).add(1, "month").toDate())}
           className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Day-of-week headers */}
       <div className="grid grid-cols-7 mb-1">
         {DOW.map((d) => (
           <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground/60 py-1">
@@ -82,18 +119,15 @@ function MiniCalendar({
         ))}
       </div>
 
-      {/* Day grid */}
       {weeks.map((week, wi) => (
         <div key={wi} className="grid grid-cols-7">
           {week.map((day) => {
-            const k        = format(day, "yyyy-MM-dd");
-            const inMonth  = isSameMonth(day, cursor);
-            const isAllowed = allowedDates.has(k);
-            const hResult  = hospitalCheck(k);
-            const blocked  = hResult?.ok === false;
-            const isDisabled = !inMonth || !isAllowed || blocked;
-            const isSel    = selected ? isSameDay(day, selected) : false;
-            const isTod    = isToday(day);
+            const k          = moment(day).format("YYYY-MM-DD");
+            const inMonth    = moment(day).isSame(cursor, "month");
+            const isAllowed  = allowedDates.has(k);
+            const isDisabled = !inMonth || !isAllowed;
+            const isSel      = selected ? moment(day).isSame(selected, "day") : false;
+            const isTod      = moment(day).isSame(moment(), "day");
 
             return (
               <button
@@ -110,9 +144,8 @@ function MiniCalendar({
                   isAllowed && !isDisabled && !isSel && "font-medium",
                 )}
               >
-                {format(day, "d")}
-                {/* availability dot */}
-                {isAllowed && !blocked && !isSel && inMonth && (
+                {moment(day).format("D")}
+                {isAllowed && !isSel && inMonth && (
                   <span className="absolute bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-0.5 rounded-full bg-emerald-500" />
                 )}
               </button>
@@ -124,21 +157,21 @@ function MiniCalendar({
   );
 }
 
-// ─── Time slot grid ───────────────────────────────────────────────────────────
+// ─── TimeSlotGrid ──────────────────────────────────────────────────────────────
 
 function TimeSlotGrid({
   slots,
   selected,
   onSelect,
 }: {
-  slots: { time: string; status: string }[];
+  slots: MappedSlot[];
   selected: string | null;
   onSelect: (t: string) => void;
 }) {
   const periods = useMemo(() => {
-    const morning:   typeof slots = [];
-    const afternoon: typeof slots = [];
-    const evening:   typeof slots = [];
+    const morning:   MappedSlot[] = [];
+    const afternoon: MappedSlot[] = [];
+    const evening:   MappedSlot[] = [];
     slots.forEach((s) => {
       const h = parseInt(s.time.split(":")[0], 10);
       if (h < 12)      morning.push(s);
@@ -165,7 +198,6 @@ function TimeSlotGrid({
 
   return (
     <div className="space-y-3">
-      {/* Slot count badge */}
       <div className="flex items-center gap-1.5">
         <Clock className="h-3 w-3 text-muted-foreground/60" />
         <span className="text-[10px] text-muted-foreground">
@@ -184,7 +216,7 @@ function TimeSlotGrid({
               const sel   = selected === s.time;
               return (
                 <button
-                  key={s.time}
+                  key={s.id}
                   disabled={!avail}
                   onClick={() => avail && onSelect(s.time)}
                   className={cn(
@@ -205,88 +237,190 @@ function TimeSlotGrid({
   );
 }
 
-// ─── Main dialog ──────────────────────────────────────────────────────────────
+// ─── BookingDialog ─────────────────────────────────────────────────────────────
 
 export const BookingDialog = ({
   doctor,
   open,
   onOpenChange,
+  onConfirmed,              // ← NEW: called with fresh doctor data after booking
 }: {
   doctor: Doctor;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  onConfirmed?: (updatedDoctor: Doctor) => void;  // ← NEW
 }) => {
-  const schedule = useSchedule(doctor.id);
-  useHospitalSchedule(doctor.hospital);
+  const queryClient = useQueryClient();
 
-  const [date,      setDate]      = useState<Date | undefined>(
-    schedule ? parseISO(schedule.days[0].date) : undefined,
-  );
+  // ── Local state ────────────────────────────────────────────────────────────
+  const [date,      setDate]      = useState<Date | undefined>(undefined);
   const [time,      setTime]      = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ date: string; time: string } | null>(null);
+  const [shouldRefetchDoctor, setShouldRefetchDoctor] = useState(false);
 
-  const dateKey = date ? format(date, "yyyy-MM-dd") : null;
+  const dateKey = date ? moment(date).format("YYYY-MM-DD") : null;
 
-  const day = useMemo(
-    () => schedule?.days.find((d) => d.date === dateKey),
-    [schedule, dateKey],
-  );
-
-  const allowedDates = useMemo(
-    () => new Set(schedule?.days.map((d) => d.date) ?? []),
-    [schedule],
-  );
-
-  const hospitalCheck = (k: string) =>
-    checkHospitalAvailability(doctor.hospital, k);
-
-  const hospitalBlocked =
-    dateKey
-      ? (() => { const h = hospitalCheck(dateKey); return h?.ok === false ? h.reason : null; })()
-      : null;
-
-  const handleConfirm = () => {
-    if (!dateKey || !time) return;
-    const hCheck = checkHospitalAvailability(doctor.hospital, dateKey);
-    if (hCheck.ok === false) {
-      toast.error("Cannot book", { description: hCheck.reason });
-      return;
+  // ── Reset ALL state every time the dialog opens ────────────────────────────
+  // This is the definitive fix: no matter how the dialog was previously closed
+  // (Done button, X button, backdrop click), opening it again always starts
+  // completely fresh. We also nuke the doctor query cache so freshDoctorData
+  // is undefined on the new open and can't re-trigger onConfirmed.
+  useEffect(() => {
+    if (open) {
+      setDate(undefined);
+      setTime(null);
+      setConfirmed(null);
+      setShouldRefetchDoctor(false);
+      queryClient.removeQueries({ queryKey: ["doctor", doctor.slug] });
     }
-    const appt = bookSlot(doctor.id, doctor.name, doctor.specialty, dateKey, time);
-    if (appt) {
-      incrementHospitalBooked(doctor.hospital, dateKey);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 1. Fetch all available dates ───────────────────────────────────────────
+  const {
+    data: slotsData,
+    isLoading: slotsLoading,
+    isError: slotsError,
+  } = useGetSlots(doctor.slug, open);
+
+  // ── 2. Fetch slots for the selected date ───────────────────────────────────
+  const {
+    data: dayData,
+    isLoading: dayLoading,
+    isError: dayError,
+  } = useGetSlotsByDate(doctor.slug, dateKey, !!dateKey && open);
+
+  // ── 3. Booking mutation ────────────────────────────────────────────────────
+  const bookAppointment = useBookAppointment();
+
+  // ── NEW: Fetch fresh doctor data after booking ─────────────────────────────
+  // Only fires once `shouldRefetchDoctor` is true (after successful booking).
+  // We pass the slug always but the query is gated by the `enabled` field
+  // inside the hook — so update useGetDoctorBySlug to accept a second param.
+  const { data: freshDoctorData } = useGetDoctorBySlug(
+    shouldRefetchDoctor ? doctor.slug : "",
+  );
+
+  // ── Derived: set of allowed calendar dates ─────────────────────────────────
+  const allowedDates = useMemo(() => {
+    if (!slotsData?.dates) return new Set<string>();
+    return new Set(slotsData.dates);
+  }, [slotsData]);
+
+  // Auto-select first available date
+  useMemo(() => {
+    if (slotsData?.dates?.length && !date) {
+      setDate(moment(slotsData.dates[0]).toDate());
+    }
+  }, [slotsData]);
+
+  // ── Derived: mapped slots for the selected day ─────────────────────────────
+  const daySlots = useMemo<MappedSlot[]>(() => {
+    if (!dateKey || !dayData?.slots[dateKey]) return [];
+    return mapSlots(dayData.slots[dateKey]);
+  }, [dayData, dateKey]);
+
+  // ── When fresh doctor data arrives, propagate it to the parent ────────────
+  // useEffect (not useMemo) so this only runs when freshDoctorData *changes*,
+  // not on every render. The shouldRefetchDoctor guard means it only fires
+  // after a real booking, never on the next dialog open.
+  useEffect(() => {
+    if (freshDoctorData && shouldRefetchDoctor && onConfirmed) {
+      const updated: Doctor = {
+        ...doctor,
+        ...(freshDoctorData as Partial<Doctor>),
+      };
+      onConfirmed(updated);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freshDoctorData]);
+
+  // ── Booking handler ────────────────────────────────────────────────────────
+  const handleConfirm = async () => {
+    if (!dateKey || !time) return;
+
+    const consultationType =
+      doctor.consultation_type === "in_person" ? "in_person" : "online";
+
+    const slot = daySlots.find((s) => s.time === time);
+    const appointmentTime = slot ? toTimeLabel(slot.rawTime) : time;
+
+    try {
+      await bookAppointment.mutateAsync({
+        doctor_id: doctor.id,
+        type: consultationType,
+        appointment_date: dateKey,
+        appointment_time: appointmentTime,
+      });
+
+      // Invalidate stale queries
+      await queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
+      await queryClient.invalidateQueries({ queryKey: ["doctor-slots", doctor.slug] });
+
+      // ── NEW: Invalidate cached doctor data so useGetDoctorBySlug re-fetches ─
+      await queryClient.invalidateQueries({ queryKey: ["doctor", doctor.slug] });
+
+      // ── NEW: Enable the doctor re-fetch (triggers useGetDoctorBySlug above) ─
+      setShouldRefetchDoctor(true);
+
       setConfirmed({ date: dateKey, time });
       toast.success("Appointment confirmed", {
-        description: `${doctor.name} · ${format(parseISO(dateKey), "EEE MMM d")} at ${time}`,
+        description: `${doctorName} · ${moment(dateKey).format("ddd MMM D")} at ${time}`,
       });
-    } else {
-      toast.error("Slot no longer available");
+    } catch (err) {
+      toast.error("Booking failed", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
     }
   };
 
-  const reset = () => { setTime(null); setConfirmed(null); };
+  const reset = () => {
+    setTime(null);
+    setConfirmed(null);
+    setDate(undefined);
+    setShouldRefetchDoctor(false);
+    queryClient.removeQueries({ queryKey: ["doctor", doctor.slug] });
+  };
+
+  // ── Derived display values ─────────────────────────────────────────────────
+  const doctorName    = doctor.user?.name ?? "Unknown Doctor";
+  const doctorAvatar  = doctor.user?.avatar ?? doctor.image ?? null;
+  const doctorInitial = doctorName.charAt(0);
+
+  const showLoading = slotsLoading && !confirmed;
+  const showError   = slotsError && !confirmed;
+  const showBody    = !slotsLoading && !slotsError && !confirmed && !!slotsData;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
       <DialogContent className="max-w-[680px] p-0 overflow-hidden gap-0">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/60">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
-              {doctor.avatar}
+              {doctorAvatar
+                ? <img src={doctorAvatar} alt={doctorName} className="h-9 w-9 rounded-md object-cover" />
+                : doctorInitial}
             </div>
             <div className="min-w-0">
               <DialogTitle className="text-[14px] font-semibold leading-tight truncate">
-                {doctor.name}
+                {doctorName}
               </DialogTitle>
               <DialogDescription className="text-[11px] mt-0.5 flex items-center gap-2">
                 <span className="flex items-center gap-1">
                   <Stethoscope className="h-3 w-3" />
-                  {doctor.specialty}
+                  {doctor.specialization}
                 </span>
-                <span className="text-border">·</span>
-                <span className="font-semibold text-foreground">${doctor.fee}</span>
+                {doctor.consultation_fee !== undefined && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="font-semibold text-foreground">
+                      {Number(doctor.consultation_fee) === 0
+                        ? "Free"
+                        : `${doctor.consultation_fee} ${doctor.currency ?? "RWF"}`}
+                    </span>
+                  </>
+                )}
                 <span className="text-border">·</span>
                 <span className="flex items-center gap-1">
                   <Video className="h-3 w-3" /> Video consult
@@ -296,8 +430,24 @@ export const BookingDialog = ({
           </div>
         </div>
 
-        {confirmed ? (
-          /* ── Success state ── */
+        {/* Loading state */}
+        {showLoading && (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-[12px]">Loading available slots…</p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {showError && (
+          <div className="flex flex-col items-center justify-center py-12 gap-2 text-destructive">
+            <AlertTriangle className="h-6 w-6" />
+            <p className="text-[12px]">Could not load availability. Please try again.</p>
+          </div>
+        )}
+
+        {/* ── NEW: Confirmed state — shows refreshing indicator while doctor re-fetches ── */}
+        {confirmed && (
           <div className="px-6 py-10 text-center space-y-5">
             <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <Check className="h-7 w-7" />
@@ -305,22 +455,31 @@ export const BookingDialog = ({
             <div className="space-y-1">
               <h3 className="text-[15px] font-semibold">Appointment confirmed</h3>
               <p className="text-[12px] text-muted-foreground">
-                {format(parseISO(confirmed.date), "EEEE, MMMM d, yyyy")} at {confirmed.time}
+                {moment(confirmed.date).format("dddd, MMMM D, YYYY")} at {confirmed.time}
               </p>
               <p className="text-[11px] text-muted-foreground/70 mt-2 inline-flex items-center gap-1.5 border border-border/60 rounded-full px-3 py-1">
                 <Video className="h-3 w-3" />
                 Video link will be sent before the session
               </p>
+
+              {/* NEW: subtle "syncing" badge while fresh doctor data loads */}
+              {shouldRefetchDoctor && !freshDoctorData && (
+                <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center justify-center gap-1">
+                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                  Syncing availability…
+                </p>
+              )}
             </div>
             <Button onClick={() => onOpenChange(false)} className="px-8">
               Done
             </Button>
           </div>
-        ) : (
-          <>
-            {/* ── Body: calendar + slots side by side ── */}
-            <div className="grid grid-cols-[1fr_1px_1fr] min-h-[320px]">
+        )}
 
+        {/* Main body */}
+        {showBody && (
+          <>
+            <div className="grid grid-cols-[1fr_1px_1fr] min-h-[320px]">
               {/* Left — calendar */}
               <div className="px-5 py-5">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
@@ -328,23 +487,18 @@ export const BookingDialog = ({
                 </p>
                 <MiniCalendar
                   selected={date}
-                  onSelect={(d) => { setDate(d); setTime(null); }}
+                  onSelect={(d) => {
+                    setDate(d);
+                    setTime(null);
+                  }}
                   allowedDates={allowedDates}
-                  hospitalCheck={hospitalCheck}
                 />
-                {/* Selected date pill */}
                 {date && (
                   <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border/60 rounded-md px-2.5 py-1.5 bg-muted/30">
                     <CalendarDays className="h-3 w-3 shrink-0" />
-                    <span className="font-medium text-foreground">{format(date, "EEE, MMM d")}</span>
+                    <span className="font-medium text-foreground">{moment(date).format("ddd, MMM D")}</span>
                     <span className="text-muted-foreground/50">·</span>
-                    <span>{schedule ? `${schedule.days.length} days avail.` : "—"}</span>
-                  </div>
-                )}
-                {hospitalBlocked && (
-                  <div className="mt-2 flex items-start gap-1.5 text-[11px] text-destructive bg-destructive/8 border border-destructive/20 rounded-md px-2.5 py-1.5">
-                    <AlertTriangle className="h-3 w-3 shrink-0 mt-px" />
-                    <span>{hospitalBlocked}</span>
+                    <span>{slotsData.dates.length} day{slotsData.dates.length !== 1 ? "s" : ""} avail.</span>
                   </div>
                 )}
               </div>
@@ -355,23 +509,39 @@ export const BookingDialog = ({
               {/* Right — time slots */}
               <div className="px-5 py-5 overflow-y-auto max-h-[380px]">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
-                  Select time · 30 min
+                  Select time · {daySlots[0]?.duration ?? 30} min
                 </p>
-                <TimeSlotGrid
-                  slots={day?.slots ?? []}
-                  selected={time}
-                  onSelect={setTime}
-                />
+
+                {dayLoading && dateKey && (
+                  <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <p className="text-[11px]">Loading slots…</p>
+                  </div>
+                )}
+
+                {dayError && !dayLoading && (
+                  <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-destructive">
+                    <AlertTriangle className="h-5 w-5" />
+                    <p className="text-[11px]">Could not load slots for this date.</p>
+                  </div>
+                )}
+
+                {!dayLoading && !dayError && (
+                  <TimeSlotGrid
+                    slots={daySlots}
+                    selected={time}
+                    onSelect={setTime}
+                  />
+                )}
               </div>
             </div>
 
-            {/* ── Footer ── */}
+            {/* Footer */}
             <div className="px-6 py-4 border-t border-border/60 flex items-center justify-between gap-3 bg-muted/20">
-              {/* Summary */}
               <div className="text-[11px] text-muted-foreground min-w-0">
                 {date && time ? (
                   <span className="font-medium text-foreground truncate">
-                    {format(date, "EEE, MMM d")} · {time}
+                    {moment(date).format("ddd, MMM D")} · {time}
                   </span>
                 ) : (
                   <span className="text-muted-foreground/50">
@@ -390,11 +560,13 @@ export const BookingDialog = ({
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!date || !time || !!hospitalBlocked}
+                  disabled={!date || !time || bookAppointment.isPending}
                   onClick={handleConfirm}
                   className="h-8 px-5 text-[12px] rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 >
-                  Confirm appointment
+                  {bookAppointment.isPending
+                    ? <><Loader2 className="h-3 w-3 animate-spin mr-1.5" /> Booking…</>
+                    : "Confirm appointment"}
                 </Button>
               </div>
             </div>

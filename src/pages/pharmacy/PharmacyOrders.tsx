@@ -2,16 +2,38 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { pharmacyOrders } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Package, CheckCircle2, Truck, SlidersHorizontal, X, Search, ChevronDown } from "lucide-react";
+import {
+  ClipboardList,
+  Package,
+  CheckCircle2,
+  XCircle,
+  SlidersHorizontal,
+  X,
+  Search,
+  ChevronDown,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+// ── Import every hook + type from the dedicated hooks file ───────────────────
+import {
+  useGetOrders,
+  useAcceptOrder,
+  useRejectOrder,
+  useCompleteOrder,
+  type Order,
+  type OrderStatus,
+  type OrderSource,
+  type ListOrdersParams,
+} from "@/hooks/pharmacy/use-pharmacy-orders";
 
-type OrderStatus = "incoming" | "processing" | "ready" | "delivered";
+// ─── Local UI types ───────────────────────────────────────────────────────────
+
 type SortOption =
   | "time-desc"
   | "time-asc"
@@ -19,18 +41,41 @@ type SortOption =
   | "total-asc"
   | "patient";
 
+interface FilterState {
+  search: string;
+  /** "all" means no ?status= param is sent to the API */
+  status: OrderStatus | "all";
+  /** "all" means no ?source= param is sent to the API */
+  source: OrderSource | "all";
+  /** client-side sort only */
+  sort: SortOption;
+}
+
+const INITIAL_FILTERS: FilterState = {
+  search: "",
+  status: "all",
+  source: "all",
+  sort: "time-desc",
+};
+
+// ─── Visual config ────────────────────────────────────────────────────────────
+
 const STATUS_STYLES: Record<OrderStatus, string> = {
-  incoming: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  processing: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
-  ready: "bg-primary/10 text-primary border-primary/20",
-  delivered: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  pending:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  accepted:
+    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+  completed:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  rejected:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
 };
 
 const STATUS_DOT: Record<OrderStatus, string> = {
-  incoming: "bg-amber-500",
-  processing: "bg-sky-500",
-  ready: "bg-primary",
-  delivered: "bg-emerald-500",
+  pending: "bg-amber-500",
+  accepted: "bg-sky-500",
+  completed: "bg-emerald-500",
+  rejected: "bg-red-500",
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -41,19 +86,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "patient", label: "Patient (A–Z)" },
 ];
 
-interface FilterState {
-  search: string;
-  status: OrderStatus | "All";
-  sort: SortOption;
-}
-
-const INITIAL_FILTERS: FilterState = {
-  search: "",
-  status: "All",
-  sort: "time-desc",
-};
-
-// ─── Sidebar atoms ─────────────────────────────────────────────────────────────
+// ─── Sidebar sub-components ───────────────────────────────────────────────────
 
 function FilterSection({
   title,
@@ -79,7 +112,7 @@ function PillGroup<T extends string>({
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; dot?: string }[];
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -88,12 +121,20 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
+            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-2",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
           )}
         >
+          {o.dot && (
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                value === o.value ? "bg-primary-foreground/70" : o.dot,
+              )}
+            />
+          )}
           {o.label}
         </button>
       ))}
@@ -101,16 +142,106 @@ function PillGroup<T extends string>({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Per-row action buttons ───────────────────────────────────────────────────
+// Each button calls the matching hook:
+//   pending  → useAcceptOrder  (POST /orders/:id/accept)
+//            → useRejectOrder  (POST /orders/:id/reject  + reason)
+//   accepted → useCompleteOrder (POST /orders/:id/complete)
+//   completed / rejected → receipt / nothing
+
+function OrderActions({ order }: { order: Order }) {
+  const { t } = useTranslation();
+
+  // All three mutations live here; only the relevant one fires per row.
+  const accept  = useAcceptOrder();
+  const reject  = useRejectOrder();
+  const complete = useCompleteOrder();
+
+  const busy = accept.isPending || reject.isPending || complete.isPending;
+
+  // ── pending: Accept + Reject ──────────────────────────────────────────────
+  if (order.status === "pending") {
+    return (
+      <div className="flex items-center justify-end gap-1.5">
+        {/* Reject — POST /orders/:id/reject { reason } */}
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() =>
+            reject.mutate({ id: order.id, reason: "Medicine out of stock" })
+          }
+          className="h-7 px-3 text-[10px] rounded-sm border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+        >
+          {reject.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            t("pages.pharmacy.reject", "Reject")
+          )}
+        </Button>
+
+        {/* Accept — POST /orders/:id/accept */}
+        <Button
+          size="sm"
+          disabled={busy}
+          onClick={() => accept.mutate(order.id)}
+          className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm transition-all duration-200"
+        >
+          {accept.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            t("pages.pharmacy.approve", "Accept")
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // ── accepted: Complete ────────────────────────────────────────────────────
+  // Internal orders auto-deduct stock; external orders skip deduction.
+  if (order.status === "accepted") {
+    return (
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={() => complete.mutate(order.id)}
+        className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-sm transition-all duration-200"
+      >
+        {complete.isPending ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : (
+          t("pages.pharmacy.complete", "Complete")
+        )}
+      </Button>
+    );
+  }
+
+  // ── completed: Receipt (view-only) ───────────────────────────────────────
+  if (order.status === "completed") {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm transition-all duration-200"
+      >
+        {t("pages.pharmacy.receipt", "Receipt")}
+      </Button>
+    );
+  }
+
+  // ── rejected: no action ──────────────────────────────────────────────────
+  return null;
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PharmacyOrders = () => {
   const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
   const set = useCallback(
-    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-    },
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
+      setFilters((prev) => ({ ...prev, [key]: value })),
     [],
   );
 
@@ -121,53 +252,80 @@ const PharmacyOrders = () => {
     [filters],
   );
 
+  // ── Build API params (38 — GET /orders) ─────────────────────────────────
+  // Only include status / source when they're not "all";
+  // the hook builds the ?status= / ?source= query string from these.
+  const apiParams: ListOrdersParams = useMemo(
+    () => ({
+      ...(filters.status !== "all" && { status: filters.status }),
+      ...(filters.source !== "all" && { source: filters.source }),
+    }),
+    [filters.status, filters.source],
+  );
+
+  // React Query re-fetches automatically when apiParams changes (key changes).
+  const { data, isLoading, isError, refetch } = useGetOrders(apiParams);
+
+  const orders: Order[] = data?.data ?? [];
+
+  // ── Client-side search + sort (status/source are server-side) ───────────
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
-    return pharmacyOrders
+
+    return orders
       .filter((o) => {
-        if (filters.status !== "All" && o.status !== filters.status)
-          return false;
-        if (
-          q &&
-          !o.patient.toLowerCase().includes(q) &&
-          !o.doctor.toLowerCase().includes(q) &&
-          !o.id.toLowerCase().includes(q)
-        )
-          return false;
-        return true;
+        if (!q) return true;
+        return (
+          o.patient.name.toLowerCase().includes(q) ||
+          o.order_number.toLowerCase().includes(q)
+        );
       })
       .sort((a, b) => {
         switch (filters.sort) {
           case "time-asc":
-            return a.time.localeCompare(b.time);
+            return (a.created_at ?? "").localeCompare(b.created_at ?? "");
           case "total-desc":
-            return b.total - a.total;
+            return parseFloat(b.total_amount) - parseFloat(a.total_amount);
           case "total-asc":
-            return a.total - b.total;
+            return parseFloat(a.total_amount) - parseFloat(b.total_amount);
           case "patient":
-            return a.patient.localeCompare(b.patient);
-          default:
-            return b.time.localeCompare(a.time);
+            return a.patient.name.localeCompare(b.patient.name);
+          default: // time-desc
+            return (b.created_at ?? "").localeCompare(a.created_at ?? "");
         }
       });
-  }, [filters]);
+  }, [orders, filters.search, filters.sort]);
 
-  const incomingCount = pharmacyOrders.filter((o) => o.status === "incoming").length;
-  const processingCount = pharmacyOrders.filter((o) => o.status === "processing").length;
-  const readyCount = pharmacyOrders.filter((o) => o.status === "ready").length;
-  const deliveredCount = pharmacyOrders.filter((o) => o.status === "delivered").length;
+  // ── Count per status from the current API response ───────────────────────
+  const counts = useMemo(
+    () => ({
+      pending:   orders.filter((o) => o.status === "pending").length,
+      accepted:  orders.filter((o) => o.status === "accepted").length,
+      completed: orders.filter((o) => o.status === "completed").length,
+      rejected:  orders.filter((o) => o.status === "rejected").length,
+    }),
+    [orders],
+  );
+
+  // ─── Sidebar ─────────────────────────────────────────────────────────────
 
   const sidebarContent = (
     <>
+      {/* Header */}
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
-          <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
+          <button
+            onClick={clearAll}
+            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
+          >
             <X className="w-3 h-3" />
             Reset all
           </button>
@@ -175,22 +333,82 @@ const PharmacyOrders = () => {
       </div>
 
       <div className="px-3.5">
+        {/* Status filter → maps to ?status= on the API */}
         <FilterSection title="Status">
-          <PillGroup<OrderStatus | "All">
+          <PillGroup<OrderStatus | "all">
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "All", label: "All statuses" },
-              { value: "incoming", label: t("pages.pharmacy.stat_incoming") },
-              { value: "processing", label: t("pages.pharmacy.stat_processing") },
-              { value: "ready", label: t("pages.pharmacy.stat_ready") },
-              { value: "delivered", label: t("pages.pharmacy.stat_delivered") },
+              { value: "all", label: "All statuses" },
+              { value: "pending",   label: t("pages.pharmacy.stat_incoming",   "Pending"),   dot: "bg-amber-500" },
+              { value: "accepted",  label: t("pages.pharmacy.stat_processing", "Accepted"),  dot: "bg-sky-500" },
+              { value: "completed", label: t("pages.pharmacy.stat_delivered",  "Completed"), dot: "bg-emerald-500" },
+              { value: "rejected",  label: t("pages.pharmacy.rejected",        "Rejected"),  dot: "bg-red-500" },
             ]}
           />
         </FilterSection>
+
+        {/* Source filter → maps to ?source= on the API */}
+        <FilterSection title="Source">
+          <PillGroup<OrderSource | "all">
+            value={filters.source}
+            onChange={(v) => set("source", v)}
+            options={[
+              { value: "all",      label: "All sources" },
+              { value: "internal", label: "Internal" },
+              { value: "external", label: "External" },
+            ]}
+          />
+        </FilterSection>
+
+        {/* Active filter chips — let user remove one at a time */}
+        {hasActiveFilters && (
+          <div className="py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2">
+              Active filters
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {filters.status !== "all" && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
+                  {filters.status}
+                  <button
+                    onClick={() => set("status", "all")}
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              )}
+              {filters.source !== "all" && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
+                  {filters.source}
+                  <button
+                    onClick={() => set("source", "all")}
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              )}
+              {filters.search && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
+                  "{filters.search}"
+                  <button
+                    onClick={() => set("search", "")}
+                    className="hover:opacity-70"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout role="pharmacy">
@@ -200,101 +418,137 @@ const PharmacyOrders = () => {
           subtitle={t("pages.pharmacy.orders_sub")}
         />
 
-        {/* ── Body: sidebar + results ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* ── Left Sidebar ── */}
+          {/* ── Sidebar ── */}
           <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* ── Results ── */}
+          {/* ── Main content ── */}
           <main className="flex-1 overflow-y-auto">
-            {/* Stats strip */}
+
+            {/* Stat cards — counts from the current API page */}
             <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
-                label={t("pages.pharmacy.stat_incoming")}
-                value={incomingCount}
+                label={t("pages.pharmacy.stat_incoming", "Pending")}
+                value={isLoading ? "—" : counts.pending}
                 icon={ClipboardList}
                 accent="warning"
               />
               <StatCard
-                label={t("pages.pharmacy.stat_processing")}
-                value={processingCount}
+                label={t("pages.pharmacy.stat_processing", "Accepted")}
+                value={isLoading ? "—" : counts.accepted}
                 icon={Package}
                 accent="info"
               />
               <StatCard
-                label={t("pages.pharmacy.stat_ready")}
-                value={readyCount}
+                label={t("pages.pharmacy.stat_delivered", "Completed")}
+                value={isLoading ? "—" : counts.completed}
                 icon={CheckCircle2}
-                accent="primary"
+                accent="success"
               />
               <StatCard
-                label={t("pages.pharmacy.stat_delivered")}
-                value={deliveredCount}
-                icon={Truck}
-                accent="success"
+                label={t("pages.pharmacy.rejected", "Rejected")}
+                value={isLoading ? "—" : counts.rejected}
+                icon={XCircle}
+                accent="danger"
               />
             </div>
 
             {/* Meta bar */}
             <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+              {/* Left: count + quick-filter pills */}
               <div className="flex items-center gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  <span className="font-bold text-foreground">{filtered.length}</span>{" "}
-                  {filtered.length === 1 ? "order" : "orders"}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                    >
-                      Reset filters
-                    </button>
-                  )}
-                </p>
+                {isLoading ? (
+                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading orders…
+                  </span>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-bold text-foreground">
+                      {filtered.length}
+                    </span>{" "}
+                    {filtered.length === 1 ? "order" : "orders"}
+                    {hasActiveFilters && (
+                      <button
+                        onClick={clearAll}
+                        className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </p>
+                )}
 
-                <div className="hidden lg:flex items-center gap-2">
-                  {incomingCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      {incomingCount} incoming
-                    </span>
-                  )}
-                  {processingCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                      {processingCount} processing
-                    </span>
-                  )}
-                  {readyCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      {readyCount} ready
-                    </span>
-                  )}
-                  {deliveredCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {deliveredCount} delivered
-                    </span>
-                  )}
-                </div>
+                {/* Clickable status pills — clicking sets the sidebar filter */}
+                {!isLoading && (
+                  <div className="hidden lg:flex items-center gap-2">
+                    {counts.pending > 0 && (
+                      <button
+                        onClick={() => set("status", "pending")}
+                        className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        {counts.pending} pending
+                      </button>
+                    )}
+                    {counts.accepted > 0 && (
+                      <button
+                        onClick={() => set("status", "accepted")}
+                        className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        {counts.accepted} accepted
+                      </button>
+                    )}
+                    {counts.completed > 0 && (
+                      <button
+                        onClick={() => set("status", "completed")}
+                        className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {counts.completed} completed
+                      </button>
+                    )}
+                    {counts.rejected > 0 && (
+                      <button
+                        onClick={() => set("status", "rejected")}
+                        className="flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        {counts.rejected} rejected
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
+              {/* Right: refresh + search + sort */}
               <div className="flex items-center gap-2">
-                {/* Search */}
+                <button
+                  onClick={() => refetch()}
+                  title="Refresh"
+                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw
+                    className={cn("w-3 h-3", isLoading && "animate-spin")}
+                  />
+                </button>
+
+                {/* Client-side search (patient name / order number) */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
                     type="text"
                     value={filters.search}
                     onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search patient, doctor, order ID…"
+                    placeholder="Search patient, order ID…"
                     className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
-                {/* Sort */}
+                {/* Client-side sort */}
                 <div className="relative">
                   <select
                     value={filters.sort}
@@ -302,7 +556,9 @@ const PharmacyOrders = () => {
                     className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                   >
                     {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
@@ -310,50 +566,123 @@ const PharmacyOrders = () => {
               </div>
             </div>
 
-            {/* Table */}
+            {/* Table area */}
             <div className="p-4">
-              {filtered.length === 0 ? (
+
+              {/* ── Error state ── */}
+              {isError && (
+                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                  <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-foreground">
+                      Failed to load orders
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                      Check your connection and try again
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => refetch()}
+                    className="text-[11px] h-7 px-3 rounded-sm mt-1"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1.5" />
+                    Retry
+                  </Button>
+                </div>
+              )}
+
+              {/* ── Loading skeleton ── */}
+              {isLoading && (
+                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                      <tr>
+                        {["Order", "Patient", "Items", "Total", "Source", "Status", ""].map(
+                          (h) => (
+                            <th
+                              key={h}
+                              className="text-left px-4 py-3 font-semibold"
+                            >
+                              {h}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <tr key={i} className="border-t border-border/40">
+                          {Array.from({ length: 7 }).map((_, j) => (
+                            <td key={j} className="px-4 py-3.5">
+                              <div
+                                className="h-2.5 rounded bg-muted/60 animate-pulse"
+                                style={{ width: `${50 + ((i * 3 + j * 7) % 40)}%` }}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* ── Empty state ── */}
+              {!isLoading && !isError && filtered.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
                   <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
                     <ClipboardList className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground">
-                      No orders match your filters
+                      {hasActiveFilters
+                        ? "No orders match your filters"
+                        : "No orders yet"}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
+                      {hasActiveFilters
+                        ? "Try widening your search criteria"
+                        : "Orders will appear here once received"}
                     </p>
                   </div>
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
-                  >
-                    Clear all filters
-                  </button>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearAll}
+                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
                 </div>
-              ) : (
+              )}
+
+              {/* ── Data table ── */}
+              {!isLoading && !isError && filtered.length > 0 && (
                 <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_order")}
+                          {t("pages.pharmacy.th_order", "Order")}
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_patient")}
+                          {t("pages.pharmacy.th_patient", "Patient")}
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_doctor")}
+                          {t("pages.pharmacy.th_items", "Items")}
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_items")}
+                          {t("pages.pharmacy.th_total", "Total")}
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_total")}
+                          Source
                         </th>
                         <th className="text-left px-4 py-3 font-semibold">
-                          {t("pages.pharmacy.th_status")}
+                          {t("pages.pharmacy.th_status", "Status")}
                         </th>
                         <th className="px-4 py-3" />
                       </tr>
@@ -364,21 +693,50 @@ const PharmacyOrders = () => {
                           key={o.id}
                           className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
                         >
+                          {/* Order number — ORD-ABC123 */}
                           <td className="px-4 py-3 font-mono text-[10px] text-muted-foreground/70">
-                            #{o.id.toUpperCase()}
+                            {o.order_number}
                           </td>
+
+                          {/* Patient name + delivery address sub-line */}
                           <td className="px-4 py-3 font-semibold text-[11px] text-foreground">
-                            {o.patient}
+                            {o.patient.name}
+                            {o.delivery_type === "delivery" &&
+                              o.delivery_address && (
+                                <span className="block text-[10px] font-normal text-muted-foreground/60 mt-0.5 truncate max-w-[160px]">
+                                  {o.delivery_address}
+                                </span>
+                              )}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground/80">
-                            {o.doctor}
-                          </td>
+
+                          {/* Number of line items */}
                           <td className="px-4 py-3 tabular-nums text-foreground">
-                            {o.items}
+                            {o.items.length}
                           </td>
+
+                          {/* Total amount with currency */}
                           <td className="px-4 py-3 font-bold tabular-nums text-[12px] text-foreground">
-                            ${o.total.toFixed(2)}
+                            {parseFloat(o.total_amount).toLocaleString()}{" "}
+                            <span className="font-normal text-[10px] text-muted-foreground">
+                              {o.currency}
+                            </span>
                           </td>
+
+                          {/* Source badge: internal (violet) / external (orange) */}
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "text-[9px] px-1.5 py-0.5 rounded-sm border font-medium capitalize",
+                                o.source === "internal"
+                                  ? "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900"
+                                  : "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
+                              )}
+                            >
+                              {o.source}
+                            </span>
+                          </td>
+
+                          {/* Status badge */}
                           <td className="px-4 py-3">
                             <Badge
                               variant="outline"
@@ -387,46 +745,20 @@ const PharmacyOrders = () => {
                                 STATUS_STYLES[o.status],
                               )}
                             >
-                              <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[o.status])} />
-                              {o.status} · {o.time}
+                              <span
+                                className={cn(
+                                  "w-1 h-1 rounded-full mr-1",
+                                  STATUS_DOT[o.status],
+                                  o.status === "pending" && "animate-pulse",
+                                )}
+                              />
+                              {o.status}
                             </Badge>
                           </td>
+
+                          {/* Action buttons (Accept/Reject/Complete/Receipt) */}
                           <td className="px-4 py-3 text-right">
-                            {o.status === "incoming" && (
-                              <Button
-                                size="sm"
-                                className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
-                              >
-                                {t("pages.pharmacy.approve")}
-                              </Button>
-                            )}
-                            {o.status === "processing" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
-                              >
-                                {t("pages.pharmacy.mark_ready")}
-                              </Button>
-                            )}
-                            {o.status === "ready" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
-                              >
-                                {t("pages.pharmacy.dispatch")}
-                              </Button>
-                            )}
-                            {o.status === "delivered" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm transition-all duration-200"
-                              >
-                                {t("pages.pharmacy.receipt")}
-                              </Button>
-                            )}
+                            <OrderActions order={o} />
                           </td>
                         </tr>
                       ))}

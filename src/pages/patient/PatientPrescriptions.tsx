@@ -10,9 +10,6 @@ import {
   Pill,
   Send,
   MapPin,
-  User,
-  Mail,
-  Smartphone,
   FileText,
   SlidersHorizontal,
   X,
@@ -20,79 +17,102 @@ import {
   ChevronDown,
   LayoutGrid,
   Rows3,
+  CalendarRange,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  usePrescriptions,
-  type RxStatus,
+  PrescriptionApiStatus,
+  useGetPatientPrescriptions,
+  type PrescriptionFilters,
   type Prescription,
-} from "@/lib/prescription-store";
+} from "@/hooks/patient/use-patient-prescriptions";
+
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type ViewMode = "table" | "cards";
-type SortOption = "date-asc" | "date-desc" | "doctor";
 
 interface FilterState {
   search: string;
-  status: RxStatus | "All";
-  issuer: "All" | "doctor" | "hospital";
-  sort: SortOption;
+  status: PrescriptionApiStatus | "all";
+  from: string;
+  to: string;
+  is_signed: boolean | "all";
+  sort: "date-asc" | "date-desc";
 }
 
 const INITIAL_FILTERS: FilterState = {
   search: "",
-  status: "All",
-  issuer: "All",
+  status: "all",
+  from: "",
+  to: "",
+  is_signed: "all",
   sort: "date-desc",
 };
 
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "date-desc", label: "Date: Latest first" },
-  { value: "date-asc", label: "Date: Oldest first" },
-  { value: "doctor", label: "Doctor (A–Z)" },
-];
+// ─── Status config ────────────────────────────────────────────────────────────
 
-const STATUS_STYLES: Record<RxStatus, string> = {
-  draft: "bg-muted text-muted-foreground border-border",
-  "sent-to-patient": "bg-primary/10 text-primary border-primary/20",
-  "sent-to-pharmacy":
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  filled:
+const STATUS_STYLES: Record<string, string> = {
+  issued: "bg-primary/10 text-primary border-primary/20",
+  sent_to_pharmacy:
+    "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
+  dispensed:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
   cancelled:
     "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  active: "bg-primary/10 text-primary border-primary/20",
+  expired:
+    "bg-muted text-muted-foreground border-border",
   pending:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  dispensed:
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  expired: "bg-muted text-muted-foreground border-border",
-  completed:
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  rejected:
-    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  returned: "bg-muted text-muted-foreground border-border",
 };
 
 const STATUS_DOT: Record<string, string> = {
-  draft: "bg-muted-foreground",
-  "sent-to-patient": "bg-primary",
-  "sent-to-pharmacy": "bg-emerald-500",
-  filled: "bg-emerald-500",
-  cancelled: "bg-red-500",
-  active: "bg-primary",
-  pending: "bg-amber-500",
+  issued: "bg-primary",
+  sent_to_pharmacy: "bg-violet-500",
   dispensed: "bg-emerald-500",
+  cancelled: "bg-red-500",
   expired: "bg-muted-foreground",
-  completed: "bg-emerald-500",
-  rejected: "bg-red-500",
-  returned: "bg-muted-foreground",
+  pending: "bg-amber-500",
 };
 
-const channelIcon = { app: User, email: Mail, sms: Smartphone } as const;
+const STATUS_LABEL: Record<string, string> = {
+  issued: "Issued",
+  sent_to_pharmacy: "Sent to Pharmacy",
+  dispensed: "Dispensed",
+  cancelled: "Cancelled",
+  expired: "Expired",
+  pending: "Pending",
+};
 
-// ─── Sidebar atoms ────────────────────────────────────────────────────────────
+const ALL_STATUSES: PrescriptionApiStatus[] = [
+  "issued",
+  "sent_to_pharmacy",
+  "pending",
+  "dispensed",
+  "expired",
+  "cancelled",
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function isExpiringSoon(validUntil: string): boolean {
+  const diff = new Date(validUntil).getTime() - Date.now();
+  return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000; // within 3 days
+}
+
+// ─── Filter sidebar atoms ─────────────────────────────────────────────────────
 
 function FilterSection({
   title,
@@ -111,7 +131,7 @@ function FilterSection({
   );
 }
 
-function PillGroup<T extends string>({
+function PillGroup<T extends string | boolean>({
   value,
   onChange,
   options,
@@ -124,7 +144,7 @@ function PillGroup<T extends string>({
     <div className="flex flex-col gap-1">
       {options.map((o) => (
         <button
-          key={o.value}
+          key={String(o.value)}
           onClick={() => onChange(o.value)}
           className={cn(
             "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
@@ -140,19 +160,64 @@ function PillGroup<T extends string>({
   );
 }
 
+function DateRangeInput({
+  from,
+  to,
+  onFrom,
+  onTo,
+}: {
+  from: string;
+  to: string;
+  onFrom: (v: string) => void;
+  onTo: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div>
+        <label className="text-[10px] text-muted-foreground/70 mb-1 block">
+          From
+        </label>
+        <input
+          type="date"
+          value={from}
+          onChange={(e) => onFrom(e.target.value)}
+          className="w-full px-2 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+        />
+      </div>
+      <div>
+        <label className="text-[10px] text-muted-foreground/70 mb-1 block">
+          To
+        </label>
+        <input
+          type="date"
+          value={to}
+          min={from || undefined}
+          onChange={(e) => onTo(e.target.value)}
+          className="w-full px-2 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Card view ────────────────────────────────────────────────────────────────
 
 function PrescriptionCard({
   p,
-  statusLabel,
   onAction,
 }: {
   p: Prescription;
-  statusLabel: Record<string, string>;
-  onAction: (p: Prescription, action: "pdf" | "send" | "status") => void;
+  onAction: (p: Prescription, action: "pdf" | "send") => void;
 }) {
+  const expiring = isExpiringSoon(p.valid_until);
+
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-4 hover:border-primary/30 transition-colors duration-150">
+    <div
+      className={cn(
+        "bg-card border rounded-sm p-4 hover:border-primary/30 transition-colors duration-150",
+        expiring ? "border-amber-300 dark:border-amber-800" : "border-border/70",
+      )}
+    >
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -161,78 +226,86 @@ function PrescriptionCard({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-semibold text-foreground truncate">
-              {p.doctorName}
+              {p.doctor.user.name}
             </p>
             <p className="text-[10px] text-muted-foreground/70">
-              {p.issuer === "hospital" && p.issuerOrg
-                ? `${p.issuerOrg} · `
-                : ""}
-              {p.date}
+              {p.doctor.specialization} · {formatDate(p.created_at)}
             </p>
           </div>
         </div>
-        <Badge
-          variant="outline"
-          className={cn(
-            "shrink-0 text-[9px] px-1.5 py-0 gap-1",
-            STATUS_STYLES[p.status] ??
-              "bg-muted text-muted-foreground border-border",
-          )}
-        >
-          <span
+        <div className="flex flex-col items-end gap-1">
+          <Badge
+            variant="outline"
             className={cn(
-              "w-1 h-1 rounded-full",
-              STATUS_DOT[p.status] ?? "bg-muted-foreground",
+              "shrink-0 text-[9px] px-1.5 py-0 gap-1",
+              STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground border-border",
             )}
-          />
-          {statusLabel[p.status] ?? p.status}
-        </Badge>
+          >
+            <span
+              className={cn(
+                "w-1 h-1 rounded-full",
+                STATUS_DOT[p.status] ?? "bg-muted-foreground",
+              )}
+            />
+            {STATUS_LABEL[p.status] ?? p.status}
+          </Badge>
+          {p.is_signed && (
+            <span className="flex items-center gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              Signed
+            </span>
+          )}
+        </div>
       </div>
+
+      {/* Diagnosis */}
+      {p.diagnosis && (
+        <div className="mt-2 px-2.5 py-1.5 rounded-sm bg-secondary/20 border border-border/30">
+          <p className="text-[10px] text-muted-foreground/70">Diagnosis</p>
+          <p className="text-[11px] font-medium text-foreground">{p.diagnosis}</p>
+        </div>
+      )}
 
       {/* Medications */}
       <div className="mt-2.5 space-y-1">
-        {p.medications.map((m, i) => (
+        {p.items.map((item) => (
           <div
-            key={i}
+            key={item.id}
             className="flex items-start gap-2 px-2.5 py-1.5 rounded-sm bg-secondary/30 border border-border/30"
           >
             <Pill className="h-3 w-3 text-primary mt-0.5 shrink-0" />
             <div className="text-[11px]">
-              <span className="font-medium text-foreground">{m.name}</span>
-              <span className="text-muted-foreground/70"> · {m.dosage}</span>
+              <span className="font-medium text-foreground">{item.medicine_name}</span>
+              <span className="text-muted-foreground/70"> · {item.dosage}</span>
               <p className="text-muted-foreground/60 mt-0.5 text-[10px]">
-                {m.frequency}
-                {m.quantity ? ` · Qty: ${m.quantity}` : ""}
+                {item.frequency} · {item.duration}
+                {item.quantity ? ` · Qty: ${item.quantity}` : ""}
               </p>
+              {item.instructions && (
+                <p className="text-muted-foreground/50 mt-0.5 text-[10px] italic">
+                  {item.instructions}
+                </p>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Pharmacy + channels */}
-      <div className="mt-2.5 flex items-center justify-between flex-wrap gap-2">
-        {p.pharmacyName ? (
-          <span className="text-[10px] flex items-center gap-1 text-primary">
-            <MapPin className="h-3 w-3" />
-            {p.pharmacyName}
-          </span>
-        ) : (
-          <span />
-        )}
-        <div className="flex items-center gap-1">
-          {p.channels.map((c) => {
-            const I = channelIcon[c];
-            return (
-              <span
-                key={c}
-                className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-sm bg-secondary/50 text-muted-foreground/70 border border-border/40"
-              >
-                <I className="h-2.5 w-2.5" />
-                {c}
-              </span>
-            );
-          })}
-        </div>
+      {/* Valid until + Rx number */}
+      <div className="mt-2.5 flex items-center justify-between flex-wrap gap-1.5">
+        <span
+          className={cn(
+            "text-[10px] flex items-center gap-1",
+            expiring ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground/70",
+          )}
+        >
+          <CalendarRange className="h-3 w-3" />
+          Valid until {formatDate(p.valid_until)}
+          {expiring && " · Expiring soon"}
+        </span>
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
+          {p.prescription_number}
+        </span>
       </div>
 
       {/* Actions */}
@@ -246,7 +319,7 @@ function PrescriptionCard({
           <Download className="h-3 w-3 mr-1" />
           PDF
         </Button>
-        {p.status === "sent-to-patient" ? (
+        {p.status === "issued" && (
           <Button
             size="sm"
             className="h-7 px-2.5 text-[10px] flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
@@ -255,17 +328,44 @@ function PrescriptionCard({
             <Send className="h-3 w-3 mr-1" />
             Send to Pharmacy
           </Button>
-        ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2.5 text-[10px] flex-1 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm transition-all duration-200"
-            onClick={() => onAction(p, "status")}
-          >
-            View Status
-          </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+function SkeletonRow() {
+  return (
+    <tr className="border-t border-border/40">
+      {[180, 200, 80, 120, 70, 100].map((w, i) => (
+        <td key={i} className="px-4 py-3">
+          <div
+            className="h-3 rounded bg-muted animate-pulse"
+            style={{ width: w }}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-card border border-border/50 rounded-sm p-4 space-y-3">
+      <div className="flex gap-2.5">
+        <div className="w-8 h-8 rounded-sm bg-muted animate-pulse" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+          <div className="h-2.5 w-48 bg-muted/60 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <div className="h-8 bg-muted/50 rounded animate-pulse" />
+        <div className="h-8 bg-muted/50 rounded animate-pulse" />
+      </div>
+      <div className="h-7 w-24 bg-muted rounded animate-pulse" />
     </div>
   );
 }
@@ -274,11 +374,35 @@ function PrescriptionCard({
 
 const PatientPrescriptions = () => {
   const { t } = useTranslation();
-  const list = usePrescriptions();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Convert local filter state → API filter params
+  const apiFilters = useMemo<PrescriptionFilters>(
+    () => ({
+      search: filters.search || undefined,
+      status: filters.status !== "all" ? filters.status : undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      is_signed: filters.is_signed !== "all" ? filters.is_signed : undefined,
+    }),
+    [filters],
+  );
+
+  const { data, isLoading, isError, refetch, isFetching } =
+    useGetPatientPrescriptions(apiFilters);
+
+  const prescriptions = useMemo(() => {
+    const list = data?.prescriptions ?? [];
+    // Client-side sort (the API may not support it)
+    return [...list].sort((a, b) => {
+      if (filters.sort === "date-asc")
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [data, filters.sort]);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -297,76 +421,25 @@ const PatientPrescriptions = () => {
   useEffect(() => {
     if (filterOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  const statusLabel: Record<string, string> = {
-    draft: t("pages.doctor.rx_status_draft"),
-    "sent-to-patient": t("pages.doctor.rx_status_sent_patient"),
-    "sent-to-pharmacy": t("pages.doctor.rx_status_sent_pharmacy"),
-    filled: t("pages.doctor.rx_status_filled"),
-    cancelled: t("pages.doctor.rx_status_cancelled"),
-    active: "Active",
-    pending: "Pending",
-    dispensed: "Dispensed",
-    expired: "Expired",
-    completed: "Completed",
-    rejected: "Rejected",
-    returned: "Returned",
-  };
+  // Stats
+  const issuedCount = prescriptions.filter((p) => p.status === "issued").length;
+  const sentToPharmacyCount = prescriptions.filter((p) => p.status === "sent_to_pharmacy").length;
+  const pendingCount = prescriptions.filter((p) => p.status === "pending").length;
+  const dispensedCount = prescriptions.filter((p) => p.status === "dispensed").length;
+  const cancelledCount = prescriptions.filter((p) => p.status === "cancelled").length;
+  const expiringSoonCount = prescriptions.filter((p) => isExpiringSoon(p.valid_until)).length;
 
-  const availableStatuses = useMemo(() => {
-    const seen = new Set(list.map((p) => p.status));
-    return Array.from(seen);
-  }, [list]);
+  const handleAction = useCallback((p: Prescription, action: "pdf" | "send") => {
+    if (action === "pdf" && p.pdf_url) {
+      window.open(p.pdf_url, "_blank");
+    }
+    // "send" — plug into modal/router
+  }, []);
 
-  const filtered = useMemo(() => {
-    const q = filters.search.toLowerCase().trim();
-    return list
-      .filter((p) => {
-        if (filters.status !== "All" && p.status !== filters.status)
-          return false;
-        if (filters.issuer !== "All" && p.issuer !== filters.issuer)
-          return false;
-        if (
-          q &&
-          !p.doctorName.toLowerCase().includes(q) &&
-          !p.patientName.toLowerCase().includes(q)
-        )
-          return false;
-        return true;
-      })
-      .sort((a, b) => {
-        switch (filters.sort) {
-          case "date-asc":
-            return a.createdAt - b.createdAt;
-          case "doctor":
-            return a.doctorName.localeCompare(b.doctorName);
-          default:
-            return b.createdAt - a.createdAt;
-        }
-      });
-  }, [filters, list]);
-
-  const activeCount = filtered.filter(
-    (p) => p.status === "sent-to-patient" || p.status === "sent-to-pharmacy",
-  ).length;
-  const pendingCount = filtered.filter((p) => p.status === "pending").length;
-  const filledCount = filtered.filter(
-    (p) => p.status === "filled" || p.status === "dispensed",
-  ).length;
-  const cancelledCount = filtered.filter(
-    (p) => p.status === "cancelled",
-  ).length;
-
-  const handleAction = useCallback(
-    (_p: Prescription, _action: "pdf" | "send" | "status") => {
-      // plug into router / modal here
-    },
-    [],
-  );
+  // ─── Sidebar content ─────────────────────────────────────────────────────────
 
   const sidebarContent = (
     <>
@@ -375,9 +448,7 @@ const PatientPrescriptions = () => {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
+          <span className="text-[11px] font-semibold text-foreground">Filters</span>
         </div>
         {hasActiveFilters && (
           <button
@@ -391,28 +462,52 @@ const PatientPrescriptions = () => {
       </div>
 
       <div className="px-3.5">
+        {/* Status */}
         <FilterSection title="Status">
-          <PillGroup<RxStatus | "All">
+          <PillGroup<PrescriptionApiStatus | "all">
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "All", label: "All statuses" },
-              ...availableStatuses.map((s) => ({
+              { value: "all", label: "All statuses" },
+              ...ALL_STATUSES.map((s) => ({
                 value: s,
-                label: statusLabel[s] ?? s,
+                label: STATUS_LABEL[s] ?? s,
               })),
             ]}
           />
         </FilterSection>
 
-        <FilterSection title="Issuer">
-          <PillGroup<"All" | "doctor" | "hospital">
-            value={filters.issuer}
-            onChange={(v) => set("issuer", v)}
+        {/* Signature */}
+        <FilterSection title="Signature">
+          <PillGroup<boolean | "all">
+            value={filters.is_signed}
+            onChange={(v) => set("is_signed", v)}
             options={[
-              { value: "All", label: "All issuers" },
-              { value: "doctor", label: "Doctor" },
-              { value: "hospital", label: "Hospital" },
+              { value: "all", label: "All" },
+              { value: true, label: "Signed" },
+              { value: false, label: "Unsigned" },
+            ]}
+          />
+        </FilterSection>
+
+        {/* Date range */}
+        <FilterSection title="Date range">
+          <DateRangeInput
+            from={filters.from}
+            to={filters.to}
+            onFrom={(v) => set("from", v)}
+            onTo={(v) => set("to", v)}
+          />
+        </FilterSection>
+
+        {/* Sort */}
+        <FilterSection title="Sort">
+          <PillGroup<"date-asc" | "date-desc">
+            value={filters.sort}
+            onChange={(v) => set("sort", v)}
+            options={[
+              { value: "date-desc", label: "Latest first" },
+              { value: "date-asc", label: "Oldest first" },
             ]}
           />
         </FilterSection>
@@ -420,22 +515,25 @@ const PatientPrescriptions = () => {
     </>
   );
 
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub")}
+          title={t("pages.patient.prescriptions_title", { defaultValue: "My Prescriptions" })}
+          subtitle={t("pages.patient.prescriptions_sub", {
+            defaultValue: "View and manage your prescriptions",
+          })}
         />
 
-        {/* ── Body: sidebar + results ── */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Desktop sidebar */}
           <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile overlay: backdrop */}
+          {/* Mobile backdrop */}
           <div
             onClick={() => setFilterOpen(false)}
             className={cn(
@@ -446,7 +544,7 @@ const PatientPrescriptions = () => {
             )}
           />
 
-          {/* Mobile overlay: bottom-sheet drawer */}
+          {/* Mobile drawer */}
           <div
             className={cn(
               "fixed bottom-0 left-0 right-0 z-50 md:hidden",
@@ -470,45 +568,39 @@ const PatientPrescriptions = () => {
             </div>
           </div>
 
-          {/* ── Results ── */}
+          {/* ── Main results area ── */}
           <main className="flex-1 overflow-y-auto">
             {/* Stats strip */}
             <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label="Active"
-                value={activeCount}
-                icon={Pill}
-                accent="primary"
-              />
-              <StatCard
-                label="Pending"
-                value={pendingCount}
-                icon={FileText}
-                accent="warning"
-              />
-              <StatCard
-                label="Filled"
-                value={filledCount}
-                icon={Send}
-                accent="success"
-              />
-              <StatCard
-                label="Cancelled"
-                value={cancelledCount}
-                icon={X}
-                accent="primary"
-              />
+              <StatCard label="Issued" value={issuedCount} icon={FileText} accent="primary" />
+              <StatCard label="At Pharmacy" value={sentToPharmacyCount} icon={MapPin} accent="warning" />
+              <StatCard label="Dispensed" value={dispensedCount} icon={Send} accent="success" />
+              <StatCard label="Cancelled" value={cancelledCount} icon={X} accent="primary" />
             </div>
 
-            {/* Meta bar */}
+            {/* Expiring-soon banner */}
+            {expiringSoonCount > 0 && (
+              <div className="mx-4 mt-3 px-3 py-2 rounded-sm bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-900 flex items-center gap-2">
+                <CalendarRange className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  {expiringSoonCount} prescription{expiringSoonCount > 1 ? "s" : ""} expiring within 3 days — collect soon.
+                </p>
+              </div>
+            )}
+
+            {/* Meta / toolbar */}
             <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <p className="text-[11px] text-muted-foreground">
-                  <span className="font-bold text-foreground">
-                    {filtered.length}
-                  </span>{" "}
-                  {filtered.length === 1 ? "prescription" : "prescriptions"}
-                  {hasActiveFilters && (
+                  {isLoading ? (
+                    <span className="text-muted-foreground/50">Loading…</span>
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{prescriptions.length}</span>{" "}
+                      {prescriptions.length === 1 ? "prescription" : "prescriptions"}
+                    </>
+                  )}
+                  {hasActiveFilters && !isLoading && (
                     <button
                       onClick={clearAll}
                       className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
@@ -518,10 +610,11 @@ const PatientPrescriptions = () => {
                   )}
                 </p>
 
-                {activeCount > 0 && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    {activeCount} active
+                {/* Refetch indicator */}
+                {isFetching && !isLoading && (
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Refreshing
                   </span>
                 )}
               </div>
@@ -534,23 +627,22 @@ const PatientPrescriptions = () => {
                     type="text"
                     value={filters.search}
                     onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search doctor or patient.."
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    placeholder="Search diagnosis, doctor…"
+                    className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
-                {/* Sort */}
+                {/* Sort selector */}
                 <div className="relative">
                   <select
                     value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as SortOption)}
+                    onChange={(e) =>
+                      set("sort", e.target.value as FilterState["sort"])
+                    }
                     className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                   >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
+                    <option value="date-desc">Latest first</option>
+                    <option value="date-asc">Oldest first</option>
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
@@ -583,7 +675,7 @@ const PatientPrescriptions = () => {
                   </button>
                 </div>
 
-                {/* Filters button — mobile only */}
+                {/* Mobile filters button */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
@@ -602,162 +694,225 @@ const PatientPrescriptions = () => {
               </div>
             </div>
 
-            {/* Content */}
+            {/* ── Content ── */}
             <div className="p-4">
-              {filtered.length === 0 ? (
+              {/* Error state */}
+              {isError && (
+                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                  <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/30 flex items-center justify-center border border-red-200 dark:border-red-900">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-foreground">
+                      Failed to load prescriptions
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                      Please check your connection and try again.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => refetch()}
+                    className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold transition-colors mt-1"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {/* Loading skeleton */}
+              {isLoading && !isError && (
+                view === "table" ? (
+                  <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                    <table className="w-full text-[11px]">
+                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                        <tr>
+                          {["Doctor", "Medications", "Issued", "Valid Until", "Status", ""].map(
+                            (h) => (
+                              <th key={h} className="text-left px-4 py-3 font-semibold">
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <SkeletonRow key={i} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <SkeletonCard key={i} />
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* Empty state */}
+              {!isLoading && !isError && prescriptions.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
                   <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
                     <Pill className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground">
-                      No prescriptions match your filters
+                      {hasActiveFilters
+                        ? "No prescriptions match your filters"
+                        : "No prescriptions yet"}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
+                      {hasActiveFilters
+                        ? "Try widening your search criteria"
+                        : "Prescriptions issued by your doctor will appear here"}
                     </p>
                   </div>
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
-                  >
-                    Clear all filters
-                  </button>
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearAll}
+                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
                 </div>
-              ) : view === "table" ? (
+              )}
+
+              {/* Table view */}
+              {!isLoading && !isError && prescriptions.length > 0 && view === "table" && (
                 <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Doctor
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Medications
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Issued
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Pharmacy
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Status
-                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                        <th className="text-left px-4 py-3 font-semibold">Medications</th>
+                        <th className="text-left px-4 py-3 font-semibold">Issued</th>
+                        <th className="text-left px-4 py-3 font-semibold">Valid Until</th>
+                        <th className="text-left px-4 py-3 font-semibold">Status</th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map((p) => (
-                        <tr
-                          key={p.id}
-                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-[11px] text-foreground">
-                              {p.doctorName}
-                            </p>
-                            {p.issuer === "hospital" && p.issuerOrg && (
-                              <p className="text-[10px] text-muted-foreground/70">
-                                {p.issuerOrg}
+                      {prescriptions.map((p) => {
+                        const expiring = isExpiringSoon(p.valid_until);
+                        return (
+                          <tr
+                            key={p.id}
+                            className={cn(
+                              "border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150",
+                              expiring && "bg-amber-50/30 dark:bg-amber-950/10",
+                            )}
+                          >
+                            <td className="px-4 py-3">
+                              <p className="font-semibold text-[11px] text-foreground">
+                                {p.doctor.user.name}
                               </p>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-col gap-0.5">
-                              {p.medications.map((m, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/80"
-                                >
-                                  <Pill className="h-2.5 w-2.5 text-primary shrink-0" />
-                                  {m.name}{" "}
-                                  <span className="text-muted-foreground/50">
-                                    · {m.dosage}
-                                  </span>
+                              <p className="text-[10px] text-muted-foreground/70">
+                                {p.doctor.specialization}
+                              </p>
+                              {p.is_signed && (
+                                <span className="flex items-center gap-0.5 mt-0.5 text-[9px] text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
+                                  Signed
                                 </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-muted-foreground/80 text-[10px]">
-                            {p.date}
-                          </td>
-                          <td className="px-4 py-3">
-                            {p.pharmacyName ? (
-                              <span className="flex items-center gap-1 text-[10px] text-primary">
-                                <MapPin className="h-3 w-3" />
-                                {p.pharmacyName}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-muted-foreground/50">
-                                —
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-[9px] px-1.5 py-0 gap-1",
-                                STATUS_STYLES[p.status] ??
-                                  "bg-muted text-muted-foreground border-border",
                               )}
-                            >
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col gap-0.5">
+                                {p.items.map((item) => (
+                                  <span
+                                    key={item.id}
+                                    className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/80"
+                                  >
+                                    <Pill className="h-2.5 w-2.5 text-primary shrink-0" />
+                                    {item.medicine_name}
+                                    <span className="text-muted-foreground/50">
+                                      · {item.dosage}
+                                    </span>
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+
+                            <td className="px-4 py-3 whitespace-nowrap text-muted-foreground/80 text-[10px]">
+                              {formatDate(p.created_at)}
+                            </td>
+
+                            <td className="px-4 py-3 whitespace-nowrap">
                               <span
                                 className={cn(
-                                  "w-1 h-1 rounded-full",
-                                  STATUS_DOT[p.status] ?? "bg-muted-foreground",
+                                  "text-[10px]",
+                                  expiring
+                                    ? "text-amber-600 dark:text-amber-400 font-medium"
+                                    : "text-muted-foreground/80",
                                 )}
-                              />
-                              {statusLabel[p.status] ?? p.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
-                                onClick={() => handleAction(p, "pdf")}
                               >
-                                <Download className="h-3 w-3 mr-1" />
-                                PDF
-                              </Button>
-                              {p.status === "sent-to-patient" ? (
+                                {formatDate(p.valid_until)}
+                                {expiring && (
+                                  <span className="ml-1 text-[9px]">⚠ soon</span>
+                                )}
+                              </span>
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-[9px] px-1.5 py-0 gap-1",
+                                  STATUS_STYLES[p.status] ??
+                                    "bg-muted text-muted-foreground border-border",
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "w-1 h-1 rounded-full",
+                                    STATUS_DOT[p.status] ?? "bg-muted-foreground",
+                                  )}
+                                />
+                                {STATUS_LABEL[p.status] ?? p.status}
+                              </Badge>
+                            </td>
+
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <Button
                                   size="sm"
-                                  className="h-7 px-2.5 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
-                                  onClick={() => handleAction(p, "send")}
+                                  variant="outline"
+                                  className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+                                  onClick={() => handleAction(p, "pdf")}
                                 >
-                                  <Send className="h-3 w-3 mr-1" />
-                                  Send
+                                  <Download className="h-3 w-3 mr-1" />
+                                  PDF
                                 </Button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm transition-all duration-200"
-                                  onClick={() => handleAction(p, "status")}
-                                >
-                                  Details
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {p.status === "issued" && (
+                                  <Button
+                                    size="sm"
+                                    className="h-7 px-2.5 text-[10px] bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
+                                    onClick={() => handleAction(p, "send")}
+                                  >
+                                    <Send className="h-3 w-3 mr-1" />
+                                    Send
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              ) : (
+              )}
+
+              {/* Card view */}
+              {!isLoading && !isError && prescriptions.length > 0 && view === "cards" && (
                 <div className="grid md:grid-cols-2 gap-3">
-                  {filtered.map((p) => (
-                    <PrescriptionCard
-                      key={p.id}
-                      p={p}
-                      statusLabel={statusLabel}
-                      onAction={handleAction}
-                    />
+                  {prescriptions.map((p) => (
+                    <PrescriptionCard key={p.id} p={p} onAction={handleAction} />
                   ))}
                 </div>
               )}

@@ -35,22 +35,21 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const onPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     const isEmail = identifier.includes("@");
-    // const payload = isEmail
-    //   ? { email: identifier, auth_method: "password" as const, password }
-    //   : { phone: identifier, country_code: "+250", auth_method: "password" as const, password };
-    const payload = {
-      email: "pharmacy@mediconnect.rw",
-      auth_method: "password",
-      password: "Pharmacy@2026!",
-    };
+    const payload = isEmail
+      ? { email: identifier, auth_method: "password" as const, password }
+      : { phone: identifier, country_code: "+250", auth_method: "password" as const, password };
 
+console.log("Logging in with payload:", payload);
     login.mutate(payload, {
-      onSuccess: () => onSuccess(),
-      onError: (err: any) => {
-        const msg = err?.response?.data?.message ?? t("auth.errors.unknown");
-        toast.error(msg);
-      },
-    });
+  onSuccess: (data) => {
+    // toast.success(data.message ?? t("auth.login_success", "Logged in successfully."));
+    // onSuccess();
+  },
+  onError: (err: any) => {
+    const msg = err?.message ?? t("auth.errors.unknown");
+    toast.error(msg);
+  },
+});
   };
 
   // ── Send OTP ────────────────────────────────────────
@@ -71,22 +70,24 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   // ── Verify OTP ──────────────────────────────────────
-  const onVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    verifyOtp.mutate(
-      { phone, country_code: "+250", code: otp, type: "login" },
-      {
-        onSuccess: () => onSuccess(),
-        onError: (err: any) => {
-          const msg = err?.response?.data?.message ?? t("auth.errors.unknown");
-          const attemptsLeft = err?.response?.data?.attempts_remaining;
-          toast.error(
-            attemptsLeft ? `${msg} (${attemptsLeft} attempts left)` : msg,
-          );
-        },
+ // ✅ Define it as a function
+const onVerify = (e: React.FormEvent) => {
+  e.preventDefault();
+  verifyOtp.mutate(
+    { phone, country_code: "+250", code: otp, type: "login" },
+    {
+      onSuccess: (data) => {
+        toast.success(data.message ?? t("auth.login_success"));
+        onSuccess();
       },
-    );
-  };
+      onError: (err: any) => {
+        const msg = err?.message ?? t("auth.errors.unknown");
+        const attemptsLeft = err?.data?.attempts_remaining;
+        toast.error(attemptsLeft ? `${msg} (${attemptsLeft} attempts left)` : msg);
+      },
+    }
+  );
+};
 
   const inputCls =
     "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";

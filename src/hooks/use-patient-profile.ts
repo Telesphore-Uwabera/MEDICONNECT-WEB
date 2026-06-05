@@ -1,109 +1,7 @@
-// import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-// import { patientProfileService } from "@/services/patient-profile.service";
-// import type {
-//   UpdateProfilePayload,
-//   UpdateMedicalPayload,
-//   UpdateInsurancePayload,
-// } from "@/types/patient-profile";
-
-// const KEYS = {
-//   profile: ["patient", "profile"],
-//   medical: ["patient", "profile", "medical"],
-//   insurance: ["patient", "profile", "insurance"],
-// };
-
-// // ── Get profile ───────────────────────────────────────
-// export const usePatientProfile = () =>
-//   useQuery({
-//     queryKey: KEYS.profile,
-//     queryFn: patientProfileService.getProfile,
-//     retry: (count, err: any) => {
-//       // don't retry on 404 (profile not created yet)
-//       if (err?.response?.status === 404) return false;
-//       return count < 1;
-//     },
-//   });
-
-// // ── Create / update profile ───────────────────────────
-// export const useUpsertProfile = () => {
-//   const qc = useQueryClient();
-//   return useMutation({
-//     mutationFn: (payload: UpdateProfilePayload) =>
-//       patientProfileService.upsertProfile(payload),
-//     onSuccess: (data) => {
-//       qc.setQueryData(KEYS.profile, data);
-//     },
-//   });
-// };
-
-// // ── Upload avatar ─────────────────────────────────────
-// export const useUploadAvatar = () => {
-//   const qc = useQueryClient();
-//   return useMutation({
-//     mutationFn: (file: File) => patientProfileService.uploadAvatar(file),
-//     onSuccess: (avatarUrl) => {
-//       qc.setQueryData(KEYS.profile, (old: any) => {
-//         if (!old) return old;
-//         return { ...old, user: { ...old.user, avatar: avatarUrl } };
-//       });
-//     },
-//   });
-// };
-
-// // ── Get medical info ──────────────────────────────────
-// export const usePatientMedical = () =>
-//   useQuery({
-//     queryKey: KEYS.medical,
-//     queryFn: patientProfileService.getMedicalInfo,
-//     retry: (count, err: any) => {
-//       if (err?.response?.status === 404) return false;
-//       return count < 1;
-//     },
-//   });
-
-// // ── Save medical info ─────────────────────────────────
-// export const useSaveMedicalInfo = () => {
-//   const qc = useQueryClient();
-//   return useMutation({
-//     mutationFn: (payload: UpdateMedicalPayload) =>
-//       patientProfileService.saveMedicalInfo(payload),
-//     onSuccess: (data) => {
-//       qc.setQueryData(KEYS.medical, (old: any) =>
-//         old ? { ...old, medical_info: data } : old
-//       );
-//     },
-//   });
-// };
-
-// // ── Get insurance ─────────────────────────────────────
-// export const usePatientInsurance = () =>
-//   useQuery({
-//     queryKey: KEYS.insurance,
-//     queryFn: patientProfileService.getInsurance,
-//     retry: (count, err: any) => {
-//       if (err?.response?.status === 404) return false;
-//       return count < 1;
-//     },
-//   });
-
-// // ── Update insurance ──────────────────────────────────
-// export const useUpdateInsurance = () => {
-//   const qc = useQueryClient();
-//   return useMutation({
-//     mutationFn: (payload: UpdateInsurancePayload) =>
-//       patientProfileService.updateInsurance(payload),
-//     onSuccess: (data) => {
-//       qc.setQueryData(KEYS.insurance, data);
-//       qc.invalidateQueries({ queryKey: KEYS.profile });
-//     },
-//   });
-// };
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/Api";
 import type {
   PatientProfile,
-  FullPatientProfile,
   MedicalInfo,
   Insurance,
   UpdateProfilePayload,
@@ -133,7 +31,7 @@ interface AvatarResponse {
 
 interface MedicalInfoResponse {
   medical_info: MedicalInfo;
-  patient: FullPatientProfile;
+  patient: PatientProfile; // ← was FullPatientProfile; API actually returns PatientProfile (with nested user)
 }
 
 interface SaveMedicalInfoResponse {
@@ -172,7 +70,7 @@ export function useUpsertProfile() {
     mutationFn: (payload: UpdateProfilePayload) =>
       apiFetch<UpsertProfileResponse>(BASE, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
       }).then((r) => r.patient),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-profile"] });
@@ -190,7 +88,6 @@ export function useUploadAvatar() {
     mutationFn: (file: File) => {
       const form = new FormData();
       form.append("avatar", file);
-      // No Content-Type header — browser sets it automatically with boundary for FormData
       return apiFetch<AvatarResponse>(`${BASE}/avatar`, {
         method: "POST",
         body: form,
@@ -224,7 +121,7 @@ export function useSaveMedicalInfo() {
     mutationFn: (payload: UpdateMedicalPayload) =>
       apiFetch<SaveMedicalInfoResponse>(`${BASE}/medical`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
       }).then((r) => r.medical_info),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-medical-info"] });
@@ -254,7 +151,7 @@ export function useUpdateInsurance() {
     mutationFn: (payload: UpdateInsurancePayload) =>
       apiFetch<UpdateInsuranceResponse>(`${BASE}/insurance`, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: payload,
       }).then((r) => r.insurance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-insurance"] });

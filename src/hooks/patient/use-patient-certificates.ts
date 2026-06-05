@@ -1,0 +1,238 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/Api";
+
+const BASE = "/patient/certificates";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type CertStatus = "draft" | "pending" | "in_review" | "approved" | "rejected";
+
+export interface Doctor {
+  id: number;
+  name: string;
+  avatar?: string;
+  pending_load?: number;
+}
+
+export interface CertificateAnswer {
+  field: string;
+  value: string;
+}
+
+export interface Certificate {
+  id: number;
+  certificate_number: string;
+  status: CertStatus;
+  current_step?: number;
+  purpose: string;
+  purpose_other?: string | null;
+  job_type?: string;
+  has_red_flags: boolean;
+  decision?: string | null;
+  valid_until?: string | null;
+  doctor_notes?: string | null;
+  doctor?: Doctor | null;
+  answers?: CertificateAnswer[];
+  created_at: string;
+}
+
+export interface StepDataResponse {
+  certificate_id: number;
+  current_step: number;
+  step: number;
+  answers?: CertificateAnswer[];
+  // Step 1
+  purpose?: string;
+  purpose_other?: string | null;
+  job_type?: string;
+  // Step 4
+  vitals?: {
+    temperature?: string;
+    blood_pressure?: string;
+    pulse?: string;
+    oxygen_saturation?: string;
+  };
+  notes?: string;
+}
+
+// Step payloads
+export interface Step1Payload {
+  purpose: string;
+  purpose_other?: string | null;
+  job_type: string;
+}
+
+export interface StepAnswersPayload {
+  answers: Record<string, string>;
+  // Step 4 extras
+  temperature?: string;
+  blood_pressure?: string;
+  pulse?: string;
+  oxygen_saturation?: string;
+  notes?: string;
+}
+
+export type SaveStepPayload = Step1Payload | StepAnswersPayload;
+
+export interface SaveStepResponse {
+  message: string;
+  certificate: Certificate;
+  current_step: number;
+}
+
+export interface SubmitResponse {
+  message: string;
+  certificate: Certificate;
+}
+
+export interface AvailableDoctorsResponse {
+  doctors: Doctor[];
+}
+
+export interface CertificatesListResponse {
+  certificates: Certificate[];
+}
+
+export interface DownloadResponse {
+  url: string;
+  expires_in: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared API error type
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ApiError extends Error {
+  status: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Query Keys
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const certKeys = {
+  all: ["patient-certificates"] as const,
+  list: (status?: string) => [...certKeys.all, "list", status] as const,
+  single: (id: number) => [...certKeys.all, "single", id] as const,
+  request: () => [...certKeys.all, "request"] as const,
+  step: (step: number) => [...certKeys.all, "step", step] as const,
+  doctors: () => [...certKeys.all, "available-doctors"] as const,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates/available-doctors
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useGetAvailableDoctors() {
+  return useQuery<AvailableDoctorsResponse>({
+    queryKey: certKeys.doctors(),
+    queryFn: () => apiFetch(`${BASE}/available-doctors`),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates  (list)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useGetPatientCertificates(status?: string) {
+  return useQuery<CertificatesListResponse>({
+    queryKey: certKeys.list(status),
+    queryFn: () =>
+      apiFetch(status ? `${BASE}?status=${status}` : BASE),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates/{id}
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useGetCertificate(id: number | null) {
+  return useQuery<{ certificate: Certificate }>({
+    queryKey: certKeys.single(id!),
+    queryFn: () => apiFetch(`${BASE}/${id}`),
+    enabled: id !== null,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates/request  (current draft)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useGetCurrentRequest() {
+  return useQuery<{ certificate: Certificate }>({
+    queryKey: certKeys.request(),
+    queryFn: () => apiFetch(`${BASE}/request`),
+    retry: (failureCount, error) => {
+      if ((error as ApiError).status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates/request/step/{step}
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useGetStepData(step: number, enabled = true) {
+  return useQuery<StepDataResponse>({
+    queryKey: certKeys.step(step),
+    queryFn: () => apiFetch(`${BASE}/request/step/${step}`),
+    enabled,
+    retry: (failureCount, error) => {
+      if ((error as ApiError).status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /patient/certificates/step/{step}
+// FIX: pass payload as a plain object — apiFetch already calls JSON.stringify.
+//      Previously body: JSON.stringify(payload) caused double-stringification,
+//      sending a JSON string instead of a JSON object to the server.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useSaveStep() {
+  const qc = useQueryClient();
+  return useMutation<SaveStepResponse, Error, { step: number; payload: SaveStepPayload }>({
+    mutationFn: ({ step, payload }) =>
+      apiFetch(`${BASE}/step/${step}`, {
+        method: "POST",
+        body: payload, // ← plain object, NOT JSON.stringify(payload)
+      }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: certKeys.request() });
+      qc.invalidateQueries({ queryKey: certKeys.step(data.current_step) });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /patient/certificates/submit
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useSubmitCertificate() {
+  const qc = useQueryClient();
+  return useMutation<SubmitResponse, Error, void>({
+    mutationFn: () =>
+      apiFetch(`${BASE}/submit`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: certKeys.all });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /patient/certificates/{id}/download
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useDownloadCertificate() {
+  return useMutation<DownloadResponse, Error, number>({
+    mutationFn: (id) => apiFetch(`${BASE}/${id}/download`),
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+    },
+  });
+}

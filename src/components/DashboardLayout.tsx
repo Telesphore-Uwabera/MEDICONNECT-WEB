@@ -77,10 +77,10 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.medical"),
       items: [
         { to: "/admin/manage-appointments", label: t("sidebar.appointments"), icon: Calendar },
-        { to: "/admin/specializations", label: t("sidebar.specializations"), icon: FlaskConical },
-        { to: "/admin/checklist-questions", label: t("sidebar.checklistQuestions"), icon: HelpCircle },
+        { to: "/admin/manage-specializations", label: t("sidebar.specializations"), icon: FlaskConical },
+        { to: "/admin/manage-checklist-questions", label: t("sidebar.checklistQuestions"), icon: HelpCircle },
         { to: "/admin/manage-insurances", label: t("sidebar.insurances"), icon: Shield },
-        { to: "/admin/manage-reviews", label: t("sidebar.reviews"), icon: Star },
+        { to: "/admin/manage-instant-doctors", label: t("sidebar.instantDoctors"), icon: Star },
       ],
     },
     {
@@ -125,7 +125,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/doctor/prescriptions", label: t("sidebar.prescriptions"), icon: FileText },
         { to: "/doctor/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
-        // { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
+        { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
       ],
     },
     {
@@ -177,8 +177,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.myHealth"),
       items: [
         { to: "/patient/profile", label: t("sidebar.profile"), icon: User },
-        { to: "/patient/medical-info", label: t("sidebar.medicalInfo"), icon: HeartPulse },
-        { to: "/patient/insurance", label: t("sidebar.insurance"), icon: Shield },
+        // { to: "/patient/medical-info", label: t("sidebar.medicalInfo"), icon: HeartPulse },
+        // { to: "/patient/insurance", label: t("sidebar.insurance"), icon: Shield },
       ],
     },
     {
@@ -186,6 +186,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/patient/search-doctors", label: t("sidebar.searchDoctors"), icon: Search },
         { to: "/patient/search-hospitals", label: t("sidebar.searchHospitals"), icon: Building2 },
+        { to: "/patient/search-pharmacy", label: t("sidebar.searchPharmacies"), icon: Pill },
         { to: "/patient/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
       ],
     },
@@ -407,9 +408,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
       </nav>
 
       {/* ── Role Switcher ── */}
-      <div className="px-3 py-3 border-t border-sidebar-border flex-shrink-0">
-        <RoleSwitcher current={role} t={t} />
-      </div>
+     <div className="px-3 py-3 border-t border-sidebar-border flex-shrink-0">
+  <ActiveRoleBadge role={role} t={t} />
+</div>
     </div>
   );
 
@@ -483,42 +484,30 @@ export const DashboardLayout = ({ role, children }: Props) => {
   );
 };
 
-/* ── Role Switcher ── */
-const RoleSwitcher = ({ current, t }: { current: Role; t: (k: string) => string }) => {
-  const roles: { role: Role; label: string; to: string; icon: LucideIcon }[] = [
-    { role: "patient",  label: t("sidebar.patient"),  to: "/patient",  icon: User },
-    { role: "doctor",   label: t("sidebar.doctor"),   to: "/doctor",   icon: Stethoscope },
-    { role: "hospital", label: t("sidebar.hospital"), to: "/hospital", icon: Building2 },
-    { role: "pharmacy", label: t("sidebar.pharmacy"), to: "/pharmacy/orders", icon: Pill },
-    { role: "admin",    label: t("sidebar.admin"),    to: "/admin",    icon: ShieldCheck },
-  ];
+/* ── Active Role Badge ── */
+const ActiveRoleBadge = ({ role, t }: { role: Role; t: (k: string) => string }) => {
+  const roleMap: Record<Role, { label: string; icon: LucideIcon }> = {
+    patient:  { label: t("sidebar.patient"),  icon: User },
+    doctor:   { label: t("sidebar.doctor"),   icon: Stethoscope },
+    hospital: { label: t("sidebar.hospital"), icon: Building2 },
+    pharmacy: { label: t("sidebar.pharmacy"), icon: Pill },
+    admin:    { label: t("sidebar.admin"),    icon: ShieldCheck },
+  };
+
+  const { label, icon: Icon } = roleMap[role];
 
   return (
-    <div className="space-y-1.5">
-      <p className="px-1 text-[9px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/35 select-none">
-        {t("sidebar.switchRole")}
-      </p>
-      <div className="grid grid-cols-5 gap-0.5 rounded-sm bg-sidebar-accent/40 p-1 border border-sidebar-border">
-        {roles.map((r) => {
-          const Icon = r.icon;
-          const active = current === r.role;
-          return (
-            <NavLink
-              key={r.role}
-              to={r.to}
-              title={r.label}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all duration-150",
-                active
-                  ? "bg-primary/15 text-primary border border-primary/20"
-                  : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70 hover:bg-sidebar-accent"
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 2} />
-              <span className="text-[8px] font-semibold leading-none">{r.label}</span>
-            </NavLink>
-          );
-        })}
+    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-sm bg-primary/10 border border-primary/15">
+      <span className="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary flex-shrink-0">
+        <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+      </span>
+      <div className="flex flex-col min-w-0">
+        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 leading-none mb-0.5">
+          {t("sidebar.activeRole")}
+        </span>
+        <span className="text-[11px] font-semibold text-primary truncate leading-none">
+          {label}
+        </span>
       </div>
     </div>
   );
