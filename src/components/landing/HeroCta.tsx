@@ -16,7 +16,9 @@ const HeroCta = () => {
     return (
       <div className="mt-7 flex flex-col gap-3 max-w-2xl w-full">
         <div className="grid grid-cols-2 gap-3">
-          <Link to={dashboardPath(user.role)}>
+          
+          {/* /patient/search-doctors instant */}
+          <Link to="/patient/search-doctors">
             <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
@@ -24,10 +26,10 @@ const HeroCta = () => {
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none truncate">
-                    {t("common.dashboard", "Dashboard")}
+                    {t("pages.landing.instant_consultation", "Instant Consultation")}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
-                    {t("pages.landing.welcome_back", "Welcome back")}, {user.name.split(" ")[0]}
+                    {t("pages.landing.title", "connect in under 5 minutes")}
                   </p>
                 </div>
               </div>
@@ -56,7 +58,7 @@ const HeroCta = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Link to="/patient/search-doctors" className="group">
+          <Link to="/patient/search-pharmacy" className="group">
             <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
               <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-accent text-primary shrink-0">
                 <Pill className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -136,7 +138,7 @@ const HeroCta = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/patient/search-doctors" className="group">
+        <Link to="/patient/search-pharmacy" className="group">
           <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
             <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-accent text-primary shrink-0">
               <Pill className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -146,7 +148,7 @@ const HeroCta = () => {
                 {t("pages.landing.open_marketplace")}
               </p>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate">
-                500+ pharmacies
+                500+ pharmacies 
               </p>
             </div>
           </button>

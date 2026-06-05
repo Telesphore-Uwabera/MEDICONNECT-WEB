@@ -28,6 +28,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useMe();
+  console.log(user);
   const logout = useLogout();
 
   const navLinks = [

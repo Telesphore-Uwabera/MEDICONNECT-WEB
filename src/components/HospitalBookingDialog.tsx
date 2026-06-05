@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -17,58 +17,191 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Users2, MapPin, Stethoscope, CalendarDays } from "lucide-react";
+import {
+  Check,
+  Users2,
+  MapPin,
+  Stethoscope,
+  CalendarDays,
+  Loader2,
+  Building2,
+  Clock,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
-  HospitalInfo,
-  bookHospitalSpot,
-  useHospitalSchedule,
-} from "@/lib/hospital-store";
+  useHospitalDetail,
+  useCreateBooking,
+  buildWeekSchedule,
+  buildDateSlots,
+  buildTimeSlots,
+  type BookingPayload,
+  type Department,
+  type HospitalService,
+} from "@/hooks/hospital/use-hospital-booking";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+interface HospitalBasic {
+  id: number | string;
+  slug?: string;
+  name_en: string;
+  city?: string | null;
+  logo?: string | null;
+}
+
+interface BookingConfirmed {
+  date: string;
+  time: string;
+  serviceName: string;
+  departmentName: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 export const HospitalBookingDialog = ({
   hospital,
   open,
   onOpenChange,
 }: {
-  hospital: HospitalInfo;
+  hospital: HospitalBasic;
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) => {
-  const schedule = useHospitalSchedule(hospital.name);
-  const [selected,  setSelected]  = useState<string | null>(null);
-  const [reason,    setReason]    = useState("");
-  const [serviceId, setServiceId] = useState<string>("");
-  const [confirmed, setConfirmed] = useState<{ date: string; service?: string } | null>(null);
-
-  const days    = useMemo(() => schedule?.days ?? [], [schedule]);
-  const service = useMemo(
-    () => hospital.services.find((s) => s.id === serviceId),
-    [hospital.services, serviceId],
+  const { data: detail, isLoading } = useHospitalDetail(
+    open ? hospital.slug : undefined
   );
 
+  const createBooking = useCreateBooking();
+
+  const [selectedDate, setSelectedDate]             = useState<string | null>(null);
+  const [selectedTime, setSelectedTime]             = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedService, setSelectedService]       = useState<string>("");
+  const [notes, setNotes]                           = useState("");
+  const [confirmed, setConfirmed]                   = useState<BookingConfirmed | null>(null);
+
+  // ── Derived data ──────────────────────────────────────────────────────────
+
+  const departments = useMemo<Department[]>(
+    () => (detail?.departments ?? []).filter((d) => d.is_active !== false),
+    [detail]
+  );
+
+  /**
+   * Services are nested inside each department in the API response:
+   *   detail.departments[n].services[]
+   *
+   * Find the selected department first, then read its services array.
+   * This fixes: "Property 'services' does not exist on type 'Department[]'"
+   */
+  const filteredServices = useMemo<HospitalService[]>(() => {
+    if (!selectedDepartment) return [];
+    const dept = departments.find((d) => String(d.id) === selectedDepartment);
+    return (dept?.services ?? []).filter((s) => s.is_active !== false);
+  }, [departments, selectedDepartment]);
+
+  /**
+   * weekSchedule uses detail.working_days (the correct API key).
+   * This fixes: "Property 'working_days' does not exist on type 'HospitalDetail'"
+   */
+  const weekSchedule = useMemo(
+    () => buildWeekSchedule(detail?.working_days ?? []),
+    [detail]
+  );
+
+  /**
+   * dateSlots — only upcoming open days within the next 14 days.
+   * Falls back to detail.opens_at / closes_at when a day row has null times.
+   */
+  const dateSlots = useMemo(
+    () =>
+      buildDateSlots(
+        detail?.working_days ?? [],
+        detail?.opens_at,
+        detail?.closes_at
+      ),
+    [detail]
+  );
+
+  const activeDateSlot = useMemo(
+    () => dateSlots.find((s) => s.date === selectedDate) ?? null,
+    [dateSlots, selectedDate]
+  );
+
+  const timeSlots = useMemo(
+    () =>
+      activeDateSlot
+        ? buildTimeSlots(activeDateSlot.openTime, activeDateSlot.closeTime)
+        : [],
+    [activeDateSlot]
+  );
+
+  const chosenDepartment = useMemo(
+    () => departments.find((d) => String(d.id) === selectedDepartment) ?? null,
+    [departments, selectedDepartment]
+  );
+
+  const chosenService = useMemo(
+    () => filteredServices.find((s) => String(s.id) === selectedService) ?? null,
+    [filteredServices, selectedService]
+  );
+
+  const canConfirm =
+    !!selectedDate && !!selectedTime && !!chosenDepartment && !!chosenService;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const hasAnyOpenDay = weekSchedule.some((d) => !d.is_closed && d.is_active);
+
+  const handleDepartmentChange = (val: string) => {
+    setSelectedDepartment(val);
+    setSelectedService("");
+  };
+
   const handleConfirm = () => {
-    if (!selected || !service) return;
-    const result = bookHospitalSpot(
-      hospital.name, selected, reason || service.name, service,
-    );
-    if ("error" in result) {
-      toast.error("Cannot book", { description: result.error });
-      return;
-    }
-    setConfirmed({ date: selected, service: service.name });
-    toast.success("Hospital spot reserved", {
-      description: `${hospital.name} · ${service.name} · ${format(parseISO(selected), "EEE MMM d")}`,
+    if (!canConfirm || !chosenService || !chosenDepartment) return;
+
+    const payload: BookingPayload = {
+      hospital_id:         hospital.id,
+      hospital_service_id: chosenService.id,
+      department_id:       chosenDepartment.id,
+      preferred_date:      selectedDate!,
+      preferred_time:      selectedTime,
+      notes:               notes || undefined,
+    };
+
+    createBooking.mutate(payload, {
+      onSuccess: () => {
+        setConfirmed({
+          date:           selectedDate!,
+          time:           selectedTime,
+          serviceName:    chosenService.name_en,
+          departmentName: chosenDepartment.name_en,
+        });
+        toast.success("Booking confirmed!", {
+          description: `${hospital.name_en} · ${chosenService.name_en} · ${selectedDate} at ${selectedTime}`,
+        });
+      },
+      onError: (err: Error) => {
+        toast.error("Booking failed", { description: err.message });
+      },
     });
   };
 
   const reset = () => {
-    setSelected(null);
-    setReason("");
-    setServiceId("");
+    setSelectedDate(null);
+    setSelectedTime("");
+    setSelectedDepartment("");
+    setSelectedService("");
+    setNotes("");
     setConfirmed(null);
   };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Sheet
@@ -80,13 +213,21 @@ export const HospitalBookingDialog = ({
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-sm flex flex-col gap-0 p-0 bg-background border-l border-border"
+        className="w-full sm:max-w-[520px] flex flex-col gap-0 p-0 bg-background border-l border-border"
       >
         {/* ── Header ── */}
         <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15">
-              {hospital.image}
+            <div className="h-8 w-8 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15 overflow-hidden">
+              {hospital.logo ? (
+                <img
+                  src={hospital.logo}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                hospital.name_en.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <SheetTitle className="text-[13px] font-semibold text-foreground leading-tight">
@@ -94,7 +235,7 @@ export const HospitalBookingDialog = ({
               </SheetTitle>
               <SheetDescription className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                 <MapPin className="h-2.5 w-2.5 shrink-0" />
-                {hospital.name}
+                {hospital.name_en}
                 {hospital.city ? ` · ${hospital.city}` : ""}
               </SheetDescription>
             </div>
@@ -103,27 +244,40 @@ export const HospitalBookingDialog = ({
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto">
-          {confirmed ? (
-            /* ── Success state ── */
+
+          {/* Loading */}
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <p className="text-[11px]">Loading hospital details…</p>
+            </div>
+          )}
+
+          {/* Success state */}
+          {!isLoading && confirmed && (
             <div className="flex flex-col items-center justify-center h-full py-12 px-6 text-center gap-4">
               <div className="h-14 w-14 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
                 <Check className="h-7 w-7" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">Spot reserved</p>
+                <p className="text-[13px] font-semibold text-foreground">
+                  Spot reserved
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                  {hospital.name}
+                  {hospital.name_en}
                   <br />
-                  {format(parseISO(confirmed.date), "EEEE, MMMM d, yyyy")}
-                  {confirmed.service && (
-                    <>
-                      <br />
-                      <span className="inline-flex items-center gap-1 mt-1 text-foreground font-medium">
-                        <Stethoscope className="h-3 w-3" />
-                        {confirmed.service}
-                      </span>
-                    </>
-                  )}
+                  {format(parseISO(confirmed.date), "EEEE, MMMM d, yyyy")} at{" "}
+                  {confirmed.time}
+                  <br />
+                  <span className="inline-flex items-center gap-1 mt-1 text-muted-foreground">
+                    <Building2 className="h-3 w-3" />
+                    {confirmed.departmentName}
+                  </span>
+                  <br />
+                  <span className="inline-flex items-center gap-1 text-foreground font-medium">
+                    <Stethoscope className="h-3 w-3" />
+                    {confirmed.serviceName}
+                  </span>
                 </p>
               </div>
               <Button
@@ -134,132 +288,276 @@ export const HospitalBookingDialog = ({
                 Done
               </Button>
             </div>
-          ) : (
+          )}
+
+          {/* Form */}
+          {!isLoading && !confirmed && (
             <div className="px-5 py-4 space-y-5">
 
-              {/* ── Date picker ── */}
+              {/* ── Weekly schedule overview ── */}
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <CalendarDays className="h-2.5 w-2.5" /> Available days
+                  <CalendarDays className="h-2.5 w-2.5" /> Working days
                 </p>
-                {days.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center gap-2 border border-dashed border-border rounded-sm">
-                    <CalendarDays className="h-6 w-6 text-muted-foreground/30" />
-                    <p className="text-[10px] text-muted-foreground">
-                      No service schedule yet for this hospital.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-1.5 max-h-60 overflow-y-auto pr-0.5">
-                    {days.map((d) => {
-                      const remaining   = Math.max(0, d.capacity - d.booked);
-                      const disabled    = !d.active || remaining === 0;
-                      const isSelected  = selected === d.date;
-                      const utilization = d.capacity > 0 ? (d.booked / d.capacity) * 100 : 0;
 
-                      return (
-                        <button
-                          key={d.date}
-                          disabled={disabled}
-                          onClick={() => setSelected(d.date)}
+                <div className="grid grid-cols-7 gap-1">
+                  {weekSchedule.map((day) => {
+                    const isOpen = !day.is_closed && day.is_active;
+                    return (
+                      <div
+                        key={day.dayName}
+                        className={cn(
+                          "flex flex-col items-center rounded-sm py-2 px-0.5 border text-center",
+                          isOpen
+                            ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10"
+                            : "border-border bg-muted/30 opacity-50"
+                        )}
+                      >
+                        <span
                           className={cn(
-                            "rounded-sm border p-2 text-left transition-all duration-150 relative",
-                            isSelected
-                              ? "border-primary ring-1 ring-primary/30 bg-primary/5 dark:bg-primary/10"
-                              : !disabled
-                              ? "border-border hover:border-primary/60 hover:bg-muted/40"
-                              : "border-dashed border-border/50 bg-muted/20 opacity-50 cursor-not-allowed",
+                            "text-[9px] font-semibold uppercase tracking-wider",
+                            isOpen
+                              ? "text-emerald-700 dark:text-emerald-400"
+                              : "text-muted-foreground"
                           )}
                         >
-                          <div className="text-[8px] uppercase font-semibold tracking-wider text-muted-foreground">
-                            {format(parseISO(d.date), "EEE")}
-                          </div>
-                          <div className="text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                            {format(parseISO(d.date), "d")}
-                            <span className="text-[9px] font-medium text-muted-foreground ml-0.5">
-                              {format(parseISO(d.date), "MMM")}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                            <Users2 className="h-2.5 w-2.5" />
-                            {d.active ? `${remaining} left` : "Closed"}
-                          </div>
-                          <div className="h-0.5 mt-1.5 rounded-full bg-border overflow-hidden">
-                            <div
-                              className={cn(
-                                "h-full rounded-full transition-all",
-                                utilization > 85 ? "bg-amber-500" : "bg-primary",
-                                disabled && "opacity-30",
-                              )}
-                              style={{ width: `${utilization}%` }}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                          {day.shortName}
+                        </span>
+                        <span
+                          className={cn(
+                            "mt-1 text-[8px]",
+                            isOpen
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : "text-muted-foreground/50"
+                          )}
+                        >
+                          {isOpen ? "Open" : "Closed"}
+                        </span>
+                        {isOpen && day.openTime && day.closeTime && (
+                          <span className="mt-0.5 text-[7px] text-muted-foreground leading-tight">
+                            {day.openTime}–{day.closeTime}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!hasAnyOpenDay && (
+                  <p className="mt-2 text-[10px] text-muted-foreground text-center py-1">
+                    This hospital has no open days configured yet.
+                  </p>
                 )}
               </div>
 
-              {/* ── Service / department ── */}
+              {/* ── Selectable date cards (next 14 days, open days only) ── */}
+              {hasAnyOpenDay && (
+                <div>
+                  <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
+                    <Clock className="h-2.5 w-2.5" /> Select a date
+                  </p>
+
+                  {dateSlots.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-border rounded-sm">
+                      <CalendarDays className="h-5 w-5 text-muted-foreground/30" />
+                      <p className="text-[10px] text-muted-foreground">
+                        No open dates in the next 14 days.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
+                      {dateSlots.map((slot) => (
+                        <button
+                          key={slot.date}
+                          onClick={() => {
+                            setSelectedDate(slot.date);
+                            setSelectedTime("");
+                          }}
+                          className={cn(
+                            "rounded-sm border p-2 text-left transition-all duration-150",
+                            selectedDate === slot.date
+                              ? "border-primary ring-1 ring-primary/30 bg-primary/5 dark:bg-primary/10"
+                              : "border-border hover:border-primary/60 hover:bg-muted/40"
+                          )}
+                        >
+                          <div className="text-[8px] uppercase font-semibold tracking-wider text-muted-foreground">
+                            {format(slot.displayDate, "EEE")}
+                          </div>
+                          <div className="text-[12px] font-bold text-foreground leading-tight mt-0.5">
+                            {format(slot.displayDate, "d")}
+                            <span className="text-[9px] font-medium text-muted-foreground ml-0.5">
+                              {format(slot.displayDate, "MMM")}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                            <Users2 className="h-2.5 w-2.5 shrink-0" />
+                            {slot.openTime}–{slot.closeTime}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Time slots ── */}
+              {selectedDate && timeSlots.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                    Preferred time{" "}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {timeSlots.map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setSelectedTime(t)}
+                        className={cn(
+                          "rounded-sm border py-1.5 text-[10px] font-semibold transition-all",
+                          selectedTime === t
+                            ? "border-primary bg-primary/5 text-primary dark:bg-primary/10"
+                            : "border-border hover:border-primary/60 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Department dropdown ── */}
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="department"
+                  className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"
+                >
+                  <Building2 className="h-2.5 w-2.5" />
+                  Department <span className="text-destructive">*</span>
+                </Label>
+                {departments.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground py-1">
+                    No departments listed for this hospital.
+                  </p>
+                ) : (
+                  <Select
+                    value={selectedDepartment}
+                    onValueChange={handleDepartmentChange}
+                  >
+                    <SelectTrigger
+                      id="department"
+                      className="h-8 text-[11px] rounded-sm border-border bg-background focus:ring-1 focus:ring-primary/30"
+                    >
+                      <SelectValue placeholder="Select a department" />
+                    </SelectTrigger>
+                    <SelectContent className="text-[11px]">
+                      {departments.map((d) => (
+                        <SelectItem
+                          key={d.id}
+                          value={String(d.id)}
+                          className="text-[11px]"
+                        >
+                          {d.name_en}
+                          {d.floor ? (
+                            <span className="text-muted-foreground">
+                              {" "}· {d.floor}
+                            </span>
+                          ) : null}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* ── Service dropdown (filtered by selected department's nested services) ── */}
               <div className="space-y-1.5">
                 <Label
                   htmlFor="service"
                   className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"
                 >
                   <Stethoscope className="h-2.5 w-2.5" />
-                  Service / department <span className="text-destructive">*</span>
+                  Service <span className="text-destructive">*</span>
                 </Label>
-                <Select value={serviceId} onValueChange={setServiceId}>
-                  <SelectTrigger
-                    id="service"
-                    className="h-8 text-[11px] rounded-sm border-border bg-background focus:ring-1 focus:ring-primary/30"
+
+                {!selectedDepartment ? (
+                  <p className="text-[10px] text-muted-foreground/60 py-1 italic">
+                    Select a department first.
+                  </p>
+                ) : filteredServices.length === 0 ? (
+                  <p className="text-[10px] text-muted-foreground py-1">
+                    No services available for this department.
+                  </p>
+                ) : (
+                  <Select
+                    value={selectedService}
+                    onValueChange={setSelectedService}
                   >
-                    <SelectValue placeholder="Select a service" />
-                  </SelectTrigger>
-                  <SelectContent className="text-[11px]">
-                    {hospital.services.map((s) => (
-                      <SelectItem key={s.id} value={s.id} className="text-[11px]">
-                        <span className="font-medium">{s.name}</span>
-                        <span className="text-muted-foreground"> · {s.department}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger
+                      id="service"
+                      className="h-8 text-[11px] rounded-sm border-border bg-background focus:ring-1 focus:ring-primary/30"
+                    >
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                    <SelectContent className="text-[11px]">
+                      {filteredServices.map((s) => (
+                        <SelectItem
+                          key={s.id}
+                          value={String(s.id)}
+                          className="text-[11px]"
+                        >
+                          <span className="font-medium">{s.name_en}</span>
+                          {/* {s.price ? (
+                            <span className="text-muted-foreground">
+                              {" "}· {Number(s.price).toLocaleString()}{" "}
+                              {s.currency ?? ""}
+                            </span>
+                          ) : null} */}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
-              {/* ── Reason (optional) ── */}
+              {/* ── Notes ── */}
               <div className="space-y-1.5">
                 <Label
-                  htmlFor="reason"
+                  htmlFor="notes"
                   className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
                 >
-                  Reason for visit
+                  Notes
                   <span className="normal-case tracking-normal font-normal ml-1 text-muted-foreground/60">
                     (optional)
                   </span>
                 </Label>
                 <Input
-                  id="reason"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Follow-up on results"
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. I prefer morning sessions"
                   className="h-8 text-[11px] rounded-sm border-border bg-background placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
 
-              {/* ── Summary chip (appears when both fields filled) ── */}
-              {selected && service && (
+              {/* ── Summary chip ── */}
+              {selectedDate && selectedTime && chosenDepartment && chosenService && (
                 <div className="rounded-sm border border-primary/20 bg-primary/5 dark:bg-primary/10 px-3 py-2.5 flex items-start gap-2">
                   <div className="h-4 w-4 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
                     <Check className="h-2.5 w-2.5 text-primary" />
                   </div>
-                  <div>
-                    <p className="text-[10px] font-semibold text-foreground">
-                      {service.name}
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-foreground truncate">
+                      {chosenService.name_en}
                     </p>
                     <p className="text-[9px] text-muted-foreground mt-0.5">
-                      {format(parseISO(selected), "EEEE, MMMM d, yyyy")} · {hospital.name}
+                      <span className="inline-flex items-center gap-0.5">
+                        <Building2 className="h-2.5 w-2.5" />
+                        {chosenDepartment.name_en}
+                      </span>
+                      {" · "}
+                      {format(parseISO(selectedDate), "EEEE, MMMM d, yyyy")} at{" "}
+                      {selectedTime}
                     </p>
                   </div>
                 </div>
@@ -269,7 +567,7 @@ export const HospitalBookingDialog = ({
         </div>
 
         {/* ── Footer ── */}
-        {!confirmed && (
+        {!confirmed && !isLoading && (
           <SheetFooter className="px-5 py-3.5 border-t border-border bg-muted/30 shrink-0 flex items-center justify-between sm:justify-between gap-2">
             <Button
               variant="outline"
@@ -281,10 +579,13 @@ export const HospitalBookingDialog = ({
             </Button>
             <Button
               size="sm"
-              disabled={!selected || !service}
+              disabled={!canConfirm || createBooking.isPending}
               onClick={handleConfirm}
-              className="h-8 px-4 text-[10px] font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+              className="h-8 px-4 text-[10px] font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 flex items-center gap-1.5"
             >
+              {createBooking.isPending && (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              )}
               Confirm booking
             </Button>
           </SheetFooter>

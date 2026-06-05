@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { dashboardPath } from "@/lib/auth-store";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
@@ -24,13 +22,20 @@ const Auth = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
+  const hasRedirected = useRef(false);
 
   const { data: user } = useMe();
 
+  useEffect(() => {
+    if (user && !hasRedirected.current) {
+      hasRedirected.current = true;
+      navigate(dashboardPath(user.role), { replace: true });
+    }
+  }, [user, navigate]);
+
   const goAfterAuth = () => {
-    if (!user) return;
-    navigate(dashboardPath(user.role));
-  };
+  setTab("signin");
+};
 
   const tabs = [
     { id: "signin" as const, label: t("auth.tab_signin") },
@@ -39,7 +44,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-       <TopBar />
+      <TopBar />
       <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
 
       {/* ── Main ── */}
@@ -108,7 +113,7 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 "
+                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
                   <div className="w-7 h-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
                     <span className="text-sm">💉</span>
@@ -127,7 +132,7 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.75, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15 "
+                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
                   <div className="w-7 h-7 rounded-md bg-teal-500/20 flex items-center justify-center">
                     <span className="text-sm">🩺</span>

@@ -35,16 +35,27 @@ export interface MedicalInfo {
 
 export interface PatientProfile {
   id: number;
+  user_id: string | number;
   user: PatientUser;
-  date_of_birth: string;
-  gender: string;
-  blood_type: string;
-  address: string;
-  city: string;
-  province: string;
-  country: string;
+  date_of_birth: string | null;
+  gender: string | null;
+  national_id: string | null;
+  blood_type: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  country: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relation: string | null;
+  insurance_id: number | null;
+  insurance_number: string | null;
   insurance: Insurance | null;
   medical_info: MedicalInfo | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface FullPatientProfile {

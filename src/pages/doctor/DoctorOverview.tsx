@@ -18,10 +18,12 @@ import {
   Video,
   MapPin,
   ArrowUpRight,
+  PauseCircle,
+  PlayCircle,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
-import { appointments, patientFlowData } from "@/lib/mock-data";
 import {
   LineChart,
   Line,
@@ -35,66 +37,106 @@ import {
   Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useDoctorDashboard, type Period, type ChartGroup } from "@/hooks/doctor/use-doctor-dashboard";
 
-// ─── Mock extras ─────────────────────────────────────────────────────────────
+// ─── Period picker options ────────────────────────────────────────────────────
 
-const completionData = [
-  { day: "Mon", rate: 88 },
-  { day: "Tue", rate: 92 },
-  { day: "Wed", rate: 78 },
-  { day: "Thu", rate: 95 },
-  { day: "Fri", rate: 85 },
-  { day: "Sat", rate: 70 },
-  { day: "Sun", rate: 60 },
+const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+  { value: "today", label: "Today" },
+  { value: "week", label: "This Week" },
+  { value: "month", label: "This Month" },
+  { value: "year", label: "This Year" },
 ];
 
-const recentReviews = [
-  {
-    name: "Sarah K",
-    rating: 5,
-    comment: "Very thorough and caring",
-    time: "2h ago",
-  },
-  {
-    name: "John M",
-    rating: 4,
-    comment: "Professional and prompt",
-    time: "5h ago",
-  },
-  {
-    name: "Amina T",
-    rating: 5,
-    comment: "Excellent consultation",
-    time: "1d ago",
-  },
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const quickStats = [
-  {
-    label: "Completed",
-    value: 4,
-    icon: CheckCircle2,
-    color: "text-success bg-success/10",
-  },
-  {
-    label: "Pending",
-    value: 2,
-    icon: Clock,
-    color: "text-warning bg-warning/10",
-  },
-  {
-    label: "Cancelled",
-    value: 1,
-    icon: XCircle,
-    color: "text-destructive bg-destructive/10",
-  },
-];
+function formatCurrency(value: number) {
+  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+  return `$${value.toFixed(0)}`;
+}
+
+function formatPct(value: number | null) {
+  if (value === null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function shortLabel(label: string) {
+  // "May 25, 2026" → "May 25"  |  "2026-01" → "Jan" etc.
+  const parts = label.split(",");
+  return parts[0] ?? label;
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const DoctorOverview = () => {
   const { t } = useTranslation();
-  const [instant, setInstant] = useState(true);
+
+  const {
+    data,
+    loading,
+    error,
+    filters,
+    updateFilters,
+    refresh,
+    toggleState,
+    toggleLoading,
+    toggleInstantConsultation,
+    togglePauseBookings,
+  } = useDoctorDashboard({ period: "week", chart_group: "day" });
+
+  // ── Derived values ──────────────────────────────────────────────────────
+
+  const today = data?.today;
+  const period = data?.period_stats;
+  const revenue = data?.revenue;
+  const reviews = data?.reviews;
+  const prescriptions = data?.prescriptions;
+  const instantStats = data?.instant;
+
+  const patientFlowData = (data?.patient_flow ?? []).map((d) => ({
+    ...d,
+    day: shortLabel(d.label),
+  }));
+
+  const completionData = (data?.completion_rate ?? []).map((d) => ({
+    ...d,
+    day: shortLabel(d.label),
+  }));
+
+  const revenueChangePct = revenue?.change_percent ?? null;
+  const revenueUp = revenueChangePct === null ? null : revenueChangePct >= 0;
+
+  const totalRevenue = revenue?.total ?? 0;
+  const onlineRevTotal = revenue?.breakdown.online.total ?? 0;
+  const inPersonRevTotal = revenue?.breakdown.in_person.total ?? 0;
+  const combinedRev = onlineRevTotal + inPersonRevTotal;
+  const onlinePct = combinedRev > 0 ? Math.round((onlineRevTotal / combinedRev) * 100) : 61;
+  const inPersonPct = combinedRev > 0 ? Math.round((inPersonRevTotal / combinedRev) * 100) : 39;
+
+  // ── Quick stats (Today) ─────────────────────────────────────────────────
+
+  const quickStats = [
+    {
+      label: "Completed",
+      value: today?.completed ?? 0,
+      icon: CheckCircle2,
+      color: "text-success bg-success/10",
+    },
+    {
+      label: "Pending",
+      value: (today?.pending ?? 0) + (today?.confirmed ?? 0),
+      icon: Clock,
+      color: "text-warning bg-warning/10",
+    },
+    {
+      label: "Cancelled",
+      value: today?.cancelled ?? 0,
+      icon: XCircle,
+      color: "text-destructive bg-destructive/10",
+    },
+  ];
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout role="doctor">
@@ -106,13 +148,67 @@ const DoctorOverview = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
-            {/* ── Instant toggle + today quick stats ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-              {/* Instant toggle */}
+
+            {/* ── Toolbar: period picker + chart group + refresh ── */}
+            <div className="flex flex-wrap items-center gap-2">
+              {PERIOD_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => updateFilters({ period: opt.value })}
+                  className={cn(
+                    "px-3 py-1 rounded text-[10px] font-semibold border transition-colors",
+                    filters.period === opt.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card border-border/60 text-muted-foreground hover:border-primary/50",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+
+              {/* Chart group (day / week / month) */}
+              <div className="ml-auto flex items-center gap-1.5">
+                {(["day", "week", "month"] as ChartGroup[]).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => updateFilters({ chart_group: g })}
+                    className={cn(
+                      "px-2 py-1 rounded text-[10px] border transition-colors capitalize",
+                      filters.chart_group === g
+                        ? "bg-secondary text-foreground border-border"
+                        : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {g}
+                  </button>
+                ))}
+
+                <button
+                  onClick={refresh}
+                  disabled={loading}
+                  className="ml-1 p-1 rounded border border-border/60 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+                </button>
+              </div>
+            </div>
+
+            {/* ── Error banner ── */}
+            {error && (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-[11px] text-destructive">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            {/* ── Toggles + today quick stats ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+
+              {/* Instant Consultation toggle */}
               <div
                 className={cn(
-                  "sm:col-span-1 rounded-md border p-3 shadow-soft flex flex-col justify-between gap-3",
-                  instant
+                  "rounded-md border p-3 shadow-soft flex flex-col justify-between gap-3",
+                  toggleState.instant_consultation
                     ? "bg-success/5 border-success/20"
                     : "bg-card border-border/70",
                 )}
@@ -121,20 +217,21 @@ const DoctorOverview = () => {
                   <div
                     className={cn(
                       "h-7 w-7 rounded flex items-center justify-center",
-                      instant
+                      toggleState.instant_consultation
                         ? "bg-success/15 text-success"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
-                    {instant ? (
+                    {toggleState.instant_consultation ? (
                       <Zap className="h-3.5 w-3.5" />
                     ) : (
                       <ZapOff className="h-3.5 w-3.5" />
                     )}
                   </div>
                   <Switch
-                    checked={instant}
-                    onCheckedChange={setInstant}
+                    checked={toggleState.instant_consultation}
+                    onCheckedChange={toggleInstantConsultation}
+                    disabled={toggleLoading["instant_consultation"]}
                     className="data-[state=checked]:bg-success scale-90"
                   />
                 </div>
@@ -145,12 +242,58 @@ const DoctorOverview = () => {
                   <p
                     className={cn(
                       "text-[10px] mt-0.5",
-                      instant ? "text-success" : "text-muted-foreground",
+                      toggleState.instant_consultation ? "text-success" : "text-muted-foreground",
                     )}
                   >
-                    {instant
+                    {toggleState.instant_consultation
                       ? t("pages.doctor.instant_visible")
                       : t("pages.doctor.instant_hidden")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Pause Bookings toggle */}
+              <div
+                className={cn(
+                  "rounded-md border p-3 shadow-soft flex flex-col justify-between gap-3",
+                  toggleState.bookings_paused
+                    ? "bg-warning/5 border-warning/20"
+                    : "bg-card border-border/70",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div
+                    className={cn(
+                      "h-7 w-7 rounded flex items-center justify-center",
+                      toggleState.bookings_paused
+                        ? "bg-warning/15 text-warning"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {toggleState.bookings_paused ? (
+                      <PauseCircle className="h-3.5 w-3.5" />
+                    ) : (
+                      <PlayCircle className="h-3.5 w-3.5" />
+                    )}
+                  </div>
+                  <Switch
+                    checked={toggleState.bookings_paused}
+                    onCheckedChange={togglePauseBookings}
+                    disabled={toggleLoading["bookings_paused"]}
+                    className="data-[state=checked]:bg-warning scale-90"
+                  />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-foreground">
+                    Pause Bookings
+                  </p>
+                  <p
+                    className={cn(
+                      "text-[10px] mt-0.5",
+                      toggleState.bookings_paused ? "text-warning" : "text-muted-foreground",
+                    )}
+                  >
+                    {toggleState.bookings_paused ? "No new bookings allowed" : "Accepting bookings"}
                   </p>
                 </div>
               </div>
@@ -172,7 +315,10 @@ const DoctorOverview = () => {
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className="text-[18px] font-bold text-foreground tabular-nums leading-none">
+                      <p className={cn(
+                        "text-[18px] font-bold text-foreground tabular-nums leading-none",
+                        loading && "opacity-40",
+                      )}>
                         {s.value}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -184,36 +330,41 @@ const DoctorOverview = () => {
               })}
             </div>
 
-            {/* ── Stats strip ── */}
+            {/* ── Stats strip (period) ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
                 label={t("pages.doctor.stat_today")}
-                value={6}
+                value={today?.total ?? 0}
                 icon={Calendar}
                 accent="primary"
+                loading={loading}
               />
               <StatCard
-                label={t("pages.doctor.stat_week")}
-                value={42}
+                label="Unique Patients"
+                value={period?.unique_patients ?? 0}
                 icon={Users}
                 accent="info"
+                loading={loading}
               />
               <StatCard
-                label={t("pages.doctor.stat_rx")}
-                value={18}
+                label="Prescriptions"
+                value={prescriptions?.issued ?? 0}
                 icon={FileText}
                 accent="success"
+                loading={loading}
               />
               <StatCard
-                label={t("pages.doctor.stat_instant")}
-                value={9}
+                label="Instant Queue"
+                value={instantStats?.current_queue ?? 0}
                 icon={Activity}
                 accent="warning"
+                loading={loading}
               />
             </div>
 
             {/* ── Main grid ── */}
             <div className="grid lg:grid-cols-3 gap-3">
+
               {/* Patient flow chart */}
               <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-3">
@@ -231,247 +382,343 @@ const DoctorOverview = () => {
                     </span>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={patientFlowData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="hsl(var(--border))"
-                    />
-                    <XAxis
-                      dataKey="day"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={9}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={9}
-                      tickLine={false}
-                      axisLine={false}
-                      width={24}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 4,
-                        fontSize: 10,
-                        padding: "5px 8px",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="patients"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))", r: 2.5 }}
-                      activeDot={{ r: 4 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="consultations"
-                      stroke="hsl(var(--info))"
-                      strokeWidth={1.5}
-                      dot={false}
-                      strokeDasharray="4 3"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {loading ? (
+                  <div className="h-[200px] flex items-center justify-center">
+                    <RefreshCw className="h-5 w-5 text-muted-foreground animate-spin" />
+                  </div>
+                ) : patientFlowData.length === 0 ? (
+                  <div className="h-[200px] flex items-center justify-center text-[11px] text-muted-foreground">
+                    No data for this period
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <LineChart data={patientFlowData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="day"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={9}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={9}
+                        tickLine={false}
+                        axisLine={false}
+                        width={24}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 4,
+                          fontSize: 10,
+                          padding: "5px 8px",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="patients"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--primary))", r: 2.5 }}
+                        activeDot={{ r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="consultations"
+                        stroke="hsl(var(--info))"
+                        strokeWidth={1.5}
+                        dot={false}
+                        strokeDasharray="4 3"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
-              {/* Today schedule */}
-              <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[11px] font-semibold text-foreground">
-                    {t("pages.doctor.today_schedule")}
-                  </h3>
-                  <span className="text-[9px] text-primary font-medium cursor-pointer hover:underline">
-                    View all
-                  </span>
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  {appointments.slice(0, 5).map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-2 px-2.5 py-2 rounded bg-secondary/40 border border-border/30 hover:bg-secondary/70 transition-colors duration-150 group"
-                    >
-                      <span className="text-[10px] font-mono font-bold tabular-nums text-primary w-9 flex-shrink-0">
-                        {a.time}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-medium text-foreground truncate">
-                          {t("pages.doctor.patient")} · {a.specialty}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground/70 flex items-center gap-1 mt-0.5">
-                          {a.type === "video" ? (
-                            <Video className="h-2.5 w-2.5" />
-                          ) : (
-                            <MapPin className="h-2.5 w-2.5" />
-                          )}
-                          {a.type}
-                        </p>
-                      </div>
-                      <ArrowUpRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-primary transition-colors flex-shrink-0" />
+              {/* Period summary card */}
+              <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft flex flex-col gap-2">
+                <h3 className="text-[11px] font-semibold text-foreground">Period Summary</h3>
+
+                {[
+                  { label: "Total Appointments", value: period?.total_appointments ?? 0 },
+                  { label: "Completed", value: period?.completed ?? 0 },
+                  { label: "Pending", value: period?.pending ?? 0 },
+                  { label: "Cancelled", value: period?.cancelled ?? 0 },
+                  { label: "Online", value: period?.online_count ?? 0 },
+                  { label: "In-person", value: period?.in_person_count ?? 0 },
+                  { label: "Avg Duration", value: period?.avg_duration_minutes ? `${period.avg_duration_minutes}m` : "—" },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0"
+                  >
+                    <span className="text-[10px] text-muted-foreground">{row.label}</span>
+                    <span className={cn(
+                      "text-[11px] font-semibold text-foreground tabular-nums",
+                      loading && "opacity-40",
+                    )}>
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+
+                {/* Instant stats */}
+                {instantStats && (
+                  <div className="mt-1 pt-2 border-t border-border/40">
+                    <p className="text-[10px] font-semibold text-foreground mb-1.5">
+                      Instant Consultations
+                    </p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { label: "Total", value: instantStats.total },
+                        { label: "Done", value: instantStats.completed },
+                        { label: "Queue", value: instantStats.current_queue },
+                      ].map((s) => (
+                        <div key={s.label} className="rounded bg-secondary/40 px-2 py-1.5 text-center">
+                          <p className={cn("text-[13px] font-bold tabular-nums", loading && "opacity-40")}>
+                            {s.value}
+                          </p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">{s.label}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* ── Bottom row ── */}
             <div className="grid lg:grid-cols-3 gap-3">
+
               {/* Completion rate bar chart */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-[11px] font-semibold text-foreground">
                     Appointment Completion
                   </h3>
-                  <span className="flex items-center gap-0.5 text-[10px] font-semibold text-success">
-                    <TrendingUp className="h-3 w-3" />
-                    +4%
-                  </span>
+                  {/* Show trend only when we have data */}
+                  {completionData.length > 0 && (() => {
+                    const avg = completionData.reduce((s, d) => s + d.rate, 0) / completionData.length;
+                    return (
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        avg {avg.toFixed(0)}%
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-[10px] text-muted-foreground mb-3">
-                  Weekly completion rate
+                  Completion rate · {filters.period}
                 </p>
-                <ResponsiveContainer width="100%" height={110}>
-                  <BarChart data={completionData} barSize={18}>
-                    <XAxis
-                      dataKey="day"
-                      fontSize={9}
-                      tickLine={false}
-                      axisLine={false}
-                      stroke="hsl(var(--muted-foreground))"
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 4,
-                        fontSize: 10,
-                        padding: "4px 8px",
-                      }}
-                      formatter={(v: number) => [`${v}%`, "Rate"]}
-                    />
-                    {completionData.map((entry, i) => (
-                      <Bar key={i} dataKey="rate" radius={[3, 3, 0, 0]}>
-                        <Cell
-                          key={i}
-                          fill={
-                            entry.rate >= 90
-                              ? "hsl(var(--success))"
-                              : entry.rate >= 75
-                                ? "hsl(var(--primary))"
-                                : "hsl(var(--warning))"
-                          }
-                          fillOpacity={0.85}
-                        />
-                      </Bar>
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
+                {loading ? (
+                  <div className="h-[110px] flex items-center justify-center">
+                    <RefreshCw className="h-4 w-4 text-muted-foreground animate-spin" />
+                  </div>
+                ) : completionData.length === 0 ? (
+                  <div className="h-[110px] flex items-center justify-center text-[11px] text-muted-foreground">
+                    No data
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={110}>
+                    <BarChart data={completionData} barSize={18}>
+                      <XAxis
+                        dataKey="day"
+                        fontSize={9}
+                        tickLine={false}
+                        axisLine={false}
+                        stroke="hsl(var(--muted-foreground))"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 4,
+                          fontSize: 10,
+                          padding: "4px 8px",
+                        }}
+                        formatter={(v: number) => [`${v}%`, "Rate"]}
+                      />
+                      {completionData.map((entry, i) => (
+                        <Bar key={i} dataKey="rate" radius={[3, 3, 0, 0]}>
+                          <Cell
+                            key={i}
+                            fill={
+                              entry.rate >= 90
+                                ? "hsl(var(--success))"
+                                : entry.rate >= 60
+                                  ? "hsl(var(--primary))"
+                                  : "hsl(var(--warning))"
+                            }
+                            fillOpacity={0.85}
+                          />
+                        </Bar>
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               {/* Rating & reviews */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[11px] font-semibold text-foreground">
-                    Recent Reviews
-                  </h3>
-                  <div className="flex items-center gap-1 bg-warning/10 px-2 py-0.5 rounded">
-                    <Star className="h-3 w-3 fill-warning text-warning" />
-                    <span className="text-[11px] font-bold text-foreground">
-                      4.8
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {recentReviews.map((r, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-2 p-2 rounded bg-secondary/30 border border-border/20"
-                    >
-                      <div className="h-6 w-6 rounded bg-primary-soft text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0">
-                        {r.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="text-[10px] font-semibold text-foreground">
-                            {r.name}
-                          </p>
-                          <span className="text-[9px] text-muted-foreground flex-shrink-0">
-                            {r.time}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <Star
-                              key={j}
-                              className={cn(
-                                "h-2.5 w-2.5",
-                                j < r.rating
-                                  ? "fill-warning text-warning"
-                                  : "text-border",
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
-                          {r.comment}
-                        </p>
-                      </div>
+                  <h3 className="text-[11px] font-semibold text-foreground">Recent Reviews</h3>
+                  {reviews?.all_time_avg != null && (
+                    <div className="flex items-center gap-1 bg-warning/10 px-2 py-0.5 rounded">
+                      <Star className="h-3 w-3 fill-warning text-warning" />
+                      <span className="text-[11px] font-bold text-foreground">
+                        {reviews.all_time_avg.toFixed(1)}
+                      </span>
                     </div>
-                  ))}
+                  )}
                 </div>
+
+                {reviews?.recent && reviews.recent.length > 0 ? (
+                  <div className="space-y-2">
+                    {reviews.recent.map((r, i) => (
+                      <div
+                        key={r.id ?? i}
+                        className="flex items-start gap-2 p-2 rounded bg-secondary/30 border border-border/20"
+                      >
+                        <div className="h-6 w-6 rounded bg-primary-soft text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+                          {r.patient_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-[10px] font-semibold text-foreground">
+                              {r.patient_name}
+                            </p>
+                            <span className="text-[9px] text-muted-foreground flex-shrink-0">
+                              {new Date(r.created_at).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <Star
+                                key={j}
+                                className={cn(
+                                  "h-2.5 w-2.5",
+                                  j < r.rating ? "fill-warning text-warning" : "text-border",
+                                )}
+                              />
+                            ))}
+                          </div>
+                          {r.comment && (
+                            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
+                              {r.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[100px] gap-1">
+                    <Star className="h-5 w-5 text-border" />
+                    <p className="text-[10px] text-muted-foreground">No reviews yet</p>
+                    {reviews?.period.avg_rating != null && (
+                      <p className="text-[9px] text-muted-foreground">
+                        Period avg: {reviews.period.avg_rating.toFixed(1)}★
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Star breakdown mini-bars */}
+                {reviews && reviews.period.total > 0 && (
+                  <div className="mt-3 pt-3 border-t border-border/40 space-y-1">
+                    {[
+                      { label: "5★", value: reviews.period.five_star },
+                      { label: "4★", value: reviews.period.four_star },
+                      { label: "3★", value: reviews.period.three_star },
+                      { label: "1-2★", value: reviews.period.low_star },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center gap-2">
+                        <span className="text-[9px] text-muted-foreground w-6">{row.label}</span>
+                        <div className="flex-1 h-1 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-warning/70"
+                            style={{ width: `${(row.value / reviews.period.total) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-muted-foreground w-3 text-right">
+                          {row.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Revenue summary */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-[11px] font-semibold text-foreground">
-                    Revenue This Month
+                    Revenue · {filters.period}
                   </h3>
-                  <span className="flex items-center gap-0.5 text-[10px] font-semibold text-success">
-                    <TrendingUp className="h-3 w-3" />
-                    +12%
-                  </span>
+                  {revenueChangePct !== null && (
+                    <span
+                      className={cn(
+                        "flex items-center gap-0.5 text-[10px] font-semibold",
+                        revenueUp ? "text-success" : "text-destructive",
+                      )}
+                    >
+                      {revenueUp ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      {formatPct(revenueChangePct)}
+                    </span>
+                  )}
                 </div>
 
                 <div>
-                  <p className="text-[26px] font-bold text-foreground tabular-nums leading-none">
-                    $3,240
+                  <p className={cn(
+                    "text-[26px] font-bold text-foreground tabular-nums leading-none",
+                    loading && "opacity-40",
+                  )}>
+                    {formatCurrency(totalRevenue)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    vs $2,890 last month
-                  </p>
+                  {revenue && revenue.previous_period_total > 0 && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      vs {formatCurrency(revenue.previous_period_total)} prev period
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 mt-auto">
                   {[
                     {
-                      label: "Video consults",
-                      value: "$1,980",
-                      count: "22",
-                      pct: 61,
+                      label: "Video / Online",
+                      value: formatCurrency(onlineRevTotal),
+                      count: String(revenue?.breakdown.online.count ?? 0),
+                      pct: onlinePct,
                     },
                     {
-                      label: "In-person visits",
-                      value: "$1,260",
-                      count: "14",
-                      pct: 39,
+                      label: "In-person",
+                      value: formatCurrency(inPersonRevTotal),
+                      count: String(revenue?.breakdown.in_person.count ?? 0),
+                      pct: inPersonPct,
                     },
                   ].map((row) => (
                     <div key={row.label}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-muted-foreground">
-                          {row.label}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">{row.label}</span>
                         <span className="text-[10px] font-semibold text-foreground">
                           {row.value}
+                          <span className="text-muted-foreground font-normal ml-1">
+                            ({row.count})
+                          </span>
                         </span>
                       </div>
                       <div className="h-1 rounded-full bg-secondary overflow-hidden">
@@ -485,15 +732,14 @@ const DoctorOverview = () => {
                 </div>
 
                 <div className="pt-2 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">
-                    Avg per consultation
-                  </span>
-                  <span className="text-[11px] font-bold text-foreground">
-                    $89
+                  <span className="text-[10px] text-muted-foreground">Avg per consultation</span>
+                  <span className={cn("text-[11px] font-bold text-foreground", loading && "opacity-40")}>
+                    {formatCurrency(revenue?.avg_per_appointment ?? 0)}
                   </span>
                 </div>
               </div>
             </div>
+
           </div>
         </main>
       </div>
