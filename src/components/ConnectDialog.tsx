@@ -3287,7 +3287,7 @@ type CallPhase =
   | "guest_form"
   | "requesting"
   | "polling"
-  | "accepted"
+  | "accepted" 
   | "in_progress"
   | "connected"
   | "rejected"
