@@ -233,17 +233,24 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
       // 4. Owner creates offer after delay
 if (isOwner) {
-  console.info("[WebRTC] I am owner — will send offer in 2s…");
+  console.info("[WebRTC] I am owner — waiting for WebSocket then sending offer…");
 
   const createAndSendOffer = async () => {
+    if (cancelled) return;
     const activePc = pcRef.current;
-    if (!activePc || cancelled) return;
-    if (activePc.signalingState !== "stable" && activePc.signalingState !== "have-local-offer") return;
+    if (!activePc) return;
+    // If stuck in have-local-offer, close and recreate
+    if (activePc.signalingState === "have-local-offer") {
+      console.info("[WebRTC] Stuck in have-local-offer — recreating PC…");
+      activePc.close();
+      pcRef.current = createPeerConnection();
+    }
+    const freshPc = pcRef.current!;
     try {
       makingOffer.current = true;
-      console.info("[WebRTC] Creating offer, signalingState:", activePc.signalingState);
-      const offer = await activePc.createOffer();
-      await activePc.setLocalDescription(offer);
+      console.info("[WebRTC] Creating offer, signalingState:", freshPc.signalingState);
+      const offer = await freshPc.createOffer();
+      await freshPc.setLocalDescription(offer);
       console.info("[WebRTC] Offer created — sending…");
       await sendSignal("offer", { type: offer.type, sdp: offer.sdp });
       console.info("[WebRTC] Offer sent successfully ✅");
@@ -254,31 +261,38 @@ if (isOwner) {
     }
   };
 
-  // Initial offer after 2s
-  setTimeout(createAndSendOffer, 2000);
+  const pusher = echo.connector.pusher;
 
-  // Re-send offer every 8s if still not connected (patient may have missed it)
-const retryInterval = setInterval(async () => {
-  if (cancelled) { clearInterval(retryInterval); return; }
-  const activePc = pcRef.current;
-  if (!activePc) { clearInterval(retryInterval); return; }
+  const startOffer = () => {
+    // Wait 1.5s after WS connects to let patient subscribe to channel
+    setTimeout(createAndSendOffer, 1500);
+  };
 
-  if (activePc.connectionState === "connected") {
-    console.info("[WebRTC] Connected — stopping offer retry");
-    clearInterval(retryInterval);
-    return;
+  if (pusher.connection.state === "connected") {
+    console.info("[WebRTC] WebSocket already connected — sending offer soon…");
+    startOffer();
+  } else {
+    console.info("[WebRTC] WebSocket not ready — waiting for connection…");
+    pusher.connection.bind("connected", () => {
+      console.info("[WebRTC] WebSocket connected — sending offer now…");
+      startOffer();
+    });
   }
 
-  console.info("[WebRTC] No answer yet — restarting peer connection and retrying offer…");
-
-  // Close old PC and create fresh one so signalingState is stable
-  activePc.close();
-  const newPc = createPeerConnection();
-  pcRef.current = newPc;
-
-  await createAndSendOffer();
-}, 8000);
-} else {
+  // Retry every 8s until connected
+  const retryInterval = setInterval(async () => {
+    if (cancelled) { clearInterval(retryInterval); return; }
+    const activePc = pcRef.current;
+    if (!activePc) { clearInterval(retryInterval); return; }
+    if (activePc.connectionState === "connected") {
+      console.info("[WebRTC] Connected — stopping retry");
+      clearInterval(retryInterval);
+      return;
+    }
+    console.info("[WebRTC] No answer yet — retrying offer…");
+    await createAndSendOffer();
+  }, 8000);
+}else {
         console.info("[WebRTC] I am NOT owner — waiting for offer from doctor…");
       }
     };
