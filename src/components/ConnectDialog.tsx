@@ -4106,10 +4106,12 @@ const InCallView = ({
 
   // Build the Daily.co iframe src — token is passed as the `t` query param
   // which Daily recognises as the meeting token for guest access.
+  const roomName = roomUrl?.split('/consultation/').pop();
   const iframeSrc =
-    roomUrl && dailyToken
-      ? `${roomUrl}?t=${encodeURIComponent(dailyToken)}`
+    roomName && dailyToken
+      ? `${window.location.origin}/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`
       : null;
+
 
   return (
     <div
