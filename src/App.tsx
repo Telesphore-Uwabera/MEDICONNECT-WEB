@@ -74,6 +74,7 @@ import ManageServicePricing from "./pages/admin/ManageServicePricing.tsx";
 import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
 import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
+import ConsultationRoomPage from "./pages/ConsultationRoom.tsx";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/consultation/:roomName" element={<ConsultationRoomPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding/:role" element={<Onboarding />} />
 
