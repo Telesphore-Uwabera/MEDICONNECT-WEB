@@ -206,46 +206,66 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       const pc = createPeerConnection();
       console.info("[WebRTC] PeerConnection created");
 
-      // 3. Subscribe to Reverb channel
       console.info(`[WebRTC] Subscribing to channel: consultation.${roomName}`);
-      const channel = echo.channel(`consultation.${roomName}`);
-      channelRef.current = channel;
 
-      channel.listen(".webrtc.signal", (payload: { type: string; data: unknown; from: string }) => {
-        console.info("[WebRTC] Raw signal event received:", payload);
-        handleSignal(payload);
+      const subscribeToChannel = () => {
+        const channel = echo.channel(`consultation.${roomName}`);
+        channelRef.current = channel;
+        channel.listen(".webrtc.signal", (payload: { type: string; data: unknown; from: string }) => {
+          console.info("[WebRTC] Raw signal event received:", payload);
+          handleSignal(payload);
+        });
+        console.info("[WebRTC] Channel subscribed and listening");
+      };
+
+      subscribeToChannel();
+
+      // Reconnect on WebSocket disconnect
+      echo.connector.pusher.connection.bind("connected", () => {
+        console.info("[WebRTC] WebSocket reconnected — resubscribing to channel");
+        subscribeToChannel();
       });
 
-      console.info("[WebRTC] Channel subscribed and listening");
-
       // 4. Owner creates offer after delay
-      if (isOwner) {
-        console.info("[WebRTC] I am owner — will send offer in 2s…");
-        setTimeout(async () => {
-          if (cancelled) {
-            console.warn("[WebRTC] Cancelled before offer — aborting");
-            return;
-          }
-          const activePc = pcRef.current;
-          if (!activePc) {
-            console.error("[WebRTC] No peer connection available for offer");
-            return;
-          }
-          console.info("[WebRTC] Creating offer, signalingState:", activePc.signalingState);
-          try {
-            makingOffer.current = true;
-            const offer = await activePc.createOffer();
-            await activePc.setLocalDescription(offer);
-            console.info("[WebRTC] Offer created and set locally — sending via signal…");
-            await sendSignal("offer", offer);
-            console.info("[WebRTC] Offer sent successfully ✅");
-          } catch (e) {
-            console.error("[WebRTC] Offer creation failed", e);
-          } finally {
-            makingOffer.current = false;
-          }
-        }, 2000);
-      } else {
+if (isOwner) {
+  console.info("[WebRTC] I am owner — will send offer in 2s…");
+
+  const createAndSendOffer = async () => {
+    const activePc = pcRef.current;
+    if (!activePc || cancelled) return;
+    if (activePc.signalingState !== "stable" && activePc.signalingState !== "have-local-offer") return;
+    try {
+      makingOffer.current = true;
+      console.info("[WebRTC] Creating offer, signalingState:", activePc.signalingState);
+      const offer = await activePc.createOffer();
+      await activePc.setLocalDescription(offer);
+      console.info("[WebRTC] Offer created — sending…");
+      await sendSignal("offer", offer);
+      console.info("[WebRTC] Offer sent successfully ✅");
+    } catch (e) {
+      console.error("[WebRTC] Offer creation failed", e);
+    } finally {
+      makingOffer.current = false;
+    }
+  };
+
+  // Initial offer after 2s
+  setTimeout(createAndSendOffer, 2000);
+
+  // Re-send offer every 8s if still not connected (patient may have missed it)
+  const retryInterval = setInterval(() => {
+    if (cancelled) { clearInterval(retryInterval); return; }
+    const activePc = pcRef.current;
+    if (!activePc) { clearInterval(retryInterval); return; }
+    if (activePc.connectionState === "connected") {
+      console.info("[WebRTC] Connected — stopping offer retry");
+      clearInterval(retryInterval);
+      return;
+    }
+    console.info("[WebRTC] No answer yet — retrying offer…");
+    createAndSendOffer();
+  }, 8000);
+} else {
         console.info("[WebRTC] I am NOT owner — waiting for offer from doctor…");
       }
     };
