@@ -142,8 +142,14 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             return;
           }
 
+          const rawData = payload.data as Record<string, unknown>;
+          const cleanSdp = rawData.sdp?.toString().replace(
+            /^(a=ssrc:\d+ msid:\S+)\s+\S+/gm,
+            "$1"
+          ) ?? "";
+
           await pc.setRemoteDescription(
-            new RTCSessionDescription(payload.data as RTCSessionDescriptionInit),
+            new RTCSessionDescription({ type: rawData.type as RTCSdpType, sdp: cleanSdp }),
           );
           console.info("[WebRTC] Remote description set, creating answer…");
           const answer = await pc.createAnswer();
