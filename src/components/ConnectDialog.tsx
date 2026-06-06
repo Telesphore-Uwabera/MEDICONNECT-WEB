@@ -3599,6 +3599,7 @@ export const ConnectDialog = ({
       ahead: statusData.people_ahead,
     });
 
+    console.info("[Poll] statusData:", JSON.stringify(statusData));
     if (statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
