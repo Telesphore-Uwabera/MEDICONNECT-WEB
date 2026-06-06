@@ -60,7 +60,7 @@ export function InstantConsultTab() {
         toast.success("Request accepted. You can now join the room.");
         // Navigate doctor to the consultation room
         const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-        navigate(`/consultation/${roomName}?t=${encodeURIComponent(res.doctor_token)}`);
+        navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
       },
       onError: (err: unknown) => {
         toast.error(getErrMsg(err, "Failed to accept consultation"));
@@ -89,7 +89,7 @@ export function InstantConsultTab() {
     joinInstant.mutate(item.id, {
       onSuccess: (res) => {
         const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-        navigate(`/consultation/${roomName}?t=${encodeURIComponent(res.doctor_token)}`);
+        navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
       },
       onError: (err: unknown) => {
         toast.error(getErrMsg(err, "Failed to join session"));
