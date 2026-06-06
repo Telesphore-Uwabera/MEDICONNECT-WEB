@@ -3657,11 +3657,11 @@ export const ConnectDialog = ({
   };
 
   // ── Join the call — transition to connected with real room data ───────────
-  const handleJoin = () => {
-    console.info("[Join] roomUrl:", roomUrl, "dailyToken:", dailyToken);
-    call.confirmJoin();
-    setPhase("connected");
-  };
+const handleJoin = () => {
+  if (!roomUrl || !dailyToken) return;
+  const roomName = roomUrl.split('/consultation/').pop() ?? roomUrl;
+  window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
+};
 
   // ── Close / end ───────────────────────────────────────────────────────────
   const handleClose = () => {
