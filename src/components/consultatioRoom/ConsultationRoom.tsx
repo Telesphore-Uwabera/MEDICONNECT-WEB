@@ -42,16 +42,17 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const makingOffer    = useRef(false);
   const isOwner        = token.is_owner;
 
-  const [audioEnabled, setAudioEnabled]   = useState(true);
-  const [videoEnabled, setVideoEnabled]   = useState(true);
-  const [connState, setConnState]         = useState<ConnectionState>("connecting");
-  const [remoteStream, setRemoteStream]   = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [connState, setConnState]       = useState<ConnectionState>("connecting");
+  const [remoteStream, setRemoteStream] = useState(false);
 
   // ── Send signal via API ───────────────────────────────────────────────────
   const sendSignal = useCallback(
     async (type: string, data: unknown) => {
+      console.info(`[WebRTC] Sending signal: ${type} from: ${token.username}`);
       try {
-        await fetch(
+        const res = await fetch(
           `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal`,
           {
             method: "POST",
@@ -59,8 +60,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             body: JSON.stringify({ room: roomName, type, data, from: token.username }),
           },
         );
+        console.info(`[WebRTC] Signal sent: ${type} status: ${res.status}`);
       } catch (e) {
-        console.error("Signal send failed", e);
+        console.error("[WebRTC] Signal send failed", e);
       }
     },
     [roomName, token.username],
@@ -68,20 +70,34 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // ── Setup RTCPeerConnection ───────────────────────────────────────────────
   const createPeerConnection = useCallback(() => {
+    console.info("[WebRTC] Creating RTCPeerConnection with ICE servers:", token.ice_servers);
     const pc = new RTCPeerConnection({ iceServers: token.ice_servers });
 
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) sendSignal("ice-candidate", candidate.toJSON());
+      if (candidate) {
+        console.info("[WebRTC] ICE candidate generated:", candidate.type);
+        sendSignal("ice-candidate", candidate.toJSON());
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.info("[WebRTC] ICE connection state:", pc.iceConnectionState);
+    };
+
+    pc.onsignalingstatechange = () => {
+      console.info("[WebRTC] Signaling state:", pc.signalingState);
     };
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
-      if (s === "connected")                        setConnState("connected");
+      console.info("[WebRTC] Connection state changed:", s);
+      if (s === "connected")                           setConnState("connected");
       else if (s === "disconnected" || s === "closed") setConnState("disconnected");
-      else if (s === "failed")                      setConnState("failed");
+      else if (s === "failed")                         setConnState("failed");
     };
 
     pc.ontrack = ({ streams }) => {
+      console.info("[WebRTC] Remote track received, streams:", streams.length);
       if (remoteVideoRef.current && streams[0]) {
         remoteVideoRef.current.srcObject = streams[0];
         setRemoteStream(true);
@@ -90,9 +106,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     // Add local tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) =>
-        pc.addTrack(track, localStreamRef.current!),
-      );
+      const tracks = localStreamRef.current.getTracks();
+      console.info("[WebRTC] Adding local tracks:", tracks.length);
+      tracks.forEach((track) => pc.addTrack(track, localStreamRef.current!));
+    } else {
+      console.warn("[WebRTC] No local stream available when creating peer connection");
     }
 
     pcRef.current = pc;
@@ -102,35 +120,52 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // ── Handle incoming signal ────────────────────────────────────────────────
   const handleSignal = useCallback(
     async (payload: { type: string; data: unknown; from: string }) => {
+      console.info(`[WebRTC] Signal received: ${payload.type} from: ${payload.from}`);
+
       // Ignore own signals
-      if (payload.from === token.username) return;
+      if (payload.from === token.username) {
+        console.info("[WebRTC] Ignoring own signal");
+        return;
+      }
 
       const pc = pcRef.current ?? createPeerConnection();
 
       try {
         if (payload.type === "offer") {
+          console.info("[WebRTC] Processing offer, signalingState:", pc.signalingState);
           const offerCollision =
             makingOffer.current || pc.signalingState !== "stable";
-          // Polite peer (non-owner) defers; impolite peer (owner) ignores
-          if (offerCollision && isOwner) return;
+
+          if (offerCollision && isOwner) {
+            console.warn("[WebRTC] Offer collision — ignoring (impolite peer)");
+            return;
+          }
 
           await pc.setRemoteDescription(
             new RTCSessionDescription(payload.data as RTCSessionDescriptionInit),
           );
+          console.info("[WebRTC] Remote description set, creating answer…");
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
+          console.info("[WebRTC] Answer created and set, sending…");
           sendSignal("answer", answer);
+
         } else if (payload.type === "answer") {
+          console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
           await pc.setRemoteDescription(
             new RTCSessionDescription(payload.data as RTCSessionDescriptionInit),
           );
+          console.info("[WebRTC] Remote description set from answer");
+
         } else if (payload.type === "ice-candidate") {
+          console.info("[WebRTC] Adding ICE candidate");
           await pc.addIceCandidate(
             new RTCIceCandidate(payload.data as RTCIceCandidateInit),
           );
+          console.info("[WebRTC] ICE candidate added");
         }
       } catch (e) {
-        console.error("Signal handling error", e);
+        console.error("[WebRTC] Signal handling error", e);
       }
     },
     [token.username, isOwner, createPeerConnection, sendSignal],
@@ -140,55 +175,85 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   useEffect(() => {
     let cancelled = false;
 
+    console.info("[WebRTC] Component mounted — roomName:", roomName, "isOwner:", isOwner);
+    console.info("[WebRTC] Token:", JSON.stringify(token));
+
     const setup = async () => {
+      console.info("[WebRTC] Setup starting…");
+
       // 1. Get local media
       try {
+        console.info("[WebRTC] Requesting media devices…");
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
+        if (cancelled) {
+          console.warn("[WebRTC] Cancelled after media acquired — stopping tracks");
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         localStreamRef.current = stream;
         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+        console.info("[WebRTC] Local media acquired — tracks:", stream.getTracks().map(t => t.kind));
       } catch (e) {
-        console.error("Media access denied", e);
+        console.error("[WebRTC] Media access denied", e);
         setConnState("failed");
         return;
       }
 
       // 2. Create peer connection
       const pc = createPeerConnection();
+      console.info("[WebRTC] PeerConnection created");
 
       // 3. Subscribe to Reverb channel
+      console.info(`[WebRTC] Subscribing to channel: consultation.${roomName}`);
       const channel = echo.channel(`consultation.${roomName}`);
       channelRef.current = channel;
 
-      channel.listen(".webrtc.signal", handleSignal);
+      channel.listen(".webrtc.signal", (payload: { type: string; data: unknown; from: string }) => {
+        console.info("[WebRTC] Raw signal event received:", payload);
+        handleSignal(payload);
+      });
 
-      // 4. Owner creates offer after a short delay (lets both sides subscribe)
-if (isOwner) {
-  setTimeout(async () => {
-    if (cancelled) return;
-    const activePc = pcRef.current;
-    if (!activePc) return;
-    try {
-      makingOffer.current = true;
-      const offer = await activePc.createOffer();
-      await activePc.setLocalDescription(offer);
-      sendSignal("offer", offer);
-      console.info("[WebRTC] Offer sent", offer.type);
-    } catch (e) {
-      console.error("[WebRTC] Offer creation failed", e);
-    } finally {
-      makingOffer.current = false;
-    }
-  }, 2000);
-}
+      console.info("[WebRTC] Channel subscribed and listening");
+
+      // 4. Owner creates offer after delay
+      if (isOwner) {
+        console.info("[WebRTC] I am owner — will send offer in 2s…");
+        setTimeout(async () => {
+          if (cancelled) {
+            console.warn("[WebRTC] Cancelled before offer — aborting");
+            return;
+          }
+          const activePc = pcRef.current;
+          if (!activePc) {
+            console.error("[WebRTC] No peer connection available for offer");
+            return;
+          }
+          console.info("[WebRTC] Creating offer, signalingState:", activePc.signalingState);
+          try {
+            makingOffer.current = true;
+            const offer = await activePc.createOffer();
+            await activePc.setLocalDescription(offer);
+            console.info("[WebRTC] Offer created and set locally — sending via signal…");
+            await sendSignal("offer", offer);
+            console.info("[WebRTC] Offer sent successfully ✅");
+          } catch (e) {
+            console.error("[WebRTC] Offer creation failed", e);
+          } finally {
+            makingOffer.current = false;
+          }
+        }, 2000);
+      } else {
+        console.info("[WebRTC] I am NOT owner — waiting for offer from doctor…");
+      }
     };
 
     setup();
 
     return () => {
+      console.info("[WebRTC] Cleanup — leaving channel and closing PC");
       cancelled = true;
       channelRef.current?.stopListening(".webrtc.signal");
       echo.leaveChannel(`consultation.${roomName}`);
@@ -215,11 +280,11 @@ if (isOwner) {
 
   // ── End call ──────────────────────────────────────────────────────────────
   const endCall = () => {
+    console.info("[WebRTC] Ending call…");
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     echo.leaveChannel(`consultation.${roomName}`);
     window.close();
-    // fallback if window.close() is blocked
     window.location.href = "/";
   };
 
@@ -244,7 +309,7 @@ if (isOwner) {
       {/* ── Video area ──────────────────────────────────────────────────── */}
       <div className="relative flex-1 overflow-hidden">
 
-        {/* Remote video — full background */}
+        {/* Remote video */}
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -260,7 +325,10 @@ if (isOwner) {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center space-y-4">
               <div className="relative mx-auto w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping" style={{ animationDuration: "2s" }} />
+                <div
+                  className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping"
+                  style={{ animationDuration: "2s" }}
+                />
                 <div className="relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold ring-2 ring-emerald-500/30 select-none">
                   {nameInitial(token.username)}
                 </div>
@@ -270,7 +338,7 @@ if (isOwner) {
           </div>
         )}
 
-        {/* Local video — picture-in-picture */}
+        {/* Local video PiP */}
         <div className="absolute bottom-20 right-4 w-36 h-28 rounded-xl overflow-hidden border border-white/10 shadow-xl z-10">
           <video
             ref={localVideoRef}
@@ -286,7 +354,7 @@ if (isOwner) {
           )}
         </div>
 
-        {/* Status bar — top */}
+        {/* Status bar */}
         <div className="absolute top-0 inset-x-0 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent z-20">
           <div className="flex items-center gap-2">
             <span className={cn("h-2 w-2 rounded-full", stateColor)} />
@@ -303,10 +371,8 @@ if (isOwner) {
         </div>
       </div>
 
-      {/* ── Controls bar ────────────────────────────────────────────────── */}
+      {/* ── Controls bar ─────────────────────────────────────────────────── */}
       <div className="h-16 bg-[#111] border-t border-white/5 flex items-center justify-center gap-4 px-6 shrink-0">
-
-        {/* Mic */}
         <button
           onClick={toggleAudio}
           className={cn(
@@ -319,7 +385,6 @@ if (isOwner) {
           {audioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
         </button>
 
-        {/* End call */}
         <button
           onClick={endCall}
           className="h-13 w-13 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 p-3"
@@ -327,7 +392,6 @@ if (isOwner) {
           <PhoneOff className="w-6 h-6" />
         </button>
 
-        {/* Camera */}
         <button
           onClick={toggleVideo}
           className={cn(
@@ -339,7 +403,6 @@ if (isOwner) {
         >
           {videoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
         </button>
-
       </div>
     </div>
   );
