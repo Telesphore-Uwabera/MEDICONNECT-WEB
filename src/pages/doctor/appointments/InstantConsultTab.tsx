@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   FileText, Stethoscope,
   UserCheck, Clock3, Users, CheckCircle2,
@@ -29,7 +28,6 @@ type ItemAction = {
 
 export function InstantConsultTab() {
   const call     = useCallStore();
-  const navigate = useNavigate();
   const [notesOpen,    setNotesOpen]    = useState(true);
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
 
@@ -86,7 +84,7 @@ const handleJoin = (item: InstantConsultQueueItem) => {
   joinInstant.mutate(item.id, {
     onSuccess: (res) => {
       const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-      navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
+      window.location.href = `/consultation/${roomName}?t=${res.doctor_token}`;
     },
     onError: (err: unknown) => {
       toast.error(getErrMsg(err, "Failed to join session"));
