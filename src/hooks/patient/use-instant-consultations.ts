@@ -19,7 +19,8 @@ export interface InstantConsultationRequestResponse {
   people_ahead: number;
 }
 
-export type ConsultationStatus = "pending" | "accepted" | "rejected" | "cancelled";
+export type ConsultationStatus = "pending" | "accepted" | "in_progress" | "rejected" | "cancelled";
+
 
 export interface InstantConsultationStatusResponse {
   status: ConsultationStatus;
