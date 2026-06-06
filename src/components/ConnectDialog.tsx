@@ -3346,6 +3346,11 @@ const StatusBadge = ({ phase }: { phase: CallPhase }) => {
       text: "Doctor ready",
       cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
     },
+    in_progress: {
+  icon: <Activity className="h-3 w-3 animate-pulse" />,
+  text: "In progress",
+  cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+},
     connected: {
       icon: <CheckCircle2 className="h-3 w-3" />,
       text: "Connected",
@@ -3594,10 +3599,10 @@ export const ConnectDialog = ({
       ahead: statusData.people_ahead,
     });
 
-    if (statusData.status === "accepted") {
+    if (statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
-      setPhase("accepted");
+      setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
     } else if (
       statusData.status === "rejected" ||
       statusData.status === "cancelled"
@@ -3692,6 +3697,7 @@ export const ConnectDialog = ({
     if (phase === "requesting") return "Sending request…";
     if (phase === "polling")    return "Waiting for doctor";
     if (phase === "accepted")   return "Doctor is ready";
+    if (phase === "in_progress") return "Doctor is in call";
     if (phase === "connected")  return "In consultation";
     if (phase === "rejected")   return "Request declined";
     if (phase === "failed")     return "Connection failed";
@@ -3702,11 +3708,13 @@ export const ConnectDialog = ({
   const progressValue = (): number => {
     if (phase === "requesting") return 30;
     if (phase === "polling")    return 65;
-    if (phase === "accepted")   return 100;
+    if (phase === "accepted")   return 80;
+    if (phase === "in_progress") return 100;
     return 0;
   };
 
-  const showProgress = ["requesting", "polling", "accepted"].includes(phase);
+  const showProgress = ["requesting", "polling", "accepted", "in_progress"].includes(phase);
+
 
   return createPortal(
     <>
@@ -4020,7 +4028,7 @@ export const ConnectDialog = ({
               )}
 
               {/* Trust footer */}
-              {["idle", "guest_form", "polling", "accepted"].includes(phase) && (
+              {["idle", "guest_form", "polling", "accepted", "in_progress"].includes(phase) && (
                 <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
                   <ShieldCheck className="h-3 w-3" />
                   HIPAA compliant · End-to-end encrypted
