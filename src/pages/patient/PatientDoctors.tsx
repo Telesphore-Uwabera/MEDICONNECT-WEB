@@ -493,7 +493,7 @@ const PatientDoctors = () => {
               placeholder="Name or specialization…"
               value={filters.q}
               onChange={(e) => set("q", e.target.value)}
-              className="w-full pl-6.5 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+              className="w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
             />
             {filters.q && (
               <button

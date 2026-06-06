@@ -153,7 +153,7 @@ export function useSearchPharmacies(params: PharmacySearchParams) {
   if (params.page && params.page > 1) sp.set("page", String(params.page));
 
   const qs = sp.toString();
-  const url = qs ? `/patient/pharmacies?${qs}` : "/patient/pharmacies";
+  const url = qs ? `/public/pharmacies?${qs}` : "/public/pharmacies";
 
   return useQuery<ApiListResponse<Pharmacy>>({
     queryKey: ["pharmacies", params],
