@@ -3287,7 +3287,8 @@ type CallPhase =
   | "guest_form"
   | "requesting"
   | "polling"
-  | "accepted"
+  | "accepted" 
+  | "in_progress"
   | "connected"
   | "rejected"
   | "failed"
@@ -3930,8 +3931,8 @@ export const ConnectDialog = ({
                 </div>
               )}
 
-              {/* ── Accepted — join CTA ── */}
-              {phase === "accepted" && (
+              {/* ── Accepted / In Progress — join CTA ── */}
+              {(phase === "accepted" || phase === "in_progress") && (
                 <div className="space-y-3">
                   <DeviceToggles compact={true} />
                   <div className="space-y-2 pt-1">
