@@ -253,18 +253,26 @@ if (isOwner) {
   setTimeout(createAndSendOffer, 2000);
 
   // Re-send offer every 8s if still not connected (patient may have missed it)
-  const retryInterval = setInterval(() => {
-    if (cancelled) { clearInterval(retryInterval); return; }
-    const activePc = pcRef.current;
-    if (!activePc) { clearInterval(retryInterval); return; }
-    if (activePc.connectionState === "connected") {
-      console.info("[WebRTC] Connected — stopping offer retry");
-      clearInterval(retryInterval);
-      return;
-    }
-    console.info("[WebRTC] No answer yet — retrying offer…");
-    createAndSendOffer();
-  }, 8000);
+const retryInterval = setInterval(async () => {
+  if (cancelled) { clearInterval(retryInterval); return; }
+  const activePc = pcRef.current;
+  if (!activePc) { clearInterval(retryInterval); return; }
+
+  if (activePc.connectionState === "connected") {
+    console.info("[WebRTC] Connected — stopping offer retry");
+    clearInterval(retryInterval);
+    return;
+  }
+
+  console.info("[WebRTC] No answer yet — restarting peer connection and retrying offer…");
+
+  // Close old PC and create fresh one so signalingState is stable
+  activePc.close();
+  const newPc = createPeerConnection();
+  pcRef.current = newPc;
+
+  await createAndSendOffer();
+}, 8000);
 } else {
         console.info("[WebRTC] I am NOT owner — waiting for offer from doctor…");
       }
