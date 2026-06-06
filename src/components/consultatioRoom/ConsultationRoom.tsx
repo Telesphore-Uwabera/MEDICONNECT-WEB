@@ -148,7 +148,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           console.info("[WebRTC] Answer created and set, sending…");
-          sendSignal("answer", answer);
+          sendSignal("answer", { type: answer.type, sdp: answer.sdp });
 
         } else if (payload.type === "answer") {
           console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
@@ -158,6 +158,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           console.info("[WebRTC] Remote description set from answer");
 
         } else if (payload.type === "ice-candidate") {
+          if (!pc.remoteDescription) {
+            console.warn("[WebRTC] ICE candidate arrived before remote description — skipping");
+            return;
+          }
           console.info("[WebRTC] Adding ICE candidate");
           await pc.addIceCandidate(
             new RTCIceCandidate(payload.data as RTCIceCandidateInit),
@@ -240,7 +244,7 @@ if (isOwner) {
       const offer = await activePc.createOffer();
       await activePc.setLocalDescription(offer);
       console.info("[WebRTC] Offer created — sending…");
-      await sendSignal("offer", offer);
+      await sendSignal("offer", { type: offer.type, sdp: offer.sdp });
       console.info("[WebRTC] Offer sent successfully ✅");
     } catch (e) {
       console.error("[WebRTC] Offer creation failed", e);
