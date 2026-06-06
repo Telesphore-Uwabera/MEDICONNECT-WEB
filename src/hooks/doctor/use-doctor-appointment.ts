@@ -324,7 +324,8 @@ const IC = "/doctor/instant-consultations";
 export interface InstantConsultQueueItem {
   id: number;
   guest_phone: string;
-  description: string;
+  description: string | null;
+  status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "completed";
   queue_position: number;
   waiting_seconds: number;
   waiting_label: string;
@@ -346,6 +347,14 @@ export interface InstantConsultQueueResponse {
 export interface InstantAcceptResponse {
   message:      string;
   room_url:     string;
+  room_name:    string;
+  doctor_token: string;
+}
+
+export interface InstantJoinResponse {
+  message:      string;
+  room_url:     string;
+  room_name:    string;
   doctor_token: string;
 }
 
@@ -387,7 +396,23 @@ export function useDeclineInstant() {
   });
 }
 
-/* 10.4  useCompleteInstant  →  POST /instant-consultations/:id/complete */
+/* 10.4  useJoinInstant  →  POST /instant-consultations/:id/join */
+
+export function useJoinInstant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<InstantJoinResponse>(`${IC}/${id}/join`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["instant-consultations"] });
+    },
+  });
+  
+}
+
+
+
+/* 10.5  useCompleteInstant  →  POST /instant-consultations/:id/complete */
 
 export function useCompleteInstant() {
   const qc = useQueryClient();
