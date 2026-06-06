@@ -53,21 +53,18 @@ export function InstantConsultTab() {
   );
 
   // ── Accept (confirmed → accepted) ─────────────────────────────────────────
-  const handleAccept = (item: InstantConsultQueueItem) => {
-    setActiveAction({ id: item.id, action: "accepting" });
-    acceptInstant.mutate(item.id, {
-      onSuccess: (res) => {
-        toast.success("Request accepted. You can now join the room.");
-        // Navigate doctor to the consultation room
-        const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-        navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
-      },
-      onError: (err: unknown) => {
-        toast.error(getErrMsg(err, "Failed to accept consultation"));
-      },
-      onSettled: () => setActiveAction(null),
-    });
-  };
+const handleAccept = (item: InstantConsultQueueItem) => {
+  setActiveAction({ id: item.id, action: "accepting" });
+  acceptInstant.mutate(item.id, {
+    onSuccess: () => {
+      toast.success("Request accepted. Click Join when ready.");
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrMsg(err, "Failed to accept consultation"));
+    },
+    onSettled: () => setActiveAction(null),
+  });
+};
 
   // ── Decline ────────────────────────────────────────────────────────────────
   const handleDecline = (item: InstantConsultQueueItem) => {
@@ -84,19 +81,19 @@ export function InstantConsultTab() {
   };
 
   // ── Join (accepted → joined) ───────────────────────────────────────────────
-  const handleJoin = (item: InstantConsultQueueItem) => {
-    setActiveAction({ id: item.id, action: "joining" });
-    joinInstant.mutate(item.id, {
-      onSuccess: (res) => {
-        const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-        navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
-      },
-      onError: (err: unknown) => {
-        toast.error(getErrMsg(err, "Failed to join session"));
-      },
-      onSettled: () => setActiveAction(null),
-    });
-  };
+const handleJoin = (item: InstantConsultQueueItem) => {
+  setActiveAction({ id: item.id, action: "joining" });
+  joinInstant.mutate(item.id, {
+    onSuccess: (res) => {
+      const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
+      navigate(`/consultation/${roomName}?t=${res.doctor_token}`);
+    },
+    onError: (err: unknown) => {
+      toast.error(getErrMsg(err, "Failed to join session"));
+    },
+    onSettled: () => setActiveAction(null),
+  });
+};
 
   // ── Complete ───────────────────────────────────────────────────────────────
   const handleComplete = (item: InstantConsultQueueItem) => {
