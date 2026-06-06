@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -139,17 +140,20 @@ const Index = () => {
 
 
 
+const queryClient = useQueryClient();
+
 useEffect(() => {
     const channel = echo.channel('doctors.availability');
 
     channel.listen('.availability.changed', (data: DoctorAvailabilityEvent) => {
         console.log('Doctor availability changed:', data);
+        queryClient.invalidateQueries({ queryKey: ['patient-search-doctors'] });
     });
 
     return () => {
         echo.leaveChannel('doctors.availability');
     };
-}, []);
+}, [queryClient]);
 
   const prevSlide = useCallback(() => {
     if (!instantDoctors.length) return;

@@ -463,7 +463,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </label>
           <div className="relative">
             <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={form.name} onChange={set("name")} className={inputCls} placeholder="John Doe" required />
+            <Input value={form.name} onChange={set("name")} className={inputCls} placeholder="ISHIMWE Jean" required />
           </div>
         </div>
 
@@ -502,7 +502,10 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
             </div>
             <div className="relative flex-1">
               <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input value={form.phone} onChange={set("phone")} placeholder="0781234567" className={inputCls} required />
+              <Input value={form.phone} onChange={set("phone")} placeholder="0781234567" className={inputCls}
+              maxLength={10} 
+              minLength={10}
+               required />
             </div>
           </div>
         </div>
