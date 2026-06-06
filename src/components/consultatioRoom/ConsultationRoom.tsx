@@ -150,8 +150,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
           const rawData = payload.data as Record<string, unknown>;
           const cleanSdp = rawData.sdp?.toString()
-            .replace(/^a=ssrc:\d+ msid:[^\r\n]*/gm, "")
-            .replace(/\r\n\r\n/g, "\r\n")
+            .replace(/^a=ssrc:[^\r\n]*/gm, "")
+            .replace(/(\r\n){2,}/g, "\r\n")
             ?? "";
 
           await pc.setRemoteDescription(
@@ -171,8 +171,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             }
             const rawAnswer = payload.data as Record<string, unknown>;
             const cleanAnswerSdp = rawAnswer.sdp?.toString()
-              .replace(/^a=ssrc:\d+ msid:[^\r\n]*/gm, "")
-              .replace(/\r\n\r\n/g, "\r\n")
+              .replace(/^a=ssrc:[^\r\n]*/gm, "")
+              .replace(/(\r\n){2,}/g, "\r\n")
               ?? "";
             await pc.setRemoteDescription(
               new RTCSessionDescription({ type: rawAnswer.type as RTCSdpType, sdp: cleanAnswerSdp }),
