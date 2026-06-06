@@ -133,6 +133,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       try {
         if (payload.type === "offer") {
           console.info("[WebRTC] Processing offer, signalingState:", pc.signalingState);
+          console.info("[WebRTC] Offer SDP first 200 chars:", JSON.stringify((payload.data as Record<string, unknown>)?.sdp?.toString().slice(0, 200)));
           const offerCollision =
             makingOffer.current || pc.signalingState !== "stable";
 
