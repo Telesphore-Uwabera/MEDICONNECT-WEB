@@ -163,16 +163,21 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           console.info("[WebRTC] Answer created and set, sending…");
           sendSignal("answer", { type: answer.type, sdp: answer.sdp });
 
-        } else if (payload.type === "answer") {
-          console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
-          if (pc.signalingState !== "have-local-offer") {
-            console.warn("[WebRTC] Ignoring answer — not in have-local-offer state");
-            return;
-          }
-          await pc.setRemoteDescription(
-            new RTCSessionDescription(payload.data as RTCSessionDescriptionInit),
-          );
-          console.info("[WebRTC] Remote description set from answer");
+          } else if (payload.type === "answer") {
+            console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
+            if (pc.signalingState !== "have-local-offer") {
+              console.warn("[WebRTC] Ignoring answer — not in have-local-offer state");
+              return;
+            }
+            const rawAnswer = payload.data as Record<string, unknown>;
+            const cleanAnswerSdp = rawAnswer.sdp?.toString()
+              .replace(/^a=ssrc:\d+ msid:[^\r\n]*/gm, "")
+              .replace(/\r\n\r\n/g, "\r\n")
+              ?? "";
+            await pc.setRemoteDescription(
+              new RTCSessionDescription({ type: rawAnswer.type as RTCSdpType, sdp: cleanAnswerSdp }),
+            );
+            console.info("[WebRTC] Remote description set from answer");
 
         } else if (payload.type === "ice-candidate") {
           if (!pc.remoteDescription) {
