@@ -3657,8 +3657,7 @@ export const ConnectDialog = ({
 
   // ── Join the call — transition to connected with real room data ───────────
   const handleJoin = () => {
-    // roomUrl and dailyToken are already in state; pass them to InCallView
-    // via the connected phase. confirmJoin updates CallStore.
+    console.info("[Join] roomUrl:", roomUrl, "dailyToken:", dailyToken);
     call.confirmJoin();
     setPhase("connected");
   };
