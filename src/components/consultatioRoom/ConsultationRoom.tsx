@@ -166,21 +166,24 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       channel.listen(".webrtc.signal", handleSignal);
 
       // 4. Owner creates offer after a short delay (lets both sides subscribe)
-      if (isOwner) {
-        setTimeout(async () => {
-          if (cancelled) return;
-          try {
-            makingOffer.current = true;
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendSignal("offer", offer);
-          } catch (e) {
-            console.error("Offer creation failed", e);
-          } finally {
-            makingOffer.current = false;
-          }
-        }, 1500);
-      }
+if (isOwner) {
+  setTimeout(async () => {
+    if (cancelled) return;
+    const activePc = pcRef.current;
+    if (!activePc) return;
+    try {
+      makingOffer.current = true;
+      const offer = await activePc.createOffer();
+      await activePc.setLocalDescription(offer);
+      sendSignal("offer", offer);
+      console.info("[WebRTC] Offer sent", offer.type);
+    } catch (e) {
+      console.error("[WebRTC] Offer creation failed", e);
+    } finally {
+      makingOffer.current = false;
+    }
+  }, 2000);
+}
     };
 
     setup();
