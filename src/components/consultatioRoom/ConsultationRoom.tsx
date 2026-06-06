@@ -131,11 +131,17 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       const pc = pcRef.current ?? createPeerConnection();
 
       try {
-        if (payload.type === "offer") {
-          console.info("[WebRTC] Processing offer, signalingState:", pc.signalingState);
-          console.info("[WebRTC] Offer SDP first 200 chars:", JSON.stringify((payload.data as Record<string, unknown>)?.sdp?.toString().slice(0, 200)));
-          const offerCollision =
-            makingOffer.current || pc.signalingState !== "stable";
+    if (payload.type === "offer") {
+      console.info("[WebRTC] Processing offer, signalingState:", pc.signalingState);
+      console.info("[WebRTC] Offer SDP first 200 chars:", JSON.stringify((payload.data as Record<string, unknown>)?.sdp?.toString().slice(0, 200)));
+
+      if (pc.connectionState === "connected") {
+        console.info("[WebRTC] Already connected — ignoring redundant offer");
+        return;
+      }
+
+      const offerCollision =
+        makingOffer.current || pc.signalingState !== "stable";
 
           if (offerCollision && isOwner) {
             console.warn("[WebRTC] Offer collision — ignoring (impolite peer)");
@@ -159,6 +165,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
         } else if (payload.type === "answer") {
           console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
+          if (pc.signalingState !== "have-local-offer") {
+            console.warn("[WebRTC] Ignoring answer — not in have-local-offer state");
+            return;
+          }
           await pc.setRemoteDescription(
             new RTCSessionDescription(payload.data as RTCSessionDescriptionInit),
           );
