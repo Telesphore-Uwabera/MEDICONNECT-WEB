@@ -3240,9 +3240,1155 @@
 // };
 
 
+
+
+// // components/ConnectDialog.tsx
+// import { useEffect, useState, useRef } from "react";
+// import { createPortal } from "react-dom";
+// import { ChatPanel } from "@/components/ChatPanel";
+// import { cn } from "@/lib/utils";
+// import { useMe } from "@/hooks/useAuth";
+// import {
+//   useInstantConsultationRequest,
+//   useInstantConsultationStatus,
+//   useInstantConsultationPay,
+//   type InstantConsultationRequestPayload,
+// } from "@/hooks/patient/use-instant-consultations";
+// import {
+//   Maximize2,
+//   Minimize2,
+//   Minus,
+//   X,
+//   Mic,
+//   MicOff,
+//   Video,
+//   VideoOff,
+//   PhoneOff,
+//   Phone,
+//   ShieldCheck,
+//   Loader2,
+//   CheckCircle2,
+//   AlertCircle,
+//   MessageSquare,
+//   Wifi,
+//   ArrowRight,
+//   Sparkles,
+//   Activity,
+//   User,
+// } from "lucide-react";
+// import { Button } from "@/components/ui/button";
+// import { Progress } from "@/components/ui/progress";
+// import { Input } from "@/components/ui/input";
+// import { Label } from "@/components/ui/label";
+// import { useCallStore } from "@/context/CallStore";
+// import type { Doctor } from "@/context/CallStore";
+
+// // ─── Types ────────────────────────────────────────────────────────────────────
+
+// type CallPhase =
+//   | "idle"
+//   | "guest_form"
+//   | "requesting"
+//   | "payment"
+//   | "polling"
+//   | "accepted"
+//   | "in_progress"
+//   | "connected"
+//   | "rejected"
+//   | "failed"
+//   | "ended";
+
+// // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// const fmt = (s: number) =>
+//   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+// /** Returns up to 2 uppercase initials from a display name. */
+// const nameInitial = (name: string): string =>
+//   name
+//     .split(" ")
+//     .map((n) => n[0] ?? "")
+//     .join("")
+//     .slice(0, 2)
+//     .toUpperCase() || "?";
+
+// // ─── Signal Bars ──────────────────────────────────────────────────────────────
+
+// const SignalBars = ({ strength }: { strength: number }) => (
+//   <div className="flex items-end gap-0.5 h-4">
+//     {[1, 2, 3, 4].map((b) => (
+//       <div
+//         key={b}
+//         style={{ height: `${b * 4}px` }}
+//         className={cn(
+//           "w-1 rounded-sm transition-colors",
+//           b <= strength
+//             ? "bg-emerald-500 dark:bg-emerald-400"
+//             : "bg-foreground/10",
+//         )}
+//       />
+//     ))}
+//   </div>
+// );
+
+// // ─── Status Badge ─────────────────────────────────────────────────────────────
+
+// const StatusBadge = ({ phase }: { phase: CallPhase }) => {
+//   const map: Record<string, { icon: React.ReactNode; text: string; cls: string }> = {
+//     requesting: {
+//       icon: <Loader2 className="h-3 w-3 animate-spin" />,
+//       text: "Requesting..",
+//       cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
+//     },
+//     polling: {
+//       icon: <Loader2 className="h-3 w-3 animate-spin" />,
+//       text: "Waiting for doctor..",
+//       cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25",
+//     },
+//     accepted: {
+//       icon: <Phone className="h-3 w-3 animate-pulse" />,
+//       text: "Doctor ready",
+//       cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+//     },
+//     in_progress: {
+//   icon: <Activity className="h-3 w-3 animate-pulse" />,
+//   text: "In progress",
+//   cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+// },
+//     connected: {
+//       icon: <CheckCircle2 className="h-3 w-3" />,
+//       text: "Connected",
+//       cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+//     },
+//     rejected: {
+//       icon: <AlertCircle className="h-3 w-3" />,
+//       text: "Declined",
+//       cls: "bg-destructive/10 text-destructive border-destructive/25",
+//     },
+//     failed: {
+//       icon: <AlertCircle className="h-3 w-3" />,
+//       text: "Failed",
+//       cls: "bg-destructive/10 text-destructive border-destructive/25",
+//     },
+//     ended: {
+//       icon: <PhoneOff className="h-3 w-3" />,
+//       text: "Ended",
+//       cls: "bg-muted text-muted-foreground border-border",
+//     },
+//   };
+//   const c = map[phase];
+//   if (!c) return null;
+//   return (
+//     <span
+//       className={cn(
+//         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border",
+//         c.cls,
+//       )}
+//     >
+//       {c.icon}
+//       {c.text}
+//     </span>
+//   );
+// };
+
+// // ─── Device Toggles ───────────────────────────────────────────────────────────
+
+// const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
+//   const call = useCallStore();
+
+//   if (compact) {
+//     return (
+//       <div className="flex gap-2">
+//         <button
+//           onClick={call.toggleVideo}
+//           className={cn(
+//             "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
+//             call.videoEnabled
+//               ? "bg-primary/10 text-primary border-primary/25"
+//               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+//           )}
+//         >
+//           {call.videoEnabled ? (
+//             <Video className="h-3.5 w-3.5" />
+//           ) : (
+//             <VideoOff className="h-3.5 w-3.5" />
+//           )}
+//           {call.videoEnabled ? "Camera on" : "Camera off"}
+//         </button>
+//         <button
+//           onClick={call.toggleAudio}
+//           className={cn(
+//             "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
+//             call.audioEnabled
+//               ? "bg-primary/10 text-primary border-primary/25"
+//               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+//           )}
+//         >
+//           {call.audioEnabled ? (
+//             <Mic className="h-3.5 w-3.5" />
+//           ) : (
+//             <MicOff className="h-3.5 w-3.5" />
+//           )}
+//           {call.audioEnabled ? "Mic on" : "Mic off"}
+//         </button>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <>
+//       <div className="flex gap-2">
+//         <button
+//           onClick={call.toggleVideo}
+//           className={cn(
+//             "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
+//             call.videoEnabled
+//               ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
+//               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+//           )}
+//         >
+//           <div
+//             className={cn(
+//               "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
+//               call.videoEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
+//             )}
+//           >
+//             {call.videoEnabled ? (
+//               <Video className="h-5 w-5" />
+//             ) : (
+//               <VideoOff className="h-5 w-5" />
+//             )}
+//           </div>
+//           <div className="text-center space-y-0.5">
+//             <p className="text-[11px] font-semibold leading-none">Camera</p>
+//             <p
+//               className={cn(
+//                 "text-[10px] leading-none",
+//                 call.videoEnabled ? "text-primary/70" : "text-muted-foreground/50",
+//               )}
+//             >
+//               {call.videoEnabled ? "On" : "Off"}
+//             </p>
+//           </div>
+//         </button>
+
+//         <button
+//           onClick={call.toggleAudio}
+//           className={cn(
+//             "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
+//             call.audioEnabled
+//               ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
+//               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+//           )}
+//         >
+//           <div
+//             className={cn(
+//               "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
+//               call.audioEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
+//             )}
+//           >
+//             {call.audioEnabled ? (
+//               <Mic className="h-5 w-5" />
+//             ) : (
+//               <MicOff className="h-5 w-5" />
+//             )}
+//           </div>
+//           <div className="text-center space-y-0.5">
+//             <p className="text-[11px] font-semibold leading-none">Microphone</p>
+//             <p
+//               className={cn(
+//                 "text-[10px] leading-none",
+//                 call.audioEnabled ? "text-primary/70" : "text-muted-foreground/50",
+//               )}
+//             >
+//               {call.audioEnabled ? "On" : "Off"}
+//             </p>
+//           </div>
+//         </button>
+//       </div>
+
+//       <p className="text-[10px] text-muted-foreground/60 text-center">
+//         {!call.videoEnabled && !call.audioEnabled
+//           ? "⚠ Camera and mic are both off"
+//           : !call.videoEnabled
+//           ? "Camera off · Mic on"
+//           : !call.audioEnabled
+//           ? "Camera on · Mic off — others won't hear you"
+//           : "Camera and mic are ready"}
+//       </p>
+//     </>
+//   );
+// };
+
+// // ─── ConnectDialog ────────────────────────────────────────────────────────────
+
+// interface ConnectDialogProps {
+//   /** Slim Doctor shape from CallStore — built by DoctorCard from ApiDoctor */
+//   doctor: Doctor;
+//   open: boolean;
+//   onOpenChange: (v: boolean) => void;
+// }
+
+// export const ConnectDialog = ({
+//   doctor,
+//   open,
+//   onOpenChange,
+// }: ConnectDialogProps) => {
+//   const call = useCallStore();
+
+//   // ── Auth ──────────────────────────────────────────────────────────────────
+//   const { data: me } = useMe();
+//   const isLoggedIn = !!me;
+
+//   // A logged-in user is "complete" only if they have both name and phone.
+//   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
+
+//   // ── Local state ───────────────────────────────────────────────────────────
+//   const [phase, setPhase]           = useState<CallPhase>("idle");
+//   const [fullscreen, setFullscreen] = useState(false);
+
+//   // Guest / supplemental form fields
+//   const [guestName, setGuestName]   = useState("");
+//   const [guestPhone, setGuestPhone] = useState("");
+//   const [guestError, setGuestError] = useState<string | null>(null);
+
+//   // Consultation state from API
+//   const [consultationToken, setConsultationToken] = useState<string | null>(null);
+//   const [queueInfo, setQueueInfo] = useState<{
+//     position: number;
+//     ahead: number;
+//   } | null>(null);
+//   const [roomUrl, setRoomUrl]       = useState<string | null>(null);
+//   const [dailyToken, setDailyToken] = useState<string | null>(null);
+//   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
+
+//   // ── API hooks ─────────────────────────────────────────────────────────────
+//     const [consultationId, setConsultationId]         = useState<number | null>(null);
+//   const [paymentLoading, setPaymentLoading]         = useState(false);
+//   const [paymentInfo, setPaymentInfo]               = useState<{
+//     amount: number;
+//     currency: string;
+//     invoice_number: string;
+//     public_key: string;
+//   } | null>(null);
+
+//   const requestMutation = useInstantConsultationRequest();
+//   const payMutation     = useInstantConsultationPay();
+//   const { data: statusData } = useInstantConsultationStatus(
+//     consultationToken,
+//     phase === "polling",
+//   );
+
+//   // ── Reset on open ─────────────────────────────────────────────────────────
+//   useEffect(() => {
+//     if (open) {
+//       setPhase(isProfileComplete ? "idle" : "guest_form");
+//       setFullscreen(false);
+//       setGuestName(me?.name ?? "");
+//       setGuestPhone(me?.phone ?? "");
+//       setGuestError(null);
+//       setConsultationToken(null);
+//       setQueueInfo(null);
+//       setRoomUrl(null);
+//       setDailyToken(null);
+//       setErrorMsg(null);
+//     }
+//   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   // ── Promote guest_form → idle if user logs in with complete profile ────────
+//   useEffect(() => {
+//     if (open && phase === "guest_form" && isProfileComplete) {
+//       setGuestName(me?.name ?? "");
+//       setGuestPhone(me?.phone ?? "");
+//       setPhase("idle");
+//     }
+//   }, [isLoggedIn, me]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   // ── React to poll results ─────────────────────────────────────────────────
+//   useEffect(() => {
+//     if (!statusData || phase !== "polling") return;
+
+//     setQueueInfo({
+//       position: Number(statusData.queue_position),
+//       ahead: statusData.people_ahead,
+//     });
+
+//     console.info("[Poll] statusData:", JSON.stringify(statusData));
+//     if (statusData.status === "accepted" || statusData.status === "in_progress") {
+//       setRoomUrl(statusData.room_url ?? null);
+//       setDailyToken(statusData.daily_guest_token ?? null);
+//       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
+//     } else if (
+//       statusData.status === "rejected" ||
+//       statusData.status === "cancelled"
+//     ) {
+//       setPhase("rejected");
+//     }
+//   }, [statusData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   // ── Send consultation request ─────────────────────────────────────────────
+//   const handleRequest = async (override?: { name: string; phone: string }) => {
+//     setPhase("requesting");
+//     setErrorMsg(null);
+
+//     try {
+//       const name  = override?.name  ?? me?.name  ?? guestName;
+//       const phone = override?.phone ?? me?.phone ?? guestPhone;
+
+//       const payload: InstantConsultationRequestPayload = {
+//         doctor_id:   doctor.id,
+//         guest_name:  name,
+//         guest_phone: phone,
+//       };
+
+//       const res = await requestMutation.mutateAsync(payload);
+//       setConsultationToken(res.guest_token);
+//       setConsultationId(res.id ?? null);
+//       setQueueInfo({
+//         position: Number(res.queue_position),
+//         ahead: res.people_ahead ?? 0,
+//       });
+
+//       if (res.payment_status === "paid") {
+//         setPhase("polling");
+//         return;
+//       }
+
+//       setPaymentInfo({
+//         amount:         Number(res.amount),
+//         currency:       "RWF",
+//         invoice_number: "",
+//         public_key:     "",
+//       });
+//       setPhase("payment");
+//     } catch (err: unknown) {
+//       setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
+//       setPhase("failed");
+//     }
+//   };
+
+//   const handlePay = async () => {
+//     if (!consultationId || !paymentInfo) return;
+//     setPaymentLoading(true);
+//     try {
+//       const payRes = await payMutation.mutateAsync(consultationId);
+//       (window as any).IremboPay.initiate({
+//         publicKey:     payRes.public_key,
+//         invoiceNumber: payRes.invoice_number,
+//         locale:        (window as any).IremboPay.locale.EN,
+//         callback: (err: unknown) => {
+//           if (!err) {
+//             (window as any).IremboPay.closeModal();
+//             setPhase("polling");
+//           } else {
+//             setErrorMsg("Payment failed. Please try again.");
+//           }
+//         },
+//       });
+//     } catch {
+//       setErrorMsg("Payment could not be initiated. Please try again.");
+//     } finally {
+//       setPaymentLoading(false);
+//     }
+//   };
+//   // ── Guest form submit ─────────────────────────────────────────────────────
+//   const handleGuestSubmit = () => {
+//     if (!guestName.trim()) {
+//       setGuestError("Please enter your name.");
+//       return;
+//     }
+//     if (!guestPhone.trim()) {
+//       setGuestError("Please enter your phone number.");
+//       return;
+//     }
+//     setGuestError(null);
+//     handleRequest({ name: guestName.trim(), phone: guestPhone.trim() });
+//   };
+
+//   // ── Join the call — transition to connected with real room data ───────────
+// const handleJoin = () => {
+//   if (!roomUrl || !dailyToken) return;
+//   const roomName = roomUrl.split('/consultation/').pop() ?? roomUrl;
+//   window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
+// };
+
+//   // ── Close / end ───────────────────────────────────────────────────────────
+//   const handleClose = () => {
+//     onOpenChange(false);
+//     if (phase === "ended") call.setDialogOpen(false);
+//   };
+
+//   const handleEnd = () => {
+//     call.endCall();
+//     setPhase("ended");
+//   };
+
+//   const handleMinimize = () => call.setMinimized(true);
+
+//   // ── Retry helper ──────────────────────────────────────────────────────────
+//   const handleRetry = () => {
+//     if (isProfileComplete) {
+//       handleRequest();
+//     } else {
+//       setPhase("guest_form");
+//     }
+//   };
+
+//   if (!open) return null;
+
+//   // ── Derived display values ────────────────────────────────────────────────
+//   const doctorName    = doctor.user.name;
+//   const doctorInitial = nameInitial(doctorName);
+
+//   const titleText = (): string => {
+//     if (phase === "idle")       return "Instant consult";
+//     if (phase === "guest_form") return "Your details";
+//     if (phase === "requesting") return "Sending request…";
+//     if (phase === "payment")    return "Complete payment";
+//     if (phase === "polling")    return "Waiting for doctor";
+//     if (phase === "accepted")   return "Doctor is ready";
+//     if (phase === "in_progress") return "Doctor is in call";
+//     if (phase === "connected")  return "In consultation";
+//     if (phase === "rejected")   return "Request declined";
+//     if (phase === "failed")     return "Connection failed";
+//     if (phase === "ended")      return "Call ended";
+//     return "Instant consult";
+//   };
+
+//   const progressValue = (): number => {
+//     if (phase === "requesting") return 30;
+//     if (phase === "polling")    return 65;
+//     if (phase === "accepted")   return 80;
+//     if (phase === "in_progress") return 100;
+//     return 0;
+//   };
+
+//     const showProgress = ["requesting", "polling", "accepted", "in_progress"].includes(phase);
+
+
+
+//   return createPortal(
+//     <>
+//       {!fullscreen && (
+//         <div
+//           className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
+//           onClick={handleClose}
+//         />
+//       )}
+
+//       <div
+//         className={cn(
+//           "fixed z-50 flex flex-col overflow-hidden transition-all duration-300",
+//           fullscreen
+//             ? "inset-0 rounded-none"
+//             : [
+//                 "rounded-2xl shadow-2xl",
+//                 "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+//                 phase === "connected"
+//                   ? "w-[860px] max-w-[95vw]"
+//                   : "w-[400px] max-w-[95vw]",
+//               ],
+//         )}
+//       >
+//         {phase !== "connected" ? (
+//           // ── Pre-call panel ────────────────────────────────────────────────
+//           <div className="bg-card border border-border rounded-2xl overflow-hidden">
+//             {/* Title bar */}
+//             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+//               <div className="flex items-center gap-2">
+//                 <Sparkles className="h-3.5 w-3.5 text-primary" />
+//                 <span className="text-[12px] font-semibold text-foreground/80">
+//                   {titleText()}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-1">
+//                 <button
+//                   onClick={() => setFullscreen(!fullscreen)}
+//                   className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+//                 >
+//                   {fullscreen ? (
+//                     <Minimize2 className="h-3.5 w-3.5" />
+//                   ) : (
+//                     <Maximize2 className="h-3.5 w-3.5" />
+//                   )}
+//                 </button>
+//                 <button
+//                   onClick={handleClose}
+//                   className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+//                 >
+//                   <X className="h-3.5 w-3.5" />
+//                 </button>
+//               </div>
+//             </div>
+
+//             <div className="p-5 space-y-4">
+//               {/* Doctor card — hidden on guest_form */}
+//               {phase !== "guest_form" && (
+//                 <div
+//                   className={cn(
+//                     "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
+//                     showProgress
+//                       ? "border-primary/20 bg-primary/5"
+//                       : "border-border bg-muted/50",
+//                   )}
+//                 >
+//                   <div className="relative shrink-0">
+//                     <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none">
+//                       {doctorInitial}
+//                     </div>
+//                     {showProgress && (
+//                       <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
+//                     )}
+//                   </div>
+//                   <div className="flex-1 min-w-0">
+//                     <p className="text-[13px] font-semibold text-foreground truncate">
+//                       {doctorName}
+//                     </p>
+//                     {doctor.specialization && (
+//                       <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+//                         {doctor.specialization}
+//                       </p>
+//                     )}
+//                     {queueInfo && phase === "polling" && (
+//                       <p className="text-[11px] text-muted-foreground mt-0.5">
+//                         Position {queueInfo.position} ·{" "}
+//                         {queueInfo.ahead === 0
+//                           ? "You're next"
+//                           : `${queueInfo.ahead} ahead`}
+//                       </p>
+//                     )}
+//                   </div>
+//                   {phase !== "idle" && <StatusBadge phase={phase} />}
+//                 </div>
+//               )}
+
+//               {/* Progress bar */}
+//               {showProgress && (
+//                 <div className="space-y-2">
+//                   <Progress
+//                     value={progressValue()}
+//                     className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
+//                   />
+//                   <p className="text-[10px] text-muted-foreground text-center">
+//                     {phase === "requesting" && "Sending consultation request…"}
+//                     {phase === "polling"    && "Waiting for doctor to accept…"}
+//                     {phase === "accepted"   && "Doctor is ready — join when you are!"}
+//                   </p>
+//                 </div>
+//               )}
+
+//               {/* ── Guest / contact-incomplete form ── */}
+//               {phase === "guest_form" && (
+//                 <div className="space-y-4">
+//                   <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+//                     <User className="h-4 w-4 text-muted-foreground shrink-0" />
+//                     <p className="text-[11px] text-muted-foreground">
+//                       {isLoggedIn
+//                         ? "Please confirm your contact details to continue."
+//                         : "You're not logged in. Please enter your details to continue."}
+//                     </p>
+//                   </div>
+
+//                   {/* Show which doctor they're requesting */}
+//                   <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
+//                     <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
+//                       {doctorInitial}
+//                     </div>
+//                     <div className="min-w-0">
+//                       <p className="text-[12px] font-semibold text-foreground truncate">
+//                         {doctorName}
+//                       </p>
+//                       {doctor.specialization && (
+//                         <p className="text-[10px] text-muted-foreground truncate">
+//                           {doctor.specialization}
+//                         </p>
+//                       )}
+//                     </div>
+//                   </div>
+
+//                   <div className="space-y-3">
+//                     <div className="space-y-1.5">
+//                       <Label className="text-[11px] font-medium">Full name</Label>
+//                       <Input
+//                         placeholder="e.g. Alain Honore"
+//                         value={guestName}
+//                         onChange={(e) => setGuestName(e.target.value)}
+//                         className="h-9 text-[12px]"
+//                         onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+//                       />
+//                     </div>
+//                     <div className="space-y-1.5">
+//                       <Label className="text-[11px] font-medium">Phone number</Label>
+//                       <Input
+//                         placeholder="e.g. 0733334512"
+//                         value={guestPhone}
+//                         onChange={(e) => setGuestPhone(e.target.value)}
+//                         className="h-9 text-[12px]"
+//                         onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+//                       />
+//                     </div>
+//                     {guestError && (
+//                       <p className="text-[11px] text-destructive flex items-center gap-1">
+//                         <AlertCircle className="h-3 w-3" /> {guestError}
+//                       </p>
+//                     )}
+//                   </div>
+
+//                   <div className="space-y-2">
+//                     <Button
+//                       onClick={handleGuestSubmit}
+//                       className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+//                     >
+//                       <Wifi className="h-4 w-4" />
+//                       Request consultation
+//                       <ArrowRight className="h-3.5 w-3.5" />
+//                     </Button>
+//                     <Button
+//                       variant="outline"
+//                       onClick={handleClose}
+//                       className="w-full h-9 text-[11px] rounded-xl"
+//                     >
+//                       Cancel
+//                     </Button>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* ── Idle CTA (logged-in with complete profile) ── */}
+//               {phase === "idle" && (
+//                 <div className="space-y-2 pt-1">
+//                   <DeviceToggles compact={false} />
+//                   <Button
+//                     onClick={() => handleRequest()}
+//                     className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+//                   >
+//                     <Wifi className="h-4 w-4" />
+//                     Start instant consultation
+//                     <ArrowRight className="h-3.5 w-3.5" />
+//                   </Button>
+//                   <Button
+//                     variant="outline"
+//                     onClick={handleClose}
+//                     className="w-full h-9 text-[11px] rounded-xl"
+//                   >
+//                     Cancel
+//                   </Button>
+//                 </div>
+//               )}
+
+//               {/* ── Polling — wait with device toggles ── */}
+//               {phase === "polling" && (
+//                 <div className="space-y-3">
+//                   <DeviceToggles compact={true} />
+//                   <Button
+//                     variant="outline"
+//                     onClick={handleClose}
+//                     className="w-full h-9 text-[11px] rounded-xl"
+//                   >
+//                     Cancel
+//                   </Button>
+//                 </div>
+//               )}
+
+//               {/* ── Payment ── */}
+//               {phase === "payment" && (
+//                 <div className="space-y-4">
+//                   <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+//                     <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+//                       Payment summary
+//                     </p>
+//                     <div className="flex justify-between text-[12px]">
+//                       <span className="text-muted-foreground">Patient</span>
+//                       <span className="font-medium text-foreground">
+//                         {guestName || me?.name}
+//                       </span>
+//                     </div>
+//                     <div className="flex justify-between text-[12px]">
+//                       <span className="text-muted-foreground">Phone</span>
+//                       <span className="font-medium text-foreground">
+//                         {guestPhone || me?.phone}
+//                       </span>
+//                     </div>
+//                     <div className="flex justify-between text-[12px]">
+//                       <span className="text-muted-foreground">Doctor</span>
+//                       <span className="font-medium text-foreground">{doctorName}</span>
+//                     </div>
+//                     <div className="border-t border-border pt-2 flex justify-between text-[13px]">
+//                       <span className="font-semibold text-foreground">Amount</span>
+//                       <span className="font-bold text-primary">
+//                         {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
+//                       </span>
+//                     </div>
+//                   </div>
+
+//                   {errorMsg && (
+//                     <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+//                       <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+//                       {errorMsg}
+//                     </div>
+//                   )}
+
+//                   <Button
+//                     onClick={handlePay}
+//                     disabled={paymentLoading}
+//                     className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+//                   >
+//                     {paymentLoading ? (
+//                       <Loader2 className="h-4 w-4 animate-spin" />
+//                     ) : (
+//                       <ShieldCheck className="h-4 w-4" />
+//                     )}
+//                     {paymentLoading ? "Initiating…" : "Pay now"}
+//                   </Button>
+//                   <Button
+//                     variant="outline"
+//                     onClick={handleClose}
+//                     className="w-full h-9 text-[11px] rounded-xl"
+//                   >
+//                     Cancel
+//                   </Button>
+//                 </div>
+//               )}
+
+//               {/* ── Accepted / In Progress — join CTA ── */}
+//               {(phase === "accepted" || phase === "in_progress") && (
+//                 <div className="space-y-3">
+//                   <DeviceToggles compact={true} />
+//                   <div className="space-y-2 pt-1">
+//                     <Button
+//                       onClick={handleJoin}
+//                       className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+//                     >
+//                       <Phone className="h-4 w-4" />
+//                       Join call
+//                       <ArrowRight className="h-3.5 w-3.5" />
+//                     </Button>
+//                     <Button
+//                       variant="outline"
+//                       onClick={handleClose}
+//                       className="w-full h-9 text-[11px] rounded-xl"
+//                     >
+//                       Cancel
+//                     </Button>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* ── Failed / rejected ── */}
+//               {(phase === "failed" || phase === "rejected") && (
+//                 <div className="space-y-3">
+//                   {errorMsg && (
+//                     <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+//                       <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+//                       {errorMsg}
+//                     </div>
+//                   )}
+//                   {phase === "rejected" && (
+//                     <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
+//                       The doctor is currently unavailable. Please try again
+//                       later or book an appointment.
+//                     </div>
+//                   )}
+//                   <div className="space-y-2 pt-1">
+//                     <Button
+//                       onClick={handleRetry}
+//                       className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+//                     >
+//                       <Phone className="h-4 w-4" />
+//                       Try again
+//                     </Button>
+//                     <Button
+//                       variant="outline"
+//                       onClick={handleClose}
+//                       className="w-full h-9 text-[11px] rounded-xl"
+//                     >
+//                       Close
+//                     </Button>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* ── Ended ── */}
+//               {phase === "ended" && (
+//                 <div className="space-y-3">
+//                   <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
+//                     <p className="text-[12px] font-medium text-foreground/60">
+//                       Your consultation has ended
+//                     </p>
+//                     <p className="text-[10px] text-muted-foreground">
+//                       Duration: session complete
+//                     </p>
+//                   </div>
+//                   <div className="space-y-2">
+//                     <Button
+//                       onClick={handleRetry}
+//                       className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+//                     >
+//                       <Phone className="h-4 w-4" />
+//                       Reconnect with {doctorName}
+//                     </Button>
+//                     <Button
+//                       variant="outline"
+//                       onClick={handleClose}
+//                       className="w-full h-9 text-[11px] rounded-xl"
+//                     >
+//                       Close
+//                     </Button>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* Trust footer */}
+//                 {["idle", "guest_form", "payment", "polling", "accepted", "in_progress"].includes(phase) && (
+
+//                 <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
+//                   <ShieldCheck className="h-3 w-3" />
+//                   HIPAA compliant · End-to-end encrypted
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         ) : (
+//           // ── In-call view (Daily.co iframe) ────────────────────────────────
+//           <InCallView
+//             doctor={doctor}
+//             roomUrl={roomUrl}
+//             dailyToken={dailyToken}
+//             fullscreen={fullscreen}
+//             setFullscreen={setFullscreen}
+//             onMinimize={handleMinimize}
+//             onEnd={handleEnd}
+//           />
+//         )}
+//       </div>
+//     </>,
+//     document.body,
+//   );
+// };
+
+// // ─── In-call view ─────────────────────────────────────────────────────────────
+
+// interface InCallViewProps {
+//   doctor: Doctor;
+//   roomUrl: string | null;
+//   dailyToken: string | null;
+//   fullscreen: boolean;
+//   setFullscreen: (v: boolean) => void;
+//   onMinimize: () => void;
+//   onEnd: () => void;
+// }
+
+// const InCallView = ({
+//   doctor,
+//   roomUrl,
+//   dailyToken,
+//   fullscreen,
+//   setFullscreen,
+//   onMinimize,
+//   onEnd,
+// }: InCallViewProps) => {
+//   const call = useCallStore();
+//   const [controlsVisible, setControlsVisible] = useState(true);
+//   const [chatOpen, setChatOpen]               = useState(false);
+//   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+//   const scheduleHide = () => {
+//     if (hideTimer.current) clearTimeout(hideTimer.current);
+//     hideTimer.current = setTimeout(() => setControlsVisible(false), 4000);
+//   };
+
+//   const handleMouseMove = () => {
+//     setControlsVisible(true);
+//     scheduleHide();
+//   };
+
+//   useEffect(() => {
+//     scheduleHide();
+//     return () => {
+//       if (hideTimer.current) clearTimeout(hideTimer.current);
+//     };
+//   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+//   const handleChatToggle = () => {
+//     const next = !chatOpen;
+//     setChatOpen(next);
+//     if (next) call.clearUnread();
+//     // Keep controls visible while chat is open
+//     if (next && hideTimer.current) {
+//       clearTimeout(hideTimer.current);
+//     } else {
+//       scheduleHide();
+//     }
+//   };
+
+//   const doctorName    = doctor.user.name;
+//   const doctorInitial = nameInitial(doctorName);
+//   const chatWidth     = chatOpen ? 288 : 0;
+
+//   // Build the Daily.co iframe src — token is passed as the `t` query param
+//   // which Daily recognises as the meeting token for guest access.
+//   const roomName = roomUrl?.split('/consultation/').pop();
+//   const iframeSrc =
+//     roomName && dailyToken
+//       ? `${window.location.origin}/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`
+//       : null;
+
+
+//   return (
+//     <div
+//       className={cn(
+//         "relative flex bg-[#0c0c0c] overflow-hidden",
+//         fullscreen ? "h-screen w-screen" : "h-[580px]",
+//       )}
+//       onMouseMove={handleMouseMove}
+//       onTouchStart={handleMouseMove}
+//     >
+//       {/* ── Daily.co iframe ─────────────────────────────────────────────── */}
+//       <div
+//         className="relative flex-1 flex flex-col min-w-0 transition-all duration-300"
+//         style={{ marginRight: chatWidth }}
+//       >
+//         {iframeSrc ? (
+//           <iframe
+//             src={iframeSrc}
+//             allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
+//             allowFullScreen
+//             className="absolute inset-0 w-full h-full border-0"
+//             title={`Consultation with ${doctorName}`}
+//           />
+//         ) : (
+//           // Fallback — should rarely be seen
+//           <div className="absolute inset-0 flex items-center justify-center">
+//             <div className="text-center space-y-3">
+//               <div className="relative mx-auto w-[88px] h-[88px]">
+//                 <div
+//                   className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping"
+//                   style={{ animationDuration: "2s" }}
+//                 />
+//                 <div className="relative h-[88px] w-[88px] rounded-full bg-[#1e2a26] text-white/85 flex items-center justify-center text-3xl font-bold ring-[1.5px] ring-emerald-500/30 select-none">
+//                   {doctorInitial}
+//                 </div>
+//               </div>
+//               <p className="text-[13px] text-white/50">Connecting to room…</p>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* ── Overlay top bar (minimize / fullscreen / timer) ────────────── */}
+//         {/* Sits above the iframe; pointer-events only on the buttons */}
+//         <div
+//           className={cn(
+//             "absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none",
+//             "bg-gradient-to-b from-black/60 to-transparent",
+//             "transition-opacity duration-500",
+//             controlsVisible ? "opacity-100" : "opacity-0",
+//           )}
+//         >
+//           {/* Live timer */}
+//           <div className="flex items-center gap-2 pointer-events-none">
+//             <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+//             <span className="text-[10px] text-white/70 font-mono tracking-wide">
+//               LIVE · {fmt(call.elapsed)}
+//             </span>
+//           </div>
+
+//           {/* Window controls */}
+//           <div className="flex items-center gap-1 pointer-events-auto">
+//             <SignalBars strength={call.signalStrength} />
+//             <button
+//               onClick={onMinimize}
+//               title="Minimize"
+//               className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+//             >
+//               <Minus className="h-3.5 w-3.5" />
+//             </button>
+//             <button
+//               onClick={() => setFullscreen(!fullscreen)}
+//               title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+//               className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+//             >
+//               {fullscreen ? (
+//                 <Minimize2 className="h-3.5 w-3.5" />
+//               ) : (
+//                 <Maximize2 className="h-3.5 w-3.5" />
+//               )}
+//             </button>
+//           </div>
+//         </div>
+
+//         {/* ── Overlay bottom bar (chat + end call) ───────────────────────── */}
+//         {/* Daily owns mic/camera/grid controls inside the iframe.           */}
+//         {/* We only expose chat sidebar and end-call here.                   */}
+//         <div
+//           className={cn(
+//             "absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-3 z-20",
+//             "bg-gradient-to-t from-black/65 to-transparent pointer-events-none",
+//             "transition-opacity duration-500",
+//             controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none",
+//           )}
+//         >
+//           {/* Chat toggle */}
+//           <div className="relative pointer-events-auto">
+//             <button
+//               onClick={handleChatToggle}
+//               title={chatOpen ? "Close chat" : "Open chat"}
+//               className={cn(
+//                 "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90",
+//                 chatOpen
+//                   ? "bg-white/20 hover:bg-white/30 text-white"
+//                   : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white",
+//               )}
+//             >
+//               <MessageSquare className="h-4 w-4" />
+//             </button>
+//             {call.unreadCount > 0 && !chatOpen && (
+//               <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center pointer-events-none leading-none">
+//                 {call.unreadCount > 9 ? "9+" : call.unreadCount}
+//               </span>
+//             )}
+//           </div>
+
+//           {/* End call */}
+//           <button
+//             onClick={onEnd}
+//             title="End call"
+//             className="pointer-events-auto h-11 w-11 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/35"
+//           >
+//             <PhoneOff className="h-[18px] w-[18px]" />
+//           </button>
+
+//           {/* Spacer to balance layout */}
+//           <div className="w-10" />
+//         </div>
+//       </div>
+
+//       {/* ── Chat panel ──────────────────────────────────────────────────── */}
+//       {/* Uses bg-card so it follows the light/dark theme of the app       */}
+//       <div
+//         className={cn(
+//           "absolute top-0 right-0 h-full flex flex-col z-30",
+//           "bg-card border-l border-border",
+//           "transition-all duration-300 ease-in-out",
+//           chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden",
+//         )}
+//       >
+//         {chatOpen && (
+//           <ChatPanel
+//             open={chatOpen}
+//             onClose={() => setChatOpen(false)}
+//             doctorAvatar={doctorInitial}
+//             doctorName={doctorName}
+//           />
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+
+
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom";
 import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useAuth";
@@ -3253,26 +4399,10 @@ import {
   type InstantConsultationRequestPayload,
 } from "@/hooks/patient/use-instant-consultations";
 import {
-  Maximize2,
-  Minimize2,
-  Minus,
-  X,
-  Mic,
-  MicOff,
-  Video,
-  VideoOff,
-  PhoneOff,
-  Phone,
-  ShieldCheck,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  MessageSquare,
-  Wifi,
-  ArrowRight,
-  Sparkles,
-  Activity,
-  User,
+  Mic, MicOff, Video, VideoOff, PhoneOff, Phone,
+  ShieldCheck, Loader2, CheckCircle2, AlertCircle,
+  MessageSquare, Wifi, ArrowRight, Sparkles, Activity,
+  User, Maximize2, Minimize2, Minus, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -3288,6 +4418,7 @@ type CallPhase =
   | "guest_form"
   | "requesting"
   | "payment"
+  | "payment_verifying"
   | "polling"
   | "accepted"
   | "in_progress"
@@ -3301,14 +4432,51 @@ type CallPhase =
 const fmt = (s: number) =>
   `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-/** Returns up to 2 uppercase initials from a display name. */
 const nameInitial = (name: string): string =>
-  name
-    .split(" ")
-    .map((n) => n[0] ?? "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "?";
+  name.split(" ").map((n) => n[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
+
+// ─── Invoice Poller ───────────────────────────────────────────────────────────
+
+function pollInvoice(
+  invoiceNumber: string,
+  onPaid: () => void,
+  onFailed: (msg: string) => void,
+  intervalMs = 3000,
+  maxAttempts = 20,
+): () => void {
+  let attempts = 0;
+  let cancelled = false;
+
+  const tick = async () => {
+    if (cancelled) return;
+    attempts++;
+    try {
+      const res = await fetch(
+        `/public/payments/check-invoice/${encodeURIComponent(invoiceNumber)}`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: { status: "paid" | "pending" | string } = await res.json();
+      if (cancelled) return;
+      if (data.status === "paid") { onPaid(); return; }
+      if (attempts >= maxAttempts) {
+        onFailed("Payment verification timed out. If you completed payment, please wait a moment and try again.");
+        return;
+      }
+      setTimeout(tick, intervalMs);
+    } catch {
+      if (cancelled) return;
+      if (attempts >= maxAttempts) {
+        onFailed("Could not verify payment status. Please check your connection and try again.");
+        return;
+      }
+      setTimeout(tick, intervalMs);
+    }
+  };
+
+  setTimeout(tick, intervalMs);
+  return () => { cancelled = true; };
+}
 
 // ─── Signal Bars ──────────────────────────────────────────────────────────────
 
@@ -3320,9 +4488,7 @@ const SignalBars = ({ strength }: { strength: number }) => (
         style={{ height: `${b * 4}px` }}
         className={cn(
           "w-1 rounded-sm transition-colors",
-          b <= strength
-            ? "bg-emerald-500 dark:bg-emerald-400"
-            : "bg-foreground/10",
+          b <= strength ? "bg-emerald-500 dark:bg-emerald-400" : "bg-foreground/10",
         )}
       />
     ))}
@@ -3338,6 +4504,11 @@ const StatusBadge = ({ phase }: { phase: CallPhase }) => {
       text: "Requesting..",
       cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25",
     },
+    payment_verifying: {
+      icon: <Loader2 className="h-3 w-3 animate-spin" />,
+      text: "Verifying payment…",
+      cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25",
+    },
     polling: {
       icon: <Loader2 className="h-3 w-3 animate-spin" />,
       text: "Waiting for doctor..",
@@ -3349,10 +4520,10 @@ const StatusBadge = ({ phase }: { phase: CallPhase }) => {
       cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
     },
     in_progress: {
-  icon: <Activity className="h-3 w-3 animate-pulse" />,
-  text: "In progress",
-  cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
-},
+      icon: <Activity className="h-3 w-3 animate-pulse" />,
+      text: "In progress",
+      cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25",
+    },
     connected: {
       icon: <CheckCircle2 className="h-3 w-3" />,
       text: "Connected",
@@ -3377,12 +4548,7 @@ const StatusBadge = ({ phase }: { phase: CallPhase }) => {
   const c = map[phase];
   if (!c) return null;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border",
-        c.cls,
-      )}
-    >
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border", c.cls)}>
       {c.icon}
       {c.text}
     </span>
@@ -3406,11 +4572,7 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          {call.videoEnabled ? (
-            <Video className="h-3.5 w-3.5" />
-          ) : (
-            <VideoOff className="h-3.5 w-3.5" />
-          )}
+          {call.videoEnabled ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
           {call.videoEnabled ? "Camera on" : "Camera off"}
         </button>
         <button
@@ -3422,11 +4584,7 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          {call.audioEnabled ? (
-            <Mic className="h-3.5 w-3.5" />
-          ) : (
-            <MicOff className="h-3.5 w-3.5" />
-          )}
+          {call.audioEnabled ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
           {call.audioEnabled ? "Mic on" : "Mic off"}
         </button>
       </div>
@@ -3445,26 +4603,12 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          <div
-            className={cn(
-              "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
-              call.videoEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
-            )}
-          >
-            {call.videoEnabled ? (
-              <Video className="h-5 w-5" />
-            ) : (
-              <VideoOff className="h-5 w-5" />
-            )}
+          <div className={cn("h-10 w-10 rounded-full flex items-center justify-center transition-colors", call.videoEnabled ? "bg-primary/20" : "bg-muted-foreground/10")}>
+            {call.videoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
           </div>
           <div className="text-center space-y-0.5">
             <p className="text-[11px] font-semibold leading-none">Camera</p>
-            <p
-              className={cn(
-                "text-[10px] leading-none",
-                call.videoEnabled ? "text-primary/70" : "text-muted-foreground/50",
-              )}
-            >
+            <p className={cn("text-[10px] leading-none", call.videoEnabled ? "text-primary/70" : "text-muted-foreground/50")}>
               {call.videoEnabled ? "On" : "Off"}
             </p>
           </div>
@@ -3479,26 +4623,12 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
               : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
           )}
         >
-          <div
-            className={cn(
-              "h-10 w-10 rounded-full flex items-center justify-center transition-colors",
-              call.audioEnabled ? "bg-primary/20" : "bg-muted-foreground/10",
-            )}
-          >
-            {call.audioEnabled ? (
-              <Mic className="h-5 w-5" />
-            ) : (
-              <MicOff className="h-5 w-5" />
-            )}
+          <div className={cn("h-10 w-10 rounded-full flex items-center justify-center transition-colors", call.audioEnabled ? "bg-primary/20" : "bg-muted-foreground/10")}>
+            {call.audioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
           </div>
           <div className="text-center space-y-0.5">
             <p className="text-[11px] font-semibold leading-none">Microphone</p>
-            <p
-              className={cn(
-                "text-[10px] leading-none",
-                call.audioEnabled ? "text-primary/70" : "text-muted-foreground/50",
-              )}
-            >
+            <p className={cn("text-[10px] leading-none", call.audioEnabled ? "text-primary/70" : "text-muted-foreground/50")}>
               {call.audioEnabled ? "On" : "Off"}
             </p>
           </div>
@@ -3518,57 +4648,47 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
-// ─── ConnectDialog ────────────────────────────────────────────────────────────
+// ─── ConnectDialogContent ─────────────────────────────────────────────────────
 
-interface ConnectDialogProps {
-  /** Slim Doctor shape from CallStore — built by DoctorCard from ApiDoctor */
+interface ConnectDialogContentProps {
   doctor: Doctor;
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onMinimize: () => void;
+  onCloseCompletely: () => void;
 }
 
-export const ConnectDialog = ({
+export const ConnectDialogContent = ({
   doctor,
-  open,
-  onOpenChange,
-}: ConnectDialogProps) => {
+  onMinimize,
+  onCloseCompletely,
+}: ConnectDialogContentProps) => {
   const call = useCallStore();
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
   const { data: me } = useMe();
   const isLoggedIn = !!me;
-
-  // A logged-in user is "complete" only if they have both name and phone.
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
-  // ── Local state ───────────────────────────────────────────────────────────
   const [phase, setPhase]           = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
+  const [chatOpen, setChatOpen]     = useState(false);
 
-  // Guest / supplemental form fields
   const [guestName, setGuestName]   = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
-  // Consultation state from API
   const [consultationToken, setConsultationToken] = useState<string | null>(null);
-  const [queueInfo, setQueueInfo] = useState<{
-    position: number;
-    ahead: number;
-  } | null>(null);
-  const [roomUrl, setRoomUrl]       = useState<string | null>(null);
-  const [dailyToken, setDailyToken] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
-
-  // ── API hooks ─────────────────────────────────────────────────────────────
-    const [consultationId, setConsultationId]         = useState<number | null>(null);
-  const [paymentLoading, setPaymentLoading]         = useState(false);
-  const [paymentInfo, setPaymentInfo]               = useState<{
+  const [consultationId, setConsultationId]       = useState<number | null>(null);
+  const [queueInfo, setQueueInfo]                 = useState<{ position: number; ahead: number } | null>(null);
+  const [roomUrl, setRoomUrl]                     = useState<string | null>(null);
+  const [dailyToken, setDailyToken]               = useState<string | null>(null);
+  const [errorMsg, setErrorMsg]                   = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading]       = useState(false);
+  const [paymentInfo, setPaymentInfo]             = useState<{
     amount: number;
     currency: string;
-    invoice_number: string;
-    public_key: string;
   } | null>(null);
+
+  // ref to cancel any in-flight invoice poll
+  const cancelInvoicePollRef = useRef<(() => void) | null>(null);
 
   const requestMutation = useInstantConsultationRequest();
   const payMutation     = useInstantConsultationPay();
@@ -3577,49 +4697,46 @@ export const ConnectDialog = ({
     phase === "polling",
   );
 
-  // ── Reset on open ─────────────────────────────────────────────────────────
+  // cleanup invoice poller on unmount
   useEffect(() => {
-    if (open) {
-      setPhase(isProfileComplete ? "idle" : "guest_form");
-      setFullscreen(false);
-      setGuestName(me?.name ?? "");
-      setGuestPhone(me?.phone ?? "");
-      setGuestError(null);
-      setConsultationToken(null);
-      setQueueInfo(null);
-      setRoomUrl(null);
-      setDailyToken(null);
-      setErrorMsg(null);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { cancelInvoicePollRef.current?.(); };
+  }, []);
 
-  // ── Promote guest_form → idle if user logs in with complete profile ────────
+  // reset on mount
   useEffect(() => {
-    if (open && phase === "guest_form" && isProfileComplete) {
+    setPhase(isProfileComplete ? "idle" : "guest_form");
+    setFullscreen(false);
+    setGuestName(me?.name ?? "");
+    setGuestPhone(me?.phone ?? "");
+    setGuestError(null);
+    setConsultationToken(null);
+    setConsultationId(null);   // ← always reset so no stale ID
+    setQueueInfo(null);
+    setRoomUrl(null);
+    setDailyToken(null);
+    setErrorMsg(null);
+    setPaymentInfo(null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // promote guest_form → idle when profile becomes complete
+  useEffect(() => {
+    if (phase === "guest_form" && isProfileComplete) {
       setGuestName(me?.name ?? "");
       setGuestPhone(me?.phone ?? "");
       setPhase("idle");
     }
   }, [isLoggedIn, me]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── React to poll results ─────────────────────────────────────────────────
+  // react to poll results
   useEffect(() => {
     if (!statusData || phase !== "polling") return;
-
-    setQueueInfo({
-      position: Number(statusData.queue_position),
-      ahead: statusData.people_ahead,
-    });
-
+    setQueueInfo({ position: Number(statusData.queue_position), ahead: statusData.people_ahead });
     console.info("[Poll] statusData:", JSON.stringify(statusData));
     if (statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
-    } else if (
-      statusData.status === "rejected" ||
-      statusData.status === "cancelled"
-    ) {
+    } else if (statusData.status === "rejected" || statusData.status === "cancelled") {
       setPhase("rejected");
     }
   }, [statusData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -3628,6 +4745,12 @@ export const ConnectDialog = ({
   const handleRequest = async (override?: { name: string; phone: string }) => {
     setPhase("requesting");
     setErrorMsg(null);
+
+    // ── Reset payment state so a retry always creates a fresh consultation ──
+    setConsultationId(null);
+    setConsultationToken(null);
+    setPaymentInfo(null);
+    cancelInvoicePollRef.current?.();
 
     try {
       const name  = override?.name  ?? me?.name  ?? guestName;
@@ -3640,23 +4763,23 @@ export const ConnectDialog = ({
       };
 
       const res = await requestMutation.mutateAsync(payload);
+
+      console.info("[Request] response:", JSON.stringify(res));
+
       setConsultationToken(res.guest_token);
       setConsultationId(res.id ?? null);
-      setQueueInfo({
-        position: Number(res.queue_position),
-        ahead: res.people_ahead ?? 0,
-      });
+      setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 
+      // If already paid (e.g. returning user), skip payment screen
       if (res.payment_status === "paid") {
         setPhase("polling");
         return;
       }
 
+      // Store only what we need for the summary UI
       setPaymentInfo({
-        amount:         Number(res.amount),
-        currency:       "RWF",
-        invoice_number: "",
-        public_key:     "",
+        amount:   Number(res.amount),
+        currency: "RWF",
       });
       setPhase("payment");
     } catch (err: unknown) {
@@ -3665,720 +4788,478 @@ export const ConnectDialog = ({
     }
   };
 
+  // ── Pay ───────────────────────────────────────────────────────────────────
+  // Mirrors the old implementation exactly — payMutation gives us the
+  // invoice_number and public_key; we never store them before this point.
   const handlePay = async () => {
     if (!consultationId || !paymentInfo) return;
+
+    console.info("[Pay] initiating for consultationId:", consultationId);
+
     setPaymentLoading(true);
+    setErrorMsg(null);
+
     try {
       const payRes = await payMutation.mutateAsync(consultationId);
+
+      console.info("[Pay] payRes:", JSON.stringify(payRes));
+
+      // Exactly as in the old component — use payRes directly
       (window as any).IremboPay.initiate({
         publicKey:     payRes.public_key,
         invoiceNumber: payRes.invoice_number,
         locale:        (window as any).IremboPay.locale.EN,
         callback: (err: unknown) => {
-          if (!err) {
-            (window as any).IremboPay.closeModal();
-            setPhase("polling");
-          } else {
-            setErrorMsg("Payment failed. Please try again.");
+          // IremboPay fires callback on modal close (paid OR cancelled).
+          // We always start invoice polling — if cancelled it'll time out gracefully.
+          (window as any).IremboPay.closeModal?.();
+
+          if (err) {
+            // Hard SDK error
+            setErrorMsg("Payment could not be processed. Please try again.");
+            setPhase("payment");
+            return;
           }
+
+          // No SDK error → start polling the invoice
+          setPhase("payment_verifying");
+          cancelInvoicePollRef.current?.();
+          cancelInvoicePollRef.current = pollInvoice(
+            payRes.invoice_number,
+            () => setPhase("polling"),
+            (msg) => {
+              setErrorMsg(msg);
+              setPhase("payment");
+            },
+          );
         },
       });
-    } catch {
-      setErrorMsg("Payment could not be initiated. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Payment could not be initiated.";
+      console.error("[Pay] error:", msg);
+      setErrorMsg(`${msg} Please try again.`);
+      setPhase("payment");
     } finally {
       setPaymentLoading(false);
     }
   };
-  // ── Guest form submit ─────────────────────────────────────────────────────
+
   const handleGuestSubmit = () => {
-    if (!guestName.trim()) {
-      setGuestError("Please enter your name.");
-      return;
-    }
-    if (!guestPhone.trim()) {
-      setGuestError("Please enter your phone number.");
-      return;
-    }
+    if (!guestName.trim()) { setGuestError("Please enter your name."); return; }
+    if (!guestPhone.trim()) { setGuestError("Please enter your phone number."); return; }
     setGuestError(null);
     handleRequest({ name: guestName.trim(), phone: guestPhone.trim() });
   };
 
-  // ── Join the call — transition to connected with real room data ───────────
-const handleJoin = () => {
-  if (!roomUrl || !dailyToken) return;
-  const roomName = roomUrl.split('/consultation/').pop() ?? roomUrl;
-  window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
-};
-
-  // ── Close / end ───────────────────────────────────────────────────────────
-  const handleClose = () => {
-    onOpenChange(false);
-    if (phase === "ended") call.setDialogOpen(false);
+  const handleJoin = () => {
+    if (!roomUrl || !dailyToken) return;
+    const roomName = roomUrl.split("/consultation/").pop() ?? roomUrl;
+    window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
   };
 
-  const handleEnd = () => {
-    call.endCall();
-    setPhase("ended");
-  };
+  const handleEnd = () => { call.endCall(); setPhase("ended"); };
 
-  const handleMinimize = () => call.setMinimized(true);
-
-  // ── Retry helper ──────────────────────────────────────────────────────────
   const handleRetry = () => {
-    if (isProfileComplete) {
-      handleRequest();
-    } else {
-      setPhase("guest_form");
-    }
+    cancelInvoicePollRef.current?.();
+    if (isProfileComplete) handleRequest();
+    else setPhase("guest_form");
   };
 
-  if (!open) return null;
-
-  // ── Derived display values ────────────────────────────────────────────────
   const doctorName    = doctor.user.name;
   const doctorInitial = nameInitial(doctorName);
 
   const titleText = (): string => {
-    if (phase === "idle")       return "Instant consult";
-    if (phase === "guest_form") return "Your details";
-    if (phase === "requesting") return "Sending request…";
-    if (phase === "payment")    return "Complete payment";
-    if (phase === "polling")    return "Waiting for doctor";
-    if (phase === "accepted")   return "Doctor is ready";
-    if (phase === "in_progress") return "Doctor is in call";
-    if (phase === "connected")  return "In consultation";
-    if (phase === "rejected")   return "Request declined";
-    if (phase === "failed")     return "Connection failed";
-    if (phase === "ended")      return "Call ended";
+    if (phase === "idle")              return "Instant consult";
+    if (phase === "guest_form")        return "Your details";
+    if (phase === "requesting")        return "Sending request…";
+    if (phase === "payment")           return "Complete payment";
+    if (phase === "payment_verifying") return "Verifying payment…";
+    if (phase === "polling")           return "Waiting for doctor";
+    if (phase === "accepted")          return "Doctor is ready";
+    if (phase === "in_progress")       return "Doctor is in call";
+    if (phase === "connected")         return "In consultation";
+    if (phase === "rejected")          return "Request declined";
+    if (phase === "failed")            return "Connection failed";
+    if (phase === "ended")             return "Call ended";
     return "Instant consult";
   };
 
   const progressValue = (): number => {
-    if (phase === "requesting") return 30;
-    if (phase === "polling")    return 65;
-    if (phase === "accepted")   return 80;
-    if (phase === "in_progress") return 100;
+    if (phase === "requesting")        return 25;
+    if (phase === "payment")           return 40;
+    if (phase === "payment_verifying") return 55;
+    if (phase === "polling")           return 70;
+    if (phase === "accepted")          return 85;
+    if (phase === "in_progress")       return 100;
     return 0;
   };
 
-    const showProgress = ["requesting", "polling", "accepted", "in_progress"].includes(phase);
+  const showProgress = [
+    "requesting", "payment_verifying", "polling", "accepted", "in_progress",
+  ].includes(phase);
 
+  // ── In-call (Daily iframe) view ───────────────────────────────────────────
+  if (phase === "connected") {
+    const roomName = roomUrl?.split("/consultation/").pop();
+    const iframeSrc =
+      roomName && dailyToken
+        ? `${window.location.origin}/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`
+        : null;
 
-
-  return createPortal(
-    <>
-      {!fullscreen && (
+    return (
+      <div className={cn(
+        "relative flex bg-[#0c0c0c] overflow-hidden",
+        fullscreen ? "h-screen w-screen fixed inset-0 z-[70]" : "h-[520px]",
+      )}>
         <div
-          className="fixed inset-0 z-40 bg-black/50 dark:bg-black/70 backdrop-blur-sm"
-          onClick={handleClose}
-        />
-      )}
-
-      <div
-        className={cn(
-          "fixed z-50 flex flex-col overflow-hidden transition-all duration-300",
-          fullscreen
-            ? "inset-0 rounded-none"
-            : [
-                "rounded-2xl shadow-2xl",
-                "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                phase === "connected"
-                  ? "w-[860px] max-w-[95vw]"
-                  : "w-[400px] max-w-[95vw]",
-              ],
-        )}
-      >
-        {phase !== "connected" ? (
-          // ── Pre-call panel ────────────────────────────────────────────────
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
-            {/* Title bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[12px] font-semibold text-foreground/80">
-                  {titleText()}
-                </span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setFullscreen(!fullscreen)}
-                  className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  {fullscreen ? (
-                    <Minimize2 className="h-3.5 w-3.5" />
-                  ) : (
-                    <Maximize2 className="h-3.5 w-3.5" />
-                  )}
-                </button>
-                <button
-                  onClick={handleClose}
-                  className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+          className="relative flex-1 flex flex-col min-w-0 transition-all duration-300"
+          style={{ marginRight: chatOpen ? 288 : 0 }}
+        >
+          {iframeSrc ? (
+            <iframe
+              src={iframeSrc}
+              allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+              title={`Consultation with ${doctorName}`}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center space-y-3">
+                <div className="relative mx-auto w-[88px] h-[88px]">
+                  <div className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping" style={{ animationDuration: "2s" }} />
+                  <div className="relative h-[88px] w-[88px] rounded-full bg-[#1e2a26] text-white/85 flex items-center justify-center text-3xl font-bold ring-[1.5px] ring-emerald-500/30 select-none">
+                    {doctorInitial}
+                  </div>
+                </div>
+                <p className="text-[13px] text-white/50">Connecting to room…</p>
               </div>
             </div>
+          )}
 
-            <div className="p-5 space-y-4">
-              {/* Doctor card — hidden on guest_form */}
-              {phase !== "guest_form" && (
-                <div
-                  className={cn(
-                    "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
-                    showProgress
-                      ? "border-primary/20 bg-primary/5"
-                      : "border-border bg-muted/50",
-                  )}
-                >
-                  <div className="relative shrink-0">
-                    <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none">
-                      {doctorInitial}
-                    </div>
-                    {showProgress && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground truncate">
-                      {doctorName}
-                    </p>
-                    {doctor.specialization && (
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                        {doctor.specialization}
-                      </p>
-                    )}
-                    {queueInfo && phase === "polling" && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Position {queueInfo.position} ·{" "}
-                        {queueInfo.ahead === 0
-                          ? "You're next"
-                          : `${queueInfo.ahead} ahead`}
-                      </p>
-                    )}
-                  </div>
-                  {phase !== "idle" && <StatusBadge phase={phase} />}
-                </div>
+          {/* Top bar */}
+          <div className="absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
+            <div className="flex items-center gap-2 pointer-events-none">
+              <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] text-white/70 font-mono tracking-wide">
+                LIVE · {fmt(call.elapsed)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 pointer-events-auto">
+              <SignalBars strength={call.signalStrength} />
+              <button onClick={onMinimize} title="Minimize" className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit fullscreen" : "Fullscreen"} className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
+                {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              </button>
+              <button onClick={onCloseCompletely} title="End and close" className="h-7 w-7 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-3 z-20 bg-gradient-to-t from-black/65 to-transparent">
+            <div className="relative">
+              <button
+                onClick={() => { const next = !chatOpen; setChatOpen(next); if (next) call.clearUnread(); }}
+                className={cn("h-10 w-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}
+              >
+                <MessageSquare className="h-4 w-4" />
+              </button>
+              {call.unreadCount > 0 && !chatOpen && (
+                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center leading-none">
+                  {call.unreadCount > 9 ? "9+" : call.unreadCount}
+                </span>
               )}
+            </div>
+            <button onClick={handleEnd} className="h-11 w-11 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/35">
+              <PhoneOff className="h-[18px] w-[18px]" />
+            </button>
+            <div className="w-10" />
+          </div>
+        </div>
 
-              {/* Progress bar */}
-              {showProgress && (
-                <div className="space-y-2">
-                  <Progress
-                    value={progressValue()}
-                    className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
-                  />
-                  <p className="text-[10px] text-muted-foreground text-center">
-                    {phase === "requesting" && "Sending consultation request…"}
-                    {phase === "polling"    && "Waiting for doctor to accept…"}
-                    {phase === "accepted"   && "Doctor is ready — join when you are!"}
-                  </p>
-                </div>
-              )}
+        {/* Chat panel */}
+        <div className={cn("absolute top-0 right-0 h-full flex flex-col z-30 bg-card border-l border-border transition-all duration-300 ease-in-out", chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden")}>
+          {chatOpen && (
+            <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={doctorInitial} doctorName={doctorName} />
+          )}
+        </div>
+      </div>
+    );
+  }
 
-              {/* ── Guest / contact-incomplete form ── */}
-              {phase === "guest_form" && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
-                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <p className="text-[11px] text-muted-foreground">
-                      {isLoggedIn
-                        ? "Please confirm your contact details to continue."
-                        : "You're not logged in. Please enter your details to continue."}
-                    </p>
-                  </div>
+  // ── Pre-call / post-call panel ────────────────────────────────────────────
+  return (
+    <div className="p-5 space-y-4">
 
-                  {/* Show which doctor they're requesting */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
-                    <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
-                      {doctorInitial}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-semibold text-foreground truncate">
-                        {doctorName}
-                      </p>
-                      {doctor.specialization && (
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {doctor.specialization}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-3.5 w-3.5 text-primary" />
+        <span className="text-[11px] font-medium text-muted-foreground">{titleText()}</span>
+      </div>
 
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-medium">Full name</Label>
-                      <Input
-                        placeholder="e.g. Alain Honore"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        className="h-9 text-[12px]"
-                        onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[11px] font-medium">Phone number</Label>
-                      <Input
-                        placeholder="e.g. 0733334512"
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                        className="h-9 text-[12px]"
-                        onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                      />
-                    </div>
-                    {guestError && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" /> {guestError}
-                      </p>
-                    )}
-                  </div>
+      {/* Doctor card — hidden on guest_form */}
+      {phase !== "guest_form" && (
+        <div className={cn(
+          "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
+          showProgress ? "border-primary/20 bg-primary/5" : "border-border bg-muted/50",
+        )}>
+          <div className="relative shrink-0">
+            <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none">
+              {doctorInitial}
+            </div>
+            {showProgress && (
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-foreground truncate">{doctorName}</p>
+            {doctor.specialization && (
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{doctor.specialization}</p>
+            )}
+            {queueInfo && phase === "polling" && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Position {queueInfo.position} · {queueInfo.ahead === 0 ? "You're next" : `${queueInfo.ahead} ahead`}
+              </p>
+            )}
+          </div>
+          {phase !== "idle" && <StatusBadge phase={phase} />}
+        </div>
+      )}
 
-                  <div className="space-y-2">
-                    <Button
-                      onClick={handleGuestSubmit}
-                      className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-                    >
-                      <Wifi className="h-4 w-4" />
-                      Request consultation
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClose}
-                      className="w-full h-9 text-[11px] rounded-xl"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
+      {/* Progress bar */}
+      {showProgress && (
+        <div className="space-y-2">
+          <Progress value={progressValue()} className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
+          <p className="text-[10px] text-muted-foreground text-center">
+            {phase === "requesting"        && "Sending consultation request…"}
+            {phase === "payment_verifying" && "Confirming your payment with provider…"}
+            {phase === "polling"           && "Waiting for doctor to accept…"}
+            {phase === "accepted"          && "Doctor is ready — join when you are!"}
+          </p>
+        </div>
+      )}
 
-              {/* ── Idle CTA (logged-in with complete profile) ── */}
-              {phase === "idle" && (
-                <div className="space-y-2 pt-1">
-                  <DeviceToggles compact={false} />
-                  <Button
-                    onClick={() => handleRequest()}
-                    className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-                  >
-                    <Wifi className="h-4 w-4" />
-                    Start instant consultation
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="w-full h-9 text-[11px] rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              {/* ── Polling — wait with device toggles ── */}
-              {phase === "polling" && (
-                <div className="space-y-3">
-                  <DeviceToggles compact={true} />
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="w-full h-9 text-[11px] rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              {/* ── Payment ── */}
-              {phase === "payment" && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
-                    <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
-                      Payment summary
-                    </p>
-                    <div className="flex justify-between text-[12px]">
-                      <span className="text-muted-foreground">Patient</span>
-                      <span className="font-medium text-foreground">
-                        {guestName || me?.name}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-[12px]">
-                      <span className="text-muted-foreground">Phone</span>
-                      <span className="font-medium text-foreground">
-                        {guestPhone || me?.phone}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-[12px]">
-                      <span className="text-muted-foreground">Doctor</span>
-                      <span className="font-medium text-foreground">{doctorName}</span>
-                    </div>
-                    <div className="border-t border-border pt-2 flex justify-between text-[13px]">
-                      <span className="font-semibold text-foreground">Amount</span>
-                      <span className="font-bold text-primary">
-                        {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {errorMsg && (
-                    <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      {errorMsg}
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={handlePay}
-                    disabled={paymentLoading}
-                    className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-                  >
-                    {paymentLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ShieldCheck className="h-4 w-4" />
-                    )}
-                    {paymentLoading ? "Initiating…" : "Pay now"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleClose}
-                    className="w-full h-9 text-[11px] rounded-xl"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-
-              {/* ── Accepted / In Progress — join CTA ── */}
-              {(phase === "accepted" || phase === "in_progress") && (
-                <div className="space-y-3">
-                  <DeviceToggles compact={true} />
-                  <div className="space-y-2 pt-1">
-                    <Button
-                      onClick={handleJoin}
-                      className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Join call
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClose}
-                      className="w-full h-9 text-[11px] rounded-xl"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Failed / rejected ── */}
-              {(phase === "failed" || phase === "rejected") && (
-                <div className="space-y-3">
-                  {errorMsg && (
-                    <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      {errorMsg}
-                    </div>
-                  )}
-                  {phase === "rejected" && (
-                    <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
-                      The doctor is currently unavailable. Please try again
-                      later or book an appointment.
-                    </div>
-                  )}
-                  <div className="space-y-2 pt-1">
-                    <Button
-                      onClick={handleRetry}
-                      className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Try again
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClose}
-                      className="w-full h-9 text-[11px] rounded-xl"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── Ended ── */}
-              {phase === "ended" && (
-                <div className="space-y-3">
-                  <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
-                    <p className="text-[12px] font-medium text-foreground/60">
-                      Your consultation has ended
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Duration: session complete
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Button
-                      onClick={handleRetry}
-                      className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Reconnect with {doctorName}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClose}
-                      className="w-full h-9 text-[11px] rounded-xl"
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Trust footer */}
-                {["idle", "guest_form", "payment", "polling", "accepted", "in_progress"].includes(phase) && (
-
-                <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
-                  <ShieldCheck className="h-3 w-3" />
-                  HIPAA compliant · End-to-end encrypted
-                </div>
+      {/* ── Guest form ── */}
+      {phase === "guest_form" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+            <User className="h-4 w-4 text-muted-foreground shrink-0" />
+            <p className="text-[11px] text-muted-foreground">
+              {isLoggedIn
+                ? "Please confirm your contact details to continue."
+                : "You're not logged in. Please enter your details to continue."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
+            <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
+              {doctorInitial}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold text-foreground truncate">{doctorName}</p>
+              {doctor.specialization && (
+                <p className="text-[10px] text-muted-foreground truncate">{doctor.specialization}</p>
               )}
             </div>
           </div>
-        ) : (
-          // ── In-call view (Daily.co iframe) ────────────────────────────────
-          <InCallView
-            doctor={doctor}
-            roomUrl={roomUrl}
-            dailyToken={dailyToken}
-            fullscreen={fullscreen}
-            setFullscreen={setFullscreen}
-            onMinimize={handleMinimize}
-            onEnd={handleEnd}
-          />
-        )}
-      </div>
-    </>,
-    document.body,
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium">Full name</Label>
+              <Input
+                placeholder="e.g. Alain Honore"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                className="h-9 text-[12px]"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] font-medium">Phone number</Label>
+              <Input
+                placeholder="e.g. 0733334512"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                className="h-9 text-[12px]"
+                onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+              />
+            </div>
+            {guestError && (
+              <p className="text-[11px] text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" /> {guestError}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Button onClick={handleGuestSubmit} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+              <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Idle ── */}
+      {phase === "idle" && (
+        <div className="space-y-2 pt-1">
+          <DeviceToggles compact={false} />
+          <Button onClick={() => handleRequest()} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+            <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+        </div>
+      )}
+
+      {/* ── Polling ── */}
+      {phase === "polling" && (
+        <div className="space-y-3">
+          <DeviceToggles compact={true} />
+          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+            Minimize — keep waiting in background
+          </Button>
+        </div>
+      )}
+
+      {/* ── Payment ── */}
+      {phase === "payment" && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
+            <div className="flex justify-between text-[12px]">
+              <span className="text-muted-foreground">Patient</span>
+              <span className="font-medium text-foreground">{guestName || me?.name}</span>
+            </div>
+            <div className="flex justify-between text-[12px]">
+              <span className="text-muted-foreground">Phone</span>
+              <span className="font-medium text-foreground">{guestPhone || me?.phone}</span>
+            </div>
+            <div className="flex justify-between text-[12px]">
+              <span className="text-muted-foreground">Doctor</span>
+              <span className="font-medium text-foreground">{doctorName}</span>
+            </div>
+            <div className="border-t border-border pt-2 flex justify-between text-[13px]">
+              <span className="font-semibold text-foreground">Amount</span>
+              <span className="font-bold text-primary">
+                {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
+              </span>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+            </div>
+          )}
+
+          <Button
+            onClick={handlePay}
+            disabled={paymentLoading || !consultationId}
+            className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+          >
+            {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+            {paymentLoading ? "Initiating…" : "Pay now"}
+          </Button>
+          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+        </div>
+      )}
+
+      {/* ── Payment verifying ── */}
+      {phase === "payment_verifying" && (
+        <div className="space-y-3">
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-[12px] font-medium text-foreground">Confirming your payment…</p>
+            <p className="text-[11px] text-muted-foreground max-w-[280px]">
+              This usually takes a few seconds. Please don't close this window.
+            </p>
+          </div>
+          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+            Minimize — verification continues in background
+          </Button>
+        </div>
+      )}
+
+      {/* ── Accepted / In Progress ── */}
+      {(phase === "accepted" || phase === "in_progress") && (
+        <div className="space-y-3">
+          <DeviceToggles compact={true} />
+          <div className="space-y-2 pt-1">
+            <Button onClick={handleJoin} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
+              <Phone className="h-4 w-4" />Join call<ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+              Minimize — I'll join later
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Failed / Rejected ── */}
+      {(phase === "failed" || phase === "rejected") && (
+        <div className="space-y-3">
+          {errorMsg && (
+            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+            </div>
+          )}
+          {phase === "rejected" && (
+            <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
+              The doctor is currently unavailable. Please try again later or book an appointment.
+            </div>
+          )}
+          <div className="space-y-2 pt-1">
+            <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+              <Phone className="h-4 w-4" />Try again
+            </Button>
+            <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Ended ── */}
+      {phase === "ended" && (
+        <div className="space-y-3">
+          <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
+            <p className="text-[12px] font-medium text-foreground/60">Your consultation has ended</p>
+            <p className="text-[10px] text-muted-foreground">Duration: session complete</p>
+          </div>
+          <div className="space-y-2">
+            <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+              <Phone className="h-4 w-4" />Reconnect with {doctorName}
+            </Button>
+            <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Trust footer */}
+      {["idle", "guest_form", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase) && (
+        <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
+          <ShieldCheck className="h-3 w-3" />
+          HIPAA compliant · End-to-end encrypted
+        </div>
+      )}
+    </div>
   );
 };
 
-// ─── In-call view ─────────────────────────────────────────────────────────────
+// ─── Legacy ConnectDialog ─────────────────────────────────────────────────────
 
-interface InCallViewProps {
+interface ConnectDialogProps {
   doctor: Doctor;
-  roomUrl: string | null;
-  dailyToken: string | null;
-  fullscreen: boolean;
-  setFullscreen: (v: boolean) => void;
-  onMinimize: () => void;
-  onEnd: () => void;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
 }
 
-const InCallView = ({
-  doctor,
-  roomUrl,
-  dailyToken,
-  fullscreen,
-  setFullscreen,
-  onMinimize,
-  onEnd,
-}: InCallViewProps) => {
-  const call = useCallStore();
-  const [controlsVisible, setControlsVisible] = useState(true);
-  const [chatOpen, setChatOpen]               = useState(false);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const scheduleHide = () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setControlsVisible(false), 4000);
-  };
-
-  const handleMouseMove = () => {
-    setControlsVisible(true);
-    scheduleHide();
-  };
-
-  useEffect(() => {
-    scheduleHide();
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleChatToggle = () => {
-    const next = !chatOpen;
-    setChatOpen(next);
-    if (next) call.clearUnread();
-    // Keep controls visible while chat is open
-    if (next && hideTimer.current) {
-      clearTimeout(hideTimer.current);
-    } else {
-      scheduleHide();
-    }
-  };
-
-  const doctorName    = doctor.user.name;
-  const doctorInitial = nameInitial(doctorName);
-  const chatWidth     = chatOpen ? 288 : 0;
-
-  // Build the Daily.co iframe src — token is passed as the `t` query param
-  // which Daily recognises as the meeting token for guest access.
-  const roomName = roomUrl?.split('/consultation/').pop();
-  const iframeSrc =
-    roomName && dailyToken
-      ? `${window.location.origin}/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`
-      : null;
-
-
+/** @deprecated Use ConnectDialogContent inside UnifiedModal instead. */
+export const ConnectDialog = ({ doctor, open, onOpenChange }: ConnectDialogProps) => {
+  if (!open) return null;
   return (
-    <div
-      className={cn(
-        "relative flex bg-[#0c0c0c] overflow-hidden",
-        fullscreen ? "h-screen w-screen" : "h-[580px]",
-      )}
-      onMouseMove={handleMouseMove}
-      onTouchStart={handleMouseMove}
-    >
-      {/* ── Daily.co iframe ─────────────────────────────────────────────── */}
-      <div
-        className="relative flex-1 flex flex-col min-w-0 transition-all duration-300"
-        style={{ marginRight: chatWidth }}
-      >
-        {iframeSrc ? (
-          <iframe
-            src={iframeSrc}
-            allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full border-0"
-            title={`Consultation with ${doctorName}`}
-          />
-        ) : (
-          // Fallback — should rarely be seen
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-3">
-              <div className="relative mx-auto w-[88px] h-[88px]">
-                <div
-                  className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping"
-                  style={{ animationDuration: "2s" }}
-                />
-                <div className="relative h-[88px] w-[88px] rounded-full bg-[#1e2a26] text-white/85 flex items-center justify-center text-3xl font-bold ring-[1.5px] ring-emerald-500/30 select-none">
-                  {doctorInitial}
-                </div>
-              </div>
-              <p className="text-[13px] text-white/50">Connecting to room…</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Overlay top bar (minimize / fullscreen / timer) ────────────── */}
-        {/* Sits above the iframe; pointer-events only on the buttons */}
-        <div
-          className={cn(
-            "absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none",
-            "bg-gradient-to-b from-black/60 to-transparent",
-            "transition-opacity duration-500",
-            controlsVisible ? "opacity-100" : "opacity-0",
-          )}
-        >
-          {/* Live timer */}
-          <div className="flex items-center gap-2 pointer-events-none">
-            <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-[10px] text-white/70 font-mono tracking-wide">
-              LIVE · {fmt(call.elapsed)}
-            </span>
-          </div>
-
-          {/* Window controls */}
-          <div className="flex items-center gap-1 pointer-events-auto">
-            <SignalBars strength={call.signalStrength} />
-            <button
-              onClick={onMinimize}
-              title="Minimize"
-              className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
-            >
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setFullscreen(!fullscreen)}
-              title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
-              className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
-            >
-              {fullscreen ? (
-                <Minimize2 className="h-3.5 w-3.5" />
-              ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* ── Overlay bottom bar (chat + end call) ───────────────────────── */}
-        {/* Daily owns mic/camera/grid controls inside the iframe.           */}
-        {/* We only expose chat sidebar and end-call here.                   */}
-        <div
-          className={cn(
-            "absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-3 z-20",
-            "bg-gradient-to-t from-black/65 to-transparent pointer-events-none",
-            "transition-opacity duration-500",
-            controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none",
-          )}
-        >
-          {/* Chat toggle */}
-          <div className="relative pointer-events-auto">
-            <button
-              onClick={handleChatToggle}
-              title={chatOpen ? "Close chat" : "Open chat"}
-              className={cn(
-                "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90",
-                chatOpen
-                  ? "bg-white/20 hover:bg-white/30 text-white"
-                  : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white",
-              )}
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-            {call.unreadCount > 0 && !chatOpen && (
-              <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center pointer-events-none leading-none">
-                {call.unreadCount > 9 ? "9+" : call.unreadCount}
-              </span>
-            )}
-          </div>
-
-          {/* End call */}
-          <button
-            onClick={onEnd}
-            title="End call"
-            className="pointer-events-auto h-11 w-11 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/35"
-          >
-            <PhoneOff className="h-[18px] w-[18px]" />
-          </button>
-
-          {/* Spacer to balance layout */}
-          <div className="w-10" />
-        </div>
-      </div>
-
-      {/* ── Chat panel ──────────────────────────────────────────────────── */}
-      {/* Uses bg-card so it follows the light/dark theme of the app       */}
-      <div
-        className={cn(
-          "absolute top-0 right-0 h-full flex flex-col z-30",
-          "bg-card border-l border-border",
-          "transition-all duration-300 ease-in-out",
-          chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden",
-        )}
-      >
-        {chatOpen && (
-          <ChatPanel
-            open={chatOpen}
-            onClose={() => setChatOpen(false)}
-            doctorAvatar={doctorInitial}
-            doctorName={doctorName}
-          />
-        )}
-      </div>
-    </div>
+    <ConnectDialogContent
+      doctor={doctor}
+      onMinimize={() => onOpenChange(false)}
+      onCloseCompletely={() => onOpenChange(false)}
+    />
   );
 };
