@@ -320,5 +320,13 @@
   },
   "header": {
     "search": "Search…"
+  },
+  "common": {
+    "view_all": "View all",
+    "loading": "Loading…",
+    "error": "An error occurred. Please try again.",
+    "no_data": "No data available"
   }
+
+
 }

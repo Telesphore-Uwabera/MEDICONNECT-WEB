@@ -318,5 +318,12 @@
   },
   "header": {
     "search": "Rechercher…"
+  },
+    "common": {
+    "view_all": "Voir tout",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue. Veuillez réessayer.",
+    "no_data": "Aucune donnée disponible"
   }
+
 }
