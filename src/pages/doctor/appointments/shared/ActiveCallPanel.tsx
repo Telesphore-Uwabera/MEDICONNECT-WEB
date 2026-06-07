@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallStore } from "@/context/CallStore";
-import { ChatPanel } from "@/components/ChatPanel";
+import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
 import { InlineVitalsChart } from "./InlineVitalsChart";
 import { fmt } from "./helpers";
 import { SignalBars } from "./SignalBars";
@@ -34,17 +34,17 @@ const CallCtrlBtn = ({
 export function ActiveCallPanel() {
   const call = useCallStore();
   const { activeRequest, activeAppointment } = call;
-  const [chatOpen,        setChatOpen]        = useState(false);
-  const [fullscreen,      setFullscreen]      = useState(false);
-  const [showVitals,      setShowVitals]      = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showVitals, setShowVitals] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const displayName   = activeRequest?.patientName   ?? activeAppointment?.patientLabel ?? "Patient";
-  const displaySub    = activeRequest?.reason        ?? activeAppointment?.specialty    ?? "";
+  const displayName = activeRequest?.patientName ?? activeAppointment?.patientLabel ?? "Patient";
+  const displaySub = activeRequest?.reason ?? activeAppointment?.specialty ?? "";
   const displayAvatar = activeRequest?.patientAvatar ?? (activeAppointment?.specialty.slice(0, 2).toUpperCase() ?? "PT");
-  const chatName      = activeRequest?.patientName   ?? activeAppointment?.patientLabel ?? "Patient";
-  const chatAvatar    = activeRequest?.patientAvatar ?? displayAvatar;
+  const chatName = activeRequest?.patientName ?? activeAppointment?.patientLabel ?? "Patient";
+  const chatAvatar = activeRequest?.patientAvatar ?? displayAvatar;
 
   const resetHide = useCallback(() => {
     setControlsVisible(true);

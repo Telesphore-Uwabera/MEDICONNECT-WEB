@@ -19,11 +19,17 @@ export interface InstantConsultationRequestResponse {
   id: number;
   amount: number;
   payment_status: string;
+  status?: string;
 }
 
 export type ConsultationStatus =
   | "pending"
   | "accepted"
+  | "declined"
+  | "withdrawn"
+  | "expired"
+  | "completed"
+  | "confirmed"
   | "in_progress"
   | "rejected"
   | "cancelled";
@@ -88,6 +94,10 @@ export function useInstantConsultationStatus(
       const status = query.state.data?.status;
       if (
         status === "accepted" ||
+        status === "declined" ||
+        status === "withdrawn" ||
+        status === "expired" ||
+        status === "completed" ||
         status === "rejected" ||
         status === "cancelled"
       ) {

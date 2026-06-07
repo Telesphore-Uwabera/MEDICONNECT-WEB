@@ -452,7 +452,18 @@ export function InstantConsultTab() {
     joinInstant.mutate(item.id, {
       onSuccess: (res) => {
         const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
-        window.location.href = `/consultation/${roomName}?t=${res.doctor_token}`;
+
+        // Inject consultation_id into the token for the chat API
+        let enrichedToken = res.doctor_token;
+        try {
+          const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+          decoded.consultation_id = item.id;
+          enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
+        } catch {
+          enrichedToken = encodeURIComponent(res.doctor_token);
+        }
+
+        window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
       },
       onError: (err: unknown) => toast.error(getErrMsg(err, "Failed to join session")),
       onSettled: () => setActiveAction(null),

@@ -63,7 +63,7 @@
 //   update: (mode: string) => void;
 // }
 
- 
+
 
 // interface ChartConstructor {
 //   new (canvas: HTMLCanvasElement, config: object): ChartInstance;
@@ -4388,7 +4388,6 @@
 
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef } from "react";
-import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useAuth";
 import {
@@ -4426,7 +4425,9 @@ type CallPhase =
   | "connected"
   | "rejected"
   | "failed"
-  | "ended";
+  | "ended"
+  ;
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -4664,10 +4665,10 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
         {!call.videoEnabled && !call.audioEnabled
           ? "⚠ Camera and mic are both off"
           : !call.videoEnabled
-          ? "Camera off · Mic on"
-          : !call.audioEnabled
-          ? "Camera on · Mic off — others won't hear you"
-          : "Camera and mic are ready"}
+            ? "Camera off · Mic on"
+            : !call.audioEnabled
+              ? "Camera on · Mic off — others won't hear you"
+              : "Camera and mic are ready"}
       </p>
     </>
   );
@@ -4693,27 +4694,26 @@ export const ConnectDialogContent = ({
   const isLoggedIn = !!me;
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
-  const [phase, setPhase]           = useState<CallPhase>("idle");
+  const [phase, setPhase] = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
-  const [chatOpen, setChatOpen]     = useState(false);
 
   // Resume-session UI state
-  const [savedSession, setSavedSession]     = useState<ReturnType<typeof session.read>>(null);
-  const [isResuming, setIsResuming]         = useState(false);
+  const [savedSession, setSavedSession] = useState<ReturnType<typeof session.read>>(null);
+  const [isResuming, setIsResuming] = useState(false);
   const [resumeDeclined, setResumeDeclined] = useState(false);
 
-  const [guestName, setGuestName]   = useState("");
+  const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
   const [consultationToken, setConsultationToken] = useState<string | null>(null);
-  const [consultationId, setConsultationId]       = useState<number | null>(null);
-  const [queueInfo, setQueueInfo]                 = useState<{ position: number; ahead: number } | null>(null);
-  const [roomUrl, setRoomUrl]                     = useState<string | null>(null);
-  const [dailyToken, setDailyToken]               = useState<string | null>(null);
-  const [errorMsg, setErrorMsg]                   = useState<string | null>(null);
-  const [paymentLoading, setPaymentLoading]       = useState(false);
-  const [paymentInfo, setPaymentInfo]             = useState<{
+  const [consultationId, setConsultationId] = useState<number | null>(null);
+  const [queueInfo, setQueueInfo] = useState<{ position: number; ahead: number } | null>(null);
+  const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [dailyToken, setDailyToken] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<{
     amount: number;
     currency: string;
   } | null>(null);
@@ -4721,7 +4721,7 @@ export const ConnectDialogContent = ({
   const invoicePoller = useInvoicePoller();
 
   const requestMutation = useInstantConsultationRequest();
-  const payMutation     = useInstantConsultationPay();
+  const payMutation = useInstantConsultationPay();
   const { data: statusData } = useInstantConsultationStatus(
     consultationToken,
     phase === "polling",
@@ -4761,6 +4761,14 @@ export const ConnectDialogContent = ({
 
     setFullscreen(false);
     setGuestError(null);
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data === "END_CALL") {
+        handleEnd();
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // promote guest_form → idle when profile becomes complete
@@ -4782,8 +4790,15 @@ export const ConnectDialogContent = ({
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
       session.clear();
-    } else if (statusData.status === "rejected" || statusData.status === "cancelled") {
-      setPhase("rejected");
+    } else if (
+      statusData.status === "declined" ||
+      statusData.status === "withdrawn" ||
+      statusData.status === "expired" ||
+      statusData.status === "completed" ||
+      statusData.status === "rejected" ||
+      statusData.status === "cancelled"
+    ) {
+      setPhase(statusData.status === "completed" ? "ended" : "rejected");
       session.clear();
     }
   }, [statusData]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -4835,12 +4850,12 @@ export const ConnectDialogContent = ({
     invoicePoller.cancel();
 
     try {
-      const name  = override?.name  ?? me?.name  ?? guestName;
+      const name = override?.name ?? me?.name ?? guestName;
       const phone = override?.phone ?? me?.phone ?? guestPhone;
 
       const payload: InstantConsultationRequestPayload = {
-        doctor_id:   doctor.id,
-        guest_name:  name,
+        doctor_id: doctor.id,
+        guest_name: name,
         guest_phone: phone,
       };
 
@@ -4852,14 +4867,19 @@ export const ConnectDialogContent = ({
       setConsultationId(res.id ?? null);
       setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 
-      if (res.payment_status === "paid") {
+      if (
+        res.payment_status === "paid" ||
+        res.status === "confirmed" ||
+        res.status === "accepted" ||
+        res.status === "in_progress"
+      ) {
         session.save(res.guest_token, name, phone);
         setPhase("polling");
         return;
       }
 
       setPaymentInfo({
-        amount:   Number(res.amount),
+        amount: Number(res.amount),
         currency: "RWF",
       });
       setPhase("payment");
@@ -4884,9 +4904,9 @@ export const ConnectDialogContent = ({
       console.info("[Pay] payRes:", JSON.stringify(payRes));
 
       (window as any).IremboPay.initiate({
-        publicKey:     payRes.public_key,
+        publicKey: payRes.public_key,
         invoiceNumber: payRes.invoice_number,
-        locale:        (window as any).IremboPay.locale.EN,
+        locale: (window as any).IremboPay.locale.EN,
         callback: (err: unknown) => {
           (window as any).IremboPay.closeModal?.();
 
@@ -4900,7 +4920,7 @@ export const ConnectDialogContent = ({
           invoicePoller.start(
             payRes.invoice_number,
             () => {
-              const name  = me?.name  ?? guestName;
+              const name = me?.name ?? guestName;
               const phone = me?.phone ?? guestPhone;
               if (consultationToken) {
                 session.save(consultationToken, name, phone);
@@ -4934,7 +4954,20 @@ export const ConnectDialogContent = ({
   const handleJoin = () => {
     if (!roomUrl || !dailyToken) return;
     const roomName = roomUrl.split("/consultation/").pop() ?? roomUrl;
-    window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
+
+    // Inject consultation_id into the token so the consultation room
+    // can use it for the chat API
+    let enrichedToken = dailyToken;
+    try {
+      const decoded = JSON.parse(atob(decodeURIComponent(dailyToken)));
+      decoded.consultation_id = consultationId;
+      enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
+    } catch {
+      // If decoding fails, pass the original token as-is
+      enrichedToken = encodeURIComponent(dailyToken);
+    }
+
+    window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
   };
 
   const handleEnd = () => {
@@ -4958,33 +4991,33 @@ export const ConnectDialogContent = ({
     else setPhase("guest_form");
   };
 
-  const doctorName    = doctor.user.name;
+  const doctorName = doctor.user.name;
   const doctorInitial = nameInitial(doctorName);
 
   const titleText = (): string => {
     if (savedSession && !isResuming) return "Resume your session";
-    if (phase === "idle")              return "Instant consult";
-    if (phase === "guest_form")        return "Your details";
-    if (phase === "requesting")        return "Sending request…";
-    if (phase === "payment")           return "Complete payment";
+    if (phase === "idle") return "Instant consult";
+    if (phase === "guest_form") return "Your details";
+    if (phase === "requesting") return "Sending request…";
+    if (phase === "payment") return "Complete payment";
     if (phase === "payment_verifying") return "Verifying payment…";
-    if (phase === "polling")           return "Waiting for doctor";
-    if (phase === "accepted")          return "Doctor is ready";
-    if (phase === "in_progress")       return "Doctor is in call";
-    if (phase === "connected")         return "In consultation";
-    if (phase === "rejected")          return "Request declined";
-    if (phase === "failed")            return "Connection failed";
-    if (phase === "ended")             return "Call ended";
+    if (phase === "polling") return "Waiting for doctor";
+    if (phase === "accepted") return "Doctor is ready";
+    if (phase === "in_progress") return "Doctor is in call";
+    if (phase === "connected") return "In consultation";
+    if (phase === "rejected") return "Request declined";
+    if (phase === "failed") return "Connection failed";
+    if (phase === "ended") return "Call ended";
     return "Instant consult";
   };
 
   const progressValue = (): number => {
-    if (phase === "requesting")        return 25;
-    if (phase === "payment")           return 40;
+    if (phase === "requesting") return 25;
+    if (phase === "payment") return 40;
     if (phase === "payment_verifying") return 55;
-    if (phase === "polling")           return 70;
-    if (phase === "accepted")          return 85;
-    if (phase === "in_progress")       return 100;
+    if (phase === "polling") return 70;
+    if (phase === "accepted") return 85;
+    if (phase === "in_progress") return 100;
     return 0;
   };
 
@@ -5005,85 +5038,10 @@ export const ConnectDialogContent = ({
         "relative flex bg-[#0c0c0c] overflow-hidden",
         fullscreen ? "h-screen w-screen fixed inset-0 z-[70]" : "h-[520px]",
       )}>
-        <div
-          className="relative flex-1 flex flex-col min-w-0 transition-all duration-300"
-          style={{ marginRight: chatOpen ? 288 : 0 }}
-        >
-          {iframeSrc ? (
-            <iframe
-              src={iframeSrc}
-              allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full border-0"
-              title={`Consultation with ${doctorName}`}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center space-y-3">
-                <div className="relative mx-auto w-[88px] h-[88px]">
-                  <div className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping" style={{ animationDuration: "2s" }} />
-                  <div className="relative h-[88px] w-[88px] rounded-full bg-[#1e2a26] text-white/85 flex items-center justify-center text-3xl font-bold ring-[1.5px] ring-emerald-500/30 select-none">
-                    {doctorInitial}
-                  </div>
-                </div>
-                <p className="text-[13px] text-white/50">Connecting to room…</p>
-              </div>
-            </div>
-          )}
-
-          {/* Top bar */}
-          <div className="absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
-            <div className="flex items-center gap-2 pointer-events-none">
-              <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[10px] text-white/70 font-mono tracking-wide">
-                LIVE · {fmt(call.elapsed)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 pointer-events-auto">
-              <SignalBars strength={call.signalStrength} />
-              <button onClick={onMinimize} title="Minimize" className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit fullscreen" : "Fullscreen"} className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
-                {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-              </button>
-              <button onClick={onCloseCompletely} title="End and close" className="h-7 w-7 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-3 z-20 bg-gradient-to-t from-black/65 to-transparent">
-            <div className="relative">
-              <button
-                onClick={() => { const next = !chatOpen; setChatOpen(next); if (next) call.clearUnread(); }}
-                className={cn("h-10 w-10 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}
-              >
-                <MessageSquare className="h-4 w-4" />
-              </button>
-              {call.unreadCount > 0 && !chatOpen && (
-                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center leading-none">
-                  {call.unreadCount > 9 ? "9+" : call.unreadCount}
-                </span>
-              )}
-            </div>
-            <button onClick={handleEnd} className="h-11 w-11 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/35">
-              <PhoneOff className="h-[18px] w-[18px]" />
-            </button>
-            <div className="w-10" />
-          </div>
-        </div>
-
-        {/* Chat panel */}
-        <div className={cn("absolute top-0 right-0 h-full flex flex-col z-30 bg-card border-l border-border transition-all duration-300 ease-in-out", chatOpen ? "w-72 opacity-100" : "w-0 opacity-0 overflow-hidden")}>
-          {chatOpen && (
-            <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={doctorInitial} doctorName={doctorName} />
-          )}
-        </div>
       </div>
     );
   }
+
 
   // ── Pre-call / post-call panel ────────────────────────────────────────────
   return (
@@ -5147,10 +5105,10 @@ export const ConnectDialogContent = ({
         <div className="space-y-2">
           <Progress value={progressValue()} className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
           <p className="text-[10px] text-muted-foreground text-center">
-            {phase === "requesting"        && "Sending consultation request…"}
+            {phase === "requesting" && "Sending consultation request…"}
             {phase === "payment_verifying" && "Confirming your payment with provider…"}
-            {phase === "polling"           && "Waiting for doctor to accept…"}
-            {phase === "accepted"          && "Doctor is ready — join when you are!"}
+            {phase === "polling" && "Waiting for doctor to accept…"}
+            {phase === "accepted" && "Doctor is ready — join when you are!"}
           </p>
         </div>
       )}
