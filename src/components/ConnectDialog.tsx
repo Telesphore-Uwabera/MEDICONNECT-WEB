@@ -3249,6 +3249,7 @@ import { useMe } from "@/hooks/useAuth";
 import {
   useInstantConsultationRequest,
   useInstantConsultationStatus,
+  useInstantConsultationPay,
   type InstantConsultationRequestPayload,
 } from "@/hooks/patient/use-instant-consultations";
 import {
@@ -3286,8 +3287,9 @@ type CallPhase =
   | "idle"
   | "guest_form"
   | "requesting"
+  | "payment"
   | "polling"
-  | "accepted" 
+  | "accepted"
   | "in_progress"
   | "connected"
   | "rejected"
@@ -3559,7 +3561,17 @@ export const ConnectDialog = ({
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
 
   // ── API hooks ─────────────────────────────────────────────────────────────
+    const [consultationId, setConsultationId]         = useState<number | null>(null);
+  const [paymentLoading, setPaymentLoading]         = useState(false);
+  const [paymentInfo, setPaymentInfo]               = useState<{
+    amount: number;
+    currency: string;
+    invoice_number: string;
+    public_key: string;
+  } | null>(null);
+
   const requestMutation = useInstantConsultationRequest();
+  const payMutation     = useInstantConsultationPay();
   const { data: statusData } = useInstantConsultationStatus(
     consultationToken,
     phase === "polling",
@@ -3629,19 +3641,54 @@ export const ConnectDialog = ({
 
       const res = await requestMutation.mutateAsync(payload);
       setConsultationToken(res.guest_token);
+      setConsultationId(res.id ?? null);
       setQueueInfo({
         position: Number(res.queue_position),
-        ahead: res.people_ahead,
+        ahead: res.people_ahead ?? 0,
       });
-      setPhase("polling");
-    } catch (err) {
-      setErrorMsg(
-        err instanceof Error ? err.message : "Request failed. Please try again.",
-      );
+
+      if (res.payment_status === "paid") {
+        setPhase("polling");
+        return;
+      }
+
+      setPaymentInfo({
+        amount:         Number(res.amount),
+        currency:       "RWF",
+        invoice_number: "",
+        public_key:     "",
+      });
+      setPhase("payment");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
       setPhase("failed");
     }
   };
 
+  const handlePay = async () => {
+    if (!consultationId || !paymentInfo) return;
+    setPaymentLoading(true);
+    try {
+      const payRes = await payMutation.mutateAsync(consultationId);
+      (window as any).IremboPay.initiate({
+        publicKey:     payRes.public_key,
+        invoiceNumber: payRes.invoice_number,
+        locale:        (window as any).IremboPay.locale.EN,
+        callback: (err: unknown) => {
+          if (!err) {
+            (window as any).IremboPay.closeModal();
+            setPhase("polling");
+          } else {
+            setErrorMsg("Payment failed. Please try again.");
+          }
+        },
+      });
+    } catch {
+      setErrorMsg("Payment could not be initiated. Please try again.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
   // ── Guest form submit ─────────────────────────────────────────────────────
   const handleGuestSubmit = () => {
     if (!guestName.trim()) {
@@ -3695,6 +3742,7 @@ const handleJoin = () => {
     if (phase === "idle")       return "Instant consult";
     if (phase === "guest_form") return "Your details";
     if (phase === "requesting") return "Sending request…";
+    if (phase === "payment")    return "Complete payment";
     if (phase === "polling")    return "Waiting for doctor";
     if (phase === "accepted")   return "Doctor is ready";
     if (phase === "in_progress") return "Doctor is in call";
@@ -3713,7 +3761,8 @@ const handleJoin = () => {
     return 0;
   };
 
-  const showProgress = ["requesting", "polling", "accepted", "in_progress"].includes(phase);
+    const showProgress = ["requesting", "polling", "accepted", "in_progress"].includes(phase);
+
 
 
   return createPortal(
@@ -3939,6 +3988,66 @@ const handleJoin = () => {
                 </div>
               )}
 
+              {/* ── Payment ── */}
+              {phase === "payment" && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+                    <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">
+                      Payment summary
+                    </p>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-muted-foreground">Patient</span>
+                      <span className="font-medium text-foreground">
+                        {guestName || me?.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-muted-foreground">Phone</span>
+                      <span className="font-medium text-foreground">
+                        {guestPhone || me?.phone}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-muted-foreground">Doctor</span>
+                      <span className="font-medium text-foreground">{doctorName}</span>
+                    </div>
+                    <div className="border-t border-border pt-2 flex justify-between text-[13px]">
+                      <span className="font-semibold text-foreground">Amount</span>
+                      <span className="font-bold text-primary">
+                        {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {errorMsg && (
+                    <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      {errorMsg}
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handlePay}
+                    disabled={paymentLoading}
+                    className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+                  >
+                    {paymentLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4" />
+                    )}
+                    {paymentLoading ? "Initiating…" : "Pay now"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                    className="w-full h-9 text-[11px] rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+
               {/* ── Accepted / In Progress — join CTA ── */}
               {(phase === "accepted" || phase === "in_progress") && (
                 <div className="space-y-3">
@@ -4028,7 +4137,8 @@ const handleJoin = () => {
               )}
 
               {/* Trust footer */}
-              {["idle", "guest_form", "polling", "accepted", "in_progress"].includes(phase) && (
+                {["idle", "guest_form", "payment", "polling", "accepted", "in_progress"].includes(phase) && (
+
                 <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
                   <ShieldCheck className="h-3 w-3" />
                   HIPAA compliant · End-to-end encrypted
