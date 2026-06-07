@@ -4386,7 +4386,6 @@
 // };
 
 
-
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef } from "react";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -4396,13 +4395,14 @@ import {
   useInstantConsultationRequest,
   useInstantConsultationStatus,
   useInstantConsultationPay,
+  useInvoicePoller,
   type InstantConsultationRequestPayload,
 } from "@/hooks/patient/use-instant-consultations";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Phone,
   ShieldCheck, Loader2, CheckCircle2, AlertCircle,
   MessageSquare, Wifi, ArrowRight, Sparkles, Activity,
-  User, Maximize2, Minimize2, Minus, X,
+  User, Maximize2, Minimize2, Minus, X, RotateCcw, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -4410,6 +4410,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
+import { useConsultationSession } from "@/hooks/patient/se-consultation-session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -4435,47 +4436,12 @@ const fmt = (s: number) =>
 const nameInitial = (name: string): string =>
   name.split(" ").map((n) => n[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
 
-// ─── Invoice Poller ───────────────────────────────────────────────────────────
-
-function pollInvoice(
-  invoiceNumber: string,
-  onPaid: () => void,
-  onFailed: (msg: string) => void,
-  intervalMs = 3000,
-  maxAttempts = 20,
-): () => void {
-  let attempts = 0;
-  let cancelled = false;
-
-  const tick = async () => {
-    if (cancelled) return;
-    attempts++;
-    try {
-      const res = await fetch(
-        `/public/payments/check-invoice/${encodeURIComponent(invoiceNumber)}`,
-        { method: "POST", headers: { "Content-Type": "application/json" } },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { status: "paid" | "pending" | string } = await res.json();
-      if (cancelled) return;
-      if (data.status === "paid") { onPaid(); return; }
-      if (attempts >= maxAttempts) {
-        onFailed("Payment verification timed out. If you completed payment, please wait a moment and try again.");
-        return;
-      }
-      setTimeout(tick, intervalMs);
-    } catch {
-      if (cancelled) return;
-      if (attempts >= maxAttempts) {
-        onFailed("Could not verify payment status. Please check your connection and try again.");
-        return;
-      }
-      setTimeout(tick, intervalMs);
-    }
-  };
-
-  setTimeout(tick, intervalMs);
-  return () => { cancelled = true; };
+function timeAgo(ts: number): string {
+  const secs = Math.floor((Date.now() - ts) / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} min ago`;
+  return `${Math.floor(mins / 60)}h ago`;
 }
 
 // ─── Signal Bars ──────────────────────────────────────────────────────────────
@@ -4554,6 +4520,65 @@ const StatusBadge = ({ phase }: { phase: CallPhase }) => {
     </span>
   );
 };
+
+// ─── Resume Session Banner ────────────────────────────────────────────────────
+
+interface ResumeSessionBannerProps {
+  savedAt: number;
+  onResume: () => void;
+  onDiscard: () => void;
+  isResuming: boolean;
+}
+
+const ResumeSessionBanner = ({ savedAt, onResume, onDiscard, isResuming }: ResumeSessionBannerProps) => (
+  <div className={cn(
+    "rounded-xl border p-3.5 space-y-2.5",
+    "bg-violet-500/5 border-violet-500/20",
+    "animate-in fade-in slide-in-from-top-2 duration-300",
+  )}>
+    <div className="flex items-start gap-2.5">
+      <div className="h-8 w-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
+        <RotateCcw className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-semibold text-foreground leading-tight">
+          Resume your session?
+        </p>
+        <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+          <Clock className="h-2.5 w-2.5 shrink-0" />
+          Session saved {timeAgo(savedAt)}
+        </p>
+      </div>
+    </div>
+
+    <p className="text-[11px] text-muted-foreground leading-relaxed">
+      You were waiting in queue. Your position may still be held — tap <strong className="text-foreground font-medium">Resume</strong> to continue where you left off.
+    </p>
+
+    <div className="flex gap-2 pt-0.5">
+      <Button
+        size="sm"
+        onClick={onResume}
+        disabled={isResuming}
+        className="flex-1 h-8 text-[11px] font-semibold gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white"
+      >
+        {isResuming
+          ? <><Loader2 className="h-3 w-3 animate-spin" />Resuming…</>
+          : <><RotateCcw className="h-3 w-3" />Resume session</>
+        }
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={onDiscard}
+        disabled={isResuming}
+        className="flex-1 h-8 text-[11px] rounded-lg"
+      >
+        Start fresh
+      </Button>
+    </div>
+  </div>
+);
 
 // ─── Device Toggles ───────────────────────────────────────────────────────────
 
@@ -4662,6 +4687,7 @@ export const ConnectDialogContent = ({
   onCloseCompletely,
 }: ConnectDialogContentProps) => {
   const call = useCallStore();
+  const session = useConsultationSession(doctor.id);
 
   const { data: me } = useMe();
   const isLoggedIn = !!me;
@@ -4670,6 +4696,11 @@ export const ConnectDialogContent = ({
   const [phase, setPhase]           = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
   const [chatOpen, setChatOpen]     = useState(false);
+
+  // Resume-session UI state
+  const [savedSession, setSavedSession]     = useState<ReturnType<typeof session.read>>(null);
+  const [isResuming, setIsResuming]         = useState(false);
+  const [resumeDeclined, setResumeDeclined] = useState(false);
 
   const [guestName, setGuestName]   = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -4687,8 +4718,7 @@ export const ConnectDialogContent = ({
     currency: string;
   } | null>(null);
 
-  // ref to cancel any in-flight invoice poll
-  const cancelInvoicePollRef = useRef<(() => void) | null>(null);
+  const invoicePoller = useInvoicePoller();
 
   const requestMutation = useInstantConsultationRequest();
   const payMutation     = useInstantConsultationPay();
@@ -4697,25 +4727,40 @@ export const ConnectDialogContent = ({
     phase === "polling",
   );
 
-  // cleanup invoice poller on unmount
+  // ── On mount: check for a saved session ──────────────────────────────────────
+  // FIX: Pre-load ALL state from the saved session immediately on mount so
+  // that consultationToken is already set when the user clicks Resume (or if
+  // we ever want to auto-resume). Previously, the token was only set inside
+  // handleResumeSession, but the state-reset block ran unconditionally and
+  // zeroed it out first, so polling never had a token to work with.
   useEffect(() => {
-    return () => { cancelInvoicePollRef.current?.(); };
-  }, []);
+    const existing = session.read();
 
-  // reset on mount
-  useEffect(() => {
-    setPhase(isProfileComplete ? "idle" : "guest_form");
+    if (existing && !resumeDeclined) {
+      // Pre-load everything from the saved session right away
+      setSavedSession(existing);
+      setConsultationToken(existing.token);   // ← key fix: token is live immediately
+      setGuestName(existing.guestName);
+      setGuestPhone(existing.guestPhone);
+      // Stay on idle so the resume banner is visible; polling activates on Resume click
+      setPhase("idle");
+    } else {
+      // No session (or user discarded it) — full reset
+      setSavedSession(null);
+      setConsultationToken(null);
+      setConsultationId(null);
+      setQueueInfo(null);
+      setRoomUrl(null);
+      setDailyToken(null);
+      setErrorMsg(null);
+      setPaymentInfo(null);
+      setGuestName(me?.name ?? "");
+      setGuestPhone(me?.phone ?? "");
+      setPhase(isProfileComplete ? "idle" : "guest_form");
+    }
+
     setFullscreen(false);
-    setGuestName(me?.name ?? "");
-    setGuestPhone(me?.phone ?? "");
     setGuestError(null);
-    setConsultationToken(null);
-    setConsultationId(null);   // ← always reset so no stale ID
-    setQueueInfo(null);
-    setRoomUrl(null);
-    setDailyToken(null);
-    setErrorMsg(null);
-    setPaymentInfo(null);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // promote guest_form → idle when profile becomes complete
@@ -4736,21 +4781,58 @@ export const ConnectDialogContent = ({
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
+      session.clear();
     } else if (statusData.status === "rejected" || statusData.status === "cancelled") {
       setPhase("rejected");
+      session.clear();
     }
   }, [statusData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Resume saved session ──────────────────────────────────────────────────────
+  // FIX: All state is already pre-loaded on mount, so this only needs to
+  // dismiss the banner and activate polling. No redundant state-setting needed.
+  const handleResumeSession = async () => {
+    if (!savedSession) return;
+    setIsResuming(true);
+    setErrorMsg(null);
+
+    // Token + guest info already set on mount — just clear the banner
+    setSavedSession(null);
+
+    // Short artificial delay so the UI transition feels intentional
+    await new Promise((r) => setTimeout(r, 400));
+
+    setIsResuming(false);
+    // consultationToken is already set, so the polling hook activates immediately
+    setPhase("polling");
+  };
+
+  const handleDiscardSession = () => {
+    session.clear();
+    setSavedSession(null);
+    setResumeDeclined(true);
+    // Reset live state since user chose to start fresh
+    setConsultationToken(null);
+    setConsultationId(null);
+    setQueueInfo(null);
+    setRoomUrl(null);
+    setDailyToken(null);
+    setErrorMsg(null);
+    setPaymentInfo(null);
+    setGuestName(me?.name ?? "");
+    setGuestPhone(me?.phone ?? "");
+    setPhase(isProfileComplete ? "idle" : "guest_form");
+  };
 
   // ── Send consultation request ─────────────────────────────────────────────
   const handleRequest = async (override?: { name: string; phone: string }) => {
     setPhase("requesting");
     setErrorMsg(null);
 
-    // ── Reset payment state so a retry always creates a fresh consultation ──
     setConsultationId(null);
     setConsultationToken(null);
     setPaymentInfo(null);
-    cancelInvoicePollRef.current?.();
+    invoicePoller.cancel();
 
     try {
       const name  = override?.name  ?? me?.name  ?? guestName;
@@ -4770,13 +4852,12 @@ export const ConnectDialogContent = ({
       setConsultationId(res.id ?? null);
       setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 
-      // If already paid (e.g. returning user), skip payment screen
       if (res.payment_status === "paid") {
+        session.save(res.guest_token, name, phone);
         setPhase("polling");
         return;
       }
 
-      // Store only what we need for the summary UI
       setPaymentInfo({
         amount:   Number(res.amount),
         currency: "RWF",
@@ -4789,8 +4870,6 @@ export const ConnectDialogContent = ({
   };
 
   // ── Pay ───────────────────────────────────────────────────────────────────
-  // Mirrors the old implementation exactly — payMutation gives us the
-  // invoice_number and public_key; we never store them before this point.
   const handlePay = async () => {
     if (!consultationId || !paymentInfo) return;
 
@@ -4804,29 +4883,30 @@ export const ConnectDialogContent = ({
 
       console.info("[Pay] payRes:", JSON.stringify(payRes));
 
-      // Exactly as in the old component — use payRes directly
       (window as any).IremboPay.initiate({
         publicKey:     payRes.public_key,
         invoiceNumber: payRes.invoice_number,
         locale:        (window as any).IremboPay.locale.EN,
         callback: (err: unknown) => {
-          // IremboPay fires callback on modal close (paid OR cancelled).
-          // We always start invoice polling — if cancelled it'll time out gracefully.
           (window as any).IremboPay.closeModal?.();
 
           if (err) {
-            // Hard SDK error
             setErrorMsg("Payment could not be processed. Please try again.");
             setPhase("payment");
             return;
           }
 
-          // No SDK error → start polling the invoice
           setPhase("payment_verifying");
-          cancelInvoicePollRef.current?.();
-          cancelInvoicePollRef.current = pollInvoice(
+          invoicePoller.start(
             payRes.invoice_number,
-            () => setPhase("polling"),
+            () => {
+              const name  = me?.name  ?? guestName;
+              const phone = me?.phone ?? guestPhone;
+              if (consultationToken) {
+                session.save(consultationToken, name, phone);
+              }
+              setPhase("polling");
+            },
             (msg) => {
               setErrorMsg(msg);
               setPhase("payment");
@@ -4857,10 +4937,23 @@ export const ConnectDialogContent = ({
     window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
   };
 
-  const handleEnd = () => { call.endCall(); setPhase("ended"); };
+  const handleEnd = () => {
+    call.endCall();
+    session.clear();
+    setPhase("ended");
+  };
 
   const handleRetry = () => {
-    cancelInvoicePollRef.current?.();
+    invoicePoller.cancel();
+    session.clear();
+    setSavedSession(null);
+    setConsultationToken(null);
+    setConsultationId(null);
+    setQueueInfo(null);
+    setRoomUrl(null);
+    setDailyToken(null);
+    setErrorMsg(null);
+    setPaymentInfo(null);
     if (isProfileComplete) handleRequest();
     else setPhase("guest_form");
   };
@@ -4869,6 +4962,7 @@ export const ConnectDialogContent = ({
   const doctorInitial = nameInitial(doctorName);
 
   const titleText = (): string => {
+    if (savedSession && !isResuming) return "Resume your session";
     if (phase === "idle")              return "Instant consult";
     if (phase === "guest_form")        return "Your details";
     if (phase === "requesting")        return "Sending request…";
@@ -5000,8 +5094,27 @@ export const ConnectDialogContent = ({
         <span className="text-[11px] font-medium text-muted-foreground">{titleText()}</span>
       </div>
 
-      {/* Doctor card — hidden on guest_form */}
-      {phase !== "guest_form" && (
+      {/* ── Resume banner — shown when a saved session is detected ── */}
+      {savedSession && !isResuming && (
+        <ResumeSessionBanner
+          savedAt={savedSession.savedAt}
+          onResume={handleResumeSession}
+          onDiscard={handleDiscardSession}
+          isResuming={isResuming}
+        />
+      )}
+
+      {/* Resuming spinner */}
+      {isResuming && (
+        <div className="flex flex-col items-center gap-3 py-6">
+          <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
+          <p className="text-[12px] font-medium text-foreground">Reconnecting to your session…</p>
+          <p className="text-[10px] text-muted-foreground">Picking up where you left off</p>
+        </div>
+      )}
+
+      {/* Doctor card — hidden on guest_form and while resume banner is shown */}
+      {phase !== "guest_form" && !savedSession && !isResuming && (
         <div className={cn(
           "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
           showProgress ? "border-primary/20 bg-primary/5" : "border-border bg-muted/50",
@@ -5030,7 +5143,7 @@ export const ConnectDialogContent = ({
       )}
 
       {/* Progress bar */}
-      {showProgress && (
+      {showProgress && !savedSession && !isResuming && (
         <div className="space-y-2">
           <Progress value={progressValue()} className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
           <p className="text-[10px] text-muted-foreground text-center">
@@ -5042,195 +5155,200 @@ export const ConnectDialogContent = ({
         </div>
       )}
 
-      {/* ── Guest form ── */}
-      {phase === "guest_form" && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
-            <User className="h-4 w-4 text-muted-foreground shrink-0" />
-            <p className="text-[11px] text-muted-foreground">
-              {isLoggedIn
-                ? "Please confirm your contact details to continue."
-                : "You're not logged in. Please enter your details to continue."}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
-            <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
-              {doctorInitial}
+      {/* ── Below sections only shown when no saved-session banner is active ── */}
+      {!savedSession && !isResuming && (
+        <>
+          {/* ── Guest form ── */}
+          {phase === "guest_form" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+                <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                <p className="text-[11px] text-muted-foreground">
+                  {isLoggedIn
+                    ? "Please confirm your contact details to continue."
+                    : "You're not logged in. Please enter your details to continue."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
+                <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
+                  {doctorInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-foreground truncate">{doctorName}</p>
+                  {doctor.specialization && (
+                    <p className="text-[10px] text-muted-foreground truncate">{doctor.specialization}</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">Full name</Label>
+                  <Input
+                    placeholder="e.g. Alain Honore"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="h-9 text-[12px]"
+                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">Phone number</Label>
+                  <Input
+                    placeholder="e.g. 0733334512"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    className="h-9 text-[12px]"
+                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  />
+                </div>
+                {guestError && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" /> {guestError}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Button onClick={handleGuestSubmit} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                  <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-foreground truncate">{doctorName}</p>
-              {doctor.specialization && (
-                <p className="text-[10px] text-muted-foreground truncate">{doctor.specialization}</p>
+          )}
+
+          {/* ── Idle ── */}
+          {phase === "idle" && (
+            <div className="space-y-2 pt-1">
+              <DeviceToggles compact={false} />
+              <Button onClick={() => handleRequest()} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+            </div>
+          )}
+
+          {/* ── Polling ── */}
+          {phase === "polling" && (
+            <div className="space-y-3">
+              <DeviceToggles compact={true} />
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                Minimize — keep waiting in background
+              </Button>
+            </div>
+          )}
+
+          {/* ── Payment ── */}
+          {phase === "payment" && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-muted-foreground">Patient</span>
+                  <span className="font-medium text-foreground">{guestName || me?.name}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-muted-foreground">Phone</span>
+                  <span className="font-medium text-foreground">{guestPhone || me?.phone}</span>
+                </div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-muted-foreground">Doctor</span>
+                  <span className="font-medium text-foreground">{doctorName}</span>
+                </div>
+                <div className="border-t border-border pt-2 flex justify-between text-[13px]">
+                  <span className="font-semibold text-foreground">Amount</span>
+                  <span className="font-bold text-primary">
+                    {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
+                  </span>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+                </div>
               )}
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium">Full name</Label>
-              <Input
-                placeholder="e.g. Alain Honore"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                className="h-9 text-[12px]"
-                onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[11px] font-medium">Phone number</Label>
-              <Input
-                placeholder="e.g. 0733334512"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                className="h-9 text-[12px]"
-                onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-              />
-            </div>
-            {guestError && (
-              <p className="text-[11px] text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" /> {guestError}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Button onClick={handleGuestSubmit} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-              <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
-          </div>
-        </div>
-      )}
 
-      {/* ── Idle ── */}
-      {phase === "idle" && (
-        <div className="space-y-2 pt-1">
-          <DeviceToggles compact={false} />
-          <Button onClick={() => handleRequest()} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-            <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
-        </div>
-      )}
-
-      {/* ── Polling ── */}
-      {phase === "polling" && (
-        <div className="space-y-3">
-          <DeviceToggles compact={true} />
-          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
-            Minimize — keep waiting in background
-          </Button>
-        </div>
-      )}
-
-      {/* ── Payment ── */}
-      {phase === "payment" && (
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-muted-foreground">Patient</span>
-              <span className="font-medium text-foreground">{guestName || me?.name}</span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-muted-foreground">Phone</span>
-              <span className="font-medium text-foreground">{guestPhone || me?.phone}</span>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-muted-foreground">Doctor</span>
-              <span className="font-medium text-foreground">{doctorName}</span>
-            </div>
-            <div className="border-t border-border pt-2 flex justify-between text-[13px]">
-              <span className="font-semibold text-foreground">Amount</span>
-              <span className="font-bold text-primary">
-                {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
-              </span>
-            </div>
-          </div>
-
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+              <Button
+                onClick={handlePay}
+                disabled={paymentLoading || !consultationId}
+                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
+              >
+                {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                {paymentLoading ? "Initiating…" : "Pay now"}
+              </Button>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
             </div>
           )}
 
-          <Button
-            onClick={handlePay}
-            disabled={paymentLoading || !consultationId}
-            className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl"
-          >
-            {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-            {paymentLoading ? "Initiating…" : "Pay now"}
-          </Button>
-          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
-        </div>
-      )}
-
-      {/* ── Payment verifying ── */}
-      {phase === "payment_verifying" && (
-        <div className="space-y-3">
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-[12px] font-medium text-foreground">Confirming your payment…</p>
-            <p className="text-[11px] text-muted-foreground max-w-[280px]">
-              This usually takes a few seconds. Please don't close this window.
-            </p>
-          </div>
-          <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
-            Minimize — verification continues in background
-          </Button>
-        </div>
-      )}
-
-      {/* ── Accepted / In Progress ── */}
-      {(phase === "accepted" || phase === "in_progress") && (
-        <div className="space-y-3">
-          <DeviceToggles compact={true} />
-          <div className="space-y-2 pt-1">
-            <Button onClick={handleJoin} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
-              <Phone className="h-4 w-4" />Join call<ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
-              Minimize — I'll join later
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Failed / Rejected ── */}
-      {(phase === "failed" || phase === "rejected") && (
-        <div className="space-y-3">
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+          {/* ── Payment verifying ── */}
+          {phase === "payment_verifying" && (
+            <div className="space-y-3">
+              <div className="flex flex-col items-center gap-3 py-6 text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-[12px] font-medium text-foreground">Confirming your payment…</p>
+                <p className="text-[11px] text-muted-foreground max-w-[280px]">
+                  This usually takes a few seconds. Please don't close this window.
+                </p>
+              </div>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                Minimize — verification continues in background
+              </Button>
             </div>
           )}
-          {phase === "rejected" && (
-            <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
-              The doctor is currently unavailable. Please try again later or book an appointment.
+
+          {/* ── Accepted / In Progress ── */}
+          {(phase === "accepted" || phase === "in_progress") && (
+            <div className="space-y-3">
+              <DeviceToggles compact={true} />
+              <div className="space-y-2 pt-1">
+                <Button onClick={handleJoin} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
+                  <Phone className="h-4 w-4" />Join call<ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                  Minimize — I'll join later
+                </Button>
+              </div>
             </div>
           )}
-          <div className="space-y-2 pt-1">
-            <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-              <Phone className="h-4 w-4" />Try again
-            </Button>
-            <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
-          </div>
-        </div>
-      )}
 
-      {/* ── Ended ── */}
-      {phase === "ended" && (
-        <div className="space-y-3">
-          <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
-            <p className="text-[12px] font-medium text-foreground/60">Your consultation has ended</p>
-            <p className="text-[10px] text-muted-foreground">Duration: session complete</p>
-          </div>
-          <div className="space-y-2">
-            <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-              <Phone className="h-4 w-4" />Reconnect with {doctorName}
-            </Button>
-            <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
-          </div>
-        </div>
+          {/* ── Failed / Rejected ── */}
+          {(phase === "failed" || phase === "rejected") && (
+            <div className="space-y-3">
+              {errorMsg && (
+                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+                </div>
+              )}
+              {phase === "rejected" && (
+                <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
+                  The doctor is currently unavailable. Please try again later or book an appointment.
+                </div>
+              )}
+              <div className="space-y-2 pt-1">
+                <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                  <Phone className="h-4 w-4" />Try again
+                </Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Ended ── */}
+          {phase === "ended" && (
+            <div className="space-y-3">
+              <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
+                <p className="text-[12px] font-medium text-foreground/60">Your consultation has ended</p>
+                <p className="text-[10px] text-muted-foreground">Duration: session complete</p>
+              </div>
+              <div className="space-y-2">
+                <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                  <Phone className="h-4 w-4" />Reconnect with {doctorName}
+                </Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Trust footer */}

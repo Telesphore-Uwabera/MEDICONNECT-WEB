@@ -1277,6 +1277,7 @@
 // };
 
 
+
 // components/DoctorCard.tsx
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -1286,7 +1287,7 @@ import {
   Zap, Maximize2, Globe, Video, Building2, X,
   ShieldCheck, Languages, BadgeCheck, FileText,
   CalendarCheck, User, ChevronRight, ChevronLeft,
-  Minus, ArrowUpRight,
+  Minus, ArrowUpRight, RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -1295,10 +1296,10 @@ import { ConnectDialogContent } from "@/components/ConnectDialog";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import type { ApiDoctor, ApiDoctorHospital, ApiDoctorSpecialization } from "@/hooks/patient/use-patient-doctor";
+import { readConsultSession } from "@/hooks/patient/se-consultation-session"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-/** What the unified modal is currently showing */
 type ModalMode = "details" | "connect";
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -1383,7 +1384,6 @@ function DetailRow({
 }
 
 // ─── Resume Pill ──────────────────────────────────────────────────────────────
-// Floating pill shown when a call is in progress but the modal is minimized.
 
 function ResumePill({
   doctorName,
@@ -1400,7 +1400,6 @@ function ResumePill({
 
   return createPortal(
     <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
-      {/* Red X to end completely */}
       <button
         onClick={onEndCompletely}
         title="End call completely"
@@ -1409,7 +1408,6 @@ function ResumePill({
         <X className="h-3.5 w-3.5" />
       </button>
 
-      {/* Resume pill */}
       <button
         onClick={onResume}
         className={cn(
@@ -1432,18 +1430,51 @@ function ResumePill({
   );
 }
 
+// ─── Saved Session Pill ───────────────────────────────────────────────────────
+// Floating pill shown when a saved queue session exists but no live call is running.
+
+function SavedSessionPill({
+  doctorName,
+  onResume,
+  onDismiss,
+}: {
+  doctorName: string;
+  onResume: () => void;
+  onDismiss: () => void;
+}) {
+  return createPortal(
+    <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
+      <button
+        onClick={onDismiss}
+        title="Dismiss"
+        className="h-8 w-8 rounded-full bg-muted hover:bg-muted/80 border border-border text-muted-foreground flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+
+      <button
+        onClick={onResume}
+        className="flex items-center gap-2.5 pl-3 pr-4 h-10 rounded-full shadow-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 text-violet-700 dark:text-violet-300 transition-all hover:scale-[1.02] active:scale-[0.98]"
+      >
+        <RotateCcw className="h-3 w-3 shrink-0" />
+        <span className="text-[11px] font-semibold leading-none truncate max-w-[130px]">
+          Resume · {doctorName}
+        </span>
+        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-70" />
+      </button>
+    </div>,
+    document.body,
+  );
+}
+
 // ─── Unified Modal ────────────────────────────────────────────────────────────
-// Single portal. Renders either doctor details or the connect flow.
-// No more stacking of two separate portals.
 
 interface UnifiedModalProps {
   doctor: ApiDoctor;
   callDoctor: Doctor;
   initialMode: ModalMode;
   open: boolean;
-  /** Hides modal but keeps call session alive (minimize) */
   onMinimize: () => void;
-  /** Ends session entirely and closes modal */
   onCloseCompletely: () => void;
   onBook: () => void;
   canBook: boolean;
@@ -1463,7 +1494,6 @@ function UnifiedModal({
 }: UnifiedModalProps) {
   const [mode, setMode] = useState<ModalMode>(initialMode);
 
-  // Sync when parent changes initialMode (e.g. clicking "Connect Now" button)
   useEffect(() => {
     if (open) setMode(initialMode);
   }, [open, initialMode]);
@@ -1494,13 +1524,11 @@ function UnifiedModal({
 
   return createPortal(
     <>
-      {/* Single shared overlay */}
       <div
         className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
         onClick={onMinimize}
       />
 
-      {/* Single modal shell */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           className={cn(
@@ -1515,7 +1543,6 @@ function UnifiedModal({
           {/* ── Shared header bar ── */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 flex-shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              {/* Back arrow when in connect mode */}
               {mode === "connect" && (
                 <button
                   onClick={() => setMode("details")}
@@ -1531,7 +1558,6 @@ function UnifiedModal({
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Minus = minimize: hides modal, call stays alive */}
               <button
                 onClick={onMinimize}
                 title="Minimize (keep session alive)"
@@ -1539,7 +1565,6 @@ function UnifiedModal({
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
-              {/* X = close completely: ends session */}
               <button
                 onClick={onCloseCompletely}
                 title="Close and end session"
@@ -1550,7 +1575,7 @@ function UnifiedModal({
             </div>
           </div>
 
-          {/* ── Content area: switches by mode, no re-mount of overlay ── */}
+          {/* ── Content area ── */}
           {mode === "details" ? (
             <>
               {/* Doctor details header band */}
@@ -1738,7 +1763,6 @@ function UnifiedModal({
               </div>
             </>
           ) : (
-            // Connect flow — pure content, no portal/overlay of its own
             <ConnectDialogContent
               doctor={callDoctor}
               onMinimize={onMinimize}
@@ -1768,6 +1792,20 @@ export const DoctorCard = ({
   const call = useCallStore();
 
   const [doctor, setDoctor] = useState<ApiDoctor>(doctorProp);
+
+  // Check for a saved (queue) session for this doctor on mount and after modal closes
+  const [hasSavedSession, setHasSavedSession] = useState(
+    () => !!readConsultSession(doctorProp.id),
+  );
+  // Whether the user has dismissed the saved-session pill from this card
+  const [savedSessionPillDismissed, setSavedSessionPillDismissed] = useState(false);
+
+  // Re-check saved session whenever the modal closes (session may have been cleared inside)
+  useEffect(() => {
+    if (!modalOpen) {
+      setHasSavedSession(!!readConsultSession(doctor.id));
+    }
+  }, [modalOpen, doctor.id]);
 
   if (!bookOpen && doctorProp !== doctor && doctorProp.id === doctor.id) {
     setDoctor(doctorProp);
@@ -1806,8 +1844,16 @@ export const DoctorCard = ({
   const canConnect = doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation;
   const canBook    = doctor.is_available && !doctor.bookings_paused;
 
-  // Show resume pill when a call is running but this modal is closed
+  // Show live resume pill when a call is running but modal is closed
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
+
+  // Show saved-session pill when there's a saved queue session but NO live call
+  const showSavedSessionPill =
+    hasSavedSession &&
+    !isCallInProgress &&
+    !modalOpen &&
+    !bookOpen &&
+    !savedSessionPillDismissed;
 
   const openDetails = () => {
     setInitialMode("details");
@@ -1821,10 +1867,14 @@ export const DoctorCard = ({
     setModalOpen(true);
   };
 
-  /** Minimize: hides the modal shell, keeps the call session running */
+  /** Open directly to connect mode to surface the resume banner */
+  const openResume = () => {
+    setInitialMode("connect");
+    setModalOpen(true);
+  };
+
   const handleMinimize = () => setModalOpen(false);
 
-  /** Close completely: tears down the session */
   const handleCloseCompletely = () => {
     setModalOpen(false);
     if (isCallInProgress) call.endCall();
@@ -1841,6 +1891,8 @@ export const DoctorCard = ({
           "overflow-hidden transition-all duration-200 cursor-pointer",
           "hover:shadow-md hover:-translate-y-px shadow-sm",
           isConnected && "ring-1 ring-emerald-500/30",
+          // Subtle violet ring when a saved session is pending
+          hasSavedSession && !isCallInProgress && "ring-1 ring-violet-500/25",
         )}
         onClick={openDetails}
       >
@@ -1882,6 +1934,12 @@ export const DoctorCard = ({
                   <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-sky-600 bg-sky-500/10 border-sky-500/20">
                     <span className="h-1 w-1 rounded-full bg-sky-500 animate-pulse shrink-0" />
                     Connecting
+                  </span>
+                ) : hasSavedSession ? (
+                  // Saved-session badge
+                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-violet-600 bg-violet-500/10 border-violet-500/20">
+                    <RotateCcw className="h-2 w-2 shrink-0" />
+                    In queue
                   </span>
                 ) : (
                   <span className={cn("inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0", s.text, s.bg)}>
@@ -1956,6 +2014,11 @@ export const DoctorCard = ({
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
                   <span className="text-[10px] font-medium text-sky-600">Connecting…</span>
                 </>
+              ) : hasSavedSession ? (
+                <>
+                  <RotateCcw className="h-2.5 w-2.5 text-violet-500" />
+                  <span className="text-[10px] font-medium text-violet-600 dark:text-violet-400">Queue session saved</span>
+                </>
               ) : (
                 <>
                   <Zap className={cn("h-2.5 w-2.5", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground")} />
@@ -1977,7 +2040,17 @@ export const DoctorCard = ({
                 {t("pages.cards.book")}
               </Button>
 
-              {canConnect ? (
+              {/* Saved-session resume button — shown instead of Connect when a session exists */}
+              {hasSavedSession && !isCallInProgress ? (
+                <Button
+                  size="sm"
+                  onClick={openResume}
+                  className="h-6 px-2.5 text-[10px] font-semibold rounded-sm bg-violet-600 hover:bg-violet-700 text-white"
+                >
+                  <RotateCcw className="h-2.5 w-2.5 mr-1" />
+                  Resume
+                </Button>
+              ) : canConnect ? (
                 <Button
                   size="sm"
                   onClick={
@@ -2017,7 +2090,7 @@ export const DoctorCard = ({
         </div>
       </div>
 
-      {/* ── Resume pill — floats bottom-right when call is live but modal is closed ── */}
+      {/* ── Live-call resume pill ── */}
       {showResumePill && (
         <ResumePill
           doctorName={doctor.user.name}
@@ -2027,7 +2100,16 @@ export const DoctorCard = ({
         />
       )}
 
-      {/* ── Single unified modal — no stacking conflicts ── */}
+      {/* ── Saved-session pill (no live call, but token is saved) ── */}
+      {showSavedSessionPill && (
+        <SavedSessionPill
+          doctorName={doctor.user.name}
+          onResume={openResume}
+          onDismiss={() => setSavedSessionPillDismissed(true)}
+        />
+      )}
+
+      {/* ── Unified modal ── */}
       <UnifiedModal
         doctor={doctor}
         callDoctor={callDoctor}
@@ -2040,7 +2122,7 @@ export const DoctorCard = ({
         canConnect={canConnect}
       />
 
-      {/* ── Booking dialog — separate concern, no z-index conflict ── */}
+      {/* ── Booking dialog ── */}
       <BookingDialog
         doctor={doctor}
         open={bookOpen}
