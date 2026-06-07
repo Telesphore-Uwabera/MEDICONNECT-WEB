@@ -287,7 +287,7 @@ const HospitalAnalytics = () => {
                 <SectionTitle>{t("pages.hospital.by_department")}</SectionTitle>
                 {isLoading ? <Skeleton className="h-[180px]" />
                 : deptPieData.length === 0
-                  ? <p className="text-[11px] text-muted-foreground pt-2">{t("common.no_data")}</p>
+                  ? <p className="text-[11px] text-muted-foreground pt-2">{t("pages.common.no_data")}</p>
                   : (
                     <>
                       <ResponsiveContainer width="100%" height={160}>
@@ -406,7 +406,7 @@ const HospitalAnalytics = () => {
                 <SectionTitle>Daily Appointments</SectionTitle>
                 {isLoading ? <Skeleton className="h-[200px]" />
                 : dailyAppts.length === 0
-                  ? <p className="text-[11px] text-muted-foreground">{t("common.no_data")}</p>
+                  ? <p className="text-[11px] text-muted-foreground">{t("pages.common.no_data")}</p>
                   : (
                     <ResponsiveContainer width="100%" height={200}>
                       <AreaChart data={dailyAppts}>
@@ -435,7 +435,7 @@ const HospitalAnalytics = () => {
                 <SectionTitle>Upcoming Appointments</SectionTitle>
                 {isLoading ? <div className="space-y-2">{Array.from({length:3}).map((_,i)=><Skeleton key={i} className="h-12"/>)}</div>
                 : upcoming.length === 0
-                  ? <p className="text-[11px] text-muted-foreground">{t("common.no_data")}</p>
+                  ? <p className="text-[11px] text-muted-foreground">{t("pages.common.no_data")}</p>
                   : (
                     <div className="space-y-3">
                       {upcoming.map((a: any) => (
@@ -534,7 +534,7 @@ const HospitalAnalytics = () => {
                         </div>
                       </>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground">{t("common.no_data")}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("pages.common.no_data")}</p>
                     )}
                   </>
                 )}
@@ -584,7 +584,7 @@ const HospitalAnalytics = () => {
                   {/* Recent reviews list */}
                   <div className="space-y-3">
                     {(reviews?.recent ?? []).length === 0
-                      ? <p className="text-[11px] text-muted-foreground">{t("common.no_data")}</p>
+                      ? <p className="text-[11px] text-muted-foreground">{t("pages.common.no_data")}</p>
                       : (reviews?.recent ?? []).map((r: any) => (
                           <div key={r.id} className="space-y-0.5">
                             <div className="flex items-center justify-between">

@@ -318,5 +318,13 @@
   },
   "header": {
     "search": "Shakisha…"
+  },
+
+    "common": {
+    "view_all": "Reba byose",
+    "loading": "Biracyaza…",
+    "error": "Habayemo ikibazo.",
+    "no_data": "Nta makuru aboneka"
   }
+
 }
