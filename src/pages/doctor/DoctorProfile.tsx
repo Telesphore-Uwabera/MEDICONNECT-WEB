@@ -140,69 +140,159 @@ type StepSaveState = "idle" | "saving" | "saved" | "error" | "dirty";
 type StepSaveStates = Record<string, StepSaveState>;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Mutation response shapes
+// These match what the hooks return from the API so we never need `any`.
+// ─────────────────────────────────────────────────────────────────────────────
+interface EducationMutationResponse {
+  education?: { id?: number };
+}
+interface ExperienceMutationResponse {
+  experience?: { id?: number };
+}
+interface QualificationMutationResponse {
+  qualification?: { id?: number };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+/**
+ * consultation_fee comes from the API as a string "100.00".
+ * Always coerce to number before formatting.
+ */
+const formatFee = (fee: number | string, currency: string) =>
+  `${currency} ${Number(fee).toLocaleString()}`;
+
+/**
+ * API returns full ISO timestamps for date fields on qualifications
+ * (e.g. "2026-06-01T22:00:00.000000Z"). Convert to "MMM YYYY" for display
+ * and to "YYYY-MM-DD" for <input type="date"> defaultValues.
+ */
+const formatDateDisplay = (d: string) =>
+  d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" }) : "—";
+
+/** Strips ISO timestamp to YYYY-MM-DD for <input type="date"> */
+const toDateInputValue = (isoOrDate: string | null | undefined): string => {
+  if (!isoOrDate) return "";
+  // already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoOrDate)) return isoOrDate;
+  const d = new Date(isoOrDate);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // API ↔ Form shape mappers
 // ─────────────────────────────────────────────────────────────────────────────
 function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
   return {
     personal: {
-      specialization: doc.specialization ?? "",
-      doctor_degree: doc.doctor_degree ?? "",
-      medical_license: doc.medical_license ?? "",
-      designations: "",
-      bio_en: doc.bio_en ?? "",
-      bio_fr: "",
-      bio_kiny: "",
-      consultation_fee: 0,
-      currency: "RWF",
+      specialization:    doc.specialization    ?? "",
+      doctor_degree:     doc.doctor_degree     ?? "",
+      medical_license:   doc.medical_license   ?? "",
+      // FIX: designations was hardcoded to "" — pull from API
+      designations:      doc.designations      ?? "",
+      bio_en:            doc.bio_en            ?? "",
+      // FIX: bio_fr / bio_kiny were hardcoded to "" — pull from API
+      bio_fr:            doc.bio_fr            ?? "",
+      bio_kiny:          doc.bio_kiny          ?? "",
+      // FIX: consultation_fee was hardcoded to 0 — parse from API string "100.00"
+      consultation_fee:  parseFloat(String(doc.consultation_fee ?? "0")) || 0,
+      currency:          doc.currency          ?? "RWF",
       consultation_type: doc.consultation_type ?? "both",
       preferred_language: doc.preferred_language ?? "en",
     },
     specializations: {
-      primary: doc.specialization ?? "",
-      secondary: [],
-      custom_tags: [],
+      // FIX: primary was coming from doc.specialization correctly but secondary
+      // was always [] even though the API returns doc.specializations[]
+      primary:             doc.specialization ?? "",
+      secondary:           (doc.specializations ?? []).map((s: any) => s.name ?? s),
+      custom_tags:         [],
       years_of_experience: 0,
-      subspecialties: "",
+      subspecialties:      "",
     },
     education: (doc.educations ?? []).map((e) => ({
-      id: String(e.id),
-      apiId: e.id,
-      degree: e.degree,
+      id:         String(e.id),
+      apiId:      e.id,
+      degree:     e.degree,
       institution: e.institution,
-      country: e.country,
-      start_year: e.start_year,
-      end_year: e.end_year ?? new Date().getFullYear(),
+      country:    e.country,
+      // FIX: API returns start_year/end_year as strings "2020"/"2026"
+      start_year: Number(e.start_year),
+      end_year:   Number(e.end_year ?? new Date().getFullYear()),
     })),
     experience: (doc.experiences ?? []).map((e) => ({
-      id: String(e.id),
-      apiId: e.id,
-      job_title: e.job_title,
-      workplace: e.workplace,
-      country: e.country,
-      start_date: e.start_date,
-      end_date: e.end_date ?? null,
-      is_current: e.is_current,
+      id:         String(e.id),
+      apiId:      e.id,
+      job_title:  e.job_title,
+      workplace:  e.workplace,
+      country:    e.country,
+      // FIX: dates may be ISO timestamps — normalise to YYYY-MM-DD for date inputs
+      start_date: toDateInputValue(e.start_date),
+      end_date:   e.end_date ? toDateInputValue(e.end_date) : null,
+      is_current: Boolean(e.is_current),
     })),
     qualifications: (doc.qualifications ?? []).map((q) => ({
-      id: String(q.id),
-      apiId: q.id,
-      title: q.title,
+      id:          String(q.id),
+      apiId:       q.id,
+      title:       q.title,
       issuing_body: q.issuing_body,
-      issued_at: q.issued_at,
-      expires_at: q.expires_at ?? "",
+      // FIX: issued_at / expires_at come as ISO timestamps — normalise for date inputs
+      issued_at:   toDateInputValue(q.issued_at),
+      expires_at:  q.expires_at ? toDateInputValue(q.expires_at) : "",
     })),
-    documents: { profile_image: null, degree_document: null, license_document: null },
+    documents:    { profile_image: null, degree_document: null, license_document: null },
     linksSection: {
-      linkedin: doc.social_links?.linkedin ?? "",
-      twitter: doc.social_links?.twitter ?? "",
-      facebook: doc.social_links?.facebook ?? "",
-      instagram: doc.social_links?.instagram ?? "",
-      website: "",
-      youtube: "",
+      // FIX: social_links is null in API — safe fallback
+      linkedin:    doc.social_links?.linkedin    ?? "",
+      twitter:     doc.social_links?.twitter     ?? "",
+      facebook:    doc.social_links?.facebook    ?? "",
+      instagram:   doc.social_links?.instagram   ?? "",
+      website:     "",
+      youtube:     "",
       researchgate: "",
-      orcid: "",
+      orcid:       "",
     },
   };
+}
+
+/**
+ * Determines which steps have actual saved data so the sidebar can show the
+ * correct initial save-state badges and so the view/form mode per-step can
+ * be decided.
+ */
+function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
+  const s: StepSaveStates = {};
+  if (d.personal.specialization || d.personal.doctor_degree || d.personal.medical_license)
+    s["personal"] = "saved";
+  if (d.specializations.primary)
+    s["specializations"] = "saved";
+  if (d.education.length)
+    s["education"] = "saved";
+  if (d.experience.length)
+    s["experience"] = "saved";
+  if (d.qualifications.length)
+    s["qualifications"] = "saved";
+  if (Object.values(d.linksSection).some(Boolean))
+    s["linksSection"] = "saved";
+  return s;
+}
+
+/** Returns true if a given step has any saved data */
+function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
+  if (!data) return false;
+  switch (stepId) {
+    case "personal":        return !!(data.personal.specialization || data.personal.doctor_degree);
+    case "specializations": return !!data.specializations.primary;
+    case "education":       return data.education.length > 0;
+    case "experience":      return data.experience.length > 0;
+    case "qualifications":  return data.qualifications.length > 0;
+    case "documents":       return !!(data.documents.profile_image || data.documents.degree_document || data.documents.license_document);
+    case "linksSection":    return Object.values(data.linksSection).some(Boolean);
+    default:                return false;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -210,13 +300,13 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
 // ─────────────────────────────────────────────────────────────────────────────
 const CURRENCIES = ["RWF", "USD", "EUR"];
 const CONSULTATION_TYPES = [
-  { value: "online", label: "Online only" },
+  { value: "online",    label: "Online only" },
   { value: "in_person", label: "In-person only" },
-  { value: "both", label: "Both" },
+  { value: "both",      label: "Both" },
 ];
 const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "fr", label: "French" },
+  { value: "en",   label: "English" },
+  { value: "fr",   label: "French" },
   { value: "kiny", label: "Kinyarwanda" },
 ];
 const COMMON_SPECIALIZATIONS = [
@@ -228,38 +318,28 @@ const COMMON_SPECIALIZATIONS = [
   "Pulmonology","Gastroenterology","Hematology",
 ];
 const SOCIAL_PLATFORMS: Array<{ key: keyof SocialLinksInfo; label: string; placeholder: string }> = [
-  { key: "linkedin",    label: "LinkedIn",         placeholder: "https://linkedin.com/in/your-profile" },
-  { key: "twitter",     label: "X / Twitter",      placeholder: "https://x.com/your-handle" },
-  { key: "facebook",    label: "Facebook",         placeholder: "https://facebook.com/your-page" },
-  { key: "instagram",   label: "Instagram",        placeholder: "https://instagram.com/your-handle" },
-  { key: "website",     label: "Personal website", placeholder: "https://yourwebsite.com" },
-  { key: "youtube",     label: "YouTube",          placeholder: "https://youtube.com/@your-channel" },
-  { key: "researchgate",label: "ResearchGate",     placeholder: "https://researchgate.net/profile/your-name" },
-  { key: "orcid",       label: "ORCID",            placeholder: "https://orcid.org/0000-0000-0000-0000" },
+  { key: "linkedin",     label: "LinkedIn",         placeholder: "https://linkedin.com/in/your-profile" },
+  { key: "twitter",      label: "X / Twitter",      placeholder: "https://x.com/your-handle" },
+  { key: "facebook",     label: "Facebook",         placeholder: "https://facebook.com/your-page" },
+  { key: "instagram",    label: "Instagram",        placeholder: "https://instagram.com/your-handle" },
+  { key: "website",      label: "Personal website", placeholder: "https://yourwebsite.com" },
+  { key: "youtube",      label: "YouTube",          placeholder: "https://youtube.com/@your-channel" },
+  { key: "researchgate", label: "ResearchGate",     placeholder: "https://researchgate.net/profile/your-name" },
+  { key: "orcid",        label: "ORCID",            placeholder: "https://orcid.org/0000-0000-0000-0000" },
 ];
 const STEPS = [
-  { id: "personal"       as const, label: "Personal",       icon: User,         sectionTitle: "Professional information",       description: "Specialization, degree, license, bio & fees" },
-  { id: "specializations"as const, label: "Specializations",icon: Stethoscope,  sectionTitle: "Specializations",                description: "Primary & secondary medical specializations" },
-  { id: "education"      as const, label: "Education",      icon: GraduationCap,sectionTitle: "Education history",              description: "Degrees and academic background" },
-  { id: "experience"     as const, label: "Experience",     icon: Briefcase,    sectionTitle: "Work experience",                description: "Past and current positions" },
-  { id: "qualifications" as const, label: "Qualifications", icon: Award,        sectionTitle: "Certifications & qualifications",description: "Certifications and licenses" },
-  { id: "documents"      as const, label: "Documents",      icon: FileText,     sectionTitle: "Upload documents",               description: "Profile photo and official docs" },
-  { id: "linksSection"   as const, label: "Social Links",   icon: Link2,        sectionTitle: "Social & online presence",       description: "LinkedIn, website, ResearchGate & more" },
+  { id: "personal"        as const, label: "Personal",        icon: User,          sectionTitle: "Professional information",        description: "Specialization, degree, license, bio & fees" },
+  { id: "specializations" as const, label: "Specializations", icon: Stethoscope,   sectionTitle: "Specializations",                 description: "Primary & secondary medical specializations" },
+  { id: "education"       as const, label: "Education",       icon: GraduationCap, sectionTitle: "Education history",               description: "Degrees and academic background" },
+  { id: "experience"      as const, label: "Experience",      icon: Briefcase,     sectionTitle: "Work experience",                 description: "Past and current positions" },
+  { id: "qualifications"  as const, label: "Qualifications",  icon: Award,         sectionTitle: "Certifications & qualifications", description: "Certifications and licenses" },
+  { id: "documents"       as const, label: "Documents",       icon: FileText,      sectionTitle: "Upload documents",                description: "Profile photo and official docs" },
+  { id: "linksSection"    as const, label: "Social Links",    icon: Link2,         sectionTitle: "Social & online presence",        description: "LinkedIn, website, ResearchGate & more" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helpers
+// Skeleton Components
 // ─────────────────────────────────────────────────────────────────────────────
-const uid = () => Math.random().toString(36).slice(2, 9);
-const formatFee = (fee: number, currency: string) => `${currency} ${fee.toLocaleString()}`;
-const formatDateDisplay = (d: string) =>
-  d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short" }) : "—";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton Components — shown while background-refetching
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Skeleton for the stats bar */
 const StatsSkeleton = React.memo(function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
@@ -274,7 +354,6 @@ const StatsSkeleton = React.memo(function StatsSkeleton() {
   );
 });
 
-/** Skeleton for the sidebar */
 const SidebarSkeleton = React.memo(function SidebarSkeleton() {
   return (
     <div className="w-full sm:w-56 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
@@ -306,11 +385,9 @@ const SidebarSkeleton = React.memo(function SidebarSkeleton() {
   );
 });
 
-/** Skeleton for the main content panel */
 const ContentSkeleton = React.memo(function ContentSkeleton() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Header bar */}
       <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Skeleton className="w-1.5 h-1.5 rounded-full" />
@@ -318,9 +395,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
         </div>
         <Skeleton className="h-7 w-14 rounded-md" />
       </div>
-      {/* Body */}
       <div className="flex-1 p-4 sm:p-5 space-y-5">
-        {/* Field grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-1.5">
@@ -329,14 +404,12 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
             </div>
           ))}
         </div>
-        {/* Bio block */}
         <div className="border-t border-border pt-4 space-y-2">
           <Skeleton className="h-2 w-16 rounded" />
           <Skeleton className="h-3 w-full rounded" />
           <Skeleton className="h-3 w-5/6 rounded" />
           <Skeleton className="h-3 w-4/6 rounded" />
         </div>
-        {/* Entry cards */}
         <div className="space-y-3 pt-2">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="rounded-md border border-border bg-muted/40 p-4 space-y-3">
@@ -411,7 +484,7 @@ const FormField = React.memo(function FormField({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ViewField
+// ViewField — fixed alignment: label always same height, value never wraps awkwardly
 // ─────────────────────────────────────────────────────────────────────────────
 const ViewField = React.memo(function ViewField({
   label, value, mono = false,
@@ -419,11 +492,39 @@ const ViewField = React.memo(function ViewField({
   label: string; value?: string | number | null; mono?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className={cn("text-[12px] font-medium text-foreground", mono && "font-mono")}>
+    <div className="flex flex-col gap-1 min-w-0">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
+        {label}
+      </span>
+      <span className={cn(
+        "text-[13px] font-medium text-foreground leading-snug break-words",
+        mono && "font-mono text-[12px]",
+        !value && "text-muted-foreground/50 italic",
+      )}>
         {value || "—"}
       </span>
+    </div>
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmptyStepPrompt — shown in view mode when a step has no data yet
+// ─────────────────────────────────────────────────────────────────────────────
+const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
+  label, onFill,
+}: { label: string; onFill: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-lg bg-muted/30">
+      <div className="rounded-full bg-muted p-3">
+        <Plus className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-foreground">No {label.toLowerCase()} added yet</p>
+        <p className="text-[12px] text-muted-foreground">Fill in this section to complete your profile.</p>
+      </div>
+      <Button onClick={onFill} size="sm" className="text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+        <Pencil className="h-3 w-3" /> Add {label}
+      </Button>
     </div>
   );
 });
@@ -441,53 +542,55 @@ const ViewPersonal = React.memo(function ViewPersonal({ data }: { data: DoctorPr
     () => LANGUAGES.find((l) => l.value === p.preferred_language)?.label ?? p.preferred_language,
     [p.preferred_language],
   );
+  // FIX: consultation_fee may be a string from the API — always coerce
   const feeDisplay = useMemo(
-    () => (p.consultation_fee ? formatFee(p.consultation_fee, p.currency) : null),
+    () => {
+      const fee = Number(p.consultation_fee);
+      return fee > 0 ? formatFee(fee, p.currency) : null;
+    },
     [p.consultation_fee, p.currency],
   );
+
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+    <div className="space-y-6">
+      {/* Primary info grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
         <ViewField label="Specialization"     value={p.specialization} />
         <ViewField label="Doctor degree"      value={p.doctor_degree} />
         <ViewField label="Medical license"    value={p.medical_license} mono />
         <ViewField label="Designation"        value={p.designations} />
         <ViewField label="Consultation type"  value={consultationTypeLabel} />
         <ViewField label="Preferred language" value={languageLabel} />
-        <ViewField label="Consultation fee"   value={feeDisplay} />
+        {feeDisplay && <ViewField label="Consultation fee" value={feeDisplay} />}
       </div>
-      {p.bio_en && (
-        <div className="border-t border-border pt-4 space-y-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Bio (English)</span>
-          <p className="text-[12px] text-foreground leading-relaxed">{p.bio_en}</p>
+
+      {/* Bio sections — each in its own clearly separated block */}
+      {[
+        { lang: "English",     value: p.bio_en   },
+        { lang: "French",      value: p.bio_fr   },
+        { lang: "Kinyarwanda", value: p.bio_kiny },
+      ].filter(b => b.value).map(({ lang, value }) => (
+        <div key={lang} className="border-t border-border pt-5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            Bio ({lang})
+          </p>
+          <p className="text-[13px] text-foreground leading-relaxed">{value}</p>
         </div>
-      )}
-      {p.bio_fr && (
-        <div className="border-t border-border pt-4 space-y-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Bio (French)</span>
-          <p className="text-[12px] text-foreground leading-relaxed">{p.bio_fr}</p>
-        </div>
-      )}
-      {p.bio_kiny && (
-        <div className="border-t border-border pt-4 space-y-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Bio (Kinyarwanda)</span>
-          <p className="text-[12px] text-foreground leading-relaxed">{p.bio_kiny}</p>
-        </div>
-      )}
+      ))}
     </div>
   );
 });
 
 const ViewSpecializations = React.memo(function ViewSpecializations({ data }: { data: DoctorProfileData }) {
   const s = data.specializations;
-  if (!s.primary) return <p className="text-xs text-muted-foreground">No specializations added yet.</p>;
+  if (!s.primary) return null; // caller handles empty state
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <ViewField label="Primary specialization" value={s.primary} />
       {s.years_of_experience > 0 && <ViewField label="Years of experience" value={`${s.years_of_experience} years`} />}
       {s.subspecialties && <ViewField label="Subspecialties" value={s.subspecialties} />}
       {s.secondary.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Secondary specializations</span>
           <div className="flex flex-wrap gap-1.5">
             {s.secondary.map((spec) => (
@@ -497,7 +600,7 @@ const ViewSpecializations = React.memo(function ViewSpecializations({ data }: { 
         </div>
       )}
       {s.custom_tags.length > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Custom tags</span>
           <div className="flex flex-wrap gap-1.5">
             {s.custom_tags.map((tag) => (
@@ -511,14 +614,13 @@ const ViewSpecializations = React.memo(function ViewSpecializations({ data }: { 
 });
 
 const ViewEducation = React.memo(function ViewEducation({ data }: { data: DoctorProfileData }) {
-  if (data.education.length === 0)
-    return <p className="text-xs text-muted-foreground">No education entries added yet.</p>;
+  if (data.education.length === 0) return null;
   return (
     <div className="space-y-3">
       {data.education.map((edu) => (
-        <div key={edu.id} className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
-          <p className="text-[12px] font-semibold text-foreground">{edu.degree}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div key={edu.id} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+          <p className="text-[13px] font-semibold text-foreground capitalize">{edu.degree}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
             <ViewField label="Institution" value={edu.institution} />
             <ViewField label="Country"     value={edu.country} />
             <ViewField label="Period"      value={`${edu.start_year} – ${edu.end_year}`} />
@@ -530,19 +632,18 @@ const ViewEducation = React.memo(function ViewEducation({ data }: { data: Doctor
 });
 
 const ViewExperience = React.memo(function ViewExperience({ data }: { data: DoctorProfileData }) {
-  if (data.experience.length === 0)
-    return <p className="text-xs text-muted-foreground">No experience entries added yet.</p>;
+  if (data.experience.length === 0) return null;
   return (
     <div className="space-y-3">
       {data.experience.map((exp) => (
-        <div key={exp.id} className="rounded-md border border-border bg-muted/40 p-4 space-y-2">
+        <div key={exp.id} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[12px] font-semibold text-foreground">{exp.job_title}</p>
+            <p className="text-[13px] font-semibold text-foreground">{exp.job_title}</p>
             {exp.is_current && (
               <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-primary/15 text-primary">Current</span>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
             <ViewField label="Workplace" value={exp.workplace} />
             <ViewField label="Country"   value={exp.country} />
             <ViewField
@@ -561,24 +662,26 @@ const ViewExperience = React.memo(function ViewExperience({ data }: { data: Doct
 });
 
 const ViewQualifications = React.memo(function ViewQualifications({ data }: { data: DoctorProfileData }) {
-  if (data.qualifications.length === 0)
-    return <p className="text-xs text-muted-foreground">No qualifications added yet.</p>;
+  if (data.qualifications.length === 0) return null;
   const now = new Date();
   return (
     <div className="space-y-3">
       {data.qualifications.map((q) => {
         const isExpired = q.expires_at && new Date(q.expires_at) < now;
         return (
-          <div key={q.id} className={cn("rounded-md border p-4 space-y-2", isExpired ? "border-destructive/20 bg-destructive/5" : "border-primary/20 bg-primary/5")}>
-            <p className="text-[12px] font-semibold text-foreground">{q.title}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div key={q.id} className={cn(
+            "rounded-lg border p-4 space-y-3",
+            isExpired ? "border-destructive/30 bg-destructive/5" : "border-primary/20 bg-primary/5",
+          )}>
+            <p className="text-[13px] font-semibold text-foreground">{q.title}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
               <ViewField label="Issuing body" value={q.issuing_body} />
               <ViewField label="Issued"       value={formatDateDisplay(q.issued_at)} />
               {q.expires_at && (
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Expires</span>
-                  <span className={cn("text-[12px] font-medium", isExpired ? "text-destructive" : "text-primary")}>
-                    {isExpired ? "Expired " : ""}{formatDateDisplay(q.expires_at)}
+                <div className="flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Expires</span>
+                  <span className={cn("text-[13px] font-medium leading-snug", isExpired ? "text-destructive" : "text-primary")}>
+                    {isExpired ? "Expired · " : ""}{formatDateDisplay(q.expires_at)}
                   </span>
                 </div>
               )}
@@ -599,17 +702,16 @@ const ViewDocuments = React.memo(function ViewDocuments({ data }: { data: Doctor
     ] as [string, File | null | undefined][]).filter((entry): entry is [string, File] => !!entry[1])
   ), [data.documents]);
 
-  if (filledDocs.length === 0)
-    return <p className="text-xs text-muted-foreground">No documents uploaded yet.</p>;
+  if (filledDocs.length === 0) return null;
 
   return (
     <div className="space-y-3">
       {filledDocs.map(([label, file]) => (
-        <div key={label} className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-4 py-3">
+        <div key={label} className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
           <FileText className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
-            <p className="text-[12px] font-medium text-foreground truncate">{file.name}</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{file.name}</p>
           </div>
         </div>
       ))}
@@ -622,8 +724,7 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({ data }: { data: Do
     () => SOCIAL_PLATFORMS.filter(({ key }) => !!data.linksSection[key]),
     [data.linksSection],
   );
-  if (filledLinks.length === 0)
-    return <p className="text-xs text-muted-foreground">No social links added yet.</p>;
+  if (filledLinks.length === 0) return null;
   return (
     <div className="grid grid-cols-1 gap-2">
       {filledLinks.map(({ key, label }) => (
@@ -632,10 +733,10 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({ data }: { data: Do
           href={data.linksSection[key]}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
         >
           <Link2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
-          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide w-24 shrink-0">{label}</span>
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide w-28 shrink-0">{label}</span>
           <span className="text-[12px] text-primary truncate">{data.linksSection[key]}</span>
         </a>
       ))}
@@ -643,15 +744,33 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({ data }: { data: Do
   );
 });
 
-function SectionViewPanel({ stepId, data }: { stepId: typeof STEPS[number]["id"]; data: DoctorProfileData }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// SectionViewPanel — wraps view component, delegates empty state to caller
+// ─────────────────────────────────────────────────────────────────────────────
+function SectionViewPanel({
+  stepId, data, onFill,
+}: {
+  stepId: typeof STEPS[number]["id"];
+  data: DoctorProfileData;
+  onFill: () => void;
+}) {
+  const hasData = stepHasData(stepId, data);
+  const stepLabel = STEPS.find(s => s.id === stepId)?.label ?? stepId;
+
+  // FIX: if this step has no data at all, show the "add" prompt instead of a blank view
+  if (!hasData) {
+    return <EmptyStepPrompt label={stepLabel} onFill={onFill} />;
+  }
+
   switch (stepId) {
-    case "personal":       return <ViewPersonal        data={data} />;
-    case "specializations":return <ViewSpecializations data={data} />;
-    case "education":      return <ViewEducation       data={data} />;
-    case "experience":     return <ViewExperience      data={data} />;
-    case "qualifications": return <ViewQualifications  data={data} />;
-    case "documents":      return <ViewDocuments       data={data} />;
-    case "linksSection":   return <ViewSocialLinks     data={data} />;
+    case "personal":        return <ViewPersonal        data={data} />;
+    case "specializations": return <ViewSpecializations data={data} />;
+    case "education":       return <ViewEducation       data={data} />;
+    case "experience":      return <ViewExperience      data={data} />;
+    case "qualifications":  return <ViewQualifications  data={data} />;
+    case "documents":       return <ViewDocuments       data={data} />;
+    case "linksSection":    return <ViewSocialLinks     data={data} />;
+    default:                return null;
   }
 }
 
@@ -678,12 +797,14 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
 
   const profileSummary = useMemo(() => {
     if (!profileData) return null;
+    const fee = Number(profileData.personal.consultation_fee);
     return {
-      initials: profileData.personal.specialization.slice(0, 2).toUpperCase() || "DR",
+      initials:      profileData.personal.specialization.slice(0, 2).toUpperCase() || "DR",
       specialization: profileData.personal.specialization,
-      license: profileData.personal.medical_license,
-      degree: profileData.personal.doctor_degree,
-      fee: formatFee(profileData.personal.consultation_fee, profileData.personal.currency),
+      license:       profileData.personal.medical_license,
+      degree:        profileData.personal.doctor_degree,
+      // FIX: coerce fee from string before formatting
+      fee:           fee > 0 ? formatFee(fee, profileData.personal.currency) : "—",
     };
   }, [profileData]);
 
@@ -718,9 +839,9 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
                 { label: "Degree", value: profileSummary.degree },
                 { label: "Fee",    value: profileSummary.fee },
               ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-center">
-                  <span className="text-[10px] text-muted-foreground">{label}</span>
-                  <span className="text-[10px] font-medium text-foreground">{value}</span>
+                <div key={label} className="flex justify-between items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
+                  <span className="text-[10px] font-medium text-foreground truncate text-right">{value}</span>
                 </div>
               ))}
             </div>
@@ -736,6 +857,8 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
           const saveState = stepSaveStates[step.id] ?? "idle";
           const isSaved = saveState === "saved";
           const isDirty = saveState === "dirty";
+          // FIX: in view mode show a subtle "empty" indicator on steps with no data
+          const isEmpty = !isForm && !stepHasData(step.id, profileData);
 
           return (
             <button
@@ -745,7 +868,9 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
                 "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150 cursor-pointer",
                 isActive
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  : isEmpty
+                    ? "text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <div className={cn(
@@ -753,16 +878,25 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
                 isActive  ? "bg-primary border-primary text-primary-foreground"
                 : isSaved ? "bg-primary/20 border-primary/40 text-primary"
                 : isDirty ? "bg-amber-500/20 border-amber-500/40 text-amber-600"
+                : isEmpty ? "bg-muted/50 border-border/50 text-muted-foreground/40"
                           : "bg-muted border-border text-muted-foreground",
               )}>
                 {isSaved ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
               </div>
               <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
-                  <span className={cn("text-xs font-medium leading-tight truncate", isActive ? "text-primary" : "")}>
+                  <span className={cn(
+                    "text-xs font-medium leading-tight truncate",
+                    isActive ? "text-primary" : isEmpty ? "text-muted-foreground/50" : "",
+                  )}>
                     {step.label}
                   </span>
-                  {isForm && <StepSaveStatusBadge state={isActive ? "idle" : saveState} />}
+                  {isForm
+                    ? <StepSaveStatusBadge state={isActive ? "idle" : saveState} />
+                    : isEmpty
+                      ? <span className="text-[9px] text-muted-foreground/40 shrink-0">Empty</span>
+                      : null
+                  }
                 </div>
                 <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
                   {step.description}
@@ -773,14 +907,21 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
         })}
       </div>
 
-      {/* Footer actions */}
+      {/* Footer actions — FIX: no Edit button when step has no data (handled by EmptyStepPrompt instead) */}
       {!isForm && profileData && (
         <div className="p-2 sm:p-3 border-t border-border flex flex-row sm:flex-col gap-2">
-          <Button onClick={onEdit} className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8">
+          <Button
+            onClick={onEdit}
+            className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
+          >
             <Pencil size={12} /> Edit profile
           </Button>
-          <Button variant="outline" onClick={onDelete} className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8">
-            <Trash2 size={12} /> Delete profile
+          <Button
+            variant="outline"
+            onClick={onDelete}
+            className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
+          >
+            <Trash2 size={12} /> Delete
           </Button>
         </div>
       )}
@@ -815,7 +956,7 @@ const EntryCard = React.memo(function EntryCard({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Step form sub-components
+// Step form sub-components (unchanged logic, minor style consistency)
 // ─────────────────────────────────────────────────────────────────────────────
 const SpecializationsStep = React.memo(function SpecializationsStep({
   data, onChange,
@@ -886,9 +1027,7 @@ const SpecializationsStep = React.memo(function SpecializationsStep({
             {(data.custom_tags ?? []).map((tag) => (
               <span key={tag} className="flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
                 {tag}
-                <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors">
-                  <X className="h-2.5 w-2.5" />
-                </button>
+                <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors"><X className="h-2.5 w-2.5" /></button>
               </span>
             ))}
           </div>
@@ -1065,7 +1204,7 @@ const FileUploadBox = React.memo(function FileUploadBox({
 // DoctorProfileForm
 // ─────────────────────────────────────────────────────────────────────────────
 const DEFAULT_SPECIALIZATIONS: SpecializationsInfo = { primary: "", secondary: [], custom_tags: [], years_of_experience: 0, subspecialties: "" };
-const DEFAULT_SOCIAL_LINKS: SocialLinksInfo = { linkedin: "", twitter: "", facebook: "", instagram: "", website: "", youtube: "", researchgate: "", orcid: "" };
+const DEFAULT_SOCIAL_LINKS: SocialLinksInfo        = { linkedin: "", twitter: "", facebook: "", instagram: "", website: "", youtube: "", researchgate: "", orcid: "" };
 
 function DoctorProfileForm({
   mode, defaultData, currentStep, onStepChange, onCancel, stepSaveStates, onSaveStep,
@@ -1137,13 +1276,13 @@ function DoctorProfileForm({
       <div key={currentStep} className="flex-1 overflow-y-auto p-4 sm:p-5">
         {step.id === "personal" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Specialization *" error={errors.specialization?.message}><Input {...register("specialization", { required: "Required" })} placeholder="General Practitioner" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
-            <FormField label="Doctor degree *"  error={errors.doctor_degree?.message}><Input {...register("doctor_degree",  { required: "Required" })} placeholder="MBBS" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
+            <FormField label="Specialization *"  error={errors.specialization?.message}><Input {...register("specialization", { required: "Required" })} placeholder="General Practitioner" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
+            <FormField label="Doctor degree *"   error={errors.doctor_degree?.message}><Input {...register("doctor_degree",  { required: "Required" })} placeholder="MBBS" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
             <FormField label="Medical license *" error={errors.medical_license?.message}><Input {...register("medical_license", { required: "Required" })} placeholder="RW-MED-2024-001" className="border-border focus-visible:ring-primary font-mono text-xs h-9" /></FormField>
-            <FormField label="Designations"><Input {...register("designations")} placeholder="Senior Doctor" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
-            <FormField label="Bio (English) *" error={errors.bio_en?.message} className="col-span-1 sm:col-span-2"><Textarea {...register("bio_en", { required: "Required" })} placeholder="Experienced doctor with 10 years in general medicine" className="border-border focus-visible:ring-primary text-xs resize-none" rows={2} /></FormField>
-            <FormField label="Bio (French)" className="col-span-1 sm:col-span-2"><Textarea {...register("bio_fr")} placeholder="Médecin expérimenté avec 10 ans en médecine générale" className="border-border focus-visible:ring-primary text-xs resize-none" rows={2} /></FormField>
-            <FormField label="Bio (Kinyarwanda)" className="col-span-1 sm:col-span-2"><Textarea {...register("bio_kiny")} placeholder="Umuganga w'inzobere ufite imyaka 10" className="border-border focus-visible:ring-primary text-xs resize-none" rows={2} /></FormField>
+            <FormField label="Designations"><Input {...register("designations")} placeholder="Dr. John Doe" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
+            <FormField label="Bio (English) *"   error={errors.bio_en?.message} className="col-span-1 sm:col-span-2"><Textarea {...register("bio_en", { required: "Required" })} placeholder="Experienced doctor with 10 years in general medicine" className="border-border focus-visible:ring-primary text-xs resize-none" rows={3} /></FormField>
+            <FormField label="Bio (French)"       className="col-span-1 sm:col-span-2"><Textarea {...register("bio_fr")}   placeholder="Médecin expérimenté avec 10 ans en médecine générale" className="border-border focus-visible:ring-primary text-xs resize-none" rows={2} /></FormField>
+            <FormField label="Bio (Kinyarwanda)"  className="col-span-1 sm:col-span-2"><Textarea {...register("bio_kiny")} placeholder="Umuganga w'inzobere ufite imyaka 10" className="border-border focus-visible:ring-primary text-xs resize-none" rows={2} /></FormField>
             <FormField label="Consultation fee *" error={errors.consultation_fee?.message}><Input type="number" {...register("consultation_fee", { required: "Required", min: { value: 0, message: "Must be positive" }, valueAsNumber: true })} placeholder="5000" className="border-border focus-visible:ring-primary text-xs h-9" /></FormField>
             <FormField label="Currency">
               <Select defaultValue={defaultData?.personal?.currency ?? "RWF"} onValueChange={(v) => setValue("currency", v)}>
@@ -1206,12 +1345,10 @@ type Mode = "view" | "create" | "edit";
 const DoctorProfile = () => {
   const { t } = useTranslation();
 
-  // ── FIX 1: use placeholderData so cached data shows immediately on tab return
-  // while isFetching drives skeleton overlays instead of isLoading driving a spinner
   const {
     data: apiData,
-    isLoading: isLoadingProfile,   // true only on the very first load (no cache)
-    isFetching: isFetchingProfile, // true on every background refetch
+    isLoading:  isLoadingProfile,
+    isFetching: isFetchingProfile,
   } = useGetDoctorProfile();
 
   const upsertProfile       = useUpsertDoctorProfile();
@@ -1237,14 +1374,7 @@ const DoctorProfile = () => {
       const mapped = mapApiProfileToFormData(apiData.doctor);
       setProfileData(mapped);
       setMode("view");
-      const initial: StepSaveStates = {};
-      if (mapped.personal.specialization)                   initial["personal"]        = "saved";
-      if (mapped.specializations.primary)                   initial["specializations"] = "saved";
-      if (mapped.education.length)                          initial["education"]       = "saved";
-      if (mapped.experience.length)                         initial["experience"]      = "saved";
-      if (mapped.qualifications.length)                     initial["qualifications"]  = "saved";
-      if (Object.values(mapped.linksSection).some(Boolean)) initial["linksSection"]    = "saved";
-      setStepSaveStates(initial);
+      setStepSaveStates(computeInitialSaveStates(mapped));
     }
   }, [apiData]);
 
@@ -1252,6 +1382,14 @@ const DoctorProfile = () => {
 
   const setStepState = useCallback((stepId: string, state: StepSaveState) => {
     setStepSaveStates((prev) => ({ ...prev, [stepId]: state }));
+  }, []);
+
+  // ── FIX: when clicking "Add X" from an empty step prompt, open the edit form
+  //    at that specific step
+  const handleFillStep = useCallback((stepId: string) => {
+    const idx = STEPS.findIndex(s => s.id === stepId);
+    if (idx !== -1) setCurrentStep(idx);
+    setMode("edit");
   }, []);
 
   const syncEducation = useCallback(async (newEntries: EducationEntry[], oldEntries: EducationEntry[]): Promise<EducationEntry[]> => {
@@ -1262,11 +1400,11 @@ const DoctorProfile = () => {
     const updated: EducationEntry[] = [];
     for (const entry of newEntries) {
       if (entry.apiId) {
-        const res = await updateEducation.mutateAsync({ id: entry.apiId, degree: entry.degree, institution: entry.institution, country: entry.country, start_year: Number(entry.start_year), end_year: entry.end_year ? Number(entry.end_year) : null });
-        updated.push({ ...entry, apiId: (res as { education?: { id?: number } })?.education?.id ?? entry.apiId });
+        const res = await updateEducation.mutateAsync({ id: entry.apiId, degree: entry.degree, institution: entry.institution, country: entry.country, start_year: Number(entry.start_year), end_year: entry.end_year ? Number(entry.end_year) : null }) as EducationMutationResponse;
+        updated.push({ ...entry, apiId: res?.education?.id ?? entry.apiId });
       } else {
-        const res = await addEducation.mutateAsync({ degree: entry.degree, institution: entry.institution, country: entry.country, start_year: Number(entry.start_year), end_year: entry.end_year ? Number(entry.end_year) : null });
-        const newId = (res as { education?: { id?: number } })?.education?.id;
+        const res = await addEducation.mutateAsync({ degree: entry.degree, institution: entry.institution, country: entry.country, start_year: Number(entry.start_year), end_year: entry.end_year ? Number(entry.end_year) : null }) as EducationMutationResponse;
+        const newId = res?.education?.id;
         updated.push({ ...entry, apiId: newId, id: newId ? String(newId) : entry.id });
       }
     }
@@ -1281,11 +1419,11 @@ const DoctorProfile = () => {
     const updated: ExperienceEntry[] = [];
     for (const entry of newEntries) {
       if (entry.apiId) {
-        const res = await updateExperience.mutateAsync({ id: entry.apiId, job_title: entry.job_title, workplace: entry.workplace, country: entry.country, start_date: entry.start_date, end_date: entry.is_current ? null : (entry.end_date ?? null), is_current: Boolean(entry.is_current) });
-        updated.push({ ...entry, apiId: (res as { experience?: { id?: number } })?.experience?.id ?? entry.apiId });
+        const res = await updateExperience.mutateAsync({ id: entry.apiId, job_title: entry.job_title, workplace: entry.workplace, country: entry.country, start_date: entry.start_date, end_date: entry.is_current ? null : (entry.end_date ?? null), is_current: Boolean(entry.is_current) }) as ExperienceMutationResponse;
+        updated.push({ ...entry, apiId: res?.experience?.id ?? entry.apiId });
       } else {
-        const res = await addExperience.mutateAsync({ job_title: entry.job_title, workplace: entry.workplace, country: entry.country, start_date: entry.start_date, end_date: entry.is_current ? null : (entry.end_date ?? null), is_current: Boolean(entry.is_current) });
-        const newId = (res as { experience?: { id?: number } })?.experience?.id;
+        const res = await addExperience.mutateAsync({ job_title: entry.job_title, workplace: entry.workplace, country: entry.country, start_date: entry.start_date, end_date: entry.is_current ? null : (entry.end_date ?? null), is_current: Boolean(entry.is_current) }) as ExperienceMutationResponse;
+        const newId = res?.experience?.id;
         updated.push({ ...entry, apiId: newId, id: newId ? String(newId) : entry.id });
       }
     }
@@ -1300,11 +1438,11 @@ const DoctorProfile = () => {
     const updated: QualificationEntry[] = [];
     for (const entry of newEntries) {
       if (entry.apiId) {
-        const res = await updateQualification.mutateAsync({ id: entry.apiId, title: entry.title, issuing_body: entry.issuing_body, issued_at: entry.issued_at, expires_at: entry.expires_at || undefined, certificate_file: entry.certificate_file ?? undefined });
-        updated.push({ ...entry, apiId: (res as { qualification?: { id?: number } })?.qualification?.id ?? entry.apiId });
+        const res = await updateQualification.mutateAsync({ id: entry.apiId, title: entry.title, issuing_body: entry.issuing_body, issued_at: entry.issued_at, expires_at: entry.expires_at || undefined, certificate_file: entry.certificate_file ?? undefined }) as QualificationMutationResponse;
+        updated.push({ ...entry, apiId: res?.qualification?.id ?? entry.apiId });
       } else {
-        const res = await addQualification.mutateAsync({ title: entry.title, issuing_body: entry.issuing_body, issued_at: entry.issued_at, expires_at: entry.expires_at || undefined, certificate_file: entry.certificate_file ?? undefined });
-        const newId = (res as { qualification?: { id?: number } })?.qualification?.id;
+        const res = await addQualification.mutateAsync({ title: entry.title, issuing_body: entry.issuing_body, issued_at: entry.issued_at, expires_at: entry.expires_at || undefined, certificate_file: entry.certificate_file ?? undefined }) as QualificationMutationResponse;
+        const newId = res?.qualification?.id;
         updated.push({ ...entry, apiId: newId, id: newId ? String(newId) : entry.id });
       }
     }
@@ -1316,9 +1454,6 @@ const DoctorProfile = () => {
     try {
       switch (stepId) {
         case "personal": {
-          // ── FIX 2: Only send fields the API actually accepts on upsert.
-          // consultation_fee, currency, and designations are NOT in UpsertProfilePayload
-          // and caused the API to store "0.00" / "RWF" / null on creation.
           await upsertProfile.mutateAsync({
             specialization:     data.personal!.specialization,
             doctor_degree:      data.personal!.doctor_degree,
@@ -1331,10 +1466,11 @@ const DoctorProfile = () => {
             currency:           data.personal!.currency,
             bio_fr:             data.personal!.bio_fr,
             bio_kiny:           data.personal!.bio_kiny,
-            // ⬇ intentionally omitted: designation, consultation_fee, currency,
-            //   bio_fr, bio_kiny — these are not part of UpsertProfilePayload
           });
-          setProfileData((prev) => prev ? { ...prev, personal: data.personal! } : { ...({} as DoctorProfileData), personal: data.personal! });
+          setProfileData((prev) => prev
+            ? { ...prev, personal: data.personal! }
+            : { ...({} as DoctorProfileData), personal: data.personal! },
+          );
           break;
         }
         case "specializations": {
@@ -1395,19 +1531,20 @@ const DoctorProfile = () => {
 
   const stats = useMemo(() => {
     if (!profileData) return null;
+    // FIX: coerce fee from string
+    const fee = Number(profileData.personal.consultation_fee);
     return {
-      degree:         profileData.personal.doctor_degree,
-      license:        profileData.personal.medical_license,
+      degree:         profileData.personal.doctor_degree   || "—",
+      license:        profileData.personal.medical_license || "—",
       education:      profileData.education.length,
       experience:     profileData.experience.length,
       qualifications: profileData.qualifications.length,
-      fee:            formatFee(profileData.personal.consultation_fee, profileData.personal.currency),
+      fee:            fee > 0 ? formatFee(fee, profileData.personal.currency) : "—",
     };
   }, [profileData]);
 
   const activeStep = STEPS[currentStep];
 
-  // ── FIX 1 continued: hard spinner ONLY on the very first load (empty cache)
   if (isLoadingProfile) {
     return (
       <DashboardLayout role="doctor">
@@ -1435,7 +1572,7 @@ const DoctorProfile = () => {
       />
 
       <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
-        {/* Stats bar — view mode only; show skeletons while background-fetching */}
+        {/* Stats bar */}
         {!isForm && (
           isFetchingProfile && !profileData
             ? <StatsSkeleton />
@@ -1450,7 +1587,6 @@ const DoctorProfile = () => {
                     <StatCard label="Qualifications" value={stats.qualifications} sub="certs" />
                     <StatCard label="Consult fee"    value={stats.fee}            accent />
                   </div>
-                  {/* Subtle refetch indicator — top-right corner dot, no spinner */}
                   {isFetchingProfile && (
                     <span className="absolute top-1 right-1 flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -1464,7 +1600,6 @@ const DoctorProfile = () => {
 
         {/* Main card */}
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
-          {/* Sidebar: show skeleton overlay while background-fetching and no data yet */}
           {isFetchingProfile && !profileData
             ? <SidebarSkeleton />
             : (
@@ -1495,6 +1630,7 @@ const DoctorProfile = () => {
             <ContentSkeleton />
           ) : profileData ? (
             <div className="flex flex-col flex-1 min-h-0">
+              {/* Content header */}
               <div className="flex items-center justify-between gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
@@ -1502,26 +1638,33 @@ const DoctorProfile = () => {
                     {activeStep.sectionTitle}
                   </span>
                 </div>
-                {/* Inline refetch indicator next to Edit button */}
                 <div className="flex items-center gap-2">
                   {isFetchingProfile && (
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                       <Loader2 className="h-2.5 w-2.5 animate-spin" /> Syncing…
                     </span>
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={openEdit}
-                    className="h-7 text-[11px] gap-1.5 border-border text-muted-foreground hover:text-primary hover:border-primary"
-                  >
-                    <Pencil size={11} /> Edit
-                  </Button>
+                  {/* FIX: only show Edit button if this step actually has data */}
+                  {stepHasData(activeStep.id, profileData) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={openEdit}
+                      className="h-7 text-[11px] gap-1.5 border-border text-muted-foreground hover:text-primary hover:border-primary"
+                    >
+                      <Pencil size={11} /> Edit
+                    </Button>
+                  )}
                 </div>
               </div>
 
+              {/* Content body */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-                <SectionViewPanel stepId={activeStep.id} data={profileData} />
+                <SectionViewPanel
+                  stepId={activeStep.id}
+                  data={profileData}
+                  onFill={() => handleFillStep(activeStep.id)}
+                />
               </div>
             </div>
           ) : null}
