@@ -228,6 +228,8 @@
     "active_days": "jours actifs",
     "capacity": "Capacité",
     "booked": "Réservés",
+    "today_bookings": "Réservations aujourd'hui",
+    "today_appointments": "Rendez-vous aujourd'hui",
     "off_days": "Jours fermés",
     "service_period": "Période de service personnalisée",
     "date_range": "Plage de dates",
