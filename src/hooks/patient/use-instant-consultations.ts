@@ -11,12 +11,16 @@ export interface InstantConsultationRequestPayload {
   guest_name?: string;
 }
 
+// With this:
 export interface InstantConsultationRequestResponse {
   message: string;
-  /** UUID used to poll status — store this after the request */
+  is_existing?: boolean;
   guest_token: string;
   queue_position: number;
   people_ahead: number;
+  id: number;
+  amount: number;
+  payment_status: string;
 }
 
 export type ConsultationStatus = "pending" | "accepted" | "in_progress" | "rejected" | "cancelled";
@@ -81,5 +85,28 @@ export function useInstantConsultationStatus(
       return 3_000;
     },
     staleTime: 0,
+  });
+}
+
+
+// Add these types:
+export interface InstantConsultationPayResponse {
+  message: string;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
+}
+
+// Add this hook:
+export function useInstantConsultationPay() {
+  return useMutation<InstantConsultationPayResponse, Error, number>({
+    mutationKey: ["instant-consultation-pay"],
+    mutationFn: (id: number) =>
+      apiFetch<InstantConsultationPayResponse>(
+        `/public/instant-consultations/pay/${id}`,
+        { method: "POST" },
+      ),
   });
 }
