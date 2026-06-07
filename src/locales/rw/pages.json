@@ -240,6 +240,8 @@
     "tip_3": "· Gahunda zubahiriza ubushobozi n'imiterere",
     "daily_schedule": "Gahunda ya buri munsi",
     "no_schedule_yet": "Nta gahunda",
+    "today_bookings": "Imyanya yafashwe uyu munsi",
+    "today_appointments": "Gahunda z'uyu munsi",
     "days_configured": "Iminsi {{count}} yashyizweho",
     "no_schedule_hint": "Kora gahunda kugirango ushyireho buri munsi",
     "active": "Ikora",

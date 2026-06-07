@@ -243,6 +243,8 @@
     "days_configured": "{{count}} days configured",
     "no_schedule_hint": "Generate a schedule to configure each day individually",
     "active": "Active",
+    "today_bookings": "Bookings today",
+    "today_appointments": "Appointments today",
     "closed": "Closed",
     "booked_of": "{{booked}} / {{capacity}} booked",
     "schedule_generated": "Service schedule generated",
