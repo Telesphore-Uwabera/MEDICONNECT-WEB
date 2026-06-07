@@ -110,7 +110,8 @@ function MiniBar({ value, total, color }: { value: number; total: number; color:
 
 const HospitalAnalytics = () => {
   const { t } = useTranslation();
-  const { data, isLoading, isError } = useGetHospitalStats({ period: "month" });
+  const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
+
 
   /* ── Aliases ── */
   const today          = data?.today;
@@ -154,15 +155,15 @@ const HospitalAnalytics = () => {
   ] : [];
   const totalReviewsCount = starBreakdown.reduce((s, r) => s + r.value, 0);
 
-  if (isError) {
-    return (
-      <DashboardLayout role="hospital">
-        <div className="flex h-full items-center justify-center text-destructive text-sm">
-          {t("common.error_loading")}
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // if (isError) {
+  //   return (
+  //     <DashboardLayout role="hospital">
+  //       <div className="flex h-full items-center justify-center text-destructive text-sm">
+  //         {t("common.error_loading")}
+  //       </div>
+  //     </DashboardLayout>
+  //   );
+  // }
 
   return (
     <DashboardLayout role="hospital">
