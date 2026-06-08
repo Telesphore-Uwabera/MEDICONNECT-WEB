@@ -1279,7 +1279,6 @@
 
 
 
-
 // components/DoctorCard.tsx
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -1298,7 +1297,7 @@ import { ConnectDialogContent } from "@/components/ConnectDialog";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import type { ApiDoctor, ApiDoctorHospital, ApiDoctorSpecialization } from "@/hooks/patient/use-patient-doctor";
-import { readConsultSession } from "@/hooks/patient/se-consultation-session"
+import { readConsultSession } from "@/hooks/patient/se-consultation-session";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1765,6 +1764,7 @@ function UnifiedModal({
               </div>
             </>
           ) : (
+            // ConnectDialogContent owns the full session lifecycle — no startCall() here
             <ConnectDialogContent
               doctor={callDoctor}
               onMinimize={onMinimize}
@@ -1795,17 +1795,25 @@ export const DoctorCard = ({
 
   const [doctor, setDoctor] = useState<ApiDoctor>(doctorProp);
 
-  // Check for a saved (queue) session for this doctor on mount and after modal closes
+  // ── Saved-session state ──────────────────────────────────────────────────────
+  // Initialised from sessionStorage on mount. Re-checked every time the modal
+  // closes so the pill disappears once ConnectDialogContent clears the session.
   const [hasSavedSession, setHasSavedSession] = useState(
     () => !!readConsultSession(doctorProp.id),
   );
-  // Whether the user has dismissed the saved-session pill from this card
+  // Tracks whether the user explicitly dismissed the floating pill this session.
+  // Reset to false when a new session is saved (handled in the re-check effect).
   const [savedSessionPillDismissed, setSavedSessionPillDismissed] = useState(false);
 
-  // Re-check saved session whenever the modal closes (session may have been cleared inside)
+  // Re-check saved session whenever the modal closes.
+  // This catches both the "user resumed & cleared" and "user discarded" cases.
   useEffect(() => {
     if (!modalOpen) {
-      setHasSavedSession(!!readConsultSession(doctor.id));
+      const stillExists = !!readConsultSession(doctor.id);
+      setHasSavedSession(stillExists);
+      // If the session was just created (e.g. user minimised mid-request) and a
+      // pill was previously dismissed, un-dismiss it so the new pill is visible.
+      if (stillExists) setSavedSessionPillDismissed(false);
     }
   }, [modalOpen, doctor.id]);
 
@@ -1846,10 +1854,10 @@ export const DoctorCard = ({
   const canConnect = doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation;
   const canBook    = doctor.is_available && !doctor.bookings_paused;
 
-  // Show live resume pill when a call is running but modal is closed
+  // Show the live-call resume pill when a CallStore call is running but modal is closed
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
 
-  // Show saved-session pill when there's a saved queue session but NO live call
+  // Show the saved-session pill when sessionStorage has a token but NO live CallStore call
   const showSavedSessionPill =
     hasSavedSession &&
     !isCallInProgress &&
@@ -1857,19 +1865,25 @@ export const DoctorCard = ({
     !bookOpen &&
     !savedSessionPillDismissed;
 
+  // ── Open helpers ─────────────────────────────────────────────────────────────
+
   const openDetails = () => {
     setInitialMode("details");
     setModalOpen(true);
   };
 
+  // Opens directly to the connect panel (fresh start).
+  // NOTE: we do NOT call call.startCall() here — ConnectDialogContent owns the
+  // entire session lifecycle and calling startCall() would create a phantom
+  // parallel flow in CallStore.
   const openConnect = () => {
     if (!canConnect) return;
-    if (!isCallInProgress) call.startCall(callDoctor);
     setInitialMode("connect");
     setModalOpen(true);
   };
 
-  /** Open directly to connect mode to surface the resume banner */
+  // Opens directly to the connect panel so the resume banner inside
+  // ConnectDialogContent is the first thing the user sees.
   const openResume = () => {
     setInitialMode("connect");
     setModalOpen(true);
@@ -1879,6 +1893,9 @@ export const DoctorCard = ({
 
   const handleCloseCompletely = () => {
     setModalOpen(false);
+    // Only end the CallStore call if one is actually running (live call).
+    // Do NOT call endCall() for a saved-session resume — that's handled inside
+    // ConnectDialogContent (handleDiscardSession clears sessionStorage, not CallStore).
     if (isCallInProgress) call.endCall();
   };
 
@@ -1893,7 +1910,7 @@ export const DoctorCard = ({
           "overflow-hidden transition-all duration-200 cursor-pointer",
           "hover:shadow-md hover:-translate-y-px shadow-sm",
           isConnected && "ring-1 ring-emerald-500/30",
-          // Subtle violet ring when a saved session is pending
+          // Subtle violet ring when a saved queue session is pending
           hasSavedSession && !isCallInProgress && "ring-1 ring-violet-500/25",
         )}
         onClick={openDetails}
@@ -1927,6 +1944,7 @@ export const DoctorCard = ({
                   </p>
                 </div>
 
+                {/* Status badge — live call states take priority over saved-session */}
                 {isConnected ? (
                   <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
                     <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />
@@ -1938,7 +1956,6 @@ export const DoctorCard = ({
                     Connecting
                   </span>
                 ) : hasSavedSession ? (
-                  // Saved-session badge
                   <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-violet-600 bg-violet-500/10 border-violet-500/20">
                     <RotateCcw className="h-2 w-2 shrink-0" />
                     In queue
@@ -2005,6 +2022,7 @@ export const DoctorCard = ({
             className="mt-2.5 flex items-center justify-between gap-2"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Left: status hint text */}
             <div className="flex items-center gap-1">
               {isConnected ? (
                 <>
@@ -2031,6 +2049,7 @@ export const DoctorCard = ({
               )}
             </div>
 
+            {/* Right: action buttons */}
             <div className="flex items-center gap-1.5">
               <Button
                 variant="outline"
@@ -2042,7 +2061,15 @@ export const DoctorCard = ({
                 {t("pages.cards.book")}
               </Button>
 
-              {/* Saved-session resume button — shown instead of Connect when a session exists */}
+              {/*
+                Connect / Resume button logic:
+                1. hasSavedSession + no live call → violet "Resume" that opens
+                   ConnectDialogContent in connect mode (resume banner will appear)
+                2. isConnected or isCallInProgress → opens modal to the live call
+                3. canConnect → fresh "Connect" (no startCall() — ConnectDialogContent
+                   owns the full lifecycle)
+                4. otherwise → disabled availability label
+              */}
               {hasSavedSession && !isCallInProgress ? (
                 <Button
                   size="sm"
@@ -2055,11 +2082,15 @@ export const DoctorCard = ({
               ) : canConnect ? (
                 <Button
                   size="sm"
-                  onClick={
-                    showResumePill
-                      ? () => { setInitialMode("connect"); setModalOpen(true); }
-                      : openConnect
-                  }
+                  onClick={() => {
+                    if (isCallInProgress || isConnected) {
+                      // Re-open the modal to show the live call — no new flow needed
+                      setInitialMode("connect");
+                      setModalOpen(true);
+                    } else {
+                      openConnect();
+                    }
+                  }}
                   className={cn(
                     "h-6 px-2.5 text-[10px] font-semibold rounded-sm",
                     isConnected
@@ -2092,7 +2123,7 @@ export const DoctorCard = ({
         </div>
       </div>
 
-      {/* ── Live-call resume pill ── */}
+      {/* ── Live-call resume pill (CallStore call running, modal closed) ── */}
       {showResumePill && (
         <ResumePill
           doctorName={doctor.user.name}
@@ -2102,7 +2133,7 @@ export const DoctorCard = ({
         />
       )}
 
-      {/* ── Saved-session pill (no live call, but token is saved) ── */}
+      {/* ── Saved-session pill (sessionStorage token exists, no live call) ── */}
       {showSavedSessionPill && (
         <SavedSessionPill
           doctorName={doctor.user.name}

@@ -34,6 +34,7 @@ import {
   Loader2,
   Save,
   AlertCircle,
+  ChevronRight
 } from "lucide-react";
 import {
   useGetDoctorProfile,
@@ -466,22 +467,7 @@ const StatCard = React.memo(function StatCard({
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FormField
-// ─────────────────────────────────────────────────────────────────────────────
-const FormField = React.memo(function FormField({
-  label, error, children, className = "",
-}: {
-  label: string; error?: string; children: React.ReactNode; className?: string;
-}) {
-  return (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-      <Label className="text-[10px] text-muted-foreground">{label}</Label>
-      {children}
-      {error && <p className="text-[10px] text-destructive">{error}</p>}
-    </div>
-  );
-});
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ViewField — fixed alignment: label always same height, value never wraps awkwardly
@@ -958,25 +944,228 @@ const EntryCard = React.memo(function EntryCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Step form sub-components (unchanged logic, minor style consistency)
 // ─────────────────────────────────────────────────────────────────────────────
-const SpecializationsStep = React.memo(function SpecializationsStep({
-  data, onChange,
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Types (copy from your existing file or import)
+// ─────────────────────────────────────────────────────────────────────────────
+interface SpecializationsInfo {
+  primary: string;
+  secondary: string[];
+  custom_tags: string[];
+  years_of_experience: number;
+  subspecialties: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FormField helper (copy from your existing file or import)
+// ─────────────────────────────────────────────────────────────────────────────
+const FormField = ({
+  label,
+  error,
+  children,
+  className = "",
 }: {
-  data: SpecializationsInfo; onChange: (v: SpecializationsInfo) => void;
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div className={`flex flex-col gap-1.5 ${className}`}>
+    <Label className="text-[10px] text-muted-foreground">{label}</Label>
+    {children}
+    {error && <p className="text-[10px] text-destructive">{error}</p>}
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SPECIALIZATION DATA  —  primary → subspecialties
+// ─────────────────────────────────────────────────────────────────────────────
+export const SPECIALIZATION_MAP: Record<string, string[]> = {
+  "Internal Medicine": [
+    "Cardiology","Endocrinology","Gastroenterology","Hematology",
+    "Infectious Disease","Nephrology","Oncology","Pulmonology",
+    "Rheumatology","Geriatrics","Hepatology","Allergy & Immunology",
+  ],
+  "Surgery": [
+    "Cardiothoracic Surgery","Colorectal Surgery","Neurosurgery",
+    "Orthopedic Surgery","Pediatric Surgery","Plastic & Reconstructive Surgery",
+    "Transplant Surgery","Trauma Surgery","Vascular Surgery",
+    "Urological Surgery","Bariatric Surgery","Surgical Oncology",
+  ],
+  "Pediatrics": [
+    "Pediatric Cardiology","Pediatric Endocrinology","Pediatric Gastroenterology",
+    "Pediatric Hematology/Oncology","Pediatric Infectious Disease","Pediatric Nephrology",
+    "Pediatric Neurology","Pediatric Pulmonology","Neonatology",
+    "Pediatric Emergency Medicine","Pediatric Rheumatology","Pediatric Critical Care",
+    "Developmental-Behavioral Pediatrics",
+  ],
+  "Obstetrics & Gynecology": [
+    "Maternal-Fetal Medicine","Reproductive Endocrinology & Infertility",
+    "Gynecologic Oncology","Urogynecology","Minimally Invasive Gynecologic Surgery",
+    "Female Pelvic Medicine","Pediatric & Adolescent Gynecology",
+  ],
+  "Neurology": [
+    "Clinical Neurophysiology","Epilepsy","Movement Disorders","Neurocritical Care",
+    "Neuro-Oncology","Neuromuscular Medicine","Sleep Medicine","Stroke Medicine",
+    "Behavioral Neurology","Child Neurology","Headache Medicine","Multiple Sclerosis",
+  ],
+  "Psychiatry": [
+    "Addiction Psychiatry","Child & Adolescent Psychiatry","Forensic Psychiatry",
+    "Geriatric Psychiatry","Consultation-Liaison Psychiatry","Neuropsychiatry",
+    "Sleep Psychiatry","Community Psychiatry","Psychosomatic Medicine",
+  ],
+  "Radiology": [
+    "Interventional Radiology","Neuroradiology","Abdominal Radiology","Breast Imaging",
+    "Cardiovascular Radiology","Musculoskeletal Radiology","Pediatric Radiology",
+    "Nuclear Medicine","Emergency Radiology","Thoracic Radiology",
+  ],
+  "Orthopedics": [
+    "Spine Surgery","Joint Replacement","Sports Medicine","Hand & Upper Extremity Surgery",
+    "Foot & Ankle Surgery","Pediatric Orthopedics","Orthopedic Oncology",
+    "Trauma Orthopedics","Shoulder & Elbow Surgery",
+  ],
+  "Ophthalmology": [
+    "Retina & Vitreous","Cornea & External Disease","Glaucoma","Neuro-Ophthalmology",
+    "Pediatric Ophthalmology","Oculoplastics","Refractive Surgery","Uveitis","Ocular Oncology",
+  ],
+  "Otolaryngology (ENT)": [
+    "Rhinology","Laryngology","Otology & Neurotology","Head & Neck Surgery",
+    "Facial Plastic Surgery","Pediatric ENT","Sleep Surgery","Skull Base Surgery",
+  ],
+  "Dermatology": [
+    "Dermatopathology","Pediatric Dermatology","Dermatologic Surgery","Mohs Surgery",
+    "Cosmetic Dermatology","Immunodermatology","Photomedicine","Trichology","Wound Care",
+  ],
+  "Anesthesiology": [
+    "Cardiac Anesthesiology","Pediatric Anesthesiology","Obstetric Anesthesiology",
+    "Neuroanesthesiology","Regional Anesthesiology","Pain Medicine",
+    "Critical Care Medicine","Thoracic Anesthesiology",
+  ],
+  "Emergency Medicine": [
+    "Pediatric Emergency Medicine","Emergency Medical Services","Toxicology","Ultrasound",
+    "Wilderness Medicine","Disaster Medicine","Sports Medicine in EM","Hyperbaric Medicine",
+  ],
+  "Pathology": [
+    "Anatomic Pathology","Clinical Pathology","Forensic Pathology","Hematopathology",
+    "Neuropathology","Dermatopathology","Cytopathology","Surgical Pathology",
+    "Molecular Pathology","Transfusion Medicine","Pediatric Pathology",
+  ],
+  "Family Medicine": [
+    "Geriatric Medicine","Sports Medicine","Palliative Care","Adolescent Medicine",
+    "Rural Medicine","Preventive Medicine","Integrative Medicine","Hospice Medicine",
+  ],
+  "Urology": [
+    "Urologic Oncology","Female Urology","Pediatric Urology","Male Infertility",
+    "Endourology","Reconstructive Urology","Neurourology","Kidney Transplant Urology",
+  ],
+  "Cardiology": [
+    "Interventional Cardiology","Electrophysiology","Heart Failure","Echocardiography",
+    "Cardiac Imaging","Preventive Cardiology","Pediatric Cardiology",
+    "Structural Heart Disease","Cardiac Rehabilitation","Cardiovascular Genetics",
+  ],
+  "Oncology": [
+    "Medical Oncology","Surgical Oncology","Radiation Oncology","Hematologic Oncology",
+    "Gynecologic Oncology","Neuro-Oncology","Pediatric Oncology",
+    "Gastrointestinal Oncology","Thoracic Oncology","Genitourinary Oncology",
+    "Breast Oncology","Palliative Oncology",
+  ],
+  "Infectious Disease": [
+    "HIV/AIDS Medicine","Tropical Medicine","Travel Medicine","Hospital Epidemiology",
+    "Antimicrobial Stewardship","Mycology","Virology","Parasitology",
+    "Immunocompromised Host",
+  ],
+  "Nephrology": [
+    "Transplant Nephrology","Dialysis Medicine","Onco-Nephrology","Glomerular Disease",
+    "Pediatric Nephrology","Hypertension","Critical Care Nephrology","Electrolyte Disorders",
+  ],
+  "Endocrinology": [
+    "Diabetes & Metabolism","Thyroid Disease","Adrenal Disease","Pituitary Disease",
+    "Reproductive Endocrinology","Bone & Mineral Metabolism",
+    "Neuroendocrinology","Pediatric Endocrinology",
+  ],
+  "Gastroenterology": [
+    "Hepatology","Inflammatory Bowel Disease","Endoscopy","Pancreatic Disease",
+    "Motility","Pediatric Gastroenterology","Transplant Hepatology","Gastrointestinal Oncology",
+  ],
+  "Rheumatology": [
+    "Lupus & Connective Tissue Disease","Inflammatory Arthritis","Vasculitis","Scleroderma",
+    "Pediatric Rheumatology","Osteoporosis & Bone Disease","Gout & Crystal Arthropathies","Myositis",
+  ],
+  "Pulmonology": [
+    "Critical Care / Intensive Care","Sleep Medicine","Interstitial Lung Disease",
+    "Pulmonary Hypertension","Thoracic Oncology","Cystic Fibrosis","COPD & Asthma",
+    "Interventional Pulmonology","Lung Transplantation",
+  ],
+  "Hematology": [
+    "Benign Hematology","Hematologic Malignancies","Bone Marrow Transplantation",
+    "Coagulation & Thrombosis","Transfusion Medicine","Sickle Cell Disease","Pediatric Hematology",
+  ],
+  "Physical Medicine & Rehabilitation": [
+    "Spinal Cord Injury","Brain Injury Rehabilitation","Musculoskeletal Medicine",
+    "Pediatric Rehabilitation","Cancer Rehabilitation","Pain Medicine","Sports Medicine",
+    "Electrodiagnostic Medicine",
+  ],
+  "Nuclear Medicine": [
+    "PET/CT Imaging","Thyroid Disease","Bone Scintigraphy","Radionuclide Therapy",
+    "Cardiac Nuclear Imaging","Neuro-Nuclear Medicine","Pediatric Nuclear Medicine",
+  ],
+  "Preventive Medicine": [
+    "Occupational Medicine","Aerospace Medicine","Undersea & Hyperbaric Medicine",
+    "Public Health & General Preventive Medicine","Medical Toxicology",
+    "Clinical Informatics","Lifestyle Medicine",
+  ],
+  "Genetics & Genomics": [
+    "Clinical Genetics","Biochemical Genetics","Molecular Genetics","Cytogenetics",
+    "Cancer Genetics","Neurogenetics","Pharmacogenomics","Prenatal Genetics",
+  ],
+  "General Practice": [],
+};
+
+export const PRIMARY_SPECIALIZATIONS = Object.keys(SPECIALIZATION_MAP).sort();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SpecializationsStep  (drop-in replacement)
+// ─────────────────────────────────────────────────────────────────────────────
+export const SpecializationsStep = React.memo(function SpecializationsStep({
+  data,
+  onChange,
+}: {
+  data: SpecializationsInfo;
+  onChange: (v: SpecializationsInfo) => void;
 }) {
   const [tagInput, setTagInput] = useState("");
-  const secondaryOptions = useMemo(
-    () => COMMON_SPECIALIZATIONS.filter((s) => s !== data.primary),
+
+  // Subspecialties for the chosen primary
+  const subspecialties = useMemo(
+    () => (data.primary ? SPECIALIZATION_MAP[data.primary] ?? [] : []),
     [data.primary],
   );
 
-  const toggleSecondary = useCallback((spec: string) => {
-    onChange({
-      ...data,
-      secondary: data.secondary.includes(spec)
-        ? data.secondary.filter((s) => s !== spec)
-        : [...data.secondary, spec],
-    });
-  }, [data, onChange]);
+  // When primary changes: clear secondary selections that no longer belong
+  const handlePrimaryChange = useCallback(
+    (value: string) => {
+      const validSubs = SPECIALIZATION_MAP[value] ?? [];
+      onChange({
+        ...data,
+        primary: value,
+        secondary: data.secondary.filter((s) => validSubs.includes(s)),
+      });
+    },
+    [data, onChange],
+  );
+
+  const toggleSecondary = useCallback(
+    (spec: string) => {
+      onChange({
+        ...data,
+        secondary: data.secondary.includes(spec)
+          ? data.secondary.filter((s) => s !== spec)
+          : [...data.secondary, spec],
+      });
+    },
+    [data, onChange],
+  );
 
   const addTag = useCallback(() => {
     const trimmed = tagInput.trim();
@@ -985,49 +1174,163 @@ const SpecializationsStep = React.memo(function SpecializationsStep({
     setTagInput("");
   }, [tagInput, data, onChange]);
 
-  const removeTag = useCallback((tag: string) => {
-    onChange({ ...data, custom_tags: (data.custom_tags ?? []).filter((t) => t !== tag) });
-  }, [data, onChange]);
+  const removeTag = useCallback(
+    (tag: string) => {
+      onChange({ ...data, custom_tags: (data.custom_tags ?? []).filter((t) => t !== tag) });
+    },
+    [data, onChange],
+  );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* ── Primary ────────────────────────────────────────────────── */}
       <FormField label="Primary specialization *">
-        <Select value={data.primary ?? ""} onValueChange={(v) => onChange({ ...data, primary: v })}>
-          <SelectTrigger className="border-border focus:ring-primary text-xs h-9"><SelectValue placeholder="Select primary specialization" /></SelectTrigger>
-          <SelectContent className="max-h-60">{COMMON_SPECIALIZATIONS.map((s) => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent>
+        <Select value={data.primary ?? ""} onValueChange={handlePrimaryChange}>
+          <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
+            <SelectValue placeholder="Select primary specialization" />
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {PRIMARY_SPECIALIZATIONS.map((s) => (
+              <SelectItem key={s} value={s} className="text-xs">
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </FormField>
-      <FormField label="Years of experience">
-        <Input type="number" value={data.years_of_experience ?? ""} onChange={(e) => onChange({ ...data, years_of_experience: +e.target.value })} placeholder="10" min={0} max={60} className="border-border focus-visible:ring-primary text-xs h-9 w-full sm:w-40" />
-      </FormField>
-      <div className="space-y-2">
-        <Label className="text-[10px] text-muted-foreground">Secondary specializations</Label>
-        <div className="flex flex-wrap gap-2">
-          {secondaryOptions.map((spec) => {
-            const selected = (data.secondary ?? []).includes(spec);
-            return (
-              <button key={spec} type="button" onClick={() => toggleSecondary(spec)} className={cn("text-[11px] px-2.5 py-1 rounded-full border transition-all duration-150 font-medium", selected ? "bg-primary/15 border-primary/40 text-primary" : "bg-muted border-border text-muted-foreground hover:border-primary/30 hover:text-foreground")}>
-                {selected && <Check className="inline h-2.5 w-2.5 mr-1" />}{spec}
-              </button>
-            );
-          })}
+
+      {/* ── Subspecialties (dynamic) ───────────────────────────────── */}
+      {data.primary && (
+        <div className="space-y-2.5 rounded-lg border border-border bg-muted/30 p-4">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1">
+            <ChevronRight className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {subspecialties.length > 0
+                ? `Subspecialties of ${data.primary}`
+                : `No registered subspecialties for ${data.primary}`}
+            </span>
+            {data.secondary.length > 0 && (
+              <span className="ml-auto text-[10px] font-medium rounded-full px-2 py-0.5 bg-primary/15 text-primary">
+                {data.secondary.length} selected
+              </span>
+            )}
+          </div>
+
+          {subspecialties.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {subspecialties.map((spec) => {
+                const selected = data.secondary.includes(spec);
+                return (
+                  <button
+                    key={spec}
+                    type="button"
+                    onClick={() => toggleSecondary(spec)}
+                    className={cn(
+                      "inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full border transition-all duration-150 font-medium cursor-pointer select-none",
+                      selected
+                        ? "bg-primary/15 border-primary/40 text-primary shadow-sm"
+                        : "bg-background border-border text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-muted/60",
+                    )}
+                  >
+                    {selected && <Check className="h-2.5 w-2.5 shrink-0" />}
+                    {spec}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground italic">
+              You can add custom tags below to describe your subspecialties.
+            </p>
+          )}
+
+          {/* Selected summary strip */}
+          {data.secondary.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/60">
+              <p className="text-[10px] text-muted-foreground mb-1.5">Selected subspecialties:</p>
+              <div className="flex flex-wrap gap-1">
+                {data.secondary.map((s) => (
+                  <span
+                    key={s}
+                    className="inline-flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20"
+                  >
+                    {s}
+                    <button
+                      type="button"
+                      onClick={() => toggleSecondary(s)}
+                      className="hover:text-destructive transition-colors"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-      <FormField label="Subspecialties / areas of focus">
-        <Input value={data.subspecialties ?? ""} onChange={(e) => onChange({ ...data, subspecialties: e.target.value })} placeholder="e.g. Pediatric cardiology" className="border-border focus-visible:ring-primary text-xs h-9" />
+      )}
+
+      {/* ── Years of experience ────────────────────────────────────── */}
+      <FormField label="Years of experience">
+        <Input
+          type="number"
+          value={data.years_of_experience ?? ""}
+          onChange={(e) => onChange({ ...data, years_of_experience: +e.target.value })}
+          placeholder="10"
+          min={0}
+          max={60}
+          className="border-border focus-visible:ring-primary text-xs h-9 w-full sm:w-40"
+        />
       </FormField>
+
+      {/* ── Subspecialties free-text ───────────────────────────────── */}
+      <FormField label="Subspecialties / areas of focus (free text)">
+        <Input
+          value={data.subspecialties ?? ""}
+          onChange={(e) => onChange({ ...data, subspecialties: e.target.value })}
+          placeholder="e.g. Pediatric cardiology, rare coagulopathies"
+          className="border-border focus-visible:ring-primary text-xs h-9"
+        />
+      </FormField>
+
+      {/* ── Custom tags ───────────────────────────────────────────── */}
       <div className="space-y-2">
         <Label className="text-[10px] text-muted-foreground">Custom tags</Label>
         <div className="flex gap-2">
-          <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }} placeholder="Type a tag and press Enter" className="border-border focus-visible:ring-primary text-xs h-9 flex-1" />
-          <Button type="button" variant="outline" onClick={addTag} className="text-xs h-9 px-3 border-border"><Plus className="h-3.5 w-3.5" /></Button>
+          <Input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); addTag(); }
+            }}
+            placeholder="Type a tag and press Enter"
+            className="border-border focus-visible:ring-primary text-xs h-9 flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={addTag}
+            className="text-xs h-9 px-3 border-border"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
         </div>
         {(data.custom_tags ?? []).length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {(data.custom_tags ?? []).map((tag) => (
-              <span key={tag} className="flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
+              <span
+                key={tag}
+                className="flex items-center gap-1 text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20"
+              >
                 {tag}
-                <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors"><X className="h-2.5 w-2.5" /></button>
+                <button
+                  type="button"
+                  onClick={() => removeTag(tag)}
+                  className="hover:text-destructive transition-colors"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
               </span>
             ))}
           </div>
@@ -1036,6 +1339,7 @@ const SpecializationsStep = React.memo(function SpecializationsStep({
     </div>
   );
 });
+
 
 const EducationStep = React.memo(function EducationStep({
   entries, onChange,
@@ -1075,6 +1379,8 @@ const EducationStep = React.memo(function EducationStep({
     </div>
   );
 });
+
+
 
 const ExperienceStep = React.memo(function ExperienceStep({
   entries, onChange,
