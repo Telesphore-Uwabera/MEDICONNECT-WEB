@@ -169,7 +169,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               </Link>
               <Link to="/auth?mode=signup">
                 <Button size="sm" className="bg-gradient-primary hover:opacity-90">
-                  {t("common.getStarted")}
+                  {t("common.Register")}
                 </Button>
               </Link>
             </>
@@ -285,7 +285,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                   </Link>
                   <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
                     <Button size="sm" className="w-full bg-gradient-primary hover:opacity-90">
-                      {t("common.getStarted")}
+                      {t("common.Register")}
                     </Button>
                   </Link>
                 </>
