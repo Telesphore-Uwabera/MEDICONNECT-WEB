@@ -253,7 +253,7 @@ function AppointmentCardItem({
               : "text-muted-foreground hover:text-foreground hover:bg-secondary",
           )}
           onClick={(e) => {
-            e.stopPropagation(); // don't also trigger the row's onDetails
+            e.stopPropagation(); 
             actionable ? onJoin() : onDetails();
           }}
         >
@@ -376,7 +376,7 @@ const PatientAppointments = () => {
             options={[
               { value: "all",       label: "All types"     },
               { value: "online",    label: "Video consult" },
-              { value: "in_person", label: "In-person"     },
+              // { value: "in_person", label: "In-person"     },
             ]}
           />
         </FilterSection>

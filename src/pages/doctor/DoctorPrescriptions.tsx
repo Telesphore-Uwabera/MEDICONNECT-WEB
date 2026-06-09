@@ -41,68 +41,80 @@ import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ViewMode   = "table" | "cards";
-type SortBy     = "created_at" | "valid_until" | "status" | "patient";
-type SortOrder  = "asc" | "desc";
+type ViewMode = "table" | "cards";
+type SortBy = "created_at" | "valid_until" | "status" | "patient";
+type SortOrder = "asc" | "desc";
 
 interface FilterState {
-  search:       string;
-  status:       PrescriptionStatus | "All";
-  is_signed:    "all" | "signed" | "unsigned";
-  validity:     "all" | "valid_only" | "expired_only";
-  date_from:    string;
-  date_to:      string;
-  sort_by:      SortBy;
-  sort_order:   SortOrder;
+  search: string;
+  status: PrescriptionStatus | "All";
+  is_signed: "all" | "signed" | "unsigned";
+  validity: "all" | "valid_only" | "expired_only";
+  date_from: string;
+  date_to: string;
+  sort_by: SortBy;
+  sort_order: SortOrder;
 }
 
 const INITIAL_FILTERS: FilterState = {
-  search:       "",
-  status:       "All",
-  is_signed:    "all",
-  validity:     "all",
-  date_from:    "",
-  date_to:      "",
-  sort_by:      "created_at",
-  sort_order:   "desc",
+  search: "",
+  status: "All",
+  is_signed: "all",
+  validity: "all",
+  date_from: "",
+  date_to: "",
+  sort_by: "created_at",
+  sort_order: "desc",
 };
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Partial<Record<PrescriptionStatus, string>> = {
-  draft:            "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
-  issued:           "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
-  sent_to_pharmacy: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  filled:           "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  cancelled:        "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  active:           "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900",
-  pending:          "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-900",
-  dispensed:        "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900",
-  expired:          "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
-  completed:        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  rejected:         "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  returned:         "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
+  draft:
+    "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
+  issued:
+    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+  sent_to_pharmacy:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  filled:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  cancelled:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  active:
+    "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900",
+  pending:
+    "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-900",
+  dispensed:
+    "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900",
+  expired:
+    "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
+  completed:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  rejected:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  returned:
+    "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
 };
 
 const STATUS_DOT: Partial<Record<PrescriptionStatus, string>> = {
-  draft:            "bg-slate-400",
-  issued:           "bg-sky-500",
+  draft: "bg-slate-400",
+  issued: "bg-sky-500",
   sent_to_pharmacy: "bg-amber-500",
-  filled:           "bg-emerald-500",
-  cancelled:        "bg-red-500",
-  active:           "bg-green-500",
-  pending:          "bg-yellow-500",
-  dispensed:        "bg-teal-500",
-  expired:          "bg-orange-500",
-  completed:        "bg-emerald-500",
-  rejected:         "bg-red-500",
-  returned:         "bg-slate-400",
+  filled: "bg-emerald-500",
+  cancelled: "bg-red-500",
+  active: "bg-green-500",
+  pending: "bg-yellow-500",
+  dispensed: "bg-teal-500",
+  expired: "bg-orange-500",
+  completed: "bg-emerald-500",
+  rejected: "bg-red-500",
+  returned: "bg-slate-400",
 };
 
 const channelIcon: Record<DeliveryChannel, React.ElementType> = {
-  app:   User,
+  app: User,
   email: Mail,
-  sms:   Smartphone,
+  sms: Smartphone,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -111,9 +123,13 @@ function fmtDate(raw?: string): string {
   if (!raw) return "—";
   try {
     return new Date(raw).toLocaleDateString("en-US", {
-      year: "numeric", month: "short", day: "numeric",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
-  } catch { return raw; }
+  } catch {
+    return raw;
+  }
 }
 
 function initials(name?: string): string {
@@ -137,7 +153,13 @@ function useDebounced<T>(value: T, delay: number): T {
 
 // ─── Sidebar atoms ────────────────────────────────────────────────────────────
 
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+function FilterSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="py-3 border-b border-border/60 last:border-b-0">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2.5">
@@ -149,7 +171,9 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 }
 
 function PillGroup<T extends string>({
-  value, onChange, options,
+  value,
+  onChange,
+  options,
 }: {
   value: T;
   onChange: (v: T) => void;
@@ -189,11 +213,21 @@ function SkeletonRow() {
           </div>
         </div>
       </td>
-      <td className="px-4 py-3"><div className="h-3 w-32 rounded bg-muted" /></td>
-      <td className="px-4 py-3"><div className="h-3 w-20 rounded bg-muted" /></td>
-      <td className="px-4 py-3"><div className="h-5 w-12 rounded bg-muted" /></td>
-      <td className="px-4 py-3"><div className="h-5 w-20 rounded bg-muted" /></td>
-      <td className="px-4 py-3 text-right"><div className="h-7 w-16 rounded bg-muted ml-auto" /></td>
+      <td className="px-4 py-3">
+        <div className="h-3 w-32 rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3">
+        <div className="h-3 w-20 rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3">
+        <div className="h-5 w-12 rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3">
+        <div className="h-5 w-20 rounded bg-muted" />
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="h-7 w-16 rounded bg-muted ml-auto" />
+      </td>
     </tr>
   );
 }
@@ -256,10 +290,16 @@ function PrescriptionCard({
           variant="outline"
           className={cn(
             "shrink-0 text-[9px] px-1.5 py-0 font-medium border",
-            STATUS_STYLES[p.status] ?? "bg-secondary/50 text-muted-foreground border-border/60",
+            STATUS_STYLES[p.status] ??
+              "bg-secondary/50 text-muted-foreground border-border/60",
           )}
         >
-          <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[p.status] ?? "bg-muted-foreground/40")} />
+          <span
+            className={cn(
+              "w-1 h-1 rounded-full mr-1",
+              STATUS_DOT[p.status] ?? "bg-muted-foreground/40",
+            )}
+          />
           {statusLabel[p.status] ?? p.status}
         </Badge>
       </div>
@@ -271,8 +311,12 @@ function PrescriptionCard({
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm bg-secondary/40 border border-border/30"
           >
             <Pill className="h-3 w-3 text-primary shrink-0" />
-            <span className="text-[10px] font-medium text-foreground">{m.medicine_name}</span>
-            <span className="text-[10px] text-muted-foreground/70">· {m.dosage} · {m.frequency}</span>
+            <span className="text-[10px] font-medium text-foreground">
+              {m.medicine_name}
+            </span>
+            <span className="text-[10px] text-muted-foreground/70">
+              · {m.dosage} · {m.frequency}
+            </span>
           </div>
         ))}
       </div>
@@ -317,14 +361,14 @@ function PrescriptionCard({
 
 const DoctorPrescriptions = () => {
   const { t } = useTranslation();
-  const [wizardOpen,   setWizardOpen]   = useState(false);
-  const [filterOpen,   setFilterOpen]   = useState(false);
-  const [filters,      setFilters]      = useState<FilterState>(INITIAL_FILTERS);
-  const [view,         setView]         = useState<ViewMode>("table");
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [view, setView] = useState<ViewMode>("table");
 
   // Detail drawer state
-  const [selectedRx,   setSelectedRx]   = useState<Prescription | null>(null);
-  const [drawerOpen,   setDrawerOpen]   = useState(false);
+  const [selectedRx, setSelectedRx] = useState<Prescription | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Debounce the search so we don't fire on every keystroke
   const debouncedSearch = useDebounced(filters.search, 400);
@@ -332,20 +376,28 @@ const DoctorPrescriptions = () => {
   // ── Build API params from filter state ──────────────────────────────────
   const apiParams = useMemo<PrescriptionListParams>(() => {
     const p: PrescriptionListParams = {
-      sort_by:    filters.sort_by,
+      sort_by: filters.sort_by,
       sort_order: filters.sort_order,
     };
-    if (debouncedSearch)          p.q           = debouncedSearch;
-    if (filters.status !== "All") p.status       = filters.status;
-    if (filters.is_signed === "signed")   p.is_signed    = true;
-    if (filters.is_signed === "unsigned") p.is_signed    = false;
-    if (filters.validity === "valid_only")   p.valid_only   = true;
+    if (debouncedSearch) p.q = debouncedSearch;
+    if (filters.status !== "All") p.status = filters.status;
+    if (filters.is_signed === "signed") p.is_signed = true;
+    if (filters.is_signed === "unsigned") p.is_signed = false;
+    if (filters.validity === "valid_only") p.valid_only = true;
     if (filters.validity === "expired_only") p.expired_only = true;
-    if (filters.date_from)        p.date_from    = filters.date_from;
-    if (filters.date_to)          p.date_to      = filters.date_to;
+    if (filters.date_from) p.date_from = filters.date_from;
+    if (filters.date_to) p.date_to = filters.date_to;
     return p;
-  }, [debouncedSearch, filters.status, filters.is_signed, filters.validity,
-      filters.date_from, filters.date_to, filters.sort_by, filters.sort_order]);
+  }, [
+    debouncedSearch,
+    filters.status,
+    filters.is_signed,
+    filters.validity,
+    filters.date_from,
+    filters.date_to,
+    filters.sort_by,
+    filters.sort_order,
+  ]);
 
   // ── API ──────────────────────────────────────────────────────────────────
   // FIX: The API returns { status, data: { current_page, data: [], total } }
@@ -359,9 +411,12 @@ const DoctorPrescriptions = () => {
   const allList: Prescription[] = Array.isArray(data?.data) ? data.data : [];
 
   // ── Filter helpers ───────────────────────────────────────────────────────
-  const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const set = useCallback(
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
@@ -372,24 +427,29 @@ const DoctorPrescriptions = () => {
 
   useEffect(() => {
     if (filterOpen) document.body.style.overflow = "hidden";
-    else            document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
+    else document.body.style.overflow = "";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [filterOpen]);
 
   // ── Status labels ────────────────────────────────────────────────────────
   const localStatusLabel: Record<string, string> = {
-    draft:            t("pages.doctor.rx_status_draft",         "Draft"),
-    issued:           t("pages.doctor.rx_status_sent_patient",  "Issued"),
-    sent_to_pharmacy: t("pages.doctor.rx_status_sent_pharmacy", "Sent to pharmacy"),
-    filled:           t("pages.doctor.rx_status_filled",        "Filled"),
-    cancelled:        t("pages.doctor.rx_status_cancelled",     "Cancelled"),
-    active:    "Active",
-    pending:   "Pending",
+    draft: t("pages.doctor.rx_status_draft", "Draft"),
+    issued: t("pages.doctor.rx_status_sent_patient", "Issued"),
+    sent_to_pharmacy: t(
+      "pages.doctor.rx_status_sent_pharmacy",
+      "Sent to pharmacy",
+    ),
+    filled: t("pages.doctor.rx_status_filled", "Filled"),
+    cancelled: t("pages.doctor.rx_status_cancelled", "Cancelled"),
+    active: "Active",
+    pending: "Pending",
     dispensed: "Dispensed",
-    expired:   "Expired",
+    expired: "Expired",
     completed: "Completed",
-    rejected:  "Rejected",
-    returned:  "Returned",
+    rejected: "Rejected",
+    returned: "Returned",
   };
 
   // ── Unique statuses from current result set ──────────────────────────────
@@ -399,9 +459,15 @@ const DoctorPrescriptions = () => {
   );
 
   // ── Summary counts ───────────────────────────────────────────────────────
-  const pendingCount   = allList.filter((p) => p.status === "draft" || p.status === "issued").length;
-  const filledCount    = allList.filter((p) => p.status === "filled" || p.status === "completed").length;
-  const cancelledCount = allList.filter((p) => p.status === "cancelled" || p.status === "rejected").length;
+  const pendingCount = allList.filter(
+    (p) => p.status === "draft" || p.status === "issued",
+  ).length;
+  const filledCount = allList.filter(
+    (p) => p.status === "filled" || p.status === "completed",
+  ).length;
+  const cancelledCount = allList.filter(
+    (p) => p.status === "cancelled" || p.status === "rejected",
+  ).length;
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const handleViewDetails = useCallback((p: Prescription) => {
@@ -415,16 +481,21 @@ const DoctorPrescriptions = () => {
     setTimeout(() => setSelectedRx(null), 350);
   }, []);
 
-  const handleIssue = useCallback((p: Prescription) => {
-    issueMutation.mutate(p.id, {
-      onSuccess: (res) => {
-        toast.success(res.message ?? "Prescription issued successfully");
-      },
-      onError: (err: any) => {
-        toast.error(err?.message ?? "Failed to issue prescription");
-      },
-    });
-  }, [issueMutation]);
+  const handleIssue = useCallback(
+    (p: Prescription) => {
+      issueMutation.mutate(p.id, {
+        onSuccess: (res) => {
+          toast.success(res.message ?? "Prescription issued successfully");
+        },
+        onError: (err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : "Failed to issue prescription";
+          toast.error(message);
+        },
+      });
+    },
+    [issueMutation],
+  );
 
   // ─── Sidebar content ─────────────────────────────────────────────────────
 
@@ -435,7 +506,9 @@ const DoctorPrescriptions = () => {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
           <button
@@ -492,8 +565,8 @@ const DoctorPrescriptions = () => {
             value={filters.is_signed}
             onChange={(v) => set("is_signed", v)}
             options={[
-              { value: "all",      label: "All" },
-              { value: "signed",   label: "Signed" },
+              { value: "all", label: "All" },
+              { value: "signed", label: "Signed" },
               { value: "unsigned", label: "Unsigned" },
             ]}
           />
@@ -505,8 +578,8 @@ const DoctorPrescriptions = () => {
             value={filters.validity}
             onChange={(v) => set("validity", v)}
             options={[
-              { value: "all",          label: "All" },
-              { value: "valid_only",   label: "Valid only" },
+              { value: "all", label: "All" },
+              { value: "valid_only", label: "Valid only" },
               { value: "expired_only", label: "Expired only" },
             ]}
           />
@@ -516,7 +589,9 @@ const DoctorPrescriptions = () => {
         <FilterSection title="Date range">
           <div className="space-y-1.5">
             <div>
-              <label className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 block">From</label>
+              <label className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 block">
+                From
+              </label>
               <input
                 type="date"
                 value={filters.date_from}
@@ -525,7 +600,9 @@ const DoctorPrescriptions = () => {
               />
             </div>
             <div>
-              <label className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 block">To</label>
+              <label className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-medium mb-1 block">
+                To
+              </label>
               <input
                 type="date"
                 value={filters.date_to}
@@ -535,7 +612,10 @@ const DoctorPrescriptions = () => {
             </div>
             {(filters.date_from || filters.date_to) && (
               <button
-                onClick={() => { set("date_from", ""); set("date_to", ""); }}
+                onClick={() => {
+                  set("date_from", "");
+                  set("date_to", "");
+                }}
                 className="text-[10px] text-primary hover:underline font-medium"
               >
                 Clear dates
@@ -551,9 +631,9 @@ const DoctorPrescriptions = () => {
               value={filters.sort_by}
               onChange={(v) => set("sort_by", v)}
               options={[
-                { value: "created_at",  label: "Date created" },
+                { value: "created_at", label: "Date created" },
                 { value: "valid_until", label: "Valid until" },
-                { value: "status",      label: "Status" },
+                { value: "status", label: "Status" },
               ]}
             />
             <div className="flex gap-1 mt-1.5">
@@ -587,7 +667,6 @@ const DoctorPrescriptions = () => {
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-
           {/* Desktop sidebar */}
           <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
@@ -598,7 +677,9 @@ const DoctorPrescriptions = () => {
             onClick={() => setFilterOpen(false)}
             className={cn(
               "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+              filterOpen
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none",
             )}
           />
 
@@ -622,7 +703,9 @@ const DoctorPrescriptions = () => {
                 className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm hover:shadow"
               >
                 Show {data?.total ?? allList.length}{" "}
-                {(data?.total ?? allList.length) === 1 ? "prescription" : "prescriptions"}
+                {(data?.total ?? allList.length) === 1
+                  ? "prescription"
+                  : "prescriptions"}
               </button>
             </div>
           </div>
@@ -640,8 +723,12 @@ const DoctorPrescriptions = () => {
                     </span>
                   ) : (
                     <>
-                      <span className="font-bold text-foreground">{data?.total ?? allList.length}</span>{" "}
-                      {(data?.total ?? allList.length) === 1 ? "prescription" : "prescriptions"}
+                      <span className="font-bold text-foreground">
+                        {data?.total ?? allList.length}
+                      </span>{" "}
+                      {(data?.total ?? allList.length) === 1
+                        ? "prescription"
+                        : "prescriptions"}
                       {hasActiveFilters && (
                         <button
                           onClick={clearAll}
@@ -706,7 +793,13 @@ const DoctorPrescriptions = () => {
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <path d="M3 9h18M3 15h18M9 3v18" />
                     </svg>
@@ -721,7 +814,13 @@ const DoctorPrescriptions = () => {
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                    >
                       <line x1="3" y1="6" x2="21" y2="6" />
                       <line x1="3" y1="12" x2="21" y2="12" />
                       <line x1="3" y1="18" x2="21" y2="18" />
@@ -736,7 +835,9 @@ const DoctorPrescriptions = () => {
                   onClick={() => setWizardOpen(true)}
                 >
                   <Plus className="h-3.5 w-3.5 sm:mr-1.5" />
-                  <span className="hidden sm:inline">{t("pages.doctor.new_rx")}</span>
+                  <span className="hidden sm:inline">
+                    {t("pages.doctor.new_rx")}
+                  </span>
                 </Button>
               </div>
             </div>
@@ -749,9 +850,13 @@ const DoctorPrescriptions = () => {
                     <AlertCircle className="w-6 h-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load prescriptions</p>
+                    <p className="text-[12px] font-semibold text-foreground">
+                      Failed to load prescriptions
+                    </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {(error as any)?.message ?? "Something went wrong"}
+                      {error instanceof Error
+                        ? error.message
+                        : "Something went wrong"}
                     </p>
                   </div>
                 </div>
@@ -782,17 +887,29 @@ const DoctorPrescriptions = () => {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Patient</th>
-                        <th className="text-left px-4 py-3 font-semibold">Medications</th>
-                        <th className="text-left px-4 py-3 font-semibold">Issued</th>
-                        <th className="text-left px-4 py-3 font-semibold">Pharmacy</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Patient
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Medications
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Issued
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Pharmacy
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Status
+                        </th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
                     <tbody>
                       {isLoading
-                        ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+                        ? Array.from({ length: 5 }).map((_, i) => (
+                            <SkeletonRow key={i} />
+                          ))
                         : allList.map((p) => (
                             <tr
                               key={p.id}
@@ -826,8 +943,12 @@ const DoctorPrescriptions = () => {
                                       className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/80"
                                     >
                                       <Pill className="h-3 w-3 text-primary shrink-0" />
-                                      <span className="font-medium text-foreground">{m.medicine_name}</span>
-                                      <span className="text-muted-foreground/50">· {m.dosage}</span>
+                                      <span className="font-medium text-foreground">
+                                        {m.medicine_name}
+                                      </span>
+                                      <span className="text-muted-foreground/50">
+                                        · {m.dosage}
+                                      </span>
                                     </span>
                                   ))}
                                   {p.items.length > 2 && (
@@ -854,7 +975,9 @@ const DoctorPrescriptions = () => {
                                     {p.pharmacy.name}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] text-muted-foreground/40">—</span>
+                                  <span className="text-[10px] text-muted-foreground/40">
+                                    —
+                                  </span>
                                 )}
                               </td>
 
@@ -864,10 +987,17 @@ const DoctorPrescriptions = () => {
                                   variant="outline"
                                   className={cn(
                                     "border text-[9px] px-1.5 py-0 font-medium",
-                                    STATUS_STYLES[p.status] ?? "bg-secondary/50 text-muted-foreground border-border/60",
+                                    STATUS_STYLES[p.status] ??
+                                      "bg-secondary/50 text-muted-foreground border-border/60",
                                   )}
                                 >
-                                  <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[p.status] ?? "bg-muted-foreground/40")} />
+                                  <span
+                                    className={cn(
+                                      "w-1 h-1 rounded-full mr-1",
+                                      STATUS_DOT[p.status] ??
+                                        "bg-muted-foreground/40",
+                                    )}
+                                  />
                                   {localStatusLabel[p.status] ?? p.status}
                                 </Badge>
                               </td>
@@ -878,13 +1008,19 @@ const DoctorPrescriptions = () => {
                                   {p.status === "draft" && (
                                     <Button
                                       size="sm"
-                                      disabled={issueMutation.isPending && issueMutation.variables === p.id}
+                                      disabled={
+                                        issueMutation.isPending &&
+                                        issueMutation.variables === p.id
+                                      }
                                       onClick={() => handleIssue(p)}
                                       className="h-7 px-2.5 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm"
                                     >
-                                      {issueMutation.isPending && issueMutation.variables === p.id
-                                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                                        : "Issue"}
+                                      {issueMutation.isPending &&
+                                      issueMutation.variables === p.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        "Issue"
+                                      )}
                                     </Button>
                                   )}
                                   <Button
@@ -906,7 +1042,9 @@ const DoctorPrescriptions = () => {
               ) : (
                 <div className="grid md:grid-cols-2 gap-2">
                   {isLoading
-                    ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                        <SkeletonCard key={i} />
+                      ))
                     : allList.map((p) => (
                         <PrescriptionCard
                           key={p.id}
@@ -914,7 +1052,10 @@ const DoctorPrescriptions = () => {
                           statusLabel={localStatusLabel}
                           onViewDetails={handleViewDetails}
                           onIssue={handleIssue}
-                          isIssuing={issueMutation.isPending && issueMutation.variables === p.id}
+                          isIssuing={
+                            issueMutation.isPending &&
+                            issueMutation.variables === p.id
+                          }
                         />
                       ))}
                 </div>
