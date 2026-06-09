@@ -5,7 +5,7 @@ import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
-import { FormField, EntryCard } from "./ui-primitives";
+import { FormField, EntryCard } from "./UiPrimitives";
 import type { EducationEntry } from "./Types";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -67,7 +67,9 @@ export const EducationStep = React.memo(function EducationStep({
             <FormField label="Degree *">
               <Input
                 value={entry.degree}
-                onChange={(e) => updateEntry(entry.id, { degree: e.target.value })}
+                onChange={(e) =>
+                  updateEntry(entry.id, { degree: e.target.value })
+                }
                 placeholder="MBBS"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -76,7 +78,9 @@ export const EducationStep = React.memo(function EducationStep({
             <FormField label="Institution *">
               <Input
                 value={entry.institution}
-                onChange={(e) => updateEntry(entry.id, { institution: e.target.value })}
+                onChange={(e) =>
+                  updateEntry(entry.id, { institution: e.target.value })
+                }
                 placeholder="University of Rwanda"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -85,7 +89,9 @@ export const EducationStep = React.memo(function EducationStep({
             <FormField label="Country *">
               <Input
                 value={entry.country}
-                onChange={(e) => updateEntry(entry.id, { country: e.target.value })}
+                onChange={(e) =>
+                  updateEntry(entry.id, { country: e.target.value })
+                }
                 placeholder="Rwanda"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -97,7 +103,9 @@ export const EducationStep = React.memo(function EducationStep({
                   type="number"
                   value={entry.start_year}
                   onChange={(e) =>
-                    updateEntry(entry.id, { start_year: parseInt(e.target.value, 10) })
+                    updateEntry(entry.id, {
+                      start_year: parseInt(e.target.value, 10),
+                    })
                   }
                   className="border-border focus-visible:ring-primary text-xs h-9"
                 />
@@ -107,7 +115,9 @@ export const EducationStep = React.memo(function EducationStep({
                   type="number"
                   value={entry.end_year}
                   onChange={(e) =>
-                    updateEntry(entry.id, { end_year: parseInt(e.target.value, 10) })
+                    updateEntry(entry.id, {
+                      end_year: parseInt(e.target.value, 10),
+                    })
                   }
                   className="border-border focus-visible:ring-primary text-xs h-9"
                 />

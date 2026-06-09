@@ -19,9 +19,7 @@ export interface PersonalInfo {
 export interface SpecializationsInfo {
   primary: string;
   secondary: string[];
-  custom_tags: string[];
   years_of_experience: number;
-  subspecialties: string;
 }
 
 export interface EducationEntry {

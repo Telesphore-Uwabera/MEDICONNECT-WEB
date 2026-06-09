@@ -1,42 +1,41 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// ExperienceStep
+// QualificationsStep
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Check, Plus, Upload } from "lucide-react";
 import { FormField, EntryCard } from "./UiPrimitives";
-import type { ExperienceEntry } from "./Types";
+import type { QualificationEntry } from "./Types";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
-interface ExperienceStepProps {
-  entries: ExperienceEntry[];
-  onChange: (v: ExperienceEntry[]) => void;
+interface QualificationsStepProps {
+  entries: QualificationEntry[];
+  onChange: (v: QualificationEntry[]) => void;
 }
 
-export const ExperienceStep = React.memo(function ExperienceStep({
+export const QualificationsStep = React.memo(function QualificationsStep({
   entries,
   onChange,
-}: ExperienceStepProps) {
+}: QualificationsStepProps) {
   const addEntry = useCallback(() => {
     onChange([
       ...entries,
       {
         id: uid(),
         apiId: undefined,
-        job_title: "",
-        workplace: "",
-        country: "",
-        start_date: "",
-        end_date: null,
-        is_current: false,
+        title: "",
+        issuing_body: "",
+        issued_at: "",
+        expires_at: "",
+        certificate_file: null,
       },
     ]);
   }, [entries, onChange]);
 
   const updateEntry = useCallback(
-    (id: string, patch: Partial<ExperienceEntry>) => {
+    (id: string, patch: Partial<QualificationEntry>) => {
       onChange(entries.map((e) => (e.id === id ? { ...e, ...patch } : e)));
     },
     [entries, onChange],
@@ -53,7 +52,7 @@ export const ExperienceStep = React.memo(function ExperienceStep({
     <div className="space-y-4">
       {entries.length === 0 && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-4 py-3 border border-dashed border-border">
-          No experience entries yet. Click "Add experience" below.
+          No qualifications yet. Click "Add qualification" below.
         </p>
       )}
 
@@ -65,83 +64,88 @@ export const ExperienceStep = React.memo(function ExperienceStep({
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField label="Job title *">
+            <FormField
+              label="Certification title *"
+              className="col-span-1 sm:col-span-2"
+            >
               <Input
-                value={entry.job_title}
+                value={entry.title}
                 onChange={(e) =>
-                  updateEntry(entry.id, { job_title: e.target.value })
+                  updateEntry(entry.id, { title: e.target.value })
                 }
-                placeholder="General Practitioner"
+                placeholder="Advanced Cardiac Life Support"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
 
-            <FormField label="Workplace *">
+            <FormField
+              label="Issuing body *"
+              className="col-span-1 sm:col-span-2"
+            >
               <Input
-                value={entry.workplace}
+                value={entry.issuing_body}
                 onChange={(e) =>
-                  updateEntry(entry.id, { workplace: e.target.value })
+                  updateEntry(entry.id, { issuing_body: e.target.value })
                 }
-                placeholder="King Faisal Hospital"
+                placeholder="American Heart Association"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
 
-            <FormField label="Country *">
-              <Input
-                value={entry.country}
-                onChange={(e) =>
-                  updateEntry(entry.id, { country: e.target.value })
-                }
-                placeholder="Rwanda"
-                className="border-border focus-visible:ring-primary text-xs h-9"
-              />
-            </FormField>
-
-            <FormField label="Start date *">
+            <FormField label="Issued date *">
               <Input
                 type="date"
-                value={entry.start_date}
+                value={entry.issued_at}
                 onChange={(e) =>
-                  updateEntry(entry.id, { start_date: e.target.value })
+                  updateEntry(entry.id, { issued_at: e.target.value })
                 }
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
 
-            {!entry.is_current && (
-              <FormField label="End date">
-                <Input
-                  type="date"
-                  value={entry.end_date ?? ""}
-                  onChange={(e) =>
-                    updateEntry(entry.id, { end_date: e.target.value || null })
-                  }
-                  className="border-border focus-visible:ring-primary text-xs h-9"
-                />
-              </FormField>
-            )}
-
-            <div className="col-span-1 sm:col-span-2 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`current-${entry.id}`}
-                checked={entry.is_current}
+            <FormField label="Expiry date">
+              <Input
+                type="date"
+                value={entry.expires_at}
                 onChange={(e) =>
-                  updateEntry(entry.id, {
-                    is_current: e.target.checked,
-                    end_date: e.target.checked ? null : entry.end_date,
-                  })
+                  updateEntry(entry.id, { expires_at: e.target.value })
                 }
-                className="accent-primary"
+                className="border-border focus-visible:ring-primary text-xs h-9"
               />
-              <label
-                htmlFor={`current-${entry.id}`}
-                className="text-xs text-muted-foreground"
-              >
-                Currently working here
+            </FormField>
+
+            <FormField
+              label="Certificate file (optional)"
+              className="col-span-1 sm:col-span-2"
+            >
+              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md px-3 py-2 hover:border-primary hover:bg-primary/5 transition-colors">
+                <input
+                  type="file"
+                  accept=".pdf,image/jpeg,image/png"
+                  className="sr-only"
+                  onChange={(e) =>
+                    updateEntry(entry.id, {
+                      certificate_file: e.target.files?.[0] ?? null,
+                    })
+                  }
+                />
+                {entry.certificate_file ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-[11px] text-primary truncate">
+                      {entry.certificate_file.name}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Upload certificate (PDF, JPG, PNG · max 4 MB)
+                    </span>
+                  </>
+                )}
               </label>
-            </div>
+            </FormField>
           </div>
         </EntryCard>
       ))}
@@ -152,7 +156,7 @@ export const ExperienceStep = React.memo(function ExperienceStep({
         onClick={addEntry}
         className="w-full border-dashed border-border text-xs text-muted-foreground hover:text-primary hover:border-primary"
       >
-        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add experience
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add qualification
       </Button>
     </div>
   );
