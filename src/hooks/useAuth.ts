@@ -113,3 +113,29 @@ export const useConvertGuest = () =>
         body: payload,
       }),
   });
+
+
+ 
+
+export const useForgotPassword = () =>
+  useMutation({
+    mutationFn: (payload: { email: string }) =>
+      apiFetch<{ message: string }>("/auth/forgot-password", {
+        method: "POST",
+        body: payload,
+      }),
+  });
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: (payload: {
+      email: string;
+      otp: string;
+      password: string;
+      password_confirmation: string;
+    }) =>
+      apiFetch<{ message: string }>("/auth/reset-password", {
+        method: "POST",
+        body: payload,
+      }),
+  });

@@ -96,5 +96,6 @@
   "orders": "Orders",
   "deliveries": "Deliveries",
   "activeRole": "Active Role",
-  "instantDoctors": "Instant Doctors"
+  "instantDoctors": "Instant Doctors",
+  "wallet":"Wallets"
 }

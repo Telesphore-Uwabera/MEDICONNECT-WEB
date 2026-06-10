@@ -81,6 +81,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
         { to: "/admin/manage-checklist-questions", label: t("sidebar.checklistQuestions"), icon: HelpCircle },
         { to: "/admin/manage-insurances", label: t("sidebar.insurances"), icon: Shield },
         { to: "/admin/manage-instant-doctors", label: t("sidebar.instantDoctors"), icon: Star },
+        // wallet
+            { to: "/admin/manage-wallet", label: t("sidebar.wallet"), icon: Star },
       ],
     },
     {
@@ -92,9 +94,9 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.system"),
       items: [
-        { to: "/admin/settings", label: t("sidebar.settings"), icon: Settings },
-        { to: "/admin/audit-logs", label: t("sidebar.auditLogs"), icon: History },
-        { to: "/admin/maintenance", label: t("sidebar.maintenance"), icon: Wrench },
+        { to: "/settings", label: t("sidebar.settings"), icon: Settings },
+        // { to: "/admin/audit-logs", label: t("sidebar.auditLogs"), icon: History },
+        // { to: "/admin/maintenance", label: t("sidebar.maintenance"), icon: Wrench },
       ],
     },
     {
@@ -131,7 +133,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.account"),
       items: [
-        { to: "/doctor/settings", label: t("sidebar.settings"), icon: Settings },
+        // { to: "/doctor/settings", label: t("sidebar.settings"), icon: Settings },
+               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],
@@ -208,7 +211,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.account"),
       items: [
-        { to: "/patient/settings", label: t("sidebar.settings"), icon: Settings },
+        // { to: "/patient/settings", label: t("sidebar.settings"), icon: Settings },
+               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],
@@ -249,7 +253,8 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.account"),
       items: [
-        { to: "/pharmacy/settings", label: t("sidebar.settings"), icon: Settings },
+        // { to: "/pharmacy/settings", label: t("sidebar.settings"), icon: Settings },
+               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],

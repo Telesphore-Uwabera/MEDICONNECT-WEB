@@ -75,6 +75,8 @@ import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
 import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ConsultationRoomPage from "./pages/ConsultationRoom.tsx";
+import AdminSettings from "./pages/admin/AdminSettings.tsx";
+import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
 
 const queryClient = new QueryClient();
 
@@ -86,54 +88,96 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/consultation/:roomName" element={<ConsultationRoomPage />} />
+          <Route
+            path="/consultation/:roomName"
+            element={<ConsultationRoomPage />}
+          />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding/:role" element={<Onboarding />} />
 
           <Route path="/patient" element={<PatientOverview />} />
           <Route path="/patient/search-doctors" element={<PatientDoctors />} />
-          <Route path="/patient/search-hospitals" element={<PatientHospitals />} />
+          <Route
+            path="/patient/search-hospitals"
+            element={<PatientHospitals />}
+          />
           <Route path="/patient/instant" element={<PatientInstant />} />
-          <Route path="/patient/appointments" element={<PatientAppointments />} />
-          <Route path="/patient/prescriptions" element={<PatientPrescriptions />} />
-          <Route path="/patient/fitness-certificates" element={<PatientFitnessCertificates />} />
-          <Route path="/patient/search-pharmacy" element={<PatientPharmacy />} />
+          <Route
+            path="/patient/appointments"
+            element={<PatientAppointments />}
+          />
+          <Route
+            path="/patient/prescriptions"
+            element={<PatientPrescriptions />}
+          />
+          <Route
+            path="/patient/fitness-certificates"
+            element={<PatientFitnessCertificates />}
+          />
+          <Route
+            path="/patient/search-pharmacy"
+            element={<PatientPharmacy />}
+          />
           <Route path="/patient/profile" element={<PatientProfile />} />
           <Route path="/patient/medical-info" element={<MedicalInfo />} />
           <Route path="/patient/insurance" element={<PatientInsurence />} />
-          <Route path="/patient/service-bookings" element={<ServiceBookings />} />
+          <Route
+            path="/patient/service-bookings"
+            element={<ServiceBookings />}
+          />
           <Route path="/patient/my-reviews" element={<MyReviews />} />
 
           <Route path="/doctor" element={<DoctorOverview />} />
           <Route path="/doctor/availability" element={<DoctorAvailability />} />
           <Route path="/doctor/appointments" element={<DoctorAppointments />} />
           <Route path="/doctor/patients" element={<DoctorPatients />} />
-          <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
-          <Route path="/doctor/fitness-certificates" element={<DoctorFitnessCertificates />} />
-          <Route path="/doctor/profile" element={<DoctorProfile/>} />
+          <Route
+            path="/doctor/prescriptions"
+            element={<DoctorPrescriptions />}
+          />
+          <Route
+            path="/doctor/fitness-certificates"
+            element={<DoctorFitnessCertificates />}
+          />
+          <Route path="/doctor/profile" element={<DoctorProfile />} />
           <Route path="/doctor/referrals" element={<MyReferrals />} />
-          
+
           {/* Settings */}
           <Route path="/doctor/settings" element={<Settings />} />
 
           <Route path="/hospital" element={<HospitalAnalytics />} />
-          <Route path="/hospital/appointments" element={<HospitalAppointments />} />
+          <Route
+            path="/hospital/appointments"
+            element={<HospitalAppointments />}
+          />
           <Route path="/hospital/doctors" element={<HospitalDoctors />} />
-          <Route path="/hospital/departments" element={<HospitalDepartments />} />
+          <Route
+            path="/hospital/departments"
+            element={<HospitalDepartments />}
+          />
           <Route path="/hospital/schedule" element={<HospitalSchedule />} />
-          <Route path="/hospital/prescriptions" element={<HospitalPrescriptions />} />
+          <Route
+            path="/hospital/prescriptions"
+            element={<HospitalPrescriptions />}
+          />
           <Route path="/hospital/profile" element={<HospitalProfile />} />
-          <Route path="/hospital/insurances" element={<HospitalInsurances/>} />
+          <Route path="/hospital/insurances" element={<HospitalInsurances />} />
           {/* ServiceBookings */}
-          <Route path="/hospital/service-bookings" element={<HospitalServiceBookings />} />
+          <Route
+            path="/hospital/service-bookings"
+            element={<HospitalServiceBookings />}
+          />
           {/* HospitalSettings */}
-          <Route path="/hospital/settings" element={<HospitalSettings/>} />
+          <Route path="/hospital/settings" element={<HospitalSettings />} />
 
           <Route path="/pharmacy/orders" element={<PharmacyOrders />} />
           <Route path="/pharmacy/inventory" element={<PharmacyInventory />} />
-          <Route path="/pharmacy/prescriptions" element={<PharmacyPrescriptions />} />
+          <Route
+            path="/pharmacy/prescriptions"
+            element={<PharmacyPrescriptions />}
+          />
           <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
-          <Route path="/pharmacy/overview" element={<PharmacyDashboard/>} />
+          <Route path="/pharmacy/overview" element={<PharmacyDashboard />} />
           {/* PharmacyCategories */}
           <Route path="/pharmacy/categories" element={<PharmacyCategories />} />
           {/* PharmacyDeliveries */}
@@ -141,7 +185,10 @@ const App = () => (
           {/* PharmacySettings */}
           <Route path="/pharmacy/settings" element={<PharmacySettings />} />
           {/* RestockRequests */}
-          <Route path="/pharmacy/restock-requests" element={<RestockRequests />} />
+          <Route
+            path="/pharmacy/restock-requests"
+            element={<RestockRequests />}
+          />
 
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/approvals" element={<AdminApprovals />} />
@@ -149,16 +196,41 @@ const App = () => (
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/moderation" element={<AdminModeration />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/admin/service-pricing" element={<ManageServicePricing />} />
+          <Route
+            path="/admin/service-pricing"
+            element={<ManageServicePricing />}
+          />
           <Route path="/admin/manage-doctors" element={<ManageDoctors />} />
           <Route path="/admin/manage-patients" element={<ManagePatients />} />
           <Route path="/admin/manage-hospitals" element={<ManageHospitals />} />
-          <Route path="/admin/manage-pharmacies" element={<ManagePharmacies />} />
-          <Route path="/admin/manage-appointments" element={<ManageAppointments />} />
-          <Route path="/admin/manage-insurances" element={<ManageInsurances />} />
-          <Route path="/admin/manage-instant-doctors" element={<ManageInstantDoctors />} />
-          <Route path="/admin/manage-specializations" element={<ManageSpecializations />} />
-          <Route path="/admin/manage-checklist-questions" element={<ChecklistQuestions />} />
+          <Route
+            path="/admin/manage-pharmacies"
+            element={<ManagePharmacies />}
+          />
+          <Route
+            path="/admin/manage-appointments"
+            element={<ManageAppointments />}
+          />
+          <Route
+            path="/admin/manage-insurances"
+            element={<ManageInsurances />}
+          />
+          <Route
+            path="/admin/manage-instant-doctors"
+            element={<ManageInstantDoctors />}
+          />
+          <Route
+            path="/admin/manage-specializations"
+            element={<ManageSpecializations />}
+          />
+          <Route
+            path="/admin/manage-checklist-questions"
+            element={<ChecklistQuestions />}
+          />
+          {/* AdminSettings */}
+          <Route path="/settings" element={<AdminSettings/>} />
+          {/* ManageAdminWallet */}
+          <Route path="/admin/manage-wallet" element={<ManageAdminWallet/>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
