@@ -8,8 +8,8 @@
  * Key shape:  "consult_session:<doctorId>"
  * Value shape: ConsultSession (JSON)
  *
- * Lifetime: sessionStorage — cleared automatically when the tab/window closes,
- * so stale tokens never survive a full browser restart.
+ * Lifetime: localStorage — persists across tabs and windows, 
+ * automatically pruned by TTL to prevent stale tokens.
  */
 
 import { useCallback } from "react";
@@ -30,12 +30,12 @@ const key = (doctorId: number) => `consult_session:${doctorId}`;
 
 export function readConsultSession(doctorId: number): ConsultSession | null {
   try {
-    const raw = sessionStorage.getItem(key(doctorId));
+    const raw = localStorage.getItem(key(doctorId));
     if (!raw) return null;
     const session: ConsultSession = JSON.parse(raw);
     // Discard sessions that are too old — the token has likely expired
     if (Date.now() - session.savedAt > TTL_MS) {
-      sessionStorage.removeItem(key(doctorId));
+      localStorage.removeItem(key(doctorId));
       return null;
     }
     return session;
@@ -50,15 +50,15 @@ export function useConsultationSession(doctorId: number) {
   const save = useCallback((token: string, guestName: string, guestPhone: string) => {
     try {
       const session: ConsultSession = { token, doctorId, guestName, guestPhone, savedAt: Date.now() };
-      sessionStorage.setItem(key(doctorId), JSON.stringify(session));
+      localStorage.setItem(key(doctorId), JSON.stringify(session));
     } catch {
-      // sessionStorage unavailable (private mode quota, etc.) — degrade silently
+      // localStorage unavailable (private mode quota, etc.) — degrade silently
     }
   }, [doctorId]);
 
   const clear = useCallback(() => {
     try {
-      sessionStorage.removeItem(key(doctorId));
+      localStorage.removeItem(key(doctorId));
     } catch {
       // ignore
     }

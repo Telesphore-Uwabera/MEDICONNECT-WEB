@@ -8,6 +8,7 @@ export interface InstantConsultationRequestPayload {
   doctor_id: number;
   guest_phone?: string;
   guest_name?: string;
+  guest_password?: string;
 }
 
 export interface InstantConsultationRequestResponse {

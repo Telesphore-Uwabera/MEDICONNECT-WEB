@@ -660,18 +660,30 @@ export function IncomingCard({
               </button>
             )}
 
-            {/* IN_PROGRESS → Complete */}
+            {/* IN_PROGRESS → Complete & Rejoin */}
             {item.status === "in_progress" && (
-              <button
-                onClick={onComplete}
-                disabled={isBusy}
-                className="h-8 px-3 rounded-[5px] bg-[hsl(var(--info))] hover:opacity-90 text-[hsl(var(--info-foreground))] text-[10px] font-semibold flex items-center gap-1.5 transition-smooth shadow-soft active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isCompleting
-                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  : <CheckCircle2 className="h-3.5 w-3.5" />}
-                Complete
-              </button>
+              <>
+                <button
+                  onClick={() => setPreCallOpen(true)}
+                  disabled={isBusy}
+                  title="Rejoin"
+                  className="h-8 w-8 rounded-[5px] border border-border bg-card hover:bg-primary/10 hover:border-primary/40 text-muted-foreground hover:text-primary flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isJoining
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <LogIn className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  onClick={onComplete}
+                  disabled={isBusy}
+                  className="h-8 px-3 rounded-[5px] bg-[hsl(var(--info))] hover:opacity-90 text-[hsl(var(--info-foreground))] text-[10px] font-semibold flex items-center gap-1.5 transition-smooth shadow-soft active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isCompleting
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Complete
+                </button>
+              </>
             )}
 
           </div>

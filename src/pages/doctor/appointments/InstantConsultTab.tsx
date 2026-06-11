@@ -306,11 +306,6 @@
 //             </div>
 //           </div>
 //         ))}
-//       </aside>
-//     </div>
-//   );
-// }
-
 import { useState } from "react";
 import {
   FileText, Stethoscope,
@@ -328,6 +323,7 @@ import {
   type InstantConsultQueueItem,
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useCallStore } from "@/context/CallStore";
+import { useCallContext } from "@/context/CallContext";
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
@@ -407,25 +403,26 @@ function StatTile({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function InstantConsultTab() {
-  const call     = useCallStore();
-  const [notesOpen,    setNotesOpen]    = useState(true);
+  const call = useCallStore();
+  const [notesOpen, setNotesOpen] = useState(true);
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
 
   const isInCall = call.phase === "connected" && call.role === "doctor";
 
   const { data: queueData, isLoading: queueLoading } = useGetInstantQueue(!isInCall);
-  const acceptInstant   = useAcceptInstant();
-  const declineInstant  = useDeclineInstant();
-  const joinInstant     = useJoinInstant();
+  const acceptInstant = useAcceptInstant();
+  const declineInstant = useDeclineInstant();
+  const joinInstant = useJoinInstant();
   const completeInstant = useCompleteInstant();
+  const { startCall } = useCallContext();
 
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
 
   const confirmed = queue.filter((i) => i.status === "confirmed");
-  const accepted  = queue.filter((i) => i.status === "accepted");
-  const joined    = queue.filter((i) => i.status === "in_progress");
-  const others    = queue.filter((i) =>
+  const accepted = queue.filter((i) => i.status === "accepted");
+  const joined = queue.filter((i) => i.status === "in_progress");
+  const others = queue.filter((i) =>
     ["pending", "declined", "withdrawn", "expired", "completed"].includes(i.status),
   );
 
@@ -453,17 +450,19 @@ export function InstantConsultTab() {
       onSuccess: (res) => {
         const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
 
-        // Inject consultation_id into the token for the chat API
-        let enrichedToken = res.doctor_token;
+        let decodedToken: any;
         try {
-          const decoded = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
-          decoded.consultation_id = item.id;
-          enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
+          decodedToken = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+          decodedToken.consultation_id = item.id;
         } catch {
-          enrichedToken = encodeURIComponent(res.doctor_token);
+          decodedToken = null;
         }
 
-        window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
+        if (decodedToken) {
+          startCall(roomName, decodedToken);
+        } else {
+          toast.error("Failed to parse consultation token");
+        }
       },
       onError: (err: unknown) => toast.error(getErrMsg(err, "Failed to join session")),
       onSettled: () => setActiveAction(null),
@@ -526,7 +525,7 @@ export function InstantConsultTab() {
 
         {notesOpen && (
           <div className="w-72 flex-shrink-0 border-l border-border overflow-hidden flex flex-col bg-muted/20">
-            <InstantNotesSidebar onClose={() => setNotesOpen(false)} />
+            <InstantNotesSidebar onClose={() => setNotesOpen(false)} activeConsult={joined[0]} />
           </div>
         )}
       </div>
@@ -637,7 +636,9 @@ export function InstantConsultTab() {
                     key={item.id}
                     item={item}
                     onComplete={() => handleComplete(item)}
+                    onJoin={() => handleJoin(item)}
                     isCompleting={activeAction?.id === item.id && activeAction.action === "completing"}
+                    isJoining={activeAction?.id === item.id && activeAction.action === "joining"}
                   />
                 ))}
               </section>

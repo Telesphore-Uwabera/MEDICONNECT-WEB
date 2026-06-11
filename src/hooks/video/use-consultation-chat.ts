@@ -40,7 +40,7 @@ export interface ChatMessage {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useConsultationChat(consultationId: number | null) {
+export function useConsultationChat(consultationId: number | null, isOwner?: boolean) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -56,9 +56,16 @@ export function useConsultationChat(consultationId: number | null) {
   // Convert API message to UI message
   const toUiMessage = useCallback(
     (msg: ChatMessageApi): ChatMessage => {
-      const isMe =
-        currentUserIdRef.current !== null &&
-        msg.sender_id === currentUserIdRef.current;
+      let isMe = false;
+      if (isOwner !== undefined) {
+        const myRole = isOwner ? "doctor" : "patient";
+        isMe = msg.sender_type === myRole;
+      } else {
+        isMe =
+          currentUserIdRef.current !== null &&
+          msg.sender_id === currentUserIdRef.current;
+      }
+
       return {
         id: String(msg.id),
         from: isMe ? "me" : "other",
@@ -67,7 +74,7 @@ export function useConsultationChat(consultationId: number | null) {
         senderType: msg.sender_type,
       };
     },
-    [],
+    [isOwner],
   );
 
   // ── Fetch existing messages ─────────────────────────────────────────────────
@@ -143,7 +150,7 @@ export function useConsultationChat(consultationId: number | null) {
         from: "me",
         text: text.trim(),
         timestamp: Date.now(),
-        senderType: "patient", // assumed patient from this UI
+        senderType: isOwner !== undefined ? (isOwner ? "doctor" : "patient") : "patient",
       };
       setMessages((prev) => [...prev, optimisticMsg]);
 
@@ -173,7 +180,7 @@ export function useConsultationChat(consultationId: number | null) {
         setSending(false);
       }
     },
-    [consultationId, toUiMessage],
+    [consultationId, toUiMessage, isOwner],
   );
 
   // ── Mark as read ────────────────────────────────────────────────────────────

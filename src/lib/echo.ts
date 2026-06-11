@@ -18,10 +18,39 @@ const echo = new Echo({
     forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'wss',
     enabledTransports: ['ws', 'wss'],
     authEndpoint: `${import.meta.env.VITE_APP_BASE_URL}/broadcasting/auth`,
-    auth: {
-        headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-        },
+    authorizer: (channel: any, options: any) => {
+        return {
+            authorize: (socketId: string, callback: Function) => {
+                let token = localStorage.getItem("auth_token");
+                if (!token) {
+                    try {
+                        const sessionStr = localStorage.getItem("instant_consult_session");
+                        if (sessionStr) {
+                            token = JSON.parse(sessionStr).token;
+                        }
+                    } catch { }
+                }
+
+                fetch(options.authEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        socket_id: socketId,
+                        channel_name: channel.name
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Auth failed');
+                        return response.json();
+                    })
+                    .then(data => callback(false, data))
+                    .catch(error => callback(true, error));
+            }
+        };
     },
 });
 

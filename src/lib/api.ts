@@ -59,55 +59,55 @@
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
-  body?: unknown;
+    body?: unknown;
 }
 
 export async function apiFetch<T>(
-  endpoint: string,
-  options?: ApiFetchOptions
+    endpoint: string,
+    options?: ApiFetchOptions
 ): Promise<T> {
-  const token = localStorage.getItem("auth_token");
-  const { body, headers: extraHeaders, ...restOptions } = options ?? {};
+    const token = localStorage.getItem("auth_token");
+    const { body, headers: extraHeaders, ...restOptions } = options ?? {};
 
-  const isFormData = body instanceof FormData;
+    const isFormData = body instanceof FormData;
 
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    ...(extraHeaders as Record<string, string> | undefined),
-  };
+    const headers: Record<string, string> = {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
+        ...(extraHeaders as Record<string, string> | undefined),
+    };
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...restOptions,
-    headers,
-    body:
-      body === undefined
-        ? undefined
-        : isFormData
-          ? (body as FormData)
-          : JSON.stringify(body),
-  });
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+        ...restOptions,
+        headers,
+        body:
+            body === undefined
+                ? undefined
+                : isFormData
+                    ? (body as FormData)
+                    : JSON.stringify(body),
+    });
 
-  if (res.status === 401) {
-    localStorage.removeItem("auth_token");
-    window.location.href = "/auth";
-    return Promise.reject(new Error("Unauthorized"));
-  }
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    // Handle both array shape: ["msg"] and object shape: { phone: ["msg"] }
-    const fieldErrors = data?.errors;
-    if (fieldErrors) {
-      const flat = Array.isArray(fieldErrors)
-        ? (fieldErrors as string[])
-        : Object.values(fieldErrors as Record<string, string[]>).flat();
-      if (flat.length > 0) throw new Error(flat.join(" · "));
+    if (res.status === 401) {
+        localStorage.removeItem("auth_token");
+        window.location.href = "/auth";
+        return Promise.reject(new Error("Unauthorized"));
     }
-    throw new Error(data?.message ?? "Something went wrong");
-  }
 
-  return data as T;
+    const data = await res.json();
+
+    if (!res.ok) {
+        // Handle both array shape: ["msg"] and object shape: { phone: ["msg"] }
+        const fieldErrors = data?.errors;
+        if (fieldErrors) {
+            const flat = Array.isArray(fieldErrors)
+                ? (fieldErrors as string[])
+                : Object.values(fieldErrors as Record<string, string[]>).flat();
+            if (flat.length > 0) throw new Error(flat.join(" · "));
+        }
+        throw new Error(data?.message ?? "Something went wrong");
+    }
+
+    return data as T;
 }

@@ -4410,6 +4410,9 @@ import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import { useConsultationSession } from "@/hooks/patient/se-consultation-session";
+import { useLogin } from "@/hooks/useAuth";
+import { useCallContext } from "@/context/CallContext";
+import { useNavigate } from "react-router-dom";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -4687,6 +4690,8 @@ export const ConnectDialogContent = ({
   onMinimize,
   onCloseCompletely,
 }: ConnectDialogContentProps) => {
+  const { startCall } = useCallContext();
+  const navigate = useNavigate();
   const call = useCallStore();
   const session = useConsultationSession(doctor.id);
 
@@ -4704,6 +4709,7 @@ export const ConnectDialogContent = ({
 
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
   const [consultationToken, setConsultationToken] = useState<string | null>(null);
@@ -4722,6 +4728,7 @@ export const ConnectDialogContent = ({
 
   const requestMutation = useInstantConsultationRequest();
   const payMutation = useInstantConsultationPay();
+  const loginMutation = useLogin();
   const { data: statusData } = useInstantConsultationStatus(
     consultationToken,
     phase === "polling",
@@ -4840,7 +4847,7 @@ export const ConnectDialogContent = ({
   };
 
   // ── Send consultation request ─────────────────────────────────────────────
-  const handleRequest = async (override?: { name: string; phone: string }) => {
+  const handleRequest = async (override?: { name: string; phone: string, password?: string }) => {
     setPhase("requesting");
     setErrorMsg(null);
 
@@ -4857,11 +4864,20 @@ export const ConnectDialogContent = ({
         doctor_id: doctor.id,
         guest_name: name,
         guest_phone: phone,
+        guest_password: override?.password ?? guestPassword,
       };
 
       const res = await requestMutation.mutateAsync(payload);
 
       console.info("[Request] response:", JSON.stringify(res));
+
+      if (override?.password) {
+        try {
+          await loginMutation.mutateAsync({ phone, password: override.password } as any);
+        } catch (err) {
+          console.warn("[Request] auto-login failed:", err);
+        }
+      }
 
       setConsultationToken(res.guest_token);
       setConsultationId(res.id ?? null);
@@ -4947,8 +4963,11 @@ export const ConnectDialogContent = ({
   const handleGuestSubmit = () => {
     if (!guestName.trim()) { setGuestError("Please enter your name."); return; }
     if (!guestPhone.trim()) { setGuestError("Please enter your phone number."); return; }
+    if (!guestPassword.trim()) { setGuestError("Please enter your password."); return; }
+    if (guestPassword.length < 6) { setGuestError("Please enter a password of at least 6 characters."); return; }
+
     setGuestError(null);
-    handleRequest({ name: guestName.trim(), phone: guestPhone.trim() });
+    handleRequest({ name: guestName.trim(), phone: guestPhone.trim(), password: guestPassword.trim() });
   };
 
   const handleJoin = () => {
@@ -4967,7 +4986,17 @@ export const ConnectDialogContent = ({
       enrichedToken = encodeURIComponent(dailyToken);
     }
 
-    window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
+    try {
+      // Test decode to ensure it's valid
+      const decoded = JSON.parse(atob(decodeURIComponent(dailyToken)));
+      decoded.consultation_id = consultationId;
+      enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
+    } catch {
+      enrichedToken = encodeURIComponent(dailyToken);
+    }
+
+    onCloseCompletely();
+    navigate(`/consultation/${roomName}?t=${enrichedToken}`);
   };
 
   const handleEnd = () => {
@@ -5159,6 +5188,18 @@ export const ConnectDialogContent = ({
                     onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">Password</Label>
+                  <Input
+                    placeholder="**********"
+
+                    type="password"
+                    onChange={(e) => setGuestPassword(e.target.value)}
+                    className="h-9 text-[12px]"
+                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  />
+                </div>
+
                 {guestError && (
                   <p className="text-[11px] text-destructive flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" /> {guestError}

@@ -5,7 +5,7 @@ import { X, Send, MessageSquare, Loader2 } from "lucide-react";
 import {
   useConsultationChat,
   type ChatMessage,
-} from "@/hooks/use-consultation-chat";
+} from "@/hooks/video/use-consultation-chat";
 
 const fmt = (ts: number) =>
   new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -59,8 +59,8 @@ interface ChatPanelProps {
   open: boolean;
   onClose: () => void;
   doctorAvatar: string;
-  doctorName: string;
   consultationId: number | null;
+  isOwner: boolean;
   /** Expose unread count + clearUnread to parent (for badge on chat button) */
   onUnreadChange?: (count: number) => void;
 }
@@ -70,9 +70,10 @@ export const ChatPanel = ({
   onClose,
   doctorAvatar,
   consultationId,
+  isOwner,
   onUnreadChange,
 }: ChatPanelProps) => {
-  const chat = useConsultationChat(consultationId);
+  const chat = useConsultationChat(consultationId, isOwner);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -97,7 +98,10 @@ export const ChatPanel = ({
 
   // Auto-scroll to latest message
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [chat.messages]);
 
   const handleSend = () => {
@@ -118,7 +122,7 @@ export const ChatPanel = ({
   return (
     <div
       className={cn(
-        "absolute top-0 right-0 h-full w-72 flex flex-col z-20",
+        "absolute top-0 right-0 h-full w-full flex flex-col z-20",
         "bg-[#1a1a1a]/95 backdrop-blur-sm border-l border-white/10",
         "transition-transform duration-300 ease-in-out",
         open ? "translate-x-0" : "translate-x-full",
