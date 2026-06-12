@@ -1,7 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
 import {
   Users,
   UserCheck,
@@ -18,32 +18,39 @@ import {
   XCircle,
   Clock,
   BarChart3,
+  Search,
+  CalendarDays,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
-import { adminStats, useAdminUsers } from "@/lib/admin-store";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
+import {
+  useGetAdminDashboard,
+  type AdminDashboardFilters,
+} from "@/hooks/admin/use-admin-overview";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const roleIcon = {
-  doctor: Stethoscope,
-  hospital: Hospital,
-  pharmacy: Pill,
-  patient: User,
+  doctors:    Stethoscope,
+  hospitals:  Hospital,
+  pharmacies: Pill,
+  patients:   User,
 } as const;
 
 const roleColor = {
-  doctor:   "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  hospital: "bg-primary/10 text-primary",
-  pharmacy: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-  patient:  "bg-warning/10 text-warning",
+  doctors:    "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  hospitals:  "bg-primary/10 text-primary",
+  pharmacies: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  patients:   "bg-warning/10 text-warning",
 } as const;
 
-const statusStyle = {
-  active:   { bg: "bg-success/10 text-success border-success/20",   dot: "bg-success" },
-  pending:  { bg: "bg-warning/10 text-warning border-warning/20",   dot: "bg-warning" },
-  rejected: { bg: "bg-destructive/10 text-destructive border-destructive/20", dot: "bg-destructive" },
-  inactive: { bg: "bg-muted text-muted-foreground border-border",   dot: "bg-muted-foreground/40" },
+const roleBarColor = {
+  doctors:    "bg-blue-500",
+  hospitals:  "bg-primary",
+  pharmacies: "bg-violet-500",
+  patients:   "bg-warning",
 } as const;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -54,12 +61,14 @@ function KpiCard({
   icon: Icon,
   sub,
   accent = false,
+  loading = false,
 }: {
   label: string;
   value: number | string;
   icon: React.ElementType;
   sub?: string;
   accent?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div className="rounded-sm border border-border bg-card p-3.5 flex items-center gap-3 shadow-sm">
@@ -68,8 +77,12 @@ function KpiCard({
       </div>
       <div className="min-w-0">
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest truncate">{label}</p>
-        <p className={cn("text-xl font-bold tabular-nums leading-tight", accent ? "text-primary" : "text-foreground")}>{value}</p>
-        {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
+        {loading ? (
+          <div className="h-7 w-16 rounded bg-muted animate-pulse mt-0.5" />
+        ) : (
+          <p className={cn("text-xl font-bold tabular-nums leading-tight", accent ? "text-primary" : "text-foreground")}>{value}</p>
+        )}
+        {sub && !loading && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
       </div>
     </div>
   );
@@ -90,7 +103,6 @@ function SectionHeader({ title, href, linkLabel }: { title: string; href?: strin
   );
 }
 
-/** Mini bar — percentage fill */
 function MiniBar({ pct, className }: { pct: number; className?: string }) {
   return (
     <div className="h-1 rounded-full bg-muted overflow-hidden flex-1">
@@ -102,41 +114,127 @@ function MiniBar({ pct, className }: { pct: number; className?: string }) {
   );
 }
 
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={cn("rounded bg-muted animate-pulse", className)} />;
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 flex items-center gap-2 text-[11px] text-destructive">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      {message}
+    </div>
+  );
+}
+
+// ─── Filter bar ───────────────────────────────────────────────────────────────
+
+function FilterBar({
+  filters,
+  onChange,
+}: {
+  filters: AdminDashboardFilters;
+  onChange: (f: AdminDashboardFilters) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search name, phone, invoice…"
+          value={filters.q ?? ""}
+          onChange={(e) => onChange({ ...filters, q: e.target.value || undefined })}
+          className="pl-6 pr-3 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-52"
+        />
+      </div>
+
+      {/* Exact date */}
+      <div className="relative">
+        <CalendarDays className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+        <input
+          type="date"
+          value={filters.date ?? ""}
+          onChange={(e) => onChange({ ...filters, date: e.target.value || undefined, date_from: undefined, date_to: undefined })}
+          className="pl-6 pr-3 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
+        />
+      </div>
+
+      {/* Date range */}
+      <div className="flex items-center gap-1.5">
+        <input
+          type="date"
+          value={filters.date_from ?? ""}
+          onChange={(e) => onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })}
+          className="px-2 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
+        />
+        <span className="text-[10px] text-muted-foreground">→</span>
+        <input
+          type="date"
+          value={filters.date_to ?? ""}
+          onChange={(e) => onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })}
+          className="px-2 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
+        />
+      </div>
+
+      {/* Clear filters */}
+      {Object.values(filters).some(Boolean) && (
+        <button
+          onClick={() => onChange({})}
+          className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AdminOverview = () => {
   const { t } = useTranslation();
-  const users = useAdminUsers();
-  const stats = adminStats();
+  const [filters, setFilters] = useState<AdminDashboardFilters>({});
 
-  const recent = [...users].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
-  const total = stats.total || 1;
+  const { data: response, isLoading, isError } = useGetAdminDashboard(filters);
+  const data = response?.data;
 
-  // Status distribution
-  const statusCounts = users.reduce(
-    (acc, u) => { acc[u.status as keyof typeof acc] = (acc[u.status as keyof typeof acc] ?? 0) + 1; return acc; },
-    { active: 0, pending: 0, rejected: 0, inactive: 0 } as Record<string, number>,
-  );
+  // Derived values — safe-fallback to 0 while loading
+  const users        = data?.users;
+  const appointments = data?.appointments;
+  const payments     = data?.payments;
+  const certificates = data?.certificates;
+  const consultations = data?.quick_consultations;
 
-  // Role distribution with percentages
-  const roleEntries = (Object.keys(stats.byRole) as Array<keyof typeof stats.byRole>).map((r) => ({
-    role: r,
-    count: stats.byRole[r],
-    pct: Math.round((stats.byRole[r] / total) * 100),
-  }));
+  const totalUsers = users?.total || 1;
 
-  // Mock activity trend (last 7 days) — replace with real data
-  const activityData = [42, 58, 51, 73, 65, 88, 76];
-  const activityMax = Math.max(...activityData);
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  // Approval rate
-  const approvalRate = total > 0
-    ? Math.round(((statusCounts.active ?? 0) / total) * 100)
+  const approvalRate = users
+    ? Math.round(((users.patients + users.doctors + users.pharmacies) / totalUsers) * 100)
     : 0;
 
-  // Prescriptions mock — replace with real store
-  const rxStats = { total: 1240, pending: 87, dispensed: 948, expired: 45 };
+  const roleEntries = users
+    ? ([
+        { key: "patients",   count: users.patients },
+        { key: "doctors",    count: users.doctors },
+        { key: "pharmacies", count: users.pharmacies },
+      ] as const).map(({ key, count }) => ({
+        key,
+        count,
+        pct: Math.round((count / totalUsers) * 100),
+      }))
+    : [];
+
+  const rxTotal      = payments ? parseInt(payments.total_revenue, 10) || 0 : 0;
+  const rxToday      = payments ? parseInt(payments.revenue_today, 10) || 0 : 0;
+  const currency     = payments?.currency ?? "RWF";
+  const dispenseRate = rxTotal > 0 ? Math.round((rxToday / rxTotal) * 100) : 0;
+
+  // Certificate totals
+  const certTotal = certificates ? (certificates.approved + certificates.pending) : 0;
+  const certApprovalRate = certTotal > 0
+    ? Math.round((certificates!.approved / certTotal) * 100)
+    : 0;
 
   return (
     <DashboardLayout role="admin">
@@ -147,237 +245,255 @@ const AdminOverview = () => {
 
       <div className="p-5 space-y-5">
 
+        {/* ── Filters ── */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <FilterBar filters={filters} onChange={setFilters} />
+          {isLoading && (
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Updating…
+            </div>
+          )}
+        </div>
+
+        {isError && <ErrorBanner message="Failed to load dashboard data. Please try again." />}
+
         {/* ── Row 1: KPI cards ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             label={t("admin.overview.total_users")}
-            value={stats.total}
+            value={users?.total ?? 0}
             icon={Users}
             sub={`${approvalRate}% approval rate`}
             accent
+            loading={isLoading}
           />
           <KpiCard
-            label={t("admin.overview.pending_approvals")}
-            value={stats.pending}
+            label="Pending appointments"
+            value={appointments?.pending ?? 0}
             icon={UserCheck}
-            sub="Awaiting review"
+            sub={appointments ? `${appointments.today} today` : undefined}
+            loading={isLoading}
           />
           <KpiCard
             label={t("admin.overview.active_users")}
-            value={stats.active}
+            value={consultations?.active ?? 0}
             icon={Activity}
-            sub={`of ${stats.total} total`}
+            sub="Active consultations"
+            loading={isLoading}
           />
           <KpiCard
-            label={t("admin.overview.open_flags")}
-            value={stats.openFlags}
+            label="Open certificates"
+            value={certificates?.pending ?? 0}
             icon={ShieldAlert}
-            sub="Needs attention"
+            sub="Awaiting approval"
+            loading={isLoading}
           />
         </div>
 
-        {/* ── Row 2: Role breakdown + Activity chart + Status distribution ── */}
+        {/* ── Row 2: Role breakdown + Appointments + Certificates ── */}
         <div className="grid lg:grid-cols-3 gap-3">
 
           {/* Role breakdown */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
             <SectionHeader title="Users by role" href="/admin/users" linkLabel="Manage" />
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {roleEntries.map(({ role, count, pct }) => {
-                const Icon = roleIcon[role];
-                return (
-                  <div key={role} className="rounded-sm border border-border bg-muted/30 p-2.5">
-                    <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center mb-2", roleColor[role])}>
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-2">
+                {[...Array(4)].map((_, i) => <SkeletonBlock key={i} className="h-20" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {roleEntries.map(({ key, count, pct }) => {
+                  const Icon = roleIcon[key];
+                  return (
+                    <div key={key} className="rounded-sm border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center mb-2", roleColor[key])}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <p className="text-[18px] font-bold tabular-nums text-foreground leading-none">{count}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">
+                        {t(`admin.roles.${key.slice(0, -1)}`) /* patients→patient etc */}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <MiniBar pct={pct} className={roleBarColor[key]} />
+                        <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Total users summary */}
+            {!isLoading && users && (
+              <div className="rounded-sm border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
+                <div>
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Total registered</p>
+                  <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">{users.total}</p>
+                </div>
+                <div className="relative w-10 h-10">
+                  <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted" />
+                    <circle
+                      cx="18" cy="18" r="14" fill="none"
+                      stroke="currentColor" strokeWidth="3"
+                      strokeDasharray={`${approvalRate * 0.879} 87.9`}
+                      strokeLinecap="round"
+                      className="text-primary transition-all duration-700"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Appointments */}
+          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
+            <SectionHeader title="Appointments" href="/admin/appointments" linkLabel="View all" />
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { label: "Total",   value: appointments?.total   ?? 0, icon: ClipboardList, color: "text-foreground bg-muted" },
+                  { label: "Today",   value: appointments?.today   ?? 0, icon: TrendingUp,    color: "text-primary bg-primary/10" },
+                  { label: "Pending", value: appointments?.pending ?? 0, icon: Clock,         color: "text-warning bg-warning/10" },
+                ].map(({ label, value, icon: Icon, color }) => (
+                  <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5 flex items-center gap-3">
+                    <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center shrink-0", color)}>
                       <Icon className="h-3.5 w-3.5" />
                     </div>
-                    <p className="text-[18px] font-bold tabular-nums text-foreground leading-none">{count}</p>
-                    <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">{t(`admin.roles.${role}`)}</p>
-                    <div className="mt-1.5 flex items-center gap-1.5">
-                      <MiniBar pct={pct} className={
-                        role === "doctor" ? "bg-blue-500" :
-                        role === "hospital" ? "bg-primary" :
-                        role === "pharmacy" ? "bg-violet-500" : "bg-warning"
-                      } />
-                      <span className="text-[9px] text-muted-foreground tabular-nums shrink-0">{pct}%</span>
+                    <div>
+                      <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Activity chart (7-day logins) */}
+          {/* Certificates */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Logins — last 7 days" />
-            <div className="flex items-end gap-1.5 h-24 mt-1">
-              {activityData.map((v, i) => {
-                const h = Math.round((v / activityMax) * 100);
-                const isToday = i === activityData.length - 1;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[9px] text-muted-foreground tabular-nums">{v}</span>
-                    <div
-                      className={cn(
-                        "w-full rounded-sm transition-all duration-500",
-                        isToday ? "bg-primary" : "bg-primary/30",
-                      )}
-                      style={{ height: `${h}%`, minHeight: 4 }}
-                    />
-                    <span className={cn("text-[9px]", isToday ? "text-primary font-semibold" : "text-muted-foreground")}>
-                      {days[i]}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-3 flex items-center gap-1.5 rounded-sm border border-border bg-muted/40 px-2.5 py-1.5">
-              <TrendingUp className="h-3 w-3 text-success shrink-0" />
-              <span className="text-[10px] text-foreground font-medium">+14% vs last week</span>
-            </div>
-          </div>
-
-          {/* Status distribution */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Account status" />
-            <div className="space-y-2">
-              {(Object.entries(statusCounts) as [string, number][]).map(([status, count]) => {
-                const pct = Math.round((count / total) * 100);
-                const style = statusStyle[status as keyof typeof statusStyle] ?? statusStyle.inactive;
-                return (
-                  <div key={status} className="flex items-center gap-2">
-                    <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", style.dot)} />
-                    <span className="text-[11px] text-foreground capitalize flex-1">{status}</span>
-                    <MiniBar pct={pct} className={
-                      status === "active" ? "bg-success" :
-                      status === "pending" ? "bg-warning" :
-                      status === "rejected" ? "bg-destructive" : "bg-muted-foreground/40"
-                    } />
-                    <span className="text-[10px] text-muted-foreground tabular-nums w-6 text-right">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Approval rate ring-like display */}
-            <div className="mt-3 rounded-sm border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Approval rate</p>
-                <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">{approvalRate}%</p>
+            <SectionHeader title="Certificates" />
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(2)].map((_, i) => <SkeletonBlock key={i} className="h-14" />)}
               </div>
-              <div className="relative w-10 h-10">
-                <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
-                  <circle cx="18" cy="18" r="14" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted" />
-                  <circle
-                    cx="18" cy="18" r="14" fill="none"
-                    stroke="currentColor" strokeWidth="3"
-                    strokeDasharray={`${approvalRate * 0.879} 87.9`}
-                    strokeLinecap="round"
-                    className="text-primary transition-all duration-700"
-                  />
-                </svg>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {[
+                    { label: "Approved", value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
+                    { label: "Pending",  value: certificates?.pending  ?? 0, icon: Clock,        color: "text-warning bg-warning/10" },
+                  ].map(({ label, value, icon: Icon, color }) => (
+                    <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-6 h-6 rounded-sm flex items-center justify-center mb-1.5", color)}>
+                        <Icon className="h-3 w-3" />
+                      </div>
+                      <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Approval rate</span>
+                    <span className="text-[10px] font-semibold text-foreground">{certApprovalRate}%</span>
+                  </div>
+                  <MiniBar pct={certApprovalRate} className="bg-success" />
+                </div>
+
+                {/* Active consultations callout */}
+                <div className="mt-3 rounded-sm border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Active consultations</p>
+                    <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">
+                      {consultations?.active ?? 0}
+                    </p>
+                  </div>
+                  <Activity className="h-5 w-5 text-primary/40" />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* ── Row 3: Prescriptions + Recent signups ── */}
+        {/* ── Row 3: Revenue ── */}
         <div className="grid lg:grid-cols-3 gap-3">
-
-          {/* Prescription analytics */}
           <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
-            <SectionHeader title="Prescriptions" />
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Total issued", value: rxStats.total, icon: ClipboardList, color: "text-foreground bg-muted" },
-                { label: "Pending",      value: rxStats.pending, icon: Clock,         color: "text-warning bg-warning/10" },
-                { label: "Dispensed",    value: rxStats.dispensed, icon: CheckCircle2, color: "text-success bg-success/10" },
-                { label: "Expired",      value: rxStats.expired, icon: XCircle,       color: "text-destructive bg-destructive/10" },
-              ].map(({ label, value, icon: Icon, color }) => (
-                <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5">
-                  <div className={cn("w-6 h-6 rounded-sm flex items-center justify-center mb-1.5", color)}>
-                    <Icon className="h-3 w-3" />
-                  </div>
-                  <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
-                  <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
+            <SectionHeader title="Revenue" />
+            {isLoading ? (
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => <SkeletonBlock key={i} className="h-12" />)}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: "Total revenue",   value: `${currency} ${Number(payments?.total_revenue ?? 0).toLocaleString()}`, icon: ClipboardList, color: "text-foreground bg-muted" },
+                    { label: "Today's revenue",  value: `${currency} ${Number(payments?.revenue_today ?? 0).toLocaleString()}`, icon: TrendingUp,    color: "text-primary bg-primary/10" },
+                    { label: "Pending payments", value: payments?.pending_count ?? 0, icon: Clock,         color: "text-warning bg-warning/10" },
+                    { label: "Currency",         value: currency, icon: XCircle,                                                  color: "text-muted-foreground bg-muted" },
+                  ].map(({ label, value, icon: Icon, color }) => (
+                    <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-6 h-6 rounded-sm flex items-center justify-center mb-1.5", color)}>
+                        <Icon className="h-3 w-3" />
+                      </div>
+                      <p className="text-[13px] font-bold tabular-nums text-foreground leading-none break-all">{String(value)}</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
+                    </div>
+                  ))}
                 </div>
+
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Today vs total</span>
+                    <span className="text-[10px] font-semibold text-foreground">{dispenseRate}%</span>
+                  </div>
+                  <MiniBar pct={dispenseRate} className="bg-primary" />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Quick actions — span remaining 2 cols */}
+          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm lg:col-span-2">
+            <SectionHeader title="Quick actions" />
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: "Manage users",      href: "/admin/users",        icon: Users },
+                { label: "Pending approvals", href: "/admin/approvals",    icon: UserCheck },
+                { label: "Flagged accounts",  href: "/admin/flags",        icon: ShieldAlert },
+                { label: "System reports",    href: "/admin/reports",      icon: BarChart3 },
+                { label: "Appointments",      href: "/admin/appointments", icon: CalendarDays },
+              ].map(({ label, href, icon: Icon }) => (
+                <Link key={href} to={href}>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">
+                    <Icon className="h-3 w-3 text-muted-foreground" />
+                    {label}
+                  </button>
+                </Link>
               ))}
             </div>
 
-            {/* Dispense rate bar */}
-            <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">Dispense rate</span>
-                <span className="text-[10px] font-semibold text-foreground">
-                  {Math.round((rxStats.dispensed / rxStats.total) * 100)}%
-                </span>
+            {/* Applied filters summary */}
+            {response?.filters_applied && Object.values(response.filters_applied).some(Boolean) && (
+              <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 px-2.5 py-2">
+                <p className="text-[10px] text-primary font-medium mb-1">Filters active</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(response.filters_applied).map(([k, v]) =>
+                    v ? (
+                      <span key={k} className="text-[9px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20">
+                        {k}: {v}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
               </div>
-              <MiniBar pct={Math.round((rxStats.dispensed / rxStats.total) * 100)} className="bg-success" />
-            </div>
-          </div>
-
-          {/* Recent signups */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm lg:col-span-2">
-            <SectionHeader title="Recent signups" href="/admin/approvals" linkLabel="View all" />
-            <ul className="divide-y divide-border">
-              {recent.map((u) => {
-                const Icon = roleIcon[u.role as keyof typeof roleIcon] ?? User;
-                const style = statusStyle[u.status as keyof typeof statusStyle] ?? statusStyle.inactive;
-                return (
-                  <li key={u.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                    {/* Role icon */}
-                    <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center shrink-0", roleColor[u.role as keyof typeof roleColor] ?? "bg-muted text-muted-foreground")}>
-                      <Icon className="h-3.5 w-3.5" />
-                    </div>
-
-                    {/* Name + email */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold text-foreground truncate leading-tight">{u.name}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {t(`admin.roles.${u.role}`)} · {u.email}
-                      </p>
-                    </div>
-
-                    {/* Status badge */}
-                    <span className={cn(
-                      "inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0",
-                      style.bg,
-                    )}>
-                      <span className={cn("w-1 h-1 rounded-full", style.dot)} />
-                      {t(`admin.status.${u.status}`)}
-                    </span>
-
-                    {/* Quick action */}
-                    {u.status === "pending" && (
-                      <Link to={`/admin/approvals?id=${u.id}`}>
-                        <button className="text-[10px] font-medium text-primary hover:underline shrink-0">
-                          Review
-                        </button>
-                      </Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-
-        {/* ── Row 4: Quick actions ── */}
-        <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
-          <SectionHeader title="Quick actions" />
-          <div className="flex flex-wrap gap-2">
-            {[
-              { label: "Manage users",     href: "/admin/users",     icon: Users },
-              { label: "Pending approvals", href: "/admin/approvals", icon: UserCheck },
-              { label: "Flagged accounts",  href: "/admin/flags",     icon: ShieldAlert },
-              { label: "System reports",    href: "/admin/reports",   icon: BarChart3 },
-            ].map(({ label, href, icon: Icon }) => (
-              <Link key={href} to={href}>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">
-                  <Icon className="h-3 w-3 text-muted-foreground" />
-                  {label}
-                </button>
-              </Link>
-            ))}
+            )}
           </div>
         </div>
 

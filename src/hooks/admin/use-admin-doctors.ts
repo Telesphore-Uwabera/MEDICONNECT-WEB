@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 const BASE        = "/admin/doctors";
 const WALLET_BASE = "/admin/wallets/doctors";
@@ -9,6 +9,7 @@ const CERT_BASE   = "/admin/certification-doctors";
 const SPEC_BASE   = "/admin/specializations";
 const SPEC_FEE_BASE = "/admin/specialization-fees";
 const DOC_CONSULT_BASE = "/admin/doctor-consultations";
+const QUICK_CONSULT_BASE = "/admin/quick-consultations/doctor";
 
 // ─── Shared types ─────────────────────────────────────────────────────────────
 
@@ -163,10 +164,10 @@ export interface ApiAppointment {
   booking_type: string;
   appointment_date: string;
   appointment_time: string;
-  duration_minutes?: number | null;          // ← add
-  payment_status?: string | null;            // ← add
-  payment_method?: string | null;            // ← add
-  daily_room_url?: string | null;            // ← add
+  duration_minutes?: number | null;
+  payment_status?: string | null;
+  payment_method?: string | null;
+  daily_room_url?: string | null;
   patient: { id: number; name: string };
   doctor: { id: number; user: { name: string } };
   hospital: { id: number; name_en: string } | null;
@@ -266,19 +267,70 @@ export interface ApiDoctorConsultation {
   override_set_by: unknown | null;
 }
 
+// ─── Quick Consultations ──────────────────────────────────────────────────────
+
+export interface ApiQuickConsultation {
+  id: number;
+  status: "pending" | "confirmed" | "accepted" | "in_progress" | "completed" | "cancelled" | "withdrawn";
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  /** Registered patient (null for guest bookings) */
+  user?: {
+    id: number;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+  } | null;
+  doctor: {
+    id: number;
+    user: { id: number; name: string };
+  };
+  notes?: string | null;
+  duration_minutes?: number | null;
+  started_at?: string | null;
+  ended_at?: string | null;
+  daily_room_url?: string | null;
+  payment_status?: string | null;
+  payment_method?: string | null;
+  amount?: number | null;
+  currency?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface PaginatedQuickConsultations {
+  current_page: number;
+  data: ApiQuickConsultation[];
+  per_page: number;
+  total: number;
+}
+
+export interface GetQuickConsultationsParams {
+  /** doctor id — required; determines the endpoint */
+  doctor_id: number;
+  status?: "pending" | "confirmed" | "accepted" | "in_progress" | "completed" | "cancelled" | "withdrawn" | "";
+  search?: string;
+  /** Y-m-d */
+  from?: string;
+  /** Y-m-d */
+  to?: string;
+  page?: number;
+}
+
 // ─── Query key factory ────────────────────────────────────────────────────────
 
 export const doctorKeys = {
-  all:              ()                          => ["admin-doctors"]                       as const,
-  list:             (p: GetAdminDoctorsParams)  => ["admin-doctors", p]                   as const,
-  detail:           (id: number | null)         => ["admin-doctor", id]                   as const,
-  wallet:           (id: number)                => ["admin-doctor-wallet", id]             as const,
-  appointments:     (p: GetAppointmentsParams)  => ["admin-appointments", p]               as const,
-  instantList:      ()                          => ["admin-instant-consultations"]         as const,
-  certList:         ()                          => ["admin-certification-doctors"]         as const,
-  specializationList: ()                        => ["admin-specializations"]               as const,
-  specFeeList:      ()                          => ["admin-specialization-fees"]           as const,
-  doctorConsultList: ()                         => ["admin-doctor-consultations"]          as const,
+  all:                  ()                                => ["admin-doctors"]                       as const,
+  list:                 (p: GetAdminDoctorsParams)        => ["admin-doctors", p]                   as const,
+  detail:               (id: number | null)               => ["admin-doctor", id]                   as const,
+  wallet:               (id: number)                      => ["admin-doctor-wallet", id]             as const,
+  appointments:         (p: GetAppointmentsParams)        => ["admin-appointments", p]               as const,
+  instantList:          ()                                => ["admin-instant-consultations"]         as const,
+  certList:             ()                                => ["admin-certification-doctors"]         as const,
+  specializationList:   ()                                => ["admin-specializations"]               as const,
+  specFeeList:          ()                                => ["admin-specialization-fees"]           as const,
+  doctorConsultList:    ()                                => ["admin-doctor-consultations"]          as const,
+  quickConsultations:   (p: GetQuickConsultationsParams)  => ["admin-quick-consultations", p]       as const,
 };
 
 // ─── Doctors ──────────────────────────────────────────────────────────────────
@@ -395,12 +447,12 @@ export function useGetAppointments(params: GetAppointmentsParams = {}) {
     queryKey: doctorKeys.appointments(params),
     queryFn: () => {
       const qs = new URLSearchParams();
-      if (status)      qs.set("status", status);
-      if (type)        qs.set("type", type);
+      if (status)       qs.set("status", status);
+      if (type)         qs.set("type", type);
       if (booking_type) qs.set("booking_type", booking_type);
-      if (date)        qs.set("date", date);
-      if (doctor_id)   qs.set("doctor_id", String(doctor_id));
-      if (page > 1)    qs.set("page", String(page));
+      if (date)         qs.set("date", date);
+      if (doctor_id)    qs.set("doctor_id", String(doctor_id));
+      if (page > 1)     qs.set("page", String(page));
       const url = qs.toString() ? `${APPT_BASE}?${qs}` : APPT_BASE;
       return apiFetch<PaginatedAppointments>(url);
     },
@@ -413,6 +465,27 @@ export function useGetAppointment(id: number | null) {
     queryFn: () =>
       apiFetch<{ appointment: ApiAppointment }>(`${APPT_BASE}/${id}`).then((r) => r.appointment),
     enabled: !!id,
+  });
+}
+
+// ─── Quick Consultations ──────────────────────────────────────────────────────
+
+export function useGetDoctorQuickConsultations(params: GetQuickConsultationsParams) {
+  const { doctor_id, status, search, from, to, page = 1 } = params;
+  return useQuery<PaginatedQuickConsultations>({
+    queryKey: doctorKeys.quickConsultations(params),
+    queryFn: () => {
+      const qs = new URLSearchParams();
+      if (status)   qs.set("status", status);
+      if (search)   qs.set("search", search);
+      if (from)     qs.set("from", from);
+      if (to)       qs.set("to", to);
+      if (page > 1) qs.set("page", String(page));
+      const base = `${QUICK_CONSULT_BASE}/${doctor_id}`;
+      const url  = qs.toString() ? `${base}?${qs}` : base;
+      return apiFetch<PaginatedQuickConsultations>(url);
+    },
+    enabled: !!doctor_id,
   });
 }
 

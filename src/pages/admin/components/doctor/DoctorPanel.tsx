@@ -7,6 +7,7 @@ import {
   Globe, ChevronRight, Star, Zap, PauseCircle, CheckCircle2, MapPin, ExternalLink,
   CalendarDays, ToggleLeft, ToggleRight, DollarSign, RefreshCw, Plus,
   Pencil, Check, XCircle, Shield, Activity, PackageCheck, AlertTriangle,
+  MessageSquare, Search, ChevronLeft, Filter, UserCheck, UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,8 @@ import {
   useAssignDoctorConsultation,
   useUpdateDoctorConsultation,
   useSetDoctorFeeOverride,
+  useGetDoctorQuickConsultations,
+  type ApiQuickConsultation,
 } from "@/hooks/admin/use-admin-doctors";
 import {
   getInitials,
@@ -53,37 +56,66 @@ function storageUrl(path?: string | null): string | undefined {
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
-const fmtDate   = (iso?: string | null) => iso ? moment(iso).format("D MMM YYYY") : null;
-const fmtMonth  = (iso?: string | null) => iso ? moment(iso).format("MMM YYYY") : null;
-const fmtTime   = (iso?: string | null) => iso ? moment(iso).format("HH:mm") : null;
-const fmtFull   = (iso?: string | null) => iso ? moment(iso).format("D MMM YYYY [at] HH:mm") : null;
+const fmtDate  = (iso?: string | null) => iso ? moment(iso).format("D MMM YYYY") : null;
+const fmtMonth = (iso?: string | null) => iso ? moment(iso).format("MMM YYYY") : null;
+const fmtTime  = (iso?: string | null) => iso ? moment(iso).format("HH:mm") : null;
+const fmtFull  = (iso?: string | null) => iso ? moment(iso).format("D MMM YYYY [at] HH:mm") : null;
 const isExpired = (iso?: string | null) => iso ? moment(iso).isBefore(moment()) : false;
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
 type TabId =
-  | "overview" | "appointments" | "education" | "experience"
+  | "overview" | "appointments" | "quick_consults" | "education" | "experience"
   | "qualifications" | "schedule" | "links" | "instant"
   | "certification" | "fees" | "wallet";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "overview",       label: "Overview",      icon: <User className="w-3 h-3" /> },
-  { id: "appointments",   label: "Appointments",  icon: <CalendarDays className="w-3 h-3" /> },
-  { id: "education",      label: "Education",     icon: <GraduationCap className="w-3 h-3" /> },
-  { id: "experience",     label: "Experience",    icon: <Briefcase className="w-3 h-3" /> },
-  { id: "qualifications", label: "Credentials",   icon: <Award className="w-3 h-3" /> },
-  { id: "schedule",       label: "Schedule",      icon: <Clock className="w-3 h-3" /> },
-  { id: "links",          label: "Links",         icon: <Link2 className="w-3 h-3" /> },
-  { id: "instant",        label: "Instant",       icon: <Zap className="w-3 h-3" /> },
-  { id: "certification",  label: "Certification", icon: <Shield className="w-3 h-3" /> },
-  { id: "fees",           label: "Fees",          icon: <DollarSign className="w-3 h-3" /> },
-  { id: "wallet",         label: "Wallet",        icon: <Wallet className="w-3 h-3" /> },
+  { id: "overview",       label: "Overview",       icon: <User className="w-3 h-3" /> },
+  { id: "appointments",   label: "Appointments",   icon: <CalendarDays className="w-3 h-3" /> },
+  { id: "quick_consults", label: "Quick Consults", icon: <MessageSquare className="w-3 h-3" /> },
+  { id: "education",      label: "Education",      icon: <GraduationCap className="w-3 h-3" /> },
+  { id: "experience",     label: "Experience",     icon: <Briefcase className="w-3 h-3" /> },
+  { id: "qualifications", label: "Credentials",    icon: <Award className="w-3 h-3" /> },
+  { id: "schedule",       label: "Schedule",       icon: <Clock className="w-3 h-3" /> },
+  { id: "links",          label: "Links",          icon: <Link2 className="w-3 h-3" /> },
+  { id: "instant",        label: "Instant",        icon: <Zap className="w-3 h-3" /> },
+  { id: "certification",  label: "Certification",  icon: <Shield className="w-3 h-3" /> },
+  { id: "fees",           label: "Fees",           icon: <DollarSign className="w-3 h-3" /> },
+  { id: "wallet",         label: "Wallet",         icon: <Wallet className="w-3 h-3" /> },
 ];
 
 const DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
 const DAY_LABEL: Record<string, string> = {
   monday: "Mo", tuesday: "Tu", wednesday: "We", thursday: "Th",
   friday: "Fr", saturday: "Sa", sunday: "Su",
+};
+
+// ─── Quick consult status helpers ─────────────────────────────────────────────
+
+type QCStatus = ApiQuickConsultation["status"];
+
+const QC_STATUS_ALL: QCStatus[] = [
+  "pending", "confirmed", "accepted", "in_progress", "completed", "cancelled", "withdrawn",
+];
+
+const QC_STATUS_VARIANT: Record<QCStatus, "emerald" | "teal" | "amber" | "red" | "violet" | "default"> = {
+  pending:     "amber",
+  confirmed:   "teal",
+  accepted:    "teal",
+  in_progress: "teal",
+  completed:   "emerald",
+  cancelled:   "red",
+  withdrawn:   "default",
+};
+
+const QC_STATUS_LABEL: Record<QCStatus, string> = {
+  pending:     "Pending",
+  confirmed:   "Confirmed",
+  accepted:    "Accepted",
+  in_progress: "In Progress",
+  completed:   "Completed",
+  cancelled:   "Cancelled",
+  withdrawn:   "Withdrawn",
 };
 
 // ─── Layout wrapper ───────────────────────────────────────────────────────────
@@ -167,7 +199,6 @@ function Pill({
 }) {
   const styles: Record<string, string> = {
     default: "bg-secondary/70 text-muted-foreground border-border/35",
-    // app primary teal — replaces old "blue" for feature/info pills
     primary: "bg-accent text-accent-foreground border-primary/20",
     teal:    "bg-primary/8 text-primary border-primary/20",
     amber:   "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
@@ -192,6 +223,358 @@ function LoadingRow() {
         <div key={i} className="h-14 rounded-[10px] bg-accent/20" />
       ))}
     </div>
+  );
+}
+
+// ─── Quick Consult card ───────────────────────────────────────────────────────
+
+function QuickConsultCard({ qc }: { qc: ApiQuickConsultation }) {
+  const isGuest    = !qc.user;
+  const callerName = qc.user?.name ?? qc.guest_name ?? "—";
+  const callerPhone = qc.user?.phone ?? qc.guest_phone ?? null;
+  const callerEmail = qc.user?.email ?? null;
+  const variant    = QC_STATUS_VARIANT[qc.status];
+
+  return (
+    <div className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all">
+      {/* Row 1: caller + status */}
+      <div className="flex items-start justify-between gap-2 mb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={cn(
+            "w-7 h-7 rounded-full flex items-center justify-center shrink-0 border text-[9px] font-bold",
+            isGuest
+              ? "bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400"
+              : "bg-primary/10 border-primary/20 text-primary",
+          )}>
+            {isGuest ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold text-foreground truncate">{callerName}</p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              {isGuest && (
+                <Pill variant="amber">Guest</Pill>
+              )}
+              {callerPhone && (
+                <span className="text-[10px] font-mono text-muted-foreground/45">{callerPhone}</span>
+              )}
+              {callerEmail && !callerPhone && (
+                <span className="text-[10px] text-muted-foreground/45 truncate">{callerEmail}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <Pill variant={variant}>
+          {QC_STATUS_LABEL[qc.status]}
+        </Pill>
+      </div>
+
+      {/* Row 2: metadata pills */}
+      <div className="flex items-center gap-1.5 flex-wrap mb-2">
+        <Pill>
+          <Calendar className="w-2 h-2" />
+          {fmtDate(qc.created_at)}
+        </Pill>
+        {qc.duration_minutes && (
+          <Pill>
+            <Clock className="w-2 h-2" />
+            {qc.duration_minutes} min
+          </Pill>
+        )}
+        {qc.payment_status && (
+          <Pill variant={qc.payment_status === "paid" ? "emerald" : qc.payment_status === "unpaid" ? "amber" : "default"}>
+            {qc.payment_status}
+          </Pill>
+        )}
+        {qc.payment_method && (
+          <Pill>{qc.payment_method.replace(/_/g, " ")}</Pill>
+        )}
+        {qc.amount !== null && qc.amount !== undefined && (
+          <Pill variant="teal">
+            <DollarSign className="w-2 h-2" />
+            {Number(qc.amount).toLocaleString()} {qc.currency ?? "RWF"}
+          </Pill>
+        )}
+      </div>
+
+      {/* Row 3: timing + room */}
+      {(qc.started_at || qc.ended_at || qc.daily_room_url) && (
+        <div className="flex items-center gap-3 pt-2 border-t border-border/25 flex-wrap">
+          {qc.started_at && (
+            <span className="text-[10px] text-muted-foreground/45 flex items-center gap-1">
+              <Activity className="w-2.5 h-2.5 text-emerald-500/60" />
+              Started {fmtFull(qc.started_at)}
+            </span>
+          )}
+          {qc.ended_at && (
+            <span className="text-[10px] text-muted-foreground/45 flex items-center gap-1">
+              <CheckCircle2 className="w-2.5 h-2.5 text-primary/40" />
+              Ended {fmtFull(qc.ended_at)}
+            </span>
+          )}
+          {qc.daily_room_url && (
+            <a
+              href={qc.daily_room_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[10px] text-primary/65 hover:text-primary hover:underline transition-colors ml-auto"
+            >
+              <ExternalLink className="w-2.5 h-2.5" /> Room
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Row 4: notes */}
+      {qc.notes && (
+        <div className="mt-2 pt-2 border-t border-border/25">
+          <p className="text-[10.5px] text-muted-foreground/55 leading-relaxed italic">"{qc.notes}"</p>
+        </div>
+      )}
+
+      {/* Row 5: IDs */}
+      <div className="flex items-center gap-2 mt-2 pt-1.5">
+        <span className="text-[9px] font-mono text-muted-foreground/25">#{qc.id}</span>
+        {qc.user?.id && (
+          <span className="text-[9px] text-muted-foreground/20">· user #{qc.user.id}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Quick Consultations ─────────────────────────────────────────────────
+
+function QuickConsultsTab({ doctorId }: { doctorId: number }) {
+  const [statusFilter, setStatusFilter] = useState<ApiQuickConsultation["status"] | "">("");
+  const [search,       setSearch]       = useState("");
+  const [searchInput,  setSearchInput]  = useState("");
+  const [from,         setFrom]         = useState("");
+  const [to,           setTo]           = useState("");
+  const [page,         setPage]         = useState(1);
+  const [showFilters,  setShowFilters]  = useState(false);
+
+  const { data, isLoading, isFetching } = useGetDoctorQuickConsultations({
+    doctor_id: doctorId,
+    status:    statusFilter || undefined,
+    search:    search       || undefined,
+    from:      from         || undefined,
+    to:        to           || undefined,
+    page,
+  });
+
+  const applySearch = () => {
+    setSearch(searchInput);
+    setPage(1);
+  };
+
+  const clearFilters = () => {
+    setStatusFilter("");
+    setSearch("");
+    setSearchInput("");
+    setFrom("");
+    setTo("");
+    setPage(1);
+  };
+
+  const hasActiveFilters = !!statusFilter || !!search || !!from || !!to;
+
+  // ── summary counts from current page for context ──
+  const items = data?.data ?? [];
+
+  return (
+    <ContentWrap>
+      <div className="space-y-3">
+
+        {/* Status filter pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => { setStatusFilter(""); setPage(1); }}
+            className={cn(
+              "text-[10px] px-2.5 py-1 rounded-full border font-medium transition-all",
+              statusFilter === ""
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/40 text-muted-foreground/55 hover:border-primary/40 hover:text-primary/70 hover:bg-accent/20",
+            )}
+          >
+            All
+          </button>
+          {QC_STATUS_ALL.map((s) => (
+            <button
+              key={s}
+              onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={cn(
+                "text-[10px] px-2.5 py-1 rounded-full border font-medium transition-all",
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border/40 text-muted-foreground/55 hover:border-primary/40 hover:text-primary/70 hover:bg-accent/20",
+              )}
+            >
+              {QC_STATUS_LABEL[s]}
+            </button>
+          ))}
+        </div>
+
+        {/* Search + date filters row */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/30" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") applySearch(); }}
+              placeholder="Search by name or phone…"
+              className="w-full h-8 pl-7 pr-2.5 rounded-[8px] border border-border/40 bg-background text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
+            />
+          </div>
+          <Button
+            size="sm" variant="outline"
+            className="h-8 px-3 text-[10.5px] rounded-[8px] gap-1.5 hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+            onClick={applySearch}
+          >
+            <Search className="w-2.5 h-2.5" /> Search
+          </Button>
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className={cn(
+              "h-8 w-8 flex items-center justify-center rounded-[8px] border transition-all",
+              showFilters || from || to
+                ? "border-primary/40 bg-accent/30 text-primary"
+                : "border-border/40 text-muted-foreground/40 hover:border-primary/30 hover:text-primary/60 hover:bg-accent/15",
+            )}
+          >
+            <Filter className="w-3 h-3" />
+          </button>
+        </div>
+
+        {/* Date range panel */}
+        {showFilters && (
+          <div className="p-3 rounded-[10px] border border-primary/15 bg-accent/10 space-y-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40">Date range (created)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[9px] text-muted-foreground/40 mb-1">From</label>
+                <input
+                  type="date"
+                  value={from}
+                  onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                  className="w-full h-8 px-2.5 rounded-[8px] border border-border/40 bg-background text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] text-muted-foreground/40 mb-1">To</label>
+                <input
+                  type="date"
+                  value={to}
+                  onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                  className="w-full h-8 px-2.5 rounded-[8px] border border-border/40 bg-background text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Active filter chips */}
+        {hasActiveFilters && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[9px] text-muted-foreground/35 uppercase tracking-wide font-semibold">Filters:</span>
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border border-primary/20 bg-accent/20 text-primary font-medium">
+                {QC_STATUS_LABEL[statusFilter]}
+                <button onClick={() => { setStatusFilter(""); setPage(1); }}>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
+            {search && (
+              <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border border-primary/20 bg-accent/20 text-primary font-medium">
+                "{search}"
+                <button onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
+            {(from || to) && (
+              <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border border-primary/20 bg-accent/20 text-primary font-medium">
+                {from || "…"} → {to || "…"}
+                <button onClick={() => { setFrom(""); setTo(""); setPage(1); }}>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={clearFilters}
+              className="text-[9.5px] text-muted-foreground/40 hover:text-red-500 transition-colors underline underline-offset-2"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
+        {/* Results */}
+        {isLoading ? (
+          <LoadingRow />
+        ) : !items.length ? (
+          <SectionEmpty label={hasActiveFilters ? "No consultations match your filters" : "No quick consultations for this doctor yet"} />
+        ) : (
+          <>
+            {/* Count bar */}
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-muted-foreground/35">
+                {data!.total} total consultation{data!.total !== 1 ? "s" : ""}
+                {isFetching && <span className="ml-2 text-primary/40 animate-pulse">refreshing…</span>}
+              </p>
+              <div className="flex gap-1 items-center">
+                {/* mini status breakdown on current page */}
+                {(["pending", "in_progress", "completed", "cancelled"] as QCStatus[]).map((s) => {
+                  const count = items.filter((i) => i.status === s).length;
+                  if (!count) return null;
+                  return (
+                    <Pill key={s} variant={QC_STATUS_VARIANT[s]}>
+                      {count} {QC_STATUS_LABEL[s].toLowerCase()}
+                    </Pill>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Cards */}
+            <div className="flex flex-col gap-2">
+              {items.map((qc) => (
+                <QuickConsultCard key={qc.id} qc={qc} />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {data!.total > data!.per_page && (
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10.5px] text-muted-foreground/40">
+                  Page {page} of {Math.ceil(data!.total / data!.per_page)}
+                </span>
+                <div className="flex gap-1.5">
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-7 w-7 p-0 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-7 w-7 p-0 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    disabled={page * data!.per_page >= data!.total}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </ContentWrap>
   );
 }
 
@@ -260,9 +643,9 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
             <SectionHeading>Documents</SectionHeading>
             <div className="flex flex-col gap-1.5">
               {[
-                { label: "Degree document",  path: doctor.degree_document },
-                { label: "Medical license",  path: doctor.medical_license_document },
-                { label: "National ID",      path: doctor.national_id_document },
+                { label: "Degree document", path: doctor.degree_document },
+                { label: "Medical license", path: doctor.medical_license_document },
+                { label: "National ID",     path: doctor.national_id_document },
               ].filter((d) => d.path).map((doc) => (
                 <a
                   key={doc.label}
@@ -272,7 +655,6 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
                   className="flex items-center justify-between p-3 rounded-[10px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group"
                 >
                   <div className="flex items-center gap-2.5">
-                    {/* teal icon bg instead of blue */}
                     <div className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center border border-primary/20">
                       <FileText className="w-3 h-3 text-primary" />
                     </div>
@@ -290,7 +672,6 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
           <div>
             <SectionHeading>Flags</SectionHeading>
             <div className="flex flex-wrap gap-1.5">
-              {/* teal pill for teal-themed features */}
               {doctor.instant_consultation && <Pill variant="teal"><Zap className="w-2 h-2" /> Instant consult</Pill>}
               {doctor.is_featured          && <Pill variant="amber"><Star className="w-2 h-2" /> Featured</Pill>}
               {doctor.bookings_paused      && <Pill variant="red"><PauseCircle className="w-2 h-2" /> Bookings paused</Pill>}
@@ -372,7 +753,7 @@ function AppointmentsTab({ doctorId }: { doctorId: number }) {
     if (s === "confirmed")   return "emerald";
     if (s === "pending")     return "amber";
     if (s === "cancelled")   return "red";
-    if (s === "in_progress") return "teal";    // was blue → now app primary
+    if (s === "in_progress") return "teal";
     if (s === "completed")   return "violet";
     return "default";
   };
@@ -383,7 +764,6 @@ function AppointmentsTab({ doctorId }: { doctorId: number }) {
   return (
     <ContentWrap>
       <div className="space-y-3">
-        {/* Status filter pills */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {statuses.map((s) => (
             <button
@@ -493,7 +873,6 @@ function EducationTab({ doctor }: { doctor: ApiDoctor }) {
         {list.map((e, i) => (
           <Card key={e.id} className="flex gap-3">
             <div className="flex flex-col items-center gap-1 shrink-0">
-              {/* teal instead of indigo */}
               <div className="w-8 h-8 rounded-[10px] bg-primary/10 flex items-center justify-center border border-primary/20">
                 <GraduationCap className="w-3.5 h-3.5 text-primary" />
               </div>
@@ -502,7 +881,7 @@ function EducationTab({ doctor }: { doctor: ApiDoctor }) {
             <div className="flex-1 min-w-0 space-y-1 pb-0.5">
               <p className="text-[12px] font-semibold text-foreground capitalize">{e.degree}</p>
               <FieldRow label="Institution" value={e.institution} />
-              <FieldRow label="Country" value={e.country} />
+              <FieldRow label="Country"     value={e.country} />
               {(e.start_year || e.end_year) && (
                 <FieldRow label="Period" value={`${e.start_year ?? "?"} – ${e.end_year ?? "Present"}`} />
               )}
@@ -526,7 +905,6 @@ function ExperienceTab({ doctor }: { doctor: ApiDoctor }) {
         {list.map((e, i) => (
           <Card key={e.id} className="flex gap-3">
             <div className="flex flex-col items-center gap-1 shrink-0">
-              {/* amber kept — it's a semantic "work" color, not a brand color */}
               <div className="w-8 h-8 rounded-[10px] bg-amber-50 dark:bg-amber-950/25 flex items-center justify-center border border-amber-100 dark:border-amber-900/50">
                 <Briefcase className="w-3.5 h-3.5 text-amber-500" />
               </div>
@@ -538,7 +916,7 @@ function ExperienceTab({ doctor }: { doctor: ApiDoctor }) {
                 {e.is_current && <Pill variant="emerald">Current</Pill>}
               </div>
               <FieldRow label="Workplace" value={e.workplace} />
-              <FieldRow label="Country" value={e.country} />
+              <FieldRow label="Country"   value={e.country} />
               {e.start_date && (
                 <FieldRow
                   label="Period"
@@ -564,7 +942,6 @@ function QualificationsTab({ doctor }: { doctor: ApiDoctor }) {
       <div className="flex flex-col gap-2.5">
         {list.map((q) => (
           <Card key={q.id} className="flex gap-3">
-            {/* emerald kept — award/credential success color */}
             <div className="w-8 h-8 rounded-[10px] bg-emerald-50 dark:bg-emerald-950/25 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/50 shrink-0 mt-0.5">
               <Award className="w-3.5 h-3.5 text-emerald-500" />
             </div>
@@ -657,7 +1034,6 @@ function ScheduleTab({ doctor }: { doctor: ApiDoctor }) {
                       <Pill>{slot.slot_duration_minutes}min slots</Pill>
                     )}
                     {slot.type && (
-                      // online → teal (app primary), in_person → emerald (semantic positive)
                       <Pill variant={slot.type === "online" ? "teal" : slot.type === "in_person" ? "emerald" : "default"}>
                         {slot.type.replace("_", " ")}
                       </Pill>
@@ -724,7 +1100,6 @@ function InstantTab({ doctor }: { doctor: ApiDoctor }) {
   return (
     <ContentWrap>
       <div className="space-y-4">
-        {/* Info banner — teal (primary) instead of blue */}
         <div className="flex items-start gap-3 p-4 rounded-[10px] border border-primary/20 bg-accent/20">
           <div className="w-8 h-8 rounded-[8px] bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
             <Zap className="w-3.5 h-3.5 text-primary" />
@@ -781,7 +1156,6 @@ function InstantTab({ doctor }: { doctor: ApiDoctor }) {
                   }
                   {entry.active ? "Disable" : "Enable"}
                 </Button>
-
                 <Button
                   size="sm" variant="outline"
                   className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
@@ -826,8 +1200,8 @@ function CertificationTab({ doctor }: { doctor: ApiDoctor }) {
 
   const [removeError, setRemoveError] = useState<string | null>(null);
 
-  const handleAdd              = () => addMutation.mutate({ doctor_id: doctor.id });
-  const handleToggleStatus     = () => { if (entry) updateMutation.mutate({ id: entry.id, status: entry.status === "active" ? "inactive" : "active" }); };
+  const handleAdd                = () => addMutation.mutate({ doctor_id: doctor.id });
+  const handleToggleStatus       = () => { if (entry) updateMutation.mutate({ id: entry.id, status: entry.status === "active" ? "inactive" : "active" }); };
   const handleToggleAvailability = () => { if (entry) updateMutation.mutate({ id: entry.id, is_available: !entry.is_available }); };
 
   const handleRemove = async () => {
@@ -843,7 +1217,6 @@ function CertificationTab({ doctor }: { doctor: ApiDoctor }) {
   return (
     <ContentWrap>
       <div className="space-y-4">
-        {/* Info banner — teal instead of purple */}
         <div className="flex items-start gap-3 p-4 rounded-[10px] border border-primary/20 bg-accent/20">
           <div className="w-8 h-8 rounded-[8px] bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
             <Shield className="w-3.5 h-3.5 text-primary" />
@@ -874,11 +1247,10 @@ function CertificationTab({ doctor }: { doctor: ApiDoctor }) {
 
             {isOnTeam && (
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-3.5 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40  dark:bg-amber-950/8">
+                <div className="p-3.5 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 dark:bg-amber-950/8">
                   <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-amber-600/60 dark:text-amber-400/60 mb-1">Pending</p>
                   <p className="text-[24px] font-bold text-amber-700 dark:text-amber-400 tabular-nums leading-none">{entry.pending_count}</p>
                 </div>
-                {/* teal instead of blue for "in review" counter */}
                 <div className="p-3.5 rounded-[10px] border border-primary/20 bg-accent/25 dark:bg-primary/8">
                   <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/50 mb-1">In review</p>
                   <p className="text-[24px] font-bold text-primary tabular-nums leading-none">{entry.in_review_count}</p>
@@ -965,12 +1337,12 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
   const consultation = consultations?.find((c) => c.doctor_id === doctor.id);
   const isActing = assignMutation.isPending || updateMutation.isPending || overrideMutation.isPending;
 
-  const [showOverrideForm,   setShowOverrideForm]   = useState(false);
-  const [onlineOverride,     setOnlineOverride]     = useState(consultation?.online_fee_override?.toString() ?? "");
-  const [inPersonOverride,   setInPersonOverride]   = useState(consultation?.in_person_fee_override?.toString() ?? "");
-  const [overrideReason,     setOverrideReason]     = useState(consultation?.override_reason ?? "");
-  const [showAssignForm,     setShowAssignForm]     = useState(false);
-  const [assignFeeId,        setAssignFeeId]        = useState("");
+  const [showOverrideForm,     setShowOverrideForm]     = useState(false);
+  const [onlineOverride,       setOnlineOverride]       = useState(consultation?.online_fee_override?.toString() ?? "");
+  const [inPersonOverride,     setInPersonOverride]     = useState(consultation?.in_person_fee_override?.toString() ?? "");
+  const [overrideReason,       setOverrideReason]       = useState(consultation?.override_reason ?? "");
+  const [showAssignForm,       setShowAssignForm]       = useState(false);
+  const [assignFeeId,          setAssignFeeId]          = useState("");
   const [assignSpecialization, setAssignSpecialization] = useState(doctor.specialization ?? "");
 
   const handleAssign = async () => {
@@ -1006,7 +1378,6 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
 
   if (feesLoading || consultLoading) return <LoadingRow />;
 
-  // Shared input className
   const inputCls = "w-full h-9 rounded-[8px] border border-border/45 bg-background px-2.5 text-[11.5px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40";
 
   return (
@@ -1014,7 +1385,7 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
       <div className="space-y-4">
         {!consultation ? (
           <div className="space-y-3">
-            <div className="flex items-start gap-3 p-4 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40  dark:bg-amber-950/8">
+            <div className="flex items-start gap-3 p-4 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 dark:bg-amber-950/8">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-[12px] font-semibold text-foreground">No fee tier assigned</p>
@@ -1067,7 +1438,6 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
           </div>
         ) : (
           <>
-            {/* Fee summary card */}
             <div className="rounded-[10px] border border-primary/20 bg-card/60 overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-primary/10 bg-accent/10">
                 <div>
@@ -1119,7 +1489,7 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
             </div>
 
             {consultation.override_reason && (
-              <div className="flex items-start gap-2 p-3 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40  dark:bg-amber-950/8">
+              <div className="flex items-start gap-2 p-3 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 dark:bg-amber-950/8">
                 <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10.5px] font-semibold text-foreground/80">Override reason</p>
@@ -1243,7 +1613,6 @@ function WalletTab({ doctorId }: { doctorId: number }) {
   return (
     <ContentWrap>
       <div className="space-y-3">
-        {/* Balance card — teal border when wallet exists */}
         <div className={cn(
           "rounded-[12px] border p-5",
           hasWallet ? "border-primary/25 bg-accent/15" : "border-border/35 bg-muted/8",
@@ -1541,17 +1910,18 @@ export function DoctorPanel({
                 <PanelSkeleton />
               ) : (
                 <div className="px-6 py-5">
-                  {tab === "overview"       && <OverviewTab       doctor={d} />}
-                  {tab === "appointments"   && <AppointmentsTab   doctorId={d.id} />}
-                  {tab === "education"      && <EducationTab      doctor={d} />}
-                  {tab === "experience"     && <ExperienceTab     doctor={d} />}
-                  {tab === "qualifications" && <QualificationsTab doctor={d} />}
-                  {tab === "schedule"       && <ScheduleTab       doctor={d} />}
-                  {tab === "links"          && <LinksTab          doctor={d} />}
-                  {tab === "instant"        && <InstantTab        doctor={d} />}
-                  {tab === "certification"  && <CertificationTab  doctor={d} />}
-                  {tab === "fees"           && <FeesTab           doctor={d} />}
-                  {tab === "wallet"         && <WalletTab         doctorId={d.id} />}
+                  {tab === "overview"       && <OverviewTab        doctor={d} />}
+                  {tab === "appointments"   && <AppointmentsTab    doctorId={d.id} />}
+                  {tab === "quick_consults" && <QuickConsultsTab   doctorId={d.id} />}
+                  {tab === "education"      && <EducationTab       doctor={d} />}
+                  {tab === "experience"     && <ExperienceTab      doctor={d} />}
+                  {tab === "qualifications" && <QualificationsTab  doctor={d} />}
+                  {tab === "schedule"       && <ScheduleTab        doctor={d} />}
+                  {tab === "links"          && <LinksTab           doctor={d} />}
+                  {tab === "instant"        && <InstantTab         doctor={d} />}
+                  {tab === "certification"  && <CertificationTab   doctor={d} />}
+                  {tab === "fees"           && <FeesTab            doctor={d} />}
+                  {tab === "wallet"         && <WalletTab          doctorId={d.id} />}
                 </div>
               )}
             </div>
