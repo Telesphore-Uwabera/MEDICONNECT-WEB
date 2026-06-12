@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
@@ -48,6 +48,15 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const channelRef = useRef<ReturnType<typeof echo.channel> | null>(null);
   const makingOffer = useRef(false);
   const candidateQueue = useRef<RTCIceCandidateInit[]>([]);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disconnectedSinceRef = useRef<number | null>(null);
+  const audioEnabledRef = useRef(true);
+  const videoEnabledRef = useRef(true);
+  // Refs holding the latest callbacks so the main effect can stay decoupled
+  // from their identities (prevents tearing down the call on parent re-render).
+  const sendSignalRef = useRef<((type: string, data?: unknown) => Promise<void>) | null>(null);
+  const createPeerConnectionRef = useRef<(() => RTCPeerConnection) | null>(null);
+  const createAndSendOfferRef = useRef<((iceRestart?: boolean) => Promise<void>) | null>(null);
   const isOwner = token.is_owner;
 
   const [audioEnabled, setAudioEnabled] = useState(true);
@@ -68,29 +77,100 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const [participantsOpen, setParticipantsOpen] = useState(false);
 
+  // Consultation id the peer told us about (see consultation-meta signal below).
+  // Used when our own token didn't carry one — e.g. a patient whose token was
+  // issued without it. The doctor always has a valid id and shares it.
+  const [peerConsultationId, setPeerConsultationId] = useState<number | null>(null);
+
   // Hook into the global CallContext
   const { isMinimized, toggleMinimize, endCall: endCallContext } = useCallContext();
 
-  const consultationId = token.consultation_id ?? null;
+  // Resolve the consultation id the chat API needs. It isn't part of the WebRTC
+  // token natively — it's injected by the join flows — so we check every known
+  // key, coerce to a positive integer, and fall back to a numeric id embedded
+  // in the room name. This keeps chat working even if token enrichment was
+  // skipped or lost a value somewhere upstream.
+  const consultationId = useMemo<number | null>(() => {
+    const t = token as any;
+    const candidates = [
+      t?.consultation_id,
+      t?.consultationId,
+      t?.instant_consultation_request_id,
+      t?.instant_consultation_id,
+      t?.id,
+    ];
+    for (const c of candidates) {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    const match = /(?:consultation|consult|instant)[-_.]?(\d+)/i.exec(roomName ?? "");
+    if (match) {
+      const n = Number(match[1]);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return null;
+  }, [token, roomName]);
+
+  // Prefer our own token's id; fall back to the one the peer shared over signaling.
+  const effectiveConsultationId = consultationId ?? peerConsultationId;
+
+  // Once connected, share our consultation id so a peer whose token lacked one
+  // (e.g. the patient) can use it for the chat. Only the side that actually has
+  // the id broadcasts, so there's no ping-pong.
+  useEffect(() => {
+    if (connState === "connected" && consultationId != null) {
+      sendSignalRef.current?.("consultation-meta", { consultation_id: consultationId });
+    }
+  }, [connState, consultationId]);
 
   // ── Send signal via API ───────────────────────────────────────────────────
+  // Path can be overridden with VITE_SIGNAL_PATH if the backend exposes the
+  // WebRTC relay endpoint somewhere other than the default.
   const sendSignal = useCallback(
     async (type: string, data: unknown = {}) => {
+      const url = `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_SIGNAL_PATH ?? "/public/consultations/signal"}`;
       try {
-        await fetch(
-          `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ room: roomName, type, data, from: token.username }),
-          }
-        );
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ room: roomName, type, data, from: token.username }),
+        });
+        if (!res.ok) {
+          console.error(`[WebRTC] Signal "${type}" rejected: HTTP ${res.status} → ${url}`);
+        }
       } catch (e) {
-        console.error("[WebRTC] Signal send failed", e);
+        // A TypeError/NetworkError here usually means the endpoint is missing or
+        // blocked by CORS — no offer/answer/ICE can be exchanged, so the call
+        // stays on "Connecting…". Verify the endpoint exists and allows this origin.
+        console.error(`[WebRTC] Signal "${type}" send failed (network/CORS) → ${url}`, e);
       }
     },
     [roomName, token.username]
   );
+
+  // ── Connection recovery ───────────────────────────────────────────────────
+  // Attempt to re-establish a degraded connection. The owner re-offers with an
+  // ICE restart; the patient nudges the owner by resending `ready`.
+  const scheduleRecovery = (delay: number) => {
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+    recoveryTimerRef.current = setTimeout(() => {
+      recoveryTimerRef.current = null;
+      const pc = pcRef.current;
+      if (!pc || pc.connectionState === "connected") return;
+      if (isOwner) {
+        createAndSendOfferRef.current?.(true);
+      } else {
+        sendSignalRef.current?.("ready");
+      }
+    }, delay);
+  };
+
+  const clearRecovery = () => {
+    if (recoveryTimerRef.current) {
+      clearTimeout(recoveryTimerRef.current);
+      recoveryTimerRef.current = null;
+    }
+  };
 
   // ── Setup RTCPeerConnection ───────────────────────────────────────────────
   const createPeerConnection = useCallback(() => {
@@ -106,29 +186,49 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
-      if (s === "connected") setConnState("connected");
-      else if (s === "disconnected" || s === "closed") setConnState("disconnected");
-      else if (s === "failed") setConnState("failed");
+      if (s === "connected") {
+        setConnState("connected");
+        disconnectedSinceRef.current = null;
+        clearRecovery();
+        // Sync our current mic/camera state so the peer's indicators are correct.
+        sendSignalRef.current?.("media-status", {
+          audio: audioEnabledRef.current,
+          video: videoEnabledRef.current,
+        });
+      } else if (s === "disconnected") {
+        setConnState("disconnected");
+        disconnectedSinceRef.current = Date.now();
+        // `disconnected` is often transient — give ICE time to self-heal first.
+        scheduleRecovery(5000);
+      } else if (s === "failed") {
+        setConnState("failed");
+        scheduleRecovery(0);
+      } else if (s === "closed") {
+        setConnState("disconnected");
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      // Some browsers surface failures on the ICE state before connectionState.
+      if (pc.iceConnectionState === "failed") {
+        setConnState("failed");
+        scheduleRecovery(0);
+      }
     };
 
     pc.ontrack = (event) => {
+      // Prefer the stream the remote attached; fall back to assembling one.
+      const [incoming] = event.streams;
+      if (incoming) {
+        setRemoteStream(incoming);
+        return;
+      }
       const track = event.track;
-
-      // Attempt to get existing stream from the video element, or create a new one
-      let stream = remoteVideoRef.current?.srcObject as MediaStream;
-      if (!stream) {
-        stream = new MediaStream();
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = stream;
-        }
-      }
-
-      // Add the track to our stream if it doesn't already exist
-      if (!stream.getTracks().find(t => t.id === track.id)) {
-        stream.addTrack(track);
-      }
-
-      setRemoteStream(new MediaStream(stream.getTracks()));
+      setRemoteStream((prev) => {
+        const next = prev ? new MediaStream(prev.getTracks()) : new MediaStream();
+        if (!next.getTracks().find((t) => t.id === track.id)) next.addTrack(track);
+        return next;
+      });
     };
 
 
@@ -148,20 +248,22 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // ── SDP Optimizer ─────────────────────────────────────────────────────────
   const optimizeAudioSDP = (sdp: string | undefined) => {
     if (!sdp) return sdp;
+    // Mono voice, but at a wideband bitrate for clearer clinical audio.
+    // ~40 kbps Opus gives crisp speech without the bandwidth of stereo/music.
     return sdp.replace(
       /useinbandfec=1/g,
-      "useinbandfec=1;usedtx=1;stereo=0;maxaveragebitrate=16000"
+      "useinbandfec=1;usedtx=1;stereo=0;maxaveragebitrate=40000;maxplaybackrate=48000"
     );
   };
 
   // ── Create and Send Offer ─────────────────────────────────────────────────
-  const createAndSendOffer = useCallback(async () => {
+  const createAndSendOffer = useCallback(async (iceRestart = false) => {
     const pc = pcRef.current;
     if (!pc || makingOffer.current) return;
 
     try {
       makingOffer.current = true;
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer(iceRestart ? { iceRestart: true } : undefined);
       offer.sdp = optimizeAudioSDP(offer.sdp);
 
       await pc.setLocalDescription(offer);
@@ -173,6 +275,24 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     }
   }, [sendSignal]);
 
+  // Keep refs pointed at the latest callbacks / control state.
+  sendSignalRef.current = sendSignal;
+  createPeerConnectionRef.current = createPeerConnection;
+  createAndSendOfferRef.current = createAndSendOffer;
+  audioEnabledRef.current = audioEnabled;
+  videoEnabledRef.current = videoEnabled;
+
+  // Single source of truth: bind the remote stream to the <video> element and
+  // attempt playback (covers autoplay-with-audio policies). Clears on null.
+  useEffect(() => {
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.srcObject = remoteStream;
+    if (remoteStream) {
+      el.play().catch(() => {/* awaiting a user gesture; UI play affordance handles it */});
+    }
+  }, [remoteStream]);
+
   const handleSignalRef = useRef<((payload: any) => Promise<void>) | null>(null);
 
   handleSignalRef.current = async (payload: { type: string; data: unknown; from: string }) => {
@@ -180,13 +300,23 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     let pc = pcRef.current;
 
+    if (payload.type === "bye") {
+      clearRecovery();
+      pcRef.current?.close();
+      pcRef.current = null;
+      candidateQueue.current = [];
+      setRemoteStream(null);
+      setConnState("disconnected");
+      return;
+    }
+
     if (payload.type === "ready" || payload.type === "offer") {
       if (pc && ["connected", "disconnected", "failed", "closed"].includes(pc.connectionState)) {
         pc.close();
         pc = null;
         pcRef.current = null;
         candidateQueue.current = [];
-        setRemoteStream(null); // Clear old dead streams
+        setRemoteStream(null); // Clear old dead streams (srcObject is cleared by the bind effect)
       }
     }
 
@@ -227,7 +357,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         sendSignal("answer", { type: answer.type, sdp: answer.sdp });
       }
       else if (payload.type === "answer") {
-        if (pc.signalingState !== "have-local-offer") return;
+        if (pc.signalingState !== "have-local-offer") {
+          console.warn("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
+          return;
+        }
 
         const rawAnswer = payload.data as RTCSessionDescriptionInit;
         if (rawAnswer.sdp) rawAnswer.sdp = sanitizeSDP(rawAnswer.sdp);
@@ -244,12 +377,24 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           candidateQueue.current.push(payload.data as RTCIceCandidateInit);
           return;
         }
-        await pc.addIceCandidate(new RTCIceCandidate(payload.data as RTCIceCandidateInit));
+        // Adding a candidate can fail benignly (it arrived for a since-reset/
+        // renegotiated description). Swallow it so it doesn't abort the handler
+        // or surface as a hard error — ICE will still complete on valid ones.
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(payload.data as RTCIceCandidateInit));
+        } catch (err) {
+          console.warn("[WebRTC] Skipped an ICE candidate that couldn't be added", err);
+        }
       }
       else if (payload.type === "media-status") {
         const { audio, video } = payload.data as { audio: boolean, video: boolean };
         if (audio !== undefined) setRemoteAudioEnabled(audio);
         if (video !== undefined) setRemoteVideoEnabled(video);
+      }
+      else if (payload.type === "consultation-meta") {
+        // Peer is telling us the consultation id (used when our token lacked one).
+        const id = Number((payload.data as { consultation_id?: unknown })?.consultation_id);
+        if (Number.isFinite(id) && id > 0) setPeerConsultationId(id);
       }
     } catch (e) {
       console.error("[WebRTC] Signal handling error", e);
@@ -289,7 +434,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         }
       }
 
-      createPeerConnection();
+      createPeerConnectionRef.current?.();
 
       const subscribeToChannel = () => {
         const channel = echo.channel(`consultation.${roomName}`);
@@ -309,13 +454,41 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         const sendReadyLoop = () => {
           if (cancelled) return;
           const pc = pcRef.current;
+          const st = pc?.connectionState;
+          // Resend `ready` when there's no usable connection. Includes
+          // `disconnected`, but only after a grace window so a self-healing
+          // ICE blip doesn't trigger an unnecessary full renegotiation.
+          const needsReady =
+            !pc ||
+            ["new", "failed", "closed"].includes(st as string) ||
+            (st === "disconnected" &&
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
 
-          if (!pc || pc.connectionState !== "connected") {
-            sendSignal("ready");
-          }
+          if (needsReady) sendSignalRef.current?.("ready");
           setTimeout(sendReadyLoop, 3000);
         };
         setTimeout(sendReadyLoop, 1000);
+      } else {
+        // Owner re-announces while not yet connected. A single nudge is fragile
+        // on rejoin: if the peer is still holding a stale connection and misses
+        // it, nothing else prompts a re-handshake until its ICE times out
+        // (10–30s of "Connecting…"). Re-announcing every 3s prompts the peer to
+        // tear the stale connection down and re-initiate promptly. It stops once
+        // we're connected/connecting, so it never disrupts a live call.
+        const announceLoop = () => {
+          if (cancelled) return;
+          const pc = pcRef.current;
+          const st = pc?.connectionState;
+          const needsAnnounce =
+            !pc ||
+            ["new", "failed", "closed"].includes(st as string) ||
+            (st === "disconnected" &&
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+
+          if (needsAnnounce) sendSignalRef.current?.("ready");
+          setTimeout(announceLoop, 3000);
+        };
+        setTimeout(announceLoop, 1000);
       }
     };
 
@@ -323,6 +496,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
     return () => {
       cancelled = true;
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
       if (channelRef.current) {
         channelRef.current.stopListening(".webrtc.signal");
         echo.leaveChannel(`consultation.${roomName}`);
@@ -330,7 +504,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       pcRef.current?.close();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [roomName, isOwner, createPeerConnection, sendSignal]);
+    // Decoupled from callback identities (accessed via refs) so a parent
+    // re-render passing a new token object can't tear down a live call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomName, isOwner]);
 
   // ── Controls ──────────────────────────────────────────────────────────────
   const toggleAudio = () => {
@@ -347,7 +524,13 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     sendSignal("media-status", { audio: audioEnabled, video: nextVideo });
   };
 
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
+
   const endCall = () => {
+    // Notify the peer so they don't sit on a frozen "Connected" frame until
+    // ICE eventually times out.
+    sendSignal("bye");
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     echo.leaveChannel(`consultation.${roomName}`);
@@ -358,15 +541,56 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const stateLabel = { connecting: "Connecting…", connected: "Connected", disconnected: "Disconnected", failed: "Connection failed" }[connState];
 
   return (
+    <>
+    {/* ── End-call confirmation ─────────────────────────────────────────── */}
+    {confirmEndOpen && (
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+        onClick={() => setConfirmEndOpen(false)}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-sm rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
+        >
+          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/15 flex items-center justify-center">
+            <PhoneOff className="h-6 w-6 text-red-400" />
+          </div>
+          <h2 className="text-white text-base font-semibold mb-1">End consultation?</h2>
+          <p className="text-white/50 text-[13px] mb-5 leading-relaxed">
+            You'll disconnect from the call{isOwner ? " and the patient will be notified" : ""}.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmEndOpen(false)}
+              className="flex-1 h-10 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => { setConfirmEndOpen(false); endCall(); }}
+              className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
+            >
+              End call
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <motion.div
       drag={isMinimized}
       dragMomentum={false}
       animate={{ x: isMinimized ? undefined : 0, y: isMinimized ? undefined : 0 }}
       className={cn(
-        "bg-[#0c0c0c] z-[5000] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
+        // Single decisive z-index above all app chrome (sidebar/header sit at
+        // z-30–z-50). Avoid stacking two z-* utilities — source order, not class
+        // order, would decide the winner and could drop the call behind the nav.
+        "bg-[#0c0c0c] z-[9990] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
         isMinimized
-          ? "fixed bottom-6 right-6 w-80 h-56 rounded-2xl z-50 border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
-          : "fixed inset-0 h-screen w-screen z-40"
+          ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
+          : "fixed inset-0 h-[100dvh] w-screen"
       )}
     >
 
@@ -397,7 +621,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             </div>
           )}
 
-          <div className={cn("absolute right-4 rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bottom-24 bg-[#1a1a1a]", isMinimized ? "w-20 h-16 bottom-16 right-3" : "w-36 h-28", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
+          <div className={cn("absolute rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
             <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
             {!videoEnabled && (
               <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
@@ -424,39 +648,40 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         </div>
 
         {/* ── Chat panel ──────────────────────────────────────────────────── */}
+        {/* Stays mounted (so the realtime subscription + unread badge keep
+            working) but collapses to zero width when closed so it never overlays
+            or blocks the notes panel. Full-width drawer on mobile, side panel ≥sm. */}
         {!isMinimized && (
-          <div className={cn("h-full z-30 transition-all duration-300 ease-in-out border-l border-white/10 shrink-0", chatOpen ? "w-96 opacity-100" : "w-0 opacity-0 overflow-hidden")}>
-            <div className="relative w-96 h-full bg-[#0c0c0c]">
-              <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={consultationId} onUnreadChange={setUnreadCount} />
+          <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", chatOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+            <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
+              <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} onUnreadChange={setUnreadCount} />
             </div>
           </div>
         )}
 
         {/* ── Notes panel ─────────────────────────────────────────────────── */}
         {!isMinimized && isOwner && (
-          <div className={cn("h-full z-30 transition-all duration-300 ease-in-out border-l border-white/10 shrink-0 bg-[#0c0c0c]", notesOpen ? "w-96 opacity-100" : "w-0 opacity-0 overflow-hidden")}>
-            {notesOpen && (
-              <div className="relative w-96 h-full">
-                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={consultationId} patientName={token.username} />
-              </div>
-            )}
+          <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+            <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
+              <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} />
+            </div>
           </div>
         )}
       </div>
 
       {/* ── Controls bar ─────────────────────────────────────────────────── */}
-      <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-3 px-3" : "h-20 gap-4 px-6")}>
-        <button onClick={toggleAudio} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90", isMinimized ? "h-9 w-9" : "h-11 w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
+      <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-2 px-3" : "h-16 sm:h-20 gap-1.5 sm:gap-3 px-2 sm:px-6")}>
+        <button onClick={toggleAudio} title={audioEnabled ? "Mute microphone" : "Unmute microphone"} aria-label={audioEnabled ? "Mute microphone" : "Unmute microphone"} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
           {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
         </button>
 
-        <button onClick={toggleVideo} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90", isMinimized ? "h-9 w-9" : "h-11 w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
+        <button onClick={toggleVideo} title={videoEnabled ? "Turn camera off" : "Turn camera on"} aria-label={videoEnabled ? "Turn camera off" : "Turn camera on"} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
           {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
         </button>
 
         {!isMinimized && (
-          <div className="relative flex gap-2">
-            <button onClick={() => setParticipantsOpen(!participantsOpen)} className={cn("h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+          <div className="relative flex gap-1.5 sm:gap-2">
+            <button onClick={() => setParticipantsOpen(!participantsOpen)} title="Participants" aria-label="Participants" aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
               <Users className="w-5 h-5" />
             </button>
             <div className="relative">
@@ -464,7 +689,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 const next = !chatOpen;
                 setChatOpen(next);
                 if (next) setNotesOpen(false);
-              }} className={cn("h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+              }} title="Chat" aria-label="Open chat" aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
                 <MessageSquare className="w-5 h-5" />
               </button>
               {unreadCount > 0 && !chatOpen && (
@@ -478,22 +703,22 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 const next = !notesOpen;
                 setNotesOpen(next);
                 if (next) setChatOpen(false);
-              }} className={cn("h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+              }} title="Call notes" aria-label="Call notes" aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
                 <FileText className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
 
-        <div className="w-px h-6 bg-white/10 mx-2" />
+        <div className="w-px h-6 bg-white/10 mx-1 sm:mx-2" />
 
-        <button onClick={endCall} className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 p-3 ml-2", isMinimized ? "h-10 w-10 p-2 ml-0" : "h-13 w-13")}>
-          <PhoneOff className={isMinimized ? "w-5 h-5" : "w-6 h-6"} />
+        <button onClick={() => setConfirmEndOpen(true)} title="End call" aria-label="End call" className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-11 w-11 sm:h-12 sm:w-12 ml-1")}>
+          <PhoneOff className={isMinimized ? "w-5 h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
         </button>
 
         {/* Participants Overlay */}
         {participantsOpen && !isMinimized && (
-          <div className="absolute bottom-24 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 translate-x-1/2 right-[calc(50%-40px)]">
+          <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
             <h3 className="text-white/80 font-semibold text-[13px] mb-3">Participants (2)</h3>
             <div className="space-y-4">
               {/* Local User */}
@@ -534,6 +759,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         )}
       </div>
     </motion.div>
+    </>
   );
 };
 

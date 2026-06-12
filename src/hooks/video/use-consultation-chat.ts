@@ -110,6 +110,11 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
     const channelName = `instant-consultation.${consultationId}.chat`;
     console.info(`[Chat] Subscribing to private channel: ${channelName}`);
 
+    // Ensure Echo uses the freshest token (especially for guests who just auto-logged in)
+    if (echo.connector?.options?.auth?.headers) {
+      echo.connector.options.auth.headers.Authorization = `Bearer ${localStorage.getItem("auth_token")}`;
+    }
+
     const channel = echo.private(channelName);
     channel.listen(".message.sent", (data: { data?: ChatMessageApi } & ChatMessageApi) => {
       // The event payload may be the message directly or nested in .data
@@ -132,14 +137,19 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
     return () => {
       console.info(`[Chat] Leaving channel: ${channelName}`);
       channel.stopListening(".message.sent");
-      echo.leaveChannel(channelName);
+      echo.leave(channelName);
     };
   }, [consultationId, toUiMessage]);
 
   // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text: string) => {
-      if (!consultationId || !text.trim()) return;
+      if (!text.trim()) return;
+      if (!consultationId) {
+        toast.error("Consultation ID is missing. Cannot send message.");
+        console.error("[Chat] Cannot send message: consultationId is null");
+        return;
+      }
 
       setSending(true);
 
@@ -159,15 +169,15 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
           `/chat/instant/${consultationId}`,
           {
             method: "POST",
-            body: { 
+            body: {
               message: text.trim(),
-              appointment_id: consultationId,
             },
           },
         );
 
         // Replace optimistic message with real one
-        const realMsg = toUiMessage(res.data);
+        const msgData = res.data ?? res;
+        const realMsg = toUiMessage(msgData as ChatMessageApi);
         setMessages((prev) =>
           prev.map((m) => (m.id === optimisticId ? realMsg : m)),
         );

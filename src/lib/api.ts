@@ -62,6 +62,13 @@ interface ApiFetchOptions extends Omit<RequestInit, "body"> {
     body?: unknown;
 }
 
+/** Error thrown by apiFetch on non-OK responses; carries the HTTP status and
+ *  parsed response body so callers can handle specific cases. */
+export interface ApiError extends Error {
+    status?: number;
+    data?: any;
+}
+
 export async function apiFetch<T>(
     endpoint: string,
     options?: ApiFetchOptions
@@ -100,13 +107,20 @@ export async function apiFetch<T>(
     if (!res.ok) {
         // Handle both array shape: ["msg"] and object shape: { phone: ["msg"] }
         const fieldErrors = data?.errors;
+        let message = data?.message ?? "Something went wrong";
         if (fieldErrors) {
             const flat = Array.isArray(fieldErrors)
                 ? (fieldErrors as string[])
                 : Object.values(fieldErrors as Record<string, string[]>).flat();
-            if (flat.length > 0) throw new Error(flat.join(" · "));
+            if (flat.length > 0) message = flat.join(" · ");
         }
-        throw new Error(data?.message ?? "Something went wrong");
+        // Preserve the HTTP status and response body so callers can react to
+        // specific cases (e.g. an "active session" conflict that carries the
+        // in-progress consultation's room/token for a rejoin link).
+        const error: ApiError = new Error(message);
+        error.status = res.status;
+        error.data = data;
+        throw error;
     }
 
     return data as T;

@@ -662,17 +662,7 @@ export function IncomingCard({
 
             {/* IN_PROGRESS → Complete & Rejoin */}
             {item.status === "in_progress" && (
-              <>
-                <button
-                  onClick={() => setPreCallOpen(true)}
-                  disabled={isBusy}
-                  title="Rejoin"
-                  className="h-8 w-8 rounded-[5px] border border-border bg-card hover:bg-primary/10 hover:border-primary/40 text-muted-foreground hover:text-primary flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {isJoining
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <LogIn className="h-3.5 w-3.5" />}
-                </button>
+              <> 
                 <button
                   onClick={onComplete}
                   disabled={isBusy}

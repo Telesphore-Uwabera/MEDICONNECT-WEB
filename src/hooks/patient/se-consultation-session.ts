@@ -19,6 +19,7 @@ export interface ConsultSession {
   doctorId: number;
   guestName: string;
   guestPhone: string;
+  consultationId: number | null;
   savedAt: number; // Date.now() — used to detect sessions older than TTL
 }
 
@@ -47,9 +48,9 @@ export function readConsultSession(doctorId: number): ConsultSession | null {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useConsultationSession(doctorId: number) {
-  const save = useCallback((token: string, guestName: string, guestPhone: string) => {
+  const save = useCallback((token: string, guestName: string, guestPhone: string, consultationId: number | null = null) => {
     try {
-      const session: ConsultSession = { token, doctorId, guestName, guestPhone, savedAt: Date.now() };
+      const session: ConsultSession = { token, doctorId, guestName, guestPhone, consultationId, savedAt: Date.now() };
       localStorage.setItem(key(doctorId), JSON.stringify(session));
     } catch {
       // localStorage unavailable (private mode quota, etc.) — degrade silently

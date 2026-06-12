@@ -1,6 +1,5 @@
 import { useRef, useEffect, useState } from "react";
 import { FileText, X, Check, Loader2 } from "lucide-react";
-import { useCallStore } from "@/context/CallStore";
 import { useSaveInstantNotes } from "@/hooks/doctor/use-doctor-appointment";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -12,35 +11,83 @@ interface Props {
 
 const TEMPLATES = ["Chief complaint", "Current medications", "Allergies", "Assessment", "Plan"];
 
+// Notes are kept per-consultation in localStorage so they survive a page
+// refresh (the call itself now persists too) and never bleed between different
+// consultations. There is no GET endpoint for instant notes, so this local copy
+// is also what we re-open with.
+const notesKey = (id?: number) => (id != null ? `instant_notes:${id}` : null);
+
+function readLocalNotes(id?: number): string {
+  const key = notesKey(id);
+  if (!key) return "";
+  try {
+    return localStorage.getItem(key) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function InstantNotesSidebar({ onClose, consultationId, patientName }: Props) {
-  const call = useCallStore();
   const textRef = useRef<HTMLTextAreaElement>(null);
-  
   const saveNotes = useSaveInstantNotes();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  
-  // Debounce the note changes so we don't spam the backend
-  const debouncedNotes = useDebounce(call.callNotes, 1500);
+
+  // Local, consultation-scoped notes (seeded from localStorage).
+  const [notes, setNotes] = useState<string>(() => readLocalNotes(consultationId));
+
+  // Re-seed when switching to a different consultation.
+  useEffect(() => {
+    setNotes(readLocalNotes(consultationId));
+    setSaveStatus("idle");
+    // We only want this when the consultation changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consultationId]);
+
+  // Track whether the user has actually edited, so the initial seeded value is
+  // never auto-saved (which previously could PUT an empty string and wipe
+  // server-side notes).
+  const dirtyRef = useRef(false);
+
+  const debouncedNotes = useDebounce(notes, 1500);
 
   useEffect(() => {
-    if (consultationId && debouncedNotes !== undefined) {
-      setSaveStatus("saving");
-      saveNotes.mutate(
-        { id: consultationId, notes: debouncedNotes },
-        {
-          onSuccess: () => setSaveStatus("saved"),
-          onError: () => setSaveStatus("error"),
-        }
-      );
+    if (!dirtyRef.current) return;
+    if (consultationId == null) return;
+
+    // Mirror locally first so a refresh restores the latest text immediately.
+    const key = notesKey(consultationId);
+    if (key) {
+      try {
+        localStorage.setItem(key, debouncedNotes);
+      } catch {
+        /* storage unavailable — saving to the server still proceeds */
+      }
     }
+
+    setSaveStatus("saving");
+    saveNotes.mutate(
+      { id: consultationId, notes: debouncedNotes },
+      {
+        onSuccess: () => setSaveStatus("saved"),
+        onError: () => setSaveStatus("error"),
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedNotes, consultationId]);
 
-  useEffect(() => { textRef.current?.focus(); }, []);
+  useEffect(() => {
+    textRef.current?.focus();
+  }, []);
+
+  const updateNotes = (next: string) => {
+    dirtyRef.current = true;
+    setNotes(next);
+  };
 
   const insertTemplate = (tpl: string) => {
     const prefix = `${tpl}:\n`;
-    const next = call.callNotes ? `${call.callNotes}\n\n${prefix}` : prefix;
-    call.updateCallNotes(next);
+    const next = notes ? `${notes}\n\n${prefix}` : prefix;
+    updateNotes(next);
     setTimeout(() => {
       if (textRef.current) {
         textRef.current.focus();
@@ -53,8 +100,8 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName }: Pr
     <div className="flex flex-col h-full bg-card">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <FileText className="h-3.5 w-3.5 text-primary" />
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="text-[12px] font-semibold">Call notes</span>
           {patientName && (
             <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">
@@ -64,7 +111,8 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName }: Pr
         </div>
         <button
           onClick={onClose}
-          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          aria-label="Close notes"
+          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -91,24 +139,24 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName }: Pr
       {/* Textarea */}
       <textarea
         ref={textRef}
-        value={call.callNotes}
-        onChange={(e) => call.updateCallNotes(e.target.value)}
-        placeholder={`Type consultation notes here…\n\nNotes are auto-saved and attached to this appointment.`}
+        value={notes}
+        onChange={(e) => updateNotes(e.target.value)}
+        placeholder={`Type consultation notes here…\n\nNotes are auto-saved and attached to this consultation.`}
         className="flex-1 w-full resize-none bg-transparent text-[12px] leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none px-4 py-3 font-mono"
       />
 
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-border/60 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/50">
-          <span>{call.callNotes.length} chars</span>
+          <span>{notes.length} chars</span>
           <span>·</span>
-          {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> Saving...</>}
+          {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>}
           {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-500" /> Saved</>}
           {saveStatus === "error" && <span className="text-red-400">Failed to save</span>}
           {saveStatus === "idle" && <span>auto-saved</span>}
         </div>
         <button
-          onClick={() => call.updateCallNotes("")}
+          onClick={() => updateNotes("")}
           className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors"
         >
           Clear

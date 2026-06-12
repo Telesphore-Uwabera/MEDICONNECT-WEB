@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/Api";
+import { fetchDoctorLiveSession, type LiveSessionResponse } from "@/lib/rejoin";
 
 const BASE = "/doctor/appointments";
 
@@ -426,6 +427,20 @@ export function useSaveInstantNotes() {
 }
 
 
+
+/* 10.4.6  useDoctorLiveSession  →  GET /doctor/instant-consultations/live-session
+   Returns the doctor's in-progress instant consultation (room + token) so they
+   can rejoin after navigating away. Resolves to null when there's none. */
+
+export function useDoctorLiveSession(enabled = true) {
+    return useQuery<LiveSessionResponse | null>({
+        queryKey: ["doctor-instant-live-session"],
+        queryFn: () => fetchDoctorLiveSession(),
+        enabled,
+        refetchOnWindowFocus: false,
+        staleTime: 10_000,
+    });
+}
 
 /* 10.5  useCompleteInstant  →  POST /instant-consultations/:id/complete */
 

@@ -306,10 +306,10 @@
 //             </div>
 //           </div>
 //         ))}
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FileText, Stethoscope,
-  UserCheck, Clock3, Users, CheckCircle2, Activity,
+  UserCheck, Clock3, Users, CheckCircle2, Activity, Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -320,15 +320,18 @@ import {
   useDeclineInstant,
   useJoinInstant,
   useCompleteInstant,
+  useDoctorLiveSession,
   type InstantConsultQueueItem,
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useCallStore } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
+import { sessionToRejoinTarget } from "@/lib/rejoin";
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
 import { InstantNotesSidebar } from "./shared/InstantNotesSidebar";
 import { getErrMsg, fmt } from "./shared/helpers";
+import { BookPhysicalModal } from "./shared/BookPhysicalModal";
 
 type ItemAction = {
   id: number;
@@ -406,6 +409,7 @@ export function InstantConsultTab() {
   const call = useCallStore();
   const [notesOpen, setNotesOpen] = useState(true);
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
+  const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
 
   const isInCall = call.phase === "connected" && call.role === "doctor";
 
@@ -414,7 +418,16 @@ export function InstantConsultTab() {
   const declineInstant = useDeclineInstant();
   const joinInstant = useJoinInstant();
   const completeInstant = useCompleteInstant();
-  const { startCall } = useCallContext();
+  const { startCall, activeCall } = useCallContext();
+
+  // In-progress session the doctor can rejoin after navigating away. Suppressed
+  // while a call overlay is already open.
+  const { data: liveSession } = useDoctorLiveSession(!isInCall && !activeCall);
+  const liveTarget = useMemo(() => sessionToRejoinTarget(liveSession), [liveSession]);
+
+  const handleRejoinLive = () => {
+    if (liveTarget) startCall(liveTarget.roomName, liveTarget.token);
+  };
 
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
@@ -450,16 +463,23 @@ export function InstantConsultTab() {
       onSuccess: (res) => {
         const roomName = res.room_url.split("/consultation/").pop() ?? res.room_name;
 
+        const consultationId = Number(item.id);
+        let enrichedToken = res.doctor_token;
         let decodedToken: any;
         try {
           decodedToken = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
-          decodedToken.consultation_id = item.id;
+          // The chat API needs the consultation id; it isn't in the token natively.
+          decodedToken.consultation_id = Number.isFinite(consultationId) ? consultationId : item.id;
+          enrichedToken = encodeURIComponent(btoa(JSON.stringify(decodedToken)));
         } catch {
           decodedToken = null;
         }
 
         if (decodedToken) {
+          // If you are using startCall directly:
           startCall(roomName, decodedToken);
+          // If you are navigating to the page instead:
+          // window.location.href = `/consultation/${roomName}?t=${enrichedToken}`;
         } else {
           toast.error("Failed to parse consultation token");
         }
@@ -469,7 +489,9 @@ export function InstantConsultTab() {
     });
   };
 
-  const handleComplete = (item: InstantConsultQueueItem) => {
+  // Completing opens the "book physical appointment" step first; the booking is
+  // optional (the doctor can skip), but either path finalizes the consult.
+  const completeConsult = (item: InstantConsultQueueItem) => {
     setActiveAction({ id: item.id, action: "completing" });
     completeInstant.mutate(item.id, {
       onSuccess: () => toast.success("Session marked as completed."),
@@ -477,6 +499,29 @@ export function InstantConsultTab() {
       onSettled: () => setActiveAction(null),
     });
   };
+
+  const handleComplete = (item: InstantConsultQueueItem) => {
+    setBookingItem(item);
+  };
+
+  const bookingPatientId =
+    bookingItem == null
+      ? null
+      : ((bookingItem as any).user_id ??
+        (bookingItem as any).patient_id ??
+        (bookingItem as any).patient?.id ??
+        null);
+
+  // Carry the consultation notes (saved by InstantNotesSidebar under
+  // instant_notes:{consultationId}) into the booking's notes field.
+  const bookingDefaultNotes = (() => {
+    if (bookingItem == null) return "";
+    try {
+      return localStorage.getItem(`instant_notes:${bookingItem.id}`) ?? "";
+    } catch {
+      return "";
+    }
+  })();
 
   // ── Active call view ───────────────────────────────────────────────────────
   if (isInCall) {
@@ -540,6 +585,26 @@ export function InstantConsultTab() {
 
       {/* Main queue */}
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
+
+        {/* Rejoin in-progress consultation */}
+        {liveTarget && (
+          <div className="flex items-center gap-3 p-3 rounded-[5px] border border-primary/30 bg-primary/5">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold text-foreground">Consultation in progress</p>
+              <p className="text-[10px] text-muted-foreground">You have a live session you can rejoin.</p>
+            </div>
+            <button
+              onClick={handleRejoinLive}
+              className="flex items-center gap-1.5 px-3 h-8 rounded-[5px] bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
+            >
+              <Video className="h-3.5 w-3.5" /> Rejoin
+            </button>
+          </div>
+        )}
 
         {/* Online header */}
         <div className="flex items-center gap-3">
@@ -702,6 +767,27 @@ export function InstantConsultTab() {
           </p>
         </div>
       </aside>
+
+      {/* Book physical appointment on completion (optional) */}
+      {bookingItem != null && (
+        <BookPhysicalModal
+          open
+          onClose={() => setBookingItem(null)}
+          patientId={bookingPatientId}
+          patientPhone={bookingItem?.guest_phone}
+          defaultNotes={bookingDefaultNotes}
+          onSkip={() => {
+            const item = bookingItem;
+            setBookingItem(null);
+            if (item) completeConsult(item);
+          }}
+          onBooked={() => {
+            const item = bookingItem;
+            setBookingItem(null);
+            if (item) completeConsult(item);
+          }}
+        />
+      )}
     </div>
   );
 }

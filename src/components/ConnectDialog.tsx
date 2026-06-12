@@ -4389,6 +4389,12 @@
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
+import {
+  sessionToRejoinTarget,
+  fetchPatientLiveSession,
+  rejoinFromPersistedCall,
+  type RejoinTarget,
+} from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
 import {
   useInstantConsultationRequest,
@@ -4685,6 +4691,48 @@ interface ConnectDialogContentProps {
   onCloseCompletely: () => void;
 }
 
+// Does this error mean the user already has an active consultation elsewhere?
+// The backend may return this as 409 or 422, and apiFetch can overwrite the
+// message with flattened field errors — so check the raw payload too.
+const ACTIVE_SESSION_RE =
+  /active consultation session|already have an active|complete or cancel/i;
+const isActiveSessionError = (err: any): boolean => {
+  if (err?.status === 409) return true;
+  const blobs = [
+    err?.message,
+    err?.data?.message,
+    err?.data?.errors ? JSON.stringify(err.data.errors) : "",
+  ];
+  return blobs.some((b) => ACTIVE_SESSION_RE.test(String(b ?? "")));
+};
+
+// Resolve a rejoin target ({ roomName, token-object }). Prefers the authoritative
+// patient live-session endpoint, then the error payload, then the call we
+// persisted locally this session.
+const resolveRejoinTarget = async (err: any): Promise<RejoinTarget | null> => {
+  const fromApi = sessionToRejoinTarget(await fetchPatientLiveSession());
+  if (fromApi) return fromApi;
+
+  const fromError = sessionToRejoinTarget(err?.data);
+  if (fromError) return fromError;
+
+  return rejoinFromPersistedCall();
+};
+
+// The Echo authorizer (lib/echo.ts) authorizes the private chat channel using a
+// bearer token from localStorage["auth_token"], falling back to
+// localStorage["instant_consult_session"].token. Guests have no auth_token, so
+// mirror their consultation token here — otherwise /broadcasting/auth returns 403
+// and realtime chat fails. Cleared when the session ends.
+const setGuestChatAuth = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem("instant_consult_session", JSON.stringify({ token }));
+    else localStorage.removeItem("instant_consult_session");
+  } catch {
+    /* ignore */
+  }
+};
+
 export const ConnectDialogContent = ({
   doctor,
   onMinimize,
@@ -4694,6 +4742,12 @@ export const ConnectDialogContent = ({
   const navigate = useNavigate();
   const call = useCallStore();
   const session = useConsultationSession(doctor.id);
+
+  const handleRejoinActive = () => {
+    if (!activeRejoin) return;
+    onCloseCompletely();
+    startCall(activeRejoin.roomName, activeRejoin.token);
+  };
 
   const { data: me } = useMe();
   const isLoggedIn = !!me;
@@ -4718,6 +4772,9 @@ export const ConnectDialogContent = ({
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyToken, setDailyToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Set when the backend rejects a new request because one is already active —
+  // holds the in-progress consultation so we can offer a one-click rejoin.
+  const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: any } | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<{
     amount: number;
@@ -4747,6 +4804,8 @@ export const ConnectDialogContent = ({
       // Pre-load everything from the saved session right away
       setSavedSession(existing);
       setConsultationToken(existing.token);   // ← key fix: token is live immediately
+      setGuestChatAuth(existing.token);
+      setConsultationId(existing.consultationId ?? null);
       setGuestName(existing.guestName);
       setGuestPhone(existing.guestPhone);
       // Stay on idle so the resume banner is visible; polling activates on Resume click
@@ -4831,6 +4890,7 @@ export const ConnectDialogContent = ({
 
   const handleDiscardSession = () => {
     session.clear();
+    setGuestChatAuth(null);
     setSavedSession(null);
     setResumeDeclined(true);
     // Reset live state since user chose to start fresh
@@ -4850,6 +4910,7 @@ export const ConnectDialogContent = ({
   const handleRequest = async (override?: { name: string; phone: string, password?: string }) => {
     setPhase("requesting");
     setErrorMsg(null);
+    setActiveRejoin(null);
 
     setConsultationId(null);
     setConsultationToken(null);
@@ -4880,7 +4941,12 @@ export const ConnectDialogContent = ({
       }
 
       setConsultationToken(res.guest_token);
-      setConsultationId(res.id ?? null);
+      setGuestChatAuth(res.guest_token);
+
+      // Fallback for different backend keys
+      const extractedId = res.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
+      setConsultationId(extractedId);
+      
       setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 
       if (
@@ -4889,7 +4955,7 @@ export const ConnectDialogContent = ({
         res.status === "accepted" ||
         res.status === "in_progress"
       ) {
-        session.save(res.guest_token, name, phone);
+        session.save(res.guest_token, name, phone, extractedId);
         setPhase("polling");
         return;
       }
@@ -4901,6 +4967,9 @@ export const ConnectDialogContent = ({
       setPhase("payment");
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
+      // If the backend blocked this because a consultation is already active,
+      // surface a one-click rejoin to that session.
+      setActiveRejoin(isActiveSessionError(err) ? await resolveRejoinTarget(err) : null);
       setPhase("failed");
     }
   };
@@ -4939,7 +5008,7 @@ export const ConnectDialogContent = ({
               const name = me?.name ?? guestName;
               const phone = me?.phone ?? guestPhone;
               if (consultationToken) {
-                session.save(consultationToken, name, phone);
+                session.save(consultationToken, name, phone, consultationId);
               }
               setPhase("polling");
             },
@@ -4974,24 +5043,27 @@ export const ConnectDialogContent = ({
     if (!roomUrl || !dailyToken) return;
     const roomName = roomUrl.split("/consultation/").pop() ?? roomUrl;
 
-    // Inject consultation_id into the token so the consultation room
-    // can use it for the chat API
-    let enrichedToken = dailyToken;
-    try {
-      const decoded = JSON.parse(atob(decodeURIComponent(dailyToken)));
-      decoded.consultation_id = consultationId;
-      enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
-    } catch {
-      // If decoding fails, pass the original token as-is
-      enrichedToken = encodeURIComponent(dailyToken);
+    // Resolve a consultation id even if the live state was lost (e.g. the user
+    // resumed a saved session). Without it the in-call chat can't work.
+    const resolvedId =
+      consultationId ??
+      savedSession?.consultationId ??
+      session.read()?.consultationId ??
+      null;
+
+    if (resolvedId == null) {
+      console.warn("[ConnectDialog] Joining without a consultation_id — chat will be unavailable.");
     }
 
+    // Inject consultation_id into the token so the consultation room can use it
+    // for the chat API.
+    let enrichedToken = encodeURIComponent(dailyToken);
     try {
-      // Test decode to ensure it's valid
       const decoded = JSON.parse(atob(decodeURIComponent(dailyToken)));
-      decoded.consultation_id = consultationId;
+      decoded.consultation_id = resolvedId;
       enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
     } catch {
+      // If decoding fails, pass the original token as-is.
       enrichedToken = encodeURIComponent(dailyToken);
     }
 
@@ -5002,6 +5074,7 @@ export const ConnectDialogContent = ({
   const handleEnd = () => {
     call.endCall();
     session.clear();
+    setGuestChatAuth(null);
     setPhase("ended");
   };
 
@@ -5015,6 +5088,7 @@ export const ConnectDialogContent = ({
     setRoomUrl(null);
     setDailyToken(null);
     setErrorMsg(null);
+    setActiveRejoin(null);
     setPaymentInfo(null);
     if (isProfileComplete) handleRequest();
     else setPhase("guest_form");
@@ -5324,7 +5398,12 @@ export const ConnectDialogContent = ({
                 </div>
               )}
               <div className="space-y-2 pt-1">
-                <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                {activeRejoin && (
+                  <Button onClick={handleRejoinActive} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                    <Phone className="h-4 w-4" />Rejoin active consultation
+                  </Button>
+                )}
+                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
                   <Phone className="h-4 w-4" />Try again
                 </Button>
                 <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
