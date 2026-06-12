@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/lib/Api";
 
 const BASE = "/admin/pharmacies";
 
@@ -8,20 +8,65 @@ const BASE = "/admin/pharmacies";
 export interface ApiPharmacyUser {
   id: number;
   name: string;
+  email?: string | null;
+  phone?: string | null;
+  is_verified?: boolean;
+  status?: string;
 }
 
 export interface ApiPharmacy {
   id: number;
   name_en: string;
+  name_rw?: string | null;
   status: "active" | "pending" | "suspended" | "rejected";
+
+  // ── Identity ──
+  logo?: string | null;
+  description_en?: string | null;
+  description_rw?: string | null;
+  registration_number?: string | null;
+
+  // ── Location ──
+  address?: string | null;
   city?: string | null;
+  province?: string | null;
+  country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+
+  // ── Contact ──
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+
+  // ── Hours ──
+  opens_at?: string | null;
+  closes_at?: string | null;
+  is_open_24h?: boolean;
+
+  // ── Delivery ──
+  offers_delivery?: boolean;
+  offers_pickup?: boolean;
+  delivery_fee?: string | number | null;
+  delivery_currency?: string | null;
+  delivery_radius_km?: number | null;
+  estimated_delivery_minutes?: number | null;
+
+  // ── Flags ──
   is_active?: boolean;
+  show_homepage?: boolean;
+  registration_fee_paid?: boolean;
+
+  // ── Timestamps ──
   verified_at?: string | null;
+  created_at: string;
+  updated_at?: string;
+
+  // ── Relations ──
   user: ApiPharmacyUser;
   workingHours?: unknown[];
   images?: unknown[];
   socialLinks?: unknown[];
-  created_at: string;
 }
 
 export interface PaginatedPharmacies {
@@ -29,6 +74,7 @@ export interface PaginatedPharmacies {
   data: ApiPharmacy[];
   per_page: number;
   total: number;
+  last_page: number;
 }
 
 export interface GetAdminPharmaciesParams {

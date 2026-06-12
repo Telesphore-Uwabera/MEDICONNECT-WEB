@@ -44,10 +44,25 @@ export interface ApiBookingDepartment {
 export interface ApiServiceBooking {
   id: number;
   booked_by: string;
-  preferred_date: string; // "2026-06-01"
-  preferred_time: string; // "09:00:00"
+  preferred_date: string;   // "2026-06-01"
+  preferred_time: string;   // "09:00:00"
   status: BookingStatus;
   notes: string | null;
+  price: string | null;
+  currency: string | null;
+  insurance_covered: string | null;
+  patient_pays: string | null;
+  payment_status: string | null;
+  payment_method: string | null;
+  rejection_reason: string | null;
+  accepted_at: string | null;
+  rejected_at: string | null;
+  completed_at: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  doctor_id: number | null;
+  insurance_id: number | null;
   hospital: ApiBookingHospital;
   service: ApiBookingService;
   department: ApiBookingDepartment;
@@ -65,16 +80,24 @@ export interface ApiSingleBookingResponse {
   booking: ApiServiceBooking;
 }
 
-// ─── Filter Params ──────────────────────────────────────────────────────────────
+// ─── Filter / Mutation Params ───────────────────────────────────────────────────
 
 export interface ServiceBookingSearchParams {
   status?: BookingStatus;
   page?: number;
 }
 
-// ─── Hooks ──────────────────────────────────────────────────────────────────────
+// ─── Query Keys ─────────────────────────────────────────────────────────────────
 
-/* GET /patient/service-bookings */
+export const bookingKeys = {
+  all: ["patient-service-bookings"] as const,
+  list: (params: ServiceBookingSearchParams) =>
+    ["patient-service-bookings", params] as const,
+  detail: (id: number) => ["patient-service-booking", id] as const,
+};
+
+// ─── GET /patient/service-bookings ──────────────────────────────────────────────
+
 export function useGetPatientServiceBookings(
   params: ServiceBookingSearchParams = {},
 ) {
@@ -87,24 +110,29 @@ export function useGetPatientServiceBookings(
   const url = queryString ? `${BASE}?${queryString}` : BASE;
 
   return useQuery<ApiServiceBookingListResponse>({
-    queryKey: ["patient-service-bookings", params],
+    queryKey: bookingKeys.list(params),
     queryFn: () =>
       apiFetch(url).then((res) => res as ApiServiceBookingListResponse),
     staleTime: 30_000,
   });
 }
 
-/* GET /patient/service-bookings/:id */
+// ─── GET /patient/service-bookings/:id ──────────────────────────────────────────
+
 export function useGetPatientServiceBooking(id: number | null) {
   return useQuery<ApiSingleBookingResponse>({
-    queryKey: ["patient-service-booking", id],
+    queryKey: bookingKeys.detail(id!),
     queryFn: () =>
-      apiFetch(`${BASE}/${id}`).then((res) => res as ApiSingleBookingResponse),
+      apiFetch(`${BASE}/${id}`).then(
+        (res) => res as ApiSingleBookingResponse,
+      ),
     enabled: id != null,
+    staleTime: 30_000,
   });
 }
 
-/* DELETE /patient/service-bookings/:id */
+// ─── DELETE /patient/service-bookings/:id ───────────────────────────────────────
+
 export function useCancelPatientServiceBooking() {
   const queryClient = useQueryClient();
   return useMutation<
@@ -116,8 +144,10 @@ export function useCancelPatientServiceBooking() {
       apiFetch(`${BASE}/${id}`, { method: "DELETE" }) as Promise<{
         message: string;
       }>,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["patient-service-bookings"] });
+    onSuccess: (_data, id) => {
+      // Invalidate list + remove detail cache for this id
+      queryClient.invalidateQueries({ queryKey: bookingKeys.all });
+      queryClient.removeQueries({ queryKey: bookingKeys.detail(id) });
     },
   });
 }

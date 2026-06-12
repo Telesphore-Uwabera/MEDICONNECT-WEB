@@ -52,7 +52,9 @@
     "pharmacies": "Pharmacies",
     "pharmacies_d": "Incoming scripts, stock, fulfillment",
     "open_dashboard": "Open dashboard",
-    "footer": "© 2026 MEDICONNECT. Bringing care to your fingertips"
+    "footer": "© 2026 MEDICONNECT. Bringing care to your fingertips",
+    "health_facility":"Health Facility"
+
   },
   "patient": {
     "overview_title": "Welcome back, John",

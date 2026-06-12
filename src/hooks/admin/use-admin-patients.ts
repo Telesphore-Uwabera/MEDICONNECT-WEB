@@ -18,11 +18,28 @@ export interface ApiPatient {
   phone_verified_at?: string | null;
   email_verified_at?: string | null;
   roles?: { name: string }[];
-  patient?: {
-    id: number;
-    date_of_birth?: string | null;
-  } | null;
+ patient?: {
+  id: number;
+  user_id?: number;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  national_id?: string | null;
+  blood_type?: string | null;
+  address?: string | null;
+  city?: string | null;
+  province?: string | null;
+  country?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relation?: string | null;
+  insurance_id?: number | null;
+  insurance_number?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+} | null;
   created_at: string;
+   updated_at?: string;   
 }
 
 export interface PaginatedPatients {

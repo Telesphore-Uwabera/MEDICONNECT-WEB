@@ -416,7 +416,7 @@ useEffect(() => {
                 {t("pages.landing.partner_network")}
               </p>
               <h2 className="mt-3 font-display text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                {t("pages.landing.hospitals_near_you")}
+                {t("pages.landing.health_facility")} 
               </h2>
               <p className="mt-2 text-sm text-muted-foreground max-w-xl">
                 {t("pages.landing.hospitals_sub")}

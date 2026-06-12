@@ -21,17 +21,16 @@ import {
   ChevronRight,
   User,
 } from "lucide-react";
-// import {
-//   useGetSearchDoctors,
-//   type ApiDoctor,
-//   type DoctorSearchParams,
-// } from "@/hooks/patient/use-patient-search-doctor";
+
 import { DoctorCard } from "@/components/DoctorCard";
-import { useGetSearchDoctors,
+import {
+  useGetSearchDoctors,
   type ApiDoctor,
   type DoctorSearchParams,
-
- } from "@/hooks/patient/use-patient-doctor";
+} from "@/hooks/patient/use-patient-doctor";
+import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
+import { SpecializationsStep } from "../doctor/profile/Specializationsstep";
+import SpecializationSelect from "./components/SpecializationSelect";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -65,9 +64,8 @@ const INITIAL_FILTERS: FilterState = {
 
 const CONSULTATION_OPTIONS = [
   { value: "all" as const, label: "All types", icon: Globe },
-  { value: "online" as const, label: "Online", icon: Video },
-  { value: "in_person" as const, label: "In-person", icon: MapPin },
-  { value: "both" as const, label: "Both", icon: Stethoscope },
+  { value: "booking" as const, label: "Booking", icon: Video },
+  { value: "instant" as const, label: "Instant", icon: MapPin },
 ];
 
 const GENDER_OPTIONS = [
@@ -91,14 +89,20 @@ const LANGUAGE_OPTIONS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildApiParams(filters: FilterState, page: number): DoctorSearchParams {
+function buildApiParams(
+  filters: FilterState,
+  page: number,
+): DoctorSearchParams {
   const params: DoctorSearchParams = { page };
   if (filters.q.trim().length >= 2) params.q = filters.q.trim();
-  if (filters.specialization.trim()) params.specialization = filters.specialization.trim();
-  if (filters.type !== "all") params.type = filters.type as "online" | "in_person" | "both";
+  if (filters.specialization.trim())
+    params.specialization = filters.specialization.trim();
+  if (filters.type !== "all")
+    params.type = filters.type as "online" | "in_person" | "both";
   if (filters.language) params.language = filters.language;
   if (filters.city.trim()) params.city = filters.city.trim();
-  if (filters.gender !== "all") params.gender = filters.gender as "male" | "female";
+  if (filters.gender !== "all")
+    params.gender = filters.gender as "male" | "female";
   if (filters.available_today) params.available_today = true;
   if (filters.instant) params.instant = true;
   return params;
@@ -119,7 +123,13 @@ function sortDoctors(doctors: ApiDoctor[], sort: SortOption): ApiDoctor[] {
 
 // ─── Sidebar atoms ──────────────────────────────────────────────────────────────
 
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+function FilterSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="py-3 border-b border-border/60 last:border-b-0">
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2.5">
@@ -219,15 +229,36 @@ function DoctorAvatar({ doctor }: { doctor: ApiDoctor }) {
   );
 }
 
-function ConsultationTypeBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
+function ConsultationTypeBadge({
+  type,
+}: {
+  type: ApiDoctor["consultation_type"];
+}) {
   const configs = {
-    online: { label: "Online", className: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900" },
-    in_person: { label: "In-Person", className: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900" },
-    both: { label: "Online & In-Person", className: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900" },
+    online: {
+      label: "Online",
+      className:
+        "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+    },
+    in_person: {
+      label: "In-Person",
+      className:
+        "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
+    },
+    both: {
+      label: "Online & In-Person",
+      className:
+        "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900",
+    },
   };
   const cfg = configs[type] ?? configs.both;
   return (
-    <span className={cn("px-1.5 py-px text-[9px] font-semibold rounded-sm border", cfg.className)}>
+    <span
+      className={cn(
+        "px-1.5 py-px text-[9px] font-semibold rounded-sm border",
+        cfg.className,
+      )}
+    >
       {cfg.label}
     </span>
   );
@@ -272,8 +303,17 @@ function DoctorListItem({ doctor }: { doctor: ApiDoctor }) {
 
       <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70 flex-shrink-0">
         <span className="flex items-center gap-1">
-          <Star className={cn("w-3 h-3", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30")} />
-          <span className="font-semibold text-foreground">{rating > 0 ? rating.toFixed(1) : "New"}</span>
+          <Star
+            className={cn(
+              "w-3 h-3",
+              rating > 0
+                ? "fill-amber-400 text-amber-400"
+                : "text-muted-foreground/30",
+            )}
+          />
+          <span className="font-semibold text-foreground">
+            {rating > 0 ? rating.toFixed(1) : "New"}
+          </span>
         </span>
         <ConsultationTypeBadge type={doctor.consultation_type} />
       </div>
@@ -309,7 +349,11 @@ function DoctorListItem({ doctor }: { doctor: ApiDoctor }) {
                 : "bg-muted text-muted-foreground cursor-not-allowed",
             )}
           >
-            {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
+            {canBook
+              ? "Book"
+              : doctor.bookings_paused
+                ? "Paused"
+                : "Unavailable"}
           </button>
         )}
       </div>
@@ -368,8 +412,12 @@ function Pagination({
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-card/50">
       <p className="text-[10px] text-muted-foreground">
-        Showing <span className="font-semibold text-foreground">{from}–{to}</span> of{" "}
-        <span className="font-semibold text-foreground">{total}</span> doctors
+        Showing{" "}
+        <span className="font-semibold text-foreground">
+          {from}–{to}
+        </span>{" "}
+        of <span className="font-semibold text-foreground">{total}</span>{" "}
+        doctors
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -417,6 +465,9 @@ const PatientDoctors = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data: insurance, isLoadingInsurances } = useGetPublicInsurances();
+
+  console.log("insurance", insurance);
 
   // Debounce search query
   useEffect(() => {
@@ -425,7 +476,9 @@ const PatientDoctors = () => {
       setDebouncedQ(filters.q);
       setPage(1);
     }, 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [filters.q]);
 
   const apiParams = useMemo<DoctorSearchParams>(() => {
@@ -439,10 +492,13 @@ const PatientDoctors = () => {
     return sortDoctors(data.data, filters.sort);
   }, [data, filters.sort]);
 
-  const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    if (key !== "q" && key !== "sort") setPage(1);
-  }, []);
+  const set = useCallback(
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+      if (key !== "q" && key !== "sort") setPage(1);
+    },
+    [],
+  );
 
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
@@ -458,7 +514,9 @@ const PatientDoctors = () => {
   useEffect(() => {
     if (filterOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [filterOpen]);
 
   const instantCount = doctors.filter((d) => d.instant_consultation).length;
@@ -473,10 +531,15 @@ const PatientDoctors = () => {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
-          <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
+          <button
+            onClick={clearAll}
+            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
+          >
             <X className="w-3 h-3" />
             Reset all
           </button>
@@ -508,6 +571,12 @@ const PatientDoctors = () => {
 
         {/* Specialization */}
         <FilterSection title="Specialization">
+          <SpecializationSelect
+            value={filters.specialization}
+            onChange={(v) => set("specialization", v)}
+          />
+        </FilterSection>
+        {/* <FilterSection title="Specialization">
           <input
             type="text"
             placeholder="e.g. Cardiologist…"
@@ -515,7 +584,7 @@ const PatientDoctors = () => {
             onChange={(e) => set("specialization", e.target.value)}
             className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
           />
-        </FilterSection>
+        </FilterSection> */}
 
         {/* Consultation type */}
         <FilterSection title="Consultation Type">
@@ -595,7 +664,9 @@ const PatientDoctors = () => {
             onClick={() => setFilterOpen(false)}
             className={cn(
               "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+              filterOpen
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none",
             )}
           />
 
@@ -618,14 +689,14 @@ const PatientDoctors = () => {
                 onClick={() => setFilterOpen(false)}
                 className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm"
               >
-                Show {data?.total ?? 0} {(data?.total ?? 0) === 1 ? "doctor" : "doctors"}
+                Show {data?.total ?? 0}{" "}
+                {(data?.total ?? 0) === 1 ? "doctor" : "doctors"}
               </button>
             </div>
           </div>
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col">
-
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -634,10 +705,15 @@ const PatientDoctors = () => {
                     <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
                   ) : (
                     <>
-                      <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
+                      <span className="font-bold text-foreground">
+                        {data?.total ?? 0}
+                      </span>{" "}
                       {(data?.total ?? 0) === 1 ? "doctor" : "doctors"} found
                       {hasActiveFilters && (
-                        <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors">
+                        <button
+                          onClick={clearAll}
+                          className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                        >
                           Reset
                         </button>
                       )}
@@ -678,7 +754,9 @@ const PatientDoctors = () => {
                   className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
                   {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
                   ))}
                 </select>
 
@@ -694,7 +772,9 @@ const PatientDoctors = () => {
                 >
                   <SlidersHorizontal className="w-3 h-3" />
                   Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
+                  {hasActiveFilters && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />
+                  )}
                 </button>
 
                 {/* View toggle */}
@@ -707,18 +787,32 @@ const PatientDoctors = () => {
                       className={cn(
                         "px-2.5 py-1.5 transition-all duration-200",
                         i > 0 && "border-l border-border/60",
-                        view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                        view === v
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                       )}
                     >
                       {v === "grid" ? (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                        >
                           <rect x="3" y="3" width="7" height="7" rx="1" />
                           <rect x="14" y="3" width="7" height="7" rx="1" />
                           <rect x="3" y="14" width="7" height="7" rx="1" />
                           <rect x="14" y="14" width="7" height="7" rx="1" />
                         </svg>
                       ) : (
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                        >
                           <line x1="3" y1="6" x2="21" y2="6" />
                           <line x1="3" y1="12" x2="21" y2="12" />
                           <line x1="3" y1="18" x2="21" y2="18" />
@@ -738,8 +832,12 @@ const PatientDoctors = () => {
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load doctors</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                    <p className="text-[12px] font-semibold text-foreground">
+                      Failed to load doctors
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                      Something went wrong. Please try again.
+                    </p>
                   </div>
                   <button
                     onClick={() => refetch()}
@@ -750,11 +848,13 @@ const PatientDoctors = () => {
                   </button>
                 </div>
               ) : isLoading ? (
-                <div className={cn(
-                  view === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2"
-                    : "flex flex-col gap-2"
-                )}>
+                <div
+                  className={cn(
+                    view === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2"
+                      : "flex flex-col gap-2",
+                  )}
+                >
                   {Array.from({ length: 6 }).map((_, i) => (
                     <DoctorCardSkeleton key={i} />
                   ))}
@@ -765,11 +865,18 @@ const PatientDoctors = () => {
                     <User className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">No doctors match your filters</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
+                    <p className="text-[12px] font-semibold text-foreground">
+                      No doctors match your filters
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">
+                      Try widening your search criteria
+                    </p>
                   </div>
                   {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                    <button
+                      onClick={clearAll}
+                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                    >
                       Clear all filters
                     </button>
                   )}
@@ -777,14 +884,12 @@ const PatientDoctors = () => {
               ) : view === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                   {doctors.map((d) => (
-             
                     <DoctorGridCard key={d.id} doctor={d} />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {doctors.map((d) => (
-             
                     <DoctorListItem key={d.id} doctor={d} />
                   ))}
                 </div>
@@ -808,4 +913,4 @@ const PatientDoctors = () => {
   );
 };
 
-export default PatientDoctors
+export default PatientDoctors;

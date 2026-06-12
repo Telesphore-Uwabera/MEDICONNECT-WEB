@@ -1,12 +1,10 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/PageHeader";
 import {
   ShieldOff,
-  ShieldCheck,
   Stethoscope,
   Clock,
   CheckCircle2,
@@ -17,15 +15,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Loader2,
-  Calendar,
-  Hash,
-  Ban,
-  Mail,
-  Phone,
-  Video,
-  MonitorSmartphone,
-  UserRound,
 } from "lucide-react";
 import {
   useGetAdminDoctors,
@@ -36,594 +25,28 @@ import {
 } from "@/hooks/admin/use-admin-doctors";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/PageHeader";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type StatusFilter       = "all" | "active" | "pending" | "suspended" | "rejected";
-type ConsultationFilter = "all" | "online" | "in_person" | "both";
-type SortOption         = "name" | "joined-desc" | "joined-asc";
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "joined-desc", label: "Joined: Newest first" },
-  { value: "joined-asc",  label: "Joined: Oldest first" },
-  { value: "name",        label: "Name (A–Z)" },
-];
-
-const CONSULTATION_LABELS: Record<string, string> = {
-  online:    "Online",
-  in_person: "In-person",
-  both:      "Both",
-};
-
-interface FilterState {
-  search:            string;
-  status:            StatusFilter;
-  specialization:    string;
-  consultation_type: ConsultationFilter;
-  sort:              SortOption;
-  page:              number;
-}
-
-const INITIAL_FILTERS: FilterState = {
-  search:            "",
-  status:            "all",
-  specialization:    "",
-  consultation_type: "all",
-  sort:              "joined-desc",
-  page:              1,
-};
-
-// ─── Style maps ───────────────────────────────────────────────────────────────
-
-const statusStyle: Record<string, string> = {
-  active:
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  pending:
-    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  suspended:
-    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  rejected: "bg-muted text-muted-foreground border-border",
-};
-
-const STATUS_DOT: Record<string, string> = {
-  active:    "bg-emerald-500",
-  pending:   "bg-amber-500",
-  suspended: "bg-red-500",
-  rejected:  "bg-muted-foreground",
-};
-
-const consultationStyle: Record<string, string> = {
-  online:    "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
-  in_person: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
-  both:      "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900",
-};
-
-const ConsultationIcon: Record<string, React.ReactNode> = {
-  online:    <Video className="w-3 h-3" />,
-  in_person: <UserRound className="w-3 h-3" />,
-  both:      <MonitorSmartphone className="w-3 h-3" />,
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return "Something went wrong";
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function FilterSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="py-3 border-b border-border/60 last:border-b-0">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2.5">
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function PillGroup<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { value: T; label: string; count?: number }[];
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
-            value === o.value
-              ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-              : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-          )}
-        >
-          <span>{o.label}</span>
-          {o.count !== undefined && (
-            <span
-              className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded-full",
-                value === o.value
-                  ? "bg-white/20 text-white"
-                  : "bg-secondary text-muted-foreground",
-              )}
-            >
-              {o.count}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ─── Desktop row ──────────────────────────────────────────────────────────────
-
-function DoctorRow({
-  d,
-  onManage,
-}: {
-  d: ApiDoctor;
-  onManage: (d: ApiDoctor) => void;
-}) {
-  return (
-    <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 border border-primary/20">
-            {getInitials(d.user.name)}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-[11px] text-foreground truncate">
-              {d.user.name}
-            </p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "—"}
-            </p>
-          </div>
-        </div>
-      </td>
-
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {d.specialization ?? <span className="text-muted-foreground/40">—</span>}
-      </td>
-
-      <td className="px-4 py-3">
-        {d.consultation_type ? (
-          <Badge
-            variant="outline"
-            className={cn(
-              "border text-[9px] px-1.5 py-0 font-medium gap-1",
-              consultationStyle[d.consultation_type] ?? "bg-muted text-muted-foreground border-border",
-            )}
-          >
-            {ConsultationIcon[d.consultation_type]}
-            {CONSULTATION_LABELS[d.consultation_type] ?? d.consultation_type}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground/40 text-[11px]">—</span>
-        )}
-      </td>
-
-      <td className="px-4 py-3">
-        <Badge
-          variant="outline"
-          className={cn(
-            "border text-[9px] px-1.5 py-0 font-medium capitalize",
-            statusStyle[d.status],
-          )}
-        >
-          <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[d.status])} />
-          {d.status}
-        </Badge>
-      </td>
-
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(d.created_at).toLocaleDateString()}
-      </td>
-
-      <td className="px-4 py-3 text-right">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
-          onClick={() => onManage(d)}
-        >
-          Manage
-        </Button>
-      </td>
-    </tr>
-  );
-}
-
-// ─── Mobile card ──────────────────────────────────────────────────────────────
-
-function DoctorCard({
-  d,
-  onManage,
-}: {
-  d: ApiDoctor;
-  onManage: (d: ApiDoctor) => void;
-}) {
-  return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
-        {getInitials(d.user.name)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold text-[12px] text-foreground truncate">
-              {d.user.name}
-            </p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "—"}
-            </p>
-          </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              "border text-[9px] px-1.5 py-0 font-medium capitalize shrink-0",
-              statusStyle[d.status],
-            )}
-          >
-            <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[d.status])} />
-            {d.status}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {d.specialization && (
-            <span className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-              <Stethoscope className="w-3 h-3" />
-              {d.specialization}
-            </span>
-          )}
-          {d.consultation_type && (
-            <Badge
-              variant="outline"
-              className={cn(
-                "border text-[9px] px-1.5 py-0 font-medium gap-1",
-                consultationStyle[d.consultation_type] ?? "bg-muted text-muted-foreground border-border",
-              )}
-            >
-              {ConsultationIcon[d.consultation_type]}
-              {CONSULTATION_LABELS[d.consultation_type] ?? d.consultation_type}
-            </Badge>
-          )}
-          <span className="text-[10px] text-muted-foreground/50">
-            {new Date(d.created_at).toLocaleDateString()}
-          </span>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
-          onClick={() => onManage(d)}
-        >
-          Manage
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <tr key={i} className="border-t border-border/40">
-          {Array.from({ length: 6 }).map((_, j) => (
-            <td key={j} className="px-4 py-3">
-              <div
-                className="h-4 bg-muted/60 rounded animate-pulse"
-                style={{ width: j === 0 ? "140px" : j === 5 ? "60px" : "80px" }}
-              />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </>
-  );
-}
-
-// ─── InfoTile ─────────────────────────────────────────────────────────────────
-
-const InfoTile = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-}) => (
-  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
-    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
-      {icon}
-      {label}
-    </div>
-    <p className="text-[13px] font-medium text-foreground truncate">{value}</p>
-  </div>
-);
-
-// ─── Doctor Panel ─────────────────────────────────────────────────────────────
-
-function DoctorPanel({
-  doctor,
-  onClose,
-  onApprove,
-  onReject,
-  onSuspend,
-  isActing,
-}: {
-  doctor: ApiDoctor | null;
-  onClose: () => void;
-  onApprove: (d: ApiDoctor) => void;
-  onReject:  (d: ApiDoctor) => void;
-  onSuspend: (d: ApiDoctor) => void;
-  isActing: boolean;
-}) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const open = !!doctor;
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className={cn(
-          "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        )}
-      />
-
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] lg:w-[440px]",
-          "bg-card border-l border-border/60 flex flex-col",
-          "transition-transform duration-300 ease-out",
-          open ? "translate-x-0" : "translate-x-full",
-        )}
-      >
-        {doctor && (
-          <>
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
-              <div>
-                <p className="text-[14px] font-semibold text-foreground leading-tight">
-                  Manage doctor
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Review details & update status
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border/60 bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
-                aria-label="Close panel"
-              >
-                <X className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-5 py-5 space-y-4">
-
-                {/* Identity card */}
-                <div className="rounded-xl border border-border/60 bg-secondary/20 overflow-hidden">
-                  <div className="h-1 w-full bg-primary/40" />
-                  <div className="p-4 flex items-start gap-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg flex-shrink-0 border-2 border-background ring-1 ring-border/40">
-                      {getInitials(doctor.user.name)}
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="font-semibold text-[15px] text-foreground leading-tight truncate">
-                        {doctor.user.name}
-                      </p>
-                      <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-                        {doctor.user.email ?? "—"}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                        {/* Status badge */}
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
-                            statusStyle[doctor.status],
-                          )}
-                        >
-                          <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[doctor.status])} />
-                          {doctor.status}
-                        </span>
-
-                        {/* Consultation type badge */}
-                        {doctor.consultation_type && (
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
-                              consultationStyle[doctor.consultation_type] ?? "bg-secondary text-foreground border-border/60",
-                            )}
-                          >
-                            {ConsultationIcon[doctor.consultation_type]}
-                            {CONSULTATION_LABELS[doctor.consultation_type] ?? doctor.consultation_type}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Details grid */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  {doctor.specialization && (
-                    <InfoTile
-                      icon={<Stethoscope className="w-3.5 h-3.5" />}
-                      label="Specialization"
-                      value={doctor.specialization}
-                    />
-                  )}
-                  {doctor.user.phone && (
-                    <InfoTile
-                      icon={<Phone className="w-3.5 h-3.5" />}
-                      label="Phone"
-                      value={doctor.user.phone}
-                    />
-                  )}
-                  {doctor.user.email && (
-                    <InfoTile
-                      icon={<Mail className="w-3.5 h-3.5" />}
-                      label="Email"
-                      value={doctor.user.email}
-                    />
-                  )}
-                  <InfoTile
-                    icon={<Calendar className="w-3.5 h-3.5" />}
-                    label="Joined"
-                    value={new Date(doctor.created_at).toLocaleDateString()}
-                  />
-                  <InfoTile
-                    icon={<Hash className="w-3.5 h-3.5" />}
-                    label="Doctor ID"
-                    value={`#${doctor.id}`}
-                  />
-                </div>
-
-              </div>
-            </div>
-
-            {/* Footer — context-aware action buttons */}
-            <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
-
-              {/* Approve — pending or rejected */}
-              {(doctor.status === "pending" || doctor.status === "rejected") && (
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-[12px] rounded-lg gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
-                  disabled={isActing}
-                  onClick={() => onApprove(doctor)}
-                >
-                  {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="h-4 w-4" />
-                  )}
-                  Approve doctor
-                </Button>
-              )}
-
-              {/* Suspend — active only */}
-              {doctor.status === "active" && (
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-[12px] rounded-lg gap-2"
-                  disabled={isActing}
-                  onClick={() => onSuspend(doctor)}
-                >
-                  {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShieldOff className="h-4 w-4" />
-                  )}
-                  Suspend doctor
-                </Button>
-              )}
-
-              {/* Reject — pending only */}
-              {doctor.status === "pending" && (
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-[12px] rounded-lg gap-2 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
-                  disabled={isActing}
-                  onClick={() => onReject(doctor)}
-                >
-                  {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Ban className="h-4 w-4" />
-                  )}
-                  Reject doctor
-                </Button>
-              )}
-
-              {/* Reactivate — suspended only */}
-              {doctor.status === "suspended" && (
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-[12px] rounded-lg gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
-                  disabled={isActing}
-                  onClick={() => onApprove(doctor)}
-                >
-                  {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="h-4 w-4" />
-                  )}
-                  Reactivate doctor
-                </Button>
-              )}
-
-              <Button
-                variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
-                onClick={onClose}
-              >
-                Close
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-    </>
-  );
-}
+import {
+  type FilterState,
+  type StatusFilter,
+  type ConsultationFilter,
+  type SortOption,
+  INITIAL_FILTERS,
+  SORT_OPTIONS,
+  getErrorMessage,
+} from "./components/doctor/Types";
+import { FilterSection, PillGroup } from "./components/doctor/Filtercomponents";
+import { DoctorRow, DoctorCard } from "./components/doctor/Doctorlistitems";
+import { SkeletonRows } from "./components/doctor/Skeletonrows";
+import { DoctorPanel } from "./components/doctor/DoctorPanel";
+import SpecializationSelect from "../patient/components/SpecializationSelect";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageDoctors() {
   const { t } = useTranslation();
-  const [filters, setFilters]       = useState<FilterState>(INITIAL_FILTERS);
-  const [selected, setSelected]     = useState<ApiDoctor | null>(null);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [selected, setSelected] = useState<ApiDoctor | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const { toast } = useToast();
 
@@ -636,20 +59,23 @@ function ManageDoctors() {
 
   // ── API ──
   const { data, isLoading, isError } = useGetAdminDoctors({
-    status:            filters.status            !== "all" ? filters.status            : undefined,
-    consultation_type: filters.consultation_type !== "all" ? filters.consultation_type : undefined,
-    specialization:    filters.specialization    || undefined,
-    search:            filters.search            || undefined,
-    page:              filters.page,
+    status: filters.status !== "all" ? filters.status : undefined,
+    consultation_type:
+      filters.consultation_type !== "all"
+        ? filters.consultation_type
+        : undefined,
+    specialization: filters.specialization || undefined,
+    search: filters.search || undefined,
+    page: filters.page,
   });
 
   const approveMutation = useApproveDoctor();
-  const rejectMutation  = useRejectDoctor();
+  const rejectMutation = useRejectDoctor();
   const suspendMutation = useSuspendDoctor();
 
-  const doctors    = data?.data      ?? [];
-  const total      = data?.total     ?? 0;
-  const perPage    = data?.per_page  ?? 20;
+  const doctors = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
   const statusCounts = useMemo(() => {
@@ -669,34 +95,41 @@ function ManageDoctors() {
     return counts;
   }, [doctors]);
 
-  // Derive unique specializations from current page
   const specializations = useMemo(() => {
     const seen = new Set<string>();
-    doctors.forEach((d) => { if (d.specialization) seen.add(d.specialization); });
+    doctors.forEach((d) => {
+      if (d.specialization) seen.add(d.specialization);
+    });
     return Array.from(seen).sort();
   }, [doctors]);
 
-  // Client-side sort
   const sorted = useMemo(() => {
     return [...doctors].sort((a, b) => {
       switch (filters.sort) {
         case "joined-asc":
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         case "name":
           return a.user.name.localeCompare(b.user.name);
         default:
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
       }
     });
   }, [doctors, filters.sort]);
 
-  const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-      ...(key !== "page" ? { page: 1 } : {}),
-    }));
-  }, []);
+  const set = useCallback(
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+        ...(key !== "page" ? { page: 1 } : {}),
+      }));
+    },
+    [],
+  );
 
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
@@ -709,45 +142,61 @@ function ManageDoctors() {
   );
 
   useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.overflow = filterOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [filterOpen]);
 
   // ── Actions ──
-  const handleApprove = useCallback(async (d: ApiDoctor) => {
-    try {
-      await approveMutation.mutateAsync(d.id);
-      setSelected((prev) => prev ? { ...prev, status: "active", is_active: true } : null);
-      toast({ title: "Doctor approved." });
-    } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
-    }
-  }, [approveMutation, toast]);
+  const handleApprove = useCallback(
+    async (d: ApiDoctor) => {
+      try {
+        await approveMutation.mutateAsync(d.id);
+        setSelected((prev) =>
+          prev ? { ...prev, status: "active", is_active: true } : null,
+        );
+        toast({ title: "Doctor approved." });
+      } catch (error: unknown) {
+        toast({ title: getErrorMessage(error), variant: "destructive" });
+      }
+    },
+    [approveMutation, toast],
+  );
 
-  const handleReject = useCallback(async (d: ApiDoctor) => {
-    try {
-      await rejectMutation.mutateAsync({ id: d.id });
-      setSelected((prev) => prev ? { ...prev, status: "rejected", is_active: false } : null);
-      toast({ title: "Doctor rejected." });
-    } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
-    }
-  }, [rejectMutation, toast]);
+  const handleReject = useCallback(
+    async (d: ApiDoctor) => {
+      try {
+        await rejectMutation.mutateAsync({ id: d.id });
+        setSelected((prev) =>
+          prev ? { ...prev, status: "rejected", is_active: false } : null,
+        );
+        toast({ title: "Doctor rejected." });
+      } catch (error: unknown) {
+        toast({ title: getErrorMessage(error), variant: "destructive" });
+      }
+    },
+    [rejectMutation, toast],
+  );
 
-  const handleSuspend = useCallback(async (d: ApiDoctor) => {
-    try {
-      await suspendMutation.mutateAsync({ id: d.id });
-      setSelected((prev) => prev ? { ...prev, status: "suspended", is_active: false } : null);
-      toast({ title: "Doctor suspended." });
-    } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
-    }
-  }, [suspendMutation, toast]);
+  const handleSuspend = useCallback(
+    async (d: ApiDoctor) => {
+      try {
+        await suspendMutation.mutateAsync({ id: d.id });
+        setSelected((prev) =>
+          prev ? { ...prev, status: "suspended", is_active: false } : null,
+        );
+        toast({ title: "Doctor suspended." });
+      } catch (error: unknown) {
+        toast({ title: getErrorMessage(error), variant: "destructive" });
+      }
+    },
+    [suspendMutation, toast],
+  );
 
   const isActing =
     approveMutation.isPending ||
-    rejectMutation.isPending  ||
+    rejectMutation.isPending ||
     suspendMutation.isPending;
 
   const pendingCount = statusCounts["pending"] ?? 0;
@@ -760,7 +209,9 @@ function ManageDoctors() {
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          <span className="text-[11px] font-semibold text-foreground">
+            Filters
+          </span>
         </div>
         {hasActiveFilters && (
           <button
@@ -774,67 +225,59 @@ function ManageDoctors() {
       </div>
 
       <div className="px-3.5">
-        {/* Status */}
         <FilterSection title="Status">
           <PillGroup<StatusFilter>
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "all",       label: "All" },
-              { value: "active",    label: "Active",    count: statusCounts["active"]    ?? 0 },
-              { value: "pending",   label: "Pending",   count: statusCounts["pending"]   ?? 0 },
-              { value: "suspended", label: "Suspended", count: statusCounts["suspended"] ?? 0 },
-              { value: "rejected",  label: "Rejected",  count: statusCounts["rejected"]  ?? 0 },
+              { value: "all", label: "All" },
+              {
+                value: "active",
+                label: "Active",
+                count: statusCounts["active"] ?? 0,
+              },
+              {
+                value: "pending",
+                label: "Pending",
+                count: statusCounts["pending"] ?? 0,
+              },
+              {
+                value: "suspended",
+                label: "Suspended",
+                count: statusCounts["suspended"] ?? 0,
+              },
+              {
+                value: "rejected",
+                label: "Rejected",
+                count: statusCounts["rejected"] ?? 0,
+              },
             ]}
           />
         </FilterSection>
 
-        {/* Consultation type */}
         <FilterSection title="Consultation">
           <PillGroup<ConsultationFilter>
             value={filters.consultation_type}
             onChange={(v) => set("consultation_type", v)}
             options={[
-              { value: "all",       label: "All types" },
-              { value: "online",    label: "Online",    count: consultationCounts["online"]    ?? 0 },
-              { value: "in_person", label: "In-person", count: consultationCounts["in_person"] ?? 0 },
+              { value: "all", label: "All types" },
+              {
+                value: "instant",
+                label: "Instant",
+                count: consultationCounts["instant"] ?? 0,
+              },
+              { value: "booking", label: "Booking", count: consultationCounts["booking"] ?? 0 },
               { value: "both",      label: "Both",      count: consultationCounts["both"]      ?? 0 },
             ]}
           />
         </FilterSection>
 
-        {/* Specialization — dynamic from current page */}
-        {specializations.length > 0 && (
-          <FilterSection title="Specialization">
-            <div className="flex flex-col gap-1">
-              <button
-                onClick={() => set("specialization", "")}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
-                  filters.specialization === ""
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-                    : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-                )}
-              >
-                All specializations
-              </button>
-              {specializations.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => set("specialization", s)}
-                  className={cn(
-                    "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left truncate",
-                    filters.specialization === s
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-                      : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </FilterSection>
-        )}
+        <FilterSection title="Specialization">
+          <SpecializationSelect
+            value={filters.specialization}
+            onChange={(v) => set("specialization", v)}
+          />
+        </FilterSection>
       </div>
     </>
   );
@@ -858,7 +301,9 @@ function ManageDoctors() {
             onClick={() => setFilterOpen(false)}
             className={cn(
               "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+              filterOpen
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none",
             )}
           />
 
@@ -1054,11 +499,21 @@ function ManageDoctors() {
                     <table className="w-full text-[11px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                          <th className="text-left px-4 py-3 font-semibold">Specialization</th>
-                          <th className="text-left px-4 py-3 font-semibold">Consultation</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="text-left px-4 py-3 font-semibold">Joined</th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            Doctor
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            Specialization
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            Consultation
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            Status
+                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">
+                            Joined
+                          </th>
                           <th className="px-4 py-3" />
                         </tr>
                       </thead>
@@ -1067,7 +522,11 @@ function ManageDoctors() {
                           <SkeletonRows />
                         ) : (
                           sorted.map((d) => (
-                            <DoctorRow key={d.id} d={d} onManage={setSelected} />
+                            <DoctorRow
+                              key={d.id}
+                              d={d}
+                              onManage={setSelected}
+                            />
                           ))
                         )}
                       </tbody>
@@ -1093,9 +552,13 @@ function ManageDoctors() {
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
                       <p className="text-[11px] text-muted-foreground">
                         Page{" "}
-                        <span className="font-semibold text-foreground">{filters.page}</span>{" "}
+                        <span className="font-semibold text-foreground">
+                          {filters.page}
+                        </span>{" "}
                         of{" "}
-                        <span className="font-semibold text-foreground">{totalPages}</span>
+                        <span className="font-semibold text-foreground">
+                          {totalPages}
+                        </span>
                       </p>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -1122,7 +585,6 @@ function ManageDoctors() {
         </div>
       </div>
 
-      {/* Right-side panel */}
       <DoctorPanel
         doctor={selected}
         onClose={() => setSelected(null)}
@@ -1136,4 +598,3 @@ function ManageDoctors() {
 }
 
 export default ManageDoctors;
-

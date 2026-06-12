@@ -1,11 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Calendar,
   Activity,
   FileText,
   Pill,
   TrendingUp,
-  TrendingDown,
   Users,
   Clock,
   CheckCircle2,
@@ -30,17 +29,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Legend,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Legend,
 } from "recharts";
-
-import type { ValueType, NameType } from "recharts/types/component/DefaultTooltipContent";
 import { cn } from "@/lib/utils";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ActivityChartPoint {
   label: string;
@@ -50,13 +54,6 @@ interface ActivityChartPoint {
   online: number;
   in_person: number;
   spent: number;
-}
-
-interface CompletionRatePoint {
-  label: string;
-  total: number;
-  completed: number;
-  rate: number;
 }
 
 interface PatientDashboardResponse {
@@ -113,7 +110,6 @@ interface PatientDashboardResponse {
     };
   };
   activity_chart: ActivityChartPoint[];
-  completion_rate: CompletionRatePoint[];
   instant: {
     total: number;
     completed: number;
@@ -175,7 +171,7 @@ interface PatientDashboardResponse {
   };
 }
 
-// ─── Filter Config ────────────────────────────────────────────────────────────
+// ─── Filter Types ─────────────────────────────────────────────────────────────
 
 type Period = "today" | "week" | "month" | "year" | "custom";
 type AppointmentType = "all" | "online" | "in_person";
@@ -191,6 +187,43 @@ interface Filters {
   chart_group: ChartGroup;
   search: string;
 }
+
+// ─── Label Maps ───────────────────────────────────────────────────────────────
+
+const PERIOD_LABELS: Record<Period, string> = {
+  today: "Today",
+  week: "This Week",
+  month: "This Month",
+  year: "This Year",
+  custom: "Custom Range",
+};
+
+const TYPE_LABELS: Record<AppointmentType, string> = {
+  all: "All Types",
+  online: "Online",
+  in_person: "In-Person",
+};
+
+const STATUS_LABELS: Record<StatusFilter, string> = {
+  all: "All Statuses",
+  completed: "Completed",
+  pending: "Pending",
+  cancelled: "Cancelled",
+};
+
+const GROUP_LABELS: Record<ChartGroup, string> = {
+  day: "By Day",
+  week: "By Week",
+  month: "By Month",
+};
+
+const DEFAULT_FILTERS: Filters = {
+  period: "month",
+  appointment_type: "all",
+  status: "all",
+  chart_group: "day",
+  search: "",
+};
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
 
@@ -242,7 +275,7 @@ function KpiCard({ label, value, icon: Icon, accent, sub, loading }: KpiCardProp
   );
 }
 
-// ─── Tooltip ──────────────────────────────────────────────────────────────────
+// ─── Custom Tooltip ───────────────────────────────────────────────────────────
 
 interface TooltipPayloadEntry {
   name: string;
@@ -272,7 +305,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   );
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
+// ─── Section Label ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -282,55 +315,39 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Label Maps ──────────────────────────────────────────────────────────────
-
-const PERIOD_LABELS: Record<Period, string> = {
-  today: "Today",
-  week: "This Week",
-  month: "This Month",
-  year: "This Year",
-  custom: "Custom Range",
-};
-
-const TYPE_LABELS: Record<AppointmentType, string> = {
-  all: "All Types",
-  online: "Online",
-  in_person: "In-Person",
-};
-
-const STATUS_LABELS: Record<StatusFilter, string> = {
-  all: "All Statuses",
-  completed: "Completed",
-  pending: "Pending",
-  cancelled: "Cancelled",
-};
-
-const GROUP_LABELS: Record<ChartGroup, string> = {
-  day: "By Day",
-  week: "By Week",
-  month: "By Month",
-};
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const PatientStats = () => {
-  const [filters, setFilters] = useState<Filters>({
-    period: "month",
-    appointment_type: "all",
-    status: "all",
-    chart_group: "day",
-    search: "",
-  });
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [chartType, setChartType] = useState<"area" | "bar">("area");
 
-  const { data: rawData, isLoading, isFetching } = useGetPatientStats();
+  // Pass filters to hook — query reruns whenever filters change
+  const { data: rawData, isLoading, isFetching } = useGetPatientStats(filters);
   const data = rawData as PatientDashboardResponse | undefined;
 
   const set = <K extends keyof Filters>(key: K, val: Filters[K]) =>
     setFilters((prev) => ({ ...prev, [key]: val }));
 
-  const handleSearch = () => set("search", searchInput);
+  // Debounced search — fires 500ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        set("search", searchInput);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setSearchInput("");
+  };
+
+  const hasActiveFilters =
+    filters.appointment_type !== "all" ||
+    filters.status !== "all" ||
+    !!filters.search;
 
   const ps = data?.period_stats;
   const today = data?.today;
@@ -353,16 +370,21 @@ const PatientStats = () => {
         <div className="p-4 space-y-4">
 
           {/* ── Filter Bar ── */}
-          <div className="rounded-sm border border-border/70 bg-card shadow-sm p-2.5">
+          <div className="rounded-sm border border-border/70 bg-card shadow-sm p-2.5 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium mr-1">
                 <Filter className="w-3 h-3" />
                 Filters
               </div>
 
+              {/* Period */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1"
+                  >
                     <Calendar className="w-2.5 h-2.5" />
                     {PERIOD_LABELS[filters.period]}
                     <ChevronDown className="w-2.5 h-2.5 opacity-50" />
@@ -372,7 +394,10 @@ const PatientStats = () => {
                   {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
                     <DropdownMenuItem
                       key={p}
-                      className={cn("text-[10px]", filters.period === p && "text-primary font-semibold")}
+                      className={cn(
+                        "text-[10px]",
+                        filters.period === p && "text-primary font-semibold"
+                      )}
                       onSelect={() => set("period", p)}
                     >
                       {PERIOD_LABELS[p]}
@@ -381,49 +406,97 @@ const PatientStats = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Custom date range */}
               {filters.period === "custom" && (
                 <>
-                  <Input type="date" className="h-6 text-[10px] rounded-sm w-28" value={filters.start_date ?? ""} onChange={(e) => set("start_date", e.target.value)} />
+                  <Input
+                    type="date"
+                    className="h-6 text-[10px] rounded-sm w-28"
+                    value={filters.start_date ?? ""}
+                    onChange={(e) => set("start_date", e.target.value)}
+                  />
                   <span className="text-[10px] text-muted-foreground">→</span>
-                  <Input type="date" className="h-6 text-[10px] rounded-sm w-28" value={filters.end_date ?? ""} onChange={(e) => set("end_date", e.target.value)} />
+                  <Input
+                    type="date"
+                    className="h-6 text-[10px] rounded-sm w-28"
+                    value={filters.end_date ?? ""}
+                    onChange={(e) => set("end_date", e.target.value)}
+                  />
                 </>
               )}
 
+              {/* Appointment Type */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
+                      filters.appointment_type !== "all" &&
+                        "border-primary/40 text-primary bg-primary/5"
+                    )}
+                  >
                     {TYPE_LABELS[filters.appointment_type]}
                     <ChevronDown className="w-2.5 h-2.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {(Object.keys(TYPE_LABELS) as AppointmentType[]).map((t) => (
-                    <DropdownMenuItem key={t} className={cn("text-[10px]", filters.appointment_type === t && "text-primary font-semibold")} onSelect={() => set("appointment_type", t)}>
+                    <DropdownMenuItem
+                      key={t}
+                      className={cn(
+                        "text-[10px]",
+                        filters.appointment_type === t && "text-primary font-semibold"
+                      )}
+                      onSelect={() => set("appointment_type", t)}
+                    >
                       {TYPE_LABELS[t]}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Status */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
+                      filters.status !== "all" &&
+                        "border-primary/40 text-primary bg-primary/5"
+                    )}
+                  >
                     {STATUS_LABELS[filters.status]}
                     <ChevronDown className="w-2.5 h-2.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((s) => (
-                    <DropdownMenuItem key={s} className={cn("text-[10px]", filters.status === s && "text-primary font-semibold")} onSelect={() => set("status", s)}>
+                    <DropdownMenuItem
+                      key={s}
+                      className={cn(
+                        "text-[10px]",
+                        filters.status === s && "text-primary font-semibold"
+                      )}
+                      onSelect={() => set("status", s)}
+                    >
                       {STATUS_LABELS[s]}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Chart Group */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1"
+                  >
                     <BarChart2 className="w-2.5 h-2.5" />
                     {GROUP_LABELS[filters.chart_group]}
                     <ChevronDown className="w-2.5 h-2.5 opacity-50" />
@@ -431,31 +504,113 @@ const PatientStats = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   {(Object.keys(GROUP_LABELS) as ChartGroup[]).map((g) => (
-                    <DropdownMenuItem key={g} className={cn("text-[10px]", filters.chart_group === g && "text-primary font-semibold")} onSelect={() => set("chart_group", g)}>
+                    <DropdownMenuItem
+                      key={g}
+                      className={cn(
+                        "text-[10px]",
+                        filters.chart_group === g && "text-primary font-semibold"
+                      )}
+                      onSelect={() => set("chart_group", g)}
+                    >
                       {GROUP_LABELS[g]}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Search */}
               <div className="flex items-center gap-1 ml-auto">
                 <div className="relative">
                   <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-muted-foreground" />
                   <Input
                     placeholder="Search doctor, hospital…"
-                    className="h-6 pl-5 pr-2 text-[10px] rounded-sm w-40"
+                    className={cn(
+                      "h-6 pl-5 pr-2 text-[8px] rounded-sm w-40 transition-colors",
+                      filters.search && "border-primary/40 bg-primary/5"
+                    )}
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") set("search", searchInput);
+                    }}
                   />
+                  {searchInput && (
+                    <button
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setSearchInput("");
+                        set("search", "");
+                      }}
+                    >
+                      <XCircle className="w-2.5 h-2.5" />
+                    </button>
+                  )}
                 </div>
-                <Button size="sm" className="h-6 px-2.5 text-[10px] rounded-sm" onClick={handleSearch}>
+                <Button
+                  size="sm"
+                  className="h-6 px-2.5 text-[10px] rounded-sm"
+                  onClick={() => set("search", searchInput)}
+                >
                   Search
                 </Button>
               </div>
 
-              {isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              {isFetching && (
+                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+              )}
             </div>
+
+            {/* Active Filter Pills */}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-border/40">
+                <span className="text-[9px] text-muted-foreground font-medium">
+                  Active:
+                </span>
+
+                {filters.appointment_type !== "all" && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    onClick={() => set("appointment_type", "all")}
+                  >
+                    {TYPE_LABELS[filters.appointment_type]}
+                    <XCircle className="w-2 h-2" />
+                  </Badge>
+                )}
+
+                {filters.status !== "all" && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    onClick={() => set("status", "all")}
+                  >
+                    {STATUS_LABELS[filters.status]}
+                    <XCircle className="w-2 h-2" />
+                  </Badge>
+                )}
+
+                {filters.search && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    onClick={() => {
+                      set("search", "");
+                      setSearchInput("");
+                    }}
+                  >
+                    &ldquo;{filters.search}&rdquo;
+                    <XCircle className="w-2 h-2" />
+                  </Badge>
+                )}
+
+                <button
+                  onClick={clearAllFilters}
+                  className="text-[9px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-0.5 transition-colors"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
 
           {/* ── Today's Snapshot ── */}
@@ -473,7 +628,14 @@ const PatientStats = () => {
 
           {/* ── Period Stats ── */}
           <div>
-            <SectionLabel>Period — {data?.filters_applied.from ?? "…"} → {data?.filters_applied.to ?? "…"}</SectionLabel>
+            <SectionLabel>
+              Period —{" "}
+              {filters.period === "custom" && filters.start_date && filters.end_date
+                ? `${filters.start_date} → ${filters.end_date}`
+                : data?.filters_applied?.from
+                ? `${data.filters_applied.from} → ${data.filters_applied.to}`
+                : PERIOD_LABELS[filters.period]}
+            </SectionLabel>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 mb-1.5">
               <KpiCard label="Total Appointments" value={ps?.total_appointments ?? 0} icon={Calendar} accent="primary" loading={isLoading} />
               <KpiCard label="Completed" value={ps?.completed ?? 0} icon={CheckCircle2} accent="success" loading={isLoading} />
@@ -484,7 +646,13 @@ const PatientStats = () => {
               <KpiCard label="Online Visits" value={ps?.online_count ?? 0} icon={Activity} accent="info" loading={isLoading} />
               <KpiCard label="In-Person" value={ps?.in_person_count ?? 0} icon={Users} accent="primary" loading={isLoading} />
               <KpiCard label="Unique Doctors" value={ps?.unique_doctors ?? 0} icon={Stethoscope} accent="violet" loading={isLoading} />
-              <KpiCard label="Completion Rate" value={`${completionRate}%`} icon={TrendingUp} accent={completionRate >= 70 ? "success" : "warning"} loading={isLoading} />
+              <KpiCard
+                label="Completion Rate"
+                value={`${completionRate}%`}
+                icon={TrendingUp}
+                accent={completionRate >= 70 ? "success" : "warning"}
+                loading={isLoading}
+              />
             </div>
           </div>
 
@@ -492,7 +660,18 @@ const PatientStats = () => {
           <div>
             <SectionLabel>Spending</SectionLabel>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-              <KpiCard label="Total Spent" value={`$${spending?.total ?? 0}`} icon={TrendingUp} accent="primary" loading={isLoading} sub={spending?.change_percent != null ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev` : undefined} />
+              <KpiCard
+                label="Total Spent"
+                value={`$${spending?.total ?? 0}`}
+                icon={TrendingUp}
+                accent="primary"
+                loading={isLoading}
+                sub={
+                  spending?.change_percent != null
+                    ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
+                    : undefined
+                }
+              />
               <KpiCard label="Insurance Saved" value={`$${spending?.total_insurance_saved ?? 0}`} icon={ShieldCheck} accent="success" loading={isLoading} />
               <KpiCard label="Avg / Appointment" value={`$${spending?.breakdown.appointments.avg_per_appointment ?? 0}`} icon={BarChart2} accent="info" loading={isLoading} />
               <KpiCard label="Service Bookings" value={spending?.breakdown.service_bookings.booking_count ?? 0} icon={FileText} accent="violet" loading={isLoading} />
@@ -501,7 +680,7 @@ const PatientStats = () => {
 
           {/* ── Instant / Prescriptions / Certificates ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5">
-            {/* Instant */}
+            {/* Instant Consults */}
             <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
                 <Zap className="w-3 h-3 text-amber-500" /> Instant Consults
@@ -539,7 +718,14 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div key={label} className="flex justify-between border-b border-border/40 pb-1">
                     <span className="text-muted-foreground">{label}</span>
-                    <span className={cn("font-semibold text-foreground", label === "Expiring Soon" && val > 0 && "text-amber-500")}>{val}</span>
+                    <span
+                      className={cn(
+                        "font-semibold text-foreground",
+                        label === "Expiring Soon" && (val as number) > 0 && "text-amber-500"
+                      )}
+                    >
+                      {val}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -561,20 +747,34 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div key={label} className="flex justify-between border-b border-border/40 pb-1">
                     <span className="text-muted-foreground">{label}</span>
-                    <span className={cn("font-semibold text-foreground", label === "Red Flags" && val > 0 && "text-rose-500")}>{val}</span>
+                    <span
+                      className={cn(
+                        "font-semibold text-foreground",
+                        label === "Red Flags" && (val as number) > 0 && "text-rose-500"
+                      )}
+                    >
+                      {val}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* ── Chart ── */}
+          {/* ── Activity Chart ── */}
           <div className="rounded-sm border border-border/70 bg-card shadow-sm overflow-hidden">
             <div className="px-3 py-2.5 border-b border-border/60 flex items-center justify-between">
               <div>
-                <h2 className="text-[11px] font-semibold text-foreground">Appointment Activity</h2>
+                <h2 className="text-[11px] font-semibold text-foreground">
+                  Appointment Activity
+                </h2>
                 <p className="text-[9px] text-muted-foreground/70 mt-0.5">
-                  {PERIOD_LABELS[filters.period]} · Grouped {GROUP_LABELS[filters.chart_group].toLowerCase()}
+                  {PERIOD_LABELS[filters.period]} · Grouped{" "}
+                  {GROUP_LABELS[filters.chart_group].toLowerCase()}
+                  {filters.appointment_type !== "all" &&
+                    ` · ${TYPE_LABELS[filters.appointment_type]}`}
+                  {filters.status !== "all" &&
+                    ` · ${STATUS_LABELS[filters.status]}`}
                 </p>
               </div>
               <div className="flex items-center gap-1 rounded-sm border border-border/60 p-0.5 bg-muted/30">
@@ -584,7 +784,9 @@ const PatientStats = () => {
                     onClick={() => setChartType(t)}
                     className={cn(
                       "px-2 py-0.5 text-[9px] rounded-[2px] font-medium transition-colors capitalize",
-                      chartType === t ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      chartType === t
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {t}
@@ -601,11 +803,16 @@ const PatientStats = () => {
               ) : chartData.length === 0 ? (
                 <div className="h-44 flex flex-col items-center justify-center gap-2 text-center">
                   <BarChart2 className="w-5 h-5 text-muted-foreground/30" />
-                  <p className="text-[10px] text-muted-foreground">No chart data for this period</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    No chart data for this period
+                  </p>
                 </div>
               ) : chartType === "area" ? (
                 <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                  <AreaChart
+                    data={chartData}
+                    margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+                  >
                     <defs>
                       <linearGradient id="gTotal" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
@@ -616,24 +823,97 @@ const PatientStats = () => {
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-                    <XAxis dataKey="label" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.4}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }} formatter={(val) => <span style={{ color: "hsl(var(--muted-foreground))", textTransform: "capitalize" }}>{val}</span>} />
-                    <Area type="monotone" dataKey="appointments" stroke="hsl(var(--primary))" strokeWidth={1.5} fill="url(#gTotal)" />
-                    <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={1.5} fill="url(#gCompleted)" />
-                    <Area type="monotone" dataKey="online" stroke="#0ea5e9" strokeWidth={1} fill="none" strokeDasharray="3 3" />
+                    <Legend
+                      wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }}
+                      formatter={(val) => (
+                        <span
+                          style={{
+                            color: "hsl(var(--muted-foreground))",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {val}
+                        </span>
+                      )}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="appointments"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={1.5}
+                      fill="url(#gTotal)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="completed"
+                      stroke="#10b981"
+                      strokeWidth={1.5}
+                      fill="url(#gCompleted)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="online"
+                      stroke="#0ea5e9"
+                      strokeWidth={1}
+                      fill="none"
+                      strokeDasharray="3 3"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={6}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.4} />
-                    <XAxis dataKey="label" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <BarChart
+                    data={chartData}
+                    margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+                    barSize={6}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      strokeOpacity={0.4}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }} formatter={(val) => <span style={{ color: "hsl(var(--muted-foreground))", textTransform: "capitalize" }}>{val}</span>} />
+                    <Legend
+                      wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }}
+                      formatter={(val) => (
+                        <span
+                          style={{
+                            color: "hsl(var(--muted-foreground))",
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {val}
+                        </span>
+                      )}
+                    />
                     <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                     <Bar dataKey="completed" fill="#10b981" radius={[2, 2, 0, 0]} />
                     <Bar dataKey="online" fill="#0ea5e9" radius={[2, 2, 0, 0]} />
@@ -644,8 +924,9 @@ const PatientStats = () => {
             </div>
           </div>
 
-          {/* ── Reviews ── */}
+          {/* ── Reviews & Medical Profile ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
+            {/* Reviews */}
             <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
                 <Star className="w-3 h-3 text-amber-400" /> Reviews
@@ -653,13 +934,21 @@ const PatientStats = () => {
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 {[
                   { label: "Total", val: reviews?.total ?? 0 },
-                  { label: "Avg Rating", val: reviews?.avg_rating != null ? reviews.avg_rating.toFixed(1) : "—" },
+                  {
+                    label: "Avg Rating",
+                    val: reviews?.avg_rating != null
+                      ? reviews.avg_rating.toFixed(1)
+                      : "—",
+                  },
                   { label: "5 Star", val: reviews?.five_star ?? 0 },
                   { label: "4 Star", val: reviews?.four_star ?? 0 },
                   { label: "3 Star", val: reviews?.three_star ?? 0 },
                   { label: "Pending Review", val: reviews?.pending_review ?? 0 },
                 ].map(({ label, val }) => (
-                  <div key={label} className="flex justify-between border-b border-border/40 pb-1">
+                  <div
+                    key={label}
+                    className="flex justify-between border-b border-border/40 pb-1"
+                  >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground">{val}</span>
                   </div>
@@ -672,7 +961,10 @@ const PatientStats = () => {
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
                 <Stethoscope className="w-3 h-3 text-sky-500" /> Medical Profile
                 {medProfile?.complete && (
-                  <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/10">
+                  <Badge
+                    variant="outline"
+                    className="ml-auto text-[9px] px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/10"
+                  >
                     Complete
                   </Badge>
                 )}
@@ -686,7 +978,10 @@ const PatientStats = () => {
                   { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
                   { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
                 ].map(({ label, val }) => (
-                  <div key={label} className="flex justify-between border-b border-border/40 pb-1">
+                  <div
+                    key={label}
+                    className="flex justify-between border-b border-border/40 pb-1"
+                  >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground capitalize">{val}</span>
                   </div>
