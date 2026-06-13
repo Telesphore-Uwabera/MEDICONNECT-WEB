@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 const BASE = "/public/doctors";
 
@@ -78,6 +78,7 @@ export interface ApiDoctorListResponse {
 export interface DoctorSearchParams {
   q?: string;
   specialization?: string;
+  specialization_fee_id?: number;
   type?: "online" | "in_person" | "both";
   language?: string;
   city?: string;
@@ -92,32 +93,40 @@ export interface DoctorSearchParams {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
-  const searchParams = new URLSearchParams();
+  const sp = new URLSearchParams();
 
   if (params.q && params.q.trim().length >= 2)
-    searchParams.set("q", params.q.trim());
+    sp.set("q", params.q.trim());
   if (params.specialization)
-    searchParams.set("specialization", params.specialization);
-  if (params.type) searchParams.set("type", params.type);
-  if (params.language) searchParams.set("language", params.language);
-  if (params.city) searchParams.set("city", params.city);
-  if (params.gender) searchParams.set("gender", params.gender);
+    sp.set("specialization", params.specialization);
+  if (params.specialization_fee_id != null)
+    sp.set("specialization_fee_id", String(params.specialization_fee_id));
+  if (params.type)
+    sp.set("type", params.type);
+  if (params.language)
+    sp.set("language", params.language);
+  if (params.city)
+    sp.set("city", params.city);
+  if (params.gender)
+    sp.set("gender", params.gender);
   if (params.hospital_id != null)
-    searchParams.set("hospital_id", String(params.hospital_id));
+    sp.set("hospital_id", String(params.hospital_id));
   if (params.insurance_id != null)
-    searchParams.set("insurance_id", String(params.insurance_id));
-  if (params.available_today) searchParams.set("available_today", "true");
-  if (params.instant) searchParams.set("instant", "true");
+    sp.set("insurance_id", String(params.insurance_id));
+  if (params.available_today)
+    sp.set("available_today", "true");
+  if (params.instant)
+    sp.set("instant", "true");
   if (params.page && params.page > 1)
-    searchParams.set("page", String(params.page));
+    sp.set("page", String(params.page));
 
-  const queryString = searchParams.toString();
+  const queryString = sp.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;
 
   return useQuery({
-    queryKey: ["patient-search-doctors", params],
+    queryKey: ["patient-search-doctors", url],
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => res as ApiDoctorListResponse),
-    staleTime: 30_000,
+    staleTime: url === BASE ? 30_000 : 0,
   });
 }

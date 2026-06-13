@@ -10,8 +10,6 @@ import {
   Search,
   Zap,
   CalendarCheck,
-  Clock,
-  Stethoscope,
   Globe,
   Video,
   MapPin,
@@ -29,19 +27,16 @@ import {
   type DoctorSearchParams,
 } from "@/hooks/patient/use-patient-doctor";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
-import { SpecializationsStep } from "../doctor/profile/Specializationsstep";
-import { SpecializationSelect } from "./components/SpecializationSelect";
-// import SpecializationSelect from "./components/SpecializationSelect";
+import { SpecializationSelect, type SpecializationValue } from "./components/SpecializationSelect";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 type SortOption = "rating" | "fee-asc" | "fee-desc";
-type ConsultationType = "all" | "online" | "in_person" | "both";
+type ConsultationType = "all" | "online" | "in_person" | "both" | "booking" | "instant";
 type ViewMode = "grid" | "list";
 
 interface FilterState {
   q: string;
-  specialization: string;
   type: ConsultationType;
   language: string;
   city: string;
@@ -53,7 +48,6 @@ interface FilterState {
 
 const INITIAL_FILTERS: FilterState = {
   q: "",
-  specialization: "",
   type: "all",
   language: "",
   city: "",
@@ -63,10 +57,12 @@ const INITIAL_FILTERS: FilterState = {
   sort: "rating",
 };
 
+const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
+
 const CONSULTATION_OPTIONS = [
-  { value: "all" as const, label: "All types", icon: Globe },
-  { value: "booking" as const, label: "Booking", icon: Video },
-  { value: "instant" as const, label: "Instant", icon: MapPin },
+  { value: "all" as const,     label: "All types", icon: Globe  },
+  { value: "booking" as const, label: "Booking",   icon: Video  },
+  { value: "instant" as const, label: "Instant",   icon: Zap    },
 ];
 
 const GENDER_OPTIONS = [
@@ -92,14 +88,29 @@ const LANGUAGE_OPTIONS = [
 
 function buildApiParams(
   filters: FilterState,
+  spec: SpecializationValue,
   page: number,
 ): DoctorSearchParams {
   const params: DoctorSearchParams = { page };
   if (filters.q.trim().length >= 2) params.q = filters.q.trim();
-  if (filters.specialization.trim())
-    params.specialization = filters.specialization.trim();
-  if (filters.type !== "all")
-    params.type = filters.type as "online" | "in_person" | "both";
+
+  // Specialization: pass name; if sub-spec (fee) selected, also pass its id
+  if (spec.specialization) {
+    params.specialization = spec.specialization.name;
+    if (spec.fee?.id) {
+      params.specialization_fee_id = spec.fee.id;
+    }
+  }
+
+ if (filters.type !== "all") {
+  const typeMap: Partial<Record<ConsultationType, "online" | "in_person" | "both">> = {
+    booking: "in_person",
+    instant: "online",
+  };
+  const apiType = typeMap[filters.type] ?? (filters.type as "online" | "in_person" | "both");
+  params.type = apiType;
+}
+
   if (filters.language) params.language = filters.language;
   if (filters.city.trim()) params.city = filters.city.trim();
   if (filters.gender !== "all")
@@ -116,7 +127,7 @@ function sortDoctors(doctors: ApiDoctor[], sort: SortOption): ApiDoctor[] {
         return parseFloat(a.consultation_fee) - parseFloat(b.consultation_fee);
       case "fee-desc":
         return parseFloat(b.consultation_fee) - parseFloat(a.consultation_fee);
-      default: // rating
+      default:
         return parseFloat(b.rating_avg) - parseFloat(a.rating_avg);
     }
   });
@@ -461,16 +472,15 @@ function Pagination({
 
 const PatientDoctors = () => {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-   const [spec, setSpec] = useState({ specialization: null, fee: null });
-   
+  // Specialization lives separately so SpecializationSelect owns its full shape
+  const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
+
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { data: insurance, isLoadingInsurances } = useGetPublicInsurances();
-
-  console.log("insurance", insurance);
+  const { data: insurance } = useGetPublicInsurances();
 
   // Debounce search query
   useEffect(() => {
@@ -484,9 +494,15 @@ const PatientDoctors = () => {
     };
   }, [filters.q]);
 
-  const apiParams = useMemo<DoctorSearchParams>(() => {
-    return buildApiParams({ ...filters, q: debouncedQ }, page);
-  }, [filters, debouncedQ, page]);
+  // Reset page when spec changes
+  useEffect(() => {
+    setPage(1);
+  }, [spec]);
+
+  const apiParams = useMemo<DoctorSearchParams>(
+    () => buildApiParams({ ...filters, q: debouncedQ }, spec, page),
+    [filters, debouncedQ, spec, page],
+  );
 
   const { data, isLoading, isError, refetch } = useGetSearchDoctors(apiParams);
 
@@ -505,13 +521,16 @@ const PatientDoctors = () => {
 
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
+    setSpec(INITIAL_SPEC);
     setDebouncedQ("");
     setPage(1);
   }, []);
 
   const hasActiveFilters = useMemo(
-    () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
-    [filters],
+    () =>
+      JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) ||
+      spec.specialization !== null,
+    [filters, spec],
   );
 
   useEffect(() => {
@@ -572,23 +591,27 @@ const PatientDoctors = () => {
           </div>
         </FilterSection>
 
-        {/* Specialization */}
+        {/* Specialization — wired to spec state, sends both name + fee id */}
         <FilterSection title="Specialization">
-          {/* <SpecializationSelect
-            value={filters.specialization}
-            onChange={(v) => set("specialization", v)}
-          /> */}
-            <SpecializationSelect value={spec} onChange={setSpec} />
+          <SpecializationSelect value={spec} onChange={setSpec} />
+          {/* Active specialization badge */}
+          {spec.specialization && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
+                {spec.specialization.name}
+                {spec.fee && (
+                  <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
+                )}
+                <button
+                  onClick={() => setSpec(INITIAL_SPEC)}
+                  className="ml-0.5 hover:text-destructive transition-colors"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            </div>
+          )}
         </FilterSection>
-        {/* <FilterSection title="Specialization">
-          <input
-            type="text"
-            placeholder="e.g. Cardiologist…"
-            value={filters.specialization}
-            onChange={(e) => set("specialization", e.target.value)}
-            className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-          />
-        </FilterSection> */}
 
         {/* Consultation type */}
         <FilterSection title="Consultation Type">
@@ -615,17 +638,6 @@ const PatientDoctors = () => {
               icon={Zap}
             />
           </div>
-        </FilterSection>
-
-        {/* City */}
-        <FilterSection title="City">
-          <input
-            type="text"
-            placeholder="e.g. Kigali…"
-            value={filters.city}
-            onChange={(e) => set("city", e.target.value)}
-            className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-          />
         </FilterSection>
 
         {/* Language */}

@@ -24,8 +24,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
+// import { MyNotifications } from "@/components/MyNotifications";
+import { useGetNotifications } from "@/hooks/use-notifications";
+import MyNotifications from "@/pages/notifications/Mynotifications";
 
-/* ─── Types ────────────────────────────────────────────────────── */
+/* ─── Types ──────────────────────────────────────────────────────── */
 
 export interface User {
   id: number;
@@ -40,16 +43,15 @@ export interface User {
   preferred_language: string;
 }
 
-/* ─── Props ────────────────────────────────────────────────────── */
+/* ─── Props ──────────────────────────────────────────────────────── */
 
 interface Props {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
-  notificationCount?: number;
 }
 
-/* ─── Helpers ──────────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────────── */
 
 const getInitials = (name: string) =>
   name
@@ -106,24 +108,23 @@ const ROLE_CONFIG: Record<
   },
 };
 
-/* ─── Component ────────────────────────────────────────────────── */
+/* ─── Component ──────────────────────────────────────────────────── */
 
-export const PageHeader = ({
-  title,
-  subtitle,
-  actions,
-  notificationCount = 3,
-}: Props) => {
+export const PageHeader = ({ title, subtitle, actions }: Props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const { data: user, isLoading } = useMe();
   const logout = useLogout();
+  const { data: notificationsData } = useGetNotifications({ per_page: 30 });
 
-  /* Click-outside to close popover */
+  const unreadCount = notificationsData?.unread ?? 0;
+
+  /* Click-outside to close profile popover */
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -162,252 +163,271 @@ export const PageHeader = ({
   const RoleIcon = roleCfg.icon;
 
   return (
-    <header className="border-b border-border/60 bg-card/90 backdrop-blur-2xl sticky top-0 z-50 shadow-sm shadow-black/5">
-      <div className="px-5 py-3 flex items-center justify-between gap-4">
-        {/* Title */}
-        <div className="min-w-0">
-          <h1 className="text-[13px] font-bold uppercase tracking-tight text-foreground truncate leading-tight">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-              {subtitle}
-            </p>
-          )}
-        </div>
-
-        {/* Right controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Search */}
-          <div
-            className={cn(
-              "relative hidden md:flex items-center transition-all duration-300 ease-out",
-              searchFocused ? "w-72" : "w-56"
+    <>
+      <header className="border-b border-border/60 bg-card/90 backdrop-blur-2xl sticky top-0 z-50 shadow-sm shadow-black/5">
+        <div className="px-5 py-3 flex items-center justify-between gap-4">
+          {/* Title */}
+          <div className="min-w-0">
+            <h1 className="text-[13px] font-bold uppercase tracking-tight text-foreground truncate leading-tight">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                {subtitle}
+              </p>
             )}
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder={t("pages.header.search")}
-              className="pl-9 pr-4 h-8 text-[11px] rounded-[5px] border-border/40 bg-secondary/60 focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-            />
           </div>
 
-          {actions}
-          <ThemeToggle />
-          <LanguageSwitcher />
-
-          {/* Bell */}
-          <button className="relative p-2 rounded-[5px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200">
-            <Bell className="h-4 w-4" />
-            {notificationCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-[1.5px] ring-card animate-pulse" />
-            )}
-          </button>
-
-          {/* Profile */}
-          <div className="relative" ref={profileRef}>
-            <button
-              onClick={() => setProfileOpen((o) => !o)}
+          {/* Right controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Search */}
+            <div
               className={cn(
-                "flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-[5px] transition-all duration-200 border",
-                profileOpen
-                  ? "bg-secondary border-border text-foreground shadow-sm"
-                  : "border-transparent hover:bg-secondary/60 hover:border-border/30 text-muted-foreground hover:text-foreground"
+                "relative hidden md:flex items-center transition-all duration-300 ease-out",
+                searchFocused ? "w-72" : "w-56"
               )}
             >
-              {/* Avatar */}
-              {isLoading ? (
-                <div className="h-7 w-7 rounded-full bg-muted animate-pulse" />
-              ) : user?.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={displayName}
-                  className="h-7 w-7 rounded-full object-cover ring-[1.5px] ring-primary/20"
-                />
-              ) : (
-                <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-[10px] font-bold ring-[1.5px] ring-primary/20">
-                  {displayInitials}
-                </div>
-              )}
-
-              {/* Name + role (desktop) */}
-              <div className="hidden sm:block text-left min-w-0">
-                {isLoading ? (
-                  <div className="space-y-1">
-                    <div className="h-2.5 w-20 bg-muted animate-pulse rounded-[5px]" />
-                    <div className="h-2 w-12 bg-muted animate-pulse rounded-[5px]" />
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-[11px] font-bold text-foreground leading-tight truncate max-w-[100px]">
-                      {displayName.split(" ")[0]}
-                    </p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <RoleIcon className={cn("h-2.5 w-2.5", roleCfg.color)} />
-                      <p
-                        className={cn(
-                          "text-[10px] font-semibold leading-tight capitalize",
-                          roleCfg.color
-                        )}
-                      >
-                        {roleCfg.label}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 shrink-0",
-                  profileOpen && "rotate-180"
-                )}
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder={t("pages.header.search")}
+                className="pl-9 pr-4 h-8 text-[11px] rounded-[5px] border-border/40 bg-secondary/60 focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
               />
+            </div>
+
+            {actions}
+            <ThemeToggle />
+            <LanguageSwitcher />
+
+            {/* Bell — opens notifications drawer */}
+            <button
+              onClick={() => setNotificationsOpen(true)}
+              className="relative p-2 rounded-[5px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
+              aria-label="Open notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold ring-[1.5px] ring-card leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </button>
 
-            {/* ── Popover ───────────────────────────────────────── */}
-            {profileOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[5px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
-                {/* User info header */}
-                <div
-                  className={cn(
-                    "px-4 py-4 border-b border-border/50 bg-gradient-to-br",
-                    roleCfg.gradient,
-                    "to-transparent"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Avatar */}
-                    {isLoading ? (
-                      <div className="h-11 w-11 rounded-full bg-muted animate-pulse shrink-0" />
-                    ) : user?.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={displayName}
-                        className="h-11 w-11 rounded-full object-cover ring-[1.5px] ring-primary/20 shrink-0"
-                      />
-                    ) : (
-                      <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-sm font-bold ring-[1.5px] ring-primary/20 shrink-0">
-                        {displayInitials}
-                      </div>
-                    )}
+            {/* Profile */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen((o) => !o)}
+                className={cn(
+                  "flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-[5px] transition-all duration-200 border",
+                  profileOpen
+                    ? "bg-secondary border-border text-foreground shadow-sm"
+                    : "border-transparent hover:bg-secondary/60 hover:border-border/30 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {/* Avatar */}
+                {isLoading ? (
+                  <div className="h-7 w-7 rounded-full bg-muted animate-pulse" />
+                ) : user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={displayName}
+                    className="h-7 w-7 rounded-full object-cover ring-[1.5px] ring-primary/20"
+                  />
+                ) : (
+                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-[10px] font-bold ring-[1.5px] ring-primary/20">
+                    {displayInitials}
+                  </div>
+                )}
 
-                    <div className="min-w-0 flex-1">
-                      {/* Name + verified badge */}
-                      <div className="flex items-center gap-1">
-                        <p className="text-[13px] font-bold text-foreground truncate">
-                          {displayName}
-                        </p>
-                        {user?.is_verified && (
-                          <BadgeCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        )}
-                      </div>
-
-                      {/* Contact info */}
-                      <div className="mt-1 space-y-0.5">
-                        {displayEmail && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Mail className="h-2.5 w-2.5 shrink-0" />
-                            <p className="text-[10px] truncate">{displayEmail}</p>
-                          </div>
-                        )}
-                        {displayPhone && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Phone className="h-2.5 w-2.5 shrink-0" />
-                            <p className="text-[10px] truncate">
-                              {user?.country_code} {displayPhone}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Badges row */}
-                      <div className="flex flex-wrap items-center gap-1 mt-2">
-                        {/* Role badge */}
-                        <span
+                {/* Name + role (desktop) */}
+                <div className="hidden sm:block text-left min-w-0">
+                  {isLoading ? (
+                    <div className="space-y-1">
+                      <div className="h-2.5 w-20 bg-muted animate-pulse rounded-[5px]" />
+                      <div className="h-2 w-12 bg-muted animate-pulse rounded-[5px]" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[11px] font-bold text-foreground leading-tight truncate max-w-[100px]">
+                        {displayName.split(" ")[0]}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <RoleIcon
+                          className={cn("h-2.5 w-2.5", roleCfg.color)}
+                        />
+                        <p
                           className={cn(
-                            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold capitalize",
-                            roleCfg.bg,
+                            "text-[10px] font-semibold leading-tight capitalize",
                             roleCfg.color
                           )}
                         >
-                          <RoleIcon className="h-2.5 w-2.5" />
                           {roleCfg.label}
-                        </span>
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
 
-                        {/* Verified badge */}
-                        {user?.is_verified && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
-                            <BadgeCheck className="h-2.5 w-2.5" />
-                            Verified
-                          </span>
-                        )}
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 shrink-0",
+                    profileOpen && "rotate-180"
+                  )}
+                />
+              </button>
 
-                        {/* Status badge */}
-                        {user?.status === "active" && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                            Active
+              {/* ── Profile Popover ──────────────────────────────── */}
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[5px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                  {/* User info header */}
+                  <div
+                    className={cn(
+                      "px-4 py-4 border-b border-border/50 bg-gradient-to-br",
+                      roleCfg.gradient,
+                      "to-transparent"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Avatar */}
+                      {isLoading ? (
+                        <div className="h-11 w-11 rounded-full bg-muted animate-pulse shrink-0" />
+                      ) : user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={displayName}
+                          className="h-11 w-11 rounded-full object-cover ring-[1.5px] ring-primary/20 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-11 w-11 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-sm font-bold ring-[1.5px] ring-primary/20 shrink-0">
+                          {displayInitials}
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        {/* Name + verified */}
+                        <div className="flex items-center gap-1">
+                          <p className="text-[13px] font-bold text-foreground truncate">
+                            {displayName}
+                          </p>
+                          {user?.is_verified && (
+                            <BadgeCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          )}
+                        </div>
+
+                        {/* Contact */}
+                        <div className="mt-1 space-y-0.5">
+                          {displayEmail && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Mail className="h-2.5 w-2.5 shrink-0" />
+                              <p className="text-[10px] truncate">
+                                {displayEmail}
+                              </p>
+                            </div>
+                          )}
+                          {displayPhone && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Phone className="h-2.5 w-2.5 shrink-0" />
+                              <p className="text-[10px] truncate">
+                                {user?.country_code} {displayPhone}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Badges */}
+                        <div className="flex flex-wrap items-center gap-1 mt-2">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold capitalize",
+                              roleCfg.bg,
+                              roleCfg.color
+                            )}
+                          >
+                            <RoleIcon className="h-2.5 w-2.5" />
+                            {roleCfg.label}
                           </span>
-                        )}
+
+                          {user?.is_verified && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+                              <BadgeCheck className="h-2.5 w-2.5" />
+                              Verified
+                            </span>
+                          )}
+
+                          {user?.status === "active" && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                              Active
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Menu items */}
-                <div className="p-1.5 space-y-0.5">
-                  <PopItem
-                    icon={User}
-                    label={t("header.profile", "Profile")}
-                    description="View & edit your details"
-                    to={userRole ? `${dashboardPath(userRole)}/profile` : "#"}
-                    onClick={() => setProfileOpen(false)}
-                  />
-                  <PopItem
-                    icon={Settings}
-                    label={t("header.settings", "Settings")}
-                    description="Preferences & security"
-                    to={userRole ? `${dashboardPath(userRole)}/settings` : "#"}
-                    onClick={() => setProfileOpen(false)}
-                  />
-                  <PopItem
-                    icon={HelpCircle}
-                    label={t("header.help", "Help & Support")}
-                    description="FAQs and contact"
-                    to="./help"
-                    onClick={() => setProfileOpen(false)}
-                  />
-                </div>
+                  {/* Menu items */}
+                  <div className="p-1.5 space-y-0.5">
+                    <PopItem
+                      icon={User}
+                      label={t("header.profile", "Profile")}
+                      description="View & edit your details"
+                      to={
+                        userRole ? `${dashboardPath(userRole)}/profile` : "#"
+                      }
+                      onClick={() => setProfileOpen(false)}
+                    />
+                    <PopItem
+                      icon={Settings}
+                      label={t("header.settings", "Settings")}
+                      description="Preferences & security"
+                      to={
+                        userRole ? `${dashboardPath(userRole)}/settings` : "#"
+                      }
+                      onClick={() => setProfileOpen(false)}
+                    />
+                    <PopItem
+                      icon={HelpCircle}
+                      label={t("header.help", "Help & Support")}
+                      description="FAQs and contact"
+                      to="./help"
+                      onClick={() => setProfileOpen(false)}
+                    />
+                  </div>
 
-                {/* Sign out */}
-                <div className="p-1.5 border-t border-border/50">
-                  <button
-                    onClick={() => {
-                      setProfileOpen(false);
-                      handleLogout();
-                    }}
-                    disabled={logout.isPending}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[5px] text-[11px] text-destructive hover:bg-destructive/10 transition-colors font-semibold disabled:opacity-50"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    {logout.isPending
-                      ? t("common.signing_out", "Signing out…")
-                      : t("header.signOut", "Sign out")}
-                  </button>
+                  {/* Sign out */}
+                  <div className="p-1.5 border-t border-border/50">
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        handleLogout();
+                      }}
+                      disabled={logout.isPending}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[5px] text-[11px] text-destructive hover:bg-destructive/10 transition-colors font-semibold disabled:opacity-50"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      {logout.isPending
+                        ? t("common.signing_out", "Signing out…")
+                        : t("header.signOut", "Sign out")}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Notifications Drawer — rendered outside header to avoid z-index clipping */}
+      <MyNotifications
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
+    </>
   );
 };
 
-/* ─── PopItem ──────────────────────────────────────────────────── */
+/* ─── PopItem ────────────────────────────────────────────────────── */
 
 const PopItem = ({
   icon: Icon,
