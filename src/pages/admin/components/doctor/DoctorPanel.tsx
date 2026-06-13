@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApiDoctor } from "@/hooks/admin/use-admin-doctors";
+import type { ApiDoctor, ApiDoctorConsultationRecord } from "@/hooks/admin/use-admin-doctors";
 import {
   useGetAdminDoctor,
   useGetDoctorWallet,
@@ -34,6 +34,12 @@ import {
   useSetDoctorFeeOverride,
   useGetDoctorQuickConsultations,
   type ApiQuickConsultation,
+  useUpdateDoctorConsultationFee,
+  useGetDoctorConsultationFees,
+  useGetInstantStatus,
+  useGetPausedStatus,
+  useToggleInstant,
+  useTogglePaused,
 } from "@/hooks/admin/use-admin-doctors";
 import {
   getInitials,
@@ -1080,102 +1086,196 @@ function LinksTab({ doctor }: { doctor: ApiDoctor }) {
 
 // ─── Tab: Instant Consultation ────────────────────────────────────────────────
 
+// ─── Tab: Instant ─────────────────────────────────────────────────────────────
+// Replace the entire InstantTab function in DoctorPanel.tsx with this.
+// Imports needed (add to the hook import block):
+//   useGetInstantStatus, useToggleInstant, useGetPausedStatus, useTogglePaused
+
 function InstantTab({ doctor }: { doctor: ApiDoctor }) {
-  const { data: list, isLoading } = useGetInstantConsultations();
-  const addMutation    = useAddInstantConsultation();
-  const updateMutation = useUpdateInstantConsultation();
-  const removeMutation = useRemoveInstantConsultation();
+  const doctorId = doctor.id;
 
-  const entry    = list?.find((ic) => ic.doctor?.id === doctor.id);
-  const isOnList = !!entry;
+  const {
+    data:      instantData,
+    isLoading: instantLoading,
+  } = useGetInstantStatus(doctorId);
 
-  const isAdding   = addMutation.isPending;
-  const isToggling = updateMutation.isPending;
-  const isRemoving = removeMutation.isPending;
+  const {
+    data:      pausedData,
+    isLoading: pausedLoading,
+  } = useGetPausedStatus(doctorId);
 
-  const handleAdd    = () => addMutation.mutate({ doctor_id: doctor.id, active: true });
-  const handleToggle = () => { if (entry) updateMutation.mutate({ id: entry.id, active: !entry.active }); };
-  const handleRemove = () => { if (entry) removeMutation.mutate(entry.id); };
+  const toggleInstant = useToggleInstant(doctorId);
+  const togglePaused  = useTogglePaused(doctorId);
+
+  const [instantError, setInstantError] = useState<string | null>(null);
+  const [pausedError,  setPausedError]  = useState<string | null>(null);
+
+  const handleToggleInstant = async () => {
+    setInstantError(null);
+    try {
+      await toggleInstant.mutateAsync();
+    } catch (err: unknown) {
+      setInstantError((err as { message?: string })?.message ?? "Failed to toggle.");
+    }
+  };
+
+  const handleTogglePaused = async () => {
+    setPausedError(null);
+    try {
+      await togglePaused.mutateAsync();
+    } catch (err: unknown) {
+      setPausedError((err as { message?: string })?.message ?? "Failed to toggle.");
+    }
+  };
+
+  const isInactive = doctor.status !== "active";
 
   return (
     <ContentWrap>
-      <div className="space-y-4">
-        <div className="flex items-start gap-3 p-4 rounded-[10px] border border-primary/20 bg-accent/20">
-          <div className="w-8 h-8 rounded-[8px] bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-            <Zap className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <div>
-            <p className="text-[12.5px] font-semibold text-foreground">Instant consultation</p>
-            <p className="text-[11px] text-muted-foreground/55 mt-0.5 leading-relaxed">
-              When enabled and active, this doctor appears in patients' instant consultation list for on-demand bookings.
+      <div className="space-y-3">
+
+        {/* ── Inactive warning ── */}
+        {isInactive && (
+          <div className="flex items-start gap-2.5 p-3.5 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 bg-amber-50/40 dark:bg-amber-950/8">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+              Doctor is <span className="font-semibold capitalize">{doctor.status}</span> — toggles will be rejected by the server.
             </p>
           </div>
-        </div>
+        )}
 
-        {isLoading ? <LoadingRow /> : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3.5 rounded-[10px] border border-border/40 bg-card/60">
+        {/* ── Instant consultation ── */}
+        <div className="rounded-[10px] border border-border/40 bg-card/60 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-8 h-8 rounded-[8px] flex items-center justify-center border shrink-0",
+                instantData?.instant_consultation
+                  ? "bg-primary/10 border-primary/20"
+                  : "bg-muted/20 border-border/30",
+              )}>
+                <Zap className={cn(
+                  "w-3.5 h-3.5",
+                  instantData?.instant_consultation ? "text-primary" : "text-muted-foreground/30",
+                )} />
+              </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">Whitelist status</p>
-                <p className="text-[10.5px] text-muted-foreground/50 mt-0.5">
-                  {isOnList
-                    ? entry.active ? "Active — visible to patients" : "On list, currently disabled"
-                    : "Not on the instant consultation list"}
+                <p className="text-[12px] font-semibold text-foreground">Instant consultation</p>
+                <p className="text-[10.5px] text-muted-foreground/45 mt-0.5">
+                  {instantLoading
+                    ? "Loading…"
+                    : (instantData?.status ?? "—")}
                 </p>
               </div>
-              <Pill variant={isOnList ? (entry.active ? "emerald" : "amber") : "default"}>
-                {isOnList ? (entry.active ? "Active" : "Disabled") : "Not listed"}
-              </Pill>
             </div>
 
-            {!isOnList ? (
-              <div>
-                <Button
-                  size="sm"
-                  className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                  disabled={isAdding}
-                  onClick={handleAdd}
-                >
-                  {isAdding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                  Add to instant list
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm" variant="outline"
-                  className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                  disabled={isToggling || isRemoving}
-                  onClick={handleToggle}
-                >
-                  {isToggling
-                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                    : entry.active
-                      ? <ToggleRight className="w-3.5 h-3.5 text-emerald-500" />
-                      : <ToggleLeft className="w-3.5 h-3.5 text-muted-foreground/40" />
-                  }
-                  {entry.active ? "Disable" : "Enable"}
-                </Button>
-                <Button
-                  size="sm" variant="outline"
-                  className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
-                  disabled={isRemoving || isToggling}
-                  onClick={handleRemove}
-                >
-                  {isRemoving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                  Remove
-                </Button>
-              </div>
-            )}
-
-            {isOnList && (
-              <div className="grid grid-cols-2 gap-2">
-                <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Entry ID" value={`#${entry.id}`} mono />
-                <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Added" value={fmtDate(entry.created_at) ?? "—"} />
-              </div>
-            )}
+            <div className="flex items-center gap-2.5 shrink-0">
+              {!instantLoading && instantData && (
+                <Pill variant={instantData.instant_consultation ? "teal" : "default"}>
+                  {instantData.instant_consultation ? "ON" : "OFF"}
+                </Pill>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "h-8 px-4 text-[11px] rounded-[8px] gap-1.5 font-medium transition-all",
+                  instantData?.instant_consultation
+                    ? "border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20"
+                    : "hover:border-primary/40 hover:text-primary hover:bg-accent/20",
+                )}
+                disabled={instantLoading || toggleInstant.isPending}
+                onClick={handleToggleInstant}
+              >
+                {toggleInstant.isPending
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : instantData?.instant_consultation
+                    ? <ToggleRight className="w-3.5 h-3.5" />
+                    : <ToggleLeft className="w-3.5 h-3.5" />
+                }
+                {instantData?.instant_consultation ? "Disable" : "Enable"}
+              </Button>
+            </div>
           </div>
-        )}
+
+          {instantError && (
+            <div className="flex items-center gap-2 px-4 py-2.5 border-t border-red-200/40 dark:border-red-800/30 bg-red-50/30 dark:bg-red-950/8">
+              <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
+              <p className="text-[10.5px] text-red-600 dark:text-red-400">{instantError}</p>
+              <button onClick={() => setInstantError(null)} className="ml-auto">
+                <X className="w-2.5 h-2.5 text-muted-foreground/40" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Bookings paused ── */}
+        <div className="rounded-[10px] border border-border/40 bg-card/60 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-8 h-8 rounded-[8px] flex items-center justify-center border shrink-0",
+                pausedData?.bookings_paused
+                  ? "bg-amber-50 dark:bg-amber-950/25 border-amber-200 dark:border-amber-800/50"
+                  : "bg-emerald-50 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/50",
+              )}>
+                <PauseCircle className={cn(
+                  "w-3.5 h-3.5",
+                  pausedData?.bookings_paused
+                    ? "text-amber-500"
+                    : "text-emerald-500",
+                )} />
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold text-foreground">Bookings</p>
+                <p className="text-[10.5px] text-muted-foreground/45 mt-0.5">
+                  {pausedLoading
+                    ? "Loading…"
+                    : (pausedData?.status ?? "—")}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              {!pausedLoading && pausedData && (
+                <Pill variant={pausedData.bookings_paused ? "amber" : "emerald"}>
+                  {pausedData.bookings_paused ? "Paused" : "Active"}
+                </Pill>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "h-8 px-4 text-[11px] rounded-[8px] gap-1.5 font-medium transition-all",
+                  pausedData?.bookings_paused
+                    ? "hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    : "border-amber-300/60 text-amber-600 hover:bg-amber-50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-950/20",
+                )}
+                disabled={pausedLoading || togglePaused.isPending}
+                onClick={handleTogglePaused}
+              >
+                {togglePaused.isPending
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : pausedData?.bookings_paused
+                    ? <CheckCircle2 className="w-3.5 h-3.5" />
+                    : <PauseCircle className="w-3.5 h-3.5" />
+                }
+                {pausedData?.bookings_paused ? "Resume" : "Pause"}
+              </Button>
+            </div>
+          </div>
+
+          {pausedError && (
+            <div className="flex items-center gap-2 px-4 py-2.5 border-t border-red-200/40 dark:border-red-800/30 bg-red-50/30 dark:bg-red-950/8">
+              <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
+              <p className="text-[10.5px] text-red-600 dark:text-red-400">{pausedError}</p>
+              <button onClick={() => setPausedError(null)} className="ml-auto">
+                <X className="w-2.5 h-2.5 text-muted-foreground/40" />
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </ContentWrap>
   );
@@ -1325,246 +1425,364 @@ function CertificationTab({ doctor }: { doctor: ApiDoctor }) {
 }
 
 // ─── Tab: Fees ────────────────────────────────────────────────────────────────
-
 function FeesTab({ doctor }: { doctor: ApiDoctor }) {
-  const { data: fees,          isLoading: feesLoading    } = useGetSpecializationFees();
-  const { data: consultations, isLoading: consultLoading } = useGetDoctorConsultations();
+  const { data, isLoading, isError } = useGetDoctorConsultationFees(doctor.id);
+  const { data: allFees, isLoading: feesLoading } = useGetSpecializationFees();
 
-  const assignMutation   = useAssignDoctorConsultation();
-  const updateMutation   = useUpdateDoctorConsultation();
   const overrideMutation = useSetDoctorFeeOverride();
+  const updateMutation   = useUpdateDoctorConsultationFee();
 
-  const consultation = consultations?.find((c) => c.doctor_id === doctor.id);
-  const isActing = assignMutation.isPending || updateMutation.isPending || overrideMutation.isPending;
+  // ── override form ──────────────────────────────────────────────────────────
+  const [onlineOverride,   setOnlineOverride]   = useState("");
+  const [inPersonOverride, setInPersonOverride] = useState("");
+  const [overrideReason,   setOverrideReason]   = useState("");
+  const [overrideError,    setOverrideError]    = useState<string | null>(null);
+  const [overrideSuccess,  setOverrideSuccess]  = useState<string | null>(null);
 
-  const [showOverrideForm,     setShowOverrideForm]     = useState(false);
-  const [onlineOverride,       setOnlineOverride]       = useState(consultation?.online_fee_override?.toString() ?? "");
-  const [inPersonOverride,     setInPersonOverride]     = useState(consultation?.in_person_fee_override?.toString() ?? "");
-  const [overrideReason,       setOverrideReason]       = useState(consultation?.override_reason ?? "");
-  const [showAssignForm,       setShowAssignForm]       = useState(false);
-  const [assignFeeId,          setAssignFeeId]          = useState("");
-  const [assignSpecialization, setAssignSpecialization] = useState(doctor.specialization ?? "");
+  // ── update form ────────────────────────────────────────────────────────────
+  const [editingId,     setEditingId]     = useState<number | null>(null);
+  const [editFeeId,     setEditFeeId]     = useState("");
+  const [editIsActive,  setEditIsActive]  = useState(true);
+  const [updateError,   setUpdateError]   = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
 
-  const handleAssign = async () => {
-    if (!assignFeeId || !assignSpecialization) return;
-    await assignMutation.mutateAsync({
-      doctor_id: doctor.id,
-      specialization_fee_id: Number(assignFeeId),
-      primary_specialization: assignSpecialization,
-    });
-    setShowAssignForm(false);
+  const records     = data?.records ?? [];
+  const multiRecord = records.length > 1;
+
+  const openEdit = (rec: ApiDoctorConsultationRecord) => {
+    setEditingId(rec.id);
+    setEditFeeId(String(rec.specialization_fee_id));
+    setEditIsActive(rec.is_active);
+    setUpdateError(null);
+    setUpdateSuccess(null);
+  };
+
+  const handleUpdate = async (rec: ApiDoctorConsultationRecord) => {
+    setUpdateError(null);
+    setUpdateSuccess(null);
+    try {
+      const payload: Parameters<typeof updateMutation.mutateAsync>[0] = {
+        doctorId: doctor.id,
+        specialization_fee_id: Number(editFeeId),
+        is_active: editIsActive,
+      };
+      if (multiRecord && rec.specialization_id) {
+        payload.specialization_id = rec.specialization_id;
+      }
+      const res = await updateMutation.mutateAsync(payload);
+      setUpdateSuccess(res.message);
+      setEditingId(null);
+    } catch (err: unknown) {
+      setUpdateError((err as { message?: string })?.message ?? "Update failed.");
+    }
   };
 
   const handleOverride = async () => {
-    await overrideMutation.mutateAsync({
-      doctorId: doctor.id,
-      online_fee_override:    onlineOverride   ? Number(onlineOverride)   : null,
-      in_person_fee_override: inPersonOverride ? Number(inPersonOverride) : null,
-      override_reason: overrideReason || null,
-    });
-    setShowOverrideForm(false);
+    setOverrideError(null);
+    setOverrideSuccess(null);
+    try {
+      const res = await overrideMutation.mutateAsync({
+        doctorId: doctor.id,
+        online_fee_override:    onlineOverride   ? Number(onlineOverride)   : null,
+        in_person_fee_override: inPersonOverride ? Number(inPersonOverride) : null,
+        override_reason:        overrideReason   || null,
+      });
+      setOverrideSuccess(res.message ?? "Override applied.");
+      setOnlineOverride("");
+      setInPersonOverride("");
+      setOverrideReason("");
+    } catch (err: unknown) {
+      setOverrideError((err as { message?: string })?.message ?? "Something went wrong.");
+    }
   };
 
-  const handleClearOverride = () => {
-    overrideMutation.mutate({
-      doctorId: doctor.id,
-      online_fee_override: null, in_person_fee_override: null, override_reason: null,
-    });
-  };
+  const inputCls =
+    "w-full h-9 rounded-[8px] border border-border/45 bg-background px-2.5 text-[11.5px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40";
 
-  const handleToggleActive = () => {
-    if (consultation) updateMutation.mutate({ doctorId: doctor.id, is_active: !consultation.is_active });
-  };
+  const fmt = (v: string | number | null | undefined) =>
+    v != null ? Number(v).toLocaleString() : "—";
 
-  if (feesLoading || consultLoading) return <LoadingRow />;
-
-  const inputCls = "w-full h-9 rounded-[8px] border border-border/45 bg-background px-2.5 text-[11.5px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40";
+  if (isLoading || feesLoading) return <ContentWrap><LoadingRow /></ContentWrap>;
 
   return (
     <ContentWrap>
-      <div className="space-y-4">
-        {!consultation ? (
-          <div className="space-y-3">
+      <div className="space-y-5">
+
+        {/* ── Records ─────────────────────────────────────────────────────── */}
+        <div className="space-y-2">
+          <SectionHeading>Fee configuration</SectionHeading>
+
+          {updateSuccess && (
+            <div className="flex items-center gap-2 p-3 rounded-[8px] border border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/40 dark:bg-emerald-950/8">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400">{updateSuccess}</p>
+              <button onClick={() => setUpdateSuccess(null)} className="ml-auto">
+                <X className="w-2.5 h-2.5 text-muted-foreground/40" />
+              </button>
+            </div>
+          )}
+
+          {isError || records.length === 0 ? (
             <div className="flex items-start gap-3 p-4 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 dark:bg-amber-950/8">
               <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-[12px] font-semibold text-foreground">No fee tier assigned</p>
-                <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">
-                  This doctor hasn't been assigned to a specialization fee tier yet.
+                <p className="text-[12px] font-semibold text-foreground">No fee records found</p>
+                <p className="text-[10.5px] text-muted-foreground/55 mt-0.5">
+                  No consultation fee configuration exists for this doctor yet.
                 </p>
               </div>
             </div>
+          ) : (
+            records.map((rec) => {
+              const sf          = rec.specialization_fee;
+              const sp          = rec.specialization;
+              const hasOverride = rec.online_fee_override !== null || rec.in_person_fee_override !== null;
+              const isEditing   = editingId === rec.id;
 
-            {!showAssignForm ? (
-              <div>
-                <Button size="sm"
-                  className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
-                  onClick={() => setShowAssignForm(true)}>
-                  <Plus className="w-3 h-3" /> Assign to fee tier
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3 p-4 rounded-[10px] border border-primary/20 bg-accent/10">
-                <p className="text-[12px] font-semibold text-foreground">Assign fee tier</p>
-                <div className="space-y-2.5">
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">Fee tier</label>
-                    <select value={assignFeeId} onChange={(e) => setAssignFeeId(e.target.value)} className={inputCls}>
-                      <option value="">Select a specialization fee…</option>
-                      {fees?.filter((f) => f.is_active).map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.specialization} — {f.online_fee.toLocaleString()} RWF online / {f.in_person_fee.toLocaleString()} RWF in-person
-                        </option>
-                      ))}
-                    </select>
+              return (
+                <div key={rec.id} className="rounded-[10px] border border-border/40 bg-card/60 overflow-hidden">
+
+                  {/* ── header: specialization name + badges ── */}
+                  <div className="flex items-center justify-between px-4 py-3 bg-accent/10 border-b border-primary/8">
+                    <div className="min-w-0">
+                      <p className="text-[12.5px] font-bold text-foreground truncate">
+                        {sp?.name ?? sf.sub_specialization}
+                      </p>
+                      {sf.sub_specialization && sp?.name !== sf.sub_specialization && (
+                        <p className="text-[10px] text-muted-foreground/45 mt-0.5">
+                          {sf.sub_specialization}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Pill variant={rec.is_active ? "emerald" : "amber"}>
+                        {rec.is_active ? "Active" : "Inactive"}
+                      </Pill>
+                      {hasOverride && (
+                        <Pill variant="amber">
+                          <Pencil className="w-2 h-2" /> Overridden
+                        </Pill>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">Primary specialization</label>
-                    <input type="text" value={assignSpecialization} onChange={(e) => setAssignSpecialization(e.target.value)}
-                      placeholder="e.g. Cardiology" className={inputCls} />
+
+                  {/* ── resolved fees (big numbers) ── */}
+                  <div className="grid grid-cols-2 divide-x divide-border/30">
+                    <div className="px-4 py-3">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/35 mb-1.5">
+                        Online fee
+                      </p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-[20px] font-bold text-foreground tabular-nums leading-none">
+                          {fmt(rec.resolved_online_fee)}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground/40">{sf.currency}</span>
+                      </div>
+                      {rec.online_fee_override !== null && (
+                        <p className="text-[9.5px] text-muted-foreground/35 line-through mt-1">
+                          {fmt(sf.online_fee)} base
+                        </p>
+                      )}
+                    </div>
+                    <div className="px-4 py-3">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/35 mb-1.5">
+                        In-person fee
+                      </p>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-[20px] font-bold text-foreground tabular-nums leading-none">
+                          {fmt(rec.resolved_in_person_fee)}
+                        </span>
+                        <span className="text-[10px] font-medium text-muted-foreground/40">{sf.currency}</span>
+                      </div>
+                      {rec.in_person_fee_override !== null && (
+                        <p className="text-[9.5px] text-muted-foreground/35 line-through mt-1">
+                          {fmt(sf.in_person_fee)} base
+                        </p>
+                      )}
+                    </div>
                   </div>
+
+                  {/* ── meta row: tier slug + updated ── */}
+                  <div className="flex items-center gap-3 px-4 py-2 border-t border-border/20 bg-muted/5">
+                    <span className="text-[9.5px] font-mono text-muted-foreground/30">
+                      tier: {sf.slug}
+                    </span>
+                    {rec.updated_at && (
+                      <span className="text-[9.5px] text-muted-foreground/25 ml-auto">
+                        updated {fmtDate(rec.updated_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* ── override reason banner ── */}
+                  {rec.override_reason && (
+                    <div className="flex items-start gap-2 px-4 py-2.5 border-t border-amber-200/40 dark:border-amber-800/30 bg-amber-50/30 dark:bg-amber-950/10">
+                      <AlertCircle className="w-3 h-3 text-amber-500/70 shrink-0 mt-0.5" />
+                      <p className="text-[10.5px] text-amber-700/70 dark:text-amber-400/70 italic">
+                        "{rec.override_reason}"
+                      </p>
+                    </div>
+                  )}
+
+                  {/* ── edit inline form ── */}
+                  {isEditing ? (
+                    <div className="px-4 py-3 border-t border-primary/10 bg-accent/10 space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
+                            Fee tier
+                          </label>
+                          <select
+                            value={editFeeId}
+                            onChange={(e) => setEditFeeId(e.target.value)}
+                            className={inputCls}
+                          >
+                            <option value="">Select…</option>
+                            {allFees?.filter((f) => f.is_active).map((f) => (
+                              <option key={f.id} value={f.id}>
+                                {f.specialization} — {Number(f.online_fee).toLocaleString()} / {Number(f.in_person_fee).toLocaleString()} RWF
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
+                            Status
+                          </label>
+                          <select
+                            value={editIsActive ? "1" : "0"}
+                            onChange={(e) => setEditIsActive(e.target.value === "1")}
+                            className={inputCls}
+                          >
+                            <option value="1">Active</option>
+                            <option value="0">Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {updateError && (
+                        <div className="flex items-center gap-2 p-2.5 rounded-[8px] border border-red-200/60 dark:border-red-800/40 bg-red-50/40 dark:bg-red-950/8">
+                          <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
+                          <p className="text-[10.5px] text-red-600 dark:text-red-400">{updateError}</p>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost" size="sm"
+                          className="h-8 text-[10.5px] rounded-[8px]"
+                          onClick={() => setEditingId(null)}
+                          disabled={updateMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 px-4 text-[10.5px] rounded-[8px] gap-1.5 font-medium"
+                          onClick={() => handleUpdate(rec)}
+                          disabled={updateMutation.isPending || !editFeeId}
+                        >
+                          {updateMutation.isPending
+                            ? <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            : <Check className="w-2.5 h-2.5" />}
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-4 py-2.5 border-t border-border/20">
+                      <button
+                        onClick={() => openEdit(rec)}
+                        className="flex items-center gap-1.5 text-[10.5px] text-primary/50 hover:text-primary transition-colors font-medium"
+                      >
+                        <Pencil className="w-2.5 h-2.5" /> Edit fee tier / status
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="h-8 text-[10.5px] rounded-[8px]"
-                    onClick={() => setShowAssignForm(false)} disabled={isActing}>Cancel</Button>
-                  <Button size="sm" className="h-8 px-4 text-[10.5px] rounded-[8px] gap-1.5 font-medium"
-                    onClick={handleAssign} disabled={isActing || !assignFeeId || !assignSpecialization}>
-                    {isActing ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
-                    Assign
-                  </Button>
-                </div>
-              </div>
-            )}
+              );
+            })
+          )}
+        </div>
+
+        {/* ── Override form ────────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          <SectionHeading>Set fee override</SectionHeading>
+
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
+              Online fee override (RWF)
+            </label>
+            <input
+              type="number" min={0}
+              value={onlineOverride}
+              onChange={(e) => setOnlineOverride(e.target.value)}
+              placeholder="e.g. 4500"
+              className={cn(inputCls, "font-mono")}
+            />
           </div>
-        ) : (
-          <>
-            <div className="rounded-[10px] border border-primary/20 bg-card/60 overflow-hidden">
-              <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-primary/10 bg-accent/10">
-                <div>
-                  <p className="text-[13px] font-bold text-foreground">{consultation.primary_specialization}</p>
-                  {consultation.secondary_specialization && (
-                    <p className="text-[10.5px] text-muted-foreground/50 mt-0.5">+{consultation.secondary_specialization}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Pill variant={consultation.is_active ? "emerald" : "amber"}>
-                    {consultation.is_active ? "Active" : "Inactive"}
-                  </Pill>
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-[7px] hover:bg-accent hover:text-primary"
-                    disabled={isActing} onClick={handleToggleActive}>
-                    {updateMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 divide-x divide-primary/10">
-                <div className="p-4">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">Online fee</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[22px] font-bold text-foreground tabular-nums">
-                      {(consultation.online_fee_override ?? consultation.specialization_fee.online_fee).toLocaleString()}
-                    </span>
-                    <span className="text-[10.5px] font-medium text-muted-foreground/45">RWF</span>
-                  </div>
-                  {consultation.online_fee_override !== null && (
-                    <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-through">
-                      {consultation.specialization_fee.online_fee.toLocaleString()} base
-                    </p>
-                  )}
-                </div>
-                <div className="p-4">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">In-person fee</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-[22px] font-bold text-foreground tabular-nums">
-                      {(consultation.in_person_fee_override ?? consultation.specialization_fee.in_person_fee).toLocaleString()}
-                    </span>
-                    <span className="text-[10.5px] font-medium text-muted-foreground/45">RWF</span>
-                  </div>
-                  {consultation.in_person_fee_override !== null && (
-                    <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-through">
-                      {consultation.specialization_fee.in_person_fee.toLocaleString()} base
-                    </p>
-                  )}
-                </div>
-              </div>
+
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
+              In-person fee override (RWF)
+            </label>
+            <input
+              type="number" min={0}
+              value={inPersonOverride}
+              onChange={(e) => setInPersonOverride(e.target.value)}
+              placeholder="e.g. 7000"
+              className={cn(inputCls, "font-mono")}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
+              Reason
+            </label>
+            <input
+              type="text"
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="e.g. Special arrangement for rural outreach"
+              className={inputCls}
+            />
+          </div>
+
+          {overrideError && (
+            <div className="flex items-center gap-2 p-3 rounded-[8px] border border-red-200/60 dark:border-red-800/40 bg-red-50/40 dark:bg-red-950/8">
+              <AlertCircle className="w-3 h-3 text-red-500 shrink-0" />
+              <p className="text-[11px] text-red-600 dark:text-red-400">{overrideError}</p>
             </div>
+          )}
 
-            {consultation.override_reason && (
-              <div className="flex items-start gap-2 p-3 rounded-[10px] border border-amber-200/60 dark:border-amber-800/40 dark:bg-amber-950/8">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-[10.5px] font-semibold text-foreground/80">Override reason</p>
-                  <p className="text-[10.5px] text-muted-foreground/60 mt-0.5">{consultation.override_reason}</p>
-                </div>
-              </div>
-            )}
+          {overrideSuccess && (
+            <div className="flex items-center gap-2 p-3 rounded-[8px] border border-emerald-200/60 dark:border-emerald-800/40 bg-emerald-50/40 dark:bg-emerald-950/8">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400">{overrideSuccess}</p>
+              <button onClick={() => setOverrideSuccess(null)} className="ml-auto">
+                <X className="w-2.5 h-2.5 text-muted-foreground/40" />
+              </button>
+            </div>
+          )}
 
-            {!showOverrideForm ? (
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline"
-                  className="h-9 px-4 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
-                  onClick={() => {
-                    setOnlineOverride(consultation.online_fee_override?.toString() ?? "");
-                    setInPersonOverride(consultation.in_person_fee_override?.toString() ?? "");
-                    setOverrideReason(consultation.override_reason ?? "");
-                    setShowOverrideForm(true);
-                  }}>
-                  <Pencil className="w-3 h-3" />
-                  {consultation.online_fee_override !== null ? "Edit override" : "Set fee override"}
-                </Button>
-                {consultation.online_fee_override !== null && (
-                  <Button size="sm" variant="outline"
-                    className="h-9 px-4 text-[11.5px] rounded-[10px] gap-2 border-red-300/60 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
-                    disabled={isActing} onClick={handleClearOverride}>
-                    {overrideMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                    Clear override
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="p-4 rounded-[10px] border border-primary/20 bg-accent/10 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[12px] font-semibold text-foreground">Fee override</p>
-                  <button onClick={() => setShowOverrideForm(false)}
-                    className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-accent/40 transition-colors">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">Online fee (RWF)</label>
-                    <input type="number" value={onlineOverride} onChange={(e) => setOnlineOverride(e.target.value)}
-                      placeholder="Leave blank to use base" className={cn(inputCls, "font-mono")} />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">In-person fee (RWF)</label>
-                    <input type="number" value={inPersonOverride} onChange={(e) => setInPersonOverride(e.target.value)}
-                      placeholder="Leave blank to use base" className={cn(inputCls, "font-mono")} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
-                    Reason <span className="normal-case tracking-normal font-normal text-muted-foreground/25">(optional)</span>
-                  </label>
-                  <input type="text" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)}
-                    placeholder="e.g. Senior consultant discount" className={inputCls} />
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="h-8 text-[10.5px] rounded-[8px]"
-                    onClick={() => setShowOverrideForm(false)} disabled={isActing}>Cancel</Button>
-                  <Button size="sm" className="h-8 px-4 text-[10.5px] rounded-[8px] gap-1.5 font-medium"
-                    onClick={handleOverride} disabled={isActing}>
-                    {overrideMutation.isPending ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
-                    Apply override
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+          <Button
+            size="sm"
+            className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={handleOverride}
+            disabled={overrideMutation.isPending}
+          >
+            {overrideMutation.isPending
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : <Check className="w-3 h-3" />}
+            Apply override
+          </Button>
+        </div>
+
       </div>
     </ContentWrap>
   );
 }
+
 
 // ─── Tab: Wallet ──────────────────────────────────────────────────────────────
 

@@ -714,15 +714,224 @@ export function useUpdateDoctorConsultation() {
   });
 }
 
+
+
+// export function useSetDoctorFeeOverride() {
+//   const qc = useQueryClient();
+//   return useMutation<
+//     { message: string; record: ApiDoctorConsultation; resolved_online_fee: number; resolved_in_person_fee: number },
+//     Error,
+//     {
+//       doctorId: number;
+//       online_fee_override: number | null;
+//       in_person_fee_override: number | null;
+//       override_reason: string | null;
+//     }
+//   >({
+//     mutationFn: ({ doctorId, ...body }) =>
+//       apiFetch(`${DOC_CONSULT_BASE}/${doctorId}/fee-override`, { method: "PUT", body }),
+//     onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.doctorConsultList() }),
+//   });
+// }
+
+// ─── Add / replace in use-admin-doctors.ts ───────────────────────────────────
+
+export interface ApiDoctorConsultationRecord {
+  id: number;
+  doctor_id: number;
+  specialization_id: number | null;
+  specialization_fee_id: number;
+  online_fee_override: string | number | null;     // API returns "5000.00" string
+  in_person_fee_override: string | number | null;  // API returns "10000.00" string
+  override_reason: string | null;
+  is_active: boolean;
+  resolved_online_fee: number;
+  resolved_in_person_fee: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  specialization_fee: {
+    id: number;
+    specialization_id: number;
+    sub_specialization: string;
+    sub_specialization_fr?: string | null;
+    sub_specialization_kiny?: string | null;
+    tier_name?: string | null;
+    slug: string;
+    online_fee: string | number;     // "3500.00"
+    in_person_fee: string | number;  // "5500.00"
+    currency: string;
+    description?: string | null;
+    is_active: boolean;
+  };
+  specialization: {
+    id: number;
+    name: string;
+    name_fr?: string | null;
+    name_kiny?: string | null;
+    slug: string;
+    description?: string | null;
+    icon?: string | null;
+    is_active: boolean;
+  } | null;
+  doctor: {
+    id: number;
+    user: { id: number; name: string; phone?: string | null; email?: string | null };
+  };
+}
+
+export interface ApiDoctorConsultationFeesResponse {
+  doctor_id: number;
+  records: ApiDoctorConsultationRecord[];
+}
+
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+export function useGetDoctorConsultationFees(doctorId: number | null) {
+  return useQuery<ApiDoctorConsultationFeesResponse>({
+    queryKey: ["admin-doctor-consult-fees", doctorId],
+    queryFn: () =>
+      apiFetch<ApiDoctorConsultationFeesResponse>(`${DOC_CONSULT_BASE}/${doctorId}`),
+    enabled: !!doctorId,
+    retry: (failureCount, error) => {
+      if ((error as { status?: number })?.status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+}
+
+export function useUpdateDoctorConsultationFee() {
+  const qc = useQueryClient();
+  return useMutation<
+    { message: string; record: ApiDoctorConsultationRecord },
+    Error,
+    {
+      doctorId: number;
+      specialization_fee_id: number;
+      is_active?: boolean;
+      specialization_id?: number;
+    }
+  >({
+    mutationFn: ({ doctorId, ...body }) =>
+      apiFetch(`${DOC_CONSULT_BASE}/${doctorId}`, { method: "PUT", body }),
+    onSuccess: (_data, { doctorId }) => {
+      qc.invalidateQueries({ queryKey: ["admin-doctor-consult-fees", doctorId] });
+    },
+  });
+}
+
+// Also update useSetDoctorFeeOverride to invalidate the per-doctor query:
 export function useSetDoctorFeeOverride() {
   const qc = useQueryClient();
   return useMutation<
-    { consultation: ApiDoctorConsultation; resolved_online_fee: number; resolved_in_person_fee: number },
+    { message: string; record: ApiDoctorConsultationRecord; resolved_online_fee: number; resolved_in_person_fee: number },
     Error,
-    { doctorId: number; online_fee_override: number | null; in_person_fee_override: number | null; override_reason: string | null }
+    {
+      doctorId: number;
+      online_fee_override: number | null;
+      in_person_fee_override: number | null;
+      override_reason: string | null;
+    }
   >({
     mutationFn: ({ doctorId, ...body }) =>
       apiFetch(`${DOC_CONSULT_BASE}/${doctorId}/fee-override`, { method: "PUT", body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.doctorConsultList() }),
+    onSuccess: (_data, { doctorId }) => {
+      qc.invalidateQueries({ queryKey: ["admin-doctor-consult-fees", doctorId] });
+    },
+  });
+}
+
+
+
+
+// ─── Add to use-admin-doctors.ts ─────────────────────────────────────────────
+// New per-doctor availability toggle hooks.
+// Add these constants at the top with the other BASE URLs:
+//   const DOCTOR_AVAIL_BASE = "/admin/doctors";  // already exists as BASE
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface ApiInstantStatus {
+  doctor_id: number;
+  instant_consultation: boolean;
+  status: string;
+}
+
+export interface ApiInstantToggleResponse {
+  message: string;
+  doctor_id: number;
+  instant_consultation: boolean;
+}
+
+export interface ApiPausedStatus {
+  doctor_id: number;
+  bookings_paused: boolean;
+  status: string;
+}
+
+export interface ApiPausedToggleResponse {
+  message: string;
+  doctor_id: number;
+  bookings_paused: boolean;
+}
+
+// ── Query keys (add to doctorKeys) ────────────────────────────────────────────
+//   instantStatus: (id: number) => ["admin-doctor-instant-status", id] as const,
+//   pausedStatus:  (id: number) => ["admin-doctor-paused-status",  id] as const,
+
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+export function useGetInstantStatus(doctorId: number) {
+  return useQuery<ApiInstantStatus>({
+    queryKey: ["admin-doctor-instant-status", doctorId],
+    queryFn: () => apiFetch<ApiInstantStatus>(`${BASE}/${doctorId}/instant-status`),
+    enabled: !!doctorId,
+  });
+}
+
+export function useToggleInstant(doctorId: number) {
+  const qc = useQueryClient();
+  return useMutation<ApiInstantToggleResponse, Error>({
+    mutationFn: () =>
+      apiFetch<ApiInstantToggleResponse>(`${BASE}/${doctorId}/toggle-instant`, {
+        method: "PUT",
+      }),
+    onSuccess: (data) => {
+      // update the status cache directly so no extra round-trip needed
+      qc.setQueryData<ApiInstantStatus>(
+        ["admin-doctor-instant-status", doctorId],
+        (prev) => prev
+          ? { ...prev, instant_consultation: data.instant_consultation }
+          : undefined,
+      );
+      // also invalidate the doctor detail so the overview tab stays in sync
+      qc.invalidateQueries({ queryKey: ["admin-doctor", doctorId] });
+    },
+  });
+}
+
+export function useGetPausedStatus(doctorId: number) {
+  return useQuery<ApiPausedStatus>({
+    queryKey: ["admin-doctor-paused-status", doctorId],
+    queryFn: () => apiFetch<ApiPausedStatus>(`${BASE}/${doctorId}/paused-status`),
+    enabled: !!doctorId,
+  });
+}
+
+export function useTogglePaused(doctorId: number) {
+  const qc = useQueryClient();
+  return useMutation<ApiPausedToggleResponse, Error>({
+    mutationFn: () =>
+      apiFetch<ApiPausedToggleResponse>(`${BASE}/${doctorId}/toggle-paused`, {
+        method: "PUT",
+      }),
+    onSuccess: (data) => {
+      qc.setQueryData<ApiPausedStatus>(
+        ["admin-doctor-paused-status", doctorId],
+        (prev) => prev
+          ? { ...prev, bookings_paused: data.bookings_paused }
+          : undefined,
+      );
+      qc.invalidateQueries({ queryKey: ["admin-doctor", doctorId] });
+    },
   });
 }

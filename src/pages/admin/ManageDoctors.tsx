@@ -39,7 +39,8 @@ import { FilterSection, PillGroup } from "./components/doctor/Filtercomponents";
 import { DoctorRow, DoctorCard } from "./components/doctor/Doctorlistitems";
 import { SkeletonRows } from "./components/doctor/Skeletonrows";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
-import SpecializationSelect from "../patient/components/SpecializationSelect";
+import { SpecializationSelect } from "../patient/components/SpecializationSelect";
+// import SpecializationSelect from "../patient/components/SpecializationSelect";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,9 @@ function ManageDoctors() {
     const timer = setTimeout(() => set("search", searchInput), 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
-
+const [spec, setSpec] = useState({ specialization: null, fee: null });
+console.log("spec",spec)
+ 
   // ── API ──
   const { data, isLoading, isError } = useGetAdminDoctors({
     status: filters.status !== "all" ? filters.status : undefined,
@@ -273,10 +276,11 @@ function ManageDoctors() {
         </FilterSection>
 
         <FilterSection title="Specialization">
-          <SpecializationSelect
+          {/* <SpecializationSelect
             value={filters.specialization}
             onChange={(v) => set("specialization", v)}
-          />
+          /> */}
+            <SpecializationSelect value={spec} onChange={setSpec} />
         </FilterSection>
       </div>
     </>

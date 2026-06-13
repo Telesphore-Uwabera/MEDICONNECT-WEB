@@ -1,103 +1,90 @@
+// SpecializationSelect.tsx
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/PageHeader";
-import { t } from "i18next";
+import { X, Search, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import {
-  SlidersHorizontal,
-  X,
-  Star,
-  Search,
-  Zap,
-  CalendarCheck,
-  Clock,
-  Stethoscope,
-  Globe,
-  Video,
-  MapPin,
-  AlertCircle,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  User,
-} from "lucide-react";
+  useSpecializationSelect,
+  type SpecializationValue,
+} from "@/hooks/use-specialization-select";
 
-import { DoctorCard } from "@/components/DoctorCard";
-import { useGetSearchDoctors,
-  type ApiDoctor,
-  type DoctorSearchParams,
+export type { SpecializationValue };
 
- } from "@/hooks/patient/use-patient-doctor";
-import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
-
-const SPECIALIZATION_GROUPS = [
-  { group: "Internal Medicine", items: ["Cardiology","Endocrinology","Gastroenterology","Hematology","Infectious Disease","Nephrology","Oncology","Pulmonology","Rheumatology","Geriatrics","Hepatology","Allergy & Immunology"] },
-  { group: "Surgery", items: ["Cardiothoracic Surgery","Colorectal Surgery","Neurosurgery","Orthopedic Surgery","Pediatric Surgery","Plastic & Reconstructive Surgery","Transplant Surgery","Trauma Surgery","Vascular Surgery","Urological Surgery","Bariatric Surgery","Surgical Oncology"] },
-  { group: "Pediatrics", items: ["Pediatric Cardiology","Pediatric Endocrinology","Pediatric Gastroenterology","Pediatric Hematology/Oncology","Pediatric Infectious Disease","Pediatric Nephrology","Pediatric Neurology","Pediatric Pulmonology","Neonatology","Pediatric Emergency Medicine","Pediatric Rheumatology","Pediatric Critical Care","Developmental-Behavioral Pediatrics"] },
-  { group: "Obstetrics & Gynecology", items: ["Maternal-Fetal Medicine","Reproductive Endocrinology & Infertility","Gynecologic Oncology","Urogynecology","Minimally Invasive Gynecologic Surgery","Female Pelvic Medicine","Pediatric & Adolescent Gynecology"] },
-  { group: "Neurology", items: ["Clinical Neurophysiology","Epilepsy","Movement Disorders","Neurocritical Care","Neuro-Oncology","Neuromuscular Medicine","Sleep Medicine","Stroke Medicine","Behavioral Neurology","Child Neurology","Headache Medicine","Multiple Sclerosis"] },
-  { group: "Psychiatry", items: ["Addiction Psychiatry","Child & Adolescent Psychiatry","Forensic Psychiatry","Geriatric Psychiatry","Consultation-Liaison Psychiatry","Neuropsychiatry","Sleep Psychiatry","Community Psychiatry","Psychosomatic Medicine"] },
-  { group: "Radiology", items: ["Interventional Radiology","Neuroradiology","Abdominal Radiology","Breast Imaging","Cardiovascular Radiology","Musculoskeletal Radiology","Pediatric Radiology","Nuclear Medicine","Emergency Radiology","Thoracic Radiology"] },
-  { group: "Orthopedics", items: ["Spine Surgery","Joint Replacement","Sports Medicine","Hand & Upper Extremity Surgery","Foot & Ankle Surgery","Pediatric Orthopedics","Orthopedic Oncology","Trauma Orthopedics","Shoulder & Elbow Surgery"] },
-  { group: "Ophthalmology", items: ["Retina & Vitreous","Cornea & External Disease","Glaucoma","Neuro-Ophthalmology","Pediatric Ophthalmology","Oculoplastics","Refractive Surgery","Uveitis","Ocular Oncology"] },
-  { group: "Otolaryngology (ENT)", items: ["Rhinology","Laryngology","Otology & Neurotology","Head & Neck Surgery","Facial Plastic Surgery","Pediatric ENT","Sleep Surgery","Skull Base Surgery"] },
-  { group: "Dermatology", items: ["Dermatopathology","Pediatric Dermatology","Dermatologic Surgery","Mohs Surgery","Cosmetic Dermatology","Immunodermatology","Photomedicine","Trichology","Wound Care"] },
-  { group: "Anesthesiology", items: ["Cardiac Anesthesiology","Pediatric Anesthesiology","Obstetric Anesthesiology","Neuroanesthesiology","Regional Anesthesiology","Pain Medicine","Critical Care Medicine","Thoracic Anesthesiology"] },
-  { group: "Emergency Medicine", items: ["Pediatric Emergency Medicine","Emergency Medical Services","Toxicology","Ultrasound","Wilderness Medicine","Disaster Medicine","Hyperbaric Medicine"] },
-  { group: "Family Medicine", items: ["Geriatric Medicine","Sports Medicine","Palliative Care","Adolescent Medicine","Rural Medicine","Preventive Medicine","Integrative Medicine","Hospice Medicine"] },
-  { group: "Urology", items: ["Urologic Oncology","Female Urology","Pediatric Urology","Male Infertility","Endourology","Reconstructive Urology","Neurourology","Kidney Transplant Urology"] },
-  { group: "Cardiology", items: ["Interventional Cardiology","Electrophysiology","Heart Failure","Echocardiography","Cardiac Imaging","Preventive Cardiology","Pediatric Cardiology","Structural Heart Disease","Cardiac Rehabilitation","Cardiovascular Genetics"] },
-  { group: "Oncology", items: ["Medical Oncology","Surgical Oncology","Radiation Oncology","Hematologic Oncology","Gynecologic Oncology","Neuro-Oncology","Pediatric Oncology","Gastrointestinal Oncology","Thoracic Oncology","Genitourinary Oncology","Breast Oncology","Palliative Oncology"] },
-  { group: "Infectious Disease", items: ["HIV/AIDS Medicine","Tropical Medicine","Travel Medicine","Hospital Epidemiology","Antimicrobial Stewardship","Mycology","Virology","Parasitology"] },
-  { group: "Nephrology", items: ["Transplant Nephrology","Dialysis Medicine","Onco-Nephrology","Glomerular Disease","Pediatric Nephrology","Hypertension","Critical Care Nephrology","Electrolyte Disorders"] },
-  { group: "Endocrinology", items: ["Diabetes & Metabolism","Thyroid Disease","Adrenal Disease","Pituitary Disease","Reproductive Endocrinology","Bone & Mineral Metabolism","Neuroendocrinology","Pediatric Endocrinology"] },
-  { group: "Gastroenterology", items: ["Hepatology","Inflammatory Bowel Disease","Endoscopy","Pancreatic Disease","Motility","Pediatric Gastroenterology","Transplant Hepatology","Gastrointestinal Oncology"] },
-  { group: "Rheumatology", items: ["Lupus & Connective Tissue Disease","Inflammatory Arthritis","Vasculitis","Scleroderma","Pediatric Rheumatology","Osteoporosis & Bone Disease","Gout & Crystal Arthropathies","Myositis"] },
-  { group: "Pulmonology", items: ["Critical Care / Intensive Care","Sleep Medicine","Interstitial Lung Disease","Pulmonary Hypertension","Thoracic Oncology","Cystic Fibrosis","COPD & Asthma","Interventional Pulmonology","Lung Transplantation"] },
-  { group: "Hematology", items: ["Benign Hematology","Hematologic Malignancies","Bone Marrow Transplantation","Coagulation & Thrombosis","Transfusion Medicine","Sickle Cell Disease","Pediatric Hematology"] },
-  { group: "Genetics & Genomics", items: ["Clinical Genetics","Biochemical Genetics","Molecular Genetics","Cytogenetics","Cancer Genetics","Neurogenetics","Pharmacogenomics","Prenatal Genetics"] },
-];
-
-function SpecializationSelect({
+export function SpecializationSelect({
   value,
   onChange,
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  value: SpecializationValue;
+  onChange: (v: SpecializationValue) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    if (!q) return SPECIALIZATION_GROUPS;
-    return SPECIALIZATION_GROUPS
-      .map((g) => ({ ...g, items: g.items.filter((i) => i.toLowerCase().includes(q)) }))
-      .filter((g) => g.items.length > 0);
-  }, [query]);
+  const {
+    step,
+    query,
+    setQuery,
+    specializations,
+    loadingSpecializations,
+    errorSpecializations,
+    fees,
+    loadingFees,
+    errorFees,
+    selectSpecialization,
+    selectFee,
+    clear,
+    backToSpecialization,
+    openDropdown,
+    resetQuery,
+    triggerLabel,
+  } = useSpecializationSelect();
+
+  // Sync internal hook value → parent onChange
+  // (hook owns local state; parent gets notified on each selection)
+  // If you need controlled behaviour (parent drives value), lift
+  // value/setValue out of the hook and pass them as props instead.
 
   const handleOpen = () => {
+    openDropdown(!!value.specialization);
     setOpen(true);
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  const handleSelect = (val: string) => {
-    onChange(val);
+  const handleSelectSpecialization = (spec: Parameters<typeof selectSpecialization>[0]) => {
+    selectSpecialization(spec);
+    onChange({ specialization: spec, fee: null });
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const handleSelectFee = (fee: Parameters<typeof selectFee>[0]) => {
+    selectFee(fee);
+    onChange({ specialization: value.specialization, fee });
     setOpen(false);
-    setQuery("");
+  };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    clear();
+    onChange({ specialization: null, fee: null });
+    setOpen(false);
+  };
+
+  const handleBack = () => {
+    backToSpecialization();
   };
 
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        resetQuery();
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [resetQuery]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -110,40 +97,70 @@ function SpecializationSelect({
           open
             ? "border-primary/50 ring-2 ring-primary/20"
             : "border-border/60 hover:border-primary/40",
-          value ? "text-foreground" : "text-muted-foreground/40",
+          triggerLabel ? "text-foreground" : "text-muted-foreground/40"
         )}
       >
-        <span className="truncate">{value || "Any specialization…"}</span>
+        <span className="truncate">{triggerLabel ?? "Any specialization…"}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {value && (
+          {triggerLabel && (
             <span
               role="button"
-              onClick={(e) => { e.stopPropagation(); handleSelect(""); }}
+              onClick={handleClear}
               className="text-muted-foreground/50 hover:text-foreground transition-colors"
             >
               <X className="w-3 h-3" />
             </span>
           )}
-          <ChevronRight className={cn("w-3 h-3 text-muted-foreground/50 transition-transform duration-200", open && "rotate-90")} />
+          <ChevronRight
+            className={cn(
+              "w-3 h-3 text-muted-foreground/50 transition-transform duration-200",
+              open && "rotate-90"
+            )}
+          />
         </div>
       </button>
 
       {/* Dropdown */}
       {open && (
         <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border/60 rounded-sm shadow-lg overflow-hidden">
+          {/* Back header on fee step */}
+          {step === "fee" && (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/60 bg-secondary/20">
+              <button
+                onClick={handleBack}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronRight className="w-3 h-3 rotate-180" />
+              </button>
+              <span className="text-[10px] font-semibold text-foreground truncate">
+                {value.specialization?.name}
+              </span>
+              <span className="text-[9px] text-muted-foreground/60 ml-auto">
+                Select sub-specialization
+              </span>
+            </div>
+          )}
+
           {/* Search */}
           <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/60">
             <Search className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
             <input
               ref={inputRef}
               type="text"
-              placeholder="Search…"
+              placeholder={
+                step === "specialization"
+                  ? "Search specializations…"
+                  : "Search sub-specializations…"
+              }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40"
             />
             {query && (
-              <button onClick={() => setQuery("")} className="text-muted-foreground/50 hover:text-foreground transition-colors">
+              <button
+                onClick={() => setQuery("")}
+                className="text-muted-foreground/50 hover:text-foreground transition-colors"
+              >
                 <X className="w-3 h-3" />
               </button>
             )}
@@ -151,62 +168,94 @@ function SpecializationSelect({
 
           {/* List */}
           <div className="max-h-52 overflow-y-auto">
-            {/* Clear option */}
-            {!query && (
-              <button
-                onClick={() => handleSelect("")}
-                className={cn(
-                  "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
-                  !value
-                    ? "text-primary font-medium bg-primary/5"
-                    : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
+            {step === "specialization" ? (
+              <>
+                {!query && (
+                  <button
+                    onClick={() => { onChange({ specialization: null, fee: null }); clear(); setOpen(false); }}
+                    className={cn(
+                      "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
+                      !value.specialization
+                        ? "text-primary font-medium bg-primary/5"
+                        : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                    )}
+                  >
+                    Any specialization
+                  </button>
                 )}
-              >
-                Any specialization
-              </button>
-            )}
 
-            {filtered.length === 0 ? (
-              <p className="px-2.5 py-4 text-[11px] text-muted-foreground/60 text-center">
-                No results for "{query}"
-              </p>
-            ) : (
-              filtered.map((g) => (
-                <div key={g.group}>
-                  {!query && (
-                    <p className="px-2.5 pt-2 pb-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 bg-secondary/20">
-                      {g.group}
-                    </p>
-                  )}
-                  {g.items.map((item) => (
+                {loadingSpecializations ? (
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-muted-foreground/60">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+                  </div>
+                ) : errorSpecializations ? (
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-destructive/70">
+                    <AlertCircle className="w-3 h-3" /> Failed to load
+                  </div>
+                ) : specializations.length === 0 ? (
+                  <p className="px-2.5 py-4 text-[11px] text-muted-foreground/60 text-center">
+                    No results for "{query}"
+                  </p>
+                ) : (
+                  specializations.map((spec) => (
                     <button
-                      key={item}
-                      onClick={() => handleSelect(item)}
+                      key={spec.id}
+                      onClick={() => handleSelectSpecialization(spec)}
                       className={cn(
-                        "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
-                        value === item
+                        "w-full px-2.5 py-1.5 text-left text-[11px] flex items-center justify-between transition-colors",
+                        value.specialization?.id === spec.id
                           ? "text-primary font-medium bg-primary/5"
-                          : "text-foreground hover:bg-secondary/40",
+                          : "text-foreground hover:bg-secondary/40"
                       )}
                     >
-                      {query ? (
-                        // Highlight matching text
-                        (() => {
-                          const idx = item.toLowerCase().indexOf(query.toLowerCase());
-                          if (idx === -1) return item;
-                          return (
-                            <>
-                              {item.slice(0, idx)}
-                              <span className="font-semibold text-primary">{item.slice(idx, idx + query.length)}</span>
-                              {item.slice(idx + query.length)}
-                            </>
-                          );
-                        })()
-                      ) : item}
+                      <span>{spec.name}</span>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
                     </button>
-                  ))}
-                </div>
-              ))
+                  ))
+                )}
+              </>
+            ) : (
+              <>
+                {loadingFees ? (
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-muted-foreground/60">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+                  </div>
+                ) : errorFees ? (
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-destructive/70">
+                    <AlertCircle className="w-3 h-3" /> Failed to load
+                  </div>
+                ) : fees.length === 0 ? (
+                  <p className="px-2.5 py-4 text-[11px] text-muted-foreground/60 text-center">
+                    {query ? `No results for "${query}"` : "No sub-specializations available"}
+                  </p>
+                ) : (
+                  fees.map((fee) => (
+                    <button
+                      key={fee.id}
+                      onClick={() => handleSelectFee(fee)}
+                      className={cn(
+                        "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
+                        value.fee?.id === fee.id
+                          ? "bg-primary/5"
+                          : "hover:bg-secondary/40"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn("font-medium", value.fee?.id === fee.id ? "text-primary" : "text-foreground")}>
+                          {fee.sub_specialization}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 bg-secondary/50 px-1.5 py-0.5 rounded-sm">
+                          {fee.tier_name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-muted-foreground/60">
+                        <span>Online: {Number(fee.online_fee).toLocaleString()} {fee.currency}</span>
+                        <span>In-person: {Number(fee.in_person_fee).toLocaleString()} {fee.currency}</span>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </>
             )}
           </div>
         </div>
@@ -214,5 +263,3 @@ function SpecializationSelect({
     </div>
   );
 }
-
-export default SpecializationSelect;
