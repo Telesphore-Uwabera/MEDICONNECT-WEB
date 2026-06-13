@@ -21,9 +21,12 @@ import {
   Loader2,
   Trash2,
   SlidersHorizontal,
+  HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BookingStatus ,
+import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
+import {
+  BookingStatus,
   useGetPatientServiceBookings,   // ← plural: fetches list with filters
   useCancelPatientServiceBooking,
   type ApiServiceBooking,
@@ -91,12 +94,12 @@ const STATUS_CONFIG: Record<
 };
 
 const STATUS_OPTIONS: Array<{ value: BookingStatus | "all"; label: string }> = [
-  { value: "all",       label: "All statuses" },
-  { value: "pending",   label: "Pending"      },
-  { value: "accepted",  label: "Accepted"     },
-  { value: "completed", label: "Completed"    },
-  { value: "rejected",  label: "Rejected"     },
-  { value: "cancelled", label: "Cancelled"    },
+  { value: "all", label: "All statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "accepted", label: "Accepted" },
+  { value: "completed", label: "Completed" },
+  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -132,12 +135,12 @@ function clientFilter(
   const query = q.toLowerCase().trim();
   const filtered = query
     ? bookings.filter(
-        (b) =>
-          b.service.name_en.toLowerCase().includes(query) ||
-          b.hospital.name_en.toLowerCase().includes(query) ||
-          b.department.name_en.toLowerCase().includes(query) ||
-          b.status.includes(query),
-      )
+      (b) =>
+        b.service.name_en.toLowerCase().includes(query) ||
+        b.hospital.name_en.toLowerCase().includes(query) ||
+        b.department.name_en.toLowerCase().includes(query) ||
+        b.status.includes(query),
+    )
     : bookings;
 
   return [...filtered].sort((a, b) => {
@@ -459,6 +462,7 @@ function ServiceBookings() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<ApiServiceBooking | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [medInfoOpen, setMedInfoOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce client-side search
@@ -564,7 +568,7 @@ function ServiceBookings() {
             onChange={(v) => set("sort", v)}
             options={[
               { value: "date-desc", label: "Newest first" },
-              { value: "date-asc",  label: "Oldest first" },
+              { value: "date-asc", label: "Oldest first" },
             ]}
           />
         </FilterSection>
@@ -602,6 +606,19 @@ function ServiceBookings() {
           title={t("pages.patient.bookings_title")}
           subtitle={t("pages.patient.bookings_sub")}
         />
+
+        {/* Quick access to the patient's own medical record / visits / files */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMedInfoOpen(true)}
+            className="h-8 px-3 text-[11px] font-medium rounded-sm gap-1.5"
+          >
+            <HeartPulse className="h-3.5 w-3.5 text-primary" />
+            My medical info
+          </Button>
+        </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
 
@@ -796,62 +813,62 @@ function ServiceBookings() {
                       {isLoading
                         ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
                         : bookings.map((b) => (
-                            <tr
-                              key={b.id}
-                              className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                            >
-                              <td className="px-4 py-3">
-                                <div>
-                                  <p className="font-semibold text-foreground">{b.service.name_en}</p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    #{b.id} · {b.booked_by}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.hospital.name_en}
+                          <tr
+                            key={b.id}
+                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="font-semibold text-foreground">{b.service.name_en}</p>
+                                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                  #{b.id} · {b.booked_by}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
+                                <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+                                {b.hospital.name_en}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="flex items-center gap-1 font-medium text-foreground">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
+                                  {formatDate(b.preferred_date)}
                                 </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="flex items-center gap-1 font-medium text-foreground">
-                                    <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatDate(b.preferred_date)}
-                                  </span>
-                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                    <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatTime(b.preferred_time)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.department.name_en}
+                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                                  <Clock className="h-3 w-3 text-muted-foreground/40" />
+                                  {formatTime(b.preferred_time)}
                                 </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <StatusBadge status={b.status} />
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                {(b.status === "pending" || b.status === "accepted") ? (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                    onClick={() => setCancelTarget(b)}
-                                  >
-                                    <Trash2 className="w-3 h-3 mr-1" />
-                                    Cancel
-                                  </Button>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground/40">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
+                                <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+                                {b.department.name_en}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusBadge status={b.status} />
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {(b.status === "pending" || b.status === "accepted") ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
+                                  onClick={() => setCancelTarget(b)}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  Cancel
+                                </Button>
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground/40">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -863,8 +880,8 @@ function ServiceBookings() {
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
                     : bookings.map((b) => (
-                        <BookingCardItem key={b.id} booking={b} onCancel={setCancelTarget} />
-                      ))}
+                      <BookingCardItem key={b.id} booking={b} onCancel={setCancelTarget} />
+                    ))}
                 </div>
               )}
 
@@ -893,6 +910,9 @@ function ServiceBookings() {
           error={cancelError}
         />
       )}
+
+      {/* My medical info drawer */}
+      <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
     </DashboardLayout>
   );
 }

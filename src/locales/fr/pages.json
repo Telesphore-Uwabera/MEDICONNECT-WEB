@@ -128,7 +128,9 @@
     "in_stock": "En stock",
     "added_to_cart": "{{name}} ajouté au panier",
     "delivery_mins": "~{{mins}} min livraison",
-    "add": "Ajouter"
+    "add": "Ajouter",
+    "bookings_title": "Gahunda z'abarwayi",
+    "bookings_sub": "Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
     "overview_title": "Bonjour, Dr. Vance",
@@ -319,11 +321,10 @@
   "header": {
     "search": "Rechercher…"
   },
-    "common": {
+  "common": {
     "view_all": "Voir tout",
     "loading": "Chargement…",
     "error": "Une erreur est survenue. Veuillez réessayer.",
     "no_data": "Aucune donnée disponible"
   }
-
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const nameInitial = (name: string) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
+  const { t } = useTranslation();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -289,7 +291,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     if (!el) return;
     el.srcObject = remoteStream;
     if (remoteStream) {
-      el.play().catch(() => {/* awaiting a user gesture; UI play affordance handles it */});
+      el.play().catch(() => {/* awaiting a user gesture; UI play affordance handles it */ });
     }
   }, [remoteStream]);
 
@@ -428,9 +430,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       } catch (e: any) {
         console.error("[WebRTC] Media access denied", e);
         if (e.name === "NotReadableError") {
-          alert("Your camera or microphone is in use by another app (like Zoom or another tab). Please close it and refresh.");
+          alert(t("consult.call.media_in_use"));
         } else if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
-          alert("Please grant camera and microphone permissions to join the consultation.");
+          alert(t("consult.call.grant_perms"));
         }
       }
 
@@ -526,9 +528,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
-  const endCall = () => {
-    // Notify the peer so they don't sit on a frozen "Connected" frame until
-    // ICE eventually times out.
+  const endCall = () => { 
     sendSignal("bye");
     if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
     pcRef.current?.close();
@@ -538,227 +538,229 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   };
 
   const stateColor = { connecting: "bg-amber-400", connected: "bg-emerald-400", disconnected: "bg-red-400", failed: "bg-red-600" }[connState];
-  const stateLabel = { connecting: "Connecting…", connected: "Connected", disconnected: "Disconnected", failed: "Connection failed" }[connState];
+  const stateLabel = { connecting: t("consult.call.connecting"), connected: t("consult.call.connected"), disconnected: t("consult.call.disconnected"), failed: t("consult.call.failed") }[connState];
 
   return (
     <>
-    {/* ── End-call confirmation ─────────────────────────────────────────── */}
-    {confirmEndOpen && (
-      <div
-        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        onClick={() => setConfirmEndOpen(false)}
-        role="dialog"
-        aria-modal="true"
-      >
+      {/* ── End-call confirmation ─────────────────────────────────────────── */}
+      {confirmEndOpen && (
         <div
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-sm rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setConfirmEndOpen(false)}
+          role="dialog"
+          aria-modal="true"
         >
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/15 flex items-center justify-center">
-            <PhoneOff className="h-6 w-6 text-red-400" />
-          </div>
-          <h2 className="text-white text-base font-semibold mb-1">End consultation?</h2>
-          <p className="text-white/50 text-[13px] mb-5 leading-relaxed">
-            You'll disconnect from the call{isOwner ? " and the patient will be notified" : ""}.
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setConfirmEndOpen(false)}
-              className="flex-1 h-10 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => { setConfirmEndOpen(false); endCall(); }}
-              className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
-            >
-              End call
-            </button>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
+          >
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/15 flex items-center justify-center">
+              <PhoneOff className="h-6 w-6 text-red-400" />
+            </div>
+            <h2 className="text-white text-base font-semibold mb-1">{t("consult.call.end_title")}</h2>
+            <p className="text-white/50 text-[13px] mb-5 leading-relaxed">
+              {isOwner ? t("consult.call.end_desc_owner") : t("consult.call.end_desc")}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmEndOpen(false)}
+                className="flex-1 h-10 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
+              >
+                {t("consult.call.cancel")}
+              </button>
+              <button
+                onClick={() => { setConfirmEndOpen(false); endCall(); }}
+                className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
+              >
+                {t("consult.call.end_call")}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
-
-    <motion.div
-      drag={isMinimized}
-      dragMomentum={false}
-      animate={{ x: isMinimized ? undefined : 0, y: isMinimized ? undefined : 0 }}
-      className={cn(
-        // Single decisive z-index above all app chrome (sidebar/header sit at
-        // z-30–z-50). Avoid stacking two z-* utilities — source order, not class
-        // order, would decide the winner and could drop the call behind the nav.
-        "bg-[#0c0c0c] z-[9990] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
-        isMinimized
-          ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
-          : "fixed inset-0 h-[100dvh] w-screen"
       )}
-    >
 
-      {/* ── Video area ──────────────────────────────────────────────────── */}
-      <div className="relative flex-1 flex overflow-hidden">
-        <div className="relative flex-1 overflow-hidden transition-all duration-300">
-          <video ref={remoteVideoRef} autoPlay playsInline className={cn("absolute inset-0 w-full h-full object-cover transition-opacity duration-500", remoteStream && remoteVideoEnabled ? "opacity-100" : "opacity-0")} />
+      <motion.div
+        drag={isMinimized}
+        dragMomentum={false}
+        animate={{ x: isMinimized ? undefined : 0, y: isMinimized ? undefined : 0 }}
+        className={cn(
+          // Single decisive z-index above all app chrome (sidebar/header sit at
+          // z-30–z-50). Avoid stacking two z-* utilities — source order, not class
+          // order, would decide the winner and could drop the call behind the nav.
+          "bg-[#0c0c0c] z-[9990] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
+          isMinimized
+            ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
+            : "fixed inset-0 h-[100dvh] w-screen"
+        )}
+      >
 
-          {(!remoteStream || !remoteVideoEnabled) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#0c0c0c] z-0">
-              <div className="text-center space-y-4">
-                <div className="relative mx-auto w-24 h-24">
-                  <div className={cn("absolute inset-0 rounded-full bg-emerald-500/15", remoteTalking ? "animate-ping" : "")} style={{ animationDuration: "2s" }} />
-                  <div className={cn("relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold select-none transition-all duration-300", remoteTalking ? "ring-4 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]" : "ring-2 ring-emerald-500/30")}>
-                    {nameInitial(token.username)}
+        {/* ── Video area ──────────────────────────────────────────────────── */}
+        <div className="relative flex-1 flex overflow-hidden">
+          <div className="relative flex-1 overflow-hidden transition-all duration-300">
+            <video ref={remoteVideoRef} autoPlay playsInline className={cn("absolute inset-0 w-full h-full object-cover transition-opacity duration-500", remoteStream && remoteVideoEnabled ? "opacity-100" : "opacity-0")} />
+
+            {(!remoteStream || !remoteVideoEnabled) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-[#0c0c0c] z-0">
+                <div className="text-center space-y-4">
+                  <div className="relative mx-auto w-24 h-24">
+                    <div className={cn("absolute inset-0 rounded-full bg-emerald-500/15", remoteTalking ? "animate-ping" : "")} style={{ animationDuration: "2s" }} />
+                    <div className={cn("relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold select-none transition-all duration-300", remoteTalking ? "ring-4 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]" : "ring-2 ring-emerald-500/30")}>
+                      {nameInitial(token.username)}
+                    </div>
                   </div>
+                  <p className="text-white/40 text-sm">
+                    {connState !== "connected"
+                      ? t("consult.call.waiting_participant")
+                      : !remoteStream
+                        ? t("consult.call.waiting_media")
+                        : !remoteAudioEnabled
+                          ? t("consult.call.mic_muted")
+                          : t("consult.call.camera_off")}
+                  </p>
                 </div>
-                <p className="text-white/40 text-sm">
-                  {connState !== "connected"
-                    ? "Waiting for the other participant…"
-                    : !remoteStream
-                      ? "Waiting for participant's camera/microphone…"
-                      : !remoteAudioEnabled
-                        ? "Microphone muted"
-                        : "Camera off"}
-                </p>
+              </div>
+            )}
+
+            <div className={cn("absolute rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+              {!videoEnabled && (
+                <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
+                  <VideoOff className={cn("text-white/30", isMinimized ? "w-4 h-4" : "w-6 h-6")} />
+                </div>
+              )}
+            </div>
+
+            <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between py-3 bg-gradient-to-b from-black/60 to-transparent z-20 transition-all", isMinimized ? "px-3" : "px-4")}>
+              <div className="flex items-center gap-2">
+                <span className={cn("h-2 w-2 rounded-full", stateColor)} />
+                {!isMinimized && <span className="text-white/60 text-[11px] font-mono">{stateLabel}</span>}
+              </div>
+              <div className="flex items-center gap-1.5 text-white/40 text-[10px]">
+                <button
+                  onClick={toggleMinimize}
+                  className="ml-2 h-6 w-6 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer"
+                  title={isMinimized ? "Expand" : "Minimize"}
+                >
+                  {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Chat panel ──────────────────────────────────────────────────── */}
+          {/* Stays mounted (so the realtime subscription + unread badge keep
+            working) but collapses to zero width when closed so it never overlays
+            or blocks the notes panel. Full-width drawer on mobile, side panel ≥sm. */}
+          {!isMinimized && (
+            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", chatOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
+                <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} onUnreadChange={setUnreadCount} />
               </div>
             </div>
           )}
 
-          <div className={cn("absolute rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
-            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-            {!videoEnabled && (
-              <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
-                <VideoOff className={cn("text-white/30", isMinimized ? "w-4 h-4" : "w-6 h-6")} />
+          {/* ── Notes panel ─────────────────────────────────────────────────── */}
+          {!isMinimized && isOwner && (
+            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
+                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} />
               </div>
-            )}
-          </div>
-
-          <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between py-3 bg-gradient-to-b from-black/60 to-transparent z-20 transition-all", isMinimized ? "px-3" : "px-4")}>
-            <div className="flex items-center gap-2">
-              <span className={cn("h-2 w-2 rounded-full", stateColor)} />
-              {!isMinimized && <span className="text-white/60 text-[11px] font-mono">{stateLabel}</span>}
             </div>
-            <div className="flex items-center gap-1.5 text-white/40 text-[10px]">
-              <button
-                onClick={toggleMinimize}
-                className="ml-2 h-6 w-6 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer"
-                title={isMinimized ? "Expand" : "Minimize"}
-              >
-                {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* ── Chat panel ──────────────────────────────────────────────────── */}
-        {/* Stays mounted (so the realtime subscription + unread badge keep
-            working) but collapses to zero width when closed so it never overlays
-            or blocks the notes panel. Full-width drawer on mobile, side panel ≥sm. */}
-        {!isMinimized && (
-          <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", chatOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
-            <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
-              <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} onUnreadChange={setUnreadCount} />
-            </div>
-          </div>
-        )}
+        {/* ── Controls bar ─────────────────────────────────────────────────── */}
+        <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-2 px-3" : "h-16 sm:h-20 gap-1.5 sm:gap-3 px-2 sm:px-6")}>
+          <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
+            {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+          </button>
 
-        {/* ── Notes panel ─────────────────────────────────────────────────── */}
-        {!isMinimized && isOwner && (
-          <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
-            <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
-              <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} />
-            </div>
-          </div>
-        )}
-      </div>
+          <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
+            {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+          </button>
 
-      {/* ── Controls bar ─────────────────────────────────────────────────── */}
-      <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-2 px-3" : "h-16 sm:h-20 gap-1.5 sm:gap-3 px-2 sm:px-6")}>
-        <button onClick={toggleAudio} title={audioEnabled ? "Mute microphone" : "Unmute microphone"} aria-label={audioEnabled ? "Mute microphone" : "Unmute microphone"} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
-          {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
-        </button>
-
-        <button onClick={toggleVideo} title={videoEnabled ? "Turn camera off" : "Turn camera on"} aria-label={videoEnabled ? "Turn camera off" : "Turn camera on"} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
-          {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
-        </button>
-
-        {!isMinimized && (
-          <div className="relative flex gap-1.5 sm:gap-2">
-            <button onClick={() => setParticipantsOpen(!participantsOpen)} title="Participants" aria-label="Participants" aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-              <Users className="w-5 h-5" />
-            </button>
-            <div className="relative">
-              <button onClick={() => {
-                const next = !chatOpen;
-                setChatOpen(next);
-                if (next) setNotesOpen(false);
-              }} title="Chat" aria-label="Open chat" aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-                <MessageSquare className="w-5 h-5" />
+          {!isMinimized && (
+            <div className="relative flex gap-1.5 sm:gap-2">
+              <button onClick={() => setParticipantsOpen(!participantsOpen)} title={t("consult.call.participants")} aria-label={t("consult.call.participants")} aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                <Users className="w-5 h-5" />
               </button>
-              {unreadCount > 0 && !chatOpen && (
-                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#111]">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+              <div className="relative">
+                <button onClick={() => {
+                  const next = !chatOpen;
+                  setChatOpen(next);
+                  if (next) setNotesOpen(false);
+                }} title={t("consult.call.chat")} aria-label={t("consult.call.chat")} aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+                {unreadCount > 0 && !chatOpen && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#111]">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              {isOwner && (
+                <button onClick={() => {
+                  const next = !notesOpen;
+                  setNotesOpen(next);
+                  if (next) setChatOpen(false);
+                }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  <FileText className="w-5 h-5" />
+                </button>
               )}
             </div>
-            {isOwner && (
-              <button onClick={() => {
-                const next = !notesOpen;
-                setNotesOpen(next);
-                if (next) setChatOpen(false);
-              }} title="Call notes" aria-label="Call notes" aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-                <FileText className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        )}
+          )}
 
-        <div className="w-px h-6 bg-white/10 mx-1 sm:mx-2" />
+          <div className="w-px h-6 bg-white/10 mx-1 sm:mx-2" />
 
-        <button onClick={() => setConfirmEndOpen(true)} title="End call" aria-label="End call" className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-11 w-11 sm:h-12 sm:w-12 ml-1")}>
-          <PhoneOff className={isMinimized ? "w-5 h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
-        </button>
+          <button onClick={() => setConfirmEndOpen(true)} title={t("consult.call.end_call")} aria-label={t("consult.call.end_call")} className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-11 w-11 sm:h-12 sm:w-12 ml-1")}>
+            <PhoneOff className={isMinimized ? "w-5 h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
+          </button>
 
-        {/* Participants Overlay */}
-        {participantsOpen && !isMinimized && (
-          <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
-            <h3 className="text-white/80 font-semibold text-[13px] mb-3">Participants (2)</h3>
-            <div className="space-y-4">
-              {/* Local User */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className={cn("h-8 w-8 rounded-full bg-white/10 text-white/80 flex items-center justify-center text-[10px] font-bold transition-all", localTalking && audioEnabled && "ring-2 ring-emerald-400")}>
-                      You
+          {/* Participants Overlay */}
+          {participantsOpen && !isMinimized && (
+            <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
+              <h3 className="text-white/80 font-semibold text-[13px] mb-3">
+                {t("consult.call.participants")} ({2})
+              </h3>
+              <div className="space-y-4">
+                {/* Local User */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className={cn("h-8 w-8 rounded-full bg-white/10 text-white/80 flex items-center justify-center text-[10px] font-bold transition-all", localTalking && audioEnabled && "ring-2 ring-emerald-400")}>
+                        <UserCircleIcon />
+                      </div>
+                      {localTalking && audioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
                     </div>
-                    {localTalking && audioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
+                    <span className="text-[12px] text-white">  {t("consult.call.you")}</span>
                   </div>
-                  <span className="text-[12px] text-white">You</span>
+                  <div className="flex items-center gap-2 text-white/40">
+                    {audioEnabled ? <Mic className={cn("w-3.5 h-3.5", localTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                    {videoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-white/40">
-                  {audioEnabled ? <Mic className={cn("w-3.5 h-3.5", localTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
-                  {videoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
-                </div>
-              </div>
 
-              {/* Remote User */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className={cn("h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold transition-all", remoteTalking && remoteAudioEnabled && "ring-2 ring-emerald-400")}>
-                      {nameInitial(token.username)}
+                {/* Remote User */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className={cn("h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold transition-all", remoteTalking && remoteAudioEnabled && "ring-2 ring-emerald-400")}>
+                        <UserCircleIcon />
+                      </div>
+                      {remoteTalking && remoteAudioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
                     </div>
-                    {remoteTalking && remoteAudioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
+                    <span className="text-[12px] text-white max-w-[90px] truncate">{token.username}</span>
                   </div>
-                  <span className="text-[12px] text-white max-w-[90px] truncate">{token.username}</span>
-                </div>
-                <div className="flex items-center gap-2 text-white/40">
-                  {remoteAudioEnabled ? <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
-                  {remoteVideoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
+                  <div className="flex items-center gap-2 text-white/40">
+                    {remoteAudioEnabled ? <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                    {remoteVideoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-    </motion.div>
+          )}
+        </div>
+      </motion.div>
     </>
   );
 };

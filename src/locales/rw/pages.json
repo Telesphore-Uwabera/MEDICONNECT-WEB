@@ -128,7 +128,9 @@
     "in_stock": "Birahari",
     "added_to_cart": "{{name}} byongeweho mu gitebo",
     "delivery_mins": "iminota ~{{mins}} yo gutanga",
-    "add": "Ongeraho"
+    "add": "Ongeraho",
+    "bookings_title":"Gahunda z'abarwayi",
+    "bookings_sub":"Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
     "overview_title": "Mwaramutse, Dr. Vance",

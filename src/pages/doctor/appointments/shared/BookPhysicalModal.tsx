@@ -289,38 +289,7 @@ export function BookPhysicalModal({
               )}
 
               {!loadingDetail && (
-                <>
-                  {/* Working days */}
-                  <div>
-                    <p className={sectionLabel}><CalendarDays className="h-2.5 w-2.5" /> Working days</p>
-                    <div className="grid grid-cols-7 gap-1">
-                      {weekSchedule.map((day) => {
-                        const isOpen = !day.is_closed && day.is_active;
-                        return (
-                          <div
-                            key={day.dayName}
-                            className={cn(
-                              "flex flex-col items-center rounded-[5px] py-2 px-0.5 border text-center",
-                              isOpen ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-muted/30 opacity-50",
-                            )}
-                          >
-                            <span className={cn("text-[9px] font-semibold uppercase tracking-wider", isOpen ? "text-emerald-500" : "text-muted-foreground")}>
-                              {day.shortName}
-                            </span>
-                            <span className={cn("mt-1 text-[8px]", isOpen ? "text-emerald-500" : "text-muted-foreground/50")}>
-                              {isOpen ? "Open" : "Closed"}
-                            </span>
-                            {isOpen && day.openTime && day.closeTime && (
-                              <span className="mt-0.5 text-[7px] text-muted-foreground leading-tight">
-                                {day.openTime}–{day.closeTime}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
+                <> 
                   {/* Select a date */}
                   {hasAnyOpenDay && (
                     <div>

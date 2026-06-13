@@ -89,7 +89,7 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
         if (cancelled) return;
         const mapped = (res.messages?.data ?? []).map(toUiMessage);
         // API returns newest first → reverse for chronological order
-        setMessages(mapped.reverse());
+        setMessages(mapped);
       })
       .catch((err) => {
         console.error("[Chat] Failed to fetch messages:", err);

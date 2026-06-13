@@ -322,6 +322,7 @@ import { cn } from "@/lib/utils";
 import { type InstantConsultQueueItem } from "@/hooks/doctor/use-doctor-appointment";
 import { Loader2 } from "lucide-react";
 import { useCallStore } from "@/context/CallStore";
+import { t } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -415,7 +416,7 @@ const DeviceToggles = () => {
         )}
       >
         {call.videoEnabled ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
-        {call.videoEnabled ? "Camera on" : "Camera off"}
+        {call.videoEnabled ? t('consult.booking.camera_on') : t('consult.booking.camera_off')}
       </button>
       <button
         onClick={call.toggleAudio}
@@ -427,7 +428,7 @@ const DeviceToggles = () => {
         )}
       >
         {call.audioEnabled ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-        {call.audioEnabled ? "Mic on" : "Mic off"}
+        {call.audioEnabled ? t('consult.booking.mic_on') : t('consult.booking.mic_off')}
       </button>
     </div>
   );
@@ -460,7 +461,7 @@ const PreCallModal = ({ item, onJoin, onClose, isJoining }: PreCallModalProps) =
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-semibold text-foreground/80 tracking-wide uppercase">
-                Ready to join
+                {t('consult.bookings.ready_to_join')}
               </span>
             </div>
             <button
@@ -482,7 +483,7 @@ const PreCallModal = ({ item, onJoin, onClose, isJoining }: PreCallModalProps) =
                   {item.guest_phone}
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                  {item.description ?? "No description"}
+                  {item.description ?? t('consult.bookings.no_description')}
                 </p>
               </div>
             </div>
@@ -499,14 +500,14 @@ const PreCallModal = ({ item, onJoin, onClose, isJoining }: PreCallModalProps) =
               {isJoining
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <LogIn className="h-4 w-4" />}
-              Join consultation
+              {t('consult.bookings.join_consultation')}
             </button>
 
             <button
               onClick={onClose}
               className="w-full h-9 rounded-[5px] border border-border text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
-              Cancel
+              {t('consult.booking.cancel')}
             </button>
           </div>
         </div>
@@ -529,7 +530,7 @@ export function IncomingCard({
   isJoining,
   isCompleting,
 }: Props) {
-  const [elapsed,     setElapsed]     = useState(item.waiting_seconds);
+  const [elapsed, setElapsed] = useState(item.waiting_seconds);
   const [preCallOpen, setPreCallOpen] = useState(false);
 
   useEffect(() => {
@@ -538,16 +539,16 @@ export function IncomingCard({
     return () => clearInterval(t);
   }, [item.waiting_seconds]);
 
-  const isBusy     = isAccepting || isDeclining || isJoining || isCompleting;
-  const badge      = STATUS_BADGE[item.status] ?? STATUS_BADGE.pending;
+  const isBusy = isAccepting || isDeclining || isJoining || isCompleting;
+  const badge = STATUS_BADGE[item.status] ?? STATUS_BADGE.pending;
   const isInactive = ["declined", "withdrawn", "expired", "completed"].includes(item.status);
 
   // Left accent bar — 3px colour strip keyed to status
   const accentBar = {
-    confirmed:   "before:bg-[hsl(var(--success))]",
-    accepted:    "before:bg-primary",
+    confirmed: "before:bg-[hsl(var(--success))]",
+    accepted: "before:bg-primary",
     in_progress: "before:bg-[hsl(var(--info))]",
-    pending:     "before:bg-[hsl(var(--warning))]",
+    pending: "before:bg-[hsl(var(--warning))]",
   }[item.status] ?? "before:bg-transparent";
 
   // Card border tint
@@ -614,7 +615,7 @@ export function IncomingCard({
             <div className="flex items-center gap-1 mt-1">
               <Clock3 className="h-2.5 w-2.5 text-muted-foreground/50" />
               <span className="text-[9px] text-muted-foreground tabular-nums">
-                Waiting {fmtSeconds(elapsed)}
+                {t('consult.bookings.waiting_timer', { time: fmtSeconds(elapsed) })}
               </span>
             </div>
           </div>
@@ -643,7 +644,7 @@ export function IncomingCard({
                   {isAccepting
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <Phone className="h-3.5 w-3.5" />}
-                  Accept
+                  {t('consult.bookings.accept')}
                 </button>
               </>
             )}
@@ -656,13 +657,13 @@ export function IncomingCard({
                 className="h-8 px-3 rounded-[5px] bg-primary hover:bg-[hsl(var(--primary-glow))] text-primary-foreground text-[10px] font-semibold flex items-center gap-1.5 transition-smooth shadow-soft active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <LogIn className="h-3.5 w-3.5" />
-                Preview
+                {t("consult.bookings.preview")}
               </button>
             )}
 
             {/* IN_PROGRESS → Complete & Rejoin */}
             {item.status === "in_progress" && (
-              <> 
+              <>
                 <button
                   onClick={onComplete}
                   disabled={isBusy}
@@ -671,7 +672,7 @@ export function IncomingCard({
                   {isCompleting
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <CheckCircle2 className="h-3.5 w-3.5" />}
-                  Complete
+                  {t("consult.bookings.complete")}
                 </button>
               </>
             )}

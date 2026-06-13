@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
 import { fmtDate, fmtTime, apptLabel, statusLabel } from "./helpers";
+import { t } from "i18next";
 
 interface Props {
   appt: Appointment;
@@ -34,7 +35,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           </Badge>
           {hasNotes && (
             <span className="text-[9px] text-emerald-600 dark:text-emerald-500 flex items-center gap-0.5">
-              <FileText className="h-2.5 w-2.5" />notes
+              <FileText className="h-2.5 w-2.5" /> {t("consult.booking.has_notes")}
             </span>
           )}
         </div>
@@ -74,7 +75,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
             className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1"
           >
             <Video className="h-3 w-3" />
-            Rejoin
+            {t("consult.booking.rejoin")}
           </Button>
         )}
 
@@ -85,7 +86,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
             onClick={() => onStart(appt)}
             className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           >
-            Start
+            {t("consult.booking.start")}
           </Button>
         )}
 
@@ -96,7 +97,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
             variant="ghost"
             className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm"
           >
-            Notes
+            {t("consult.booking.notes")}
           </Button>
         )}
       </div>

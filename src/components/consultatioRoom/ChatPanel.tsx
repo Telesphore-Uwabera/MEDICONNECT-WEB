@@ -1,5 +1,6 @@
 // components/consultatioRoom/ChatPanel.tsx
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { X, Send, MessageSquare, Loader2 } from "lucide-react";
 import {
@@ -73,6 +74,7 @@ export const ChatPanel = ({
   isOwner,
   onUnreadChange,
 }: ChatPanelProps) => {
+  const { t } = useTranslation();
   const chat = useConsultationChat(consultationId, isOwner);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -133,7 +135,7 @@ export const ChatPanel = ({
         <div className="flex items-center gap-2">
           <MessageSquare className="h-3.5 w-3.5 text-white/50" />
           <span className="text-[12px] font-semibold text-white/80">
-            In-call chat
+            {t("consult.chat.title")}
           </span>
         </div>
         <button
@@ -149,7 +151,7 @@ export const ChatPanel = ({
         {chat.loading && (
           <div className="flex flex-col items-center justify-center h-full gap-2">
             <Loader2 className="h-5 w-5 text-white/30 animate-spin" />
-            <p className="text-[11px] text-white/30">Loading messages…</p>
+            <p className="text-[11px] text-white/30">{t("consult.chat.loading")}</p>
           </div>
         )}
         {!chat.loading && chat.messages.length === 0 && (
@@ -158,7 +160,7 @@ export const ChatPanel = ({
               <MessageSquare className="h-5 w-5 text-white/20" />
             </div>
             <p className="text-[11px] text-white/30 leading-relaxed">
-              Send a message to start the conversation.
+              {t("consult.chat.empty")}
             </p>
           </div>
         )}
@@ -182,7 +184,7 @@ export const ChatPanel = ({
               e.target.style.height = `${Math.min(e.target.scrollHeight, 88)}px`;
             }}
             onKeyDown={handleKey}
-            placeholder="Send a message.."
+            placeholder={t("consult.chat.placeholder")}
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
               "text-[12px] text-white/80 placeholder:text-white/25",
@@ -208,7 +210,7 @@ export const ChatPanel = ({
           </button>
         </div>
         <p className="text-[9px] text-white/20 mt-1.5 text-center">
-          Press Enter to send · Shift+Enter for new line
+          {t("consult.chat.enter_hint")}
         </p>
       </div>
     </div>

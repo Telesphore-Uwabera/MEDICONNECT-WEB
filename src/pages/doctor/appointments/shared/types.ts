@@ -3,7 +3,7 @@ import type { AppointmentApiStatus, AppointmentApiType } from "@/hooks/doctor/us
 export type UIStatus   = "pending" | "confirmed" | "in_progress" | "completed";
 export type ViewMode   = "table" | "cards";
 export type SortOption = "date-asc" | "date-desc" | "name";
-export type TabId      = "appointments" | "instant";
+export type TabId      = "appointments" | "instant" | "bookings";
 
 export interface FilterState {
   search:   string;
