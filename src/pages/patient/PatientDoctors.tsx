@@ -30,7 +30,8 @@ import {
 } from "@/hooks/patient/use-patient-doctor";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { SpecializationsStep } from "../doctor/profile/Specializationsstep";
-import SpecializationSelect from "./components/SpecializationSelect";
+import { SpecializationSelect } from "./components/SpecializationSelect";
+// import SpecializationSelect from "./components/SpecializationSelect";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -460,6 +461,8 @@ function Pagination({
 
 const PatientDoctors = () => {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+   const [spec, setSpec] = useState({ specialization: null, fee: null });
+   
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -571,10 +574,11 @@ const PatientDoctors = () => {
 
         {/* Specialization */}
         <FilterSection title="Specialization">
-          <SpecializationSelect
+          {/* <SpecializationSelect
             value={filters.specialization}
             onChange={(v) => set("specialization", v)}
-          />
+          /> */}
+            <SpecializationSelect value={spec} onChange={setSpec} />
         </FilterSection>
         {/* <FilterSection title="Specialization">
           <input

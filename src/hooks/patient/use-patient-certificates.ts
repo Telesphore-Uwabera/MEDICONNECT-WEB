@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 const BASE = "/patient/certificates";
 
@@ -82,10 +82,64 @@ export interface SaveStepResponse {
   current_step: number;
 }
 
-export interface SubmitResponse {
+// ─────────────────────────────────────────────────────────────────────────────
+// Submit — two possible responses:
+//   1. Unpaid  → invoice_number, public_key, amount, currency, payment_uuid
+//   2. Already submitted → message only
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SubmitPaymentRequired {
   message: string;
-  certificate: Certificate;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
 }
+
+export interface SubmitAlreadyDone {
+  message: string;
+  certificate?: Certificate;
+}
+
+export type SubmitResponse = SubmitPaymentRequired | SubmitAlreadyDone;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Download — two possible responses:
+//   1. Unpaid  → invoice_number, public_key, amount, currency, payment_uuid
+//   2. Already paid → url, expires_in
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DownloadPaymentRequired {
+  message: string;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
+}
+
+export interface DownloadReady {
+  url: string;
+  expires_in: number;
+}
+
+export type DownloadResponse = DownloadPaymentRequired | DownloadReady;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment status polling
+// GET /public/payments/{payment_uuid}/status  (no auth)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type PaymentPollStatus = "initiated" | "pending" | "paid" | "failed" | string;
+
+export interface PaymentStatusResponse {
+  status: PaymentPollStatus;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Other types
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface AvailableDoctorsResponse {
   doctors: Doctor[];
@@ -95,17 +149,28 @@ export interface CertificatesListResponse {
   certificates: Certificate[];
 }
 
-export interface DownloadResponse {
-  url: string;
-  expires_in: number;
+export interface WithdrawResponse {
+  message: string;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared API error type
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface ApiError extends Error {
   status: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Type guards
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function isSubmitPaymentRequired(r: SubmitResponse): r is SubmitPaymentRequired {
+  return "payment_uuid" in r;
+}
+
+export function isDownloadPaymentRequired(r: DownloadResponse): r is DownloadPaymentRequired {
+  return "payment_uuid" in r;
+}
+
+export function isDownloadReady(r: DownloadResponse): r is DownloadReady {
+  return "url" in r;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,6 +184,7 @@ export const certKeys = {
   request: () => [...certKeys.all, "request"] as const,
   step: (step: number) => [...certKeys.all, "step", step] as const,
   doctors: () => [...certKeys.all, "available-doctors"] as const,
+  paymentStatus: (uuid: string) => [...certKeys.all, "payment-status", uuid] as const,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,8 +205,7 @@ export function useGetAvailableDoctors() {
 export function useGetPatientCertificates(status?: string) {
   return useQuery<CertificatesListResponse>({
     queryKey: certKeys.list(status),
-    queryFn: () =>
-      apiFetch(status ? `${BASE}?status=${status}` : BASE),
+    queryFn: () => apiFetch(status ? `${BASE}?status=${status}` : BASE),
   });
 }
 
@@ -189,9 +254,6 @@ export function useGetStepData(step: number, enabled = true) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /patient/certificates/step/{step}
-// FIX: pass payload as a plain object — apiFetch already calls JSON.stringify.
-//      Previously body: JSON.stringify(payload) caused double-stringification,
-//      sending a JSON string instead of a JSON object to the server.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useSaveStep() {
@@ -200,7 +262,7 @@ export function useSaveStep() {
     mutationFn: ({ step, payload }) =>
       apiFetch(`${BASE}/step/${step}`, {
         method: "POST",
-        body: payload, // ← plain object, NOT JSON.stringify(payload)
+        body: payload,
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: certKeys.request() });
@@ -211,13 +273,14 @@ export function useSaveStep() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /patient/certificates/submit
+// Returns either payment-required info or an already-done message.
+// Caller must check isSubmitPaymentRequired(response) to branch.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useSubmitCertificate() {
   const qc = useQueryClient();
   return useMutation<SubmitResponse, Error, void>({
-    mutationFn: () =>
-      apiFetch(`${BASE}/submit`, { method: "POST" }),
+    mutationFn: () => apiFetch(`${BASE}/submit`, { method: "POST" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: certKeys.all });
     },
@@ -225,14 +288,46 @@ export function useSubmitCertificate() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /public/payments/{payment_uuid}/status
+// No auth required. Poll every 3 s; stop when paid/failed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function usePaymentStatus(paymentUuid: string | null, enabled = true) {
+  return useQuery<PaymentStatusResponse>({
+    queryKey: certKeys.paymentStatus(paymentUuid ?? ""),
+    queryFn: () => apiFetch(`/public/payments/${paymentUuid}/status`),
+    enabled: !!paymentUuid && enabled,
+    refetchInterval: (query) => {
+      const s = query.state.data?.status;
+      if (s === "paid" || s === "failed") return false;
+      return 3_000;
+    },
+    staleTime: 0,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /patient/certificates/{id}/download
+// Returns either payment-required info or a signed PDF URL.
+// Caller must check isDownloadReady(response) to branch.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useDownloadCertificate() {
   return useMutation<DownloadResponse, Error, number>({
     mutationFn: (id) => apiFetch(`${BASE}/${id}/download`),
-    onSuccess: (data) => {
-      window.open(data.url, "_blank");
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /patient/certificates/withdraw
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useWithdrawCertificate() {
+  const qc = useQueryClient();
+  return useMutation<WithdrawResponse, Error, void>({
+    mutationFn: () => apiFetch(`${BASE}/withdraw`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: certKeys.all });
     },
   });
 }

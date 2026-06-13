@@ -17,9 +17,15 @@ export interface PersonalInfo {
 }
 
 export interface SpecializationsInfo {
-  primary: string;
-  secondary: string[];
+  primary: string;                    // specialization name
+  specialization_fee_id: number | null;
   years_of_experience: number;
+  // Add these for display after save
+  fee_name?: string;                  // e.g. "sub -test namw"
+  tier_name?: string;                 // e.g. "senior"
+  online_fee?: number;
+  in_person_fee?: number;
+  fee_currency?: string;
 }
 
 export interface EducationEntry {
@@ -57,6 +63,12 @@ export interface DocumentsInfo {
   profile_image?: File | null;
   degree_document?: File | null;
   license_document?: File | null;
+  national_id_document?: File | null;
+  existing?: {
+    degree_document_url: string | null;
+    medical_license_document_url: string | null;
+    national_id_document_url: string | null;
+  };
 }
 
 export interface SocialLinksInfo {
