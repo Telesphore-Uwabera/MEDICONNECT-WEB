@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 const BASE = "/doctor";
 
@@ -23,6 +23,11 @@ export interface DoctorProfile {
   availabilities: Availability[];
   social_links: SocialLinks | null;
   hospitals: Hospital[];
+  documents?: {
+    degree_document?: { path: string | null; url: string | null };
+    medical_license_document?: { path: string | null; url: string | null };
+    national_id_document?: { path: string | null; url: string | null };
+  };
 }
 
 export interface Education {
@@ -86,6 +91,9 @@ export interface UpsertProfilePayload {
   currency?: string;
   bio_fr?: string;
   bio_kiny?: string;
+  // Add these:
+  specialization_fee_id?: number | null;
+  years_of_experience?: number;
 }
 
 export interface AddEducationPayload {
@@ -360,5 +368,27 @@ export function useGetCertificateUrl(id: number) {
     queryFn: () => apiFetch(`${BASE}/qualifications/${id}/certificate/url`),
     enabled: !!id,
     staleTime: 25 * 60 * 1000,
+  });
+}
+
+
+export type DoctorDocumentType =
+  | "degree_document"
+  | "medical_license_document"
+  | "national_id_document";
+
+export function useUploadDoctorDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ type, file }: { type: DoctorDocumentType; file: File }) => {
+      const form = new FormData();
+      form.append("type", type);
+      form.append("document", file);
+      return apiFetch(`${BASE}/profile/documents`, {
+        method: "POST",
+        body: form,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["doctor-profile"] }),
   });
 }

@@ -1,5 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
+import { useCallContext } from "@/context/CallContext";
+import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +28,14 @@ import AppointmentDetailModal from "./components/AppointmentDetail";
 
 type SortOption = "date-asc" | "date-desc" | "doctor";
 type ViewMode = "table" | "cards";
+
+interface JoinResponse {
+  message?: string;
+  room_url?: string;
+  room_name?: string;
+  token?: string;
+  join_url?: string;
+}
 
 interface FilterState {
   status:    ApiAppointmentStatus | "all";
@@ -253,7 +266,7 @@ function AppointmentCardItem({
               : "text-muted-foreground hover:text-foreground hover:bg-secondary",
           )}
           onClick={(e) => {
-            e.stopPropagation(); // don't also trigger the row's onDetails
+            e.stopPropagation(); 
             actionable ? onJoin() : onDetails();
           }}
         >
@@ -278,6 +291,46 @@ const PatientAppointments = () => {
 
   const openDetail = useCallback((id: string | number) => setSelectedId(String(id)), []);
   const closeDetail = useCallback(() => setSelectedId(null), []);
+
+  // ── Join (video call) ────────────────────────────────────────────────────────
+  const { startCall } = useCallContext();
+  const joinMutation = useMutation<JoinResponse, unknown, string | number>({
+    mutationFn: (id) =>
+      apiFetch<JoinResponse>(`/patient/appointments/${id}/join`, { method: "POST" }),
+  });
+
+  // Call the join endpoint, then open the SAME in-app ConsultationRoom the doctor
+  // uses. Never open the bare daily_room_url (it carries no token → "Invalid
+  // consultation link").
+  const handleJoin = useCallback(
+    (appt: ApiAppointment) => {
+      joinMutation.mutate(appt.id, {
+        onSuccess: (res) => {
+          console.log("[Appointment] patient join response:", res);
+          // If it's our custom WebRTC token, open the in-app ConsultationRoom.
+          const started = startInAppCallFromJoin(startCall, res, {
+            consultationId: appt.id,
+            isOwner: false,
+          });
+          if (started) return;
+          // Otherwise the session is hosted on Daily.co — open the room URL the
+          // backend returned (it already carries the access token).
+          const url = res.join_url || res.room_url;
+          if (url) {
+            window.open(url, "_blank", "noopener,noreferrer");
+          } else {
+            toast.error(t("consult.booking.join_failed"));
+          }
+        },
+        onError: (err: any) => {
+          // Surface the backend's actual reason (422 validation message, etc.).
+          console.error("[Appointment] join failed:", err?.status, err?.data);
+          toast.error(err?.message || t("consult.booking.join_failed"));
+        },
+      });
+    },
+    [joinMutation, startCall, t],
+  );
 
   // ── API ────────────────────────────────────────────────────────────────────
 
@@ -376,7 +429,7 @@ const PatientAppointments = () => {
             options={[
               { value: "all",       label: "All types"     },
               { value: "online",    label: "Video consult" },
-              { value: "in_person", label: "In-person"     },
+              // { value: "in_person", label: "In-person"     },
             ]}
           />
         </FilterSection>
@@ -633,12 +686,13 @@ const PatientAppointments = () => {
                                   <Button
                                     size="sm"
                                     className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm"
+                                    disabled={joinMutation.isPending}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (a.daily_room_url) window.open(a.daily_room_url, "_blank");
+                                      handleJoin(a);
                                     }}
                                   >
-                                    Join
+                                    Join call
                                   </Button>
                                 ) : (
                                   <Button
@@ -671,7 +725,7 @@ const PatientAppointments = () => {
                           key={a.id}
                           appt={a}
                           onDetails={() => openDetail(a.id)}
-                          onJoin={() => { if (a.daily_room_url) window.open(a.daily_room_url, "_blank"); }}
+                          onJoin={() => handleJoin(a)}
                         />
                       ))}
                 </div>

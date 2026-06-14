@@ -455,6 +455,9 @@
 
 
 
+
+
+
 // context/CallStore.tsx
 import {
   createContext,
@@ -601,8 +604,8 @@ export const CallStoreProvider = ({ children }: { children: ReactNode }) => {
     phase: "idle",
     role: "patient",
     doctor: null,
-    videoEnabled: true,
-    audioEnabled: true,
+    videoEnabled: false,
+    audioEnabled: false,
     elapsed: 0,
     signalStrength: 4,
     minimized: false,
@@ -859,8 +862,42 @@ export const CallStoreProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const clearUnread  = useCallback(() => setState((s) => ({ ...s, unreadCount: 0 })),  []);
-  const toggleVideo  = useCallback(() => setState((s) => ({ ...s, videoEnabled: !s.videoEnabled })), []);
-  const toggleAudio  = useCallback(() => setState((s) => ({ ...s, audioEnabled: !s.audioEnabled })), []);
+  const toggleVideo = useCallback(() => {
+    setState((s) => {
+      if (!s.videoEnabled) {
+        navigator.mediaDevices
+          .getUserMedia({ video: true })
+          .then((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
+            setState((prev) => ({ ...prev, videoEnabled: true }));
+          })
+          .catch((err) => {
+            console.error("Camera permission denied", err);
+            // We can optionally show a toast here if imported
+          });
+        return s;
+      }
+      return { ...s, videoEnabled: false };
+    });
+  }, []);
+
+  const toggleAudio = useCallback(() => {
+    setState((s) => {
+      if (!s.audioEnabled) {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
+            setState((prev) => ({ ...prev, audioEnabled: true }));
+          })
+          .catch((err) => {
+            console.error("Mic permission denied", err);
+          });
+        return s;
+      }
+      return { ...s, audioEnabled: false };
+    });
+  }, []);
   const setMinimized = useCallback(
     (v: boolean) => setState((s) => ({ ...s, minimized: v, dialogOpen: !v })),
     [],

@@ -19,9 +19,11 @@ import {
   useGetSlots,
   useGetSlotsByDate,
   useBookAppointment,
-  useGetDoctorBySlug,        // ← NEW
+  usePayAppointment,
+  useGetDoctorBySlug,
   type ApiSlot,
 } from "@/hooks/patient/use-patient-booking";
+import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -243,12 +245,12 @@ export const BookingDialog = ({
   doctor,
   open,
   onOpenChange,
-  onConfirmed,              // ← NEW: called with fresh doctor data after booking
+  onConfirmed,
 }: {
   doctor: Doctor;
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  onConfirmed?: (updatedDoctor: Doctor) => void;  // ← NEW
+  onConfirmed?: (updatedDoctor: Doctor) => void;
 }) => {
   const queryClient = useQueryClient();
 
@@ -257,14 +259,11 @@ export const BookingDialog = ({
   const [time,      setTime]      = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ date: string; time: string } | null>(null);
   const [shouldRefetchDoctor, setShouldRefetchDoctor] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   const dateKey = date ? moment(date).format("YYYY-MM-DD") : null;
 
   // ── Reset ALL state every time the dialog opens ────────────────────────────
-  // This is the definitive fix: no matter how the dialog was previously closed
-  // (Done button, X button, backdrop click), opening it again always starts
-  // completely fresh. We also nuke the doctor query cache so freshDoctorData
-  // is undefined on the new open and can't re-trigger onConfirmed.
   useEffect(() => {
     if (open) {
       setDate(undefined);
@@ -289,13 +288,12 @@ export const BookingDialog = ({
     isError: dayError,
   } = useGetSlotsByDate(doctor.slug, dateKey, !!dateKey && open);
 
-  // ── 3. Booking mutation ────────────────────────────────────────────────────
+  // ── 3. Mutations ────────────────────────────────────────────────────────────
   const bookAppointment = useBookAppointment();
+  const payAppointment = usePayAppointment();
+  const invoicePoller = useInvoicePoller();
 
-  // ── NEW: Fetch fresh doctor data after booking ─────────────────────────────
-  // Only fires once `shouldRefetchDoctor` is true (after successful booking).
-  // We pass the slug always but the query is gated by the `enabled` field
-  // inside the hook — so update useGetDoctorBySlug to accept a second param.
+  // Fresh doctor query (only active after a successful booking) ─────────────────────────────
   const { data: freshDoctorData } = useGetDoctorBySlug(
     shouldRefetchDoctor ? doctor.slug : "",
   );
@@ -345,7 +343,7 @@ export const BookingDialog = ({
     const appointmentTime = slot ? toTimeLabel(slot.rawTime) : time;
 
     try {
-      await bookAppointment.mutateAsync({
+      const res = await bookAppointment.mutateAsync({
         doctor_id: doctor.id,
         type: consultationType,
         appointment_date: dateKey,
@@ -356,16 +354,62 @@ export const BookingDialog = ({
       await queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
       await queryClient.invalidateQueries({ queryKey: ["doctor-slots", doctor.slug] });
 
-      // ── NEW: Invalidate cached doctor data so useGetDoctorBySlug re-fetches ─
+      // Invalidate cached doctor data so useGetDoctorBySlug re-fetches
       await queryClient.invalidateQueries({ queryKey: ["doctor", doctor.slug] });
 
-      // ── NEW: Enable the doctor re-fetch (triggers useGetDoctorBySlug above) ─
+      // Enable the doctor re-fetch
       setShouldRefetchDoctor(true);
 
       setConfirmed({ date: dateKey, time });
-      toast.success("Appointment confirmed", {
+      toast.success("Appointment booked", {
         description: `${doctorName} · ${moment(dateKey).format("ddd MMM D")} at ${time}`,
       });
+
+      // Initiate payment if fee > 0
+      if (doctor.consultation_fee && Number(doctor.consultation_fee) > 0) {
+        // Handle different response structures
+        const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).appointment?.id;
+        
+        if (!appointmentId) {
+          console.error("Booking succeeded but appointment ID is missing from response:", res);
+          toast.error("Payment could not be initiated", { description: "We couldn't find the appointment ID. Please pay from your dashboard." });
+          return;
+        }
+
+        try {
+          const payRes = await payAppointment.mutateAsync(appointmentId);
+          (window as any).IremboPay?.initiate({
+            publicKey: payRes.public_key,
+            invoiceNumber: payRes.invoice_number,
+            locale: (window as any).IremboPay?.locale?.EN || "en",
+            callback: (err: Error | null) => {
+              (window as any).IremboPay?.closeModal?.();
+              if (err) {
+                toast.error("Payment failed", { description: "You can pay later from your dashboard." });
+              } else {
+                setVerifyingPayment(true);
+                invoicePoller.start(
+                  payRes.invoice_number,
+                  () => {
+                    setVerifyingPayment(false);
+                    toast.success("Payment successful", { description: "Your appointment is confirmed and paid." });
+                    // Invalidate appointments to refresh the UI
+                    queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+                  },
+                  (msg) => {
+                    setVerifyingPayment(false);
+                    toast.error("Payment verification failed", { description: msg });
+                  }
+                );
+              }
+            }
+          });
+        } catch (payErr) {
+          console.error("Payment initiation failed:", payErr);
+          toast.error("Payment could not be initiated", { description: "You can pay later from your dashboard." });
+        }
+      }
+
     } catch (err) {
       toast.error("Booking failed", {
         description: err instanceof Error ? err.message : "Please try again.",
@@ -463,10 +507,18 @@ export const BookingDialog = ({
               </p>
 
               {/* NEW: subtle "syncing" badge while fresh doctor data loads */}
-              {shouldRefetchDoctor && !freshDoctorData && (
+              {shouldRefetchDoctor && !freshDoctorData && !verifyingPayment && (
                 <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center justify-center gap-1">
                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
                   Syncing availability…
+                </p>
+              )}
+
+              {/* Verifying payment */}
+              {verifyingPayment && (
+                <p className="text-[11px] text-primary mt-2 flex items-center justify-center gap-1.5 font-medium">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Verifying payment status…
                 </p>
               )}
             </div>

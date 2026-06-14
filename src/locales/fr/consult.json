@@ -152,7 +152,12 @@
     "late": "En retard",
     "ready": "Prêt",
     "rejoin": "Rejoindre",
-    "has_notes": "A des notes"
+    "has_notes": "A des notes",
+    "no_appointments_match_your_filters": "Aucune consultation ne correspond à vos filtres.",
+    "try_widening_your_search_criteria": "Essayez d'élargir vos critères de recherche",
+    "clear_all_filters": "Effacer tous les filtres",
+    "filter_by": "Filtre par",
+    "search": "Rechercher"
 
   },
   "record": {
@@ -191,7 +196,10 @@
     "visits": "Visites",
     "files": "Fichiers",
     "notes": "Notes",
-    "hide_notes": "Masquer les notes"
+    "hide_notes": "Masquer les notes",
+    "required_before_completing": "requis avant de terminer",
+    "file_uploaded": "Fichier téléversé.",
+    "choose_file_title": "Choisissez un fichier et saisissez un titre."
   },
   "visits": {
     "loading": "Chargement des visites…",

@@ -1,13 +1,22 @@
 import { useRef, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, X, Check, Loader2 } from "lucide-react";
-import { useSaveInstantNotes } from "@/hooks/doctor/use-doctor-appointment";
+import {
+  useSaveInstantNotes,
+  useAddNotes,
+  useUpdateNotes,
+  useGetAppointment,
+} from "@/hooks/doctor/use-doctor-appointment";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { ApiError } from "@/lib/Api";
 
 interface Props {
   onClose: () => void;
   consultationId?: number;
   patientName?: string;
+  /** "instant" (default) saves to the instant-consultation notes endpoint;
+   *  "appointment" persists to /doctor/appointments/:id/notes (additional_notes). */
+  mode?: "instant" | "appointment";
 }
 
 const TEMPLATE_KEYS = [
@@ -18,14 +27,15 @@ const TEMPLATE_KEYS = [
   "tpl_plan",
 ];
 
-// Notes are kept per-consultation in localStorage so they survive a page
-// refresh (the call itself now persists too) and never bleed between different
-// consultations. There is no GET endpoint for instant notes, so this local copy
-// is also what we re-open with.
-const notesKey = (id?: number) => (id != null ? `instant_notes:${id}` : null);
+// Notes are mirrored per-consultation in localStorage so they survive a page
+// refresh and never bleed between different consultations. Instant consults have
+// no GET endpoint, so this local copy is what we re-open with; scheduled
+// appointments seed from the server (their notes object) instead.
+const notesKey = (id?: number, mode?: "instant" | "appointment") =>
+  id != null ? `${mode === "appointment" ? "appointment" : "instant"}_notes:${id}` : null;
 
-function readLocalNotes(id?: number): string {
-  const key = notesKey(id);
+function readLocalNotes(id?: number, mode?: "instant" | "appointment"): string {
+  const key = notesKey(id, mode);
   if (!key) return "";
   try {
     return localStorage.getItem(key) ?? "";
@@ -34,27 +44,48 @@ function readLocalNotes(id?: number): string {
   }
 }
 
-export function InstantNotesSidebar({ onClose, consultationId, patientName }: Props) {
+export function InstantNotesSidebar({ onClose, consultationId, patientName, mode = "instant" }: Props) {
   const { t } = useTranslation();
   const textRef = useRef<HTMLTextAreaElement>(null);
-  const saveNotes = useSaveInstantNotes();
+  const isAppointment = mode === "appointment";
+
+  const saveInstant = useSaveInstantNotes();
+  const addApptNotes = useAddNotes();
+  const updateApptNotes = useUpdateNotes();
+  // Only fetch the appointment (to seed notes) in appointment mode; id 0 disables.
+  const { data: apptData } = useGetAppointment(isAppointment ? (consultationId ?? 0) : 0);
+
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // Local, consultation-scoped notes (seeded from localStorage).
-  const [notes, setNotes] = useState<string>(() => readLocalNotes(consultationId));
+  const [notes, setNotes] = useState<string>(() => readLocalNotes(consultationId, mode));
+
+  // Tracks whether server-side appointment notes already exist (POST vs PUT).
+  const notesExistRef = useRef(false);
+  // Track whether the user has actually edited, so the seeded value is never
+  // auto-saved (which previously could wipe server-side notes with an empty PUT).
+  const dirtyRef = useRef(false);
 
   // Re-seed when switching to a different consultation.
   useEffect(() => {
-    setNotes(readLocalNotes(consultationId));
+    setNotes(readLocalNotes(consultationId, mode));
     setSaveStatus("idle");
-    // We only want this when the consultation changes.
+    notesExistRef.current = false;
+    dirtyRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [consultationId]);
+  }, [consultationId, mode]);
 
-  // Track whether the user has actually edited, so the initial seeded value is
-  // never auto-saved (which previously could PUT an empty string and wipe
-  // server-side notes).
-  const dirtyRef = useRef(false);
+  // In appointment mode, seed from the server's saved notes (additional_notes)
+  // once the appointment loads — unless the doctor has already started editing.
+  useEffect(() => {
+    if (!isAppointment) return;
+    const serverNotes = apptData?.appointment?.notes;
+    if (serverNotes) notesExistRef.current = true;
+    if (!dirtyRef.current && serverNotes?.additional_notes) {
+      setNotes(serverNotes.additional_notes);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apptData, isAppointment]);
 
   const debouncedNotes = useDebounce(notes, 1500);
 
@@ -63,7 +94,7 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName }: Pr
     if (consultationId == null) return;
 
     // Mirror locally first so a refresh restores the latest text immediately.
-    const key = notesKey(consultationId);
+    const key = notesKey(consultationId, mode);
     if (key) {
       try {
         localStorage.setItem(key, debouncedNotes);
@@ -73,13 +104,43 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName }: Pr
     }
 
     setSaveStatus("saving");
-    saveNotes.mutate(
-      { id: consultationId, notes: debouncedNotes },
-      {
-        onSuccess: () => setSaveStatus("saved"),
-        onError: () => setSaveStatus("error"),
-      },
-    );
+
+    if (isAppointment) {
+      const payload = { additional_notes: debouncedNotes };
+      const doPut = () =>
+        updateApptNotes.mutate(
+          { id: consultationId, payload },
+          { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
+        );
+
+      if (notesExistRef.current) {
+        doPut();
+      } else {
+        addApptNotes.mutate(
+          { id: consultationId, payload },
+          {
+            onSuccess: () => {
+              notesExistRef.current = true;
+              setSaveStatus("saved");
+            },
+            onError: (err) => {
+              // 409 → notes already exist, switch to PUT.
+              if ((err as ApiError)?.status === 409) {
+                notesExistRef.current = true;
+                doPut();
+              } else {
+                setSaveStatus("error");
+              }
+            },
+          },
+        );
+      }
+    } else {
+      saveInstant.mutate(
+        { id: consultationId, notes: debouncedNotes },
+        { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedNotes, consultationId]);
 

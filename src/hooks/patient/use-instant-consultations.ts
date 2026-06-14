@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
+import type { User } from "@/types/auth";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,7 +9,17 @@ export interface InstantConsultationRequestPayload {
   doctor_id: number;
   guest_phone?: string;
   guest_name?: string;
-  guest_password?: string;
+  guest_email?: string;
+  description?: string;
+  password?: string;
+}
+
+export interface InstantConsultationRequestAnyPayload {
+  guest_phone?: string;
+  guest_name?: string;
+  guest_email?: string;
+  description?: string;
+  password?: string;
 }
 
 export interface InstantConsultationRequestResponse {
@@ -21,6 +32,9 @@ export interface InstantConsultationRequestResponse {
   amount: number;
   payment_status: string;
   status?: string;
+  account_created?: boolean;
+  token?: string;
+  user?: User;
 }
 
 export type ConsultationStatus =
@@ -71,6 +85,24 @@ export function useInstantConsultationRequest() {
     mutationFn: (data) =>
       apiFetch<InstantConsultationRequestResponse>(
         "/public/instant-consultations/request",
+        { method: "POST", body: data },
+      ),
+  });
+}
+
+/**
+ * POST /public/instant-consultations/request-any
+ */
+export function useInstantConsultationRequestAny() {
+  return useMutation<
+    InstantConsultationRequestResponse,
+    Error,
+    InstantConsultationRequestAnyPayload
+  >({
+    mutationKey: ["instant-consultation-request-any"],
+    mutationFn: (data) =>
+      apiFetch<InstantConsultationRequestResponse>(
+        "/public/instant-consultations/request-any",
         { method: "POST", body: data },
       ),
   });

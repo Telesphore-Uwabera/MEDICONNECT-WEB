@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/Api";
 
 const BASE = "/patient/prescriptions";
@@ -76,6 +76,42 @@ export interface PrescriptionFilters {
   to?: string; // ISO date string e.g. "2025-12-31"
   is_signed?: boolean | "all";
   sort?: "date-asc" | "date-desc";
+}
+
+// ─── Send to Pharmacy ─────────────────────────────────────────────────────────
+
+export interface SendToPharmacyPayload {
+  prescription_id: number;
+  pharmacy_id: number;
+  delivery_type: "pickup" | "home_delivery";
+  delivery_address?: string;
+  notes?: string;
+}
+
+export interface SendToPharmacyResponse {
+  message: string;
+  prescription_id: number;
+  pharmacy_id: number;
+  status: PrescriptionApiStatus;
+}
+
+export function useSendPrescriptionToPharmacy() {
+  const queryClient = useQueryClient();
+
+  return useMutation<SendToPharmacyResponse, Error, SendToPharmacyPayload>({
+
+    mutationFn: async ({ prescription_id, pharmacy_id, delivery_type, delivery_address, notes }) => {
+  const response = await apiFetch(`${BASE}/${prescription_id}/send-to-pharmacy`, {
+    method: "POST",
+    body: { pharmacy_id, delivery_type, delivery_address, notes },
+  });
+  return response as SendToPharmacyResponse;
+},
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patient-prescriptions"] });
+    },
+  });
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Video, Stethoscope, Pill, Hospital, ArrowRight, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ConnectDialogContent } from "@/components/ConnectDialog";
 import { useMe } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
 
@@ -9,17 +12,18 @@ const HeroCta = () => {
     
   const { t } = useTranslation();
   const { data: user } = useMe();
+  const [connectOpen, setConnectOpen] = useState(false);
 
   // ── Authenticated: show dashboard shortcut ──────────
 
   if (user) {
     return (
-      <div className="mt-7 flex flex-col gap-3 max-w-2xl w-full">
-        <div className="grid grid-cols-2 gap-3">
-          
-          {/* /patient/search-doctors instant */}
-          <Link to="/patient/search-doctors">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+      <>
+        <div className="mt-7 flex flex-col gap-3 max-w-2xl w-full">
+          <div className="grid grid-cols-2 gap-3">
+            
+            {/* /patient/search-doctors instant */}
+            <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
                   <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -35,7 +39,6 @@ const HeroCta = () => {
               </div>
               <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
-          </Link>
 
           <Link to="/patient/search-doctors">
             <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
@@ -91,15 +94,26 @@ const HeroCta = () => {
           </Link>
         </div>
       </div>
+      <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+        <DialogContent className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl">
+          {connectOpen && (
+            <ConnectDialogContent 
+              onMinimize={() => setConnectOpen(false)}
+              onCloseCompletely={() => setConnectOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 
   // ── Guest: show sign up / browse CTAs ───────────────
   return (
-    <div className="mt-7 flex flex-col gap-3 max-w-2xl w-full">
-      <div className="grid grid-cols-2 gap-3">
-        <Link to="/patient/search-doctors">
-          <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+    <>
+      <div className="mt-7 flex flex-col gap-3 max-w-2xl w-full">
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
                 <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -114,8 +128,7 @@ const HeroCta = () => {
               </div>
             </div>
             <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
-          </button>
-        </Link>
+        </button>
 
         <Link to="/patient/search-doctors">
           <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
@@ -170,7 +183,18 @@ const HeroCta = () => {
           </button>
         </Link>
       </div>
-    </div>
+      </div>
+      <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+        <DialogContent className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl">
+          {connectOpen && (
+            <ConnectDialogContent 
+              onMinimize={() => setConnectOpen(false)}
+              onCloseCompletely={() => setConnectOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

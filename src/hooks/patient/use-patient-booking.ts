@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,6 +98,28 @@ export function useBookAppointment() {
       apiFetch<BookAppointmentResponse>("/patient/appointments", {
         method: "POST",
         body: payload,
+      }),
+  });
+}
+
+/**
+ * Initiates payment for a scheduled appointment.
+ * POST /patient/appointments/{id}/pay
+ */
+export interface PayAppointmentResponse {
+  message: string;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
+}
+
+export function usePayAppointment() {
+  return useMutation<PayAppointmentResponse, Error, number>({
+    mutationFn: (appointmentId) =>
+      apiFetch<PayAppointmentResponse>(`/patient/appointments/${appointmentId}/pay`, {
+        method: "POST",
       }),
   });
 }

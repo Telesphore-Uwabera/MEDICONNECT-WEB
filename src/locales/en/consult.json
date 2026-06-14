@@ -151,7 +151,12 @@
     "late": "Late",
     "ready": "Ready",
     "rejoin": "Rejoin",
-    "has_notes": "Has notes"
+    "has_notes": "Has notes",
+    "no_appointments_match_your_filters": "No appointments match your filters.",
+    "try_widening_your_search_criteria": "Try widening your search criteria",
+    "clear_all_filters": "Clear all filters",
+    "filter_by": "Filter by",
+    "search": "Search"
   },
   "record": {
     "title": "Patient medical record",
@@ -189,7 +194,10 @@
     "visits": "Visits",
     "files": "Files",
     "notes": "Notes",
-    "hide_notes": "Hide notes"
+    "hide_notes": "Hide notes",
+    "required_before_completing": "required before completing",
+    "file_uploaded": "File uploaded.",
+    "choose_file_title": "Choose a file and enter a title."
   },
   "visits": {
     "loading": "Loading visits…",

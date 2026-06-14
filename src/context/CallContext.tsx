@@ -5,6 +5,12 @@ export interface ActiveCall {
   token: any;
 }
 
+/** A scheduled appointment whose call just ended and that the doctor must now
+ *  finalize (required medical record → optional hospital booking → complete). */
+export interface PendingCompletion {
+  appointmentId: number;
+}
+
 interface CallContextType {
   activeCall: ActiveCall | null;
   isMinimized: boolean;
@@ -12,6 +18,11 @@ interface CallContextType {
   endCall: () => void;
   toggleMinimize: () => void;
   setMinimized: (val: boolean) => void;
+  /** Set when a doctor ends a scheduled-appointment call; drives the global
+   *  completion flow (record + booking). Null for instant or patient-ended calls. */
+  pendingCompletion: PendingCompletion | null;
+  requestAppointmentCompletion: (info: PendingCompletion) => void;
+  clearAppointmentCompletion: () => void;
 }
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -77,6 +88,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
   // Restore any in-progress call on first mount so a refresh rejoins it.
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(() => loadPersistedCall());
   const [isMinimized, setIsMinimized] = useState(false);
+  const [pendingCompletion, setPendingCompletion] = useState<PendingCompletion | null>(null);
+
+  const requestAppointmentCompletion = useCallback((info: PendingCompletion) => {
+    setPendingCompletion(info);
+  }, []);
+  const clearAppointmentCompletion = useCallback(() => {
+    setPendingCompletion(null);
+  }, []);
 
   const startCall = useCallback((roomName: string, token: any) => {
     const call = { roomName, token };
@@ -104,6 +123,9 @@ export function CallProvider({ children }: { children: ReactNode }) {
         endCall,
         toggleMinimize,
         setMinimized: setIsMinimized,
+        pendingCompletion,
+        requestAppointmentCompletion,
+        clearAppointmentCompletion,
       }}
     >
       {children}
