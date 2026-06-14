@@ -21,7 +21,6 @@ import {
   RefreshCcw,
   User,
   Mail,
-  DollarSign,
   Landmark,
   Activity,
   CheckCircle2,
@@ -721,7 +720,7 @@ function ActionPanel({
                   )}
                   <Field label="Amount" required>
                     <div className="relative">
-                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
+                      <CreditCard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
                       <input
                         type="number"
                         min={1}
@@ -766,7 +765,7 @@ function ActionPanel({
                   </Field>
                   <Field label="Amount" required>
                     <div className="relative">
-                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
+                      <CreditCard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
                       <input
                         type="number"
                         min={1}
@@ -982,7 +981,7 @@ function MainWalletCard({
                 Amount
               </label>
               <div className="relative">
-                <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
+                <CreditCard className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40 pointer-events-none" />
                 <input
                   type="number"
                   min={1}
@@ -1184,7 +1183,7 @@ function ManageAdminWallet() {
           {/* Stats */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard label="Total doctors"    value={walletsData?.total ?? 0}       icon={User}        accent="primary" />
-            <StatCard label="Total balance"    value={formatCurrency(totalBalance)}  icon={DollarSign}  accent="success" />
+            <StatCard label="Total balance"    value={formatCurrency(totalBalance)}  icon={CreditCard}  accent="success" />
             <StatCard label="Pending payouts"  value={pendingPayouts}                icon={Clock}       accent="warning" />
             <StatCard label="Completed payouts" value={completedPayouts}             icon={CheckCircle2} accent="info"  />
           </div>

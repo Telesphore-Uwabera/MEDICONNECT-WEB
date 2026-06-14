@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+
 import {
   ArrowRight,
   Calendar,
@@ -11,24 +12,35 @@ import {
   Activity,
   Shield,
   Clock,
-  ChevronLeft,
   ChevronRight,
   Zap,
+  X,
 } from "lucide-react";
-import echo from '@/lib/echo';
+
+import echo from "@/lib/echo";
+
 import { Button } from "@/components/ui/button";
 import { DoctorCard } from "@/components/DoctorCard";
 import { HospitalCard } from "@/components/HospitalCard";
+
 import { cn } from "@/lib/utils";
+
 import { useTheme } from "@/context/ThemeContext";
+
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
 import { useGetSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
 import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
 import { QuickConsultPanel } from "./doctor/QuickConsultPanel";
+import {
+  SpecializationSelect,
+  SpecializationValue,
+} from "./patient/components/SpecializationSelect";
+import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
 
@@ -64,10 +76,10 @@ interface ApiDoctor {
   specializations: { id: number; name: string }[];
 }
 
-  interface DoctorAvailabilityEvent {
-    doctor_id: number;
-    instant_consultation: boolean;
-    bookings_paused: boolean;
+interface DoctorAvailabilityEvent {
+  doctor_id: number;
+  instant_consultation: boolean;
+  bookings_paused: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,20 +119,74 @@ const SliderSkeleton = () => (
 
 const Index = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // ── All doctors (for the grid section) ──────────────────────────────────────
+  // ── Doctor filter state ─────────────────────────────────────────────────────
+  const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState<SpecializationValue>({ specialization: null, fee: null });
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
+
+  // ── Scroll to section on hash present (e.g. navigated from another page) ────
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const scrollToEl = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+          return true;
+        }
+        return false;
+      };
+
+      // try immediately, then retry briefly in case content is still mounting
+      if (!scrollToEl()) {
+        const timeout = setTimeout(scrollToEl, 150);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [location.hash]);
+
+  // ── Build backend params ─────────────────────────────────────────────────────
+  // FIX: useMemo now returns a stable object that changes identity only when
+  // filter values actually change, ensuring useGetSearchDoctors re-fetches.
+
+  const doctorSearchParams = useMemo(() => {
+    const params: {
+      instant?: boolean;
+      language?: string;
+      specialization?: string;
+      specialization_fee_id?: number;
+    } = {};
+
+    if (doctorFilter === "instant") params.instant = true;
+    if (selectedLanguage !== "all") params.language = selectedLanguage;
+
+    if (selectedSpecialization.specialization) {
+      params.specialization = selectedSpecialization.specialization.name;
+      if (selectedSpecialization.fee?.id) {
+        params.specialization_fee_id = selectedSpecialization.fee.id;
+      }
+    }
+
+    return params;
+  }, [doctorFilter, selectedLanguage, selectedSpecialization]);
+
+  const { data: pharmacyStats } = useGetPharmacyStats();
+
+  // ── All doctors (filtered via backend) ─────────────────────────────────────
   const { data: doctorsData, isLoading: doctorsLoading } =
-    useGetSearchDoctors();
+    useGetSearchDoctors(doctorSearchParams);
 
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
   const { data: instantDoctorsData, isLoading: instantLoading } =
     useGetSearchDoctors({ instant: true });
-  console.log("Instant doctors fetched:", instantDoctorsData);
 
   const { data: hospitalsData, isLoading: hospitalsLoading } =
     useGetSearchHospitals();
@@ -129,31 +195,30 @@ const Index = () => {
   const instantDoctors = useMemo<ApiDoctor[]>(
     () =>
       (instantDoctorsData?.data ?? [])
-        .filter((d) => d.instant_consultation) // ✅ Only check instant_consultation
+        .filter((d) => d.instant_consultation)
         .slice(0, 4),
     [instantDoctorsData],
   );
+
   // Reset slide index when data changes
   useEffect(() => {
     setActiveSlide(0);
   }, [instantDoctors.length]);
 
+  const queryClient = useQueryClient();
 
+  useEffect(() => {
+    const channel = echo.channel("doctors.availability");
 
-const queryClient = useQueryClient();
-
-useEffect(() => {
-    const channel = echo.channel('doctors.availability');
-
-    channel.listen('.availability.changed', (data: DoctorAvailabilityEvent) => {
-        console.log('Doctor availability changed:', data);
-        queryClient.invalidateQueries({ queryKey: ['patient-search-doctors'] });
+    channel.listen(".availability.changed", (data: DoctorAvailabilityEvent) => {
+      console.log("Doctor availability changed:", data);
+      queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
     });
 
     return () => {
-        echo.leaveChannel('doctors.availability');
+      echo.leaveChannel("doctors.availability");
     };
-}, [queryClient]);
+  }, [queryClient]);
 
   const prevSlide = useCallback(() => {
     if (!instantDoctors.length) return;
@@ -173,6 +238,18 @@ useEffect(() => {
     const timer = setInterval(nextSlide, 4000);
     return () => clearInterval(timer);
   }, [nextSlide, instantDoctors.length]);
+
+  // ── Clear all filters helper ─────────────────────────────────────────────────
+  const clearFilters = useCallback(() => {
+    setDoctorFilter("all");
+    setSelectedSpecialization({ specialization: null, fee: null });
+    setSelectedLanguage("all");
+  }, []);
+
+  const hasActiveFilters =
+    doctorFilter !== "all" ||
+    !!selectedSpecialization.specialization ||
+    selectedLanguage !== "all";
 
   // ── Static content ───────────────────────────────────────────────────────────
 
@@ -343,13 +420,82 @@ useEffect(() => {
       >
         <div className="container">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">
                 {t("pages.landing.available_now")}
               </p>
               <h2 className="mt-3 font-display text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
                 {t("pages.landing.doctors_ready")}
               </h2>
+
+              {/* ── Filters ── */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {/* Type filter */}
+                <div className="inline-flex items-center bg-card border border-border rounded-sm p-0.5">
+                  <button
+                    onClick={() => setDoctorFilter("all")}
+                    className={cn(
+                      "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all",
+                      doctorFilter === "all"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setDoctorFilter("instant")}
+                    className={cn(
+                      "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all flex items-center gap-1",
+                      doctorFilter === "instant"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Zap className="w-3 h-3" />
+                    Instant only
+                  </button>
+                </div>
+
+                {/* Specialization filter */}
+                <div className="w-56">
+                  <SpecializationSelect
+                    value={selectedSpecialization}
+                    onChange={setSelectedSpecialization}
+                  />
+                </div>
+
+                {/* Language filter */}
+                <div className="relative">
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    className={cn(
+                      "appearance-none px-2.5 py-1.5 pr-7 text-[11px] bg-background border rounded-sm transition-all cursor-pointer outline-none",
+                      selectedLanguage !== "all"
+                        ? "border-primary/50 ring-1 ring-primary/20 text-foreground"
+                        : "border-border/60 text-muted-foreground hover:border-primary/40",
+                    )}
+                  >
+                    <option value="all">Any language</option>
+                    <option value="en">English</option>
+                    <option value="fr">French</option>
+                    <option value="rw">Kinyarwanda</option>
+                  </select>
+                  <ChevronRight className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground/50 pointer-events-none" />
+                </div>
+
+                {/* Clear filters */}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-[11px] text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <Link to="/patient/search-doctors">
               <Button variant="outline" size="sm">
@@ -404,6 +550,21 @@ useEffect(() => {
                   .slice(0, 6)
                   .map((d) => <DoctorCard key={d.id} doctor={d} />)}
           </div>
+
+          {/* Empty state when filters return no results */}
+          {!doctorsLoading && doctorsData?.data?.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-sm text-muted-foreground">
+                No doctors match your filters.{" "}
+                <button
+                  onClick={clearFilters}
+                  className="text-primary hover:underline"
+                >
+                  Reset filters
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -416,7 +577,7 @@ useEffect(() => {
                 {t("pages.landing.partner_network")}
               </p>
               <h2 className="mt-3 font-display text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                {t("pages.landing.health_facility")} 
+                {t("pages.landing.health_facility")}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground max-w-xl">
                 {t("pages.landing.hospitals_sub")}
@@ -510,8 +671,18 @@ useEffect(() => {
             </div>
             <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
               {[
-                { v: "200+", l: t("pages.landing.stat_products") },
-                { v: "4", l: t("pages.landing.stat_pharmacies") },
+                {
+                  v: pharmacyStats
+                    ? `${pharmacyStats.summary.active_medicines}+`
+                    : "—",
+                  l: t("pages.landing.stat_products"),
+                },
+                {
+                  v: pharmacyStats
+                    ? `${pharmacyStats.summary.total_pharmacies}`
+                    : "—",
+                  l: t("pages.landing.stat_pharmacies"),
+                },
                 { v: "<1h", l: t("pages.landing.stat_delivery") },
               ].map((s) => (
                 <div
@@ -619,6 +790,7 @@ useEffect(() => {
                 >
                   support@mediconnect.com
                 </a>
+
                 <a
                   href="tel:+250788123456"
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"

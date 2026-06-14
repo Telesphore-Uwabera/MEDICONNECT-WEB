@@ -10,7 +10,7 @@ import {
   Loader2,
   CheckCircle2,
   RefreshCw,
-  DollarSign,
+  CreditCard,
   Save,
   Hash,
 } from "lucide-react";
@@ -54,7 +54,9 @@ function SkeletonRows() {
             <td key={j} className="px-4 py-3">
               <div
                 className="h-4 bg-muted/60 rounded animate-pulse"
-                style={{ width: j === 0 ? "160px" : j === 3 ? "80px" : "100px" }}
+                style={{
+                  width: j === 0 ? "160px" : j === 3 ? "80px" : "100px",
+                }}
               />
             </td>
           ))}
@@ -84,7 +86,9 @@ function PricingRow({
             <Hash className="w-3 h-3 text-primary/70" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-[11px] text-foreground">{formatKey(item.key)}</p>
+            <p className="font-semibold text-[11px] text-foreground">
+              {formatKey(item.key)}
+            </p>
             <p className="text-[10px] text-muted-foreground/50">{item.key}</p>
           </div>
         </div>
@@ -158,7 +162,9 @@ function PricingCard({
             <p className="font-mono text-[13px] font-semibold text-foreground">
               {item.value.toLocaleString()}
             </p>
-            <p className="text-[10px] text-muted-foreground/50">{item.currency}</p>
+            <p className="text-[10px] text-muted-foreground/50">
+              {item.currency}
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-between mt-2.5">
@@ -217,13 +223,18 @@ function PricingPanel({
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const handleSubmit = async () => {
     const parsed = Number(value);
     if (!value.trim() || isNaN(parsed) || parsed < 0) {
-      toast({ title: "Enter a valid non-negative number", variant: "destructive" });
+      toast({
+        title: "Enter a valid non-negative number",
+        variant: "destructive",
+      });
       return;
     }
     try {
@@ -241,7 +252,9 @@ function PricingPanel({
         onClick={onClose}
         className={cn(
           "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
       />
       <div
@@ -261,7 +274,10 @@ function PricingPanel({
                   Edit price
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Update value for <span className="font-medium text-foreground">{formatKey(item.key)}</span>
+                  Update value for{" "}
+                  <span className="font-medium text-foreground">
+                    {formatKey(item.key)}
+                  </span>
                 </p>
               </div>
               <button
@@ -288,7 +304,8 @@ function PricingPanel({
               {/* Value */}
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
-                  Value ({item.currency}) <span className="text-red-500">*</span>
+                  Value ({item.currency}){" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -361,7 +378,9 @@ function BulkEditDialog({
   useEffect(() => {
     if (pricing) {
       const init: Record<string, string> = {};
-      pricing.forEach((p) => { init[p.key] = String(p.value); });
+      pricing.forEach((p) => {
+        init[p.key] = String(p.value);
+      });
       setValues(init);
     }
   }, [pricing]);
@@ -373,7 +392,10 @@ function BulkEditDialog({
     for (const [key, val] of Object.entries(values)) {
       const n = Number(val);
       if (isNaN(n) || n < 0) {
-        toast({ title: `Invalid value for "${formatKey(key)}"`, variant: "destructive" });
+        toast({
+          title: `Invalid value for "${formatKey(key)}"`,
+          variant: "destructive",
+        });
         return;
       }
       prices[key] = n;
@@ -389,10 +411,15 @@ function BulkEditDialog({
 
   return (
     <>
-      <div onClick={onClose} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]" />
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
+      />
       <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
         <div>
-          <p className="text-[14px] font-semibold text-foreground">Bulk edit prices</p>
+          <p className="text-[14px] font-semibold text-foreground">
+            Bulk edit prices
+          </p>
           <p className="text-[12px] text-muted-foreground mt-1">
             Update all pricing values at once.
           </p>
@@ -454,10 +481,14 @@ function ManageServicePricing() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = useGetServicePricing();
+  const { data, isLoading, isError, refetch, isFetching } =
+    useGetServicePricing();
   const pricing = data?.pricing ?? [];
 
-  const openEdit = useCallback((item: ApiPricingItem) => setEditingItem(item), []);
+  const openEdit = useCallback(
+    (item: ApiPricingItem) => setEditingItem(item),
+    [],
+  );
   const closePanel = useCallback(() => setEditingItem(null), []);
 
   return (
@@ -479,17 +510,15 @@ function ManageServicePricing() {
             />
             <StatCard
               label="Total value (RWF)"
-              value={pricing.reduce((sum, p) => sum + p.value, 0).toLocaleString()}
-              icon={DollarSign}
+              value={pricing
+                .reduce((sum, p) => sum + p.value, 0)
+                .toLocaleString()}
+              icon={CreditCard}
               accent="success"
             />
             <StatCard
               label="Last synced"
-              value={
-                pricing[0]
-                  ? formatDate(pricing[0].updated_at)
-                  : "—"
-              }
+              value={pricing[0] ? formatDate(pricing[0].updated_at) : "—"}
               icon={RefreshCw}
               accent="warning"
             />
@@ -502,7 +531,9 @@ function ManageServicePricing() {
                 <span className="text-muted-foreground/50">Loading…</span>
               ) : (
                 <>
-                  <span className="font-bold text-foreground">{pricing.length}</span>{" "}
+                  <span className="font-bold text-foreground">
+                    {pricing.length}
+                  </span>{" "}
                   {pricing.length === 1 ? "price key" : "price keys"}
                 </>
               )}
@@ -516,7 +547,9 @@ function ManageServicePricing() {
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
-                <RefreshCw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
+                <RefreshCw
+                  className={cn("w-3.5 h-3.5", isFetching && "animate-spin")}
+                />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button
@@ -535,8 +568,12 @@ function ManageServicePricing() {
           <div className="p-3 sm:p-4">
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <p className="text-[12px] font-semibold text-destructive">Failed to load pricing</p>
-                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+                <p className="text-[12px] font-semibold text-destructive">
+                  Failed to load pricing
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  Check your connection and try again
+                </p>
               </div>
             ) : !isLoading && pricing.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
@@ -544,7 +581,9 @@ function ManageServicePricing() {
                   <Tag className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">No pricing configured</p>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    No pricing configured
+                  </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     No service price keys found.
                   </p>
@@ -557,10 +596,18 @@ function ManageServicePricing() {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Key</th>
-                        <th className="text-left px-4 py-3 font-semibold">Value</th>
-                        <th className="text-left px-4 py-3 font-semibold">Currency</th>
-                        <th className="text-left px-4 py-3 font-semibold">Last Updated</th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Key
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Value
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Currency
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Last Updated
+                        </th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
@@ -585,7 +632,10 @@ function ManageServicePricing() {
                 <div className="md:hidden flex flex-col gap-2">
                   {isLoading
                     ? Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        <div
+                          key={i}
+                          className="h-20 rounded-sm border border-border/60 bg-card animate-pulse"
+                        />
                       ))
                     : pricing.map((item) => (
                         <PricingCard
@@ -605,10 +655,7 @@ function ManageServicePricing() {
       <PricingPanel item={editingItem} onClose={closePanel} />
 
       {bulkOpen && (
-        <BulkEditDialog
-          pricing={pricing}
-          onClose={() => setBulkOpen(false)}
-        />
+        <BulkEditDialog pricing={pricing} onClose={() => setBulkOpen(false)} />
       )}
     </DashboardLayout>
   );

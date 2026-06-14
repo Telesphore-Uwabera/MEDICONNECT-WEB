@@ -5,7 +5,7 @@ import {
   useGetPatientAppointment,
   ApiAppointmentStatus,
 } from "@/hooks/patient/use-patient-appointment";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

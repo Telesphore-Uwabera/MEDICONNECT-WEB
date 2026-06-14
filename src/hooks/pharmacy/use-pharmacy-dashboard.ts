@@ -238,3 +238,33 @@ export function useGetPharmacyDashboard(params: DashboardParams = {}) {
     staleTime: 60_000,
   });
 }
+
+
+
+export interface PharmacyStatsSummary {
+  total_pharmacies: number;
+  total_medicines: number;
+  active_medicines: number;
+}
+
+export interface PharmacyStatsPharmacy {
+  id: number;
+  name: string;
+  slug: string;
+  total_medicines: number;
+  active_medicines: number;
+}
+
+export interface PharmacyStatsData {
+  summary: PharmacyStatsSummary;
+  pharmacies: PharmacyStatsPharmacy[];
+}
+
+export function useGetPharmacyStats() {
+  return useQuery({
+    queryKey: ["pharmacy-public-stats"],
+    queryFn: async (): Promise<PharmacyStatsData> =>
+      apiFetch<PharmacyStatsData>("/public/stats/pharmacies"),
+    staleTime: 5 * 60_000,
+  });
+}

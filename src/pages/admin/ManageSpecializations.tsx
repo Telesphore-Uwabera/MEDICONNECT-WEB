@@ -13,7 +13,7 @@ import {
   Search,
   Loader2,
   CheckCircle2,
-  DollarSign,
+  CreditCard,
   Wifi,
   Building2,
   ToggleLeft,
@@ -70,7 +70,9 @@ function SkeletonRows({ cols = 5 }: { cols?: number }) {
             <td key={j} className="px-4 py-3">
               <div
                 className="h-4 bg-muted/60 rounded animate-pulse"
-                style={{ width: j === 0 ? "180px" : j === cols - 1 ? "80px" : "110px" }}
+                style={{
+                  width: j === 0 ? "180px" : j === cols - 1 ? "80px" : "110px",
+                }}
               />
             </td>
           ))}
@@ -157,9 +159,13 @@ function SubSpecRow({
         <div className="flex items-center gap-2">
           <span className="w-px h-4 bg-border/60 rounded-full shrink-0" />
           <div className="min-w-0">
-            <p className="text-[11px] font-medium text-foreground/80 truncate">{feeDisplayName(fee)}</p>
+            <p className="text-[11px] font-medium text-foreground/80 truncate">
+              {feeDisplayName(fee)}
+            </p>
             {fee.description && (
-              <p className="text-[10px] text-muted-foreground/50 truncate">{fee.description}</p>
+              <p className="text-[10px] text-muted-foreground/50 truncate">
+                {fee.description}
+              </p>
             )}
           </div>
         </div>
@@ -192,7 +198,12 @@ function SubSpecRow({
               : "bg-muted text-muted-foreground border-border",
           )}
         >
-          <span className={cn("w-1 h-1 rounded-full mr-1", fee.is_active ? "bg-emerald-500" : "bg-muted-foreground")} />
+          <span
+            className={cn(
+              "w-1 h-1 rounded-full mr-1",
+              fee.is_active ? "bg-emerald-500" : "bg-muted-foreground",
+            )}
+          />
           {fee.is_active ? "Active" : "Inactive"}
         </Badge>
       </td>
@@ -216,7 +227,11 @@ function SubSpecRow({
             onClick={() => onDelete(fee)}
             disabled={isDeleting}
           >
-            {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            {isDeleting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3" />
+            )}
           </Button>
         </div>
       </td>
@@ -266,24 +281,42 @@ function SpecializationRow({
                   : "text-muted-foreground/30 cursor-default",
               )}
               disabled={fees.length === 0}
-              title={fees.length > 0 ? (expanded ? "Collapse" : "Expand sub-specializations") : "No sub-specializations"}
+              title={
+                fees.length > 0
+                  ? expanded
+                    ? "Collapse"
+                    : "Expand sub-specializations"
+                  : "No sub-specializations"
+              }
             >
               {fees.length > 0 ? (
-                expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
+                expanded ? (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5" />
+                )
               ) : (
                 <ChevronRight className="w-3.5 h-3.5 opacity-30" />
               )}
             </button>
             <div className="min-w-0">
-              <p className="font-semibold text-[11px] text-foreground truncate">{spec.name}</p>
-              <p className="text-[10px] text-muted-foreground/50 truncate">{spec.slug}</p>
+              <p className="font-semibold text-[11px] text-foreground truncate">
+                {spec.name}
+              </p>
+              <p className="text-[10px] text-muted-foreground/50 truncate">
+                {spec.slug}
+              </p>
             </div>
           </div>
         </td>
 
         {/* Description */}
         <td className="px-4 py-3 text-[11px] text-muted-foreground/80 max-w-[200px]">
-          <p className="truncate">{spec.description ?? <span className="text-muted-foreground/30">—</span>}</p>
+          <p className="truncate">
+            {spec.description ?? (
+              <span className="text-muted-foreground/30">—</span>
+            )}
+          </p>
         </td>
 
         {/* Sub-spec count */}
@@ -317,7 +350,12 @@ function SpecializationRow({
                 : "bg-muted text-muted-foreground border-border",
             )}
           >
-            <span className={cn("w-1 h-1 rounded-full mr-1", spec.is_active ? "bg-emerald-500" : "bg-muted-foreground")} />
+            <span
+              className={cn(
+                "w-1 h-1 rounded-full mr-1",
+                spec.is_active ? "bg-emerald-500" : "bg-muted-foreground",
+              )}
+            />
             {spec.is_active ? "Active" : "Inactive"}
           </Badge>
         </td>
@@ -351,22 +389,27 @@ function SpecializationRow({
               onClick={() => onDelete(spec)}
               disabled={isDeleting}
             >
-              {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              {isDeleting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Trash2 className="w-3 h-3" />
+              )}
             </Button>
           </div>
         </td>
       </tr>
 
       {/* Sub-specialization rows */}
-      {expanded && fees.map((fee) => (
-        <SubSpecRow
-          key={fee.id}
-          fee={fee}
-          onEdit={onEditFee}
-          onDelete={onDeleteFee}
-          isDeleting={deletingFeeId === fee.id}
-        />
-      ))}
+      {expanded &&
+        fees.map((fee) => (
+          <SubSpecRow
+            key={fee.id}
+            fee={fee}
+            onEdit={onEditFee}
+            onDelete={onDeleteFee}
+            isDeleting={deletingFeeId === fee.id}
+          />
+        ))}
     </>
   );
 }
@@ -405,10 +448,14 @@ function SpecializationCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-semibold text-[12px] text-foreground truncate">{spec.name}</p>
+              <p className="font-semibold text-[12px] text-foreground truncate">
+                {spec.name}
+              </p>
               <p className="text-[10px] text-muted-foreground/50">
                 {spec.slug}
-                {fees.length > 0 ? ` · ${fees.length} sub-spec${fees.length !== 1 ? "s" : ""}` : ""}
+                {fees.length > 0
+                  ? ` · ${fees.length} sub-spec${fees.length !== 1 ? "s" : ""}`
+                  : ""}
               </p>
             </div>
             <Badge
@@ -449,7 +496,11 @@ function SpecializationCard({
               onClick={() => onDelete(spec)}
               disabled={isDeleting}
             >
-              {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              {isDeleting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Trash2 className="w-3 h-3" />
+              )}
             </Button>
           </div>
         </div>
@@ -462,17 +513,27 @@ function SpecializationCard({
             onClick={() => setExpanded((v) => !v)}
             className="w-full flex items-center gap-2 px-3.5 py-2 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/20 transition-colors"
           >
-            {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            {expanded ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronRight className="w-3 h-3" />
+            )}
             {fees.length} sub-specialization{fees.length !== 1 ? "s" : ""}
           </button>
           {expanded && (
             <div className="divide-y divide-border/30">
               {fees.map((fee) => (
-                <div key={fee.id} className="flex items-center justify-between px-3.5 py-2.5 bg-secondary/10">
+                <div
+                  key={fee.id}
+                  className="flex items-center justify-between px-3.5 py-2.5 bg-secondary/10"
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium text-foreground/80 truncate">{feeDisplayName(fee)}</p>
+                    <p className="text-[11px] font-medium text-foreground/80 truncate">
+                      {feeDisplayName(fee)}
+                    </p>
                     <p className="text-[10px] text-muted-foreground/50">
-                      {formatFee(fee.online_fee, fee.currency)} online · {formatFee(fee.in_person_fee, fee.currency)} in-person
+                      {formatFee(fee.online_fee, fee.currency)} online ·{" "}
+                      {formatFee(fee.in_person_fee, fee.currency)} in-person
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 ml-2 shrink-0">
@@ -491,7 +552,11 @@ function SpecializationCard({
                       onClick={() => onDeleteFee(fee)}
                       disabled={deletingFeeId === fee.id}
                     >
-                      {deletingFeeId === fee.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                      {deletingFeeId === fee.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -521,11 +586,11 @@ function SpecializationPanel({
   const isEdit = mode === "edit";
   const { toast } = useToast();
 
-  const [name, setName]         = useState("");
-  const [nameFr, setNameFr]     = useState("");
+  const [name, setName] = useState("");
+  const [nameFr, setNameFr] = useState("");
   const [nameKiny, setNameKiny] = useState("");
   const [description, setDescription] = useState("");
-  const [icon, setIcon]         = useState("");
+  const [icon, setIcon] = useState("");
   const [isActive, setIsActive] = useState(true);
 
   const createMutation = useCreateSpecialization();
@@ -541,19 +606,28 @@ function SpecializationPanel({
       setIcon(specialization.icon ?? "");
       setIsActive(specialization.is_active);
     } else if (mode === "create") {
-      setName(""); setNameFr(""); setNameKiny(""); setDescription(""); setIcon(""); setIsActive(true);
+      setName("");
+      setNameFr("");
+      setNameKiny("");
+      setDescription("");
+      setIcon("");
+      setIsActive(true);
     }
   }, [mode, specialization]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && open) onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) onClose();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const handleSubmit = async () => {
@@ -581,7 +655,9 @@ function SpecializationPanel({
           icon: icon.trim() || undefined,
         });
       }
-      toast({ title: isEdit ? "Specialization updated." : "Specialization created." });
+      toast({
+        title: isEdit ? "Specialization updated." : "Specialization created.",
+      });
       onClose();
     } catch (error) {
       toast({ title: getErrorMessage(error), variant: "destructive" });
@@ -594,7 +670,9 @@ function SpecializationPanel({
         onClick={onClose}
         className={cn(
           "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
       />
       <div
@@ -614,7 +692,9 @@ function SpecializationPanel({
                   {isEdit ? "Edit specialization" : "New specialization"}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {isEdit ? "Update details and translations" : "Create a parent specialization first — then add sub-specializations under it"}
+                  {isEdit
+                    ? "Update details and translations"
+                    : "Create a parent specialization first — then add sub-specializations under it"}
                 </p>
               </div>
               <button
@@ -629,10 +709,31 @@ function SpecializationPanel({
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
               {/* Names section */}
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Name &amp; Translations</p>
-                <LangField label="Name" lang="EN" value={name} onChange={setName} placeholder="e.g. Cardiology" required />
-                <LangField label="Name" lang="FR" value={nameFr} onChange={setNameFr} placeholder="e.g. Cardiologie" />
-                <LangField label="Name" lang="KIN" value={nameKiny} onChange={setNameKiny} placeholder="e.g. Indwara z'umutima" />
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Name &amp; Translations
+                </p>
+                <LangField
+                  label="Name"
+                  lang="EN"
+                  value={name}
+                  onChange={setName}
+                  placeholder="e.g. Cardiology"
+                  required
+                />
+                <LangField
+                  label="Name"
+                  lang="FR"
+                  value={nameFr}
+                  onChange={setNameFr}
+                  placeholder="e.g. Cardiologie"
+                />
+                <LangField
+                  label="Name"
+                  lang="KIN"
+                  value={nameKiny}
+                  onChange={setNameKiny}
+                  placeholder="e.g. Indwara z'umutima"
+                />
               </div>
 
               {/* Description */}
@@ -666,7 +767,9 @@ function SpecializationPanel({
               {/* Active toggle — only on edit */}
               {isEdit && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">Status</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">
+                    Status
+                  </p>
                   <button
                     type="button"
                     onClick={() => setIsActive((v) => !v)}
@@ -683,9 +786,13 @@ function SpecializationPanel({
                       <ToggleLeft className="w-5 h-5 text-muted-foreground shrink-0" />
                     )}
                     <div className="text-left">
-                      <p className="text-[12px] font-medium text-foreground">{isActive ? "Active" : "Inactive"}</p>
+                      <p className="text-[12px] font-medium text-foreground">
+                        {isActive ? "Active" : "Inactive"}
+                      </p>
                       <p className="text-[10px] text-muted-foreground/60">
-                        {isActive ? "Visible and available for assignment" : "Hidden from doctor assignment"}
+                        {isActive
+                          ? "Visible and available for assignment"
+                          : "Hidden from doctor assignment"}
                       </p>
                     </div>
                   </button>
@@ -716,9 +823,18 @@ function SpecializationPanel({
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                {isSaving ? "Saving…" : isEdit ? "Save changes" : "Create specialization"}
+                {isSaving
+                  ? "Saving…"
+                  : isEdit
+                    ? "Save changes"
+                    : "Create specialization"}
               </Button>
-              <Button variant="ghost" className="w-full h-9 text-[12px] rounded-lg text-muted-foreground" onClick={onClose} disabled={isSaving}>
+              <Button
+                variant="ghost"
+                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                onClick={onClose}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
             </div>
@@ -748,14 +864,14 @@ function SubSpecPanel({
   const isEdit = mode === "edit";
   const { toast } = useToast();
 
-  const [subSpec, setSubSpec]           = useState("");
-  const [subSpecFr, setSubSpecFr]       = useState("");
-  const [subSpecKiny, setSubSpecKiny]   = useState("");
-  const [tierName, setTierName]         = useState("");
-  const [onlineFee, setOnlineFee]       = useState("");
-  const [inPersonFee, setInPersonFee]   = useState("");
-  const [description, setDescription]   = useState("");
-  const [isActive, setIsActive]         = useState(true);
+  const [subSpec, setSubSpec] = useState("");
+  const [subSpecFr, setSubSpecFr] = useState("");
+  const [subSpecKiny, setSubSpecKiny] = useState("");
+  const [tierName, setTierName] = useState("");
+  const [onlineFee, setOnlineFee] = useState("");
+  const [inPersonFee, setInPersonFee] = useState("");
+  const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
 
   const createMutation = useCreateSpecializationFee();
   const updateMutation = useUpdateSpecializationFee();
@@ -772,25 +888,38 @@ function SubSpecPanel({
       setDescription(fee.description ?? "");
       setIsActive(fee.is_active);
     } else if (mode === "create") {
-      setSubSpec(""); setSubSpecFr(""); setSubSpecKiny(""); setTierName("");
-      setOnlineFee(""); setInPersonFee(""); setDescription(""); setIsActive(true);
+      setSubSpec("");
+      setSubSpecFr("");
+      setSubSpecKiny("");
+      setTierName("");
+      setOnlineFee("");
+      setInPersonFee("");
+      setDescription("");
+      setIsActive(true);
     }
   }, [mode, fee]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && open) onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && open) onClose();
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   const handleSubmit = async () => {
     if (!isEdit && !subSpec.trim()) {
-      toast({ title: "Sub-specialization name is required", variant: "destructive" });
+      toast({
+        title: "Sub-specialization name is required",
+        variant: "destructive",
+      });
       return;
     }
     if (!isEdit && !tierName.trim()) {
@@ -829,7 +958,11 @@ function SubSpecPanel({
           description: description.trim() || undefined,
         });
       }
-      toast({ title: isEdit ? "Sub-specialization updated." : "Sub-specialization created." });
+      toast({
+        title: isEdit
+          ? "Sub-specialization updated."
+          : "Sub-specialization created.",
+      });
       onClose();
     } catch (error) {
       toast({ title: getErrorMessage(error), variant: "destructive" });
@@ -837,7 +970,8 @@ function SubSpecPanel({
   };
 
   // Breadcrumb: parent name from specialization_model (edit) or parentSpec (create)
-  const parentName = parentSpec?.name ?? fee?.specialization_model?.name ?? null;
+  const parentName =
+    parentSpec?.name ?? fee?.specialization_model?.name ?? null;
 
   return (
     <>
@@ -845,7 +979,9 @@ function SubSpecPanel({
         onClick={onClose}
         className={cn(
           "fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300",
-          open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          open
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none",
         )}
       />
       <div
@@ -862,7 +998,9 @@ function SubSpecPanel({
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
               <div className="min-w-0 flex-1 pr-3">
                 <p className="text-[14px] font-semibold text-foreground leading-tight">
-                  {isEdit ? "Edit sub-specialization" : "Add sub-specialization"}
+                  {isEdit
+                    ? "Edit sub-specialization"
+                    : "Add sub-specialization"}
                 </p>
                 {parentName && (
                   <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground truncate">
@@ -888,10 +1026,31 @@ function SubSpecPanel({
               {/* Sub-spec names — only on create */}
               {!isEdit && (
                 <div className="space-y-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Sub-specialization name</p>
-                  <LangField label="Name" lang="EN" value={subSpec} onChange={setSubSpec} placeholder="e.g. Interventional Cardiology" required />
-                  <LangField label="Name" lang="FR" value={subSpecFr} onChange={setSubSpecFr} placeholder="e.g. Cardiologie interventionnelle" />
-                  <LangField label="Name" lang="KIN" value={subSpecKiny} onChange={setSubSpecKiny} placeholder="e.g. Ubuvuzi bw'umutima" />
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    Sub-specialization name
+                  </p>
+                  <LangField
+                    label="Name"
+                    lang="EN"
+                    value={subSpec}
+                    onChange={setSubSpec}
+                    placeholder="e.g. Interventional Cardiology"
+                    required
+                  />
+                  <LangField
+                    label="Name"
+                    lang="FR"
+                    value={subSpecFr}
+                    onChange={setSubSpecFr}
+                    placeholder="e.g. Cardiologie interventionnelle"
+                  />
+                  <LangField
+                    label="Name"
+                    lang="KIN"
+                    value={subSpecKiny}
+                    onChange={setSubSpecKiny}
+                    placeholder="e.g. Ubuvuzi bw'umutima"
+                  />
                 </div>
               )}
 
@@ -911,11 +1070,14 @@ function SubSpecPanel({
 
               {/* Fees */}
               <div className="space-y-3">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Consultation fees (RWF)</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                  Consultation fees (RWF)
+                </p>
 
                 <div>
                   <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
-                    <Wifi className="w-3 h-3" /> Online fee <span className="text-red-500">*</span>
+                    <Wifi className="w-3 h-3" /> Online fee{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -929,7 +1091,8 @@ function SubSpecPanel({
 
                 <div>
                   <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
-                    <Building2 className="w-3 h-3" /> In-person fee <span className="text-red-500">*</span>
+                    <Building2 className="w-3 h-3" /> In-person fee{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -959,7 +1122,9 @@ function SubSpecPanel({
               {/* Status toggle — only on edit */}
               {isEdit && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">Status</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">
+                    Status
+                  </p>
                   <button
                     type="button"
                     onClick={() => setIsActive((v) => !v)}
@@ -976,9 +1141,13 @@ function SubSpecPanel({
                       <ToggleLeft className="w-5 h-5 text-muted-foreground shrink-0" />
                     )}
                     <div className="text-left">
-                      <p className="text-[12px] font-medium text-foreground">{isActive ? "Active" : "Inactive"}</p>
+                      <p className="text-[12px] font-medium text-foreground">
+                        {isActive ? "Active" : "Inactive"}
+                      </p>
                       <p className="text-[10px] text-muted-foreground/60">
-                        {isActive ? "Doctors can be assigned this fee tier" : "Deactivated — no new doctor assignments"}
+                        {isActive
+                          ? "Doctors can be assigned this fee tier"
+                          : "Deactivated — no new doctor assignments"}
                       </p>
                     </div>
                   </button>
@@ -1000,9 +1169,18 @@ function SubSpecPanel({
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                {isSaving ? "Saving…" : isEdit ? "Save changes" : "Create sub-specialization"}
+                {isSaving
+                  ? "Saving…"
+                  : isEdit
+                    ? "Save changes"
+                    : "Create sub-specialization"}
               </Button>
-              <Button variant="ghost" className="w-full h-9 text-[12px] rounded-lg text-muted-foreground" onClick={onClose} disabled={isSaving}>
+              <Button
+                variant="ghost"
+                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                onClick={onClose}
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
             </div>
@@ -1036,15 +1214,22 @@ function DeleteDialog({
 }) {
   return (
     <>
-      <div onClick={onCancel} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]" />
+      <div
+        onClick={onCancel}
+        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
+      />
       <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
         {conflictMessage ? (
           <>
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-[14px] font-semibold text-foreground">Cannot delete</p>
-                <p className="text-[12px] text-muted-foreground mt-1">{conflictMessage}</p>
+                <p className="text-[14px] font-semibold text-foreground">
+                  Cannot delete
+                </p>
+                <p className="text-[12px] text-muted-foreground mt-1">
+                  {conflictMessage}
+                </p>
                 {onDeactivate && (
                   <p className="text-[12px] text-muted-foreground mt-1">
                     You can deactivate it instead to stop new assignments.
@@ -1053,7 +1238,11 @@ function DeleteDialog({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 h-9 text-[12px] rounded-lg border-border/60" onClick={onCancel}>
+              <Button
+                variant="outline"
+                className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+                onClick={onCancel}
+              >
                 Cancel
               </Button>
               {onDeactivate && (
@@ -1063,7 +1252,11 @@ function DeleteDialog({
                   onClick={onDeactivate}
                   disabled={isDeactivating}
                 >
-                  {isDeactivating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                  {isDeactivating ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ToggleLeft className="w-3.5 h-3.5" />
+                  )}
                   Deactivate
                 </Button>
               )}
@@ -1072,18 +1265,34 @@ function DeleteDialog({
         ) : (
           <>
             <div>
-              <p className="text-[14px] font-semibold text-foreground">Delete {label}?</p>
+              <p className="text-[14px] font-semibold text-foreground">
+                Delete {label}?
+              </p>
               <p className="text-[12px] text-muted-foreground mt-1">
-                <span className="font-medium text-foreground">{name}</span>{" "}
-                will be permanently removed. This cannot be undone.
+                <span className="font-medium text-foreground">{name}</span> will
+                be permanently removed. This cannot be undone.
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 h-9 text-[12px] rounded-lg border-border/60" onClick={onCancel} disabled={isDeleting}>
+              <Button
+                variant="outline"
+                className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+                onClick={onCancel}
+                disabled={isDeleting}
+              >
                 Cancel
               </Button>
-              <Button variant="destructive" className="flex-1 h-9 text-[12px] rounded-lg gap-1.5" onClick={onConfirm} disabled={isDeleting}>
-                {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              <Button
+                variant="destructive"
+                className="flex-1 h-9 text-[12px] rounded-lg gap-1.5"
+                onClick={onConfirm}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
                 Delete
               </Button>
             </div>
@@ -1103,32 +1312,55 @@ function ManageSpecializations() {
   const [search, setSearch] = useState("");
 
   // Specialization panel
-  const [specPanelMode, setSpecPanelMode]     = useState<SpecPanelMode | null>(null);
-  const [editingSpec, setEditingSpec]         = useState<ApiSpecialization | null>(null);
-  const [deletingSpec, setDeletingSpec]       = useState<ApiSpecialization | null>(null);
-  const [deletingSpecId, setDeletingSpecId]   = useState<number | null>(null);
-  const [specDeleteConflict, setSpecDeleteConflict] = useState<string | null>(null);
+  const [specPanelMode, setSpecPanelMode] = useState<SpecPanelMode | null>(
+    null,
+  );
+  const [editingSpec, setEditingSpec] = useState<ApiSpecialization | null>(
+    null,
+  );
+  const [deletingSpec, setDeletingSpec] = useState<ApiSpecialization | null>(
+    null,
+  );
+  const [deletingSpecId, setDeletingSpecId] = useState<number | null>(null);
+  const [specDeleteConflict, setSpecDeleteConflict] = useState<string | null>(
+    null,
+  );
 
   // Sub-spec (fee) panel
-  const [feePanelMode, setFeePanelMode]             = useState<FeePanelMode | null>(null);
-  const [editingFee, setEditingFee]                 = useState<ApiSpecializationFee | null>(null);
-  const [addingSubSpecFor, setAddingSubSpecFor]     = useState<ApiSpecialization | null>(null);
-  const [deletingFee, setDeletingFee]               = useState<ApiSpecializationFee | null>(null);
-  const [deletingFeeId, setDeletingFeeId]           = useState<number | null>(null);
-  const [feeDeleteConflict, setFeeDeleteConflict]   = useState<string | null>(null);
-  const [isDeactivatingFee, setIsDeactivatingFee]   = useState(false);
+  const [feePanelMode, setFeePanelMode] = useState<FeePanelMode | null>(null);
+  const [editingFee, setEditingFee] = useState<ApiSpecializationFee | null>(
+    null,
+  );
+  const [addingSubSpecFor, setAddingSubSpecFor] =
+    useState<ApiSpecialization | null>(null);
+  const [deletingFee, setDeletingFee] = useState<ApiSpecializationFee | null>(
+    null,
+  );
+  const [deletingFeeId, setDeletingFeeId] = useState<number | null>(null);
+  const [feeDeleteConflict, setFeeDeleteConflict] = useState<string | null>(
+    null,
+  );
+  const [isDeactivatingFee, setIsDeactivatingFee] = useState(false);
 
   // Expanded rows on desktop (keyed by spec id)
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
-  const { data: specsData, isLoading: specsLoading, isError: specsError } = useGetSpecializations();
-  const { data: fees = [], isLoading: feesLoading, isError: feesError }   = useGetSpecializationFees();
+  const {
+    data: specsData,
+    isLoading: specsLoading,
+    isError: specsError,
+  } = useGetSpecializations();
+  const {
+    data: fees = [],
+    isLoading: feesLoading,
+    isError: feesError,
+  } = useGetSpecializationFees();
 
   const specs: ApiSpecialization[] = specsData?.data ?? [];
 
   const deleteSpecMutation = useDeleteSpecialization();
-  const deleteFeeMutation  = useDeleteSpecializationFee();
-  const updateFeeMutation  = useUpdateSpecializationFee();
+  const deleteFeeMutation = useDeleteSpecializationFee();
+  const updateFeeMutation = useUpdateSpecializationFee();
 
   // Group fees by specialization_id — skip orphaned fees (null specialization_id)
   const feesBySpecId = useMemo(() => {
@@ -1154,9 +1386,11 @@ function ManageSpecializations() {
   }, [specs, search]);
 
   // Stats
-  const withSubSpec = specs.filter((s) => (feesBySpecId[s.id]?.length ?? 0) > 0).length;
+  const withSubSpec = specs.filter(
+    (s) => (feesBySpecId[s.id]?.length ?? 0) > 0,
+  ).length;
   const activeSpecs = specs.filter((s) => s.is_active).length;
-  const activeFees  = fees.filter((f) => f.is_active).length;
+  const activeFees = fees.filter((f) => f.is_active).length;
 
   // Expand/collapse
   const toggleExpand = useCallback((id: number) => {
@@ -1168,9 +1402,18 @@ function ManageSpecializations() {
   }, []);
 
   // Specialization actions
-  const openCreateSpec = useCallback(() => { setEditingSpec(null); setSpecPanelMode("create"); }, []);
-  const openEditSpec   = useCallback((s: ApiSpecialization) => { setEditingSpec(s); setSpecPanelMode("edit"); }, []);
-  const closeSpecPanel = useCallback(() => { setSpecPanelMode(null); setEditingSpec(null); }, []);
+  const openCreateSpec = useCallback(() => {
+    setEditingSpec(null);
+    setSpecPanelMode("create");
+  }, []);
+  const openEditSpec = useCallback((s: ApiSpecialization) => {
+    setEditingSpec(s);
+    setSpecPanelMode("edit");
+  }, []);
+  const closeSpecPanel = useCallback(() => {
+    setSpecPanelMode(null);
+    setEditingSpec(null);
+  }, []);
 
   const confirmDeleteSpec = useCallback(async () => {
     if (!deletingSpec) return;
@@ -1182,7 +1425,10 @@ function ManageSpecializations() {
       setDeletingSpec(null);
     } catch (error) {
       const msg = getErrorMessage(error);
-      if (msg.toLowerCase().includes("doctor") || msg.toLowerCase().includes("linked")) {
+      if (
+        msg.toLowerCase().includes("doctor") ||
+        msg.toLowerCase().includes("linked")
+      ) {
         setSpecDeleteConflict(msg);
       } else {
         toast({ title: msg, variant: "destructive" });
@@ -1199,8 +1445,16 @@ function ManageSpecializations() {
     setEditingFee(null);
     setFeePanelMode("create");
   }, []);
-  const openEditFee   = useCallback((f: ApiSpecializationFee) => { setEditingFee(f); setAddingSubSpecFor(null); setFeePanelMode("edit"); }, []);
-  const closeFeePanel = useCallback(() => { setFeePanelMode(null); setEditingFee(null); setAddingSubSpecFor(null); }, []);
+  const openEditFee = useCallback((f: ApiSpecializationFee) => {
+    setEditingFee(f);
+    setAddingSubSpecFor(null);
+    setFeePanelMode("edit");
+  }, []);
+  const closeFeePanel = useCallback(() => {
+    setFeePanelMode(null);
+    setEditingFee(null);
+    setAddingSubSpecFor(null);
+  }, []);
 
   const confirmDeleteFee = useCallback(async () => {
     if (!deletingFee) return;
@@ -1212,7 +1466,11 @@ function ManageSpecializations() {
       setDeletingFee(null);
     } catch (error) {
       const msg = getErrorMessage(error);
-      if (msg.toLowerCase().includes("doctor") || msg.toLowerCase().includes("assigned") || msg.toLowerCase().includes("deactivate")) {
+      if (
+        msg.toLowerCase().includes("doctor") ||
+        msg.toLowerCase().includes("assigned") ||
+        msg.toLowerCase().includes("deactivate")
+      ) {
         setFeeDeleteConflict(msg);
       } else {
         toast({ title: msg, variant: "destructive" });
@@ -1227,7 +1485,10 @@ function ManageSpecializations() {
     if (!deletingFee) return;
     setIsDeactivatingFee(true);
     try {
-      await updateFeeMutation.mutateAsync({ id: deletingFee.id, is_active: false });
+      await updateFeeMutation.mutateAsync({
+        id: deletingFee.id,
+        is_active: false,
+      });
       toast({ title: "Sub-specialization deactivated." });
       setDeletingFee(null);
       setFeeDeleteConflict(null);
@@ -1239,7 +1500,7 @@ function ManageSpecializations() {
   }, [deletingFee, updateFeeMutation, toast]);
 
   const isLoading = specsLoading || feesLoading;
-  const isError   = specsError || feesError;
+  const isError = specsError || feesError;
 
   return (
     <DashboardLayout role="admin">
@@ -1252,10 +1513,30 @@ function ManageSpecializations() {
         <main className="flex-1 overflow-y-auto">
           {/* Stats */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total"          value={specs.length} icon={Stethoscope}  accent="primary" />
-            <StatCard label="Active"         value={activeSpecs}  icon={CheckCircle2} accent="success" />
-            <StatCard label="With sub-specs" value={withSubSpec}  icon={Layers}       accent="warning" />
-            <StatCard label="Active fees"    value={activeFees}   icon={DollarSign}   accent="info" />
+            <StatCard
+              label="Total"
+              value={specs.length}
+              icon={Stethoscope}
+              accent="primary"
+            />
+            <StatCard
+              label="Active"
+              value={activeSpecs}
+              icon={CheckCircle2}
+              accent="success"
+            />
+            <StatCard
+              label="With sub-specs"
+              value={withSubSpec}
+              icon={Layers}
+              accent="warning"
+            />
+            <StatCard
+              label="Active fees"
+              value={activeFees}
+              icon={CreditCard}
+              accent="info"
+            />
           </div>
 
           {/* Meta bar */}
@@ -1265,10 +1546,14 @@ function ManageSpecializations() {
                 <span className="text-muted-foreground/50">Loading…</span>
               ) : (
                 <>
-                  <span className="font-bold text-foreground">{specs.length}</span>{" "}
+                  <span className="font-bold text-foreground">
+                    {specs.length}
+                  </span>{" "}
                   {specs.length === 1 ? "specialization" : "specializations"}
                   {fees.length > 0 && (
-                    <span className="text-muted-foreground/50 ml-1">· {fees.length} sub-specs</span>
+                    <span className="text-muted-foreground/50 ml-1">
+                      · {fees.length} sub-specs
+                    </span>
                   )}
                 </>
               )}
@@ -1286,13 +1571,20 @@ function ManageSpecializations() {
                   className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                  >
                     <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
 
-              <Button size="sm" className="h-8 px-3 text-[11px] rounded-sm gap-1.5" onClick={openCreateSpec}>
+              <Button
+                size="sm"
+                className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
+                onClick={openCreateSpec}
+              >
                 <Plus className="w-3.5 h-3.5" />
                 Add specialization
               </Button>
@@ -1318,8 +1610,12 @@ function ManageSpecializations() {
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                 <AlertCircle className="w-8 h-8 text-destructive/60" />
-                <p className="text-[12px] font-semibold text-destructive">Failed to load data</p>
-                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+                <p className="text-[12px] font-semibold text-destructive">
+                  Failed to load data
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  Check your connection and try again
+                </p>
               </div>
             ) : !isLoading && filteredSpecs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
@@ -1328,14 +1624,22 @@ function ManageSpecializations() {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {search ? "No specializations match your search" : "No specializations yet"}
+                    {search
+                      ? "No specializations match your search"
+                      : "No specializations yet"}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {search ? "Try a different keyword" : "Create a parent specialization, then add sub-specializations under it"}
+                    {search
+                      ? "Try a different keyword"
+                      : "Create a parent specialization, then add sub-specializations under it"}
                   </p>
                 </div>
                 {!search && (
-                  <Button size="sm" className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5" onClick={openCreateSpec}>
+                  <Button
+                    size="sm"
+                    className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5"
+                    onClick={openCreateSpec}
+                  >
                     <Plus className="w-3.5 h-3.5" />
                     Add specialization
                   </Button>
@@ -1348,11 +1652,21 @@ function ManageSpecializations() {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Specialization</th>
-                        <th className="text-left px-4 py-3 font-semibold">Description</th>
-                        <th className="text-left px-4 py-3 font-semibold">Sub-specs</th>
-                        <th className="text-left px-4 py-3 font-semibold">Doctors</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Specialization
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Description
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Sub-specs
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Doctors
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Status
+                        </th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
@@ -1385,7 +1699,10 @@ function ManageSpecializations() {
                 <div className="md:hidden flex flex-col gap-2">
                   {isLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        <div
+                          key={i}
+                          className="h-24 rounded-sm border border-border/60 bg-card animate-pulse"
+                        />
                       ))
                     : filteredSpecs.map((spec) => (
                         <SpecializationCard
@@ -1429,7 +1746,10 @@ function ManageSpecializations() {
           label="specialization"
           name={deletingSpec.name}
           onConfirm={confirmDeleteSpec}
-          onCancel={() => { setDeletingSpec(null); setSpecDeleteConflict(null); }}
+          onCancel={() => {
+            setDeletingSpec(null);
+            setSpecDeleteConflict(null);
+          }}
           isDeleting={deleteSpecMutation.isPending}
           conflictMessage={specDeleteConflict}
         />
@@ -1441,7 +1761,10 @@ function ManageSpecializations() {
           label="sub-specialization"
           name={feeDisplayName(deletingFee)}
           onConfirm={confirmDeleteFee}
-          onCancel={() => { setDeletingFee(null); setFeeDeleteConflict(null); }}
+          onCancel={() => {
+            setDeletingFee(null);
+            setFeeDeleteConflict(null);
+          }}
           isDeleting={deleteFeeMutation.isPending}
           conflictMessage={feeDeleteConflict}
           onDeactivate={feeDeleteConflict ? handleDeactivateFee : undefined}

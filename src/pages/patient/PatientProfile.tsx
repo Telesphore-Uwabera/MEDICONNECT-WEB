@@ -44,6 +44,7 @@ import {
   useSaveMedicalInfo,
   useGetInsurance,
   useUpdateInsurance,
+  useGetPublicInsurances,
 } from "@/hooks/use-patient-profile";
 import type {
   PatientProfile as TPatientProfile,
@@ -1092,7 +1093,6 @@ function MedicalInfoTab() {
           <h3 className="text-sm font-semibold text-foreground">Medical Information</h3>
           {patient && (
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {/* ✅ Fixed: access name through nested user object, same shape as PatientProfile */}
               {patient.user?.name} · {patient.date_of_birth ? calcAge(patient.date_of_birth) : "—"} yrs
             </p>
           )}
@@ -1183,27 +1183,40 @@ function InsuranceTab({
   profileInsurance?: Insurance | null;
 }) {
   const { data: insurance, isLoading } = useGetInsurance();
+  const { data: publicInsurances = [], isLoading: isLoadingPublic } = useGetPublicInsurances();
   const updateInsurance = useUpdateInsurance();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [insuranceId, setInsuranceId] = useState("");
+  const [selectedId, setSelectedId] = useState<string>("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
 
   const active = insurance ?? profileInsurance ?? null;
 
+  // The insurance from the public list that matches the currently selected id
+  const selectedPublicInsurance = publicInsurances.find(
+    (ins) => ins.id.toString() === selectedId
+  ) ?? null;
+
   const startEdit = () => {
-    setInsuranceId(active?.id?.toString() ?? "");
+    setSelectedId(active?.id?.toString() ?? "");
     setInsuranceNumber("");
     setIsEditing(true);
   };
 
   const handleSave = () => {
+    if (!selectedId) {
+      toast.error("Please select an insurance provider.");
+      return;
+    }
     if (!insuranceNumber.trim()) {
       toast.error("Insurance number is required.");
       return;
     }
     updateInsurance.mutate(
-      { insurance_id: parseInt(insuranceId, 10), insurance_number: insuranceNumber.trim() },
+      {
+        insurance_id: parseInt(selectedId, 10),
+        insurance_number: insuranceNumber.trim(),
+      },
       {
         onSuccess: () => {
           toast.success("Insurance updated successfully.");
@@ -1266,50 +1279,97 @@ function InsuranceTab({
             </h3>
           </div>
           <div className="p-4 space-y-4">
-            {active && (
+            {/* Insurance provider select */}
+            <FormField label="Insurance provider">
+              <Select
+                value={selectedId}
+                onValueChange={setSelectedId}
+                disabled={isLoadingPublic}
+              >
+                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
+                  {isLoadingPublic ? (
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 size={12} className="animate-spin" />
+                      Loading providers…
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Select a provider" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {publicInsurances.map((ins) => (
+                    <SelectItem key={ins.id} value={ins.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        {ins.logo ? (
+                          <img
+                            src={ins.logo}
+                            alt={ins.name}
+                            className="h-4 w-auto object-contain shrink-0"
+                          />
+                        ) : (
+                          <Shield size={12} className="text-muted-foreground shrink-0" />
+                        )}
+                        <span>{ins.name}</span>
+                        <span className="text-muted-foreground text-[10px]">
+                          · {parseFloat(ins.coverage_percentage)}% coverage
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            {/* Preview card for the selected provider */}
+            {selectedPublicInsurance && (
               <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50 border border-border">
-                {active.logo ? (
-                  <img src={active.logo} alt={active.name} className="h-8 w-auto object-contain" />
+                {selectedPublicInsurance.logo ? (
+                  <img
+                    src={selectedPublicInsurance.logo}
+                    alt={selectedPublicInsurance.name}
+                    className="h-8 w-auto object-contain shrink-0"
+                  />
                 ) : (
-                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                     <Shield size={14} className="text-primary" />
                   </div>
                 )}
-                <div>
-                  <p className="text-xs font-medium text-foreground">{active.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{active.code}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground">{selectedPublicInsurance.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{selectedPublicInsurance.code}</p>
+                  {selectedPublicInsurance.description && (
+                    <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                      {selectedPublicInsurance.description}
+                    </p>
+                  )}
                 </div>
-                <Badge className="ml-auto text-[11px] rounded-full px-2.5 bg-green-500/10 text-green-700 border border-green-500/25">
-                  {parseFloat(active.coverage_percentage)}% coverage
+                <Badge className="ml-auto text-[11px] rounded-full px-2.5 bg-green-500/10 text-green-700 border border-green-500/25 shrink-0">
+                  {parseFloat(selectedPublicInsurance.coverage_percentage)}% coverage
                 </Badge>
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Insurance ID">
-                <Input
-                  type="number"
-                  value={insuranceId}
-                  onChange={(e) => setInsuranceId(e.target.value)}
-                  placeholder="e.g. 1"
-                  className="border-border focus-visible:ring-primary text-xs h-9"
-                />
-              </FormField>
-              <FormField label="Insurance number">
-                <Input
-                  value={insuranceNumber}
-                  onChange={(e) => setInsuranceNumber(e.target.value)}
-                  placeholder="e.g. RSSB-123456"
-                  className="border-border focus-visible:ring-primary font-mono text-xs h-9"
-                />
-              </FormField>
-            </div>
+
+            {/* Insurance number input */}
+            <FormField label="Insurance number">
+              <Input
+                value={insuranceNumber}
+                onChange={(e) => setInsuranceNumber(e.target.value)}
+                placeholder="e.g. RSSB-123456"
+                className="border-border focus-visible:ring-primary font-mono text-xs h-9"
+              />
+            </FormField>
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditing(false)} className="border-border text-xs">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                className="border-border text-xs"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={updateInsurance.isPending}
+                disabled={updateInsurance.isPending || !selectedId}
                 className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 gap-1.5"
               >
                 {updateInsurance.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
