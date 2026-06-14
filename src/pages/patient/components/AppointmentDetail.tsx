@@ -1,54 +1,156 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useGetPatientAppointment, ApiAppointmentStatus } from "@/hooks/patient/use-patient-appointment";
+import {
+  useGetPatientAppointment,
+  ApiAppointmentStatus,
+} from "@/hooks/patient/use-patient-appointment";
+import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, Video, MapPin, Calendar, Clock, CreditCard,
-  Shield, User, Building2, FileText, Phone, Mail,
-  Globe, Star, ExternalLink, Copy, Check, AlertCircle, X,
+  ArrowLeft,
+  Video,
+  MapPin,
+  Calendar,
+  Clock,
+  CreditCard,
+  Shield,
+  User,
+  Building2,
+  FileText,
+  Phone,
+  Mail,
+  Globe,
+  Star,
+  ExternalLink,
+  Copy,
+  Check,
+  AlertCircle,
+  X,
+  Loader2,
+  Banknote,
+  PhoneCall,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  Wifi,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type PaymentMethod = "mtn_momo" | "airtel_money" | "card" | "cash" | "insurance_full";
+
+interface PayPayload {
+  method: PaymentMethod;
+  phone?: string;
+}
+
+interface JoinResponse {
+  message: string;
+  room_url: string;
+  room_name: string;
+  token: string;
+  join_url: string;
+}
+
+// ─── API mutations ────────────────────────────────────────────────────────────
+
+function usePayAppointment(appointmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: PayPayload) =>
+      apiFetch(`/patient/appointments/${appointmentId}/pay`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
+      qc.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+  });
+}
+
+function useJoinSession(appointmentId: string) {
+  return useMutation<JoinResponse>({
+    mutationFn: () =>
+      apiFetch(`/patient/appointments/${appointmentId}/join`, { method: "POST" }),
+  });
+}
+
+function useCancelAppointment(appointmentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason?: string) =>
+      apiFetch(`/patient/appointments/${appointmentId}`, {
+        method: "DELETE",
+        body: reason ? JSON.stringify({ reason }) : undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
+      qc.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+  });
+}
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<ApiAppointmentStatus, string> = {
-  pending:     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  confirmed:   "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
-  in_progress: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
-  completed:   "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  cancelled:   "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  pending:
+    "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  confirmed:
+    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+  in_progress:
+    "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
+  completed:
+    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  cancelled:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
 };
 
 const STATUS_DOT: Record<ApiAppointmentStatus, string> = {
-  pending:     "bg-amber-500",
-  confirmed:   "bg-sky-500",
+  pending: "bg-amber-500",
+  confirmed: "bg-sky-500",
   in_progress: "bg-violet-500 animate-pulse",
-  completed:   "bg-emerald-500",
-  cancelled:   "bg-red-500",
+  completed: "bg-emerald-500",
+  cancelled: "bg-red-500",
+};
+
+const STATUS_ACCENT: Record<ApiAppointmentStatus, string> = {
+  pending: "bg-amber-500",
+  confirmed: "bg-sky-500",
+  in_progress: "bg-violet-500",
+  completed: "bg-emerald-500",
+  cancelled: "bg-red-500",
 };
 
 const STATUS_LABEL: Record<ApiAppointmentStatus, string> = {
-  pending:     "Pending",
-  confirmed:   "Confirmed",
+  pending: "Pending",
+  confirmed: "Confirmed",
   in_progress: "In Progress",
-  completed:   "Completed",
-  cancelled:   "Cancelled",
+  completed: "Completed",
+  cancelled: "Cancelled",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(str: string) {
-  try { return format(parseISO(str), "EEEE, MMMM dd, yyyy"); }
-  catch { return str; }
+  try {
+    return format(parseISO(str), "EEEE, MMMM dd, yyyy");
+  } catch {
+    return str;
+  }
 }
 
 function formatTime(str: string) {
   try {
     const t = str.length <= 8 ? `2000-01-01T${str}` : str;
     return format(parseISO(t), "hh:mm a");
-  } catch { return str; }
+  } catch {
+    return str;
+  }
 }
 
 function formatCurrency(amount: string, currency: string) {
@@ -57,64 +159,7 @@ function formatCurrency(amount: string, currency: string) {
   return `${n.toLocaleString()} ${currency}`;
 }
 
-// ─── Small atoms ─────────────────────────────────────────────────────────────
-
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-  mono = false,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-border/40 last:border-b-0">
-      <div className="w-6 h-6 rounded-sm bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <Icon className="w-3 h-3 text-muted-foreground/70" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-0.5">
-          {label}
-        </p>
-        <p className={cn("text-[12px] text-foreground", mono && "font-mono")}>
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function SectionCard({
-  title,
-  icon: Icon,
-  children,
-  accent,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  accent?: string;
-}) {
-  return (
-    <div className="rounded-sm border border-border/70 bg-card shadow-sm overflow-hidden">
-      <div className={cn(
-        "px-4 py-3 border-b border-border/60 flex items-center gap-2.5",
-        accent ?? "bg-muted/30",
-      )}>
-        <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-          <Icon className="w-3 h-3 text-primary" />
-        </div>
-        <h3 className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
-          {title}
-        </h3>
-      </div>
-      <div className="px-4 py-1">{children}</div>
-    </div>
-  );
-}
+// ─── Atoms ────────────────────────────────────────────────────────────────────
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
@@ -129,10 +174,305 @@ function CopyButton({ value }: { value: string }) {
       className="ml-1.5 text-muted-foreground/50 hover:text-primary transition-colors"
       title="Copy"
     >
-      {copied
-        ? <Check className="w-3 h-3 text-emerald-500" />
-        : <Copy className="w-3 h-3" />}
+      {copied ? (
+        <Check className="w-3 h-3 text-emerald-500" />
+      ) : (
+        <Copy className="w-3 h-3" />
+      )}
     </button>
+  );
+}
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  mono = false,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-border/30 last:border-b-0">
+      <Icon className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+        <p className="text-[11px] text-muted-foreground/70 whitespace-nowrap">{label}</p>
+        <p
+          className={cn(
+            "text-[12px] text-foreground text-right",
+            mono && "font-mono"
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors"
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </span>
+        {open ? (
+          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50" />
+        )}
+      </button>
+      {open && <div className="px-4 py-1">{children}</div>}
+    </div>
+  );
+}
+
+// ─── Pay Sheet ────────────────────────────────────────────────────────────────
+
+const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.ElementType; needsPhone: boolean }[] =
+  [
+    { id: "mtn_momo", label: "MTN MoMo", icon: PhoneCall, needsPhone: true },
+    { id: "airtel_money", label: "Airtel Money", icon: PhoneCall, needsPhone: true },
+    { id: "card", label: "Card", icon: CreditCard, needsPhone: false },
+    { id: "cash", label: "Cash", icon: Banknote, needsPhone: false },
+    { id: "insurance_full", label: "Full Insurance", icon: Shield, needsPhone: false },
+  ];
+
+function PaySheet({
+  appointmentId,
+  amount,
+  currency,
+  onClose,
+}: {
+  appointmentId: string;
+  amount: string;
+  currency: string;
+  onClose: () => void;
+}) {
+  const [method, setMethod] = useState<PaymentMethod>("mtn_momo");
+  const [phone, setPhone] = useState("");
+  const { mutate, isPending, isSuccess, isError, error } = usePayAppointment(appointmentId);
+
+  const selectedMethod = PAYMENT_METHODS.find((m) => m.id === method)!;
+
+  const handlePay = () => {
+    mutate(
+      selectedMethod.needsPhone ? { method, phone } : { method },
+      { onSuccess: () => setTimeout(onClose, 1500) }
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+          <div>
+            <p className="text-[13px] font-semibold">Pay for Appointment</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Amount due:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(amount, currency)}
+              </span>
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Method picker */}
+          <div className="grid grid-cols-2 gap-2">
+            {PAYMENT_METHODS.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setMethod(m.id)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-[11px] font-medium transition-all",
+                  method === m.id
+                    ? "border-primary bg-primary/8 text-primary"
+                    : "border-border/50 bg-muted/30 text-muted-foreground hover:border-border hover:bg-muted/60"
+                )}
+              >
+                <m.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Phone input */}
+          {selectedMethod.needsPhone && (
+            <div>
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5 block">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="07XXXXXXXX"
+                className="w-full h-9 rounded-lg border border-border/60 bg-muted/30 px-3 text-[12px] placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
+              />
+            </div>
+          )}
+
+          {/* Error */}
+          {isError && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+              <p className="text-[11px] text-red-600 dark:text-red-400">
+                {(error as any)?.message ?? "Payment failed. Please try again."}
+              </p>
+            </div>
+          )}
+
+          {/* Success */}
+          {isSuccess && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+              <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                Payment successful!
+              </p>
+            </div>
+          )}
+
+          <Button
+            onClick={handlePay}
+            disabled={isPending || isSuccess || (selectedMethod.needsPhone && !phone.trim())}
+            className="w-full h-9 rounded-lg text-[12px] font-semibold gap-2"
+          >
+            {isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CreditCard className="w-3.5 h-3.5" />
+            )}
+            {isPending ? "Processing…" : `Pay ${formatCurrency(amount, currency)}`}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Cancel Dialog ────────────────────────────────────────────────────────────
+
+function CancelDialog({
+  appointmentId,
+  onClose,
+}: {
+  appointmentId: string;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const { mutate, isPending, isSuccess, isError, error } = useCancelAppointment(appointmentId);
+
+  const handleCancel = () => {
+    mutate(reason.trim() || undefined, {
+      onSuccess: () => setTimeout(onClose, 1500),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border/50">
+          <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center mb-3">
+            <XCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <p className="text-[13px] font-semibold">Cancel appointment?</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            This action cannot be undone. Refund policies may apply.
+          </p>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5 block">
+              Reason <span className="normal-case font-normal">(optional)</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. I can't make it at this time"
+              rows={3}
+              className="w-full rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[12px] placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
+            />
+          </div>
+
+          {isError && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+              <p className="text-[11px] text-red-600 dark:text-red-400">
+                {(error as any)?.message ?? "Could not cancel. Please try again."}
+              </p>
+            </div>
+          )}
+
+          {isSuccess && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+              <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                Appointment cancelled.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={isPending}
+              className="flex-1 h-9 rounded-lg text-[12px]"
+            >
+              Keep it
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCancel}
+              disabled={isPending || isSuccess}
+              className="flex-1 h-9 rounded-lg text-[12px] font-semibold bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white gap-1.5"
+            >
+              {isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <XCircle className="w-3.5 h-3.5" />
+              )}
+              {isPending ? "Cancelling…" : "Yes, cancel"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -140,41 +480,101 @@ function CopyButton({ value }: { value: string }) {
 
 function DetailSkeleton() {
   return (
-    <div className="p-4 lg:p-6 space-y-4 animate-pulse">
-      {/* Hero */}
-      <div className="rounded-sm border border-border/70 bg-card p-5 space-y-4">
+    <div className="p-5 space-y-5 animate-pulse">
+      <div className="rounded-xl border border-border/50 bg-card p-5 space-y-4">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-sm bg-muted shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-48 rounded bg-muted" />
-            <div className="h-3 w-32 rounded bg-muted" />
-            <div className="h-5 w-24 rounded-sm bg-muted" />
+          <div className="w-16 h-16 rounded-full bg-muted shrink-0" />
+          <div className="flex-1 space-y-2.5">
+            <div className="h-4 w-44 rounded-full bg-muted" />
+            <div className="h-3 w-28 rounded-full bg-muted" />
+            <div className="h-5 w-20 rounded-full bg-muted" />
           </div>
-          <div className="h-8 w-24 rounded-sm bg-muted" />
         </div>
         <div className="grid grid-cols-3 gap-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-sm bg-muted" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-muted" />
           ))}
         </div>
+        <div className="h-10 rounded-xl bg-muted" />
       </div>
-      {/* Cards */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-sm border border-border/70 bg-card p-4 space-y-3">
-            <div className="h-3 w-24 rounded bg-muted" />
-            {Array.from({ length: 3 }).map((_, j) => (
-              <div key={j} className="h-2.5 w-full rounded bg-muted" />
-            ))}
-          </div>
-        ))}
-      </div>
+      {[0, 1].map((i) => (
+        <div key={i} className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+          <div className="h-3 w-24 rounded-full bg-muted" />
+          {[0, 1, 2].map((j) => (
+            <div key={j} className="flex justify-between">
+              <div className="h-2.5 w-24 rounded-full bg-muted" />
+              <div className="h-2.5 w-28 rounded-full bg-muted" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Action Bar ───────────────────────────────────────────────────────────────
+
+function ActionBar({
+  appt,
+  onPay,
+  onJoin,
+  onCancel,
+  joinPending,
+}: {
+  appt: any;
+  onPay: () => void;
+  onJoin: () => void;
+  onCancel: () => void;
+  joinPending: boolean;
+}) {
+  const status: ApiAppointmentStatus = appt.status;
+  const unpaid = appt.payment_status !== "paid"&& appt.status=="pending" ;
+  const canJoin = (status === "confirmed" || status === "in_progress") && appt.daily_room_url;
+  const canCancel = status === "pending" || status === "confirmed";
+  const canPay = unpaid && status !== "cancelled" && status !== "completed";
+
+  if (!canPay && !canJoin && !canCancel) return null;
+
+  return (
+    <div className="flex gap-2 flex-wrap">
+      {canJoin && (
+        <Button
+          onClick={onJoin}
+          disabled={joinPending}
+          className="flex-1 h-9 rounded-sm text-[12px] font-semibold gap-2 bg-violet-600 hover:bg-violet-700 border-violet-600 hover:border-violet-700 text-white shadow-sm shadow-violet-500/20"
+        >
+          {joinPending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Video className="w-3.5 h-3.5" />
+          )}
+          {joinPending ? "Joining…" : "Join Session"}
+        </Button>
+      )}
+      {canPay && (
+        <Button
+          onClick={onPay}
+          className="flex-1 h-9 rounded-sm text-[12px] font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          Pay Now
+        </Button>
+      )}
+      {canCancel && (
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="h-9 rounded-sm text-[12px] gap-1.5 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
+        >
+          <XCircle className="w-3.5 h-3.5" />
+          Cancel
+        </Button>
+      )}
     </div>
   );
 }
 
 // ─── AppointmentDetailContent ─────────────────────────────────────────────────
-// Reusable inner content — used by the modal. No layout wrappers.
 
 export function AppointmentDetailContent({
   appointmentId,
@@ -184,90 +584,109 @@ export function AppointmentDetailContent({
   onClose: () => void;
 }) {
   const { data, isLoading, isError } = useGetPatientAppointment(appointmentId);
+  const [showPay, setShowPay] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
 
-  const appt      = (data as any)?.appointment ?? data;
+  const joinMutation = useJoinSession(appointmentId);
+
+  const handleJoin = () => {
+    joinMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        window.open(res.join_url, "_blank", "noopener,noreferrer");
+      },
+    });
+  };
+
+  const appt = (data as any)?.appointment ?? data;
   const canReview = (data as any)?.can_review ?? false;
-
-  const doctor    = appt?.doctor   ?? null;
-  const hospital  = appt?.hospital ?? null;
+  const doctor = appt?.doctor ?? null;
+  const hospital = appt?.hospital ?? null;
   const insurance = appt?.insurance ?? null;
 
   const doctorName = doctor
-    ? (doctor.designations || doctor.user?.name)
+    ? doctor.designations || doctor.user?.name
     : hospital?.name_en ?? "—";
 
   const doctorAvatar = doctor?.image ?? doctor?.user?.avatar ?? null;
+  const avatarSrc = doctorAvatar
+    ? doctorAvatar.startsWith("http")
+      ? doctorAvatar
+      : `${import.meta.env.VITE_STORAGE_URL ?? ""}/${doctorAvatar}`
+    : null;
 
-  const isActionable =
-    appt?.status === "confirmed" || appt?.status === "in_progress";
+  const status: ApiAppointmentStatus | undefined = appt?.status;
+  const unpaid = appt && appt.payment_status !== "paid" && parseFloat(appt.patient_pays) > 0;
 
   return (
     <div className="flex flex-col h-full">
-
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between flex-shrink-0">
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-2.5 flex items-center justify-between flex-shrink-0">
         <button
           onClick={onClose}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to appointments
+          Appointments
         </button>
-        {appt && (
+        {status && (
           <Badge
             variant="outline"
-            className={cn("text-[10px] px-2 py-0.5 font-medium border", STATUS_STYLES[appt.status as ApiAppointmentStatus])}
+            className={cn(
+              "text-[10px] px-2.5 py-0.5 font-semibold border rounded-full",
+              STATUS_STYLES[status]
+            )}
           >
-            <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[appt.status as ApiAppointmentStatus])} />
-            {STATUS_LABEL[appt.status as ApiAppointmentStatus]}
+            <span
+              className={cn(
+                "w-1.5 h-1.5 rounded-full mr-1.5 inline-block",
+                STATUS_DOT[status]
+              )}
+            />
+            {STATUS_LABEL[status]}
           </Badge>
         )}
       </div>
 
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto">
-
-        {/* Loading */}
         {isLoading && <DetailSkeleton />}
 
-        {/* Error */}
         {isError && (
-          <div className="flex flex-col items-center justify-center py-24 gap-3 text-center px-4">
-            <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center px-6">
+            <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center">
               <AlertCircle className="w-6 h-6 text-red-500" />
             </div>
             <div>
-              <p className="text-[12px] font-semibold text-foreground">Failed to load appointment</p>
-              <p className="text-[11px] text-muted-foreground/70 mt-1">Please try again or go back</p>
+              <p className="text-[13px] font-semibold text-foreground">Failed to load</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Couldn't fetch appointment details
+              </p>
             </div>
-            <Button size="sm" variant="outline" onClick={onClose} className="rounded-sm text-[11px]">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-lg text-[11px]"
+            >
               <ArrowLeft className="w-3 h-3 mr-1.5" /> Go back
             </Button>
           </div>
         )}
 
-        {/* Content */}
         {!isLoading && !isError && appt && (
-          <div className="p-4 lg:p-6 space-y-4 max-w-5xl mx-auto">
+          <div className="p-4 lg:p-5 space-y-4 max-w-2xl mx-auto">
 
             {/* ── Hero card ── */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm overflow-hidden">
-              {/* Top accent strip */}
-              <div className={cn(
-                "h-1 w-full",
-                appt.status === "completed"   ? "bg-emerald-500" :
-                appt.status === "in_progress" ? "bg-violet-500"  :
-                appt.status === "confirmed"   ? "bg-sky-500"     :
-                appt.status === "cancelled"   ? "bg-red-500"     :
-                "bg-amber-500"
-              )} />
+            <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
+              
 
-              <div className="p-5">
-                <div className="flex items-start gap-4">
+              <div className="p-5 space-y-4">
+                {/* Provider row */}
+                <div className="flex items-start gap-3.5">
                   {/* Avatar */}
-                  <div className="w-14 h-14 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0 border border-primary/15 overflow-hidden">
-                    {doctorAvatar ? (
-                      <img src={doctorAvatar} alt={doctorName} className="h-full w-full object-cover" />
+                  <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0 border border-primary/15 overflow-hidden ring-2 ring-background">
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={doctorName} className="h-full w-full object-cover" />
                     ) : hospital ? (
                       <Building2 className="w-6 h-6" />
                     ) : (
@@ -276,60 +695,42 @@ export function AppointmentDetailContent({
                   </div>
 
                   {/* Name + meta */}
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-[15px] font-semibold text-foreground leading-tight">
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    <h2 className="text-[15px] font-semibold text-foreground leading-tight truncate">
                       {doctorName}
                     </h2>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                       {doctor
                         ? doctor.specialization || doctor.doctor_degree
                         : hospital
-                        ? `${hospital.city}${hospital.address ? ` · ${hospital.address}` : ""}`
+                        ? [hospital.city, hospital.address].filter(Boolean).join(" · ")
                         : "—"}
                     </p>
                     {doctor?.rating_avg && parseFloat(doctor.rating_avg) > 0 && (
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="flex items-center gap-1 mt-1.5">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[10px] font-medium text-foreground">
+                        <span className="text-[11px] font-semibold text-foreground">
                           {parseFloat(doctor.rating_avg).toFixed(1)}
                         </span>
+                        <span className="text-[10px] text-muted-foreground/60">rating</span>
                       </div>
                     )}
                   </div>
-
-                  {/* Action */}
-                  {isActionable && appt.daily_room_url && (
-                    <a
-                      href={appt.daily_room_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0"
-                    >
-                      <Button
-                        size="sm"
-                        className="h-8 px-4 text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm gap-1.5"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        Join Session
-                        <ExternalLink className="w-3 h-3 opacity-60" />
-                      </Button>
-                    </a>
-                  )}
                 </div>
 
-                {/* Stats row */}
-                <div className="mt-5 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                {/* Stats strip */}
+                <div className="grid grid-cols-3 divide-x divide-border/50 rounded-xl border border-border/50 overflow-hidden bg-muted/20">
                   {[
                     {
-                      icon: appt.type === "online" ? Video : MapPin,
+                      icon: appt.type === "online" ? Wifi : MapPin,
                       label: "Type",
-                      value: appt.type === "online" ? "Video consult" : "In-person",
+                      value: appt.type === "online" ? "Video" : "In-person",
                       color: appt.type === "online" ? "text-sky-500" : "text-amber-500",
                     },
                     {
                       icon: Calendar,
                       label: "Date",
-                      value: format(parseISO(appt.appointment_date), "MMM dd, yyyy"),
+                      value: format(parseISO(appt.appointment_date), "MMM dd"),
                       color: "text-muted-foreground",
                     },
                     {
@@ -339,256 +740,333 @@ export function AppointmentDetailContent({
                       color: "text-muted-foreground",
                     },
                   ].map(({ icon: Icon, label, value, color }) => (
-                    <div key={label} className="flex flex-col items-center py-3 px-2 bg-muted/20">
+                    <div key={label} className="flex flex-col items-center py-3 px-2">
                       <Icon className={cn("w-3.5 h-3.5 mb-1", color)} />
-                      <p className="text-[8px] uppercase tracking-widest font-semibold text-muted-foreground/60">
+                      <p className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground/50">
                         {label}
                       </p>
                       <p className="text-[11px] font-semibold text-foreground mt-0.5">{value}</p>
                     </div>
                   ))}
                 </div>
+
+                {/* Unpaid warning */}
+                {unpaid && appt.status !== "cancelled" && (
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                      Payment of{" "}
+                      <span className="font-semibold">
+                        {formatCurrency(appt.patient_pays, appt.currency)}
+                      </span>{" "}
+                      is due
+                    </p>
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <ActionBar
+                  appt={appt}
+                  onPay={() => setShowPay(true)}
+                  onJoin={handleJoin}
+                  onCancel={() => setShowCancel(true)}
+                  joinPending={joinMutation.isPending}
+                />
+
+                {/* Join error */}
+                {joinMutation.isError && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                    <p className="text-[11px] text-red-600 dark:text-red-400">
+                      {(joinMutation.error as any)?.message ?? "Could not start session."}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ── Detail grid ── */}
-            <div className="grid lg:grid-cols-2 gap-4">
+            {/* ── Appointment details ── */}
+            <Section title="Appointment">
+              <InfoRow icon={FileText} label="Booking type" value={appt.booking_type ?? "—"} />
+              <InfoRow
+                icon={Clock}
+                label="Duration"
+                value={appt.duration_minutes ? `${appt.duration_minutes} min` : "—"}
+              />
+              <InfoRow icon={Calendar} label="Date" value={formatDate(appt.appointment_date)} />
+              <InfoRow icon={Clock} label="Time" value={formatTime(appt.appointment_time)} />
+              {appt.notes && <InfoRow icon={FileText} label="Notes" value={appt.notes} />}
+            </Section>
 
-              {/* Appointment info */}
-              <SectionCard title="Appointment Info" icon={FileText}>
-                <InfoRow icon={FileText} label="Booking Type" value={appt.booking_type ?? "—"} />
-                <InfoRow icon={Clock}    label="Duration"     value={appt.duration_minutes ? `${appt.duration_minutes} minutes` : "—"} />
-                <InfoRow icon={Calendar} label="Date"         value={formatDate(appt.appointment_date)} />
-                <InfoRow icon={Clock}    label="Time"         value={formatTime(appt.appointment_time)} />
-                {appt.notes && (
-                  <InfoRow icon={FileText} label="Notes" value={appt.notes} />
-                )}
-              </SectionCard>
-
-              {/* Payment */}
-              <SectionCard title="Payment" icon={CreditCard}>
+            {/* ── Payment ── */}
+            <Section title="Payment">
+              <InfoRow
+                icon={CreditCard}
+                label="Consultation fee"
+                value={formatCurrency(appt.consultation_fee, appt.currency)}
+              />
+              {insurance && (
                 <InfoRow
-                  icon={CreditCard}
-                  label="Consultation Fee"
-                  value={formatCurrency(appt.consultation_fee, appt.currency)}
+                  icon={Shield}
+                  label="Insurance covers"
+                  value={formatCurrency(appt.insurance_covered, appt.currency)}
                 />
-                {insurance && (
-                  <InfoRow
-                    icon={Shield}
-                    label="Insurance Covered"
-                    value={formatCurrency(appt.insurance_covered, appt.currency)}
-                  />
-                )}
-                <InfoRow
-                  icon={CreditCard}
-                  label="You Pay"
-                  value={
-                    <span className="font-semibold text-foreground">
-                      {formatCurrency(appt.patient_pays, appt.currency)}
-                    </span>
-                  }
-                />
-                <InfoRow
-                  icon={Check}
-                  label="Payment Status"
-                  value={
-                    <span className={cn(
-                      "inline-flex items-center gap-1 text-[11px] font-medium",
-                      appt.payment_status === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
-                    )}>
-                      <span className={cn(
+              )}
+              <InfoRow
+                icon={CreditCard}
+                label="You pay"
+                value={
+                  <span className="font-semibold">
+                    {formatCurrency(appt.patient_pays, appt.currency)}
+                  </span>
+                }
+              />
+              <InfoRow
+                icon={Check}
+                label="Status"
+                value={
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 text-[11px] font-semibold",
+                      appt.payment_status === "paid"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    )}
+                  >
+                    <span
+                      className={cn(
                         "w-1.5 h-1.5 rounded-full",
                         appt.payment_status === "paid" ? "bg-emerald-500" : "bg-amber-500"
-                      )} />
-                      {appt.payment_status ?? "—"}
+                      )}
+                    />
+                    {appt.payment_status ?? "—"}
+                  </span>
+                }
+              />
+              {appt.payment_method && (
+                <InfoRow
+                  icon={Banknote}
+                  label="Method"
+                  value={appt.payment_method.replace(/_/g, " ")}
+                />
+              )}
+              {appt.payment_reference && (
+                <InfoRow
+                  icon={FileText}
+                  label="Reference"
+                  mono
+                  value={
+                    <span className="flex items-center gap-1">
+                      {appt.payment_reference}
+                      <CopyButton value={appt.payment_reference} />
                     </span>
                   }
                 />
-                {appt.payment_method && (
-                  <InfoRow icon={CreditCard} label="Payment Method" value={appt.payment_method.replace(/_/g, " ")} />
-                )}
-                {appt.payment_reference && (
-                  <InfoRow
-                    icon={FileText}
-                    label="Reference"
-                    mono
-                    value={
-                      <span className="flex items-center gap-1">
-                        {appt.payment_reference}
-                        <CopyButton value={appt.payment_reference} />
-                      </span>
-                    }
-                  />
-                )}
-              </SectionCard>
-
-              {/* Doctor card */}
-              {doctor && (
-                <SectionCard title="Doctor" icon={User}>
-                  <InfoRow icon={User}      label="Full Name"      value={doctor.user?.name ?? "—"} />
-                  <InfoRow icon={FileText}  label="Degree"         value={doctor.doctor_degree ?? "—"} />
-                  <InfoRow icon={FileText}  label="License"        value={doctor.medical_license ?? "—"} mono />
-                  <InfoRow icon={FileText}  label="Specialization" value={doctor.specialization ?? "—"} />
-                  <InfoRow
-                    icon={Globe}
-                    label="Consultation Type"
-                    value={doctor.consultation_type?.replace(/_/g, " ") ?? "—"}
-                  />
-                  {parseFloat(doctor.consultation_fee) > 0 && (
-                    <InfoRow
-                      icon={CreditCard}
-                      label="Fee"
-                      value={formatCurrency(doctor.consultation_fee, doctor.currency)}
-                    />
-                  )}
-                </SectionCard>
               )}
+            </Section>
 
-              {/* Hospital card */}
-              {hospital && (
-                <SectionCard title="Hospital" icon={Building2}>
-                  <InfoRow icon={Building2} label="Name"    value={hospital.name_en} />
-                  <InfoRow icon={MapPin}    label="Address" value={[hospital.address, hospital.city].filter(Boolean).join(", ")} />
-                  {hospital.phone && (
-                    <InfoRow icon={Phone} label="Phone" value={
+            {/* ── Doctor ── */}
+            {doctor && (
+              <Section title="Doctor">
+                <InfoRow icon={User} label="Full name" value={doctor.user?.name ?? "—"} />
+                <InfoRow icon={FileText} label="Degree" value={doctor.doctor_degree ?? "—"} />
+                <InfoRow
+                  icon={FileText}
+                  label="License"
+                  value={doctor.medical_license ?? "—"}
+                  mono
+                />
+                <InfoRow
+                  icon={FileText}
+                  label="Specialization"
+                  value={doctor.specialization ?? "—"}
+                />
+                <InfoRow
+                  icon={Globe}
+                  label="Consultation type"
+                  value={doctor.consultation_type?.replace(/_/g, " ") ?? "—"}
+                />
+                {parseFloat(doctor.consultation_fee) > 0 && (
+                  <InfoRow
+                    icon={CreditCard}
+                    label="Fee"
+                    value={formatCurrency(doctor.consultation_fee, doctor.currency)}
+                  />
+                )}
+              </Section>
+            )}
+
+            {/* ── Hospital ── */}
+            {hospital && (
+              <Section title="Hospital">
+                <InfoRow icon={Building2} label="Name" value={hospital.name_en} />
+                <InfoRow
+                  icon={MapPin}
+                  label="Address"
+                  value={[hospital.address, hospital.city].filter(Boolean).join(", ")}
+                />
+                {hospital.phone && (
+                  <InfoRow
+                    icon={Phone}
+                    label="Phone"
+                    value={
                       <a href={`tel:${hospital.phone}`} className="text-primary hover:underline">
                         {hospital.phone}
                       </a>
-                    } />
-                  )}
-                  {hospital.email && (
-                    <InfoRow icon={Mail} label="Email" value={
-                      <a href={`mailto:${hospital.email}`} className="text-primary hover:underline">
+                    }
+                  />
+                )}
+                {hospital.email && (
+                  <InfoRow
+                    icon={Mail}
+                    label="Email"
+                    value={
+                      <a
+                        href={`mailto:${hospital.email}`}
+                        className="text-primary hover:underline"
+                      >
                         {hospital.email}
                       </a>
-                    } />
-                  )}
-                  {hospital.website && (
-                    <InfoRow icon={Globe} label="Website" value={
-                      <a href={hospital.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                    }
+                  />
+                )}
+                {hospital.website && (
+                  <InfoRow
+                    icon={Globe}
+                    label="Website"
+                    value={
+                      <a
+                        href={hospital.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
                         {hospital.website}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
-                    } />
-                  )}
-                </SectionCard>
-              )}
-
-              {/* Insurance */}
-              {insurance && (
-                <SectionCard title="Insurance" icon={Shield}>
-                  <div className="py-2 flex items-center gap-3 border-b border-border/40">
-                    {insurance.logo && (
-                      <img src={insurance.logo} alt={insurance.name} className="h-8 w-8 object-contain rounded-sm" />
-                    )}
-                    <div>
-                      <p className="text-[12px] font-semibold text-foreground">{insurance.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{insurance.code}</p>
-                    </div>
-                  </div>
-                  <InfoRow icon={Shield}   label="Coverage" value={`${parseFloat(insurance.coverage_percentage ?? 0).toFixed(0)}%`} />
-                  <InfoRow icon={Globe}    label="Type"     value={insurance.type ?? "—"} />
-                  {insurance.phone && (
-                    <InfoRow icon={Phone} label="Phone" value={
-                      <a href={`tel:${insurance.phone}`} className="text-primary hover:underline">{insurance.phone}</a>
-                    } />
-                  )}
-                  {insurance.email && (
-                    <InfoRow icon={Mail} label="Email" value={
-                      <a href={`mailto:${insurance.email}`} className="text-primary hover:underline">{insurance.email}</a>
-                    } />
-                  )}
-                  {insurance.website && (
-                    <InfoRow icon={Globe} label="Website" value={
-                      <a href={insurance.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                        {insurance.website}
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    } />
-                  )}
-                </SectionCard>
-              )}
-
-              {/* Session info — only when room exists */}
-              {appt.daily_room_url && (
-                <SectionCard title="Session" icon={Video}>
-                  <InfoRow
-                    icon={Video}
-                    label="Room URL"
-                    value={
-                      <span className="flex items-center gap-1 break-all">
-                        <span className="truncate text-[10px] text-muted-foreground font-mono">
-                          {appt.daily_room_name}
-                        </span>
-                        <CopyButton value={appt.daily_room_url} />
-                      </span>
                     }
                   />
-                  {appt.session_started_at && (
-                    <InfoRow
-                      icon={Clock}
-                      label="Session Started"
-                      value={format(parseISO(appt.session_started_at), "MMM dd, yyyy · hh:mm a")}
-                    />
-                  )}
-                  {appt.session_ended_at && (
-                    <InfoRow
-                      icon={Clock}
-                      label="Session Ended"
-                      value={format(parseISO(appt.session_ended_at), "MMM dd, yyyy · hh:mm a")}
-                    />
-                  )}
-                  {isActionable && (
-                    <div className="py-3">
-                      <a href={appt.daily_room_url} target="_blank" rel="noopener noreferrer">
-                        <Button
-                          size="sm"
-                          className="w-full h-8 text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1.5"
-                        >
-                          <Video className="w-3.5 h-3.5" />
-                          Join Video Session
-                          <ExternalLink className="w-3 h-3 opacity-60" />
-                        </Button>
-                      </a>
-                    </div>
-                  )}
-                </SectionCard>
-              )}
-            </div>
+                )}
+              </Section>
+            )}
 
-            {/* ── Leave a review CTA ── */}
+            {/* ── Insurance ── */}
+            {insurance && (
+              <Section title="Insurance">
+                <div className="py-2.5 flex items-center gap-3 border-b border-border/30">
+                  {insurance.logo && (
+                    <img
+                      src={insurance.logo}
+                      alt={insurance.name}
+                      className="h-8 w-8 object-contain rounded-lg"
+                    />
+                  )}
+                  <div>
+                    <p className="text-[12px] font-semibold text-foreground">{insurance.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{insurance.code}</p>
+                  </div>
+                </div>
+                <InfoRow
+                  icon={Shield}
+                  label="Coverage"
+                  value={`${parseFloat(insurance.coverage_percentage ?? 0).toFixed(0)}%`}
+                />
+                <InfoRow icon={Globe} label="Type" value={insurance.type ?? "—"} />
+                {insurance.phone && (
+                  <InfoRow
+                    icon={Phone}
+                    label="Phone"
+                    value={
+                      <a href={`tel:${insurance.phone}`} className="text-primary hover:underline">
+                        {insurance.phone}
+                      </a>
+                    }
+                  />
+                )}
+                {insurance.email && (
+                  <InfoRow
+                    icon={Mail}
+                    label="Email"
+                    value={
+                      <a
+                        href={`mailto:${insurance.email}`}
+                        className="text-primary hover:underline"
+                      >
+                        {insurance.email}
+                      </a>
+                    }
+                  />
+                )}
+              </Section>
+            )}
+
+            {/* ── Session ── */}
+            {appt.daily_room_url && (
+              <Section title="Session">
+                <InfoRow
+                  icon={Video}
+                  label="Room"
+                  value={
+                    <span className="flex items-center gap-1 font-mono text-[10px]">
+                      {appt.daily_room_name}
+                      <CopyButton value={appt.daily_room_url} />
+                    </span>
+                  }
+                />
+                {appt.session_started_at && (
+                  <InfoRow
+                    icon={Clock}
+                    label="Started"
+                    value={format(parseISO(appt.session_started_at), "MMM dd · hh:mm a")}
+                  />
+                )}
+                {appt.session_ended_at && (
+                  <InfoRow
+                    icon={Clock}
+                    label="Ended"
+                    value={format(parseISO(appt.session_ended_at), "MMM dd · hh:mm a")}
+                  />
+                )}
+              </Section>
+            )}
+
+            {/* ── Review CTA ── */}
             {canReview && (
-              <div className="rounded-sm border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-4 py-3.5 flex items-center justify-between gap-4">
+              <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-4 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-sm bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
                     <Star className="w-4 h-4 text-amber-500" />
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">
-                      How was your appointment?
+                      How was your visit?
                     </p>
                     <p className="text-[10px] text-amber-700/70 dark:text-amber-400/70 mt-0.5">
-                      Share your experience to help others
+                      Help others find the right doctor
                     </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  className="h-8 px-4 text-[11px] font-semibold rounded-sm shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm"
+                  className="h-8 px-4 text-[11px] font-semibold rounded-lg shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm gap-1.5"
                 >
-                  <Star className="w-3 h-3 mr-1.5" />
-                  Leave Review
+                  <Star className="w-3 h-3" />
+                  Review
                 </Button>
               </div>
             )}
 
             {/* ── Cancellation info ── */}
             {appt.status === "cancelled" && appt.cancellation_reason && (
-              <div className="rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-4 py-3.5 flex items-start gap-3">
+              <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-4 py-3.5 flex items-start gap-3">
                 <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">Cancellation reason</p>
-                  <p className="text-[11px] text-red-600/80 dark:text-red-400/70 mt-0.5">{appt.cancellation_reason}</p>
+                  <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">
+                    Cancellation reason
+                  </p>
+                  <p className="text-[11px] text-red-600/80 dark:text-red-400/70 mt-0.5">
+                    {appt.cancellation_reason}
+                  </p>
                   {appt.cancelled_at && (
                     <p className="text-[10px] text-red-500/60 mt-1">
                       Cancelled on {format(parseISO(appt.cancelled_at), "MMM dd, yyyy · hh:mm a")}
@@ -598,15 +1076,34 @@ export function AppointmentDetailContent({
               </div>
             )}
 
+            {/* Spacer */}
+            <div className="h-4" />
           </div>
         )}
       </div>
+
+      {/* ── Pay sheet ── */}
+      {showPay && appt && (
+        <PaySheet
+          appointmentId={appointmentId}
+          amount={appt.patient_pays}
+          currency={appt.currency}
+          onClose={() => setShowPay(false)}
+        />
+      )}
+
+      {/* ── Cancel dialog ── */}
+      {showCancel && (
+        <CancelDialog
+          appointmentId={appointmentId}
+          onClose={() => setShowCancel(false)}
+        />
+      )}
     </div>
   );
 }
 
 // ─── AppointmentDetailModal ───────────────────────────────────────────────────
-// Slide-over panel. Open by passing a non-null appointmentId, close by onClose.
 
 export function AppointmentDetailModal({
   appointmentId,
@@ -617,15 +1114,17 @@ export function AppointmentDetailModal({
 }) {
   const isOpen = !!appointmentId;
 
-  // Lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
@@ -638,7 +1137,7 @@ export function AppointmentDetailModal({
         aria-hidden="true"
         className={cn(
           "fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         )}
       />
 
@@ -647,21 +1146,20 @@ export function AppointmentDetailModal({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-background border-l border-border/70 shadow-2xl",
+          "fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-background border-l border-border/60 shadow-2xl",
           "flex flex-col transition-transform duration-300 ease-out",
-          isOpen ? "translate-x-0" : "translate-x-full",
+          isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        {/* Close ✕ button */}
+        {/* Close ✕ */}
         <button
           onClick={onClose}
-          className="absolute top-2.5 right-3 z-10 w-7 h-7 rounded-sm bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
+          className="absolute top-2.5 right-3 z-10 w-7 h-7 rounded-lg bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
           aria-label="Close"
         >
           <X className="w-3.5 h-3.5" />
         </button>
 
-        {/* Inner content — only mount when open to avoid a stale hook call */}
         {appointmentId && (
           <AppointmentDetailContent
             appointmentId={appointmentId}
@@ -673,5 +1171,4 @@ export function AppointmentDetailModal({
   );
 }
 
-// ─── Default export (kept for any existing import) ────────────────────────────
 export default AppointmentDetailModal;

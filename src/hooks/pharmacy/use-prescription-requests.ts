@@ -34,67 +34,127 @@ export type PrescriptionStatus =
   | "rejected"
   | "fulfilled";
 
-export interface PrescriptionPatient {
+/** A user record (patient or doctor.user) */
+export interface UserRecord {
   id: number;
   name: string;
-  phone?: string;
+  phone?: string | null;
+  country_code?: string | null;
+  email?: string | null;
+  avatar?: string | null;
   [key: string]: unknown;
 }
 
+/** The doctor profile embedded in a prescription */
+export interface PrescriptionDoctor {
+  id: number;
+  user_id: number;
+  specialization?: string | null;
+  doctor_degree?: string | null;
+  medical_license?: string | null;
+  designations?: string | null;
+  user: UserRecord;
+  [key: string]: unknown;
+}
+
+/** A single medicine line inside a prescription */
+export interface PrescriptionItem {
+  id: number;
+  prescription_id: number;
+  medicine_name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  instructions?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** The prescription document attached to a request */
+export interface PrescriptionDocument {
+  id: number;
+  appointment_id?: number | null;
+  patient_id: number;
+  doctor_id: number;
+  prescription_number?: string | null;
+  pdf_url?: string | null;
+  qr_code?: string | null;
+  notes?: string | null;
+  diagnosis?: string | null;
+  valid_until?: string | null;
+  status?: string | null;
+  is_signed?: boolean;
+  signed_at?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  /** Embedded patient record */
+  patient: UserRecord;
+  /** Embedded doctor profile (with nested user) */
+  doctor?: PrescriptionDoctor | null;
+  /** Medicine line items */
+  items: PrescriptionItem[];
+}
+
+/** The reviewer (pharmacy staff) who actioned the request */
 export interface PrescriptionReviewer {
   id: number;
   name: string;
   [key: string]: unknown;
 }
 
-export interface Prescription {
+/**
+ * A prescription REQUEST — the top-level object returned by
+ * GET /pharmacy/prescription-requests
+ */
+export interface PrescriptionRequest {
   id: number;
+  prescription_id: number;
   pharmacy_id: number;
-  patient_id: number;
-  prescription_image: string;   // Cloudinary URL
-  notes: string | null;
+  delivery_type: "pickup" | "delivery";
+  delivery_address?: string | null;
   status: PrescriptionStatus;
-  reviewed_by: number | null;
-  reviewed_at: string | null;
-  rejection_reason: string | null;
-  created_at?: string;
+  notes?: string | null;
+  is_active?: boolean;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
   updated_at?: string;
-  patient: PrescriptionPatient;
-  reviewer: PrescriptionReviewer | null;
-  order: unknown | null;        // linked order when fulfilled
+  deleted_at?: string | null;
+  /** Full prescription document with patient, doctor, and items */
+  prescription?: PrescriptionDocument | null;
+  /** Staff member who reviewed/actioned this request */
+  reviewer?: PrescriptionReviewer | null;
 }
 
-export interface PaginatedPrescriptions {
-  data: Prescription[];
-  meta?: {
-    total: number;
-    current_page: number;
-    last_page: number;
-    per_page: number;
-  };
-  links?: {
-    first?: string;
-    last?: string;
-    prev?: string | null;
-    next?: string | null;
-  };
+// ─── API response wrappers ────────────────────────────────────────────────────
+
+export interface PaginatedPrescriptionRequests {
+  current_page: number;
+  data: PrescriptionRequest[];
+  first_page_url?: string;
+  from?: number;
+  last_page?: number;
+  last_page_url?: string;
+  next_page_url?: string | null;
+  prev_page_url?: string | null;
+  per_page?: number;
+  to?: number;
+  total?: number;
 }
 
-export interface SinglePrescriptionResponse {
-  prescription: Prescription;
+export interface SinglePrescriptionRequestResponse {
+  data: PrescriptionRequest;
 }
 
 export interface PrescriptionActionResponse {
   message: string;
-  prescription: Prescription;
+  data?: PrescriptionRequest;
 }
 
 // ─── 32. List Prescription Requests — GET /prescription-requests ──────────────
-//
-// Supported query params:
-//   ?status=pending | reviewing | approved | rejected | fulfilled
-//
-// Omit status to receive all.
 
 export interface ListPrescriptionParams {
   status?: PrescriptionStatus;
@@ -107,39 +167,36 @@ export function useGetPrescriptionRequests(
   if (params.status) qs.set("status", params.status);
   const queryString = qs.toString();
 
-  return useQuery<PaginatedPrescriptions>({
+  return useQuery<PaginatedPrescriptionRequests>({
     queryKey: prescriptionKeys.list(params),
     queryFn: () =>
-      apiFetch<PaginatedPrescriptions>(
+      apiFetch<PaginatedPrescriptionRequests>(
         `/pharmacy/prescription-requests${queryString ? `?${queryString}` : ""}`,
       ),
   });
 }
 
-// ─── 33. Get Single Prescription — GET /prescription-requests/:id ────────────
+// ─── 33. Get Single Prescription Request — GET /prescription-requests/:id ─────
 
 export function useGetPrescriptionRequest(id: number | undefined) {
-  return useQuery<Prescription>({
+  return useQuery<PrescriptionRequest>({
     queryKey: prescriptionKeys.detail(id!),
     queryFn: async () => {
-      const res = await apiFetch<SinglePrescriptionResponse>(
+      const res = await apiFetch<SinglePrescriptionRequestResponse>(
         `/pharmacy/prescription-requests/${id}`,
       );
-      return res.prescription;
+      return res.data;
     },
     enabled: id !== undefined && id > 0,
   });
 }
 
 // ─── 34. Mark as Reviewing — POST /prescription-requests/:id/review ──────────
-//
-// No request body. Moves status from pending → reviewing.
 
 export function useReviewPrescription() {
   const qc = useQueryClient();
-
   return useMutation<PrescriptionActionResponse, Error, number>({
-    mutationFn: (id: number) =>
+    mutationFn: (id) =>
       apiFetch<PrescriptionActionResponse>(
         `/pharmacy/prescription-requests/${id}/review`,
         { method: "POST" },
@@ -152,14 +209,11 @@ export function useReviewPrescription() {
 }
 
 // ─── 35. Approve Prescription — POST /prescription-requests/:id/approve ───────
-//
-// No request body. Moves status → approved.
 
 export function useApprovePrescription() {
   const qc = useQueryClient();
-
   return useMutation<PrescriptionActionResponse, Error, number>({
-    mutationFn: (id: number) =>
+    mutationFn: (id) =>
       apiFetch<PrescriptionActionResponse>(
         `/pharmacy/prescription-requests/${id}/approve`,
         { method: "POST" },
@@ -172,9 +226,6 @@ export function useApprovePrescription() {
 }
 
 // ─── 36. Reject Prescription — POST /prescription-requests/:id/reject ─────────
-//
-// Requires body: { reason: string }
-// apiFetch handles JSON.stringify + Content-Type header automatically.
 
 export interface RejectPrescriptionPayload {
   id: number;
@@ -183,19 +234,11 @@ export interface RejectPrescriptionPayload {
 
 export function useRejectPrescription() {
   const qc = useQueryClient();
-
-  return useMutation<
-    PrescriptionActionResponse,
-    Error,
-    RejectPrescriptionPayload
-  >({
+  return useMutation<PrescriptionActionResponse, Error, RejectPrescriptionPayload>({
     mutationFn: ({ id, reason }) =>
       apiFetch<PrescriptionActionResponse>(
         `/pharmacy/prescription-requests/${id}/reject`,
-        {
-          method: "POST",
-          body: { reason },   // apiFetch stringifies + sets Content-Type
-        },
+        { method: "POST", body: { reason } },
       ),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: prescriptionKeys.lists() });
@@ -205,14 +248,11 @@ export function useRejectPrescription() {
 }
 
 // ─── 37. Mark as Fulfilled — POST /prescription-requests/:id/fulfill ──────────
-//
-// No request body. Terminal status — no further actions available.
 
 export function useFulfillPrescription() {
   const qc = useQueryClient();
-
   return useMutation<PrescriptionActionResponse, Error, number>({
-    mutationFn: (id: number) =>
+    mutationFn: (id) =>
       apiFetch<PrescriptionActionResponse>(
         `/pharmacy/prescription-requests/${id}/fulfill`,
         { method: "POST" },

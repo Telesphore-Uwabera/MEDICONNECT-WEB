@@ -1,10 +1,9 @@
 
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 const BASE = "/public/doctors/";
-
 
 /* ─────────────────────────────────────────────
    useGetDoctorAvailability  →  GET /public/doctors/{slug}/availability
