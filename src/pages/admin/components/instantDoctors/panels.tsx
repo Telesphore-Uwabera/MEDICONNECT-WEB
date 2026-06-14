@@ -6,7 +6,7 @@ import {
   ChevronDown,
   Plus,
   AlertCircle,
-  DollarSign,
+  CreditCard,
   Hash,
   Phone,
   Filter,
@@ -78,25 +78,25 @@ const QC_STATUS_ALL: QCStatus[] = [
 ];
 
 const QC_STATUS_LABEL: Record<QCStatus, string> = {
-  pending:     "Pending",
-  confirmed:   "Confirmed",
-  accepted:    "Accepted",
+  pending: "Pending",
+  confirmed: "Confirmed",
+  accepted: "Accepted",
   in_progress: "In Progress",
-  completed:   "Completed",
-  cancelled:   "Cancelled",
-  withdrawn:   "Withdrawn",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  withdrawn: "Withdrawn",
 };
 
 type PillVariant = "default" | "emerald" | "teal" | "amber" | "red" | "violet";
 
 const QC_STATUS_VARIANT: Record<QCStatus, PillVariant> = {
-  pending:     "amber",
-  confirmed:   "teal",
-  accepted:    "teal",
+  pending: "amber",
+  confirmed: "teal",
+  accepted: "teal",
   in_progress: "teal",
-  completed:   "emerald",
-  cancelled:   "red",
-  withdrawn:   "default",
+  completed: "emerald",
+  cancelled: "red",
+  withdrawn: "default",
 };
 
 type ConsultPanelTab = "details" | "quick_consults";
@@ -167,7 +167,7 @@ function Pill({
     teal: "bg-primary/8 text-primary border-primary/20",
     amber:
       "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-    red:  "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
+    red: "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
     violet:
       "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   };
@@ -315,7 +315,6 @@ function DoctorEnrichedDetails({
 
   return (
     <div className="space-y-4">
-
       {/* ── Contact ── */}
       <TileGrid>
         <Tile label="Email" span2>
@@ -423,7 +422,7 @@ function DoctorEnrichedDetails({
       {doctor.consultation_fee && (
         <div>
           <SectionLabel
-            icon={<DollarSign className="w-3 h-3" />}
+            icon={<CreditCard className="w-3 h-3" />}
             label="Consultation Fees"
           />
           <TileGrid>
@@ -704,8 +703,10 @@ function DoctorEnrichedDetails({
               {latestAppointment.patient_pays &&
                 Number(latestAppointment.patient_pays) > 0 && (
                   <Pill variant="teal">
-                    <DollarSign className="w-2 h-2" />
-                    {Number(latestAppointment.patient_pays).toLocaleString()}{" "}
+                    <CreditCard className="w-2 h-2" />
+                    {Number(
+                      latestAppointment.patient_pays,
+                    ).toLocaleString()}{" "}
                     {latestAppointment.currency}
                   </Pill>
                 )}
@@ -730,12 +731,14 @@ function DoctorEnrichedDetails({
 // ─── Quick Consult card ───────────────────────────────────────────────────────
 
 function QuickConsultCard({ qc }: { qc: ApiQuickConsultation }) {
-  const isGuest     = !qc.user;
-  const callerName  = qc.user?.name  ?? qc.guest_name  ?? "—";
+  const isGuest = !qc.user;
+  const callerName = qc.user?.name ?? qc.guest_name ?? "—";
   const callerPhone = qc.user?.phone ?? qc.guest_phone ?? null;
   const callerEmail = qc.user?.email ?? qc.guest_email ?? null;
-  const variant     = QC_STATUS_VARIANT[qc.status];
-  const isExpired   = qc.expires_at ? new Date(qc.expires_at) < new Date() : false;
+  const variant = QC_STATUS_VARIANT[qc.status];
+  const isExpired = qc.expires_at
+    ? new Date(qc.expires_at) < new Date()
+    : false;
 
   return (
     <div className="p-3.5 rounded-[5px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all">
@@ -749,17 +752,27 @@ function QuickConsultCard({ qc }: { qc: ApiQuickConsultation }) {
                 : "bg-primary/10 border-primary/20 text-primary",
             )}
           >
-            {isGuest ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+            {isGuest ? (
+              <UserX className="w-3 h-3" />
+            ) : (
+              <UserCheck className="w-3 h-3" />
+            )}
           </div>
           <div className="min-w-0">
-            <p className="text-[12px] font-semibold text-foreground truncate">{callerName}</p>
+            <p className="text-[12px] font-semibold text-foreground truncate">
+              {callerName}
+            </p>
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
               {isGuest && <Pill variant="amber">Guest</Pill>}
               {callerPhone && (
-                <span className="text-[10px] font-mono text-muted-foreground/45">{callerPhone}</span>
+                <span className="text-[10px] font-mono text-muted-foreground/45">
+                  {callerPhone}
+                </span>
               )}
               {callerEmail && !callerPhone && (
-                <span className="text-[10px] text-muted-foreground/45 truncate">{callerEmail}</span>
+                <span className="text-[10px] text-muted-foreground/45 truncate">
+                  {callerEmail}
+                </span>
               )}
             </div>
           </div>
@@ -818,14 +831,18 @@ function QuickConsultCard({ qc }: { qc: ApiQuickConsultation }) {
       )}
 
       <div className="flex items-center gap-2 mt-2 pt-1">
-        <span className="text-[9px] font-mono text-muted-foreground/25">#{qc.id}</span>
+        <span className="text-[9px] font-mono text-muted-foreground/25">
+          #{qc.id}
+        </span>
         {qc.guest_token && (
           <span className="text-[9px] font-mono text-muted-foreground/20 truncate max-w-[120px]">
             token: {qc.guest_token.split("-")[0]}…
           </span>
         )}
         {qc.user?.id && (
-          <span className="text-[9px] text-muted-foreground/20">· user #{qc.user.id}</span>
+          <span className="text-[9px] text-muted-foreground/20">
+            · user #{qc.user.id}
+          </span>
         )}
       </div>
     </div>
@@ -834,18 +851,24 @@ function QuickConsultCard({ qc }: { qc: ApiQuickConsultation }) {
 
 // ─── Quick Consultations summary bar ─────────────────────────────────────────
 
-function QCSummaryBar({ items, total }: { items: ApiQuickConsultation[]; total: number }) {
+function QCSummaryBar({
+  items,
+  total,
+}: {
+  items: ApiQuickConsultation[];
+  total: number;
+}) {
   const inProgress = items.filter((i) => i.status === "in_progress").length;
-  const completed  = items.filter((i) => i.status === "completed").length;
-  const pending    = items.filter((i) => i.status === "pending").length;
+  const completed = items.filter((i) => i.status === "completed").length;
+  const pending = items.filter((i) => i.status === "pending").length;
 
   return (
     <div className="grid grid-cols-4 gap-2 mb-3">
       {[
-        { label: "Total",       value: total      },
+        { label: "Total", value: total },
         { label: "In Progress", value: inProgress },
-        { label: "Completed",   value: completed  },
-        { label: "Pending",     value: pending    },
+        { label: "Completed", value: completed },
+        { label: "Pending", value: pending },
       ].map(({ label, value }) => (
         <div
           key={label}
@@ -863,35 +886,43 @@ function QCSummaryBar({ items, total }: { items: ApiQuickConsultation[]; total: 
 
 function QuickConsultsContent({ doctorId }: { doctorId: number }) {
   const [statusFilter, setStatusFilter] = useState<QCStatus | "">("");
-  const [searchInput,  setSearchInput]  = useState("");
-  const [search,       setSearch]       = useState("");
-  const [from,         setFrom]         = useState("");
-  const [to,           setTo]           = useState("");
-  const [page,         setPage]         = useState(1);
-  const [showFilters,  setShowFilters]  = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [page, setPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data, isLoading, isFetching } = useGetDoctorQuickConsultations({
     doctor_id: doctorId,
-    status:    statusFilter || undefined,
-    search:    search       || undefined,
-    from:      from         || undefined,
-    to:        to           || undefined,
+    status: statusFilter || undefined,
+    search: search || undefined,
+    from: from || undefined,
+    to: to || undefined,
     page,
   });
 
-  const applySearch  = () => { setSearch(searchInput); setPage(1); };
+  const applySearch = () => {
+    setSearch(searchInput);
+    setPage(1);
+  };
   const clearFilters = () => {
-    setStatusFilter(""); setSearch(""); setSearchInput("");
-    setFrom(""); setTo(""); setPage(1);
+    setStatusFilter("");
+    setSearch("");
+    setSearchInput("");
+    setFrom("");
+    setTo("");
+    setPage(1);
   };
 
   const hasActiveFilters = !!statusFilter || !!search || !!from || !!to;
 
   const paginatedObj = (data as any)?.data ?? data;
-  const items        = paginatedObj?.data ?? (Array.isArray(paginatedObj) ? paginatedObj : []);
-  const total        = paginatedObj?.total ?? items.length;
-  const perPage      = paginatedObj?.per_page ?? 15;
-  const totalPages   = Math.max(1, Math.ceil(total / perPage));
+  const items =
+    paginatedObj?.data ?? (Array.isArray(paginatedObj) ? paginatedObj : []);
+  const total = paginatedObj?.total ?? items.length;
+  const perPage = paginatedObj?.per_page ?? 15;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   return (
     <div className="flex flex-col h-full">
@@ -899,7 +930,10 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
       <div className="flex-shrink-0 px-5 pt-4 pb-3 space-y-2.5 border-b border-border/40 bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
-            onClick={() => { setStatusFilter(""); setPage(1); }}
+            onClick={() => {
+              setStatusFilter("");
+              setPage(1);
+            }}
             className={cn(
               "text-[10px] px-2.5 py-1 rounded-[5px] border font-medium transition-all",
               statusFilter === ""
@@ -912,7 +946,10 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
           {QC_STATUS_ALL.map((s) => (
             <button
               key={s}
-              onClick={() => { setStatusFilter(s); setPage(1); }}
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(1);
+              }}
               className={cn(
                 "text-[10px] px-2.5 py-1 rounded-[5px] border font-medium transition-all",
                 statusFilter === s
@@ -932,13 +969,16 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") applySearch(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") applySearch();
+              }}
               placeholder="Search by name or phone…"
               className="w-full h-8 pl-7 pr-2.5 rounded-[5px] border border-border/40 bg-background text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
             />
           </div>
           <Button
-            size="sm" variant="outline"
+            size="sm"
+            variant="outline"
             className="h-8 w-20 text-[10.5px] rounded-[5px] gap-1.5 shrink-0 hover:border-primary/40 hover:text-primary hover:bg-accent/20"
             onClick={applySearch}
           >
@@ -964,18 +1004,30 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
             </p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[9px] text-muted-foreground/40 mb-1">From</label>
+                <label className="block text-[9px] text-muted-foreground/40 mb-1">
+                  From
+                </label>
                 <input
-                  type="date" value={from}
-                  onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                  type="date"
+                  value={from}
+                  onChange={(e) => {
+                    setFrom(e.target.value);
+                    setPage(1);
+                  }}
                   className="w-full h-8 px-2.5 rounded-[5px] border border-border/40 bg-background text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                 />
               </div>
               <div>
-                <label className="block text-[9px] text-muted-foreground/40 mb-1">To</label>
+                <label className="block text-[9px] text-muted-foreground/40 mb-1">
+                  To
+                </label>
                 <input
-                  type="date" value={to}
-                  onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                  type="date"
+                  value={to}
+                  onChange={(e) => {
+                    setTo(e.target.value);
+                    setPage(1);
+                  }}
                   className="w-full h-8 px-2.5 rounded-[5px] border border-border/40 bg-background text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
                 />
               </div>
@@ -991,7 +1043,12 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
             {statusFilter && (
               <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-[5px] border border-primary/20 bg-accent/20 text-primary font-medium">
                 {QC_STATUS_LABEL[statusFilter]}
-                <button onClick={() => { setStatusFilter(""); setPage(1); }}>
+                <button
+                  onClick={() => {
+                    setStatusFilter("");
+                    setPage(1);
+                  }}
+                >
                   <X className="w-2.5 h-2.5" />
                 </button>
               </span>
@@ -999,7 +1056,13 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
             {search && (
               <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-[5px] border border-primary/20 bg-accent/20 text-primary font-medium">
                 "{search}"
-                <button onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}>
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setSearchInput("");
+                    setPage(1);
+                  }}
+                >
                   <X className="w-2.5 h-2.5" />
                 </button>
               </span>
@@ -1007,7 +1070,13 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
             {(from || to) && (
               <span className="inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-[5px] border border-primary/20 bg-accent/20 text-primary font-medium">
                 {from || "…"} → {to || "…"}
-                <button onClick={() => { setFrom(""); setTo(""); setPage(1); }}>
+                <button
+                  onClick={() => {
+                    setFrom("");
+                    setTo("");
+                    setPage(1);
+                  }}
+                >
                   <X className="w-2.5 h-2.5" />
                 </button>
               </span>
@@ -1041,10 +1110,14 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
               <p className="text-[10px] text-muted-foreground/35">
                 {total} total consultation{total !== 1 ? "s" : ""}
                 {isFetching && (
-                  <span className="ml-2 text-primary/40 animate-pulse">refreshing…</span>
+                  <span className="ml-2 text-primary/40 animate-pulse">
+                    refreshing…
+                  </span>
                 )}
               </p>
-              {items.some((i: ApiQuickConsultation) => i.status === "in_progress") && (
+              {items.some(
+                (i: ApiQuickConsultation) => i.status === "in_progress",
+              ) && (
                 <span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live session
@@ -1063,7 +1136,8 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
                 </span>
                 <div className="flex gap-1.5">
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     className="h-7 w-7 p-0 rounded-[5px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -1071,7 +1145,8 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
                     <ChevronLeft className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant="outline" size="sm"
+                    variant="outline"
+                    size="sm"
                     className="h-7 w-7 p-0 rounded-[5px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
@@ -1098,13 +1173,13 @@ export function AssignPanel({
   onClose: () => void;
 }) {
   const { toast } = useToast();
-  const [doctorSearch,    setDoctorSearch]    = useState("");
+  const [doctorSearch, setDoctorSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedDoctor,  setSelectedDoctor]  = useState<ApiDoctor | null>(null);
-  const [showDoctorList,  setShowDoctorList]  = useState(false);
-  const [selectedFeeId,   setSelectedFeeId]   = useState<number | null>(null);
-  const [primarySpec,     setPrimarySpec]     = useState("");
-  const [secondarySpec,   setSecondarySpec]   = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | null>(null);
+  const [showDoctorList, setShowDoctorList] = useState(false);
+  const [selectedFeeId, setSelectedFeeId] = useState<number | null>(null);
+  const [primarySpec, setPrimarySpec] = useState("");
+  const [secondarySpec, setSecondarySpec] = useState("");
 
   const assignMutation = useAssignDoctorConsultation();
 
@@ -1116,7 +1191,7 @@ export function AssignPanel({
   const doctors = doctorData?.data ?? [];
 
   const { data: feesData, isLoading: feesLoading } = useGetSpecializationFees();
-  const activeFees  = (feesData ?? []).filter((f) => f.is_active);
+  const activeFees = (feesData ?? []).filter((f) => f.is_active);
   const selectedFee = activeFees.find((f) => f.id === selectedFeeId) ?? null;
 
   useEffect(() => {
@@ -1126,21 +1201,37 @@ export function AssignPanel({
 
   useEffect(() => {
     if (open) {
-      setDoctorSearch(""); setDebouncedSearch(""); setSelectedDoctor(null);
-      setPrimarySpec(""); setSecondarySpec("");
-      setShowDoctorList(false); setSelectedFeeId(null);
+      setDoctorSearch("");
+      setDebouncedSearch("");
+      setSelectedDoctor(null);
+      setPrimarySpec("");
+      setSecondarySpec("");
+      setShowDoctorList(false);
+      setSelectedFeeId(null);
     }
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!selectedDoctor)      { toast({ title: "Select a doctor",                       variant: "destructive" }); return; }
-    if (!selectedFeeId)       { toast({ title: "Select a fee tier",                      variant: "destructive" }); return; }
-    if (!primarySpec.trim())  { toast({ title: "Primary specialization is required",    variant: "destructive" }); return; }
+    if (!selectedDoctor) {
+      toast({ title: "Select a doctor", variant: "destructive" });
+      return;
+    }
+    if (!selectedFeeId) {
+      toast({ title: "Select a fee tier", variant: "destructive" });
+      return;
+    }
+    if (!primarySpec.trim()) {
+      toast({
+        title: "Primary specialization is required",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await assignMutation.mutateAsync({
-        doctor_id:                selectedDoctor.id,
-        specialization_fee_id:    selectedFeeId,
-        primary_specialization:   primarySpec.trim(),
+        doctor_id: selectedDoctor.id,
+        specialization_fee_id: selectedFeeId,
+        primary_specialization: primarySpec.trim(),
         secondary_specialization: secondarySpec.trim() || undefined,
       });
       toast({ title: "Doctor assigned to consultation." });
@@ -1157,8 +1248,12 @@ export function AssignPanel({
     <Drawer open={open} onClose={onClose}>
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
         <div>
-          <p className="text-[14px] font-semibold text-foreground leading-tight">Assign doctor</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Add a doctor to the consultation pool</p>
+          <p className="text-[14px] font-semibold text-foreground leading-tight">
+            Assign doctor
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Add a doctor to the consultation pool
+          </p>
         </div>
         <button
           onClick={onClose}
@@ -1180,13 +1275,20 @@ export function AssignPanel({
                 {getInitials(selectedDoctor.user.name)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-[12px] text-foreground truncate">{selectedDoctor.user.name}</p>
+                <p className="font-semibold text-[12px] text-foreground truncate">
+                  {selectedDoctor.user.name}
+                </p>
                 <p className="text-[10px] text-muted-foreground/60">
-                  {selectedDoctor.specialization ?? selectedDoctor.user.email ?? "—"}
+                  {selectedDoctor.specialization ??
+                    selectedDoctor.user.email ??
+                    "—"}
                 </p>
               </div>
               <button
-                onClick={() => { setSelectedDoctor(null); setDoctorSearch(""); }}
+                onClick={() => {
+                  setSelectedDoctor(null);
+                  setDoctorSearch("");
+                }}
                 className="text-muted-foreground/50 hover:text-foreground transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
@@ -1198,7 +1300,10 @@ export function AssignPanel({
               <input
                 type="text"
                 value={doctorSearch}
-                onChange={(e) => { setDoctorSearch(e.target.value); setShowDoctorList(true); }}
+                onChange={(e) => {
+                  setDoctorSearch(e.target.value);
+                  setShowDoctorList(true);
+                }}
                 onFocus={() => setShowDoctorList(true)}
                 placeholder="Search by name…"
                 className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
@@ -1210,19 +1315,27 @@ export function AssignPanel({
                       <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                     </div>
                   ) : doctors.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground/60 px-3 py-3 text-center">No active doctors found</p>
+                    <p className="text-[11px] text-muted-foreground/60 px-3 py-3 text-center">
+                      No active doctors found
+                    </p>
                   ) : (
                     doctors.map((d) => (
                       <button
                         key={d.id}
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-secondary/30 transition-colors text-left"
-                        onClick={() => { setSelectedDoctor(d); setShowDoctorList(false); setDoctorSearch(""); }}
+                        onClick={() => {
+                          setSelectedDoctor(d);
+                          setShowDoctorList(false);
+                          setDoctorSearch("");
+                        }}
                       >
                         <div className="h-7 w-7 rounded-[5px] bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px] shrink-0 border border-primary/20">
                           {getInitials(d.user.name)}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[11px] font-medium text-foreground truncate">{d.user.name}</p>
+                          <p className="text-[11px] font-medium text-foreground truncate">
+                            {d.user.name}
+                          </p>
                           <p className="text-[10px] text-muted-foreground/60 truncate">
                             {d.specialization ?? d.user.email ?? "—"}
                           </p>
@@ -1243,19 +1356,24 @@ export function AssignPanel({
           </label>
           {feesLoading ? (
             <div className="flex items-center gap-2 py-2 text-[11px] text-muted-foreground/60">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading fee tiers…
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading fee
+              tiers…
             </div>
           ) : activeFees.length === 0 ? (
             <div className="flex items-start gap-2 p-3 rounded-[5px] border border-border/60 bg-secondary/20 text-[11px] text-muted-foreground">
               <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <span>No active fee tiers. Create one in Specialization Fees first.</span>
+              <span>
+                No active fee tiers. Create one in Specialization Fees first.
+              </span>
             </div>
           ) : (
             <>
               <div className="relative">
                 <select
                   value={selectedFeeId ?? ""}
-                  onChange={(e) => setSelectedFeeId(Number(e.target.value) || null)}
+                  onChange={(e) =>
+                    setSelectedFeeId(Number(e.target.value) || null)
+                  }
                   className="w-full appearance-none px-3 pr-8 py-2 text-[12px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
                 >
                   <option value="">Select fee tier…</option>
@@ -1271,15 +1389,21 @@ export function AssignPanel({
               {selectedFee && (
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <div className="p-2.5 rounded-[5px] border border-border/60 bg-secondary/30">
-                    <p className="text-[10px] text-muted-foreground mb-1">Online</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      Online
+                    </p>
                     <p className="text-[12px] font-medium font-mono text-foreground">
-                      {selectedFee.online_fee.toLocaleString()} {selectedFee.currency}
+                      {selectedFee.online_fee.toLocaleString()}{" "}
+                      {selectedFee.currency}
                     </p>
                   </div>
                   <div className="p-2.5 rounded-[5px] border border-border/60 bg-secondary/30">
-                    <p className="text-[10px] text-muted-foreground mb-1">In-person</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">
+                      In-person
+                    </p>
                     <p className="text-[12px] font-medium font-mono text-foreground">
-                      {selectedFee.in_person_fee.toLocaleString()} {selectedFee.currency}
+                      {selectedFee.in_person_fee.toLocaleString()}{" "}
+                      {selectedFee.currency}
                     </p>
                   </div>
                 </div>
@@ -1293,7 +1417,8 @@ export function AssignPanel({
             Primary Specialization <span className="text-red-500">*</span>
           </label>
           <input
-            type="text" value={primarySpec}
+            type="text"
+            value={primarySpec}
             onChange={(e) => setPrimarySpec(e.target.value)}
             placeholder="e.g. Cardiology"
             className={inputCls}
@@ -1303,10 +1428,13 @@ export function AssignPanel({
         <div>
           <label className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
             Secondary Specialization{" "}
-            <span className="ml-1 normal-case text-muted-foreground/50 font-normal">(optional)</span>
+            <span className="ml-1 normal-case text-muted-foreground/50 font-normal">
+              (optional)
+            </span>
           </label>
           <input
-            type="text" value={secondarySpec}
+            type="text"
+            value={secondarySpec}
             onChange={(e) => setSecondarySpec(e.target.value)}
             placeholder="e.g. Internal Medicine"
             className={inputCls}
@@ -1319,11 +1447,18 @@ export function AssignPanel({
           <Button
             className="flex-1 h-10 text-[12px] rounded-[5px] gap-2"
             onClick={handleSubmit}
-            disabled={assignMutation.isPending || !selectedDoctor || !selectedFeeId || !primarySpec.trim()}
+            disabled={
+              assignMutation.isPending ||
+              !selectedDoctor ||
+              !selectedFeeId ||
+              !primarySpec.trim()
+            }
           >
-            {assignMutation.isPending
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <Plus className="h-4 w-4" />}
+            {assignMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
             {assignMutation.isPending ? "Assigning…" : "Assign doctor"}
           </Button>
           <Button
@@ -1361,20 +1496,21 @@ export function ConsultationPanel({
     if (consultation) setTab("details");
   }, [consultation]);
 
-  const doctorName        = singleDoctor?.user?.name ?? "";
-  const doctorImage       = singleDoctor?.image ?? null;
-  const doctorSpec        =
+  const doctorName = singleDoctor?.user?.name ?? "";
+  const doctorImage = singleDoctor?.image ?? null;
+  const doctorSpec =
     singleDoctor?.primary_specialization ??
     singleDoctor?.specialization ??
     "No specialization";
-  const doctorIsActive    = singleDoctor?.is_active ?? consultation?.is_active ?? false;
+  const doctorIsActive =
+    singleDoctor?.is_active ?? consultation?.is_active ?? false;
   const doctorDesignation = singleDoctor?.designations;
-  const doctorDegree      = singleDoctor?.doctor_degree;
-  const doctorRating      = singleDoctor ? Number(singleDoctor.rating_avg ?? 0) : 0;
-  const isFeatured        = singleDoctor?.is_featured ?? false;
+  const doctorDegree = singleDoctor?.doctor_degree;
+  const doctorRating = singleDoctor ? Number(singleDoctor.rating_avg ?? 0) : 0;
+  const isFeatured = singleDoctor?.is_featured ?? false;
 
   const TABS: { id: ConsultPanelTab; label: string }[] = [
-    { id: "details",        label: "Details"        },
+    { id: "details", label: "Details" },
     { id: "quick_consults", label: "Quick Consults" },
   ];
 
@@ -1384,11 +1520,12 @@ export function ConsultationPanel({
         <>
           {/* ── Header ── */}
           <div className="flex-shrink-0 border-b border-border/60 bg-card/40">
-
             {/* Title row */}
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
               <div>
-                <p className="text-[13px] font-bold text-foreground">Doctor details</p>
+                <p className="text-[13px] font-bold text-foreground">
+                  Doctor details
+                </p>
                 <p className="text-[10px] text-muted-foreground/45 mt-0.5">
                   Profile, fees, schedule, and quick consultations
                 </p>
@@ -1442,9 +1579,13 @@ export function ConsultationPanel({
                         {doctorDesignation}
                       </p>
                     )}
-                    <p className="text-[10px] text-muted-foreground/45 truncate mt-0.5">{doctorSpec}</p>
+                    <p className="text-[10px] text-muted-foreground/45 truncate mt-0.5">
+                      {doctorSpec}
+                    </p>
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                      {doctorDegree && <Pill variant="teal">{doctorDegree}</Pill>}
+                      {doctorDegree && (
+                        <Pill variant="teal">{doctorDegree}</Pill>
+                      )}
                       {doctorRating > 0 && (
                         <Pill variant="amber">
                           <Star className="w-2 h-2" />
@@ -1455,13 +1596,17 @@ export function ConsultationPanel({
                       <span
                         className={cn(
                           "inline-flex items-center gap-1 text-[9.5px] px-2 py-0.5 rounded-full border font-semibold",
-                          activeStyle[String(doctorIsActive) as "true" | "false"],
+                          activeStyle[
+                            String(doctorIsActive) as "true" | "false"
+                          ],
                         )}
                       >
                         <span
                           className={cn(
                             "w-1.5 h-1.5 rounded-full",
-                            activeDot[String(doctorIsActive) as "true" | "false"],
+                            activeDot[
+                              String(doctorIsActive) as "true" | "false"
+                            ],
                           )}
                         />
                         {doctorIsActive ? "Active" : "Inactive"}
@@ -1532,14 +1677,18 @@ export function ConsultationPanel({
                     value={consultation.doctor.user.phone ?? "—"}
                   />
                   <InfoTile
-                    icon={<DollarSign className="w-3.5 h-3.5" />}
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
                     label="Online fee"
-                    value={fmt(consultation.specialization_fee?.online_fee ?? null)}
+                    value={fmt(
+                      consultation.specialization_fee?.online_fee ?? null,
+                    )}
                   />
                   <InfoTile
-                    icon={<DollarSign className="w-3.5 h-3.5" />}
+                    icon={<CreditCard className="w-3.5 h-3.5" />}
                     label="In-person fee"
-                    value={fmt(consultation.specialization_fee?.in_person_fee ?? null)}
+                    value={fmt(
+                      consultation.specialization_fee?.in_person_fee ?? null,
+                    )}
                   />
                 </div>
 
@@ -1549,7 +1698,10 @@ export function ConsultationPanel({
                     <div className="h-[60px] rounded-[5px] bg-accent/20" />
                     <div className="grid grid-cols-2 gap-2">
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-16 rounded-[5px] bg-accent/20" />
+                        <div
+                          key={i}
+                          className="h-16 rounded-[5px] bg-accent/20"
+                        />
                       ))}
                     </div>
                   </div>

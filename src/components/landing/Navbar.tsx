@@ -28,7 +28,6 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useMe();
-  console.log(user);
   const logout = useLogout();
 
   const navLinks = [
@@ -77,6 +76,33 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
       .toUpperCase()
       .slice(0, 2);
 
+  /**
+   * Navigates to home (if not already there) and scrolls to the
+   * target section. If already on home, just scrolls.
+   */
+  const handleNavClick = (hash: string) => {
+    const sectionId = hash.replace("#", "");
+
+    if (location.pathname !== "/") {
+      navigate("/" + hash);
+      // Give the home page time to mount before scrolling
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 150);
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+        window.history.replaceState(null, "", hash);
+      } else {
+        window.location.hash = hash;
+      }
+    }
+  };
+
   return (
     <header
       ref={menuRef}
@@ -93,11 +119,11 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
           {navLinks.map((l) => {
             const active = activeHash === l.href;
             return (
-              <a
+              <button
                 key={l.href}
-                href={l.href}
+                onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-sm transition-smooth",
+                  "relative px-3 py-2 rounded-sm transition-smooth cursor-pointer",
                   active
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -107,7 +133,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 {active && (
                   <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary" />
                 )}
-              </a>
+              </button>
             );
           })}
         </nav>
@@ -206,12 +232,14 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               {navLinks.map((l) => {
                 const active = activeHash === l.href;
                 return (
-                  <a
+                  <button
                     key={l.href}
-                    href={l.href}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleNavClick(l.href);
+                    }}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth",
+                      "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth text-left",
                       active
                         ? "bg-accent text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -224,7 +252,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                       )}
                     />
                     {l.label}
-                  </a>
+                  </button>
                 );
               })}
             </nav>

@@ -32,7 +32,7 @@ import {
   Ban,
   FileText,
   Video,
-  DollarSign,
+  CreditCard,
   Briefcase,
 } from "lucide-react";
 import {
@@ -187,7 +187,12 @@ function InfoRow({
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <span className={cn("text-xs font-medium text-foreground", mono && "font-mono")}>
+      <span
+        className={cn(
+          "text-xs font-medium text-foreground",
+          mono && "font-mono",
+        )}
+      >
         {value ?? (
           <span className="text-muted-foreground italic font-normal">—</span>
         )}
@@ -408,7 +413,9 @@ function RequestDetail({
           <p className="text-sm font-medium text-foreground">
             Failed to load certificate
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Please try again.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Please try again.
+          </p>
         </div>
       </div>
     );
@@ -433,7 +440,10 @@ function RequestDetail({
   const handleSaveDecision = () => {
     if (!decision) return;
     updateMut.mutate(
-      { decision: decision as CertDecision, doctor_notes: doctorNotes || undefined },
+      {
+        decision: decision as CertDecision,
+        doctor_notes: doctorNotes || undefined,
+      },
       {
         onSuccess: ({ certificate }) => {
           setSaved(true);
@@ -463,7 +473,6 @@ function RequestDetail({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-
       {/* ── Top bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -548,14 +557,14 @@ function RequestDetail({
 
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
-
         {/* ── Cannot-sign warning ── */}
         {decidable && decision === "fit" && !signable && (
           <div className="flex items-start gap-2.5 p-3 rounded-md border border-blue-400/30 bg-blue-500/10">
             <AlertTriangle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700 dark:text-blue-400">
               <strong>Cannot sign yet. </strong>
-              {!cert.identity_verified_via_video && "Identity not yet verified via video. "}
+              {!cert.identity_verified_via_video &&
+                "Identity not yet verified via video. "}
               {cert.has_red_flags && "Active red flags must be resolved. "}
               {cert.requires_inperson && "In-person examination required."}
             </p>
@@ -569,7 +578,8 @@ function RequestDetail({
               <div className="flex items-start gap-2.5 p-3 rounded-md border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive">
-                  <strong>Red flag symptoms:</strong> {redFlags.join(", ")}. Physical examination may be required.
+                  <strong>Red flag symptoms:</strong> {redFlags.join(", ")}.
+                  Physical examination may be required.
                 </p>
               </div>
             )}
@@ -577,7 +587,8 @@ function RequestDetail({
               <div className="flex items-start gap-2.5 p-3 rounded-md border border-amber-400/40 bg-amber-500/10">
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  <strong>High-risk job type:</strong> {getJobTypeLabel(cert)}. This typically requires an in-person examination.
+                  <strong>High-risk job type:</strong> {getJobTypeLabel(cert)}.
+                  This typically requires an in-person examination.
                 </p>
               </div>
             )}
@@ -625,7 +636,9 @@ function RequestDetail({
                 <StatusChip
                   ok={cert.identity_verified_via_video}
                   label={
-                    cert.identity_verified_via_video ? "Verified" : "Not verified"
+                    cert.identity_verified_via_video
+                      ? "Verified"
+                      : "Not verified"
                   }
                 />
               }
@@ -636,7 +649,11 @@ function RequestDetail({
         {/* ── 2. Certificate Details ── */}
         <SectionCard icon={CalendarDays} title="Certificate Details">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-            <InfoRow label="Certificate #" value={cert.certificate_number} mono />
+            <InfoRow
+              label="Certificate #"
+              value={cert.certificate_number}
+              mono
+            />
             <InfoRow
               label="Status"
               value={
@@ -659,7 +676,10 @@ function RequestDetail({
               <InfoRow label="Purpose details" value={cert.purpose_other} />
             )}
             <InfoRow label="Current step" value={String(cert.current_step)} />
-            <InfoRow label="Appointment ID" value={String(cert.appointment_id)} />
+            <InfoRow
+              label="Appointment ID"
+              value={String(cert.appointment_id)}
+            />
             <InfoRow
               label="Requires in-person"
               value={
@@ -685,15 +705,21 @@ function RequestDetail({
               <InfoRow label="Valid until" value={fmtDate(cert.valid_until)} />
             )}
             <InfoRow label="Created" value={fmtDateTime(cert.created_at)} />
-            <InfoRow label="Last updated" value={fmtDateTime(cert.updated_at)} />
+            <InfoRow
+              label="Last updated"
+              value={fmtDateTime(cert.updated_at)}
+            />
             {cert.reviewed_at && (
-              <InfoRow label="Reviewed at" value={fmtDateTime(cert.reviewed_at)} />
+              <InfoRow
+                label="Reviewed at"
+                value={fmtDateTime(cert.reviewed_at)}
+              />
             )}
           </div>
         </SectionCard>
 
         {/* ── 3. Fees ── */}
-        <SectionCard icon={DollarSign} title="Fees">
+        <SectionCard icon={CreditCard} title="Fees">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <VitalChip
               label="Initial fee paid"
@@ -713,7 +739,9 @@ function RequestDetail({
               <BoolRow
                 key={key}
                 label={label}
-                value={(cert as unknown as Record<string, boolean>)[key] ?? false}
+                value={
+                  (cert as unknown as Record<string, boolean>)[key] ?? false
+                }
               />
             ))}
           </div>
@@ -758,7 +786,9 @@ function RequestDetail({
               <BoolRow
                 key={key}
                 label={label}
-                value={(cert as unknown as Record<string, boolean>)[key] ?? false}
+                value={
+                  (cert as unknown as Record<string, boolean>)[key] ?? false
+                }
                 redFlag
               />
             ))}
@@ -939,7 +969,9 @@ function RequestDetail({
                         : "bg-destructive/15 text-destructive border-destructive/25",
                   )}
                 >
-                  {cert.decision ? DECISION_LABELS[cert.decision] : "No decision"}
+                  {cert.decision
+                    ? DECISION_LABELS[cert.decision]
+                    : "No decision"}
                 </Badge>
               </div>
               {cert.doctor_notes && (
@@ -973,7 +1005,9 @@ function RequestDetail({
                   variant="destructive"
                   className="text-xs gap-1.5"
                   onClick={handleReject}
-                  disabled={rejectReason.trim().length < 10 || rejectMut.isPending}
+                  disabled={
+                    rejectReason.trim().length < 10 || rejectMut.isPending
+                  }
                 >
                   {rejectMut.isPending && (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -1010,7 +1044,9 @@ function RequestDetail({
                   variant="destructive"
                   className="text-xs gap-1.5"
                   onClick={handleRevoke}
-                  disabled={revokeReason.trim().length < 10 || revokeMut.isPending}
+                  disabled={
+                    revokeReason.trim().length < 10 || revokeMut.isPending
+                  }
                 >
                   {revokeMut.isPending && (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -1083,7 +1119,6 @@ function DoctorFitnessCertificates() {
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[580px]">
-
             {/* ── Left panel ── */}
             <div
               className={cn(

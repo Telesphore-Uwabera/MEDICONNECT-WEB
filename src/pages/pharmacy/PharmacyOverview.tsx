@@ -38,7 +38,6 @@ import {
   type OutOfStockItem,
   type ExpiringSoonItem,
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtRWF(n: number): string {

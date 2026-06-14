@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 import type {
   PatientProfile,
   MedicalInfo,
@@ -31,7 +31,7 @@ interface AvatarResponse {
 
 interface MedicalInfoResponse {
   medical_info: MedicalInfo;
-  patient: PatientProfile; // ← was FullPatientProfile; API actually returns PatientProfile (with nested user)
+  patient: PatientProfile;
 }
 
 interface SaveMedicalInfoResponse {
@@ -46,6 +46,23 @@ interface InsuranceResponse {
 interface UpdateInsuranceResponse {
   message: string;
   insurance: Insurance;
+}
+
+export interface PublicInsurance {
+  id: number;
+  name: string;
+  code: string;
+  logo: string | null;
+  description: string | null;
+  type: "public" | "private";
+  coverage_percentage: string;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+interface PublicInsurancesResponse {
+  insurances: PublicInsurance[];
 }
 
 /* ─────────────────────────────────────────────
@@ -155,6 +172,22 @@ export function useUpdateInsurance() {
       }).then((r) => r.insurance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-insurance"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-profile"] });
     },
+  });
+}
+
+/* ─────────────────────────────────────────────
+   useGetPublicInsurances  →  GET /public/insurances
+───────────────────────────────────────────── */
+
+export function useGetPublicInsurances() {
+  return useQuery({
+    queryKey: ["public-insurances"],
+    queryFn: () =>
+      apiFetch<PublicInsurancesResponse>("/public/insurances").then(
+        (r) => r.insurances
+      ),
+    staleTime: 10 * 60 * 1000, // cache for 10 min — this list rarely changes
   });
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+
 import {
   ArrowRight,
   Calendar,
@@ -15,21 +16,31 @@ import {
   Zap,
   X,
 } from "lucide-react";
-import echo from '@/lib/echo';
+
+import echo from "@/lib/echo";
+
 import { Button } from "@/components/ui/button";
 import { DoctorCard } from "@/components/DoctorCard";
 import { HospitalCard } from "@/components/HospitalCard";
+
 import { cn } from "@/lib/utils";
+
 import { useTheme } from "@/context/ThemeContext";
+
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
 import { useGetSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
 import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
 import { QuickConsultPanel } from "./doctor/QuickConsultPanel";
-import { SpecializationSelect, SpecializationValue } from "./patient/components/SpecializationSelect";
+import {
+  SpecializationSelect,
+  SpecializationValue,
+} from "./patient/components/SpecializationSelect";
+import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
 
@@ -108,6 +119,7 @@ const SliderSkeleton = () => (
 
 const Index = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
@@ -116,33 +128,57 @@ const Index = () => {
 
   // ── Doctor filter state ─────────────────────────────────────────────────────
   const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
-  const [selectedSpecialization, setSelectedSpecialization] = useState<SpecializationValue>({ specialization: null, fee: null });
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState<SpecializationValue>({ specialization: null, fee: null });
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
 
-  console.log("selectedSpecialization",selectedSpecialization)
+  // ── Scroll to section on hash present (e.g. navigated from another page) ────
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const scrollToEl = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+          return true;
+        }
+        return false;
+      };
+
+      // try immediately, then retry briefly in case content is still mounting
+      if (!scrollToEl()) {
+        const timeout = setTimeout(scrollToEl, 150);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [location.hash]);
+
   // ── Build backend params ─────────────────────────────────────────────────────
   // FIX: useMemo now returns a stable object that changes identity only when
   // filter values actually change, ensuring useGetSearchDoctors re-fetches.
-const doctorSearchParams = useMemo(() => {
-  const params: {
-    instant?: boolean;
-    language?: string;
-    specialization?: string;
-    specialization_fee_id?: number;
-  } = {};
 
-  if (doctorFilter === "instant") params.instant = true;
-  if (selectedLanguage !== "all") params.language = selectedLanguage;
+  const doctorSearchParams = useMemo(() => {
+    const params: {
+      instant?: boolean;
+      language?: string;
+      specialization?: string;
+      specialization_fee_id?: number;
+    } = {};
 
-  if (selectedSpecialization.specialization) {
-    params.specialization = selectedSpecialization.specialization.name;
-    if (selectedSpecialization.fee?.id) {
-      params.specialization_fee_id = selectedSpecialization.fee.id;
+    if (doctorFilter === "instant") params.instant = true;
+    if (selectedLanguage !== "all") params.language = selectedLanguage;
+
+    if (selectedSpecialization.specialization) {
+      params.specialization = selectedSpecialization.specialization.name;
+      if (selectedSpecialization.fee?.id) {
+        params.specialization_fee_id = selectedSpecialization.fee.id;
+      }
     }
-  }
 
-  return params;
-}, [doctorFilter, selectedLanguage, selectedSpecialization]);
+    return params;
+  }, [doctorFilter, selectedLanguage, selectedSpecialization]);
+
+  const { data: pharmacyStats } = useGetPharmacyStats();
 
   // ── All doctors (filtered via backend) ─────────────────────────────────────
   const { data: doctorsData, isLoading: doctorsLoading } =
@@ -172,15 +208,15 @@ const doctorSearchParams = useMemo(() => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const channel = echo.channel('doctors.availability');
+    const channel = echo.channel("doctors.availability");
 
-    channel.listen('.availability.changed', (data: DoctorAvailabilityEvent) => {
-      console.log('Doctor availability changed:', data);
-      queryClient.invalidateQueries({ queryKey: ['patient-search-doctors'] });
+    channel.listen(".availability.changed", (data: DoctorAvailabilityEvent) => {
+      console.log("Doctor availability changed:", data);
+      queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
     });
 
     return () => {
-      echo.leaveChannel('doctors.availability');
+      echo.leaveChannel("doctors.availability");
     };
   }, [queryClient]);
 
@@ -402,7 +438,7 @@ const doctorSearchParams = useMemo(() => {
                       "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all",
                       doctorFilter === "all"
                         ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     All
@@ -413,7 +449,7 @@ const doctorSearchParams = useMemo(() => {
                       "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all flex items-center gap-1",
                       doctorFilter === "instant"
                         ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     <Zap className="w-3 h-3" />
@@ -438,7 +474,7 @@ const doctorSearchParams = useMemo(() => {
                       "appearance-none px-2.5 py-1.5 pr-7 text-[11px] bg-background border rounded-sm transition-all cursor-pointer outline-none",
                       selectedLanguage !== "all"
                         ? "border-primary/50 ring-1 ring-primary/20 text-foreground"
-                        : "border-border/60 text-muted-foreground hover:border-primary/40"
+                        : "border-border/60 text-muted-foreground hover:border-primary/40",
                     )}
                   >
                     <option value="all">Any language</option>
@@ -635,8 +671,18 @@ const doctorSearchParams = useMemo(() => {
             </div>
             <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
               {[
-                { v: "200+", l: t("pages.landing.stat_products") },
-                { v: "4", l: t("pages.landing.stat_pharmacies") },
+                {
+                  v: pharmacyStats
+                    ? `${pharmacyStats.summary.active_medicines}+`
+                    : "—",
+                  l: t("pages.landing.stat_products"),
+                },
+                {
+                  v: pharmacyStats
+                    ? `${pharmacyStats.summary.total_pharmacies}`
+                    : "—",
+                  l: t("pages.landing.stat_pharmacies"),
+                },
                 { v: "<1h", l: t("pages.landing.stat_delivery") },
               ].map((s) => (
                 <div
@@ -744,6 +790,7 @@ const doctorSearchParams = useMemo(() => {
                 >
                   support@mediconnect.com
                 </a>
+
                 <a
                   href="tel:+250788123456"
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
