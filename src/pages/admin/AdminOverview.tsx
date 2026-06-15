@@ -136,57 +136,90 @@ function FilterBar({
   filters: AdminDashboardFilters;
   onChange: (f: AdminDashboardFilters) => void;
 }) {
+  const hasFilters = Object.values(filters).some(Boolean);
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search name, phone, invoice…"
-          value={filters.q ?? ""}
-          onChange={(e) => onChange({ ...filters, q: e.target.value || undefined })}
-          className="pl-6 pr-3 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-52"
-        />
+    <div className="flex items-end justify-between flex-wrap gap-3 rounded-sm border border-border bg-card px-3.5 py-3 shadow-sm w-full">
+      {/* Left: filter inputs */}
+      <div className="flex items-end flex-wrap gap-3 flex-1 min-w-0">
+
+        {/* Search */}
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Search
+          </label>
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Name, phone, invoice…"
+              value={filters.q ?? ""}
+              onChange={(e) => onChange({ ...filters, q: e.target.value || undefined })}
+              className="pl-6 pr-3 h-8 text-[11px] rounded-sm border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+            />
+          </div>
+        </div>
+
+        {/* Exact date */}
+        <div className="flex flex-col gap-1 flex-1 min-w-0">
+          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Exact date
+          </label>
+          <div className="relative">
+            <CalendarDays className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <input
+              type="date"
+              value={filters.date ?? ""}
+              onChange={(e) =>
+                onChange({ ...filters, date: e.target.value || undefined, date_from: undefined, date_to: undefined })
+              }
+              className="pl-6 pr-3 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+            />
+          </div>
+        </div>
+
+        {/* Date range */}
+       <div className="flex flex-col gap-1 flex-[2] min-w-0">
+          <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            Date range
+          </label>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              value={filters.date_from ?? ""}
+              onChange={(e) =>
+                onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })
+              }
+              className="px-2 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+            />
+            <span className="text-[10px] text-muted-foreground shrink-0">→</span>
+            <input
+              type="date"
+              value={filters.date_to ?? ""}
+              onChange={(e) =>
+                onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })
+              }
+              className="px-2 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+            />
+          </div>
+        </div>
+
       </div>
 
-      {/* Exact date */}
-      <div className="relative">
-        <CalendarDays className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-        <input
-          type="date"
-          value={filters.date ?? ""}
-          onChange={(e) => onChange({ ...filters, date: e.target.value || undefined, date_from: undefined, date_to: undefined })}
-          className="pl-6 pr-3 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
-        />
-      </div>
-
-      {/* Date range */}
-      <div className="flex items-center gap-1.5">
-        <input
-          type="date"
-          value={filters.date_from ?? ""}
-          onChange={(e) => onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })}
-          className="px-2 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
-        />
-        <span className="text-[10px] text-muted-foreground">→</span>
-        <input
-          type="date"
-          value={filters.date_to ?? ""}
-          onChange={(e) => onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })}
-          className="px-2 py-1.5 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40"
-        />
-      </div>
-
-      {/* Clear filters */}
-      {Object.values(filters).some(Boolean) && (
-        <button
-          onClick={() => onChange({})}
-          className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Clear
-        </button>
-      )}
+      {/* Right: clear button */}
+      <button
+        onClick={() => onChange({})}
+        disabled={!hasFilters}
+        className={cn(
+          "flex items-center gap-1 h-8 px-2.5 rounded-sm border text-[10px] font-medium transition-all",
+          hasFilters
+            ? "border-border text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            : "border-transparent text-muted-foreground/30 cursor-not-allowed",
+        )}
+      >
+        <XCircle className="h-3 w-3" />
+        Clear filters
+      </button>
     </div>
   );
 }

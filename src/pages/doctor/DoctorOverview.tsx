@@ -37,7 +37,11 @@ import {
   Cell,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { useDoctorDashboard, type Period, type ChartGroup } from "@/hooks/doctor/use-doctor-dashboard";
+import {
+  useDoctorDashboard,
+  type Period,
+  type ChartGroup,
+} from "@/hooks/doctor/use-doctor-dashboard";
 
 // ─── Period picker options ────────────────────────────────────────────────────
 
@@ -51,8 +55,8 @@ const PERIOD_OPTIONS: { value: Period; label: string }[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(value: number) {
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-  return `$${value.toFixed(0)}`;
+  if (value >= 1000) return `RWF${(value / 1000).toFixed(1)}k`;
+  return `RWF${value.toFixed(0)}`;
 }
 
 function formatPct(value: number | null) {
@@ -110,8 +114,10 @@ const DoctorOverview = () => {
   const onlineRevTotal = revenue?.breakdown.online.total ?? 0;
   const inPersonRevTotal = revenue?.breakdown.in_person.total ?? 0;
   const combinedRev = onlineRevTotal + inPersonRevTotal;
-  const onlinePct = combinedRev > 0 ? Math.round((onlineRevTotal / combinedRev) * 100) : 61;
-  const inPersonPct = combinedRev > 0 ? Math.round((inPersonRevTotal / combinedRev) * 100) : 39;
+  const onlinePct =
+    combinedRev > 0 ? Math.round((onlineRevTotal / combinedRev) * 100) : 61;
+  const inPersonPct =
+    combinedRev > 0 ? Math.round((inPersonRevTotal / combinedRev) * 100) : 39;
 
   // ── Quick stats (Today) ─────────────────────────────────────────────────
 
@@ -148,7 +154,6 @@ const DoctorOverview = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
-
             {/* ── Toolbar: period picker + chart group + refresh ── */}
             <div className="flex flex-wrap items-center gap-2">
               {PERIOD_OPTIONS.map((opt) => (
@@ -188,7 +193,9 @@ const DoctorOverview = () => {
                   disabled={loading}
                   className="ml-1 p-1 rounded border border-border/60 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                 >
-                  <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+                  <RefreshCw
+                    className={cn("h-3.5 w-3.5", loading && "animate-spin")}
+                  />
                 </button>
               </div>
             </div>
@@ -203,7 +210,6 @@ const DoctorOverview = () => {
 
             {/* ── Toggles + today quick stats ── */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-
               {/* Instant Consultation toggle */}
               <div
                 className={cn(
@@ -242,7 +248,9 @@ const DoctorOverview = () => {
                   <p
                     className={cn(
                       "text-[10px] mt-0.5",
-                      toggleState.instant_consultation ? "text-success" : "text-muted-foreground",
+                      toggleState.instant_consultation
+                        ? "text-success"
+                        : "text-muted-foreground",
                     )}
                   >
                     {toggleState.instant_consultation
@@ -290,10 +298,14 @@ const DoctorOverview = () => {
                   <p
                     className={cn(
                       "text-[10px] mt-0.5",
-                      toggleState.bookings_paused ? "text-warning" : "text-muted-foreground",
+                      toggleState.bookings_paused
+                        ? "text-warning"
+                        : "text-muted-foreground",
                     )}
                   >
-                    {toggleState.bookings_paused ? "No new bookings allowed" : "Accepting bookings"}
+                    {toggleState.bookings_paused
+                      ? "No new bookings allowed"
+                      : "Accepting bookings"}
                   </p>
                 </div>
               </div>
@@ -315,10 +327,12 @@ const DoctorOverview = () => {
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className={cn(
-                        "text-[18px] font-bold text-foreground tabular-nums leading-none",
-                        loading && "opacity-40",
-                      )}>
+                      <p
+                        className={cn(
+                          "text-[18px] font-bold text-foreground tabular-nums leading-none",
+                          loading && "opacity-40",
+                        )}
+                      >
                         {s.value}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -364,7 +378,6 @@ const DoctorOverview = () => {
 
             {/* ── Main grid ── */}
             <div className="grid lg:grid-cols-3 gap-3">
-
               {/* Patient flow chart */}
               <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-3">
@@ -393,7 +406,10 @@ const DoctorOverview = () => {
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={patientFlowData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                      />
                       <XAxis
                         dataKey="day"
                         stroke="hsl(var(--muted-foreground))"
@@ -441,26 +457,40 @@ const DoctorOverview = () => {
 
               {/* Period summary card */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft flex flex-col gap-2">
-                <h3 className="text-[11px] font-semibold text-foreground">Period Summary</h3>
+                <h3 className="text-[11px] font-semibold text-foreground">
+                  Period Summary
+                </h3>
 
                 {[
-                  { label: "Total Appointments", value: period?.total_appointments ?? 0 },
+                  {
+                    label: "Total Appointments",
+                    value: period?.total_appointments ?? 0,
+                  },
                   { label: "Completed", value: period?.completed ?? 0 },
                   { label: "Pending", value: period?.pending ?? 0 },
                   { label: "Cancelled", value: period?.cancelled ?? 0 },
                   { label: "Online", value: period?.online_count ?? 0 },
                   { label: "In-person", value: period?.in_person_count ?? 0 },
-                  { label: "Avg Duration", value: period?.avg_duration_minutes ? `${period.avg_duration_minutes}m` : "—" },
+                  {
+                    label: "Avg Duration",
+                    value: period?.avg_duration_minutes
+                      ? `${period.avg_duration_minutes}m`
+                      : "—",
+                  },
                 ].map((row) => (
                   <div
                     key={row.label}
                     className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0"
                   >
-                    <span className="text-[10px] text-muted-foreground">{row.label}</span>
-                    <span className={cn(
-                      "text-[11px] font-semibold text-foreground tabular-nums",
-                      loading && "opacity-40",
-                    )}>
+                    <span className="text-[10px] text-muted-foreground">
+                      {row.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px] font-semibold text-foreground tabular-nums",
+                        loading && "opacity-40",
+                      )}
+                    >
                       {row.value}
                     </span>
                   </div>
@@ -478,11 +508,21 @@ const DoctorOverview = () => {
                         { label: "Done", value: instantStats.completed },
                         { label: "Queue", value: instantStats.current_queue },
                       ].map((s) => (
-                        <div key={s.label} className="rounded bg-secondary/40 px-2 py-1.5 text-center">
-                          <p className={cn("text-[13px] font-bold tabular-nums", loading && "opacity-40")}>
+                        <div
+                          key={s.label}
+                          className="rounded bg-secondary/40 px-2 py-1.5 text-center"
+                        >
+                          <p
+                            className={cn(
+                              "text-[13px] font-bold tabular-nums",
+                              loading && "opacity-40",
+                            )}
+                          >
                             {s.value}
                           </p>
-                          <p className="text-[9px] text-muted-foreground mt-0.5">{s.label}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
+                            {s.label}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -493,7 +533,6 @@ const DoctorOverview = () => {
 
             {/* ── Bottom row ── */}
             <div className="grid lg:grid-cols-3 gap-3">
-
               {/* Completion rate bar chart */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-1">
@@ -501,14 +540,17 @@ const DoctorOverview = () => {
                     Appointment Completion
                   </h3>
                   {/* Show trend only when we have data */}
-                  {completionData.length > 0 && (() => {
-                    const avg = completionData.reduce((s, d) => s + d.rate, 0) / completionData.length;
-                    return (
-                      <span className="text-[10px] font-semibold text-muted-foreground">
-                        avg {avg.toFixed(0)}%
-                      </span>
-                    );
-                  })()}
+                  {completionData.length > 0 &&
+                    (() => {
+                      const avg =
+                        completionData.reduce((s, d) => s + d.rate, 0) /
+                        completionData.length;
+                      return (
+                        <span className="text-[10px] font-semibold text-muted-foreground">
+                          avg {avg.toFixed(0)}%
+                        </span>
+                      );
+                    })()}
                 </div>
                 <p className="text-[10px] text-muted-foreground mb-3">
                   Completion rate · {filters.period}
@@ -564,7 +606,9 @@ const DoctorOverview = () => {
               {/* Rating & reviews */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[11px] font-semibold text-foreground">Recent Reviews</h3>
+                  <h3 className="text-[11px] font-semibold text-foreground">
+                    Recent Reviews
+                  </h3>
                   {reviews?.all_time_avg != null && (
                     <div className="flex items-center gap-1 bg-warning/10 px-2 py-0.5 rounded">
                       <Star className="h-3 w-3 fill-warning text-warning" />
@@ -595,10 +639,13 @@ const DoctorOverview = () => {
                               {r.patient_name}
                             </p>
                             <span className="text-[9px] text-muted-foreground flex-shrink-0">
-                              {new Date(r.created_at).toLocaleDateString(undefined, {
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {new Date(r.created_at).toLocaleDateString(
+                                undefined,
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
                             </span>
                           </div>
                           <div className="flex items-center gap-0.5 mt-0.5">
@@ -607,7 +654,9 @@ const DoctorOverview = () => {
                                 key={j}
                                 className={cn(
                                   "h-2.5 w-2.5",
-                                  j < r.rating ? "fill-warning text-warning" : "text-border",
+                                  j < r.rating
+                                    ? "fill-warning text-warning"
+                                    : "text-border",
                                 )}
                               />
                             ))}
@@ -624,7 +673,9 @@ const DoctorOverview = () => {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[100px] gap-1">
                     <Star className="h-5 w-5 text-border" />
-                    <p className="text-[10px] text-muted-foreground">No reviews yet</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      No reviews yet
+                    </p>
                     {reviews?.period.avg_rating != null && (
                       <p className="text-[9px] text-muted-foreground">
                         Period avg: {reviews.period.avg_rating.toFixed(1)}★
@@ -643,11 +694,15 @@ const DoctorOverview = () => {
                       { label: "1-2★", value: reviews.period.low_star },
                     ].map((row) => (
                       <div key={row.label} className="flex items-center gap-2">
-                        <span className="text-[9px] text-muted-foreground w-6">{row.label}</span>
+                        <span className="text-[9px] text-muted-foreground w-6">
+                          {row.label}
+                        </span>
                         <div className="flex-1 h-1 rounded-full bg-secondary overflow-hidden">
                           <div
                             className="h-full rounded-full bg-warning/70"
-                            style={{ width: `${(row.value / reviews.period.total) * 100}%` }}
+                            style={{
+                              width: `${(row.value / reviews.period.total) * 100}%`,
+                            }}
                           />
                         </div>
                         <span className="text-[9px] text-muted-foreground w-3 text-right">
@@ -683,15 +738,18 @@ const DoctorOverview = () => {
                 </div>
 
                 <div>
-                  <p className={cn(
-                    "text-[26px] font-bold text-foreground tabular-nums leading-none",
-                    loading && "opacity-40",
-                  )}>
+                  <p
+                    className={cn(
+                      "text-[26px] font-bold text-foreground tabular-nums leading-none",
+                      loading && "opacity-40",
+                    )}
+                  >
                     {formatCurrency(totalRevenue)}
                   </p>
                   {revenue && revenue.previous_period_total > 0 && (
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      vs {formatCurrency(revenue.previous_period_total)} prev period
+                      vs {formatCurrency(revenue.previous_period_total)} prev
+                      period
                     </p>
                   )}
                 </div>
@@ -713,7 +771,9 @@ const DoctorOverview = () => {
                   ].map((row) => (
                     <div key={row.label}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] text-muted-foreground">{row.label}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {row.label}
+                        </span>
                         <span className="text-[10px] font-semibold text-foreground">
                           {row.value}
                           <span className="text-muted-foreground font-normal ml-1">
@@ -732,14 +792,20 @@ const DoctorOverview = () => {
                 </div>
 
                 <div className="pt-2 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">Avg per consultation</span>
-                  <span className={cn("text-[11px] font-bold text-foreground", loading && "opacity-40")}>
+                  <span className="text-[10px] text-muted-foreground">
+                    Avg per consultation
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[11px] font-bold text-foreground",
+                      loading && "opacity-40",
+                    )}
+                  >
                     {formatCurrency(revenue?.avg_per_appointment ?? 0)}
                   </span>
                 </div>
               </div>
             </div>
-
           </div>
         </main>
       </div>

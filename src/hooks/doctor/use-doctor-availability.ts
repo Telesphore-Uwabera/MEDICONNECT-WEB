@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 /* ─────────────────────────────────────────────
    Types
@@ -172,16 +172,21 @@ export interface CreatePeriodPayload {
   label?: string;
 }
 
+// use-doctor-availability.ts
 export function useCreateAvailabilityPeriod() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreatePeriodPayload) =>
       apiFetch<{
         message: string;
-        period: AvailabilityPeriod;
-        slots_generated: number;
-        available_dates: string[];
-        total_days: number;
+        saved: {
+          day: string;
+          from_date: string;
+          to_date: string;
+          slots_generated: number;
+          note: string;
+        }[];
+        skipped_days: string[];
       }>("/doctor/availability/periods", { method: "POST", body: payload }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: availabilityKeys.all });
@@ -242,6 +247,24 @@ export function useDeleteAvailabilityPeriod() {
 }
 
 /* ─────────────────────────────────────────────
+   2.8  DELETE /availability/all  — Reset whole schedule
+───────────────────────────────────────────── */
+
+export function useDeleteAllSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ message: string }>("/doctor/availability/all", {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: availabilityKeys.all });
+      qc.invalidateQueries({ queryKey: ["slots"] });
+    },
+  });
+}
+
+/* ─────────────────────────────────────────────
    3.1  GET /slots
 ───────────────────────────────────────────── */
 
@@ -253,22 +276,6 @@ export interface GetSlotsParams {
   type?: "online" | "in_person";
 }
 
-// export function useGetSlots(params?: GetSlotsParams) {
-//   const query = new URLSearchParams(
-//     Object.entries(params ?? {}).filter(([, v]) => Boolean(v)) as [
-//       string,
-//       string
-//     ][]
-//   ).toString();
-
-//   return useQuery({
-//     queryKey: availabilityKeys.slots(params as Record<string, string>),
-//     queryFn: () =>
-//       apiFetch<SlotsResponse>(`/doctor/slots`),
-//     enabled: Boolean(params?.date || params?.from),
-//   });
-// }
-// In use-doctor-availability.ts
 export function useGetSlots(params?: GetSlotsParams) {
   const query = new URLSearchParams(
     Object.entries(params ?? {}).filter(([, v]) => Boolean(v)) as [string, string][]
@@ -278,9 +285,10 @@ export function useGetSlots(params?: GetSlotsParams) {
     queryKey: availabilityKeys.slots(params as Record<string, string>),
     queryFn: () =>
       apiFetch<SlotsResponse>(`/doctor/slots`),
-    enabled: true, // Always fetch — backend returns default range if no params
+    enabled: true,
   });
 }
+
 /* ─────────────────────────────────────────────
    3.2  PATCH /slots/{id}  — Update Single Slot
 ───────────────────────────────────────────── */

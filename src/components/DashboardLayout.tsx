@@ -62,39 +62,79 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.people"),
       items: [
         { to: "/admin/users", label: t("sidebar.users"), icon: Users },
-        { to: "/admin/manage-patients", label: t("sidebar.patients"), icon: User },
-        { to: "/admin/manage-doctors", label: t("sidebar.doctors"), icon: Stethoscope },
+        {
+          to: "/admin/manage-patients",
+          label: t("sidebar.patients"),
+          icon: User,
+        },
+        {
+          to: "/admin/manage-doctors",
+          label: t("sidebar.doctors"),
+          icon: Stethoscope,
+        },
       ],
     },
     {
       heading: t("sidebar.group.facilities"),
       items: [
-        { to: "/admin/manage-hospitals", label: t("sidebar.hospitals"), icon: Building2 },
-        { to: "/admin/manage-pharmacies", label: t("sidebar.pharmacies"), icon: Pill },
+        {
+          to: "/admin/manage-facilities",
+          label: t("sidebar.facilities"),
+          icon: Building2,
+        },
+        {
+          to: "/admin/manage-pharmacies",
+          label: t("sidebar.pharmacies"),
+          icon: Pill,
+        },
       ],
     },
     {
       heading: t("sidebar.group.medical"),
       items: [
-        { to: "/admin/manage-appointments", label: t("sidebar.appointments"), icon: Calendar },
-        { to: "/admin/manage-specializations", label: t("sidebar.specializations"), icon: FlaskConical },
-        { to: "/admin/manage-checklist-questions", label: t("sidebar.checklistQuestions"), icon: HelpCircle },
-        { to: "/admin/manage-insurances", label: t("sidebar.insurances"), icon: Shield },
-        { to: "/admin/manage-instant-doctors", label: t("sidebar.instantDoctors"), icon: Star },
+        {
+          to: "/admin/manage-appointments",
+          label: t("sidebar.appointments"),
+          icon: Calendar,
+        },
+        {
+          to: "/admin/manage-specializations",
+          label: t("sidebar.specializations"),
+          icon: FlaskConical,
+        },
+        {
+          to: "/admin/manage-checklist-questions",
+          label: t("sidebar.checklistQuestions"),
+          icon: HelpCircle,
+        },
+        {
+          to: "/admin/manage-insurances",
+          label: t("sidebar.insurances"),
+          icon: Shield,
+        },
+        {
+          to: "/admin/manage-instant-doctors",
+          label: t("sidebar.instantDoctors"),
+          icon: Star,
+        },
         // wallet
-            { to: "/admin/manage-wallet", label: t("sidebar.wallet"), icon: Star },
+        { to: "/admin/manage-wallet", label: t("sidebar.wallet"), icon: Star },
       ],
     },
     {
       heading: t("sidebar.group.finance"),
       items: [
-        { to: "/admin/service-pricing", label: t("sidebar.servicePricing"), icon: Tag },
+        {
+          to: "/admin/service-pricing",
+          label: t("sidebar.servicePricing"),
+          icon: Tag,
+        },
       ],
     },
     {
       heading: t("sidebar.group.system"),
       items: [
-        { to: "/settings", label: t("sidebar.settings"), icon: Settings },
+        { to: "/admin/settings", label: t("sidebar.settings"), icon: Settings },
         // { to: "/admin/audit-logs", label: t("sidebar.auditLogs"), icon: History },
         // { to: "/admin/maintenance", label: t("sidebar.maintenance"), icon: Wrench },
       ],
@@ -118,23 +158,38 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.schedule"),
       items: [
-        { to: "/doctor/availability", label: t("sidebar.availability"), icon: Clock },
-        { to: "/doctor/appointments", label: t("sidebar.appointments"), icon: ClipboardList },
+        {
+          to: "/doctor/availability",
+          label: t("sidebar.availability"),
+          icon: Clock,
+        },
+        {
+          to: "/doctor/appointments",
+          label: t("sidebar.appointments"),
+          icon: ClipboardList,
+        },
       ],
     },
     {
       heading: t("sidebar.group.clinical"),
       items: [
-        { to: "/doctor/prescriptions", label: t("sidebar.prescriptions"), icon: FileText },
-        { to: "/doctor/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
+        {
+          to: "/doctor/prescriptions",
+          label: t("sidebar.prescriptions"),
+          icon: FileText,
+        },
+        {
+          to: "/doctor/fitness-certificates",
+          label: t("sidebar.fitnessCertificates"),
+          icon: CheckCircle,
+        },
         { to: "/doctor/referrals", label: t("sidebar.referrals"), icon: Send },
       ],
     },
     {
       heading: t("sidebar.group.account"),
       items: [
-        // { to: "/doctor/settings", label: t("sidebar.settings"), icon: Settings },
-               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
+        { to: "/doctor/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],
@@ -144,7 +199,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.ourFacility"),
       items: [
-        { to: "/hospital/profile", label: t("sidebar.profile"), icon: Building2 },
+        {
+          to: "/hospital/profile",
+          label: t("sidebar.profile"),
+          icon: Building2,
+        },
         { to: "/hospital/schedule", label: t("sidebar.schedule"), icon: Clock },
         // { to: "/hospital/gallery", label: t("sidebar.gallery"), icon: Image },
         // { to: "/hospital/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
@@ -153,23 +212,43 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.operations"),
       items: [
-        { to: "/hospital/departments", label: t("sidebar.departments"), icon: Building },
-        { to: "/hospital/appointments", label: t("sidebar.appointments"), icon: HeartPulse },
+        {
+          to: "/hospital/departments",
+          label: t("sidebar.departments"),
+          icon: Building,
+        },
+        {
+          to: "/hospital/appointments",
+          label: t("sidebar.appointments"),
+          icon: HeartPulse,
+        },
         // { to: "/hospital/doctors", label: t("sidebar.doctors"), icon: Stethoscope },
-        { to: "/hospital/insurances", label: t("sidebar.insurances"), icon: Shield },
+        {
+          to: "/hospital/insurances",
+          label: t("sidebar.insurances"),
+          icon: Shield,
+        },
       ],
     },
     {
       heading: t("sidebar.group.activity"),
       items: [
         // { to: "/hospital/service-bookings", label: t("sidebar.serviceBookings"), icon: Calendar },
-        { to: "/hospital/prescriptions", label: t("sidebar.prescriptions"), icon: Send },
+        {
+          to: "/hospital/prescriptions",
+          label: t("sidebar.prescriptions"),
+          icon: Send,
+        },
       ],
     },
     {
       heading: t("sidebar.group.account"),
       items: [
-        { to: "/hospital/settings", label: t("sidebar.settings"), icon: Settings },
+        {
+          to: "/hospital/settings",
+          label: t("sidebar.settings"),
+          icon: Settings,
+        },
       ],
     },
   ],
@@ -187,42 +266,81 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.findCare"),
       items: [
-        { to: "/patient/search-doctors", label: t("sidebar.searchDoctors"), icon: Search },
-        { to: "/patient/search-hospitals", label: t("sidebar.searchHospitals"), icon: Building2 },
-        { to: "/patient/search-pharmacy", label: t("sidebar.searchPharmacies"), icon: Pill },
-        { to: "/patient/fitness-certificates", label: t("sidebar.fitnessCertificates"), icon: CheckCircle },
+        {
+          to: "/patient/search-doctors",
+          label: t("sidebar.searchDoctors"),
+          icon: Search,
+        },
+        {
+          to: "/patient/search-facilities",
+          label: t("sidebar.searchHospitals"),
+          icon: Building2,
+        },
+        {
+          to: "/patient/search-pharmacy",
+          label: t("sidebar.searchPharmacies"),
+          icon: Pill,
+        },
+        {
+          to: "/patient/fitness-certificates",
+          label: t("sidebar.fitnessCertificates"),
+          icon: CheckCircle,
+        },
       ],
     },
     {
       heading: t("sidebar.group.appointments"),
       items: [
         // { to: "/patient/quick-appointment", label: t("sidebar.quickAppointment"), icon: Zap },
-        { to: "/patient/appointments", label: t("sidebar.myAppointments"), icon: Calendar },
-        { to: "/patient/service-bookings", label: t("sidebar.serviceBookings"), icon: ClipboardList },
+        {
+          to: "/patient/appointments",
+          label: t("sidebar.myAppointments"),
+          icon: Calendar,
+        },
+        {
+          to: "/patient/service-bookings",
+          label: t("sidebar.serviceBookings"),
+          icon: ClipboardList,
+        },
       ],
     },
     {
       heading: t("sidebar.group.records"),
       items: [
-        { to: "/patient/prescriptions", label: t("sidebar.prescriptions"), icon: FileText },
-        { to: "/patient/my-reviews", label: t("sidebar.myReviews"), icon: Star },
+        {
+          to: "/patient/prescriptions",
+          label: t("sidebar.prescriptions"),
+          icon: FileText,
+        },
+        {
+          to: "/patient/my-reviews",
+          label: t("sidebar.myReviews"),
+          icon: Star,
+        },
       ],
     },
     {
       heading: t("sidebar.group.account"),
       items: [
-        // { to: "/patient/settings", label: t("sidebar.settings"), icon: Settings },
-               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
+        { to: "/patient/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],
 
   pharmacy: [
-    { items: [{ to: "/pharmacy/overview", label: t("sidebar.dashboard"), icon: Home }] },
+    {
+      items: [
+        { to: "/pharmacy/overview", label: t("sidebar.dashboard"), icon: Home },
+      ],
+    },
     {
       heading: t("sidebar.group.ourStore"),
       items: [
-        { to: "/pharmacy/profile", label: t("sidebar.profile"), icon: Building2 },
+        {
+          to: "/pharmacy/profile",
+          label: t("sidebar.profile"),
+          icon: Building2,
+        },
         // { to: "/pharmacy/working-hours", label: t("sidebar.workingHours"), icon: Clock },
         // { to: "/pharmacy/social-links", label: t("sidebar.socialLinks"), icon: Link2 },
       ],
@@ -230,42 +348,61 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
     {
       heading: t("sidebar.group.inventory"),
       items: [
-        { to: "/pharmacy/inventory", label: t("sidebar.medicines"), icon: Pill },
-        { to: "/pharmacy/categories", label: t("sidebar.categories"), icon: Tag },
+        {
+          to: "/pharmacy/inventory",
+          label: t("sidebar.medicines"),
+          icon: Pill,
+        },
+        {
+          to: "/pharmacy/categories",
+          label: t("sidebar.categories"),
+          icon: Tag,
+        },
         // { to: "/pharmacy/orders", label: t("sidebar.orders"), icon: AlertTriangle },
-        { to: "/pharmacy/restock-requests", label: t("sidebar.restockRequests"), icon: Package },
+        {
+          to: "/pharmacy/restock-requests",
+          label: t("sidebar.restockRequests"),
+          icon: Package,
+        },
       ],
     },
     {
       heading: t("sidebar.group.prescriptions"),
       items: [
-        { to: "/pharmacy/prescriptions", label: t("sidebar.prescriptions"), icon: Image },
+        {
+          to: "/pharmacy/prescriptions",
+          label: t("sidebar.prescriptions"),
+          icon: Image,
+        },
         // { to: "/pharmacy/dispensed", label: t("sidebar.dispensed"), icon: CheckCircle },
       ],
     },
     {
       heading: t("sidebar.group.orders"),
       items: [
-        { to: "/pharmacy/orders", label: t("sidebar.orders"), icon: ShoppingCart },
+        {
+          to: "/pharmacy/orders",
+          label: t("sidebar.orders"),
+          icon: ShoppingCart,
+        },
         // { to: "/pharmacy/deliveries", label: t("sidebar.deliveries"), icon: Truck },
       ],
     },
     {
       heading: t("sidebar.group.account"),
       items: [
-        // { to: "/pharmacy/settings", label: t("sidebar.settings"), icon: Settings },
-               { to: "/settings", label: t("sidebar.settings"), icon: Settings },
+        { to: "/pharmacy/settings", label: t("sidebar.settings"), icon: Settings },
       ],
     },
   ],
 });
 
 const roleConfig: Record<Role, { labelKey: string; initials: string }> = {
-  patient:  { labelKey: "sidebar.patientPortal",   initials: "PT" },
-  doctor:   { labelKey: "sidebar.doctorWorkspace",  initials: "DR" },
-  hospital: { labelKey: "sidebar.hospitalAdmin",    initials: "HP" },
-  pharmacy: { labelKey: "sidebar.pharmacyConsole",  initials: "PH" },
-  admin:    { labelKey: "sidebar.adminConsole",     initials: "AD" },
+  patient: { labelKey: "sidebar.patientPortal", initials: "PT" },
+  doctor: { labelKey: "sidebar.doctorWorkspace", initials: "DR" },
+  hospital: { labelKey: "sidebar.hospitalAdmin", initials: "HP" },
+  pharmacy: { labelKey: "sidebar.pharmacyConsole", initials: "PH" },
+  admin: { labelKey: "sidebar.adminConsole", initials: "AD" },
 };
 
 interface Props {
@@ -280,7 +417,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<number, boolean>>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<
+    Record<number, boolean>
+  >({});
 
   const groups = buildNav(t)[role];
   const cfg = roleConfig[role];
@@ -304,7 +443,6 @@ export const DashboardLayout = ({ role, children }: Props) => {
             alt="MEDICONNECT"
             className="h-12 w-auto flex-shrink-0 rounded-sm"
           />
-       
         </NavLink>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           <ThemeToggle />
@@ -341,7 +479,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                   <ChevronRight
                     className={cn(
                       "h-2.5 w-2.5 transition-transform duration-200",
-                      !isCollapsed && "rotate-90"
+                      !isCollapsed && "rotate-90",
                     )}
                   />
                 </button>
@@ -369,7 +507,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                               "group relative flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-[12px] font-medium transition-all duration-150",
                               active
                                 ? "bg-primary/10 text-primary"
-                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70"
+                                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70",
                             )}
                           >
                             {/* Active left bar */}
@@ -377,22 +515,33 @@ export const DashboardLayout = ({ role, children }: Props) => {
                               <motion.div
                                 layoutId="activeBar"
                                 className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-5 rounded-r-full bg-primary"
-                                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 35,
+                                }}
                               />
                             )}
 
                             {/* Icon */}
-                            <span className={cn(
-                              "flex items-center justify-center w-6 h-6 rounded flex-shrink-0 transition-all duration-150",
-                              active
-                                ? "bg-primary/15 text-primary"
-                                : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
-                            )}>
-                              <Icon className="h-3.5 w-3.5" strokeWidth={active ? 2.5 : 2} />
+                            <span
+                              className={cn(
+                                "flex items-center justify-center w-6 h-6 rounded flex-shrink-0 transition-all duration-150",
+                                active
+                                  ? "bg-primary/15 text-primary"
+                                  : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70",
+                              )}
+                            >
+                              <Icon
+                                className="h-3.5 w-3.5"
+                                strokeWidth={active ? 2.5 : 2}
+                              />
                             </span>
 
                             {/* Label */}
-                            <span className="truncate flex-1">{item.label}</span>
+                            <span className="truncate flex-1">
+                              {item.label}
+                            </span>
 
                             {/* Badge */}
                             {item.badge && (
@@ -413,9 +562,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
       </nav>
 
       {/* ── Role Switcher ── */}
-     <div className="px-3 py-3 border-t border-sidebar-border flex-shrink-0">
-  <ActiveRoleBadge role={role} t={t} />
-</div>
+      <div className="px-3 py-3 border-t border-sidebar-border flex-shrink-0">
+        <ActiveRoleBadge role={role} t={t} />
+      </div>
     </div>
   );
 
@@ -444,7 +593,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-[240px] bg-sidebar border-r border-sidebar-border flex flex-col lg:hidden transition-transform duration-300 ease-out",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <button
@@ -458,7 +607,6 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* Main area */}
       <div className="flex-1 min-w-0 flex flex-col">
-
         {/* Mobile Topbar */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-30">
           <button
@@ -468,7 +616,11 @@ export const DashboardLayout = ({ role, children }: Props) => {
             <Menu className="h-4 w-4" />
           </button>
           <NavLink to="/" className="flex items-center gap-2">
-            <img src={logo} alt="MEDICONNECT" className="h-6 w-auto rounded-sm" />
+            <img
+              src={logo}
+              alt="MEDICONNECT"
+              className="h-6 w-auto rounded-sm"
+            />
             <span className="text-[12px] font-bold tracking-widest text-foreground">
               MEDICONNECT
             </span>
@@ -490,13 +642,19 @@ export const DashboardLayout = ({ role, children }: Props) => {
 };
 
 /* ── Active Role Badge ── */
-const ActiveRoleBadge = ({ role, t }: { role: Role; t: (k: string) => string }) => {
+const ActiveRoleBadge = ({
+  role,
+  t,
+}: {
+  role: Role;
+  t: (k: string) => string;
+}) => {
   const roleMap: Record<Role, { label: string; icon: LucideIcon }> = {
-    patient:  { label: t("sidebar.patient"),  icon: User },
-    doctor:   { label: t("sidebar.doctor"),   icon: Stethoscope },
+    patient: { label: t("sidebar.patient"), icon: User },
+    doctor: { label: t("sidebar.doctor"), icon: Stethoscope },
     hospital: { label: t("sidebar.hospital"), icon: Building2 },
     pharmacy: { label: t("sidebar.pharmacy"), icon: Pill },
-    admin:    { label: t("sidebar.admin"),    icon: ShieldCheck },
+    admin: { label: t("sidebar.admin"), icon: ShieldCheck },
   };
 
   const { label, icon: Icon } = roleMap[role];

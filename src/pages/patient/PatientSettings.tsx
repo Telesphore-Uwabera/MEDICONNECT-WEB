@@ -1,8 +1,5 @@
 
 
-
-
-
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -306,7 +303,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function PharmacySettings() {
+function PatientSettings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -520,7 +517,7 @@ function PharmacySettings() {
   // ── Skeleton ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <DashboardLayout role="pharmacy">
+      <DashboardLayout role="patient">
         <div className="flex flex-col h-full">
           <PageHeader title="Settings" subtitle="Manage your account" />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
@@ -535,11 +532,11 @@ function PharmacySettings() {
   }
 
   return (
-    <DashboardLayout role="pharmacy">
+    <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.pharmacy.settings_title", { defaultValue: "Settings" })}
-          subtitle={t("pages.pharmacy.settings_sub", { defaultValue: "Manage your profile, security, and account" })}
+          title={t("pages.patient.settings_title", { defaultValue: "Settings" })}
+          subtitle={t("pages.patient.settings_sub", { defaultValue: "Manage your profile, security, and account" })}
         />
 
         <main className="flex-1 overflow-y-auto">
@@ -1172,4 +1169,4 @@ function PharmacySettings() {
   );
 }
 
-export default PharmacySettings;
+export default PatientSettings;

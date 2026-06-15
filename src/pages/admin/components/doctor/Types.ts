@@ -1,7 +1,7 @@
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type StatusFilter       = "all" | "active" | "pending" | "suspended" | "rejected";
-export type ConsultationFilter = "all" | "online" | "in_person" | "both";
+export type ConsultationFilter = "all" | "instant" | "booking" | "both";
 export type SortOption         = "name" | "joined-desc" | "joined-asc";
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
