@@ -245,7 +245,14 @@ const accentMap: Record<KpiCardProps["accent"], string> = {
   violet: "bg-violet-500/10 text-violet-500 border-violet-500/20",
 };
 
-function KpiCard({ label, value, icon: Icon, accent, sub, loading }: KpiCardProps) {
+function KpiCard({
+  label,
+  value,
+  icon: Icon,
+  accent,
+  sub,
+  loading,
+}: KpiCardProps) {
   return (
     <div className="rounded-sm border border-border/70 bg-card p-3 shadow-sm flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -255,7 +262,7 @@ function KpiCard({ label, value, icon: Icon, accent, sub, loading }: KpiCardProp
         <div
           className={cn(
             "w-6 h-6 rounded-sm border flex items-center justify-center flex-shrink-0",
-            accentMap[accent]
+            accentMap[accent],
           )}
         >
           <Icon className="w-3 h-3" />
@@ -265,9 +272,13 @@ function KpiCard({ label, value, icon: Icon, accent, sub, loading }: KpiCardProp
         <div className="h-6 w-14 rounded bg-muted animate-pulse" />
       ) : (
         <div className="flex items-end gap-1.5">
-          <span className="text-xl font-bold text-foreground leading-none">{value}</span>
+          <span className="text-xl font-bold text-foreground leading-none">
+            {value}
+          </span>
           {sub && (
-            <span className="text-[10px] text-muted-foreground mb-0.5 leading-none">{sub}</span>
+            <span className="text-[10px] text-muted-foreground mb-0.5 leading-none">
+              {sub}
+            </span>
           )}
         </div>
       )}
@@ -293,10 +304,15 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-sm border border-border/60 bg-card shadow-lg p-2.5 text-[10px]">
-      <p className="font-semibold text-foreground mb-1">{String(label ?? "")}</p>
+      <p className="font-semibold text-foreground mb-1">
+        {String(label ?? "")}
+      </p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: p.color }} />
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: p.color }}
+          />
           <span className="text-muted-foreground capitalize">{p.name}:</span>
           <span className="font-medium text-foreground">{p.value}</span>
         </div>
@@ -368,7 +384,6 @@ const PatientStats = () => {
     <div className="flex flex-col h-full">
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-4">
-
           {/* ── Filter Bar ── */}
           <div className="rounded-sm border border-border/70 bg-card shadow-sm p-2.5 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -396,7 +411,7 @@ const PatientStats = () => {
                       key={p}
                       className={cn(
                         "text-[10px]",
-                        filters.period === p && "text-primary font-semibold"
+                        filters.period === p && "text-primary font-semibold",
                       )}
                       onSelect={() => set("period", p)}
                     >
@@ -434,7 +449,7 @@ const PatientStats = () => {
                     className={cn(
                       "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
                       filters.appointment_type !== "all" &&
-                        "border-primary/40 text-primary bg-primary/5"
+                        "border-primary/40 text-primary bg-primary/5",
                     )}
                   >
                     {TYPE_LABELS[filters.appointment_type]}
@@ -447,7 +462,8 @@ const PatientStats = () => {
                       key={t}
                       className={cn(
                         "text-[10px]",
-                        filters.appointment_type === t && "text-primary font-semibold"
+                        filters.appointment_type === t &&
+                          "text-primary font-semibold",
                       )}
                       onSelect={() => set("appointment_type", t)}
                     >
@@ -466,7 +482,7 @@ const PatientStats = () => {
                     className={cn(
                       "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
                       filters.status !== "all" &&
-                        "border-primary/40 text-primary bg-primary/5"
+                        "border-primary/40 text-primary bg-primary/5",
                     )}
                   >
                     {STATUS_LABELS[filters.status]}
@@ -479,7 +495,7 @@ const PatientStats = () => {
                       key={s}
                       className={cn(
                         "text-[10px]",
-                        filters.status === s && "text-primary font-semibold"
+                        filters.status === s && "text-primary font-semibold",
                       )}
                       onSelect={() => set("status", s)}
                     >
@@ -508,7 +524,8 @@ const PatientStats = () => {
                       key={g}
                       className={cn(
                         "text-[10px]",
-                        filters.chart_group === g && "text-primary font-semibold"
+                        filters.chart_group === g &&
+                          "text-primary font-semibold",
                       )}
                       onSelect={() => set("chart_group", g)}
                     >
@@ -526,7 +543,7 @@ const PatientStats = () => {
                     placeholder="Search doctor, hospital…"
                     className={cn(
                       "h-6 pl-5 pr-2 text-[8px] rounded-sm w-40 transition-colors",
-                      filters.search && "border-primary/40 bg-primary/5"
+                      filters.search && "border-primary/40 bg-primary/5",
                     )}
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
@@ -617,12 +634,48 @@ const PatientStats = () => {
           <div>
             <SectionLabel>Today</SectionLabel>
             <div className="grid grid-cols-3 lg:grid-cols-6 gap-1.5">
-              <KpiCard label="Total" value={today?.total ?? 0} icon={Calendar} accent="primary" loading={isLoading} />
-              <KpiCard label="Completed" value={today?.completed ?? 0} icon={CheckCircle2} accent="success" loading={isLoading} />
-              <KpiCard label="Pending" value={today?.pending ?? 0} icon={Clock} accent="warning" loading={isLoading} />
-              <KpiCard label="Confirmed" value={today?.confirmed ?? 0} icon={CheckCircle2} accent="info" loading={isLoading} />
-              <KpiCard label="Cancelled" value={today?.cancelled ?? 0} icon={XCircle} accent="danger" loading={isLoading} />
-              <KpiCard label="Instant Active" value={today?.instant_active ?? 0} icon={Zap} accent="violet" loading={isLoading} />
+              <KpiCard
+                label="Total"
+                value={today?.total ?? 0}
+                icon={Calendar}
+                accent="primary"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Completed"
+                value={today?.completed ?? 0}
+                icon={CheckCircle2}
+                accent="success"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Pending"
+                value={today?.pending ?? 0}
+                icon={Clock}
+                accent="warning"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Confirmed"
+                value={today?.confirmed ?? 0}
+                icon={CheckCircle2}
+                accent="info"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Cancelled"
+                value={today?.cancelled ?? 0}
+                icon={XCircle}
+                accent="danger"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Instant Active"
+                value={today?.instant_active ?? 0}
+                icon={Zap}
+                accent="violet"
+                loading={isLoading}
+              />
             </div>
           </div>
 
@@ -630,22 +683,66 @@ const PatientStats = () => {
           <div>
             <SectionLabel>
               Period —{" "}
-              {filters.period === "custom" && filters.start_date && filters.end_date
+              {filters.period === "custom" &&
+              filters.start_date &&
+              filters.end_date
                 ? `${filters.start_date} → ${filters.end_date}`
                 : data?.filters_applied?.from
-                ? `${data.filters_applied.from} → ${data.filters_applied.to}`
-                : PERIOD_LABELS[filters.period]}
+                  ? `${data.filters_applied.from} → ${data.filters_applied.to}`
+                  : PERIOD_LABELS[filters.period]}
             </SectionLabel>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 mb-1.5">
-              <KpiCard label="Total Appointments" value={ps?.total_appointments ?? 0} icon={Calendar} accent="primary" loading={isLoading} />
-              <KpiCard label="Completed" value={ps?.completed ?? 0} icon={CheckCircle2} accent="success" loading={isLoading} />
-              <KpiCard label="Pending" value={ps?.pending ?? 0} icon={Clock} accent="warning" loading={isLoading} />
-              <KpiCard label="Cancelled" value={ps?.cancelled ?? 0} icon={XCircle} accent="danger" loading={isLoading} />
+              <KpiCard
+                label="Total Appointments"
+                value={ps?.total_appointments ?? 0}
+                icon={Calendar}
+                accent="primary"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Completed"
+                value={ps?.completed ?? 0}
+                icon={CheckCircle2}
+                accent="success"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Pending"
+                value={ps?.pending ?? 0}
+                icon={Clock}
+                accent="warning"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Cancelled"
+                value={ps?.cancelled ?? 0}
+                icon={XCircle}
+                accent="danger"
+                loading={isLoading}
+              />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-              <KpiCard label="Online Visits" value={ps?.online_count ?? 0} icon={Activity} accent="info" loading={isLoading} />
-              <KpiCard label="In-Person" value={ps?.in_person_count ?? 0} icon={Users} accent="primary" loading={isLoading} />
-              <KpiCard label="Unique Doctors" value={ps?.unique_doctors ?? 0} icon={Stethoscope} accent="violet" loading={isLoading} />
+              <KpiCard
+                label="Online Visits"
+                value={ps?.online_count ?? 0}
+                icon={Activity}
+                accent="info"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="In-Person"
+                value={ps?.in_person_count ?? 0}
+                icon={Users}
+                accent="primary"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Unique Doctors"
+                value={ps?.unique_doctors ?? 0}
+                icon={Stethoscope}
+                accent="violet"
+                loading={isLoading}
+              />
               <KpiCard
                 label="Completion Rate"
                 value={`${completionRate}%`}
@@ -662,7 +759,7 @@ const PatientStats = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
               <KpiCard
                 label="Total Spent"
-                value={`$${spending?.total ?? 0}`}
+                value={`RWF${spending?.total ?? 0}`}
                 icon={TrendingUp}
                 accent="primary"
                 loading={isLoading}
@@ -672,9 +769,27 @@ const PatientStats = () => {
                     : undefined
                 }
               />
-              <KpiCard label="Insurance Saved" value={`$${spending?.total_insurance_saved ?? 0}`} icon={ShieldCheck} accent="success" loading={isLoading} />
-              <KpiCard label="Avg / Appointment" value={`$${spending?.breakdown.appointments.avg_per_appointment ?? 0}`} icon={BarChart2} accent="info" loading={isLoading} />
-              <KpiCard label="Service Bookings" value={spending?.breakdown.service_bookings.booking_count ?? 0} icon={FileText} accent="violet" loading={isLoading} />
+              <KpiCard
+                label="Insurance Saved"
+                value={`RWF${spending?.total_insurance_saved ?? 0}`}
+                icon={ShieldCheck}
+                accent="success"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Avg / Appointment"
+                value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
+                icon={BarChart2}
+                accent="info"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Service Bookings"
+                value={spending?.breakdown.service_bookings.booking_count ?? 0}
+                icon={FileText}
+                accent="violet"
+                loading={isLoading}
+              />
             </div>
           </div>
 
@@ -692,9 +807,15 @@ const PatientStats = () => {
                   { label: "Pending", val: instant?.pending ?? 0 },
                   { label: "Declined", val: instant?.declined ?? 0 },
                   { label: "Active Now", val: instant?.active_now ?? 0 },
-                  { label: "Avg Duration", val: `${instant?.avg_duration_min ?? 0}m` },
+                  {
+                    label: "Avg Duration",
+                    val: `${instant?.avg_duration_min ?? 0}m`,
+                  },
                 ].map(({ label, val }) => (
-                  <div key={label} className="flex justify-between border-b border-border/40 pb-1">
+                  <div
+                    key={label}
+                    className="flex justify-between border-b border-border/40 pb-1"
+                  >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground">{val}</span>
                   </div>
@@ -714,14 +835,22 @@ const PatientStats = () => {
                   { label: "Issued", val: prescriptions?.issued ?? 0 },
                   { label: "Signed", val: prescriptions?.signed ?? 0 },
                   { label: "Draft", val: prescriptions?.draft ?? 0 },
-                  { label: "Expiring Soon", val: prescriptions?.expiring_soon ?? 0 },
+                  {
+                    label: "Expiring Soon",
+                    val: prescriptions?.expiring_soon ?? 0,
+                  },
                 ].map(({ label, val }) => (
-                  <div key={label} className="flex justify-between border-b border-border/40 pb-1">
+                  <div
+                    key={label}
+                    className="flex justify-between border-b border-border/40 pb-1"
+                  >
                     <span className="text-muted-foreground">{label}</span>
                     <span
                       className={cn(
                         "font-semibold text-foreground",
-                        label === "Expiring Soon" && (val as number) > 0 && "text-amber-500"
+                        label === "Expiring Soon" &&
+                          (val as number) > 0 &&
+                          "text-amber-500",
                       )}
                     >
                       {val}
@@ -743,14 +872,22 @@ const PatientStats = () => {
                   { label: "Pending", val: certificates?.pending ?? 0 },
                   { label: "Signed", val: certificates?.signed ?? 0 },
                   { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
-                  { label: "Req. In-Person", val: certificates?.required_inperson ?? 0 },
+                  {
+                    label: "Req. In-Person",
+                    val: certificates?.required_inperson ?? 0,
+                  },
                 ].map(({ label, val }) => (
-                  <div key={label} className="flex justify-between border-b border-border/40 pb-1">
+                  <div
+                    key={label}
+                    className="flex justify-between border-b border-border/40 pb-1"
+                  >
                     <span className="text-muted-foreground">{label}</span>
                     <span
                       className={cn(
                         "font-semibold text-foreground",
-                        label === "Red Flags" && (val as number) > 0 && "text-rose-500"
+                        label === "Red Flags" &&
+                          (val as number) > 0 &&
+                          "text-rose-500",
                       )}
                     >
                       {val}
@@ -786,7 +923,7 @@ const PatientStats = () => {
                       "px-2 py-0.5 text-[9px] rounded-[2px] font-medium transition-colors capitalize",
                       chartType === t
                         ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {t}
@@ -815,12 +952,34 @@ const PatientStats = () => {
                   >
                     <defs>
                       <linearGradient id="gTotal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
-                      <linearGradient id="gCompleted" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <linearGradient
+                        id="gCompleted"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#10b981"
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#10b981"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -830,12 +989,18 @@ const PatientStats = () => {
                     />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -891,12 +1056,18 @@ const PatientStats = () => {
                     />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{
+                        fontSize: 9,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -914,10 +1085,26 @@ const PatientStats = () => {
                         </span>
                       )}
                     />
-                    <Bar dataKey="appointments" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="completed" fill="#10b981" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="online" fill="#0ea5e9" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="in_person" fill="#8b5cf6" radius={[2, 2, 0, 0]} />
+                    <Bar
+                      dataKey="appointments"
+                      fill="hsl(var(--primary))"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="completed"
+                      fill="#10b981"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="online"
+                      fill="#0ea5e9"
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="in_person"
+                      fill="#8b5cf6"
+                      radius={[2, 2, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -936,14 +1123,18 @@ const PatientStats = () => {
                   { label: "Total", val: reviews?.total ?? 0 },
                   {
                     label: "Avg Rating",
-                    val: reviews?.avg_rating != null
-                      ? reviews.avg_rating.toFixed(1)
-                      : "—",
+                    val:
+                      reviews?.avg_rating != null
+                        ? reviews.avg_rating.toFixed(1)
+                        : "—",
                   },
                   { label: "5 Star", val: reviews?.five_star ?? 0 },
                   { label: "4 Star", val: reviews?.four_star ?? 0 },
                   { label: "3 Star", val: reviews?.three_star ?? 0 },
-                  { label: "Pending Review", val: reviews?.pending_review ?? 0 },
+                  {
+                    label: "Pending Review",
+                    val: reviews?.pending_review ?? 0,
+                  },
                 ].map(({ label, val }) => (
                   <div
                     key={label}
@@ -972,8 +1163,14 @@ const PatientStats = () => {
               <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                 {[
                   { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
-                  { label: "Conditions", val: medProfile?.conditions_count ?? 0 },
-                  { label: "Medications", val: medProfile?.medications_count ?? 0 },
+                  {
+                    label: "Conditions",
+                    val: medProfile?.conditions_count ?? 0,
+                  },
+                  {
+                    label: "Medications",
+                    val: medProfile?.medications_count ?? 0,
+                  },
                   { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
                   { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
                   { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
@@ -983,18 +1180,20 @@ const PatientStats = () => {
                     className="flex justify-between border-b border-border/40 pb-1"
                   >
                     <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold text-foreground capitalize">{val}</span>
+                    <span className="font-semibold text-foreground capitalize">
+                      {val}
+                    </span>
                   </div>
                 ))}
               </div>
               {medProfile?.has_family_history && (
                 <div className="mt-1.5 flex items-center gap-1 text-[9px] text-amber-500">
-                  <AlertTriangle className="w-2.5 h-2.5" /> Has family history recorded
+                  <AlertTriangle className="w-2.5 h-2.5" /> Has family history
+                  recorded
                 </div>
               )}
             </div>
           </div>
-
         </div>
       </main>
     </div>
