@@ -16,22 +16,22 @@ import PatientStats from "./components/PatientStats";
 import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
 import { format, parseISO } from "date-fns";
+import moment from "moment";
 
 /** Statuses that count as "upcoming" for the overview strip */
 const UPCOMING_STATUSES = ["pending", "confirmed", "in_progress"] as const;
 
 /** Format ISO date string → "Jun 26" parts */
-function formatAppointmentDate(iso: string) {
-  const d = parseISO(iso);
+function formatAppointmentDate(date: string) {
   return {
-    month: format(d, "MMM"), // "Jun"
-    day: format(d, "d"), // "26"
+    month: moment(date).format("MMM"),
+    day: moment(date).format("D"),
   };
 }
 
 /** Format ISO time string → "09:00 AM" */
-function formatAppointmentTime(iso: string) {
-  return format(parseISO(iso), "hh:mm a");
+function formatAppointmentTime(time: string) {
+  return moment(time, "HH:mm:ss").format("hh:mm A");
 }
 
 const PatientOverview = () => {
