@@ -125,19 +125,40 @@ export interface UpdateReviewPayload {
   is_anonymous?: boolean;
 }
 
+// Shape returned by PUT — no doctor relation included
+interface UpdateReviewResponse {
+  message: string;
+  review: Omit<RawReview, "doctor">;
+}
+
 export function useUpdateReview(id: number) {
   const queryClient = useQueryClient();
 
-  return useMutation<Review, Error, UpdateReviewPayload>({
+  return useMutation<{ review: Review; message: string }, Error, UpdateReviewPayload>({
     mutationFn: async (payload) => {
       const res = (await apiFetch(`${BASE}/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
-      })) as { review: RawReview };
-      return normaliseReview(res.review);
+      })) as UpdateReviewResponse;
+
+      // PUT response has no doctor — pull it from the existing cache
+      const cached: Review[] = queryClient.getQueryData(reviewKeys.list()) ?? [];
+      const existing = cached.find((r) => r.id === id);
+
+      const merged: Review = {
+        ...(existing ?? ({} as Review)),
+        ...res.review,
+        // keep the doctor from cache; API doesn't return it on update
+        doctor: existing?.doctor ?? ({ name: "Unknown", specialization: "", designations: "", avatar: null, id: 0 } as Review["doctor"]),
+      };
+
+      return { review: merged, message: res.message };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+    onSuccess: ({ review }) => {
+      // Optimistically update the list cache so the UI reflects the change immediately
+      queryClient.setQueryData<Review[]>(reviewKeys.list(), (old = []) =>
+        old.map((r) => (r.id === id ? review : r)),
+      );
     },
   });
 }
