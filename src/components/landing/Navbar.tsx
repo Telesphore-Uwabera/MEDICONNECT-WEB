@@ -19,7 +19,7 @@ interface NavbarProps {
 }
 
 const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const location = useLocation();
@@ -195,7 +195,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               </Link>
               <Link to="/auth?mode=signup">
                 <Button size="sm" className="bg-gradient-primary hover:opacity-90">
-                  {t("common.Register")}
+                  {t("common.SignUp")}
                 </Button>
               </Link>
             </>

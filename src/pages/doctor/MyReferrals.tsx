@@ -554,7 +554,7 @@ function EmptyState({ status }: { status: TabStatus }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MyReferrals() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [activeTab, setActiveTab] = useState<TabStatus>("all");
   const [selectedId, setSelectedId] = useState<number | null>(null);

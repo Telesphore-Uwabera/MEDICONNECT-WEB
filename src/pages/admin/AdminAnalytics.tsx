@@ -22,7 +22,7 @@ const signupTrend = [
 ];
 
 const AdminAnalytics = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const stats = adminStats();
   const roleData = [
     { name: t("admin.roles.doctor"), value: stats.byRole.doctor, color: "hsl(172 76% 36%)" },

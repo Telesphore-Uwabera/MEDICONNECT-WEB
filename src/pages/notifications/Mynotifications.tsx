@@ -372,8 +372,9 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
       <aside
         className={cn(
           "fixed top-0 right-0 z-50 h-full w-[420px] max-w-[calc(100vw-16px)]",
-          "bg-card border-l border-border/50",
-          "flex flex-col transition-transform duration-250 ease-out shadow-large"
+        "bg-card border-l border-border/50",
+        "flex flex-col transition-transform duration-300 ease-in-out shadow-large",
+        open ? "translate-x-0" : "translate-x-full"
         )}
         style={{ borderRadius: "8px 0 0 8px" }}
       >

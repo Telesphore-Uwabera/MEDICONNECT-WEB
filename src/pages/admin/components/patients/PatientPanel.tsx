@@ -328,7 +328,7 @@ function VerificationTab({ p }: { p: ApiPatient }) {
 // ─── PatientPanel ─────────────────────────────────────────────────────────────
 
 export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: PatientPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("overview");
   const open = !!patient;

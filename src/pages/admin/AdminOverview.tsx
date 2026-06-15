@@ -227,7 +227,7 @@ function FilterBar({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AdminOverview = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<AdminDashboardFilters>({});
 
   const { data: response, isLoading, isError } = useGetAdminDashboard(filters);

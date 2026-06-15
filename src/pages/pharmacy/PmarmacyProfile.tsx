@@ -1346,7 +1346,7 @@
 // type Mode = "view" | "create" | "edit";
 
 // const PharmacyProfile = () => {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 
 //   const { data: profile, isLoading: profileLoading, error: profileError, refetch } = useGetPharmacyProfile();
 //   const { data: workingHours = [], isLoading: hoursLoading } = useGetWorkingHours();
@@ -3023,7 +3023,7 @@ function ProfileSkeleton() {
 type PageMode = "setup" | "view";
 
 const PharmacyProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: profile, isLoading: profileLoading, refetch } = useGetPharmacyProfile();
   const { data: workingHours = [], isLoading: hoursLoading } = useGetWorkingHours();
   const { data: closures = [] } = useGetClosures();

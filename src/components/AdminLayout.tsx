@@ -18,7 +18,7 @@ interface Props {
 
 export const AdminLayout = ({ children }: Props) => {
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const items = [
     { to: "/admin", label: t("admin.nav.overview"), icon: LayoutDashboard },
     {

@@ -640,7 +640,7 @@ const EMERGENCY_OPTIONS: { value: EmergencyFilter; label: string }[] = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const HospitalDepartments = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── Filter state (client-side search + emergency + sort) ──────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);

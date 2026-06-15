@@ -77,7 +77,7 @@ interface FormState {
 }
 
 const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [form, setForm] = useState<FormState>({
     name: "",

@@ -240,7 +240,7 @@ function ToggleRow({
    Main component
 ───────────────────────────────────────────── */
 const HospitalSchedule = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const today = useMemo(() => startOfDay(new Date()), []);
 

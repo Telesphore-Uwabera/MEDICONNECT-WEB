@@ -643,7 +643,7 @@ function QuickActions() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function PharmacyDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [period,     setPeriod]     = useState<DashboardPeriod>("month");
   const [chartGroup, setChartGroup] = useState<ChartGroup>("day");

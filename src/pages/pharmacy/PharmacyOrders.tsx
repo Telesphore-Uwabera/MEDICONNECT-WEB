@@ -150,7 +150,7 @@ function PillGroup<T extends string>({
 //   completed / rejected → receipt / nothing
 
 function OrderActions({ order }: { order: Order }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // All three mutations live here; only the relevant one fires per row.
   const accept  = useAcceptOrder();
@@ -236,7 +236,7 @@ function OrderActions({ order }: { order: Order }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PharmacyOrders = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
   const set = useCallback(

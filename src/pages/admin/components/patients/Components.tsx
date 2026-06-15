@@ -67,7 +67,7 @@ export function PillGroup<T extends string>({
 // ─── StatusBadge (shared) ─────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <Badge
       variant="outline"
@@ -95,7 +95,7 @@ function Avatar({ name, avatar, size = "sm" }: { name: string; avatar?: string |
 // ─── PatientRow (desktop table) ───────────────────────────────────────────────
 
 export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPatient) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
@@ -138,7 +138,7 @@ export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPa
 // ─── PatientCard (mobile) ─────────────────────────────────────────────────────
 
 export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPatient) => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="mt-0.5"><Avatar name={p.name} avatar={p.avatar} /></div>

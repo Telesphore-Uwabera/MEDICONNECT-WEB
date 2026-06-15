@@ -16,7 +16,7 @@ import {
 } from "./Types";
 
 export function useManagePatients() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);

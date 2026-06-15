@@ -52,7 +52,7 @@ const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageDoctors() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
 

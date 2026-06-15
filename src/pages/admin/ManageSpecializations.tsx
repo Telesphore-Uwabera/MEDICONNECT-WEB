@@ -1306,7 +1306,7 @@ function DeleteDialog({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageSpecializations() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [search, setSearch] = useState("");

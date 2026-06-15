@@ -13,7 +13,7 @@ import { useMe } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
 
 const HeroCta = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: user } = useMe();
 
   // ── Authenticated: show dashboard shortcut ──────────

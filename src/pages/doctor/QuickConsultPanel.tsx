@@ -88,7 +88,7 @@ function DoctorSlide({
   active: boolean;
   index: number;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const call = useCallStore();
 
   const name     = getDoctorName(doctor);
@@ -236,7 +236,7 @@ function DoctorSlide({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const QuickConsultPanel = ({ doctors, loading }: QuickConsultPanelProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => { setActiveSlide(0); }, [doctors.length]);

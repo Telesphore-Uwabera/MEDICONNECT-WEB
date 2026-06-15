@@ -1060,7 +1060,7 @@ function HospitalForm({
   onVisitedChange: (v: Set<number>) => void;
   submitting: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open24h, setOpen24h] = useState(
     defaultValues?.hospital?.is_open_24h ?? false,
   );
@@ -1556,7 +1556,7 @@ function HospitalProfileView({
   onNewRx: () => void;
   onEditStep: (stepIndex: number) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ViewTabId>("identity");
 
   const socialLinks = normaliseSocialLinks(hospital.social_links);
@@ -1900,7 +1900,7 @@ function HospitalProfileView({
 // Empty state
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyHospital({ onCreate }: { onCreate: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center mb-3">
@@ -1939,7 +1939,7 @@ type Mode = "view" | "create" | "edit";
 const GALLERY_STEP_INDEX = STEPS.findIndex((s) => s.id === "gallery");
 
 const HospitalProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── API hooks ──────────────────────────────────────────────────────────────
   const profileQuery = useGetHospitalProfile();

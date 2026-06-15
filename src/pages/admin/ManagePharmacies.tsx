@@ -563,7 +563,7 @@
 // // ─── Page ─────────────────────────────────────────────────────────────────────
 
 // function ManagePharmacies() {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const [filters, setFilters]       = useState<FilterState>(INITIAL_FILTERS);
 //   const [selected, setSelected]     = useState<ApiPharmacy | null>(null);
 //   const [filterOpen, setFilterOpen] = useState(false);
@@ -1078,7 +1078,7 @@ import {
 } from "./components/Pharmacy/components";
 
 function ManagePharmacies() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { filters, set, clearAll, hasActiveFilters, searchInput, setSearchInput } = usePharmacyFilters();
   const [selected, setSelected]     = useState<ApiPharmacy | null>(null);

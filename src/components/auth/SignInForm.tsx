@@ -31,7 +31,7 @@ import {
 type ForgotStep = "email" | "reset";
 
 const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState<ForgotStep>("email");
 
   const [email, setEmail] = useState("");
@@ -310,7 +310,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
 // SignInForm
 // ─────────────────────────────────────────────────────────────────────────────
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [method, setMethod] = useState<"password" | "otp">("password");
   const [showForgot, setShowForgot] = useState(false);
 

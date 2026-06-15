@@ -42,7 +42,7 @@ const nameInitial = (name: string) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
