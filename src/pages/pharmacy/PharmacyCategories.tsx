@@ -436,7 +436,7 @@ function SortButton({
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
 function PharmacyCategories() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: categories = [], isLoading, error, refetch } = useGetInventoryCategories();
   const updateCategory = useUpdateCategory();
 

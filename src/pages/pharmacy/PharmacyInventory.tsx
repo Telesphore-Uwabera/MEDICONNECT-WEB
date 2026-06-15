@@ -479,7 +479,7 @@ function DeleteConfirmModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PharmacyInventory = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── filter state ────────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);

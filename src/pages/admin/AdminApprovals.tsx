@@ -41,7 +41,7 @@ const roleIcon = {
 } as const;
 
 const AdminApprovals = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const users = useAdminUsers();
   const pending = users.filter((u) => u.status === "pending");
   const [selected, setSelected] = useState<AdminUser | null>(null);

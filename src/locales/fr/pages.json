@@ -134,7 +134,7 @@
   },
   "doctor": {
     "overview_title": "Bonjour, Dr. Vance",
-    "overview_sub": "Mardi 28 avril · 6 patients à votre programme aujourd'hui",
+   "overview_sub": "{{date}} · patients à votre programme aujourd'hui",
     "instant_title": "Consultation instantanée",
     "instant_visible": "Vous êtes visible aux patients cherchant une aide immédiate",
     "instant_hidden": "Vous êtes masqué de la file instantanée",

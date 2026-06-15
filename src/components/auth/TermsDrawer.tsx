@@ -123,7 +123,7 @@ const TermsSection = ({
 };
 
 const TermsDrawer = ({ open, onClose, role, onAccept }: TermsDrawerProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [readSections, setReadSections] = useState<Set<number>>(new Set());
 
   const roleTerms = useTerms(role, open);

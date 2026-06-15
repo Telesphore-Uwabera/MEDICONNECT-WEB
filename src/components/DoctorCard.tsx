@@ -359,7 +359,7 @@
 //   doctor: ApiDoctor;
 //   compact?: boolean;
 // }) => {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const [bookOpen,   setBookOpen]   = useState(false);
 //   const [detailOpen, setDetailOpen] = useState(false);
 //   const call = useCallStore();
@@ -997,7 +997,7 @@
 //   doctor: ApiDoctor;
 //   compact?: boolean;
 // }) => {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const [bookOpen,   setBookOpen]   = useState(false);
 //   const [detailOpen, setDetailOpen] = useState(false);
 //   const call = useCallStore();
@@ -1700,7 +1700,7 @@ export const DoctorCard = ({
   doctor: ApiDoctor;
   compact?: boolean;
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [bookOpen,    setBookOpen]    = useState(false);
   const [modalOpen,   setModalOpen]   = useState(false);
   const [initialMode, setInitialMode] = useState<ModalMode>("details");

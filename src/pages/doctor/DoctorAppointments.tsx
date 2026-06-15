@@ -1308,7 +1308,7 @@
 // // ─── Tab 1: Appointments ──────────────────────────────────────────────────────
 
 // function AppointmentsTab() {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const call = useCallStore();
 
 //   const [filters,             setFilters]             = useState<FilterState>(INITIAL_FILTERS);
@@ -2066,7 +2066,7 @@
 // // ─── Page shell ───────────────────────────────────────────────────────────────
 
 // const DoctorAppointmentsPage = () => {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const call = useCallStore();
 //   const [tab, setTab] = useState<TabId>("appointments");
 
@@ -2082,7 +2082,7 @@
 //     <DashboardLayout role="doctor">
 //       <PageHeader
 //         title={t("pages.doctor.overview_title")}
-//         subtitle={t("pages.doctor.overview_sub")}
+//         subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
 //       />
 
 //       <div className="flex items-center border-b border-border/60 px-4 bg-card/30 shrink-0">
@@ -2145,7 +2145,7 @@ import { ServiceBookingsTab } from "@/pages/doctor/appointments/ServiceBookingsT
 import { type TabId } from "@/pages/doctor/appointments/shared/types";
 
 const DoctorAppointmentsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const call = useCallStore();
   const [tab, setTab] = useState<TabId>("appointments");
 
@@ -2162,7 +2162,7 @@ const DoctorAppointmentsPage = () => {
     <DashboardLayout role="doctor">
       <PageHeader
         title={t("pages.doctor.overview_title")}
-        subtitle={t("pages.doctor.overview_sub")}
+        subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
       />
 
       {/* Tab bar — horizontally scrollable so the three tabs never overflow */}

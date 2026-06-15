@@ -869,7 +869,7 @@ function Pagination({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ServiceBookings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [debouncedQ, setDebouncedQ] = useState("");

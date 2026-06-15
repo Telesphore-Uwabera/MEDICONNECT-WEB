@@ -652,7 +652,7 @@ function AppointmentPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageAppointments() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedPreview, setSelectedPreview] = useState<ApiAppointment | null>(null);

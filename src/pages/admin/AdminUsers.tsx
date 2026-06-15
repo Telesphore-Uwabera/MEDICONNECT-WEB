@@ -198,7 +198,7 @@ function UserRow({
   u: ApiUser;
   onManage: (u: ApiUser) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const role = getRole(u);
   const Icon = roleIcon[role] ?? UserCircle;
 
@@ -279,7 +279,7 @@ function UserCard({
   u: ApiUser;
   onManage: (u: ApiUser) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const role = getRole(u);
   const Icon = roleIcon[role] ?? UserCircle;
 
@@ -387,7 +387,7 @@ function UserPanel({
   isActing: boolean;
   isDeleting: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const open = !!user;
 
@@ -661,7 +661,7 @@ function UserPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AdminUsers = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [selected, setSelected] = useState<ApiUser | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ApiUser | null>(null);
@@ -890,7 +890,7 @@ const AdminUsers = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub")}
+          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">

@@ -31,11 +31,15 @@ function formatAppointmentDate(iso: string) {
 
 /** Format ISO time string → "09:00 AM" */
 function formatAppointmentTime(iso: string) {
-  return format(parseISO(iso), "hh:mm a");
+  if (!iso) return "—";
+  // Handle plain time strings like "09:00:00"
+  const date = parseISO(iso.length <= 8 ? `1970-01-01T${iso}` : iso);
+  if (isNaN(date.getTime())) return "—";
+  return format(date, "hh:mm a");
 }
 
 const PatientOverview = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── Appointments (real API) ──────────────────────────────────────────────
   const { data: appointmentsData, isLoading: appointmentsLoading } =
@@ -162,7 +166,7 @@ const PatientOverview = () => {
                               <div className="text-[11px] font-semibold text-foreground truncate">
                                 {doctorName}
                               </div>
-                              <div className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5">
+                              <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5">
                                 <Stethoscope className="h-2.5 w-2.5" />
                                 {specialty}
                                 <span className="text-border">·</span>
@@ -179,7 +183,7 @@ const PatientOverview = () => {
                                     Live
                                   </Badge>
                                 )}
-                              </div>
+                              </span>
                             </div>
                           </div>
 

@@ -34,7 +34,7 @@ const statusVariant = (s: ModerationItem["status"]) =>
   s === "open" ? "secondary" : s === "approved" ? "default" : "destructive";
 
 const AdminModeration = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const items = useAdminModeration();
   const open = items.filter((i) => i.status === "open");
   const [selected, setSelected] = useState<ModerationItem | null>(null);

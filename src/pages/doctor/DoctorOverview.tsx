@@ -73,7 +73,7 @@ function shortLabel(label: string) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const DoctorOverview = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const {
     data,
@@ -149,7 +149,7 @@ const DoctorOverview = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub")}
+          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
         <main className="flex-1 overflow-y-auto">

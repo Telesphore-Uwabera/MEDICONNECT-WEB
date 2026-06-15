@@ -118,7 +118,7 @@ const SliderSkeleton = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const Index = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;

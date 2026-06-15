@@ -173,7 +173,7 @@ function MiniBar({
 /* ── Component ───────────────────────────────────────────────────── */
 
 const HospitalAnalytics = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
 
   /* ── Aliases ── */

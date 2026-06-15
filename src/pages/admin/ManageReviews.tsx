@@ -7,7 +7,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 function ManageReviews() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <DashboardLayout role="admin">
       <div className="flex flex-col h-full">

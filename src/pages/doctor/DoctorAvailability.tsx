@@ -538,7 +538,7 @@ function DayPickerByMonth({
 ───────────────────────────────────────────── */
 
 const DoctorAvailability = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   /* ── Date range & form state ── */
   const today = useMemo(() => moment().startOf("day").toDate(), []);

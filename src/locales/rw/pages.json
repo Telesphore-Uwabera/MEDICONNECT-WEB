@@ -134,7 +134,7 @@
   },
   "doctor": {
     "overview_title": "Mwaramutse, Dr. Vance",
-    "overview_sub": "Kuwa kabiri, 28 Mata · abarwayi 6 muri gahunda yawe uyu munsi",
+   "overview_sub": "{{date}} · abarwayi muri gahunda yawe uyu munsi",
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",
     "instant_hidden": "Urahishwe ku rutonde rw'ako kanya",

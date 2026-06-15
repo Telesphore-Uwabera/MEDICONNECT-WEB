@@ -24,7 +24,7 @@ import type { ApiDoctorConsultation } from "@/hooks/admin/use-doctor-insitant";
 // ─── ManageInstantDoctors ─────────────────────────────────────────────────────
 
 function ManageInstantDoctors() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters]         = useState<FilterState>(INITIAL_FILTERS);
   const [selected, setSelected]       = useState<ApiDoctorConsultation | null>(null);
   const [assignOpen, setAssignOpen]   = useState(false);

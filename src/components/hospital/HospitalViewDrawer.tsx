@@ -418,7 +418,7 @@ function HospitalViewDrawer({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<"overview" | "schedule">("overview");
 
   const hoursLabel = hospital.is_open_24h

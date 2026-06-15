@@ -35,7 +35,7 @@ function readLocalNotes(id?: number): string {
 }
 
 export function InstantNotesSidebar({ onClose, consultationId, patientName }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const textRef = useRef<HTMLTextAreaElement>(null);
   const saveNotes = useSaveInstantNotes();
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");

@@ -736,7 +736,7 @@ function DeleteConfirmPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ChecklistQuestions() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [searchInput, setSearchInput]           = useState("");

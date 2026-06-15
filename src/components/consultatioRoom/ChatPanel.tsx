@@ -74,7 +74,7 @@ export const ChatPanel = ({
   isOwner,
   onUnreadChange,
 }: ChatPanelProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const chat = useConsultationChat(consultationId, isOwner);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);

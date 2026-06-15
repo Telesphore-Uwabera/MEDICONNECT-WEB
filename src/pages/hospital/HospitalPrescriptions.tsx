@@ -203,7 +203,7 @@ function PrescriptionCard({
   p: (typeof DUMMY_PRESCRIPTIONS)[number];
   statusLabel: Record<RxStatus, string>;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
@@ -271,7 +271,7 @@ function PrescriptionCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const HospitalPrescriptions = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);

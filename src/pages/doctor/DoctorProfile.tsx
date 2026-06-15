@@ -1026,7 +1026,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
 type Mode = "view" | "create" | "edit";
 
 const DoctorProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── API ─────────────────────────────────────────────────────────────────────
   const {

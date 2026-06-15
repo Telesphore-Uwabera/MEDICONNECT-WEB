@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 function PharmacyDeliveries() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">

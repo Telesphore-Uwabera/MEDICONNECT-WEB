@@ -13,7 +13,7 @@ import { PatientPanel } from "./components/patients/PatientPanel";
 import { useManagePatients } from "./components/patients/use-manage-patients";
 
 export default function ManagePatients() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     filters, sorted, selected, setSelected,
     filterOpen, setFilterOpen,

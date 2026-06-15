@@ -591,7 +591,7 @@ function ProfileForm({
   onVisitedChange: (v: Set<number>) => void;
   isSaving: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -814,7 +814,7 @@ function ProfileForm({
 // Profile View
 // ─────────────────────────────────────────────────────────────────────────────
 function ProfileView({ profile }: { profile: TPatientProfile }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
@@ -1450,7 +1450,7 @@ function ProfileSkeleton() {
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
 const PatientProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [mainTab, setMainTab] = useState<MainTab>("profile");
   const [profileMode, setProfileMode] = useState<ProfileMode | null>(null);

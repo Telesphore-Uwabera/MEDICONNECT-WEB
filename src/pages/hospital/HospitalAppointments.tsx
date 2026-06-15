@@ -868,7 +868,7 @@ function AppointmentCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const HospitalAppointments = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const { data, isLoading, isError, error, refetch } = useGetServiceBookings();
   const bookings = data?.data ?? [];
