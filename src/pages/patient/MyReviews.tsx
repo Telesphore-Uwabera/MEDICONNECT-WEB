@@ -282,6 +282,7 @@ function ReviewDetail({
   const [comment, setComment] = useState(review.comment ?? "");
   const [isAnonymous, setIsAnonymous] = useState(review.is_anonymous);
   const [saved, setSaved] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
 
   // Reset local state when a different review is selected
   React.useEffect(() => {
@@ -290,6 +291,7 @@ function ReviewDetail({
     setComment(review.comment ?? "");
     setIsAnonymous(review.is_anonymous);
     setSaved(false);
+    setSavedMessage("");
   }, [review.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const StatusIcon =
@@ -303,10 +305,11 @@ function ReviewDetail({
     updateMut.mutate(
       { rating, comment: comment || null, is_anonymous: isAnonymous },
       {
-        onSuccess: () => {
+        onSuccess: ({ message }) => {
           setSaved(true);
+          setSavedMessage(message || "Review updated.");
           setEditing(false);
-          setTimeout(() => setSaved(false), 2500);
+          setTimeout(() => setSaved(false), 3000);
         },
       },
     );
@@ -382,6 +385,16 @@ function ReviewDetail({
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
+
+        {/* Success banner */}
+        {saved && savedMessage && (
+          <div className="flex items-center gap-2.5 p-3 rounded-md border border-emerald-400/30 bg-emerald-500/10">
+            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+              {savedMessage}
+            </p>
+          </div>
+        )}
 
         {/* Rejection notice */}
         {review.status === "rejected" && review.rejection_reason && (
