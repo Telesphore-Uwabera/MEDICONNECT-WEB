@@ -242,7 +242,7 @@ function CertificateDrawer({
       {/* Drawer panel */}
       <div
         className={cn(
-          "fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[440px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out",
+          "fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[640px] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -680,10 +680,12 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               <Download className="h-3.5 w-3.5 text-primary" />
               <p className="text-[11px] font-medium text-foreground">Download fee required</p>
             </div>
-            <p className="px-4 pt-0.5 pb-0 text-[10px] text-muted-foreground">
-              A one-time fee applies to download your certificate PDF.
-            </p>
-            <PaymentPanel
+            <span className="px-4  p text-[10px] text-muted-foreground">
+              A one-time fee applies to download your certificate PDF
+            </span>
+
+           <div className="m-4" >
+             <PaymentPanel
               title=""
               paymentInfo={downloadPayment}
               onPaymentConfirmed={handleDownloadPaymentConfirmed}
@@ -696,6 +698,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               }}
               cancelLabel="Cancel download"
             />
+           </div>
           </div>
         )}
 

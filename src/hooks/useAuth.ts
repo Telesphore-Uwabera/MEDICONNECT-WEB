@@ -21,6 +21,11 @@ export const useMe = () =>
     queryFn: () => apiFetch<MeResponse>("/auth/me"),
     enabled: !!localStorage.getItem("auth_token"),
     select: (data) => data.user,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
   });
 
 export const useRegister = () =>
@@ -113,9 +118,6 @@ export const useConvertGuest = () =>
         body: payload,
       }),
   });
-
-
- 
 
 export const useForgotPassword = () =>
   useMutation({

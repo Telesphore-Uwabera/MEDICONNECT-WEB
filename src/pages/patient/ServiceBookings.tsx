@@ -31,14 +31,13 @@ import {
   Receipt,
   ShieldCheck,
   Hash,
-  ChevronDown,
   HeartPulse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import {
   BookingStatus,
-  useGetPatientServiceBookings,   // ← plural: fetches list with filters
+  useGetPatientServiceBookings,
   useCancelPatientServiceBooking,
   type ApiServiceBooking,
   type ServiceBookingSearchParams,
@@ -180,12 +179,12 @@ function clientFilter(
   const query = q.toLowerCase().trim();
   const filtered = query
     ? bookings.filter(
-      (b) =>
-        b.service.name_en.toLowerCase().includes(query) ||
-        b.hospital.name_en.toLowerCase().includes(query) ||
-        b.department.name_en.toLowerCase().includes(query) ||
-        b.status.includes(query),
-    )
+        (b) =>
+          b.service.name_en.toLowerCase().includes(query) ||
+          b.hospital.name_en.toLowerCase().includes(query) ||
+          b.department.name_en.toLowerCase().includes(query) ||
+          b.status.includes(query),
+      )
     : bookings;
 
   return [...filtered].sort((a, b) => {
@@ -193,6 +192,53 @@ function clientFilter(
     const db = new Date(`${b.preferred_date}T${b.preferred_time}`).getTime();
     return sort === "date-asc" ? da - db : db - da;
   });
+}
+
+// ─── Action feedback banner ───────────────────────────────────────────────────
+// Shown inline below the meta bar after any successful/failed mutation.
+
+interface ActionFeedback {
+  type: "success" | "error";
+  message: string;
+}
+
+function FeedbackBanner({
+  feedback,
+  onDismiss,
+}: {
+  feedback: ActionFeedback;
+  onDismiss: () => void;
+}) {
+  // Auto-dismiss after 6 s
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 6000);
+    return () => clearTimeout(t);
+  }, [feedback, onDismiss]);
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2.5 px-3.5 py-2.5 border-b text-[11px] animate-in slide-in-from-top-1 duration-200",
+        feedback.type === "success"
+          ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-300"
+          : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900 text-red-800 dark:text-red-300",
+      )}
+    >
+      {feedback.type === "success" ? (
+        <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+      ) : (
+        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+      )}
+      <span className="flex-1 font-medium">{feedback.message}</span>
+      <button
+        onClick={onDismiss}
+        className="ml-auto flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+        aria-label="Dismiss"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -352,9 +398,8 @@ function BookingDetailDrawer({
         onClick={onClose}
       />
 
-      {/* Drawer panel — full-width on mobile, max-md on larger */}
+      {/* Drawer panel */}
       <div className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-md flex flex-col bg-background border-l border-border/70 shadow-2xl animate-in slide-in-from-right duration-300">
-
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/60 bg-card/80 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -364,9 +409,7 @@ function BookingDetailDrawer({
             <div>
               <p className="text-[12px] font-semibold text-foreground">Booking details</p>
               {booking && (
-                <p className="text-[10px] text-muted-foreground/60">
-                  #{booking.id}
-                </p>
+                <p className="text-[10px] text-muted-foreground/60">#{booking.id}</p>
               )}
             </div>
           </div>
@@ -380,15 +423,10 @@ function BookingDetailDrawer({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4">
-
-          {/* Loading */}
           {isLoading && (
             <div className="flex flex-col gap-3">
               {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-card border border-border/50 rounded-sm p-3 animate-pulse"
-                >
+                <div key={i} className="bg-card border border-border/50 rounded-sm p-3 animate-pulse">
                   <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-sm bg-muted" />
                     <div className="flex-1 space-y-1.5">
@@ -401,19 +439,14 @@ function BookingDetailDrawer({
             </div>
           )}
 
-          {/* Error */}
           {isError && (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
               <div className="w-12 h-12 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
                 <AlertCircle className="w-5 h-5 text-destructive/60" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">
-                  Failed to load details
-                </p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  Something went wrong. Please try again.
-                </p>
+                <p className="text-[12px] font-semibold text-foreground">Failed to load details</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
               </div>
               <button
                 onClick={() => refetch()}
@@ -425,26 +458,12 @@ function BookingDetailDrawer({
             </div>
           )}
 
-          {/* Content */}
           {!isLoading && !isError && booking && (
             <>
               {/* Status hero */}
-              <div
-                className={cn(
-                  "rounded-sm border border-border/50 p-4 mb-4 flex items-center gap-3",
-                  STATUS_CONFIG[booking.status].bg,
-                )}
-              >
-                <div
-                  className={cn(
-                    "w-9 h-9 rounded-sm flex items-center justify-center border flex-shrink-0",
-                    STATUS_CONFIG[booking.status].badge,
-                  )}
-                >
-                  {(() => {
-                    const Icon = STATUS_CONFIG[booking.status].icon;
-                    return <Icon className="w-4 h-4" />;
-                  })()}
+              <div className={cn("rounded-sm border border-border/50 p-4 mb-4 flex items-center gap-3", STATUS_CONFIG[booking.status].bg)}>
+                <div className={cn("w-9 h-9 rounded-sm flex items-center justify-center border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
+                  {(() => { const Icon = STATUS_CONFIG[booking.status].icon; return <Icon className="w-4 h-4" />; })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -454,123 +473,54 @@ function BookingDetailDrawer({
                     <StatusBadge status={booking.status} />
                   </div>
                   <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                    Booked by{" "}
-                    <span className="font-medium capitalize">{booking.booked_by}</span>
+                    Booked by <span className="font-medium capitalize">{booking.booked_by}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Rejection reason */}
               {booking.rejection_reason && (
                 <div className="mb-4 flex items-start gap-2.5 p-3 rounded-sm bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
                   <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 mb-0.5">
-                      Rejection reason
-                    </p>
-                    <p className="text-[11px] text-red-600 dark:text-red-400/80 leading-relaxed">
-                      {booking.rejection_reason}
-                    </p>
+                    <p className="text-[10px] font-semibold text-red-700 dark:text-red-400 mb-0.5">Rejection reason</p>
+                    <p className="text-[11px] text-red-600 dark:text-red-400/80 leading-relaxed">{booking.rejection_reason}</p>
                   </div>
                 </div>
               )}
 
-              {/* Appointment */}
               <DrawerSection title="Appointment">
-                <DetailRow
-                  icon={CalendarDays}
-                  label="Date"
-                  value={formatDate(booking.preferred_date)}
-                />
-                <DetailRow
-                  icon={Clock}
-                  label="Time"
-                  value={formatTime(booking.preferred_time)}
-                />
-                {booking.notes && (
-                  <DetailRow
-                    icon={FileText}
-                    label="Notes"
-                    value={booking.notes}
-                  />
-                )}
+                <DetailRow icon={CalendarDays} label="Date" value={formatDate(booking.preferred_date)} />
+                <DetailRow icon={Clock} label="Time" value={formatTime(booking.preferred_time)} />
+                {booking.notes && <DetailRow icon={FileText} label="Notes" value={booking.notes} />}
               </DrawerSection>
 
-              {/* Hospital */}
               <DrawerSection title="Hospital">
-                <DetailRow
-                  icon={Building2}
-                  label="Name"
-                  value={booking.hospital.name_en}
-                />
-                {booking.hospital.address && (
-                  <DetailRow
-                    icon={MapPin}
-                    label="Address"
-                    value={booking.hospital.address}
-                  />
-                )}
-                {booking.hospital.phone && (
-                  <DetailRow
-                    icon={Phone}
-                    label="Phone"
-                    value={booking.hospital.phone}
-                    mono
-                  />
-                )}
+                <DetailRow icon={Building2} label="Name" value={booking.hospital.name_en} />
+                {booking.hospital.address && <DetailRow icon={MapPin} label="Address" value={booking.hospital.address} />}
+                {booking.hospital.phone && <DetailRow icon={Phone} label="Phone" value={booking.hospital.phone} mono />}
               </DrawerSection>
 
-              {/* Service & Department */}
               <DrawerSection title="Service">
-                <DetailRow
-                  icon={Stethoscope}
-                  label="Service"
-                  value={booking.service.name_en}
-                />
-                {booking.service.description_en && (
-                  <DetailRow
-                    icon={Info}
-                    label="Description"
-                    value={booking.service.description_en}
-                  />
-                )}
-                <DetailRow
-                  icon={Hash}
-                  label="Department"
-                  value={booking.department.name_en}
-                />
+                <DetailRow icon={Stethoscope} label="Service" value={booking.service.name_en} />
+                {booking.service.description_en && <DetailRow icon={Info} label="Description" value={booking.service.description_en} />}
+                <DetailRow icon={Hash} label="Department" value={booking.department.name_en} />
               </DrawerSection>
 
-              {/* Payment */}
               <DrawerSection title="Payment">
                 <DetailRow
                   icon={Receipt}
                   label="Price"
-                  value={formatPrice(
-                    booking.price ?? booking.service.price,
-                    booking.currency ?? "RWF",
-                  )}
+                  value={formatPrice(booking.price ?? booking.service.price, booking.currency ?? "RWF")}
                   accent="font-semibold"
                 />
-                {booking.insurance_covered &&
-                  parseFloat(booking.insurance_covered) > 0 && (
-                    <DetailRow
-                      icon={ShieldCheck}
-                      label="Insurance covered"
-                      value={formatPrice(
-                        booking.insurance_covered,
-                        booking.currency ?? "RWF",
-                      )}
-                    />
-                  )}
+                {booking.insurance_covered && parseFloat(booking.insurance_covered) > 0 && (
+                  <DetailRow icon={ShieldCheck} label="Insurance covered" value={formatPrice(booking.insurance_covered, booking.currency ?? "RWF")} />
+                )}
                 {booking.patient_pays && (
                   <DetailRow
                     icon={CreditCard}
                     label="Patient pays"
-                    value={formatPrice(
-                      booking.patient_pays,
-                      booking.currency ?? "RWF",
-                    )}
+                    value={formatPrice(booking.patient_pays, booking.currency ?? "RWF")}
                     accent="font-semibold text-primary"
                   />
                 )}
@@ -578,102 +528,48 @@ function BookingDetailDrawer({
                   icon={CreditCard}
                   label="Payment status"
                   value={
-                    <span
-                      className={cn(
-                        "capitalize font-medium",
-                        booking.payment_status === "paid"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-amber-600 dark:text-amber-400",
-                      )}
-                    >
+                    <span className={cn("capitalize font-medium", booking.payment_status === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
                       {booking.payment_status ?? "Unpaid"}
                     </span>
                   }
                 />
                 {booking.payment_method && (
-                  <DetailRow
-                    icon={CreditCard}
-                    label="Payment method"
-                    value={
-                      <span className="capitalize">{booking.payment_method}</span>
-                    }
-                  />
+                  <DetailRow icon={CreditCard} label="Payment method" value={<span className="capitalize">{booking.payment_method}</span>} />
                 )}
               </DrawerSection>
 
-              {/* Timeline */}
               <DrawerSection title="Timeline">
-                <DetailRow
-                  icon={CalendarDays}
-                  label="Created"
-                  value={formatDateTime(booking.created_at)}
-                />
-                {booking.accepted_at && (
-                  <DetailRow
-                    icon={CheckCircle2}
-                    label="Accepted"
-                    value={formatDateTime(booking.accepted_at)}
-                    accent="text-emerald-600 dark:text-emerald-400"
-                  />
-                )}
-                {booking.rejected_at && (
-                  <DetailRow
-                    icon={XCircle}
-                    label="Rejected"
-                    value={formatDateTime(booking.rejected_at)}
-                    accent="text-red-600 dark:text-red-400"
-                  />
-                )}
-                {booking.completed_at && (
-                  <DetailRow
-                    icon={CheckCircle2}
-                    label="Completed"
-                    value={formatDateTime(booking.completed_at)}
-                    accent="text-blue-600 dark:text-blue-400"
-                  />
-                )}
-                {booking.cancelled_at && (
-                  <DetailRow
-                    icon={Ban}
-                    label="Cancelled"
-                    value={formatDateTime(booking.cancelled_at)}
-                    accent="text-slate-500"
-                  />
-                )}
+                <DetailRow icon={CalendarDays} label="Created" value={formatDateTime(booking.created_at)} />
+                {booking.accepted_at && <DetailRow icon={CheckCircle2} label="Accepted" value={formatDateTime(booking.accepted_at)} accent="text-emerald-600 dark:text-emerald-400" />}
+                {booking.rejected_at && <DetailRow icon={XCircle} label="Rejected" value={formatDateTime(booking.rejected_at)} accent="text-red-600 dark:text-red-400" />}
+                {booking.completed_at && <DetailRow icon={CheckCircle2} label="Completed" value={formatDateTime(booking.completed_at)} accent="text-blue-600 dark:text-blue-400" />}
+                {booking.cancelled_at && <DetailRow icon={Ban} label="Cancelled" value={formatDateTime(booking.cancelled_at)} accent="text-slate-500" />}
               </DrawerSection>
             </>
           )}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer */}
         {!isLoading && !isError && booking && (
           <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card/80 backdrop-blur-sm flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
-              <User className="w-3 h-3" />
-              <span className="capitalize">{booking.booked_by}</span>
-              <span className="text-muted-foreground/30">·</span>
-              <span>#{booking.id}</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 min-w-0">
+              <User className="w-3 h-3 flex-shrink-0" />
+              <span className="capitalize truncate">{booking.booked_by}</span>
+              <span className="text-muted-foreground/30 flex-shrink-0">·</span>
+              <span className="flex-shrink-0">#{booking.id}</span>
             </div>
             {canCancel ? (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => {
-                  onCancelRequest(booking);
-                  onClose();
-                }}
-                className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
+                onClick={() => { onCancelRequest(booking); onClose(); }}
+                className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all flex-shrink-0"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
                 Cancel booking
               </Button>
             ) : (
-              <span
-                className={cn(
-                  "text-[10px] font-medium px-2 py-1 rounded-sm border",
-                  STATUS_CONFIG[booking.status].badge,
-                )}
-              >
+              <span className={cn("text-[10px] font-medium px-2 py-1 rounded-sm border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
                 {STATUS_CONFIG[booking.status].label}
               </span>
             )}
@@ -689,26 +585,26 @@ function BookingDetailDrawer({
 function RowSkeleton() {
   return (
     <tr className="border-t border-border/40 animate-pulse">
-      <td className="px-4 py-3">
-        <div className="h-3 w-40 rounded bg-muted" />
+      <td className="px-3 sm:px-4 py-3">
+        <div className="space-y-1.5">
+          <div className="h-3 w-32 sm:w-40 rounded bg-muted" />
+          <div className="h-2 w-20 rounded bg-muted/60" />
+        </div>
       </td>
-      <td className="px-4 py-3 hidden md:table-cell">
-        <div className="h-2.5 w-28 rounded bg-muted" />
+      <td className="px-3 sm:px-4 py-3 hidden sm:table-cell">
+        <div className="h-2.5 w-24 rounded bg-muted" />
       </td>
-      <td className="px-4 py-3 hidden sm:table-cell">
+      <td className="px-3 sm:px-4 py-3 hidden md:table-cell">
         <div className="space-y-1.5">
           <div className="h-2.5 w-24 rounded bg-muted" />
           <div className="h-2 w-16 rounded bg-muted" />
         </div>
       </td>
-      <td className="px-4 py-3 hidden lg:table-cell">
-        <div className="h-2.5 w-20 rounded bg-muted" />
+      <td className="px-3 sm:px-4 py-3">
+        <div className="h-4 w-16 sm:w-20 rounded-sm bg-muted" />
       </td>
-      <td className="px-4 py-3">
-        <div className="h-4 w-20 rounded-sm bg-muted" />
-      </td>
-      <td className="px-4 py-3 text-right">
-        <div className="h-7 w-24 rounded-sm bg-muted ml-auto" />
+      <td className="px-3 sm:px-4 py-3 text-right">
+        <div className="h-7 w-16 sm:w-24 rounded-sm bg-muted ml-auto" />
       </td>
     </tr>
   );
@@ -725,7 +621,7 @@ function CardSkeleton() {
         <div className="h-2.5 bg-muted rounded-sm w-24" />
         <div className="h-2 bg-muted/60 rounded-sm w-16" />
       </div>
-      <div className="h-7 w-24 bg-muted rounded-sm flex-shrink-0" />
+      <div className="h-7 w-16 sm:w-24 bg-muted rounded-sm flex-shrink-0" />
     </div>
   );
 }
@@ -745,55 +641,65 @@ function CancelDialog({
   isLoading: boolean;
   error: string | null;
 }) {
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isLoading) onCancel();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onCancel, isLoading]);
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border/70 rounded-t-lg sm:rounded-sm shadow-2xl w-full sm:max-w-sm p-5 flex flex-col gap-4">
+      <div className="bg-card border border-border/70 rounded-t-lg sm:rounded-sm shadow-2xl w-full sm:max-w-sm p-5 flex flex-col gap-4 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-sm bg-destructive/10 flex items-center justify-center flex-shrink-0 border border-destructive/20">
             <Trash2 className="w-4 h-4 text-destructive" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-[12px] font-semibold text-foreground">Cancel booking?</p>
             <p className="text-[11px] text-muted-foreground/70 mt-0.5 leading-relaxed">
               Cancel{" "}
-              <span className="font-medium text-foreground">
-                {booking.service.name_en}
-              </span>{" "}
-              at{" "}
-              <span className="font-medium text-foreground">
-                {booking.hospital.name_en}
-              </span>{" "}
-              on {formatDate(booking.preferred_date)}. This cannot be undone.
+              <span className="font-medium text-foreground">{booking.service.name_en}</span>
+              {" "}at{" "}
+              <span className="font-medium text-foreground">{booking.hospital.name_en}</span>
+              {" "}on {formatDate(booking.preferred_date)}. This cannot be undone.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-sm bg-destructive/10 border border-destructive/20">
-            <AlertCircle className="w-3 h-3 text-destructive flex-shrink-0" />
-            <p className="text-[10px] text-destructive">{error}</p>
+          <div className="flex items-start gap-2 px-2.5 py-2 rounded-sm bg-destructive/10 border border-destructive/20">
+            <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-px" />
+            <p className="text-[11px] text-destructive leading-snug">{error}</p>
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 sm:flex-none px-3 py-1.5 rounded-sm text-[11px] font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-all disabled:opacity-50"
+            className="flex-1 px-3 py-2 rounded-sm text-[11px] font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-all disabled:opacity-50"
           >
             Keep booking
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-sm text-[11px] font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all disabled:opacity-70 shadow-sm"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-sm text-[11px] font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all disabled:opacity-70 shadow-sm"
           >
             {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Cancelling…
+              </>
             ) : (
-              <Trash2 className="w-3 h-3" />
+              <>
+                <Trash2 className="w-3 h-3" />
+                Yes, cancel
+              </>
             )}
-            {isLoading ? "Cancelling…" : "Yes, cancel"}
           </button>
         </div>
       </div>
@@ -815,13 +721,8 @@ function BookingCardItem({
   const canCancel = booking.status === "pending" || booking.status === "accepted";
 
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-3.5 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
-      <span
-        className={cn(
-          "w-2 h-2 rounded-full flex-shrink-0 self-start mt-2",
-          STATUS_CONFIG[booking.status].dot,
-        )}
-      />
+    <div className="bg-card border border-border/70 rounded-sm p-3 sm:p-3.5 flex items-start sm:items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+      <span className={cn("w-2 h-2 rounded-full flex-shrink-0 mt-1.5 sm:mt-0", STATUS_CONFIG[booking.status].dot)} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -833,6 +734,11 @@ function BookingCardItem({
         <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
           {booking.hospital.name_en} · {booking.department.name_en}
         </p>
+        {/* Date/time on mobile (no side column) */}
+        <p className="sm:hidden text-[10px] text-muted-foreground/60 mt-1 flex items-center gap-1">
+          <CalendarDays className="w-2.5 h-2.5" />
+          {formatDate(booking.preferred_date)}&nbsp;·&nbsp;{formatTime(booking.preferred_time)}
+        </p>
         {booking.notes && (
           <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center gap-1 truncate">
             <FileText className="w-2.5 h-2.5 flex-shrink-0" />
@@ -841,6 +747,7 @@ function BookingCardItem({
         )}
       </div>
 
+      {/* Date/time column — only on sm+ */}
       <div className="hidden sm:flex flex-col items-end gap-0.5 flex-shrink-0 text-[10px] text-muted-foreground/70">
         <span className="flex items-center gap-1">
           <CalendarDays className="w-2.5 h-2.5" />
@@ -859,38 +766,30 @@ function BookingCardItem({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0 self-start sm:self-auto">
         <Button
           size="sm"
           variant="outline"
           onClick={() => onView(booking)}
-          className="h-7 px-2.5 text-[10px] font-semibold rounded-sm transition-all duration-200"
+          className="h-7 w-7 sm:w-auto sm:px-2.5 text-[10px] font-semibold rounded-sm transition-all duration-200 p-0"
         >
           <Eye className="w-3 h-3 sm:mr-1" />
           <span className="hidden sm:inline">View</span>
         </Button>
 
-        <Button
-          size="sm"
-          variant={canCancel ? "outline" : "ghost"}
-          disabled={!canCancel}
-          onClick={() => canCancel && onCancel(booking)}
-          className={cn(
-            "h-7 px-2.5 text-[10px] font-semibold rounded-sm flex-shrink-0 transition-all duration-200",
-            canCancel
-              ? "text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40"
-              : "text-muted-foreground/40 cursor-default",
-          )}
-        >
-          {canCancel ? (
-            <>
-              <Trash2 className="w-3 h-3 sm:mr-1" />
-              <span className="hidden sm:inline">Cancel</span>
-            </>
-          ) : (
-            "—"
-          )}
-        </Button>
+        {canCancel ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onCancel(booking)}
+            className="h-7 w-7 sm:w-auto sm:px-2.5 text-[10px] font-semibold rounded-sm flex-shrink-0 transition-all duration-200 p-0 text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40"
+          >
+            <Trash2 className="w-3 h-3 sm:mr-1" />
+            <span className="hidden sm:inline">Cancel</span>
+          </Button>
+        ) : (
+          <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">—</span>
+        )}
       </div>
     </div>
   );
@@ -940,9 +839,7 @@ function Pagination({
         </Button>
         {pages.map((p, i) =>
           p === "…" ? (
-            <span key={`e-${i}`} className="text-[10px] text-muted-foreground px-1">
-              …
-            </span>
+            <span key={`e-${i}`} className="text-[10px] text-muted-foreground px-1">…</span>
           ) : (
             <Button
               key={p}
@@ -982,15 +879,15 @@ function ServiceBookings() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [medInfoOpen, setMedInfoOpen] = useState(false);
+  // Inline feedback banner after any action
+  const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce client-side search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => setDebouncedQ(filters.q), 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [filters.q]);
 
   const apiParams = useMemo<ServiceBookingSearchParams>(
@@ -999,8 +896,7 @@ function ServiceBookings() {
   );
 
   const { data, isLoading, isError, refetch } = useGetPatientServiceBookings(apiParams);
-  const { mutate: cancelBooking, isPending: isCancelling } =
-    useCancelPatientServiceBooking();
+  const { mutate: cancelBooking, isPending: isCancelling } = useCancelPatientServiceBooking();
 
   const bookings = useMemo(() => {
     if (!data?.data) return [];
@@ -1028,26 +924,25 @@ function ServiceBookings() {
   const totalPages =
     data?.last_page ?? (data ? Math.ceil(data.total / data.per_page) : 1);
 
-  // ── Cancel handler — reads the API `message` and fires a toast ────────────
+  // ── Cancel handler ────────────────────────────────────────────────────────
   const handleCancelConfirm = useCallback(() => {
     if (!cancelTarget) return;
     setCancelError(null);
-
-    // Keep a reference to the booking name for the toast (target will be cleared on success)
     const serviceName = cancelTarget.service.name_en;
 
     cancelBooking(cancelTarget.id, {
       onSuccess: (res) => {
+        const msg = res?.message ?? "Booking cancelled successfully.";
         setCancelTarget(null);
         setCancelError(null);
-        // Use the API message if present, fall back to a sensible default
-        toast.success(res?.message ?? "Booking cancelled successfully.", {
-          description: serviceName,
-        });
+        // Inline banner + toast for users who miss the banner
+        setFeedback({ type: "success", message: msg });
+        toast.success(msg, { description: serviceName });
       },
       onError: (err) => {
         const msg = err?.message ?? "Could not cancel this booking.";
         setCancelError(msg);
+        setFeedback({ type: "error", message: msg });
         toast.error(msg);
       },
     });
@@ -1055,19 +950,15 @@ function ServiceBookings() {
 
   // Lock scroll when any overlay is open
   useEffect(() => {
-    document.body.style.overflow = filterOpen || detailId !== null ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [filterOpen, detailId]);
+    document.body.style.overflow =
+      filterOpen || detailId !== null || cancelTarget !== null ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [filterOpen, detailId, cancelTarget]);
 
   const statusCounts = useMemo(
     () =>
       (data?.data ?? []).reduce(
-        (acc, b) => ({
-          ...acc,
-          [b.status]: (acc[b.status as BookingStatus] ?? 0) + 1,
-        }),
+        (acc, b) => ({ ...acc, [b.status]: (acc[b.status as BookingStatus] ?? 0) + 1 }),
         {} as Partial<Record<BookingStatus, number>>,
       ),
     [data],
@@ -1101,10 +992,7 @@ function ServiceBookings() {
             onChange={(v) => set("status", v)}
             options={STATUS_OPTIONS.map((o) => ({
               ...o,
-              dot:
-                o.value !== "all"
-                  ? STATUS_CONFIG[o.value as BookingStatus].dot
-                  : undefined,
+              dot: o.value !== "all" ? STATUS_CONFIG[o.value as BookingStatus].dot : undefined,
             }))}
           />
         </FilterSection>
@@ -1154,7 +1042,7 @@ function ServiceBookings() {
           subtitle={t("pages.patient.bookings_sub")}
         />
 
-        {/* Quick access to the patient's own medical record / visits / files */}
+        {/* Quick access to the patient's own medical record */}
         <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
           <Button
             size="sm"
@@ -1179,9 +1067,7 @@ function ServiceBookings() {
             onClick={() => setFilterOpen(false)}
             className={cn(
               "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
+              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
           />
 
@@ -1193,6 +1079,7 @@ function ServiceBookings() {
               filterOpen ? "translate-y-0" : "translate-y-full",
             )}
           >
+            {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
               <div className="w-10 h-1 rounded-full bg-border" />
             </div>
@@ -1209,6 +1096,15 @@ function ServiceBookings() {
 
           {/* Main content */}
           <main className="flex-1 overflow-y-auto min-w-0">
+
+            {/* Inline feedback banner — shown directly below the meta bar */}
+            {feedback && (
+              <FeedbackBanner
+                feedback={feedback}
+                onDismiss={() => setFeedback(null)}
+              />
+            )}
+
             {/* Sticky meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -1224,6 +1120,7 @@ function ServiceBookings() {
                     </button>
                   )}
                 </p>
+                {/* Status pill counts — hidden on small screens */}
                 <div className="hidden lg:flex items-center gap-2">
                   {(["pending", "accepted"] as BookingStatus[]).map((s) =>
                     statusCounts[s] ? (
@@ -1234,12 +1131,7 @@ function ServiceBookings() {
                           STATUS_CONFIG[s].badge,
                         )}
                       >
-                        <span
-                          className={cn(
-                            "w-1.5 h-1.5 rounded-full",
-                            STATUS_CONFIG[s].dot,
-                          )}
-                        />
+                        <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_CONFIG[s].dot)} />
                         {statusCounts[s]} {STATUS_CONFIG[s].label.toLowerCase()}
                       </span>
                     ) : null,
@@ -1277,13 +1169,7 @@ function ServiceBookings() {
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <path d="M3 9h18M3 15h18M9 3v18" />
                     </svg>
@@ -1298,13 +1184,7 @@ function ServiceBookings() {
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg
-                      className="w-3.5 h-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <line x1="3" y1="6" x2="21" y2="6" />
                       <line x1="3" y1="12" x2="21" y2="12" />
                       <line x1="3" y1="18" x2="21" y2="18" />
@@ -1322,12 +1202,8 @@ function ServiceBookings() {
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      Failed to load bookings
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Something went wrong. Please try again.
-                    </p>
+                    <p className="text-[12px] font-semibold text-foreground">Failed to load bookings</p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
                   </div>
                   <button
                     onClick={() => refetch()}
@@ -1347,14 +1223,10 @@ function ServiceBookings() {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground">
-                      {filters.status === "all"
-                        ? "No bookings yet"
-                        : `No ${filters.status} bookings`}
+                      {filters.status === "all" ? "No bookings yet" : `No ${filters.status} bookings`}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {filters.q
-                        ? "Try a different search term"
-                        : "Your service bookings will appear here"}
+                      {filters.q ? "Try a different search term" : "Your service bookings will appear here"}
                     </p>
                   </div>
                   {hasActiveFilters && (
@@ -1369,190 +1241,106 @@ function ServiceBookings() {
               )}
 
               {/* ── Table view ── */}
-              {view === "table" &&
-                (isLoading || bookings.length > 0) &&
-                !isError && (
-                  <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
+              {view === "table" && (isLoading || bookings.length > 0) && !isError && (
+                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] min-w-[480px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Service</th>
-                          <th className="text-left px-4 py-3 font-semibold">Hospital</th>
-                          <th className="text-left px-4 py-3 font-semibold">Date & Time</th>
-                          <th className="text-left px-4 py-3 font-semibold">Department</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="px-4 py-3" />
+                          <th className="text-left px-3 sm:px-4 py-3 font-semibold">Service</th>
+                          <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Hospital</th>
+                          <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">Date & Time</th>
+                          <th className="text-left px-3 sm:px-4 py-3 font-semibold">Status</th>
+                          <th className="px-3 sm:px-4 py-3" />
                         </tr>
                       </thead>
                       <tbody>
                         {isLoading
-                          ? Array.from({ length: 5 }).map((_, i) => (
-                            <RowSkeleton key={i} />
-                          ))
+                          ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
                           : bookings.map((b) => (
-                            <tr
-                              key={b.id}
-                              className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                            >
-                              <td className="px-4 py-3">
-                                <div>
-                                  <p className="font-semibold text-foreground">
-                                    {b.service.name_en}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    #{b.id} · {b.booked_by}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.hospital.name_en}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="flex items-center gap-1 font-medium text-foreground">
-                                    <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatDate(b.preferred_date)}
+                              <tr
+                                key={b.id}
+                                className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
+                              >
+                                <td className="px-3 sm:px-4 py-3">
+                                  <div>
+                                    <p className="font-semibold text-foreground leading-tight">{b.service.name_en}</p>
+                                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                      #{b.id} · {b.booked_by}
+                                    </p>
+                                    {/* Hospital shown inline on mobile */}
+                                    <p className="sm:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                                      <Building2 className="w-2.5 h-2.5 flex-shrink-0" />
+                                      {b.hospital.name_en}
+                                    </p>
+                                    {/* Date shown inline on small screens */}
+                                    <p className="md:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                                      <CalendarDays className="w-2.5 h-2.5 flex-shrink-0" />
+                                      {formatDate(b.preferred_date)} · {formatTime(b.preferred_time)}
+                                    </p>
+                                  </div>
+                                </td>
+                                <td className="px-3 sm:px-4 py-3 hidden sm:table-cell">
+                                  <span className="flex items-center gap-1.5 text-muted-foreground/80">
+                                    <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+                                    {b.hospital.name_en}
                                   </span>
-                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                    <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatTime(b.preferred_time)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.department.name_en}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <StatusBadge status={b.status} />
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 px-2.5 text-[10px] font-semibold rounded-sm transition-all"
-                                    onClick={() => setDetailId(b.id)}
-                                  >
-                                    Details
-                                  </Button>
-                                  {b.status === "pending" ||
-                                    b.status === "accepted" ? (
+                                </td>
+                                <td className="px-3 sm:px-4 py-3 hidden md:table-cell whitespace-nowrap">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="flex items-center gap-1 font-medium text-foreground">
+                                      <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
+                                      {formatDate(b.preferred_date)}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                                      <Clock className="h-3 w-3 text-muted-foreground/40" />
+                                      {formatTime(b.preferred_time)}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-3 sm:px-4 py-3">
+                                  <StatusBadge status={b.status} />
+                                </td>
+                                <td className="px-3 sm:px-4 py-3 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
                                     <Button
                                       size="sm"
                                       variant="outline"
-                                      className="h-7 px-2.5 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                      onClick={() => setCancelTarget(b)}
+                                      className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-sm transition-all"
+                                      onClick={() => setDetailId(b.id)}
                                     >
-                                      <Trash2 className="w-3 h-3 mr-1" />
-                                      Cancel
+                                      <Eye className="w-3 h-3 sm:mr-1" />
+                                      <span className="hidden sm:inline">Details</span>
                                     </Button>
-                                  ) : (
-                                    <span className="text-[10px] text-muted-foreground/40 w-[58px] text-center">
-                                      —
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                    {b.status === "pending" || b.status === "accepted" ? (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
+                                        onClick={() => setCancelTarget(b)}
+                                      >
+                                        <Trash2 className="w-3 h-3 sm:mr-1" />
+                                        <span className="hidden sm:inline">Cancel</span>
+                                      </Button>
+                                    ) : (
+                                      <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">—</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
                       </tbody>
                     </table>
                   </div>
-                )}
-              {view === "table" && (isLoading || bookings.length > 0) && !isError && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Service</th>
-                        <th className="text-left px-4 py-3 font-semibold">Hospital</th>
-                        <th className="text-left px-4 py-3 font-semibold">Date & Time</th>
-                        <th className="text-left px-4 py-3 font-semibold">Department</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isLoading
-                        ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
-                        : bookings.map((b) => (
-                          <tr
-                            key={b.id}
-                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                          >
-                            <td className="px-4 py-3">
-                              <div>
-                                <p className="font-semibold text-foreground">{b.service.name_en}</p>
-                                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                  #{b.id} · {b.booked_by}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                {b.hospital.name_en}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="flex items-center gap-1 font-medium text-foreground">
-                                  <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                  {formatDate(b.preferred_date)}
-                                </span>
-                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                  <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                  {formatTime(b.preferred_time)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                {b.department.name_en}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusBadge status={b.status} />
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {(b.status === "pending" || b.status === "accepted") ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                  onClick={() => setCancelTarget(b)}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  Cancel
-                                </Button>
-                              ) : (
-                                <span className="text-[10px] text-muted-foreground/40">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
                 </div>
               )}
 
               {/* ── Cards view ── */}
-              {view === "cards" &&
-                (isLoading || bookings.length > 0) &&
-                !isError && (
-                  <div className="flex flex-col gap-2">
-                    {isLoading
-                      ? Array.from({ length: 5 }).map((_, i) => (
-                        <CardSkeleton key={i} />
-                      ))
-                      : bookings.map((b) => (
+              {view === "cards" && (isLoading || bookings.length > 0) && !isError && (
+                <div className="flex flex-col gap-2">
+                  {isLoading
+                    ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
+                    : bookings.map((b) => (
                         <BookingCardItem
                           key={b.id}
                           booking={b}
@@ -1560,8 +1348,8 @@ function ServiceBookings() {
                           onView={(b) => setDetailId(b.id)}
                         />
                       ))}
-                  </div>
-                )}
+                </div>
+              )}
 
               {/* Pagination */}
               {!isLoading && !isError && totalPages > 1 && (

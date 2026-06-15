@@ -3,16 +3,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PersonalInfo {
-  specialization: string;
   doctor_degree: string;
   medical_license: string;
   designations: string;
   bio_en: string;
   bio_fr: string;
   bio_kiny: string;
-  consultation_fee: number;
-  currency: string;
-  consultation_type: string;
   preferred_language: string;
 }
 

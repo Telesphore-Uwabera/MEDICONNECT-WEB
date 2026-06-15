@@ -145,6 +145,7 @@ export interface PaginatedDoctors {
 export interface GetAdminDoctorsParams {
   status?: string;
   specialization?: string;
+  specialization_fee_id?: number;   // ← add
   consultation_type?: string;
   search?: string;
   page?: number;
@@ -336,16 +337,17 @@ export const doctorKeys = {
 // ─── Doctors ──────────────────────────────────────────────────────────────────
 
 export function useGetAdminDoctors(params: GetAdminDoctorsParams = {}) {
-  const { status, specialization, consultation_type, search, page = 1 } = params;
+  const { status, specialization, specialization_fee_id, consultation_type, search, page = 1 } = params;
   return useQuery<PaginatedDoctors>({
-    queryKey: doctorKeys.list({ status, specialization, consultation_type, search, page }),
+    queryKey: doctorKeys.list({ status, specialization, specialization_fee_id, consultation_type, search, page }),
     queryFn: () => {
       const qs = new URLSearchParams();
-      if (status)            qs.set("status", status);
-      if (specialization)    qs.set("specialization", specialization);
-      if (consultation_type) qs.set("consultation_type", consultation_type);
-      if (search)            qs.set("search", search);
-      if (page > 1)          qs.set("page", String(page));
+      if (status)                qs.set("status", status);
+      if (specialization)        qs.set("specialization", specialization);
+      if (specialization_fee_id) qs.set("specialization_fee_id", String(specialization_fee_id)); // ← add
+      if (consultation_type)     qs.set("consultation_type", consultation_type);
+      if (search)                qs.set("search", search);
+      if (page > 1)              qs.set("page", String(page));
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedDoctors>(url);
     },
