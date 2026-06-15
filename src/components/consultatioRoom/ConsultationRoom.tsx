@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff } from "lucide-react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon } from "lucide-react";
+import { useCallContext } from "@/context/CallContext";
+import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { cn } from "@/lib/utils";
 import echo from "@/lib/echo";
+import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
+import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
+import { Link } from "react-router-dom";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,6 +24,7 @@ interface ConsultationToken {
   room: string;
   is_owner: boolean;
   ice_servers: IceServer[];
+  consultation_id?: number;
 }
 
 interface ConsultationRoomProps {
@@ -34,445 +42,726 @@ const nameInitial = (name: string) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
-  const localVideoRef  = useRef<HTMLVideoElement>(null);
+  const { t } = useTranslation();
+  const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const pcRef          = useRef<RTCPeerConnection | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const channelRef     = useRef<ReturnType<typeof echo.channel> | null>(null);
-  const makingOffer    = useRef(false);
-  const isOwner        = token.is_owner;
+  const channelRef = useRef<ReturnType<typeof echo.channel> | null>(null);
+  const makingOffer = useRef(false);
+  const candidateQueue = useRef<RTCIceCandidateInit[]>([]);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const disconnectedSinceRef = useRef<number | null>(null);
+  const audioEnabledRef = useRef(true);
+  const videoEnabledRef = useRef(true);
+  // Refs holding the latest callbacks so the main effect can stay decoupled
+  // from their identities (prevents tearing down the call on parent re-render).
+  const sendSignalRef = useRef<((type: string, data?: unknown) => Promise<void>) | null>(null);
+  const createPeerConnectionRef = useRef<(() => RTCPeerConnection) | null>(null);
+  const createAndSendOfferRef = useRef<((iceRestart?: boolean) => Promise<void>) | null>(null);
+  const isOwner = token.is_owner;
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
-  const [connState, setConnState]       = useState<ConnectionState>("connecting");
-  const [remoteStream, setRemoteStream] = useState(false);
+  const [connState, setConnState] = useState<ConnectionState>("connecting");
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Remote media status
+  const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(true);
+  const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(true);
+
+  // Audio wave status
+  const { isTalking: localTalking } = useAudioVolume(localStreamRef.current);
+  const { isTalking: remoteTalking } = useAudioVolume(remoteStream);
+
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+
+  // Consultation id the peer told us about (see consultation-meta signal below).
+  // Used when our own token didn't carry one — e.g. a patient whose token was
+  // issued without it. The doctor always has a valid id and shares it.
+  const [peerConsultationId, setPeerConsultationId] = useState<number | null>(null);
+
+  // Hook into the global CallContext
+  const { isMinimized, toggleMinimize, endCall: endCallContext } = useCallContext();
+
+  // Resolve the consultation id the chat API needs. It isn't part of the WebRTC
+  // token natively — it's injected by the join flows — so we check every known
+  // key, coerce to a positive integer, and fall back to a numeric id embedded
+  // in the room name. This keeps chat working even if token enrichment was
+  // skipped or lost a value somewhere upstream.
+  const consultationId = useMemo<number | null>(() => {
+    const t = token as any;
+    const candidates = [
+      t?.consultation_id,
+      t?.consultationId,
+      t?.instant_consultation_request_id,
+      t?.instant_consultation_id,
+      t?.id,
+    ];
+    for (const c of candidates) {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    const match = /(?:consultation|consult|instant)[-_.]?(\d+)/i.exec(roomName ?? "");
+    if (match) {
+      const n = Number(match[1]);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return null;
+  }, [token, roomName]);
+
+  // Prefer our own token's id; fall back to the one the peer shared over signaling.
+  const effectiveConsultationId = consultationId ?? peerConsultationId;
+
+  // Once connected, share our consultation id so a peer whose token lacked one
+  // (e.g. the patient) can use it for the chat. Only the side that actually has
+  // the id broadcasts, so there's no ping-pong.
+  useEffect(() => {
+    if (connState === "connected" && consultationId != null) {
+      sendSignalRef.current?.("consultation-meta", { consultation_id: consultationId });
+    }
+  }, [connState, consultationId]);
 
   // ── Send signal via API ───────────────────────────────────────────────────
+  // Path can be overridden with VITE_SIGNAL_PATH if the backend exposes the
+  // WebRTC relay endpoint somewhere other than the default.
   const sendSignal = useCallback(
-    async (type: string, data: unknown) => {
-      console.info(`[WebRTC] Sending signal: ${type} from: ${token.username}`);
+    async (type: string, data: unknown = {}) => {
+      const url = `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_SIGNAL_PATH ?? "/public/consultations/signal"}`;
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_APP_BASE_URL}/public/consultations/signal`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ room: roomName, type, data, from: token.username }),
-          },
-        );
-        console.info(`[WebRTC] Signal sent: ${type} status: ${res.status}`);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ room: roomName, type, data, from: token.username }),
+        });
+        if (!res.ok) {
+          console.error(`[WebRTC] Signal "${type}" rejected: HTTP ${res.status} → ${url}`);
+        }
       } catch (e) {
-        console.error("[WebRTC] Signal send failed", e);
+        // A TypeError/NetworkError here usually means the endpoint is missing or
+        // blocked by CORS — no offer/answer/ICE can be exchanged, so the call
+        // stays on "Connecting…". Verify the endpoint exists and allows this origin.
+        console.error(`[WebRTC] Signal "${type}" send failed (network/CORS) → ${url}`, e);
       }
     },
-    [roomName, token.username],
+    [roomName, token.username]
   );
+
+  // ── Connection recovery ───────────────────────────────────────────────────
+  // Attempt to re-establish a degraded connection. The owner re-offers with an
+  // ICE restart; the patient nudges the owner by resending `ready`.
+  const scheduleRecovery = (delay: number) => {
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+    recoveryTimerRef.current = setTimeout(() => {
+      recoveryTimerRef.current = null;
+      const pc = pcRef.current;
+      if (!pc || pc.connectionState === "connected") return;
+      if (isOwner) {
+        createAndSendOfferRef.current?.(true);
+      } else {
+        sendSignalRef.current?.("ready");
+      }
+    }, delay);
+  };
+
+  const clearRecovery = () => {
+    if (recoveryTimerRef.current) {
+      clearTimeout(recoveryTimerRef.current);
+      recoveryTimerRef.current = null;
+    }
+  };
 
   // ── Setup RTCPeerConnection ───────────────────────────────────────────────
   const createPeerConnection = useCallback(() => {
-    console.info("[WebRTC] Creating RTCPeerConnection with ICE servers:", token.ice_servers);
-    const pc = new RTCPeerConnection({ iceServers: token.ice_servers });
+    const pc = new RTCPeerConnection({
+      iceServers: token.ice_servers,
+      bundlePolicy: "max-bundle",
+      rtcpMuxPolicy: "require"
+    });
 
     pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        console.info("[WebRTC] ICE candidate generated:", candidate.type);
-        sendSignal("ice-candidate", candidate.toJSON());
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.info("[WebRTC] ICE connection state:", pc.iceConnectionState);
-    };
-
-    pc.onsignalingstatechange = () => {
-      console.info("[WebRTC] Signaling state:", pc.signalingState);
+      if (candidate) sendSignal("ice-candidate", candidate.toJSON());
     };
 
     pc.onconnectionstatechange = () => {
       const s = pc.connectionState;
-      console.info("[WebRTC] Connection state changed:", s);
-      if (s === "connected")                           setConnState("connected");
-      else if (s === "disconnected" || s === "closed") setConnState("disconnected");
-      else if (s === "failed")                         setConnState("failed");
-    };
-
-    pc.ontrack = ({ streams }) => {
-      console.info("[WebRTC] Remote track received, streams:", streams.length);
-      if (remoteVideoRef.current && streams[0]) {
-        remoteVideoRef.current.srcObject = streams[0];
-        setRemoteStream(true);
+      if (s === "connected") {
+        setConnState("connected");
+        disconnectedSinceRef.current = null;
+        clearRecovery();
+        // Sync our current mic/camera state so the peer's indicators are correct.
+        sendSignalRef.current?.("media-status", {
+          audio: audioEnabledRef.current,
+          video: videoEnabledRef.current,
+        });
+      } else if (s === "disconnected") {
+        setConnState("disconnected");
+        disconnectedSinceRef.current = Date.now();
+        // `disconnected` is often transient — give ICE time to self-heal first.
+        scheduleRecovery(5000);
+      } else if (s === "failed") {
+        setConnState("failed");
+        scheduleRecovery(0);
+      } else if (s === "closed") {
+        setConnState("disconnected");
       }
     };
 
-    // Add local tracks
+    pc.oniceconnectionstatechange = () => {
+      // Some browsers surface failures on the ICE state before connectionState.
+      if (pc.iceConnectionState === "failed") {
+        setConnState("failed");
+        scheduleRecovery(0);
+      }
+    };
+
+    pc.ontrack = (event) => {
+      // Prefer the stream the remote attached; fall back to assembling one.
+      const [incoming] = event.streams;
+      if (incoming) {
+        setRemoteStream(incoming);
+        return;
+      }
+      const track = event.track;
+      setRemoteStream((prev) => {
+        const next = prev ? new MediaStream(prev.getTracks()) : new MediaStream();
+        if (!next.getTracks().find((t) => t.id === track.id)) next.addTrack(track);
+        return next;
+      });
+    };
+
+
     if (localStreamRef.current) {
-      const tracks = localStreamRef.current.getTracks();
-      console.info("[WebRTC] Adding local tracks:", tracks.length);
-      tracks.forEach((track) => pc.addTrack(track, localStreamRef.current!));
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current!);
+      });
     } else {
-      console.warn("[WebRTC] No local stream available when creating peer connection");
+      pc.addTransceiver("audio", { direction: "recvonly" });
+      pc.addTransceiver("video", { direction: "recvonly" });
     }
 
     pcRef.current = pc;
     return pc;
   }, [token.ice_servers, sendSignal]);
 
-  // ── Handle incoming signal ────────────────────────────────────────────────
-  const handleSignal = useCallback(
-    async (payload: { type: string; data: unknown; from: string }) => {
-      console.info(`[WebRTC] Signal received: ${payload.type} from: ${payload.from}`);
+  // ── SDP Optimizer ─────────────────────────────────────────────────────────
+  const optimizeAudioSDP = (sdp: string | undefined) => {
+    if (!sdp) return sdp;
+    // Mono voice, but at a wideband bitrate for clearer clinical audio.
+    // ~40 kbps Opus gives crisp speech without the bandwidth of stereo/music.
+    return sdp.replace(
+      /useinbandfec=1/g,
+      "useinbandfec=1;usedtx=1;stereo=0;maxaveragebitrate=40000;maxplaybackrate=48000"
+    );
+  };
 
-      // Ignore own signals
-      if (payload.from === token.username) {
-        console.info("[WebRTC] Ignoring own signal");
-        return;
-      }
+  // ── Create and Send Offer ─────────────────────────────────────────────────
+  const createAndSendOffer = useCallback(async (iceRestart = false) => {
+    const pc = pcRef.current;
+    if (!pc || makingOffer.current) return;
 
-      const pc = pcRef.current ?? createPeerConnection();
-
-      try {
-    if (payload.type === "offer") {
-      console.info("[WebRTC] Processing offer, signalingState:", pc.signalingState);
-      console.info("[WebRTC] Offer SDP first 200 chars:", JSON.stringify((payload.data as Record<string, unknown>)?.sdp?.toString().slice(0, 200)));
-
-      if (pc.connectionState === "connected") {
-        console.info("[WebRTC] Already connected — ignoring redundant offer");
-        return;
-      }
-
-      const offerCollision =
-        makingOffer.current || pc.signalingState !== "stable";
-
-          if (offerCollision && isOwner) {
-            console.warn("[WebRTC] Offer collision — ignoring (impolite peer)");
-            return;
-          }
-
-          const rawData = payload.data as Record<string, unknown>;
-          const cleanSdp = rawData.sdp?.toString()
-            .replace(/^a=ssrc:[^\r\n]*/gm, "")
-            .replace(/(\r\n){2,}/g, "\r\n")
-            ?? "";
-
-          await pc.setRemoteDescription(
-            new RTCSessionDescription({ type: rawData.type as RTCSdpType, sdp: cleanSdp }),
-          );
-          console.info("[WebRTC] Remote description set, creating answer…");
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          console.info("[WebRTC] Answer created and set, sending…");
-          sendSignal("answer", { type: answer.type, sdp: answer.sdp });
-
-          } else if (payload.type === "answer") {
-            console.info("[WebRTC] Processing answer, signalingState:", pc.signalingState);
-            if (pc.signalingState !== "have-local-offer") {
-              console.warn("[WebRTC] Ignoring answer — not in have-local-offer state");
-              return;
-            }
-            const rawAnswer = payload.data as Record<string, unknown>;
-            const cleanAnswerSdp = rawAnswer.sdp?.toString()
-              .replace(/^a=ssrc:[^\r\n]*/gm, "")
-              .replace(/(\r\n){2,}/g, "\r\n")
-              ?? "";
-            await pc.setRemoteDescription(
-              new RTCSessionDescription({ type: rawAnswer.type as RTCSdpType, sdp: cleanAnswerSdp }),
-            );
-            console.info("[WebRTC] Remote description set from answer");
-
-        } else if (payload.type === "ice-candidate") {
-          if (!pc.remoteDescription) {
-            console.warn("[WebRTC] ICE candidate arrived before remote description — skipping");
-            return;
-          }
-          console.info("[WebRTC] Adding ICE candidate");
-          await pc.addIceCandidate(
-            new RTCIceCandidate(payload.data as RTCIceCandidateInit),
-          );
-          console.info("[WebRTC] ICE candidate added");
-        }
-      } catch (e) {
-        console.error("[WebRTC] Signal handling error", e);
-      }
-    },
-    [token.username, isOwner, createPeerConnection, sendSignal],
-  );
-
-  // ── Main setup ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    console.info("[WebRTC] Component mounted — roomName:", roomName, "isOwner:", isOwner);
-    console.info("[WebRTC] Token:", JSON.stringify(token));
-
-    const setup = async () => {
-      console.info("[WebRTC] Setup starting…");
-
-      // 1. Get local media
-      try {
-        console.info("[WebRTC] Requesting media devices…");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        if (cancelled) {
-          console.warn("[WebRTC] Cancelled after media acquired — stopping tracks");
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        localStreamRef.current = stream;
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        console.info("[WebRTC] Local media acquired — tracks:", stream.getTracks().map(t => t.kind));
-      } catch (e) {
-        console.error("[WebRTC] Media access denied", e);
-        setConnState("failed");
-        return;
-      }
-
-      // 2. Create peer connection
-      const pc = createPeerConnection();
-      console.info("[WebRTC] PeerConnection created");
-
-      console.info(`[WebRTC] Subscribing to channel: consultation.${roomName}`);
-
-      const subscribeToChannel = () => {
-        const channel = echo.channel(`consultation.${roomName}`);
-        channelRef.current = channel;
-        channel.listen(".webrtc.signal", (payload: { type: string; data: unknown; from: string }) => {
-          console.info("[WebRTC] Raw signal event received:", payload);
-          handleSignal(payload);
-        });
-        console.info("[WebRTC] Channel subscribed and listening");
-      };
-
-      subscribeToChannel();
-
-      // Reconnect on WebSocket disconnect
-      echo.connector.pusher.connection.bind("connected", () => {
-        console.info("[WebRTC] WebSocket reconnected — resubscribing to channel");
-        subscribeToChannel();
-      });
-
-      // 4. Owner creates offer after delay
-if (isOwner) {
-  console.info("[WebRTC] I am owner — waiting for WebSocket then sending offer…");
-
-  const createAndSendOffer = async () => {
-    if (cancelled) return;
-    const activePc = pcRef.current;
-    if (!activePc) return;
-    // If stuck in have-local-offer, close and recreate
-    if (activePc.signalingState === "have-local-offer") {
-      console.info("[WebRTC] Stuck in have-local-offer — recreating PC…");
-      activePc.close();
-      pcRef.current = createPeerConnection();
-    }
-    const freshPc = pcRef.current!;
     try {
       makingOffer.current = true;
-      console.info("[WebRTC] Creating offer, signalingState:", freshPc.signalingState);
-      const offer = await freshPc.createOffer();
-      await freshPc.setLocalDescription(offer);
-      console.info("[WebRTC] Offer created — sending…");
+      const offer = await pc.createOffer(iceRestart ? { iceRestart: true } : undefined);
+      offer.sdp = optimizeAudioSDP(offer.sdp);
+
+      await pc.setLocalDescription(offer);
       await sendSignal("offer", { type: offer.type, sdp: offer.sdp });
-      console.info("[WebRTC] Offer sent successfully ✅");
     } catch (e) {
       console.error("[WebRTC] Offer creation failed", e);
     } finally {
       makingOffer.current = false;
     }
-  };
+  }, [sendSignal]);
 
-  const pusher = echo.connector.pusher;
+  // Keep refs pointed at the latest callbacks / control state.
+  sendSignalRef.current = sendSignal;
+  createPeerConnectionRef.current = createPeerConnection;
+  createAndSendOfferRef.current = createAndSendOffer;
+  audioEnabledRef.current = audioEnabled;
+  videoEnabledRef.current = videoEnabled;
 
-  const startOffer = () => {
-    // Wait 1.5s after WS connects to let patient subscribe to channel
-    setTimeout(createAndSendOffer, 1500);
-  };
+  // Single source of truth: bind the remote stream to the <video> element and
+  // attempt playback (covers autoplay-with-audio policies). Clears on null.
+  useEffect(() => {
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    el.srcObject = remoteStream;
+    if (remoteStream) {
+      el.play().catch(() => {/* awaiting a user gesture; UI play affordance handles it */ });
+    }
+  }, [remoteStream]);
 
-  if (pusher.connection.state === "connected") {
-    console.info("[WebRTC] WebSocket already connected — sending offer soon…");
-    startOffer();
-  } else {
-    console.info("[WebRTC] WebSocket not ready — waiting for connection…");
-    pusher.connection.bind("connected", () => {
-      console.info("[WebRTC] WebSocket connected — sending offer now…");
-      startOffer();
-    });
-  }
+  const handleSignalRef = useRef<((payload: any) => Promise<void>) | null>(null);
 
-  // Retry every 8s until connected
-  const retryInterval = setInterval(async () => {
-    if (cancelled) { clearInterval(retryInterval); return; }
-    const activePc = pcRef.current;
-    if (!activePc) { clearInterval(retryInterval); return; }
-    if (activePc.connectionState === "connected") {
-      console.info("[WebRTC] Connected — stopping retry");
-      clearInterval(retryInterval);
+  handleSignalRef.current = async (payload: { type: string; data: unknown; from: string }) => {
+    if (payload.from === token.username) return;
+
+    let pc = pcRef.current;
+
+    if (payload.type === "bye") {
+      clearRecovery();
+      pcRef.current?.close();
+      pcRef.current = null;
+      candidateQueue.current = [];
+      setRemoteStream(null);
+      setConnState("disconnected");
       return;
     }
-    console.info("[WebRTC] No answer yet — retrying offer…");
-    await createAndSendOffer();
-  }, 8000);
-}else {
-        console.info("[WebRTC] I am NOT owner — waiting for offer from doctor…");
+
+    if (payload.type === "ready" || payload.type === "offer") {
+      if (pc && ["connected", "disconnected", "failed", "closed"].includes(pc.connectionState)) {
+        pc.close();
+        pc = null;
+        pcRef.current = null;
+        candidateQueue.current = [];
+        setRemoteStream(null); // Clear old dead streams (srcObject is cleared by the bind effect)
+      }
+    }
+
+    if (!pc) pc = createPeerConnection();
+
+    const sanitizeSDP = (sdp: string) => {
+      if (!sdp) return sdp;
+      let normalized = sdp.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n');
+      return normalized
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\r\n') + '\r\n';
+    };
+
+    try {
+      if (payload.type === "ready" && isOwner) {
+        await createAndSendOffer();
+      }
+      else if (payload.type === "offer") {
+        const offerCollision = makingOffer.current || pc.signalingState !== "stable";
+        if (offerCollision && isOwner) return;
+
+        const rawData = payload.data as RTCSessionDescriptionInit;
+        if (rawData.sdp) rawData.sdp = sanitizeSDP(rawData.sdp);
+
+        await pc.setRemoteDescription(new RTCSessionDescription(rawData));
+
+        while (candidateQueue.current.length > 0) {
+          const c = candidateQueue.current.shift();
+          if (c) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+        }
+
+        const answer = await pc.createAnswer();
+        answer.sdp = optimizeAudioSDP(answer.sdp);
+
+        await pc.setLocalDescription(answer);
+        sendSignal("answer", { type: answer.type, sdp: answer.sdp });
+      }
+      else if (payload.type === "answer") {
+        if (pc.signalingState !== "have-local-offer") {
+          console.warn("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
+          return;
+        }
+
+        const rawAnswer = payload.data as RTCSessionDescriptionInit;
+        if (rawAnswer.sdp) rawAnswer.sdp = sanitizeSDP(rawAnswer.sdp);
+
+        await pc.setRemoteDescription(new RTCSessionDescription(rawAnswer));
+
+        while (candidateQueue.current.length > 0) {
+          const c = candidateQueue.current.shift();
+          if (c) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+        }
+      }
+      else if (payload.type === "ice-candidate") {
+        if (!pc.remoteDescription) {
+          candidateQueue.current.push(payload.data as RTCIceCandidateInit);
+          return;
+        }
+        // Adding a candidate can fail benignly (it arrived for a since-reset/
+        // renegotiated description). Swallow it so it doesn't abort the handler
+        // or surface as a hard error — ICE will still complete on valid ones.
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(payload.data as RTCIceCandidateInit));
+        } catch (err) {
+          console.warn("[WebRTC] Skipped an ICE candidate that couldn't be added", err);
+        }
+      }
+      else if (payload.type === "media-status") {
+        const { audio, video } = payload.data as { audio: boolean, video: boolean };
+        if (audio !== undefined) setRemoteAudioEnabled(audio);
+        if (video !== undefined) setRemoteVideoEnabled(video);
+      }
+      else if (payload.type === "consultation-meta") {
+        // Peer is telling us the consultation id (used when our token lacked one).
+        const id = Number((payload.data as { consultation_id?: unknown })?.consultation_id);
+        if (Number.isFinite(id) && id > 0) setPeerConsultationId(id);
+      }
+    } catch (e) {
+      console.error("[WebRTC] Signal handling error", e);
+    }
+  };
+
+  // ── Main setup ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const setup = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 480, max: 640 },
+            height: { ideal: 360, max: 480 },
+            frameRate: { ideal: 15, max: 20 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        localStreamRef.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      } catch (e: any) {
+        console.error("[WebRTC] Media access denied", e);
+        if (e.name === "NotReadableError") {
+          alert(t("consult.call.media_in_use"));
+        } else if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
+          alert(t("consult.call.grant_perms"));
+        }
+      }
+
+      createPeerConnectionRef.current?.();
+
+      const subscribeToChannel = () => {
+        const channel = echo.channel(`consultation.${roomName}`);
+        channelRef.current = channel;
+        channel.listen(".webrtc.signal", (payload: any) => {
+          handleSignalRef.current?.(payload);
+        });
+      };
+
+      subscribeToChannel();
+
+      echo.connector.pusher.connection.bind("connected", () => {
+        if (!channelRef.current) subscribeToChannel();
+      });
+
+      if (!isOwner) {
+        const sendReadyLoop = () => {
+          if (cancelled) return;
+          const pc = pcRef.current;
+          const st = pc?.connectionState;
+          // Resend `ready` when there's no usable connection. Includes
+          // `disconnected`, but only after a grace window so a self-healing
+          // ICE blip doesn't trigger an unnecessary full renegotiation.
+          const needsReady =
+            !pc ||
+            ["new", "failed", "closed"].includes(st as string) ||
+            (st === "disconnected" &&
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+
+          if (needsReady) sendSignalRef.current?.("ready");
+          setTimeout(sendReadyLoop, 3000);
+        };
+        setTimeout(sendReadyLoop, 1000);
+      } else {
+        // Owner re-announces while not yet connected. A single nudge is fragile
+        // on rejoin: if the peer is still holding a stale connection and misses
+        // it, nothing else prompts a re-handshake until its ICE times out
+        // (10–30s of "Connecting…"). Re-announcing every 3s prompts the peer to
+        // tear the stale connection down and re-initiate promptly. It stops once
+        // we're connected/connecting, so it never disrupts a live call.
+        const announceLoop = () => {
+          if (cancelled) return;
+          const pc = pcRef.current;
+          const st = pc?.connectionState;
+          const needsAnnounce =
+            !pc ||
+            ["new", "failed", "closed"].includes(st as string) ||
+            (st === "disconnected" &&
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+
+          if (needsAnnounce) sendSignalRef.current?.("ready");
+          setTimeout(announceLoop, 3000);
+        };
+        setTimeout(announceLoop, 1000);
       }
     };
 
     setup();
 
     return () => {
-      console.info("[WebRTC] Cleanup — leaving channel and closing PC");
       cancelled = true;
-      channelRef.current?.stopListening(".webrtc.signal");
-      echo.leaveChannel(`consultation.${roomName}`);
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      if (channelRef.current) {
+        channelRef.current.stopListening(".webrtc.signal");
+        echo.leaveChannel(`consultation.${roomName}`);
+      }
       pcRef.current?.close();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Decoupled from callback identities (accessed via refs) so a parent
+    // re-render passing a new token object can't tear down a live call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomName, isOwner]);
 
-  // ── Toggle audio ──────────────────────────────────────────────────────────
+  // ── Controls ──────────────────────────────────────────────────────────────
   const toggleAudio = () => {
-    localStreamRef.current?.getAudioTracks().forEach((t) => {
-      t.enabled = !t.enabled;
-    });
-    setAudioEnabled((v) => !v);
+    const nextAudio = !audioEnabled;
+    localStreamRef.current?.getAudioTracks().forEach((t) => (t.enabled = nextAudio));
+    setAudioEnabled(nextAudio);
+    sendSignal("media-status", { audio: nextAudio, video: videoEnabled });
   };
 
-  // ── Toggle video ──────────────────────────────────────────────────────────
   const toggleVideo = () => {
-    localStreamRef.current?.getVideoTracks().forEach((t) => {
-      t.enabled = !t.enabled;
-    });
-    setVideoEnabled((v) => !v);
+    const nextVideo = !videoEnabled;
+    localStreamRef.current?.getVideoTracks().forEach((t) => (t.enabled = nextVideo));
+    setVideoEnabled(nextVideo);
+    sendSignal("media-status", { audio: audioEnabled, video: nextVideo });
   };
 
-  // ── End call ──────────────────────────────────────────────────────────────
-  const endCall = () => {
-    console.info("[WebRTC] Ending call…");
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
+
+  const endCall = () => { 
+    sendSignal("bye");
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     echo.leaveChannel(`consultation.${roomName}`);
-    window.close();
-    window.location.href = "/";
+    endCallContext();
   };
 
-  // ── Connection state indicator ────────────────────────────────────────────
-  const stateColor = {
-    connecting:   "bg-amber-400",
-    connected:    "bg-emerald-400",
-    disconnected: "bg-red-400",
-    failed:       "bg-red-600",
-  }[connState];
-
-  const stateLabel = {
-    connecting:   "Connecting…",
-    connected:    "Connected",
-    disconnected: "Disconnected",
-    failed:       "Connection failed",
-  }[connState];
+  const stateColor = { connecting: "bg-amber-400", connected: "bg-emerald-400", disconnected: "bg-red-400", failed: "bg-red-600" }[connState];
+  const stateLabel = { connecting: t("consult.call.connecting"), connected: t("consult.call.connected"), disconnected: t("consult.call.disconnected"), failed: t("consult.call.failed") }[connState];
 
   return (
-    <div className="h-screen w-screen bg-[#0c0c0c] flex flex-col overflow-hidden">
+    <>
+      {/* ── End-call confirmation ─────────────────────────────────────────── */}
+      {confirmEndOpen && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setConfirmEndOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
+          >
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/15 flex items-center justify-center">
+              <PhoneOff className="h-6 w-6 text-red-400" />
+            </div>
+            <h2 className="text-white text-base font-semibold mb-1">{t("consult.call.end_title")}</h2>
+            <p className="text-white/50 text-[13px] mb-5 leading-relaxed">
+              {isOwner ? t("consult.call.end_desc_owner") : t("consult.call.end_desc")}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmEndOpen(false)}
+                className="flex-1 h-10 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
+              >
+                {t("consult.call.cancel")}
+              </button>
+              <button
+                onClick={() => { setConfirmEndOpen(false); endCall(); }}
+                className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
+              >
+                {t("consult.call.end_call")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* ── Video area ──────────────────────────────────────────────────── */}
-      <div className="relative flex-1 overflow-hidden">
+      <motion.div
+        drag={isMinimized}
+        dragMomentum={false}
+        animate={{ x: isMinimized ? undefined : 0, y: isMinimized ? undefined : 0 }}
+        className={cn(
+          // Single decisive z-index above all app chrome (sidebar/header sit at
+          // z-30–z-50). Avoid stacking two z-* utilities — source order, not class
+          // order, would decide the winner and could drop the call behind the nav.
+          "bg-[#0c0c0c] z-[9990] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
+          isMinimized
+            ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
+            : "fixed inset-0 h-[100dvh] w-screen"
+        )}
+      >
 
-        {/* Remote video */}
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className={cn(
-            "absolute inset-0 w-full h-full object-cover transition-opacity duration-500",
-            remoteStream ? "opacity-100" : "opacity-0",
-          )}
-        />
+        {/* ── Video area ──────────────────────────────────────────────────── */}
+        <div className="relative flex-1 flex overflow-hidden">
+          <div className="relative flex-1 overflow-hidden transition-all duration-300">
+            <video ref={remoteVideoRef} autoPlay playsInline className={cn("absolute inset-0 w-full h-full object-cover transition-opacity duration-500", remoteStream && remoteVideoEnabled ? "opacity-100" : "opacity-0")} />
 
-        {/* Remote waiting placeholder */}
-        {!remoteStream && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="relative mx-auto w-24 h-24">
-                <div
-                  className="absolute inset-0 rounded-full bg-emerald-500/15 animate-ping"
-                  style={{ animationDuration: "2s" }}
-                />
-                <div className="relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold ring-2 ring-emerald-500/30 select-none">
-                  {nameInitial(token.username)}
+            {(!remoteStream || !remoteVideoEnabled) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-[#0c0c0c] z-0">
+                <div className="text-center space-y-4">
+                  <div className="relative mx-auto w-24 h-24">
+                    <div className={cn("absolute inset-0 rounded-full bg-emerald-500/15", remoteTalking ? "animate-ping" : "")} style={{ animationDuration: "2s" }} />
+                    <div className={cn("relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold select-none transition-all duration-300", remoteTalking ? "ring-4 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]" : "ring-2 ring-emerald-500/30")}>
+                      {nameInitial(token.username)}
+                    </div>
+                  </div>
+                  <p className="text-white/40 text-sm">
+                    {connState !== "connected"
+                      ? t("consult.call.waiting_participant")
+                      : !remoteStream
+                        ? t("consult.call.waiting_media")
+                        : !remoteAudioEnabled
+                          ? t("consult.call.mic_muted")
+                          : t("consult.call.camera_off")}
+                  </p>
                 </div>
               </div>
-              <p className="text-white/40 text-sm">Waiting for the other participant…</p>
-            </div>
-          </div>
-        )}
-
-        {/* Local video PiP */}
-        <div className="absolute bottom-20 right-4 w-36 h-28 rounded-xl overflow-hidden border border-white/10 shadow-xl z-10">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover scale-x-[-1]"
-          />
-          {!videoEnabled && (
-            <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
-              <VideoOff className="w-6 h-6 text-white/30" />
-            </div>
-          )}
-        </div>
-
-        {/* Status bar */}
-        <div className="absolute top-0 inset-x-0 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/60 to-transparent z-20">
-          <div className="flex items-center gap-2">
-            <span className={cn("h-2 w-2 rounded-full", stateColor)} />
-            <span className="text-white/60 text-[11px] font-mono">{stateLabel}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-white/40 text-[10px]">
-            {connState === "connected" ? (
-              <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <WifiOff className="w-3.5 h-3.5" />
             )}
-            {roomName}
+
+            <div className={cn("absolute rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+              {!videoEnabled && (
+                <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
+                  <VideoOff className={cn("text-white/30", isMinimized ? "w-4 h-4" : "w-6 h-6")} />
+                </div>
+              )}
+            </div>
+
+            <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between py-3 bg-gradient-to-b from-black/60 to-transparent z-20 transition-all", isMinimized ? "px-3" : "px-4")}>
+              <div className="flex items-center gap-2">
+                <span className={cn("h-2 w-2 rounded-full", stateColor)} />
+                {!isMinimized && <span className="text-white/60 text-[11px] font-mono">{stateLabel}</span>}
+              </div>
+              <div className="flex items-center gap-1.5 text-white/40 text-[10px]">
+                <button
+                  onClick={toggleMinimize}
+                  className="ml-2 h-6 w-6 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer"
+                  title={isMinimized ? "Expand" : "Minimize"}
+                >
+                  {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
           </div>
+
+          {/* ── Chat panel ──────────────────────────────────────────────────── */}
+          {/* Stays mounted (so the realtime subscription + unread badge keep
+            working) but collapses to zero width when closed so it never overlays
+            or blocks the notes panel. Full-width drawer on mobile, side panel ≥sm. */}
+          {!isMinimized && (
+            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", chatOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
+                <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} onUnreadChange={setUnreadCount} />
+              </div>
+            </div>
+          )}
+
+          {/* ── Notes panel ─────────────────────────────────────────────────── */}
+          {!isMinimized && isOwner && (
+            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
+                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} />
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* ── Controls bar ─────────────────────────────────────────────────── */}
-      <div className="h-16 bg-[#111] border-t border-white/5 flex items-center justify-center gap-4 px-6 shrink-0">
-        <button
-          onClick={toggleAudio}
-          className={cn(
-            "h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90",
-            audioEnabled
-              ? "bg-white/10 hover:bg-white/20 text-white"
-              : "bg-red-500/20 hover:bg-red-500/30 text-red-400",
+        {/* ── Controls bar ─────────────────────────────────────────────────── */}
+        <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-2 px-3" : "h-16 sm:h-20 gap-1.5 sm:gap-3 px-2 sm:px-6")}>
+          <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
+            {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+          </button>
+
+          <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
+            {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+          </button>
+
+          {!isMinimized && (
+            <div className="relative flex gap-1.5 sm:gap-2">
+              <button onClick={() => setParticipantsOpen(!participantsOpen)} title={t("consult.call.participants")} aria-label={t("consult.call.participants")} aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                <Users className="w-5 h-5" />
+              </button>
+              <div className="relative">
+                <button onClick={() => {
+                  const next = !chatOpen;
+                  setChatOpen(next);
+                  if (next) setNotesOpen(false);
+                }} title={t("consult.call.chat")} aria-label={t("consult.call.chat")} aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+                {unreadCount > 0 && !chatOpen && (
+                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#111]">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              {isOwner && (
+                <button onClick={() => {
+                  const next = !notesOpen;
+                  setNotesOpen(next);
+                  if (next) setChatOpen(false);
+                }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  <FileText className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           )}
-        >
-          {audioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-        </button>
 
-        <button
-          onClick={endCall}
-          className="h-13 w-13 rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 p-3"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </button>
+          <div className="w-px h-6 bg-white/10 mx-1 sm:mx-2" />
 
-        <button
-          onClick={toggleVideo}
-          className={cn(
-            "h-11 w-11 rounded-full flex items-center justify-center transition-all active:scale-90",
-            videoEnabled
-              ? "bg-white/10 hover:bg-white/20 text-white"
-              : "bg-red-500/20 hover:bg-red-500/30 text-red-400",
+          <button onClick={() => setConfirmEndOpen(true)} title={t("consult.call.end_call")} aria-label={t("consult.call.end_call")} className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-11 w-11 sm:h-12 sm:w-12 ml-1")}>
+            <PhoneOff className={isMinimized ? "w-5 h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
+          </button>
+
+          {/* Participants Overlay */}
+          {participantsOpen && !isMinimized && (
+            <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
+              <h3 className="text-white/80 font-semibold text-[13px] mb-3">
+                {t("consult.call.participants")} ({2})
+              </h3>
+              <div className="space-y-4">
+                {/* Local User */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className={cn("h-8 w-8 rounded-full bg-white/10 text-white/80 flex items-center justify-center text-[10px] font-bold transition-all", localTalking && audioEnabled && "ring-2 ring-emerald-400")}>
+                        <UserCircleIcon />
+                      </div>
+                      {localTalking && audioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
+                    </div>
+                    <span className="text-[12px] text-white">  {t("consult.call.you")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/40">
+                    {audioEnabled ? <Mic className={cn("w-3.5 h-3.5", localTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                    {videoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
+                  </div>
+                </div>
+
+                {/* Remote User */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className={cn("h-8 w-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold transition-all", remoteTalking && remoteAudioEnabled && "ring-2 ring-emerald-400")}>
+                        <UserCircleIcon />
+                      </div>
+                      {remoteTalking && remoteAudioEnabled && <div className="absolute inset-0 rounded-full ring-2 ring-emerald-400 animate-ping" style={{ animationDuration: '1.5s' }} />}
+                    </div>
+                    <span className="text-[12px] text-white max-w-[90px] truncate">{token.username}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/40">
+                    {remoteAudioEnabled ? <Mic className={cn("w-3.5 h-3.5", remoteTalking && "text-emerald-400")} /> : <MicOff className="w-3.5 h-3.5 text-red-400" />}
+                    {remoteVideoEnabled ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5 text-red-400" />}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-        >
-          {videoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-        </button>
-      </div>
-    </div>
+        </div>
+      </motion.div>
+    </>
   );
 };
 

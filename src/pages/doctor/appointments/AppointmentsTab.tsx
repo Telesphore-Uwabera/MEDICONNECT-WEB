@@ -180,7 +180,7 @@ export function AppointmentsTab() {
     readyNext.mutate(appt.id, {
       onSuccess: (res) => {
         if (res.next_appointment) {
-          toast.success(`${res.next_appointment.patient.name} notified — they can join now.`);
+          toast.success(`${res.next_appointment.patient.name} `);
         } else {
           toast.success(res.message ?? "Next patient notified.");
         }
@@ -284,15 +284,15 @@ export function AppointmentsTab() {
             <p className="text-[11px] text-muted-foreground">
               {isLoading ? (
                 <span className="flex items-center gap-1.5">
-                  <Loader2 className="h-3 w-3 animate-spin" />Loading…
+                  <Loader2 className="h-3 w-3 animate-spin" /> {t('consult.booking.loading')}
                 </span>
               ) : (
                 <>
                   <span className="font-bold text-foreground">{data?.total ?? filtered.length}</span>{" "}
-                  {(data?.total ?? filtered.length) === 1 ? "appointment" : "appointments"}
+                  {(data?.total ?? filtered.length) === 1 ? t('consult.booking.appointment') : t('consult.booking.appointments')}
                   {hasActiveFilters && (
                     <button onClick={clearAllFilters} className="ml-2 text-primary hover:underline text-[10px] font-medium">
-                      Reset filters
+                      {t('consult.booking.reset_filters')}
                     </button>
                   )}
                 </>
@@ -354,7 +354,10 @@ export function AppointmentsTab() {
                   : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
               )}
             >
-              <SlidersHorizontal className="w-3 h-3" />Filters
+              <SlidersHorizontal className="w-3 h-3" />
+              {
+                t('consult.booking.filter')
+              }
             </button>
 
             {/* View toggle */}
@@ -394,9 +397,11 @@ export function AppointmentsTab() {
                 <AlertCircle className="w-6 h-6 text-red-500" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">Failed to load appointments</p>
+                <p className="text-[12px] font-semibold text-foreground">
+                  {t("consult.booking.failed_to_load_appointments")}
+                </p>
                 <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  {getErrMsg(error, "Something went wrong")}
+                  {getErrMsg(error, t("consult.booking.failed_to_load_appointments"))}
                 </p>
               </div>
             </div>
@@ -407,11 +412,15 @@ export function AppointmentsTab() {
                 <Calendar className="w-6 h-6 text-muted-foreground/50" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">No appointments match your filters</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
+                <p className="text-[12px] font-semibold text-foreground">
+                  {t("consult.booking.no_appointments_match_your_filters")}
+                </p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                  {t("consult.booking.try_widening_your_search_criteria")}
+                </p>
               </div>
               <button onClick={clearAllFilters} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
-                Clear all filters
+                {t("consult.booking.clear_all_filters")}
               </button>
             </div>
 
@@ -492,7 +501,7 @@ export function AppointmentsTab() {
                               <div className="flex items-center justify-end gap-1.5">
                                 {hasNotes && (
                                   <span className="text-[9px] text-emerald-600 dark:text-emerald-500 flex items-center gap-1">
-                                    <FileText className="h-3 w-3" />Has notes
+                                    <FileText className="h-3 w-3" /> {t("consult.booking.has_notes")}
                                   </span>
                                 )}
 
@@ -503,7 +512,7 @@ export function AppointmentsTab() {
                                   title="View details"
                                 >
                                   <Eye className="h-3 w-3" />
-                                  <span className="hidden xl:inline">Details</span>
+                                  <span className="hidden xl:inline">{t("consult.booking.details")}</span>
                                 </button>
 
                                 {/* Running late */}
@@ -514,7 +523,7 @@ export function AppointmentsTab() {
                                     title="Running late"
                                   >
                                     <Timer className="h-3 w-3" />
-                                    <span className="hidden xl:inline">Late</span>
+                                    <span className="hidden xl:inline">{t("consult.booking.late")}</span>
                                   </button>
                                 )}
 
@@ -529,7 +538,9 @@ export function AppointmentsTab() {
                                     {readyNext.isPending
                                       ? <Loader2 className="h-3 w-3 animate-spin" />
                                       : <ChevronRight className="h-3 w-3" />}
-                                    <span className="hidden xl:inline">Ready</span>
+                                    <span className="hidden xl:inline">
+                                      {t("consult.booking.ready")}
+                                    </span>
                                   </button>
                                 )}
 
@@ -545,7 +556,7 @@ export function AppointmentsTab() {
                                     {isJoining
                                       ? <Loader2 className="h-3 w-3 animate-spin" />
                                       : <Video className="h-3 w-3" />}
-                                    <span>Rejoin</span>
+                                    <span>{t("consult.booking.rejoin")}</span>
                                   </Button>
                                 )}
 

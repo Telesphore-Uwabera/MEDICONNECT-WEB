@@ -130,7 +130,9 @@
     "in_stock": "In stock",
     "added_to_cart": "{{name}} added to cart",
     "delivery_mins": "~{{mins}} min delivery",
-    "add": "Add"
+    "add": "Add",
+    "bookings_title": "Gahunda z'abarwayi",
+    "bookings_sub": "Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
     "overview_title": "Good morning, Dr. Vance",
@@ -329,6 +331,4 @@
     "error": "An error occurred. Please try again.",
     "no_data": "No data available"
   }
-
-
 }

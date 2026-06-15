@@ -1,8 +1,12 @@
-// components/ChatPanel.tsx
+// components/consultatioRoom/ChatPanel.tsx
 import { useEffect, useRef, useState, KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { X, Send, MessageSquare } from "lucide-react";
-import { ChatMessage, useCallStore } from "@/context/CallStore";
+import { X, Send, MessageSquare, Loader2 } from "lucide-react";
+import {
+  useConsultationChat,
+  type ChatMessage,
+} from "@/hooks/video/use-consultation-chat";
 
 const fmt = (ts: number) =>
   new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -56,42 +60,56 @@ interface ChatPanelProps {
   open: boolean;
   onClose: () => void;
   doctorAvatar: string;
-  doctorName: string;
+  consultationId: number | null;
+  isOwner: boolean;
+  /** Expose unread count + clearUnread to parent (for badge on chat button) */
+  onUnreadChange?: (count: number) => void;
 }
 
 export const ChatPanel = ({
   open,
   onClose,
   doctorAvatar,
-  doctorName,
+  consultationId,
+  isOwner,
+  onUnreadChange,
 }: ChatPanelProps) => {
-  const call = useCallStore();
+  const { t } = useTranslation();
+  const chat = useConsultationChat(consultationId, isOwner);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Clear unread + focus input when panel opens
+  // Notify parent about unread changes
+  useEffect(() => {
+    onUnreadChange?.(chat.unreadCount);
+  }, [chat.unreadCount, onUnreadChange]);
+
+  // Mark as read + focus input when panel opens
   useEffect(() => {
     if (open) {
-      call.clearUnread();
+      chat.markAsRead();
       setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clear unread whenever new messages arrive while panel is open
+  // Mark as read whenever new messages arrive while panel is open
   useEffect(() => {
-    if (open && call.unreadCount > 0) call.clearUnread();
-  }, [call.messages.length, open]);
+    if (open && chat.unreadCount > 0) chat.markAsRead();
+  }, [chat.messages.length, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll to latest message
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [call.messages]);
+    const timer = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [chat.messages]);
 
   const handleSend = () => {
     const text = draft.trim();
     if (!text) return;
-    call.sendMessage(text);
+    chat.sendMessage(text);
     setDraft("");
     inputRef.current?.focus();
   };
@@ -106,7 +124,7 @@ export const ChatPanel = ({
   return (
     <div
       className={cn(
-        "absolute top-0 right-0 h-full w-72 flex flex-col z-20",
+        "absolute top-0 right-0 h-full w-full flex flex-col z-20",
         "bg-[#1a1a1a]/95 backdrop-blur-sm border-l border-white/10",
         "transition-transform duration-300 ease-in-out",
         open ? "translate-x-0" : "translate-x-full",
@@ -117,7 +135,7 @@ export const ChatPanel = ({
         <div className="flex items-center gap-2">
           <MessageSquare className="h-3.5 w-3.5 text-white/50" />
           <span className="text-[12px] font-semibold text-white/80">
-            In-call chat
+            {t("consult.chat.title")}
           </span>
         </div>
         <button
@@ -130,20 +148,25 @@ export const ChatPanel = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-        {call.messages.length === 0 && (
+        {chat.loading && (
+          <div className="flex flex-col items-center justify-center h-full gap-2">
+            <Loader2 className="h-5 w-5 text-white/30 animate-spin" />
+            <p className="text-[11px] text-white/30">{t("consult.chat.loading")}</p>
+          </div>
+        )}
+        {!chat.loading && chat.messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
             <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
               <MessageSquare className="h-5 w-5 text-white/20" />
             </div>
             <p className="text-[11px] text-white/30 leading-relaxed">
-              Messages are only visible during this call and are not saved.
+              {t("consult.chat.empty")}
             </p>
           </div>
         )}
-        {call.messages.map((msg) => (
+        {chat.messages.map((msg) => (
           <Bubble key={msg.id} msg={msg} doctorAvatar={doctorAvatar} />
         ))}
-        {/* Typing indicator — shows briefly after each sent message */}
         <div ref={bottomRef} />
       </div>
 
@@ -161,7 +184,7 @@ export const ChatPanel = ({
               e.target.style.height = `${Math.min(e.target.scrollHeight, 88)}px`;
             }}
             onKeyDown={handleKey}
-            placeholder="Send a message.."
+            placeholder={t("consult.chat.placeholder")}
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
               "text-[12px] text-white/80 placeholder:text-white/25",
@@ -171,19 +194,23 @@ export const ChatPanel = ({
           />
           <button
             onClick={handleSend}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || chat.sending}
             className={cn(
               "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
-              draft.trim()
+              draft.trim() && !chat.sending
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
                 : "text-white/20 cursor-not-allowed",
             )}
           >
-            <Send className="h-3.5 w-3.5" />
+            {chat.sending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
         <p className="text-[9px] text-white/20 mt-1.5 text-center">
-          Press Enter to send · Shift+Enter for new line
+          {t("consult.chat.enter_hint")}
         </p>
       </div>
     </div>

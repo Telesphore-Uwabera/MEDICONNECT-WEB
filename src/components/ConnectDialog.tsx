@@ -63,7 +63,7 @@
 //   update: (mode: string) => void;
 // }
 
- 
+
 
 // interface ChartConstructor {
 //   new (canvas: HTMLCanvasElement, config: object): ChartInstance;
@@ -5337,8 +5337,13 @@
 
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef, useCallback } from "react";
-import { ChatPanel } from "@/components/ChatPanel";
 import { cn } from "@/lib/utils";
+import {
+  sessionToRejoinTarget,
+  fetchPatientLiveSession,
+  rejoinFromPersistedCall,
+  type RejoinTarget,
+} from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
 import {
   useInstantConsultationRequest,
@@ -5360,6 +5365,10 @@ import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import { useConsultationSession } from "@/hooks/patient/se-consultation-session";
+import { useLogin } from "@/hooks/useAuth";
+import { useCallContext } from "@/context/CallContext";
+import { useNavigate } from "react-router-dom";
+import { ChatPanel } from "./consultatioRoom/ChatPanel";
 
 // ─── IremboPay window type ────────────────────────────────────────────────────
 // Declared here so we never need `(window as any)` throughout the file.
@@ -5398,7 +5407,9 @@ type CallPhase =
   | "connected"
   | "rejected"
   | "failed"
-  | "ended";
+  | "ended"
+  ;
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -5410,9 +5421,9 @@ const nameInitial = (name: string): string =>
 
 function timeAgo(ts: number): string {
   const secs = Math.floor((Date.now() - ts) / 1000);
-  if (secs < 60)  return `${secs}s ago`;
+  if (secs < 60) return `${secs}s ago`;
   const mins = Math.floor(secs / 60);
-  if (mins < 60)  return `${mins} min ago`;
+  if (mins < 60) return `${mins} min ago`;
   return `${Math.floor(mins / 60)}h ago`;
 }
 
@@ -5432,15 +5443,15 @@ const SignalBars = ({ strength }: { strength: number }) => (
 
 const StatusBadge = ({ phase }: { phase: CallPhase }) => {
   const map: Record<string, { icon: React.ReactNode; text: string; cls: string }> = {
-    requesting:        { icon: <Loader2 className="h-3 w-3 animate-spin" />,  text: "Requesting…",         cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
-    payment_verifying: { icon: <Loader2 className="h-3 w-3 animate-spin" />,  text: "Verifying payment…",  cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
-    polling:           { icon: <Loader2 className="h-3 w-3 animate-spin" />,  text: "Waiting for doctor…", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
-    accepted:          { icon: <Phone className="h-3 w-3 animate-pulse" />,   text: "Doctor ready",        cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    in_progress:       { icon: <Activity className="h-3 w-3 animate-pulse" />,text: "In progress",         cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    connected:         { icon: <CheckCircle2 className="h-3 w-3" />,          text: "Connected",           cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    rejected:          { icon: <AlertCircle className="h-3 w-3" />,           text: "Declined",            cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    failed:            { icon: <AlertCircle className="h-3 w-3" />,           text: "Failed",              cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    ended:             { icon: <PhoneOff className="h-3 w-3" />,              text: "Ended",               cls: "bg-muted text-muted-foreground border-border" },
+    requesting: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Requesting…", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
+    payment_verifying: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Verifying payment…", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
+    polling: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Waiting for doctor…", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
+    accepted: { icon: <Phone className="h-3 w-3 animate-pulse" />, text: "Doctor ready", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    in_progress: { icon: <Activity className="h-3 w-3 animate-pulse" />, text: "In progress", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    connected: { icon: <CheckCircle2 className="h-3 w-3" />, text: "Connected", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    rejected: { icon: <AlertCircle className="h-3 w-3" />, text: "Declined", cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    failed: { icon: <AlertCircle className="h-3 w-3" />, text: "Failed", cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    ended: { icon: <PhoneOff className="h-3 w-3" />, text: "Ended", cls: "bg-muted text-muted-foreground border-border" },
   };
   const c = map[phase];
   if (!c) return null;
@@ -5502,14 +5513,14 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
     return (
       <div className="flex gap-2">
         {([
-          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video,  OffIcon: VideoOff, onLabel: "Camera on",  offLabel: "Camera off" },
-          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic,    OffIcon: MicOff,   onLabel: "Mic on",    offLabel: "Mic off"    },
+          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, onLabel: "Camera on", offLabel: "Camera off" },
+          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, onLabel: "Mic on", offLabel: "Mic off" },
         ] as const).map(({ on, toggle, OnIcon, OffIcon, onLabel, offLabel }) => (
           <button key={onLabel} onClick={toggle}
             className={cn(
               "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25"
-                 : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+                : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
             )}>
             {on ? <OnIcon className="h-3.5 w-3.5" /> : <OffIcon className="h-3.5 w-3.5" />}
             {on ? onLabel : offLabel}
@@ -5523,14 +5534,14 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
     <>
       <div className="flex gap-2">
         {([
-          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, label: "Camera",      onSub: "On",  offSub: "Off" },
-          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic,   OffIcon: MicOff,   label: "Microphone",  onSub: "On",  offSub: "Off" },
+          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, label: "Camera", onSub: "On", offSub: "Off" },
+          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, label: "Microphone", onSub: "On", offSub: "Off" },
         ] as const).map(({ on, toggle, OnIcon, OffIcon, label, onSub, offSub }) => (
           <button key={label} onClick={toggle}
             className={cn(
               "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
-                 : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
+                : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
             )}>
             <div className={cn("h-10 w-10 rounded-full flex items-center justify-center transition-colors",
               on ? "bg-primary/20" : "bg-muted-foreground/10")}>
@@ -5546,10 +5557,13 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
         ))}
       </div>
       <p className="text-[10px] text-muted-foreground/60 text-center">
-        {!call.videoEnabled && !call.audioEnabled ? "⚠ Camera and mic are both off"
-          : !call.videoEnabled ? "Camera off · Mic on"
-          : !call.audioEnabled ? "Camera on · Mic off — others won't hear you"
-          : "Camera and mic are ready"}
+        {!call.videoEnabled && !call.audioEnabled
+          ? "⚠ Camera and mic are both off"
+          : !call.videoEnabled
+            ? "Camera off · Mic on"
+            : !call.audioEnabled
+              ? "Camera on · Mic off — others won't hear you"
+              : "Camera and mic are ready"}
       </p>
     </>
   );
@@ -5570,20 +5584,69 @@ interface ConnectDialogContentProps {
   onRegisterCancel?: (fn: (() => void) | null) => void;
 }
 
+// Does this error mean the user already has an active consultation elsewhere?
+// The backend may return this as 409 or 422, and apiFetch can overwrite the
+// message with flattened field errors — so check the raw payload too.
+const ACTIVE_SESSION_RE =
+  /active consultation session|already have an active|complete or cancel/i;
+const isActiveSessionError = (err: any): boolean => {
+  if (err?.status === 409) return true;
+  const blobs = [
+    err?.message,
+    err?.data?.message,
+    err?.data?.errors ? JSON.stringify(err.data.errors) : "",
+  ];
+  return blobs.some((b) => ACTIVE_SESSION_RE.test(String(b ?? "")));
+};
+
+// Resolve a rejoin target ({ roomName, token-object }). Prefers the authoritative
+// patient live-session endpoint, then the error payload, then the call we
+// persisted locally this session.
+const resolveRejoinTarget = async (err: any): Promise<RejoinTarget | null> => {
+  const fromApi = sessionToRejoinTarget(await fetchPatientLiveSession());
+  if (fromApi) return fromApi;
+
+  const fromError = sessionToRejoinTarget(err?.data);
+  if (fromError) return fromError;
+
+  return rejoinFromPersistedCall();
+};
+
+// The Echo authorizer (lib/echo.ts) authorizes the private chat channel using a
+// bearer token from localStorage["auth_token"], falling back to
+// localStorage["instant_consult_session"].token. Guests have no auth_token, so
+// mirror their consultation token here — otherwise /broadcasting/auth returns 403
+// and realtime chat fails. Cleared when the session ends.
+const setGuestChatAuth = (token: string | null) => {
+  try {
+    if (token) localStorage.setItem("instant_consult_session", JSON.stringify({ token }));
+    else localStorage.removeItem("instant_consult_session");
+  } catch {
+    /* ignore */
+  }
+};
+
 export const ConnectDialogContent = ({
   doctor, onMinimize, onCloseCompletely, onRegisterCancel,
 }: ConnectDialogContentProps) => {
-  const call    = useCallStore();
+  const { startCall } = useCallContext();
+  const navigate = useNavigate();
+  const call = useCallStore();
   const session = useConsultationSession(doctor.id);
 
+  const handleRejoinActive = () => {
+    if (!activeRejoin) return;
+    onCloseCompletely();
+    startCall(activeRejoin.roomName, activeRejoin.token);
+  };
+
   const { data: me } = useMe();
-  const isLoggedIn        = !!me;
+  const isLoggedIn = !!me;
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
-  // ── Phase ─────────────────────────────────────────────────────────────────
-  const [phase,      setPhase]      = useState<CallPhase>("idle");
+  const [phase, setPhase] = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
-  const [chatOpen,   setChatOpen]   = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // ── Resume state ──────────────────────────────────────────────────────────
   // savedSession: non-null while the resume banner is visible
@@ -5591,27 +5654,35 @@ export const ConnectDialogContent = ({
   // resumeDeclinedRef: persists across renders without triggering effects,
   //   prevents the banner from re-showing after the user clicked "Start fresh"
   const [savedSession, setSavedSession] = useState<ReturnType<typeof session.read>>(null);
-  const [isResuming,   setIsResuming]   = useState(false);
-  const resumeDeclinedRef               = useRef(false);
+  const [isResuming, setIsResuming] = useState(false);
+  const resumeDeclinedRef = useRef(false);
 
   // ── Guest form ────────────────────────────────────────────────────────────
-  const [guestName,  setGuestName]  = useState("");
+  const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
   // ── Consultation state ────────────────────────────────────────────────────
   const [consultationToken, setConsultationToken] = useState<string | null>(null);
-  const [consultationId,    setConsultationId]    = useState<number | null>(null);
-  const [queueInfo,         setQueueInfo]         = useState<{ position: number; ahead: number } | null>(null);
-  const [roomUrl,           setRoomUrl]           = useState<string | null>(null);
-  const [dailyToken,        setDailyToken]        = useState<string | null>(null);
-  const [errorMsg,          setErrorMsg]          = useState<string | null>(null);
-  const [paymentLoading,    setPaymentLoading]    = useState(false);
-  const [paymentInfo,       setPaymentInfo]       = useState<{ amount: number; currency: string } | null>(null);
+  const [consultationId, setConsultationId] = useState<number | null>(null);
+  const [queueInfo, setQueueInfo] = useState<{ position: number; ahead: number } | null>(null);
+  const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  const [dailyToken, setDailyToken] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Set when the backend rejects a new request because one is already active —
+  // holds the in-progress consultation so we can offer a one-click rejoin.
+  const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: any } | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentInfo, setPaymentInfo] = useState<{
+    amount: number;
+    currency: string;
+  } | null>(null);
 
-  const invoicePoller   = useInvoicePoller();
+  const invoicePoller = useInvoicePoller();
   const requestMutation = useInstantConsultationRequest();
-  const payMutation     = useInstantConsultationPay();
+  const payMutation = useInstantConsultationPay();
+  const loginMutation = useLogin();
 
   // Polling is active only when phase === "polling" AND token is set
   const { data: statusData } = useInstantConsultationStatus(
@@ -5637,9 +5708,12 @@ export const ConnectDialogContent = ({
   useEffect(() => {
     const existing = resumeDeclinedRef.current ? null : session.read();
 
-    if (existing) {
-      // Always restore guest identity
-      setConsultationToken(existing.token);
+    if (existing && !resumeDeclinedRef) {
+      // Pre-load everything from the saved session right away
+      setSavedSession(existing);
+      setConsultationToken(existing.token);   // ← key fix: token is live immediately
+      setGuestChatAuth(existing.token);
+      setConsultationId(existing.consultationId ?? null);
       setGuestName(existing.guestName);
       setGuestPhone(existing.guestPhone);
 
@@ -5648,7 +5722,7 @@ export const ConnectDialogContent = ({
         // Restore payment context and skip straight to payment — no re-request.
         setConsultationId(existing.pendingPayment.consultationId);
         setPaymentInfo({
-          amount:   existing.pendingPayment.amount,
+          amount: existing.pendingPayment.amount,
           currency: existing.pendingPayment.currency,
         });
         // Don't show the resume banner — jump directly to the payment step
@@ -5675,6 +5749,14 @@ export const ConnectDialogContent = ({
 
     setFullscreen(false);
     setGuestError(null);
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data === "END_CALL") {
+        handleEnd();
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -5699,8 +5781,15 @@ export const ConnectDialogContent = ({
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
       session.clear();
-    } else if (statusData.status === "rejected" || statusData.status === "cancelled") {
-      setPhase("rejected");
+    } else if (
+      statusData.status === "declined" ||
+      statusData.status === "withdrawn" ||
+      statusData.status === "expired" ||
+      statusData.status === "completed" ||
+      statusData.status === "rejected" ||
+      statusData.status === "cancelled"
+    ) {
+      setPhase(statusData.status === "completed" ? "ended" : "rejected");
       session.clear();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5732,6 +5821,7 @@ export const ConnectDialogContent = ({
   const handleDiscardSession = useCallback(() => {
     session.clear();
     resumeDeclinedRef.current = true;
+    setGuestChatAuth(null);
     setSavedSession(null);
     setConsultationToken(null);  // cleared — next request will be fresh
     setConsultationId(null);
@@ -5754,8 +5844,8 @@ export const ConnectDialogContent = ({
   //   - paymentInfo already set  → go to payment
   //   - no paymentInfo           → payment was completed, go to polling
   //
-  const handleRequest = useCallback(async (override?: { name: string; phone: string }) => {
-    const name  = override?.name  ?? me?.name  ?? guestName;
+  const handleRequest = useCallback(async (override?: { name: string; phone: string, password?: string }) => {
+    const name = override?.name ?? me?.name ?? guestName;
     const phone = override?.phone ?? me?.phone ?? guestPhone;
 
     // ── Fast-path: token already exists, skip re-requesting ────────────────
@@ -5774,27 +5864,50 @@ export const ConnectDialogContent = ({
     // ── Normal path: send a fresh request ──────────────────────────────────
     setPhase("requesting");
     setErrorMsg(null);
+    setActiveRejoin(null);
     setConsultationId(null);
     setPaymentInfo(null);
     invoicePoller.cancel();
 
     try {
+      const name = override?.name ?? me?.name ?? guestName;
+      const phone = override?.phone ?? me?.phone ?? guestPhone;
+
       const payload: InstantConsultationRequestPayload = {
-        doctor_id:   doctor.id,
-        guest_name:  name,
+        doctor_id: doctor.id,
+        guest_name: name,
         guest_phone: phone,
+        guest_password: override?.password ?? guestPassword,
       };
 
       const res = await requestMutation.mutateAsync(payload);
       console.info("[Request] response:", JSON.stringify(res));
 
+      if (override?.password) {
+        try {
+          await loginMutation.mutateAsync({ phone, password: override.password } as any);
+        } catch (err) {
+          console.warn("[Request] auto-login failed:", err);
+        }
+      }
+
       setConsultationToken(res.guest_token);
-      setConsultationId(res.id ?? null);
+      setGuestChatAuth(res.guest_token);
+
+      // Fallback for different backend keys
+      const extractedId = res.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
+      setConsultationId(extractedId);
+
       setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 
-      if (res.payment_status === "paid") {
+      if (
+        res.payment_status === "paid" ||
+        res.status === "confirmed" ||
+        res.status === "accepted" ||
+        res.status === "in_progress"
+      ) {
         // Free or already paid — save session and start polling immediately
-        session.save(res.guest_token, name, phone);
+        session.save(res.guest_token, name, phone, extractedId);
         setPhase("polling");
         return;
       }
@@ -5807,6 +5920,9 @@ export const ConnectDialogContent = ({
       setPhase("payment");
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
+      // If the backend blocked this because a consultation is already active,
+      // surface a one-click rejoin to that session.
+      setActiveRejoin(isActiveSessionError(err) ? await resolveRejoinTarget(err) : null);
       setPhase("failed");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -5823,10 +5939,10 @@ export const ConnectDialogContent = ({
       const payRes = await payMutation.mutateAsync(consultationId);
       console.info("[Pay] payRes:", JSON.stringify(payRes));
 
-      (window.IremboPay).initiate({
-        publicKey:     payRes.public_key,
+      (window as any).IremboPay.initiate({
+        publicKey: payRes.public_key,
         invoiceNumber: payRes.invoice_number,
-        locale:        window.IremboPay.locale.EN,
+        locale: window.IremboPay.locale.EN,
         callback: (err: Error | null) => {
           window.IremboPay.closeModal?.();
           if (err) {
@@ -5838,11 +5954,11 @@ export const ConnectDialogContent = ({
           invoicePoller.start(
             payRes.invoice_number,
             () => {
-              const name  = me?.name  ?? guestName;
+              const name = me?.name ?? guestName;
               const phone = me?.phone ?? guestPhone;
               // Payment confirmed — upgrade session: remove pendingPayment block
               // so that if the user closes during polling, resume goes to polling
-              if (consultationToken) session.save(consultationToken, name, phone);
+              if (consultationToken) session.save(consultationToken, name, phone, consultationId);
               setPhase("polling");
             },
             (msg) => { setErrorMsg(msg); setPhase("payment"); },
@@ -5862,17 +5978,46 @@ export const ConnectDialogContent = ({
 
   // ── Guest form submit ─────────────────────────────────────────────────────
   const handleGuestSubmit = () => {
-    if (!guestName.trim())  { setGuestError("Please enter your name.");         return; }
+    if (!guestName.trim()) { setGuestError("Please enter your name."); return; }
     if (!guestPhone.trim()) { setGuestError("Please enter your phone number."); return; }
+    if (!guestPassword.trim()) { setGuestError("Please enter your password."); return; }
+    if (guestPassword.length < 6) { setGuestError("Please enter a password of at least 6 characters."); return; }
+
     setGuestError(null);
-    handleRequest({ name: guestName.trim(), phone: guestPhone.trim() });
+    handleRequest({ name: guestName.trim(), phone: guestPhone.trim(), password: guestPassword.trim() });
   };
 
   // ── Join call ─────────────────────────────────────────────────────────────
   const handleJoin = () => {
     if (!roomUrl || !dailyToken) return;
     const roomName = roomUrl.split("/consultation/").pop() ?? roomUrl;
-    window.location.href = `/consultation/${roomName}?t=${encodeURIComponent(dailyToken)}`;
+
+    // Resolve a consultation id even if the live state was lost (e.g. the user
+    // resumed a saved session). Without it the in-call chat can't work.
+    const resolvedId =
+      consultationId ??
+      savedSession?.consultationId ??
+      session.read()?.consultationId ??
+      null;
+
+    if (resolvedId == null) {
+      console.warn("[ConnectDialog] Joining without a consultation_id — chat will be unavailable.");
+    }
+
+    // Inject consultation_id into the token so the consultation room can use it
+    // for the chat API.
+    let enrichedToken = encodeURIComponent(dailyToken);
+    try {
+      const decoded = JSON.parse(atob(decodeURIComponent(dailyToken)));
+      decoded.consultation_id = resolvedId;
+      enrichedToken = encodeURIComponent(btoa(JSON.stringify(decoded)));
+    } catch {
+      // If decoding fails, pass the original token as-is.
+      enrichedToken = encodeURIComponent(dailyToken);
+    }
+
+    onCloseCompletely();
+    navigate(`/consultation/${roomName}?t=${enrichedToken}`);
   };
 
   // ── Cancel completely ─────────────────────────────────────────────────────
@@ -5900,6 +6045,7 @@ export const ConnectDialogContent = ({
   const handleEnd = () => {
     call.endCall();
     session.clear();
+    setGuestChatAuth(null);
     setPhase("ended");
   };
 
@@ -5916,45 +6062,46 @@ export const ConnectDialogContent = ({
     setRoomUrl(null);
     setDailyToken(null);
     setErrorMsg(null);
+    setActiveRejoin(null);
     setPaymentInfo(null);
     if (isProfileComplete) handleRequest();
     else setPhase("guest_form");
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const doctorName    = doctor.user.name;
+  const doctorName = doctor.user.name;
   const doctorInitial = nameInitial(doctorName);
 
   const titleText = (): string => {
     if (savedSession && !isResuming) return "Resume your session";
-    if (isResuming)                  return "Reconnecting…";
-    if (phase === "idle")              return "Instant consult";
-    if (phase === "guest_form")        return "Your details";
-    if (phase === "requesting")        return "Sending request…";
-    if (phase === "payment")           return "Complete payment";
+    if (isResuming) return "Reconnecting…";
+    if (phase === "idle") return "Instant consult";
+    if (phase === "guest_form") return "Your details";
+    if (phase === "requesting") return "Sending request…";
+    if (phase === "payment") return "Complete payment";
     if (phase === "payment_verifying") return "Verifying payment…";
-    if (phase === "polling")           return "Waiting for doctor";
-    if (phase === "accepted")          return "Doctor is ready";
-    if (phase === "in_progress")       return "Doctor is in call";
-    if (phase === "connected")         return "In consultation";
-    if (phase === "rejected")          return "Request declined";
-    if (phase === "failed")            return "Connection failed";
-    if (phase === "ended")             return "Call ended";
+    if (phase === "polling") return "Waiting for doctor";
+    if (phase === "accepted") return "Doctor is ready";
+    if (phase === "in_progress") return "Doctor is in call";
+    if (phase === "connected") return "In consultation";
+    if (phase === "rejected") return "Request declined";
+    if (phase === "failed") return "Connection failed";
+    if (phase === "ended") return "Call ended";
     return "Instant consult";
   };
 
   const progressValue = (): number => {
-    if (phase === "requesting")        return 25;
-    if (phase === "payment")           return 40;
+    if (phase === "requesting") return 25;
+    if (phase === "payment") return 40;
     if (phase === "payment_verifying") return 55;
-    if (phase === "polling")           return 70;
-    if (phase === "accepted")          return 85;
-    if (phase === "in_progress")       return 100;
+    if (phase === "polling") return 70;
+    if (phase === "accepted") return 85;
+    if (phase === "in_progress") return 100;
     return 0;
   };
 
   const showProgress = ["requesting", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase);
-  const isInFlight   = ["requesting", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase);
+  const isInFlight = ["requesting", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase);
 
   // ── Register cancel handler with parent (UnifiedModal header) ────────────
   // When a session is in-flight, tell the parent header to show the cancel
@@ -6058,6 +6205,7 @@ export const ConnectDialogContent = ({
     );
   }
 
+
   // ── Pre-call / post-call panel ────────────────────────────────────────────
   return (
     <div className="p-5 space-y-4">
@@ -6122,11 +6270,11 @@ export const ConnectDialogContent = ({
           <Progress value={progressValue()}
             className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
           <p className="text-[10px] text-muted-foreground text-center">
-            {phase === "requesting"        && "Sending consultation request…"}
+            {phase === "requesting" && "Sending consultation request…"}
             {phase === "payment_verifying" && "Confirming your payment with provider…"}
-            {phase === "polling"           && "Waiting for doctor to accept…"}
-            {phase === "accepted"          && "Doctor is ready — join when you are!"}
-            {phase === "in_progress"       && "Doctor is in the call — join when ready!"}
+            {phase === "polling" && "Waiting for doctor to accept…"}
+            {phase === "accepted" && "Doctor is ready — join when you are!"}
+            {phase === "in_progress" && "Doctor is in the call — join when ready!"}
           </p>
         </div>
       )}
@@ -6141,7 +6289,7 @@ export const ConnectDialogContent = ({
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-[11px] text-muted-foreground">
                   {isLoggedIn ? "Please confirm your contact details to continue."
-                              : "You're not logged in. Please enter your details to continue."}
+                    : "You're not logged in. Please enter your details to continue."}
                 </p>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
@@ -6164,9 +6312,24 @@ export const ConnectDialogContent = ({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[11px] font-medium">Phone number</Label>
-                  <Input placeholder="e.g. 0733334512" value={guestPhone}
-                    onChange={(e) => setGuestPhone(e.target.value)} className="h-9 text-[12px]"
-                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()} />
+                  <Input
+                    placeholder="e.g. 0733334512"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    className="h-9 text-[12px]"
+                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">Password</Label>
+                  <Input
+                    placeholder="**********"
+
+                    type="password"
+                    onChange={(e) => setGuestPassword(e.target.value)}
+                    className="h-9 text-[12px]"
+                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                  />
                 </div>
                 {guestError && (
                   <p className="text-[11px] text-destructive flex items-center gap-1">
@@ -6302,7 +6465,12 @@ export const ConnectDialogContent = ({
                 </div>
               )}
               <div className="space-y-2 pt-1">
-                <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                {activeRejoin && (
+                  <Button onClick={handleRejoinActive} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                    <Phone className="h-4 w-4" />Rejoin active consultation
+                  </Button>
+                )}
+                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
                   <Phone className="h-4 w-4" />Try again
                 </Button>
                 <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
