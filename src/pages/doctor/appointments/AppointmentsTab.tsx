@@ -19,6 +19,8 @@ import {
   type GetAppointmentsParams,
 } from "@/hooks/doctor/use-doctor-appointment";
 import { AppointmentContext, useCallStore } from "@/context/CallStore";
+import { useCallContext } from "@/context/CallContext";
+import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { doctors } from "@/lib/mock-data";
 
 import { FilterSidebar } from "./shared/FilterSidebar";
@@ -65,6 +67,7 @@ function filtersToParams(filters: FilterState): GetAppointmentsParams {
 export function AppointmentsTab() {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
+  const { startCall } = useCallContext();
 
   const [filters,             setFilters]             = useState<FilterState>(INITIAL_FILTERS);
   const [view,                setView]                = useState<ViewMode>("table");
@@ -145,32 +148,43 @@ export function AppointmentsTab() {
         type:         appt.type === "online" ? "video" : "in-person",
       };
 
-      if (!isRejoin && appt.booking_type === "quick" && appt.status === "pending") {
-        // Quick appointment that hasn't been accepted yet
-        acceptQuick.mutate(appt.id, {
-          onSuccess: () => {
-            call.startScheduledCall(apptCtx, MOCK_DOCTOR);
-            setScheduledCallActive(true);
+      // Open the in-app ConsultationRoom (same call + chat as instant consults)
+      // when the join token is our WebRTC format; otherwise fall back to the
+      // previous scheduled-call behaviour.
+      const openCall = (res: unknown) => {
+        const started = startInAppCallFromJoin(startCall, res as any, {
+          consultationId: appt.id,
+          isOwner: true,
+        });
+        if (!started) {
+          call.startScheduledCall(apptCtx, MOCK_DOCTOR);
+          setScheduledCallActive(true);
+          const joinUrl = (res as any)?.join_url;
+          if (joinUrl) window.open(joinUrl, "_blank", "noopener,noreferrer");
+        }
+      };
+
+      const join = () =>
+        joinSession.mutate(appt.id, {
+          onSuccess: (res) => openCall(res),
+          onError: (err: unknown) => {
+            toast.error(getErrMsg(err, isRejoin ? "Failed to rejoin session" : "Failed to join session"));
           },
+        });
+
+      if (!isRejoin && appt.booking_type === "quick" && appt.status === "pending") {
+        // Quick appointment that hasn't been accepted yet — accept, then join.
+        acceptQuick.mutate(appt.id, {
+          onSuccess: () => join(),
           onError: (err: unknown) => {
             toast.error(getErrMsg(err, "Failed to accept appointment"));
           },
         });
       } else {
-        // Scheduled join OR rejoin (in_progress)
-        joinSession.mutate(appt.id, {
-          onSuccess: (res) => {
-            call.startScheduledCall(apptCtx, MOCK_DOCTOR);
-            setScheduledCallActive(true);
-            if (res.join_url) console.info("Daily.co join URL:", res.join_url);
-          },
-          onError: (err: unknown) => {
-            toast.error(getErrMsg(err, isRejoin ? "Failed to rejoin session" : "Failed to join session"));
-          },
-        });
+        join();
       }
     },
-    [call, acceptQuick, joinSession]
+    [call, acceptQuick, joinSession, startCall]
   );
 
   const handleStart  = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);

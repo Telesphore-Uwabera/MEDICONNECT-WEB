@@ -124,7 +124,9 @@ export interface AddItemPayload {
 
 export interface SendToPharmacyPayload {
   pharmacy_id: number;
-  delivery_type: "pickup" | "delivery";
+  delivery_type: "pickup" | "home_delivery";
+  /** Required when delivery_type is "home_delivery". */
+  delivery_address?: string;
   notes?: string;
 }
 

@@ -40,7 +40,22 @@ export interface ChatMessage {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useConsultationChat(consultationId: number | null, isOwner?: boolean) {
+export type ChatMode = "instant" | "appointment";
+
+export function useConsultationChat(
+  consultationId: number | null,
+  isOwner?: boolean,
+  mode: ChatMode = "instant",
+) {
+  // Instant consults and scheduled appointments use different chat endpoints
+  // and broadcast channels, but the same UI.
+  const chatBase =
+    mode === "appointment" ? `/chat/${consultationId}` : `/chat/instant/${consultationId}`;
+  const chatChannel =
+    mode === "appointment"
+      ? `appointment.${consultationId}.chat`
+      : `instant-consultation.${consultationId}.chat`;
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -84,7 +99,7 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
     let cancelled = false;
     setLoading(true);
 
-    apiFetch<GetMessagesResponse>(`/chat/instant/${consultationId}`)
+    apiFetch<GetMessagesResponse>(chatBase)
       .then((res) => {
         if (cancelled) return;
         const mapped = (res.messages?.data ?? []).map(toUiMessage);
@@ -101,22 +116,22 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
     return () => {
       cancelled = true;
     };
-  }, [consultationId, toUiMessage]);
+  }, [consultationId, toUiMessage, chatBase]);
 
   // ── Subscribe to real-time messages ─────────────────────────────────────────
   useEffect(() => {
     if (!consultationId) return;
 
-    const channelName = `instant-consultation.${consultationId}.chat`;
-    console.info(`[Chat] Subscribing to private channel: ${channelName}`);
+    const channelName = chatChannel;
+    console.info(`[Chat] Subscribing to channel: ${channelName}`);
 
     // Ensure Echo uses the freshest token (especially for guests who just auto-logged in)
     if (echo.connector?.options?.auth?.headers) {
       echo.connector.options.auth.headers.Authorization = `Bearer ${localStorage.getItem("auth_token")}`;
     }
 
-    const channel = echo.private(channelName);
-    channel.listen(".message.sent", (data: { data?: ChatMessageApi } & ChatMessageApi) => {
+    const channel = echo.channel(channelName);
+    const handleMessage = (data: { data?: ChatMessageApi } & ChatMessageApi) => {
       // The event payload may be the message directly or nested in .data
       const msg: ChatMessageApi = data.data ?? data;
       console.info("[Chat] Real-time message received:", msg);
@@ -132,14 +147,20 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
       if (uiMsg.from === "other") {
         setUnreadCount((c) => c + 1);
       }
-    });
+    };
+
+    channel.listen(".message.sent", handleMessage);
+    channel.listen("MessageSent", handleMessage);
+    channel.listen(".MessageSent", handleMessage);
 
     return () => {
       console.info(`[Chat] Leaving channel: ${channelName}`);
       channel.stopListening(".message.sent");
+      channel.stopListening("MessageSent");
+      channel.stopListening(".MessageSent");
       echo.leave(channelName);
     };
-  }, [consultationId, toUiMessage]);
+  }, [consultationId, toUiMessage, chatChannel]);
 
   // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
@@ -166,9 +187,12 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
 
       try {
         const res = await apiFetch<SendMessageResponse>(
-          `/chat/instant/${consultationId}`,
+          chatBase,
           {
             method: "POST",
+            headers: {
+              "X-Socket-ID": echo.socketId() || "",
+            },
             body: {
               message: text.trim(),
             },
@@ -178,9 +202,13 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
         // Replace optimistic message with real one
         const msgData = res.data ?? res;
         const realMsg = toUiMessage(msgData as ChatMessageApi);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === optimisticId ? realMsg : m)),
-        );
+        setMessages((prev) => {
+          // If the real message already arrived via websocket, just remove the optimistic one
+          if (prev.some((m) => m.id === realMsg.id)) {
+            return prev.filter((m) => m.id !== optimisticId);
+          }
+          return prev.map((m) => (m.id === optimisticId ? realMsg : m));
+        });
       } catch (err: any) {
         console.error("[Chat] Failed to send message:", err);
         toast.error(err.message || "Failed to send message");
@@ -190,7 +218,7 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
         setSending(false);
       }
     },
-    [consultationId, toUiMessage, isOwner],
+    [consultationId, toUiMessage, isOwner, chatBase],
   );
 
   // ── Mark as read ────────────────────────────────────────────────────────────
@@ -198,13 +226,13 @@ export function useConsultationChat(consultationId: number | null, isOwner?: boo
     if (!consultationId) return;
     setUnreadCount(0);
     try {
-      await apiFetch(`/chat/instant/${consultationId}/read`, {
+      await apiFetch(`${chatBase}/read`, {
         method: "POST",
       });
     } catch (err) {
       console.error("[Chat] Failed to mark as read:", err);
     }
-  }, [consultationId]);
+  }, [consultationId, chatBase]);
 
   // ── Clear unread (local only, e.g. when panel opens) ────────────────────────
   const clearUnread = useCallback(() => {

@@ -141,3 +141,10 @@
   100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
 }
 .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+
+/* Ensure IremboPay widget stays interactive even if a Radix modal is open */
+body[data-scroll-locked] iframe,
+body[data-scroll-locked] [id*="irembo"],
+body[data-scroll-locked] [class*="irembo"] {
+  pointer-events: auto !important;
+}

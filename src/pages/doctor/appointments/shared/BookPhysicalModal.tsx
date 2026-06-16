@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X, Search, Loader2, Building2, MapPin, CalendarDays, Clock, Users2, Stethoscope, Check,
 } from "lucide-react";
@@ -46,6 +47,7 @@ export function BookPhysicalModal({
   onSkip,
   onBooked,
 }: Props) {
+  const { t } = useTranslation();
   const [hospitalQuery, setHospitalQuery] = useState("");
   const debouncedQuery = useDebounce(hospitalQuery, 350);
   const [hospital, setHospital] = useState<ApiHospital | null>(null);
@@ -128,7 +130,7 @@ export function BookPhysicalModal({
         preferred_time: selectedTime,
       });
       if (!avail.available) {
-        toast.error(avail.reason || "That slot isn't available.");
+        toast.error(avail.reason || t("consult.booking.slot_unavailable"));
         setSubmitting(false);
         return;
       }
@@ -144,20 +146,20 @@ export function BookPhysicalModal({
         },
         {
           onSuccess: () => {
-            toast.success("Physical appointment booked.");
+            toast.success(t("consult.booking.booked"));
             onBooked();
           },
           onError: (err) => {
             const e = err as ApiError;
-            if (e?.status === 409) toast.error("Patient already has a booking for this service & date.");
-            else if (e?.status === 422) toast.error(e.message || "That slot isn't available.");
-            else toast.error(e?.message || "Failed to create booking.");
+            if (e?.status === 409) toast.error(t("consult.booking.duplicate"));
+            else if (e?.status === 422) toast.error(e.message || t("consult.booking.slot_unavailable"));
+            else toast.error(e?.message || t("consult.booking.create_failed"));
             setSubmitting(false);
           },
         },
       );
     } catch {
-      toast.error("Couldn't verify availability. Try again.");
+      toast.error(t("consult.booking.verify_failed"));
       setSubmitting(false);
     }
   };
@@ -185,7 +187,7 @@ export function BookPhysicalModal({
               <CalendarDays className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold text-foreground">Book a hospital spot</h2>
+              <h2 className="text-[13px] font-semibold text-foreground">{t("consult.booking.title")}</h2>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1 truncate">
                 {hospital ? (
                   <>
@@ -194,7 +196,7 @@ export function BookPhysicalModal({
                     {hospital.city ? ` · ${hospital.city}` : ""}
                   </>
                 ) : (
-                  <>For {patientName || "patient"}{patientPhone ? ` · ${patientPhone}` : ""}</>
+                  <>{t("consult.booking.for_patient", { name: patientName || t("consult.bookings.patient") })}{patientPhone ? ` · ${patientPhone}` : ""}</>
                 )}
               </p>
             </div>
@@ -213,16 +215,16 @@ export function BookPhysicalModal({
           {/* Patient id fallback */}
           {patientId == null && (
             <div className="space-y-1.5">
-              <p className={sectionLabel}>Patient ID</p>
+              <p className={sectionLabel}>{t("consult.booking.patient_id")}</p>
               <input
                 type="number"
                 value={manualPatientId}
                 onChange={(e) => setManualPatientId(e.target.value)}
-                placeholder="Patient's user id"
+                placeholder={t("consult.booking.patient_id_placeholder")}
                 className={selectCls}
               />
               <p className="text-[9px] text-muted-foreground/70">
-                This consultation didn't include the patient's user id — enter it to book.
+                {t("consult.booking.patient_id_hint")}
               </p>
             </div>
           )}
@@ -230,13 +232,13 @@ export function BookPhysicalModal({
           {/* Hospital pick / search */}
           {!hospital ? (
             <div className="space-y-2">
-              <p className={sectionLabel}><Building2 className="h-2.5 w-2.5" /> Hospital</p>
+              <p className={sectionLabel}><Building2 className="h-2.5 w-2.5" /> {t("consult.booking.hospital")}</p>
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   value={hospitalQuery}
                   onChange={(e) => setHospitalQuery(e.target.value)}
-                  placeholder="Search hospitals…"
+                  placeholder={t("consult.booking.search_hospitals")}
                   className={cn(selectCls, "pl-8")}
                 />
               </div>
@@ -244,11 +246,11 @@ export function BookPhysicalModal({
                 <div className="border border-border rounded-[5px] divide-y divide-border max-h-44 overflow-y-auto">
                   {searching && (
                     <div className="flex items-center gap-2 px-3 py-2 text-[11px] text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("consult.booking.searching")}
                     </div>
                   )}
                   {!searching && hospitals.length === 0 && (
-                    <div className="px-3 py-2 text-[11px] text-muted-foreground">No hospitals found.</div>
+                    <div className="px-3 py-2 text-[11px] text-muted-foreground">{t("consult.booking.no_hospitals")}</div>
                   )}
                   {!searching &&
                     hospitals.map((h) => (
@@ -277,14 +279,14 @@ export function BookPhysicalModal({
                   onClick={() => setHospital(null)}
                   className="text-[10px] text-primary hover:underline shrink-0"
                 >
-                  Change
+                  {t("consult.booking.change")}
                 </button>
               </div>
 
               {loadingDetail && (
                 <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-[11px]">Loading hospital details…</span>
+                  <span className="text-[11px]">{t("consult.booking.loading_details")}</span>
                 </div>
               )}
 
@@ -293,11 +295,11 @@ export function BookPhysicalModal({
                   {/* Select a date */}
                   {hasAnyOpenDay && (
                     <div>
-                      <p className={sectionLabel}><Clock className="h-2.5 w-2.5" /> Select a date</p>
+                      <p className={sectionLabel}><Clock className="h-2.5 w-2.5" /> {t("consult.booking.select_date")}</p>
                       {dateSlots.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-border rounded-[5px]">
                           <CalendarDays className="h-5 w-5 text-muted-foreground/30" />
-                          <p className="text-[10px] text-muted-foreground">No open dates in the next 14 days.</p>
+                          <p className="text-[10px] text-muted-foreground">{t("consult.booking.no_open_dates")}</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
@@ -338,7 +340,7 @@ export function BookPhysicalModal({
                   {/* Preferred time */}
                   {selectedDate && timeSlots.length > 0 && (
                     <div>
-                      <p className={sectionLabel}>Preferred time <span className="text-destructive">*</span></p>
+                      <p className={sectionLabel}>{t("consult.booking.preferred_time")} <span className="text-destructive">*</span></p>
                       <div className="grid grid-cols-4 gap-1.5">
                         {timeSlots.map((t) => (
                           <button
@@ -360,9 +362,9 @@ export function BookPhysicalModal({
 
                   {/* Department */}
                   <div>
-                    <p className={sectionLabel}><Building2 className="h-2.5 w-2.5" /> Department <span className="text-destructive">*</span></p>
+                    <p className={sectionLabel}><Building2 className="h-2.5 w-2.5" /> {t("consult.booking.department")} <span className="text-destructive">*</span></p>
                     {departments.length === 0 ? (
-                      <p className="text-[10px] text-muted-foreground py-1">No departments listed for this hospital.</p>
+                      <p className="text-[10px] text-muted-foreground py-1">{t("consult.booking.no_departments")}</p>
                     ) : (
                       <select
                         value={selectedDepartment}
@@ -372,7 +374,7 @@ export function BookPhysicalModal({
                         }}
                         className={selectCls}
                       >
-                        <option value="">Select a department</option>
+                        <option value="">{t("consult.booking.select_department")}</option>
                         {departments.map((d) => (
                           <option key={d.id} value={String(d.id)}>{d.name_en}</option>
                         ))}
@@ -382,18 +384,18 @@ export function BookPhysicalModal({
 
                   {/* Service */}
                   <div>
-                    <p className={sectionLabel}><Stethoscope className="h-2.5 w-2.5" /> Service <span className="text-destructive">*</span></p>
+                    <p className={sectionLabel}><Stethoscope className="h-2.5 w-2.5" /> {t("consult.booking.service")} <span className="text-destructive">*</span></p>
                     {!selectedDepartment ? (
-                      <p className="text-[10px] text-muted-foreground/60 py-1 italic">Select a department first.</p>
+                      <p className="text-[10px] text-muted-foreground/60 py-1 italic">{t("consult.booking.select_department_first")}</p>
                     ) : filteredServices.length === 0 ? (
-                      <p className="text-[10px] text-muted-foreground py-1">No services available for this department.</p>
+                      <p className="text-[10px] text-muted-foreground py-1">{t("consult.booking.no_services")}</p>
                     ) : (
                       <select
                         value={selectedService}
                         onChange={(e) => setSelectedService(e.target.value)}
                         className={selectCls}
                       >
-                        <option value="">Select a service</option>
+                        <option value="">{t("consult.booking.select_service")}</option>
                         {filteredServices.map((s) => (
                           <option key={s.id} value={String(s.id)}>{s.name_en}</option>
                         ))}
@@ -407,13 +409,13 @@ export function BookPhysicalModal({
 
           {/* Notes (prefilled from the call) */}
           <div>
-            <p className={sectionLabel}>Notes <span className="text-muted-foreground/50 normal-case tracking-normal">(optional)</span></p>
+            <p className={sectionLabel}>{t("consult.booking.notes")} <span className="text-muted-foreground/50 normal-case tracking-normal">({t("consult.booking.optional")})</span></p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="e.g. I prefer morning sessions"
+              placeholder={t("consult.booking.notes_placeholder")}
               className="w-full px-3 py-2 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors resize-none"
             />
           </div>
@@ -440,7 +442,7 @@ export function BookPhysicalModal({
             onClick={onSkip}
             className="h-9 px-3 rounded-[5px] text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            Skip &amp; complete
+            {t("consult.booking.skip_complete")}
           </button>
           <button
             onClick={handleBook}
@@ -448,7 +450,7 @@ export function BookPhysicalModal({
             className="h-9 px-4 rounded-[5px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Book &amp; complete
+            {t("consult.booking.book_complete")}
           </button>
         </div>
       </div>

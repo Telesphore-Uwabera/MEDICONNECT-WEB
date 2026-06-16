@@ -85,7 +85,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const [peerConsultationId, setPeerConsultationId] = useState<number | null>(null);
 
   // Hook into the global CallContext
-  const { isMinimized, toggleMinimize, endCall: endCallContext } = useCallContext();
+  const { isMinimized, toggleMinimize, endCall: endCallContext, requestAppointmentCompletion } = useCallContext();
 
   // Resolve the consultation id the chat API needs. It isn't part of the WebRTC
   // token natively — it's injected by the join flows — so we check every known
@@ -115,6 +115,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // Prefer our own token's id; fall back to the one the peer shared over signaling.
   const effectiveConsultationId = consultationId ?? peerConsultationId;
+
+  // Scheduled appointments tag the token so chat uses the appointment endpoints.
+  const chatMode: "instant" | "appointment" =
+    (token as any)?.chat_mode === "appointment" ? "appointment" : "instant";
 
   // Once connected, share our consultation id so a peer whose token lacked one
   // (e.g. the patient) can use it for the chat. Only the side that actually has
@@ -528,12 +532,18 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
-  const endCall = () => { 
+  const endCall = () => {
     sendSignal("bye");
     if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
     pcRef.current?.close();
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     echo.leaveChannel(`consultation.${roomName}`);
+    // When the doctor ends a scheduled-appointment call, kick off the same
+    // post-call flow as instant: required medical record → optional booking →
+    // mark the appointment complete. Patient-ended / instant calls just close.
+    if (isOwner && chatMode === "appointment" && effectiveConsultationId != null) {
+      requestAppointmentCompletion({ appointmentId: effectiveConsultationId });
+    }
     endCallContext();
   };
 
@@ -639,7 +649,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 <button
                   onClick={toggleMinimize}
                   className="ml-2 h-6 w-6 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer"
-                  title={isMinimized ? "Expand" : "Minimize"}
+                  title={isMinimized ? t("consult.call.expand") : t("consult.call.minimize")}
                 >
                   {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
                 </button>
@@ -654,7 +664,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           {!isMinimized && (
             <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", chatOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
               <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
-                <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} onUnreadChange={setUnreadCount} />
+                <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} doctorAvatar={nameInitial(token.username)} isOwner={isOwner} consultationId={effectiveConsultationId} mode={chatMode} onUnreadChange={setUnreadCount} />
               </div>
             </div>
           )}
@@ -663,7 +673,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           {!isMinimized && isOwner && (
             <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
               <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full bg-[#0c0c0c] border-l border-white/10 shadow-2xl">
-                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} />
+                <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={effectiveConsultationId} patientName={token.username} mode={chatMode} />
               </div>
             </div>
           )}

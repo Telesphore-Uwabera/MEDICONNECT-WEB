@@ -62,6 +62,8 @@ interface ChatPanelProps {
   doctorAvatar: string;
   consultationId: number | null;
   isOwner: boolean;
+  /** "instant" (default) or "appointment" — selects the chat endpoint/channel. */
+  mode?: "instant" | "appointment";
   /** Expose unread count + clearUnread to parent (for badge on chat button) */
   onUnreadChange?: (count: number) => void;
 }
@@ -72,10 +74,11 @@ export const ChatPanel = ({
   doctorAvatar,
   consultationId,
   isOwner,
+  mode = "instant",
   onUnreadChange,
 }: ChatPanelProps) => {
-  const { t, i18n } = useTranslation();
-  const chat = useConsultationChat(consultationId, isOwner);
+  const { t } = useTranslation();
+  const chat = useConsultationChat(consultationId, isOwner, mode);
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

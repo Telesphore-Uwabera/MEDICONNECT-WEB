@@ -101,3 +101,25 @@ export function useBookAppointment() {
       }),
   });
 }
+
+/**
+ * Initiates payment for a scheduled appointment.
+ * POST /patient/appointments/{id}/pay
+ */
+export interface PayAppointmentResponse {
+  message: string;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
+}
+
+export function usePayAppointment() {
+  return useMutation<PayAppointmentResponse, Error, number>({
+    mutationFn: (appointmentId) =>
+      apiFetch<PayAppointmentResponse>(`/patient/appointments/${appointmentId}/pay`, {
+        method: "POST",
+      }),
+  });
+}
