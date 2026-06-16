@@ -91,7 +91,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
         onSuccess: (data) => {
           toast.success(
             data.message ??
-              t("auth.reset_success", "Password reset successfully"),
+            t("auth.reset_success", "Password reset successfully"),
           );
           onBack();
         },
@@ -337,11 +337,11 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
     const payload = isEmail
       ? { email: identifier, auth_method: "password" as const, password }
       : {
-          phone: identifier,
-          country_code: "+250",
-          auth_method: "password" as const,
-          password,
-        };
+        phone: identifier,
+        country_code: "+250",
+        auth_method: "password" as const,
+        password,
+      };
 
     login.mutate(payload, {
       onSuccess: (_data) => {
@@ -431,11 +431,10 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 key={m}
                 type="button"
                 onClick={() => setMethod(m)}
-                className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-sm transition-colors duration-200 flex items-center justify-center gap-1 ${
-                  method === m
+                className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-sm transition-colors duration-200 flex items-center justify-center gap-1 ${method === m
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {m === "password" ? (
                   <>

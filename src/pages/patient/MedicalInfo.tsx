@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { HeartPulse, Stethoscope, FileText } from "lucide-react";
@@ -17,13 +18,14 @@ import {
 
 type Tab = "record" | "visits" | "files";
 
-const TABS: Array<{ id: Tab; label: string; icon: ReactNode }> = [
-  { id: "record", label: "Medical record", icon: <HeartPulse className="h-3.5 w-3.5" /> },
-  { id: "visits", label: "Visit history", icon: <Stethoscope className="h-3.5 w-3.5" /> },
-  { id: "files", label: "Files", icon: <FileText className="h-3.5 w-3.5" /> },
+const TABS: Array<{ id: Tab; labelKey: string; icon: ReactNode }> = [
+  { id: "record", labelKey: "consult.medical_info.tab_record", icon: <HeartPulse className="h-3.5 w-3.5" /> },
+  { id: "visits", labelKey: "consult.medical_info.tab_visits", icon: <Stethoscope className="h-3.5 w-3.5" /> },
+  { id: "files", labelKey: "consult.medical_info.tab_files", icon: <FileText className="h-3.5 w-3.5" /> },
 ];
 
 function MedicalInfo() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("record");
 
   const record = useMyMedicalRecord();
@@ -33,23 +35,23 @@ function MedicalInfo() {
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
-        <PageHeader title="Medical information" subtitle="Your medical record, visit history and files" />
+        <PageHeader title={t("consult.medical_info.title")} subtitle={t("consult.medical_info.subtitle")} />
 
         {/* Tabs */}
         <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tb.id}
+              onClick={() => setTab(tb.id)}
               className={cn(
                 "flex items-center gap-1.5 px-3 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium border-b-2 transition-colors shrink-0 whitespace-nowrap",
-                tab === t.id
+                tab === tb.id
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
               )}
             >
-              {t.icon}
-              {t.label}
+              {tb.icon}
+              {t(tb.labelKey)}
             </button>
           ))}
         </div>
@@ -59,12 +61,12 @@ function MedicalInfo() {
           <div className="max-w-2xl w-full mx-auto p-4">
             {tab === "record" && (
               record.isLoading ? (
-                <PanelLoading label="Loading record…" />
+                <PanelLoading label={t("consult.record.loading_record")} />
               ) : (
                 <>
                   {!record.data && (
                     <p className="text-[11px] text-muted-foreground mb-3">
-                      No medical record has been created yet. Your doctor adds this during a consultation.
+                      {t("consult.record.no_record")}
                     </p>
                   )}
                   <RecordRows record={record.data} />
@@ -74,7 +76,7 @@ function MedicalInfo() {
 
             {tab === "visits" && (
               visits.isLoading ? (
-                <PanelLoading label="Loading visits…" />
+                <PanelLoading label={t("consult.visits.loading")} />
               ) : (
                 <VisitCards visits={visits.data ?? []} />
               )
@@ -82,7 +84,7 @@ function MedicalInfo() {
 
             {tab === "files" && (
               files.isLoading ? (
-                <PanelLoading label="Loading files…" />
+                <PanelLoading label={t("consult.files.loading")} />
               ) : (
                 <FileRows files={files.data ?? []} />
               )

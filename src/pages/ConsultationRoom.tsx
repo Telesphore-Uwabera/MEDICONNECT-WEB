@@ -5,17 +5,26 @@ import { useCallContext } from "@/context/CallContext";
 const ConsultationRoomPage = () => {
   const { roomName } = useParams<{ roomName: string }>();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("t"); 
+  const token = searchParams.get("t");
+  const mode = searchParams.get("mode"); // "appointment" for scheduled
+  const cid = searchParams.get("cid"); // consultation/appointment id
   const { startCall } = useCallContext();
 
   const parsed = useMemo(() => {
     if (!token) return null;
     try {
-      return JSON.parse(atob(decodeURIComponent(token)));
+      const obj = JSON.parse(atob(decodeURIComponent(token)));
+      if (!obj || typeof obj !== "object") return null;
+      if (mode === "appointment") obj.chat_mode = "appointment";
+      if (cid != null && obj.consultation_id == null) {
+        const n = Number(cid);
+        obj.consultation_id = Number.isFinite(n) ? n : cid;
+      }
+      return obj;
     } catch {
       return null;
     }
-  }, [token]);
+  }, [token, mode, cid]);
 
   useEffect(() => {
     if (roomName && parsed) {

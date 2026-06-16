@@ -6,9 +6,13 @@ import {
   ApiAppointmentStatus,
 } from "@/hooks/patient/use-patient-appointment";
 import { apiFetch } from "@/lib/api";
+import { useCallContext } from "@/context/CallContext";
+import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Video,
@@ -38,14 +42,17 @@ import {
   Wifi,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { t } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PaymentMethod = "mtn_momo" | "airtel_money" | "card" | "cash" | "insurance_full";
-
-interface PayPayload {
-  method: PaymentMethod;
-  phone?: string;
+interface PayAppointmentResponse {
+  message: string;
+  invoice_number: string;
+  public_key: string;
+  amount: number;
+  currency: string;
+  payment_uuid: string;
 }
 
 interface JoinResponse {
@@ -59,17 +66,11 @@ interface JoinResponse {
 // ─── API mutations ────────────────────────────────────────────────────────────
 
 function usePayAppointment(appointmentId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: PayPayload) =>
+  return useMutation<PayAppointmentResponse>({
+    mutationFn: () =>
       apiFetch(`/patient/appointments/${appointmentId}/pay`, {
         method: "POST",
-        body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
-      qc.invalidateQueries({ queryKey: ["patient-appointments"] });
-    },
   });
 }
 
@@ -242,142 +243,6 @@ function Section({
   );
 }
 
-// ─── Pay Sheet ────────────────────────────────────────────────────────────────
-
-const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.ElementType; needsPhone: boolean }[] =
-  [
-    { id: "mtn_momo", label: "MTN MoMo", icon: PhoneCall, needsPhone: true },
-    { id: "airtel_money", label: "Airtel Money", icon: PhoneCall, needsPhone: true },
-    { id: "card", label: "Card", icon: CreditCard, needsPhone: false },
-    { id: "cash", label: "Cash", icon: Banknote, needsPhone: false },
-    { id: "insurance_full", label: "Full Insurance", icon: Shield, needsPhone: false },
-  ];
-
-function PaySheet({
-  appointmentId,
-  amount,
-  currency,
-  onClose,
-}: {
-  appointmentId: string;
-  amount: string;
-  currency: string;
-  onClose: () => void;
-}) {
-  const [method, setMethod] = useState<PaymentMethod>("mtn_momo");
-  const [phone, setPhone] = useState("");
-  const { mutate, isPending, isSuccess, isError, error } = usePayAppointment(appointmentId);
-
-  const selectedMethod = PAYMENT_METHODS.find((m) => m.id === method)!;
-
-  const handlePay = () => {
-    mutate(
-      selectedMethod.needsPhone ? { method, phone } : { method },
-      { onSuccess: () => setTimeout(onClose, 1500) }
-    );
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-xl shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-          <div>
-            <p className="text-[13px] font-semibold">Pay for Appointment</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Amount due:{" "}
-              <span className="font-semibold text-foreground">
-                {formatCurrency(amount, currency)}
-              </span>
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4">
-          {/* Method picker */}
-          <div className="grid grid-cols-2 gap-2">
-            {PAYMENT_METHODS.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(m.id)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2.5 rounded-lg border text-[11px] font-medium transition-all",
-                  method === m.id
-                    ? "border-primary bg-primary/8 text-primary"
-                    : "border-border/50 bg-muted/30 text-muted-foreground hover:border-border hover:bg-muted/60"
-                )}
-              >
-                <m.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                {m.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Phone input */}
-          {selectedMethod.needsPhone && (
-            <div>
-              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5 block">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="07XXXXXXXX"
-                className="w-full h-9 rounded-lg border border-border/60 bg-muted/30 px-3 text-[12px] placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
-              />
-            </div>
-          )}
-
-          {/* Error */}
-          {isError && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-              <p className="text-[11px] text-red-600 dark:text-red-400">
-                {(error as any)?.message ?? "Payment failed. Please try again."}
-              </p>
-            </div>
-          )}
-
-          {/* Success */}
-          {isSuccess && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
-              <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                Payment successful!
-              </p>
-            </div>
-          )}
-
-          <Button
-            onClick={handlePay}
-            disabled={isPending || isSuccess || (selectedMethod.needsPhone && !phone.trim())}
-            className="w-full h-9 rounded-lg text-[12px] font-semibold gap-2"
-          >
-            {isPending ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <CreditCard className="w-3.5 h-3.5" />
-            )}
-            {isPending ? "Processing…" : `Pay ${formatCurrency(amount, currency)}`}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Cancel Dialog ────────────────────────────────────────────────────────────
 
 function CancelDialog({
@@ -520,15 +385,17 @@ function ActionBar({
   onJoin,
   onCancel,
   joinPending,
+  payPending,
 }: {
   appt: any;
   onPay: () => void;
   onJoin: () => void;
   onCancel: () => void;
   joinPending: boolean;
+  payPending?: boolean;
 }) {
   const status: ApiAppointmentStatus = appt.status;
-  const unpaid = appt.payment_status !== "paid"&& appt.status=="pending" ;
+  const unpaid = appt.payment_status !== "paid" && appt.status == "pending";
   const canJoin = (status === "confirmed" || status === "in_progress") && appt.daily_room_url;
   const canCancel = status === "pending" || status === "confirmed";
   const canPay = unpaid && status !== "cancelled" && status !== "completed";
@@ -554,10 +421,15 @@ function ActionBar({
       {canPay && (
         <Button
           onClick={onPay}
+          disabled={payPending}
           className="flex-1 h-9 rounded-sm text-[12px] font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
         >
-          <CreditCard className="w-3.5 h-3.5" />
-          Pay Now
+          {payPending ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <CreditCard className="w-3.5 h-3.5" />
+          )}
+          {payPending ? "Processing…" : "Pay Now"}
         </Button>
       )}
       {canCancel && (
@@ -583,16 +455,83 @@ export function AppointmentDetailContent({
   appointmentId: string;
   onClose: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const invoicePoller = useInvoicePoller();
+  const { startCall } = useCallContext();
   const { data, isLoading, isError } = useGetPatientAppointment(appointmentId);
-  const [showPay, setShowPay] = useState(false);
+
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
 
   const joinMutation = useJoinSession(appointmentId);
+  const payMutation = usePayAppointment(appointmentId);
 
   const handleJoin = () => {
     joinMutation.mutate(undefined, {
       onSuccess: (res) => {
-        window.open(res.join_url, "_blank", "noopener,noreferrer");
+        console.log("[Appointment] patient join response:", res);
+        // If it's our custom WebRTC token, open the in-app ConsultationRoom.
+        const started = startInAppCallFromJoin(startCall, res, {
+          consultationId: appointmentId,
+          isOwner: false,
+        });
+        if (started) {
+          onClose();
+          return;
+        }
+        // Otherwise the session is hosted on Daily.co — open the room URL the
+        // backend returned (it already carries the access token).
+        const url = res.join_url || res.room_url;
+        if (url) {
+          window.open(url, "_blank", "noopener,noreferrer");
+        } else {
+          toast.error(t("consult.booking.join_failed"));
+        }
+      },
+      onError: (err: any) => {
+        console.error("[Appointment] join failed:", err?.status, err?.data);
+        toast.error(err?.message || t("consult.booking.join_failed"));
+      },
+    });
+  };
+
+  const handlePayIrembo = () => {
+    payMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        if (!(window as any).IremboPay) {
+          toast.error("IremboPay widget is not loaded.");
+          return;
+        }
+
+        (window as any).IremboPay.initiate({
+          publicKey: res.public_key,
+          invoiceNumber: res.invoice_number,
+          locale: (window as any).IremboPay?.locale?.EN || "en",
+          callback: (err: any) => {
+            (window as any).IremboPay?.closeModal?.();
+            if (err) {
+              toast.error("Payment failed", { description: "You can pay later from your dashboard." });
+            } else {
+              setIsVerifyingPayment(true);
+              invoicePoller.start(
+                res.invoice_number,
+                () => {
+                  setIsVerifyingPayment(false);
+                  toast.success("Payment successful!");
+                  queryClient.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
+                  queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+                },
+                () => {
+                  setIsVerifyingPayment(false);
+                  toast.error("Could not verify payment status.");
+                }
+              );
+            }
+          },
+        });
+      },
+      onError: (err: any) => {
+        toast.error(err?.message || "Failed to initiate payment.");
       },
     });
   };
@@ -678,7 +617,7 @@ export function AppointmentDetailContent({
 
             {/* ── Hero card ── */}
             <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
-              
+
 
               <div className="p-5 space-y-4">
                 {/* Provider row */}
@@ -703,8 +642,8 @@ export function AppointmentDetailContent({
                       {doctor
                         ? doctor.specialization || doctor.doctor_degree
                         : hospital
-                        ? [hospital.city, hospital.address].filter(Boolean).join(" · ")
-                        : "—"}
+                          ? [hospital.city, hospital.address].filter(Boolean).join(" · ")
+                          : "—"}
                     </p>
                     {doctor?.rating_avg && parseFloat(doctor.rating_avg) > 0 && (
                       <div className="flex items-center gap-1 mt-1.5">
@@ -767,10 +706,11 @@ export function AppointmentDetailContent({
                 {/* Action buttons */}
                 <ActionBar
                   appt={appt}
-                  onPay={() => setShowPay(true)}
+                  onPay={handlePayIrembo}
                   onJoin={handleJoin}
                   onCancel={() => setShowCancel(true)}
                   joinPending={joinMutation.isPending}
+                  payPending={payMutation.isPending || isVerifyingPayment}
                 />
 
                 {/* Join error */}
@@ -1081,16 +1021,6 @@ export function AppointmentDetailContent({
           </div>
         )}
       </div>
-
-      {/* ── Pay sheet ── */}
-      {showPay && appt && (
-        <PaySheet
-          appointmentId={appointmentId}
-          amount={appt.patient_pays}
-          currency={appt.currency}
-          onClose={() => setShowPay(false)}
-        />
-      )}
 
       {/* ── Cancel dialog ── */}
       {showCancel && (

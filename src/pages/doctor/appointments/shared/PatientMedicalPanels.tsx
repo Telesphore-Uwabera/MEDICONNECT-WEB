@@ -57,7 +57,7 @@ export function RecordRows({ record }: { record?: MedicalRecord | null }) {
 }
 
 export function VisitCards({ visits }: { visits: PatientVisit[] }) {
-  if (visits.length === 0) return <PanelEmpty label="No past visits recorded." />;
+  if (visits.length === 0) return <PanelEmpty label={t("consult.visits.empty")} />;
   return (
     <div className="space-y-3">
       {visits.map((v) => (
@@ -83,7 +83,7 @@ export function VisitCards({ visits }: { visits: PatientVisit[] }) {
             </p>
           )}
           {v.needs_follow_up && v.follow_up_date && (
-            <p className="text-[10px] text-amber-600">Follow-up: {dayjs(v.follow_up_date).format("MMM D, YYYY")}{v.follow_up_notes ? ` — ${v.follow_up_notes}` : ""}</p>
+            <p className="text-[10px] text-amber-600">{t("consult.visits.follow_up")}: {dayjs(v.follow_up_date).format("MMM D, YYYY")}{v.follow_up_notes ? ` — ${v.follow_up_notes}` : ""}</p>
           )}
           {v.doctor?.user?.name && <p className="text-[10px] text-muted-foreground/70">— {v.doctor.user.name}</p>}
         </div>
@@ -93,7 +93,7 @@ export function VisitCards({ visits }: { visits: PatientVisit[] }) {
 }
 
 export function FileRows({ files }: { files: PatientFile[] }) {
-  if (files.length === 0) return <PanelEmpty label="No files yet." />;
+  if (files.length === 0) return <PanelEmpty label={t("consult.files.empty")} />;
   return (
     <div className="space-y-3">
       {files.map((f) => (
@@ -126,13 +126,13 @@ export function FileRows({ files }: { files: PatientFile[] }) {
 
 export function MedicalRecordView({ patientId }: { patientId: number | null }) {
   const { data: record, isLoading } = usePatientMedicalRecord(patientId);
-  if (isLoading) return <PanelLoading label="Loading record…" />;
+  if (isLoading) return <PanelLoading label={t("consult.record.loading_record")} />;
   return <RecordRows record={record} />;
 }
 
 export function PatientVisitsList({ patientId }: { patientId: number | null }) {
   const { data: visits = [], isLoading } = usePatientVisits(patientId);
-  if (isLoading) return <PanelLoading label="Loading visits…" />;
+  if (isLoading) return <PanelLoading label={t("consult.visits.loading")} />;
   return <VisitCards visits={visits} />;
 }
 
@@ -155,7 +155,7 @@ export function PatientFilesPanel({
 
   const handleUpload = () => {
     if (!file || !fileTitle.trim()) {
-      toast.error("Choose a file and enter a title.");
+      toast.error(t("consult.files.choose_error"));
       return;
     }
     const fd = new FormData();
@@ -167,12 +167,12 @@ export function PatientFilesPanel({
 
     uploadFile.mutate(fd, {
       onSuccess: () => {
-        toast.success("File uploaded.");
+        toast.success(t("consult.files.uploaded"));
         setFile(null);
         setFileTitle("");
         setFileNotes("");
       },
-      onError: (err) => toast.error((err as ApiError)?.message || "Failed to upload file."),
+      onError: (err) => toast.error((err as ApiError)?.message || t("consult.files.upload_failed")),
     });
   };
 
@@ -195,9 +195,9 @@ export function PatientFilesPanel({
                 <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
               ))}
             </select>
-            <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} placeholder="Title" className={inputCls} />
+            <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} placeholder={t("consult.files.title_field")} className={inputCls} />
           </div>
-          <input value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} placeholder="Notes (optional)" className={inputCls} />
+          <input value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} placeholder={t("consult.files.notes_optional")} className={inputCls} />
           <button
             onClick={handleUpload}
             disabled={uploadFile.isPending}
@@ -209,7 +209,7 @@ export function PatientFilesPanel({
         </div>
       )}
 
-      {isLoading ? <PanelLoading label="Loading files…" /> : <FileRows files={files} />}
+      {isLoading ? <PanelLoading label={t("consult.files.loading")} /> : <FileRows files={files} />}
     </div>
   );
 }

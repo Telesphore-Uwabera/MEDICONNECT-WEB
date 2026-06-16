@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { X, HeartPulse, Stethoscope, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -14,13 +15,14 @@ import {
 } from "@/pages/doctor/appointments/shared/PatientMedicalPanels";
 
 type Tab = "record" | "visits" | "files";
-const TABS: Array<{ id: Tab; label: string; icon: ReactNode }> = [
-  { id: "record", label: "Record", icon: <HeartPulse className="h-3.5 w-3.5" /> },
-  { id: "visits", label: "Visits", icon: <Stethoscope className="h-3.5 w-3.5" /> },
-  { id: "files", label: "Files", icon: <FileText className="h-3.5 w-3.5" /> },
+const TABS: Array<{ id: Tab; labelKey: string; icon: ReactNode }> = [
+  { id: "record", labelKey: "consult.record.tab_record", icon: <HeartPulse className="h-3.5 w-3.5" /> },
+  { id: "visits", labelKey: "consult.record.tab_visits", icon: <Stethoscope className="h-3.5 w-3.5" /> },
+  { id: "files", labelKey: "consult.record.tab_files", icon: <FileText className="h-3.5 w-3.5" /> },
 ];
 
 export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("record");
 
   const record = useMyMedicalRecord();
@@ -39,8 +41,8 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
             <HeartPulse className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground">My medical information</p>
-            <p className="text-[10px] text-muted-foreground">Record, visits and files</p>
+            <p className="text-[13px] font-semibold text-foreground">{t("consult.medical_info.drawer_title")}</p>
+            <p className="text-[10px] text-muted-foreground">{t("consult.medical_info.drawer_subtitle")}</p>
           </div>
           <button
             onClick={onClose}
@@ -53,17 +55,17 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
 
         {/* Tabs */}
         <div className="flex items-center gap-1 px-3 border-b border-border/60 bg-card shrink-0">
-          {TABS.map((t) => (
+          {TABS.map((tb) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tb.id}
+              onClick={() => setTab(tb.id)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-medium border-b-2 transition-colors",
-                tab === t.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+                tab === tb.id ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
-              {t.icon}
-              {t.label}
+              {tb.icon}
+              {t(tb.labelKey)}
             </button>
           ))}
         </div>
@@ -72,12 +74,12 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
         <div className="flex-1 overflow-y-auto p-4">
           {tab === "record" &&
             (record.isLoading ? (
-              <PanelLoading label="Loading record…" />
+              <PanelLoading label={t("consult.record.loading_record")} />
             ) : (
               <>
                 {!record.data && (
                   <p className="text-[11px] text-muted-foreground mb-3">
-                    No medical record yet. Your doctor adds this during a consultation.
+                    {t("consult.record.no_record_short")}
                   </p>
                 )}
                 <RecordRows record={record.data} />
@@ -85,10 +87,10 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
             ))}
 
           {tab === "visits" &&
-            (visits.isLoading ? <PanelLoading label="Loading visits…" /> : <VisitCards visits={visits.data ?? []} />)}
+            (visits.isLoading ? <PanelLoading label={t("consult.visits.loading")} /> : <VisitCards visits={visits.data ?? []} />)}
 
           {tab === "files" &&
-            (files.isLoading ? <PanelLoading label="Loading files…" /> : <FileRows files={files.data ?? []} />)}
+            (files.isLoading ? <PanelLoading label={t("consult.files.loading")} /> : <FileRows files={files.data ?? []} />)}
         </div>
       </div>
     </div>
