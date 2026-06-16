@@ -69,7 +69,10 @@ interface DoctorProfileFormProps {
   onStepChange: (i: number) => void;
   onCancel: () => void;
   stepSaveStates: StepSaveStates;
-  onSaveStep: (stepId: string, data: Partial<DoctorProfileData>) => Promise<void>;
+  onSaveStep: (
+    stepId: string,
+    data: Partial<DoctorProfileData>,
+  ) => Promise<void>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -106,11 +109,13 @@ export function DoctorProfileForm({
 
   // Sync when defaultData changes (switching edit → view → edit)
   useEffect(() => {
-    if (defaultData?.specializations) setSpecializations(defaultData.specializations);
-    if (defaultData?.education)       setEducation(defaultData.education);
-    if (defaultData?.experience)      setExperience(defaultData.experience);
-    if (defaultData?.qualifications)  setQualifications(defaultData.qualifications);
-    if (defaultData?.linksSection)    setLinksSection(defaultData.linksSection);
+    if (defaultData?.specializations)
+      setSpecializations(defaultData.specializations);
+    if (defaultData?.education) setEducation(defaultData.education);
+    if (defaultData?.experience) setExperience(defaultData.experience);
+    if (defaultData?.qualifications)
+      setQualifications(defaultData.qualifications);
+    if (defaultData?.linksSection) setLinksSection(defaultData.linksSection);
   }, [defaultData]);
 
   const {
@@ -138,11 +143,11 @@ export function DoctorProfileForm({
 
     const payloads: Record<string, Partial<DoctorProfileData>> = {
       specializations: { specializations },
-      education:       { education },
-      experience:      { experience },
-      qualifications:  { qualifications },
-      documents:       { documents },
-      linksSection:    { linksSection },
+      education: { education },
+      experience: { experience },
+      qualifications: { qualifications },
+      documents: { documents },
+      linksSection: { linksSection },
     };
 
     if (payloads[step.id]) await onSaveStep(step.id, payloads[step.id]);
@@ -173,7 +178,8 @@ export function DoctorProfileForm({
     [],
   );
   const handleNationalIdChange = useCallback(
-    (f: File | null) => setDocuments((d) => ({ ...d, national_id_document: f })),
+    (f: File | null) =>
+      setDocuments((d) => ({ ...d, national_id_document: f })),
     [],
   );
 
@@ -199,15 +205,10 @@ export function DoctorProfileForm({
         {/* ── Personal ──────────────────────────────────────────────────── */}
         {step.id === "personal" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Specialization *" error={errors.specialization?.message}>
-              <Input
-                {...register("specialization", { required: "Required" })}
-                placeholder="General Practitioner"
-                className="border-border focus-visible:ring-primary text-xs h-9"
-              />
-            </FormField>
-
-            <FormField label="Doctor degree *" error={errors.doctor_degree?.message}>
+            <FormField
+              label="Doctor degree *"
+              error={errors.doctor_degree?.message}
+            >
               <Input
                 {...register("doctor_degree", { required: "Required" })}
                 placeholder="MBBS"
@@ -215,7 +216,10 @@ export function DoctorProfileForm({
               />
             </FormField>
 
-            <FormField label="Medical license *" error={errors.medical_license?.message}>
+            <FormField
+              label="Medical license *"
+              error={errors.medical_license?.message}
+            >
               <Input
                 {...register("medical_license", { required: "Required" })}
                 placeholder="RW-MED-2024-001"
@@ -231,6 +235,24 @@ export function DoctorProfileForm({
               />
             </FormField>
 
+            <FormField label="Preferred language">
+              <Select
+                defaultValue={defaultData?.personal?.preferred_language ?? "en"}
+                onValueChange={(v) => setValue("preferred_language", v)}
+              >
+                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
             <FormField
               label="Bio (English) *"
               error={errors.bio_en?.message}
@@ -244,7 +266,10 @@ export function DoctorProfileForm({
               />
             </FormField>
 
-            <FormField label="Bio (French)" className="col-span-1 sm:col-span-2">
+            <FormField
+              label="Bio (French)"
+              className="col-span-1 sm:col-span-2"
+            >
               <Textarea
                 {...register("bio_fr")}
                 placeholder="Médecin expérimenté avec 10 ans en médecine générale"
@@ -253,7 +278,10 @@ export function DoctorProfileForm({
               />
             </FormField>
 
-            <FormField label="Bio (Kinyarwanda)" className="col-span-1 sm:col-span-2">
+            <FormField
+              label="Bio (Kinyarwanda)"
+              className="col-span-1 sm:col-span-2"
+            >
               <Textarea
                 {...register("bio_kiny")}
                 placeholder="Umuganga w'inzobere ufite imyaka 10"
@@ -261,76 +289,15 @@ export function DoctorProfileForm({
                 rows={2}
               />
             </FormField>
-
-            <FormField
-              label="Consultation fee *"
-              error={errors.consultation_fee?.message}
-            >
-              <Input
-                type="number"
-                {...register("consultation_fee", {
-                  required: "Required",
-                  min: { value: 0, message: "Must be positive" },
-                  valueAsNumber: true,
-                })}
-                placeholder="5000"
-                className="border-border focus-visible:ring-primary text-xs h-9"
-              />
-            </FormField>
-
-            <FormField label="Currency">
-              <Select
-                defaultValue={defaultData?.personal?.currency ?? "RWF"}
-                onValueChange={(v) => setValue("currency", v)}
-              >
-                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            <FormField label="Consultation type">
-              <Select
-                defaultValue={defaultData?.personal?.consultation_type ?? "both"}
-                onValueChange={(v) => setValue("consultation_type", v)}
-              >
-                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONSULTATION_TYPES.map((ct) => (
-                    <SelectItem key={ct.value} value={ct.value}>{ct.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            <FormField label="Preferred language">
-              <Select
-                defaultValue={defaultData?.personal?.preferred_language ?? "en"}
-                onValueChange={(v) => setValue("preferred_language", v)}
-              >
-                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {LANGUAGES.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
           </div>
         )}
 
         {/* ── Specializations ───────────────────────────────────────────── */}
         {step.id === "specializations" && (
-          <SpecializationsStep data={specializations} onChange={setSpecializations} />
+          <SpecializationsStep
+            data={specializations}
+            onChange={setSpecializations}
+          />
         )}
 
         {/* ── Education ─────────────────────────────────────────────────── */}
@@ -345,15 +312,18 @@ export function DoctorProfileForm({
 
         {/* ── Qualifications ────────────────────────────────────────────── */}
         {step.id === "qualifications" && (
-          <QualificationsStep entries={qualifications} onChange={setQualifications} />
+          <QualificationsStep
+            entries={qualifications}
+            onChange={setQualifications}
+          />
         )}
 
         {/* ── Documents ─────────────────────────────────────────────────── */}
         {step.id === "documents" && (
           <div className="grid grid-cols-1 gap-4">
             <p className="text-[11px] text-muted-foreground -mt-2 mb-1">
-              Upload your profile photo, degree certificate, medical license, and
-              national ID. JPEG, PNG, PDF · max 4 MB each.
+              Upload your profile photo, degree certificate, medical license,
+              and national ID. JPEG, PNG, PDF · max 4 MB each.
             </p>
             <FileUploadBox
               label="Profile photo"
@@ -422,11 +392,20 @@ export function DoctorProfileForm({
             className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 gap-1.5"
           >
             {isSaving ? (
-              <><Loader2 className="h-3 w-3 animate-spin" />Saving…</>
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving…
+              </>
             ) : currentSaveState === "saved" ? (
-              <><Check className="h-3 w-3" />Saved</>
+              <>
+                <Check className="h-3 w-3" />
+                Saved
+              </>
             ) : (
-              <><Save className="h-3 w-3" />Save section</>
+              <>
+                <Save className="h-3 w-3" />
+                Save section
+              </>
             )}
           </Button>
 

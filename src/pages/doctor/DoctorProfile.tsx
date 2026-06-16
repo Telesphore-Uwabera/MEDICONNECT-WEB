@@ -21,7 +21,6 @@ import {
 import {
   STEPS,
   SOCIAL_PLATFORMS,
-  CONSULTATION_TYPES,
   LANGUAGES,
 } from "../doctor/profile/Constants";
 
@@ -38,10 +37,8 @@ import type {
 import {
   useGetDoctorProfile,
   useUpsertDoctorProfile,
-
- useUploadProfileImage,
+  useUploadProfileImage,
   useUploadDoctorDocument,
-
   useAddEducation,
   useUpdateEducation,
   useDeleteEducation,
@@ -81,40 +78,37 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
   return d.toISOString().slice(0, 10);
 };
 
+const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API → Form mapper
 // ─────────────────────────────────────────────────────────────────────────────
 function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
   return {
     personal: {
-      specialization: doc.specialization ?? "",
       doctor_degree: doc.doctor_degree ?? "",
       medical_license: doc.medical_license ?? "",
       designations: doc.designations ?? "",
       bio_en: doc.bio_en ?? "",
       bio_fr: doc.bio_fr ?? "",
       bio_kiny: doc.bio_kiny ?? "",
-      consultation_fee: parseFloat(String(doc.consultation_fee ?? "0")) || 0,
-      currency: doc.currency ?? "RWF",
-      consultation_type: doc.consultation_type ?? "both",
       preferred_language: doc.preferred_language ?? "en",
     },
 
-   specializations: {
-  primary: doc.specialization ?? "",
-  specialization_fee_id: doc.specialization_fee_id ?? null,
-  years_of_experience: doc.years_of_experience ?? 0,
-  // Map fee details for rich display
-  fee_name: doc.specialization_fee?.sub_specialization ?? undefined,
-  tier_name: doc.specialization_fee?.tier_name ?? undefined,
-  online_fee: doc.specialization_fee?.online_fee 
-    ? parseFloat(String(doc.specialization_fee.online_fee)) 
-    : undefined,
-  in_person_fee: doc.specialization_fee?.in_person_fee 
-    ? parseFloat(String(doc.specialization_fee.in_person_fee)) 
-    : undefined,
-  fee_currency: doc.specialization_fee?.currency ?? undefined,
-},
+    specializations: {
+      primary: doc.specialization ?? "",
+      specialization_fee_id: doc.specialization_fee_id ?? null,
+      years_of_experience: doc.years_of_experience ?? 0,
+      fee_name: doc.specialization_fee?.sub_specialization ?? undefined,
+      tier_name: doc.specialization_fee?.tier_name ?? undefined,
+      online_fee: doc.specialization_fee?.online_fee
+        ? parseFloat(String(doc.specialization_fee.online_fee))
+        : undefined,
+      in_person_fee: doc.specialization_fee?.in_person_fee
+        ? parseFloat(String(doc.specialization_fee.in_person_fee))
+        : undefined,
+      fee_currency: doc.specialization_fee?.currency ?? undefined,
+    },
 
     education: (doc.educations ?? []).map((e) => ({
       id: String(e.id),
@@ -143,7 +137,7 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
       issued_at: toDateInputValue(q.issued_at),
       expires_at: q.expires_at ? toDateInputValue(q.expires_at) : "",
     })),
-  documents: {
+    documents: {
       profile_image: null,
       degree_document: null,
       license_document: null,
@@ -154,7 +148,8 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
           : doc.documents?.degree_document?.path
             ? `${BASE_URL}/${doc.documents.degree_document.path}`
             : null,
-        medical_license_document_url: doc.documents?.medical_license_document?.url
+        medical_license_document_url: doc.documents?.medical_license_document
+          ?.url
           ? doc.documents.medical_license_document.url
           : doc.documents?.medical_license_document?.path
             ? `${BASE_URL}/${doc.documents.medical_license_document.path}`
@@ -179,13 +174,12 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers — save-state seeding & step data detection
+// ─────────────────────────────────────────────────────────────────────────────
 function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
   const s: StepSaveStates = {};
-  if (
-    d.personal.specialization ||
-    d.personal.doctor_degree ||
-    d.personal.medical_license
-  )
+  if (d.personal.doctor_degree || d.personal.medical_license)
     s["personal"] = "saved";
   if (d.specializations.primary) s["specializations"] = "saved";
   if (d.education.length) s["education"] = "saved";
@@ -199,7 +193,7 @@ function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
   if (!data) return false;
   switch (stepId) {
     case "personal":
-      return !!(data.personal.specialization || data.personal.doctor_degree);
+      return !!(data.personal.doctor_degree || data.personal.medical_license);
     case "specializations":
       return !!data.specializations.primary;
     case "education":
@@ -208,7 +202,7 @@ function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
       return data.experience.length > 0;
     case "qualifications":
       return data.qualifications.length > 0;
-   case "documents":
+    case "documents":
       return !!(
         data.documents.profile_image ||
         data.documents.degree_document ||
@@ -230,8 +224,8 @@ function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
 // ─────────────────────────────────────────────────────────────────────────────
 const StatsSkeleton = React.memo(function StatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+      {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
           className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-1.5"
@@ -291,7 +285,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
       </div>
       <div className="flex-1 p-4 sm:p-5 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-1.5">
               <Skeleton className="h-2 w-20 rounded" />
               <Skeleton className="h-3.5 w-32 rounded" />
@@ -438,35 +432,20 @@ const ViewPersonal = React.memo(function ViewPersonal({
   data: DoctorProfileData;
 }) {
   const p = data.personal;
-  const consultationTypeLabel = useMemo(
-    () =>
-      CONSULTATION_TYPES.find((c) => c.value === p.consultation_type)?.label ??
-      p.consultation_type,
-    [p.consultation_type],
-  );
   const languageLabel = useMemo(
     () =>
       LANGUAGES.find((l) => l.value === p.preferred_language)?.label ??
       p.preferred_language,
     [p.preferred_language],
   );
-  const feeDisplay = useMemo(() => {
-    const fee = Number(p.consultation_fee);
-    return fee > 0 ? formatFee(fee, p.currency) : null;
-  }, [p.consultation_fee, p.currency]);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-        <ViewField label="Specialization" value={p.specialization} />
         <ViewField label="Doctor degree" value={p.doctor_degree} />
         <ViewField label="Medical license" value={p.medical_license} mono />
         <ViewField label="Designation" value={p.designations} />
-        <ViewField label="Consultation type" value={consultationTypeLabel} />
         <ViewField label="Preferred language" value={languageLabel} />
-        {feeDisplay && (
-          <ViewField label="Consultation fee" value={feeDisplay} />
-        )}
       </div>
       {[
         { lang: "English", value: p.bio_en },
@@ -498,10 +477,8 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
 
   return (
     <div className="space-y-5">
-      {/* Primary specialization */}
       <ViewField label="Primary specialization" value={s.primary} />
-      
-      {/* Years of experience */}
+
       {s.years_of_experience > 0 && (
         <ViewField
           label="Years of experience"
@@ -509,7 +486,6 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
         />
       )}
 
-      {/* Fee details card */}
       {s.specialization_fee_id && (s.fee_name || s.tier_name) && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -520,21 +496,12 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
               ID: {s.specialization_fee_id}
             </span>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            <ViewField 
-              label="Sub-specialization" 
-              value={s.fee_name} 
-            />
-            {s.tier_name && (
-              <ViewField 
-                label="Tier" 
-                value={s.tier_name} 
-              />
-            )}
+            <ViewField label="Sub-specialization" value={s.fee_name} />
+            {s.tier_name && <ViewField label="Tier" value={s.tier_name} />}
           </div>
 
-          {/* Fee breakdown */}
           {(s.online_fee !== undefined || s.in_person_fee !== undefined) && (
             <div className="grid grid-cols-2 gap-3 pt-2 border-t border-primary/10">
               {s.in_person_fee !== undefined && (
@@ -562,7 +529,6 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
         </div>
       )}
 
-      {/* Fallback: just show fee ID if no rich data */}
       {s.specialization_fee_id && !s.fee_name && (
         <ViewField
           label="Fee configuration ID"
@@ -784,8 +750,8 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({
   return (
     <div className="grid grid-cols-1 gap-2">
       {filledLinks.map(({ key, label }) => (
-        <a
-          key={key}
+        
+    <a      key={key}
           href={data.linksSection[key]}
           target="_blank"
           rel="noopener noreferrer"
@@ -871,14 +837,19 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
 
   const profileSummary = useMemo(() => {
     if (!profileData) return null;
-    const fee = Number(profileData.personal.consultation_fee);
+    const fee =
+      profileData.specializations.in_person_fee ??
+      profileData.specializations.online_fee;
+    const feeCurrency = profileData.specializations.fee_currency ?? "RWF";
     return {
       initials:
-        profileData.personal.specialization.slice(0, 2).toUpperCase() || "DR",
-      specialization: profileData.personal.specialization,
+        profileData.specializations.primary.slice(0, 2).toUpperCase() || "DR",
+      specialization:
+        profileData.specializations.primary ||
+        profileData.personal.doctor_degree,
       license: profileData.personal.medical_license,
       degree: profileData.personal.doctor_degree,
-      fee: fee > 0 ? formatFee(fee, profileData.personal.currency) : "—",
+      fee: fee ? formatFee(fee, feeCurrency) : "—",
     };
   }, [profileData]);
 
@@ -1055,7 +1026,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
 type Mode = "view" | "create" | "edit";
 
 const DoctorProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── API ─────────────────────────────────────────────────────────────────────
   const {
@@ -1065,10 +1036,8 @@ const DoctorProfile = () => {
   } = useGetDoctorProfile();
 
   const upsertProfile = useUpsertDoctorProfile();
-  
-    const uploadImage = useUploadProfileImage();
+  const uploadImage = useUploadProfileImage();
   const uploadDocument = useUploadDoctorDocument();
-
   const addEducation = useAddEducation();
   const updateEducation = useUpdateEducation();
   const deleteEducation = useDeleteEducation();
@@ -1081,9 +1050,7 @@ const DoctorProfile = () => {
   const setSocialLinks = useSetSocialLinks();
 
   // ── Local state ─────────────────────────────────────────────────────────────
-  const [profileData, setProfileData] = useState<DoctorProfileData | null>(
-    null,
-  );
+  const [profileData, setProfileData] = useState<DoctorProfileData | null>(null);
   const [mode, setMode] = useState<Mode>("create");
   const [currentStep, setCurrentStep] = useState(0);
   const [stepSaveStates, setStepSaveStates] = useState<StepSaveStates>({});
@@ -1153,9 +1120,7 @@ const DoctorProfile = () => {
           })) as EducationMutationResponse;
           updated.push({ ...entry, apiId: res?.education?.id ?? entry.apiId });
         } else {
-          const res = (await addEducation.mutateAsync(
-            payload,
-          )) as EducationMutationResponse;
+          const res = (await addEducation.mutateAsync(payload)) as EducationMutationResponse;
           const newId = res?.education?.id;
           updated.push({
             ...entry,
@@ -1196,9 +1161,7 @@ const DoctorProfile = () => {
           })) as ExperienceMutationResponse;
           updated.push({ ...entry, apiId: res?.experience?.id ?? entry.apiId });
         } else {
-          const res = (await addExperience.mutateAsync(
-            payload,
-          )) as ExperienceMutationResponse;
+          const res = (await addExperience.mutateAsync(payload)) as ExperienceMutationResponse;
           const newId = res?.experience?.id;
           updated.push({
             ...entry,
@@ -1241,9 +1204,7 @@ const DoctorProfile = () => {
             apiId: res?.qualification?.id ?? entry.apiId,
           });
         } else {
-          const res = (await addQualification.mutateAsync(
-            payload,
-          )) as QualificationMutationResponse;
+          const res = (await addQualification.mutateAsync(payload)) as QualificationMutationResponse;
           const newId = res?.qualification?.id;
           updated.push({
             ...entry,
@@ -1265,18 +1226,11 @@ const DoctorProfile = () => {
         switch (stepId) {
           case "personal": {
             await upsertProfile.mutateAsync({
-              specialization: data.personal!.specialization,
               doctor_degree: data.personal!.doctor_degree,
               medical_license: data.personal!.medical_license,
               bio_en: data.personal!.bio_en,
-              consultation_type: data.personal!.consultation_type as
-                | "online"
-                | "in_person"
-                | "both",
               preferred_language: data.personal!.preferred_language,
               is_available: true,
-              consultation_fee: data.personal!.consultation_fee,
-              currency: data.personal!.currency,
               bio_fr: data.personal!.bio_fr,
               bio_kiny: data.personal!.bio_kiny,
             });
@@ -1289,24 +1243,14 @@ const DoctorProfile = () => {
           }
           case "specializations": {
             const payload: UpsertProfilePayload = {};
-
-            if (data.specializations?.primary) {
+            if (data.specializations?.primary)
               payload.specialization = data.specializations.primary;
-            }
-
-            // Always send these if they exist (including null for fee_id to clear it)
-            if (data.specializations?.specialization_fee_id !== undefined) {
+            if (data.specializations?.specialization_fee_id !== undefined)
               payload.specialization_fee_id = data.specializations.specialization_fee_id;
-            }
-
-            if (data.specializations?.years_of_experience !== undefined) {
+            if (data.specializations?.years_of_experience !== undefined)
               payload.years_of_experience = data.specializations.years_of_experience;
-            }
-
-            if (Object.keys(payload).length > 0) {
+            if (Object.keys(payload).length > 0)
               await upsertProfile.mutateAsync(payload);
-            }
-
             setProfileData((prev) =>
               prev ? { ...prev, specializations: data.specializations! } : null,
             );
@@ -1342,7 +1286,7 @@ const DoctorProfile = () => {
             );
             break;
           }
-         case "documents": {
+          case "documents": {
             const d = data.documents!;
             if (d.profile_image)
               await uploadImage.mutateAsync(d.profile_image);
@@ -1361,9 +1305,7 @@ const DoctorProfile = () => {
                 type: "national_id_document",
                 file: d.national_id_document,
               });
-            setProfileData((prev) =>
-              prev ? { ...prev, documents: d } : null,
-            );
+            setProfileData((prev) => (prev ? { ...prev, documents: d } : null));
             break;
           }
           case "linksSection": {
@@ -1406,14 +1348,17 @@ const DoctorProfile = () => {
   // ── Stats ───────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     if (!profileData) return null;
-    const fee = Number(profileData.personal.consultation_fee);
+    const fee =
+      profileData.specializations.in_person_fee ??
+      profileData.specializations.online_fee;
+    const feeCurrency = profileData.specializations.fee_currency ?? "RWF";
     return {
       degree: profileData.personal.doctor_degree || "—",
       license: profileData.personal.medical_license || "—",
       education: profileData.education.length,
       experience: profileData.experience.length,
       qualifications: profileData.qualifications.length,
-      fee: fee > 0 ? formatFee(fee, profileData.personal.currency) : "—",
+      fee: fee ? formatFee(fee, feeCurrency) : "—",
     };
   }, [profileData]);
 
@@ -1468,28 +1413,15 @@ const DoctorProfile = () => {
             <div className="relative">
               <div
                 className={cn(
-                  "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 transition-opacity duration-300",
+                  "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 transition-opacity duration-300",
                   isFetchingProfile && "opacity-60",
                 )}
               >
                 <StatCard label="Degree" value={stats.degree} />
                 <StatCard label="License" value={stats.license} />
-                <StatCard
-                  label="Education"
-                  value={stats.education}
-                  sub="entries"
-                />
-                <StatCard
-                  label="Experience"
-                  value={stats.experience}
-                  sub="positions"
-                />
-                <StatCard
-                  label="Qualifications"
-                  value={stats.qualifications}
-                  sub="certs"
-                />
-                <StatCard label="Consult fee" value={stats.fee} accent />
+                <StatCard label="Education" value={stats.education} sub="entries" />
+                <StatCard label="Experience" value={stats.experience} sub="positions" />
+                <StatCard label="Qualifications" value={stats.qualifications} sub="certs" />
               </div>
               {isFetchingProfile && (
                 <span className="absolute top-1 right-1 flex h-2 w-2">
@@ -1519,7 +1451,6 @@ const DoctorProfile = () => {
 
           {/* Right panel */}
           {isForm ? (
-            // ── Form mode ────────────────────────────────────────────────────
             <DoctorProfileForm
               mode={mode === "edit" ? "edit" : "create"}
               defaultData={
@@ -1534,7 +1465,6 @@ const DoctorProfile = () => {
           ) : isFetchingProfile && !profileData ? (
             <ContentSkeleton />
           ) : profileData ? (
-            // ── View mode ────────────────────────────────────────────────────
             <div className="flex flex-col flex-1 min-h-0">
               {/* Content header */}
               <div className="flex items-center justify-between gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">

@@ -10,7 +10,7 @@ import { useForgotPassword, useResetPassword } from "@/hooks/useAuth";
 type Step = "email" | "reset";
 
 const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [step, setStep] = useState<Step>("email");
 
   // Step 1 — email

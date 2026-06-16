@@ -22,6 +22,8 @@ import {
   X,
   BadgeCheck,
   Clock,
+  Hash,
+  Globe,
 } from "lucide-react";
 import {
   useGetMySettings,
@@ -103,10 +105,10 @@ function DisplayField({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
         {label}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <p className="text-[13px] text-foreground font-medium">
           {value || <span className="text-muted-foreground/40 font-normal italic">Not set</span>}
         </p>
@@ -187,7 +189,7 @@ function SectionCard({
 }) {
   return (
     <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-      <div className="px-5 py-4 border-b border-border/60 flex items-center gap-3">
+      <div className="px-5 py-4 border-b border-border/50 flex items-center gap-3">
         <div className="h-8 w-8 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
           <Icon className="w-4 h-4 text-primary" />
         </div>
@@ -225,7 +227,7 @@ function OtpStep({
 }) {
   const [otp, setOtp] = useState("");
   return (
-    <div className="mt-4 p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+    <div className="mt-4 p-4 rounded-sm border border-primary/20 bg-primary/5 space-y-3">
       <p className="text-[11px] text-foreground font-medium">{label}</p>
       <Field label="OTP code" required>
         <input
@@ -256,6 +258,30 @@ function OtpStep({
   );
 }
 
+// ─── InfoRow ─────────────────────────────────────────────────────────────────
+
+function InfoRow({
+  label,
+  value,
+  badge,
+}: {
+  label: string;
+  value?: string | null;
+  badge?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between py-3 border-b border-border/40 last:border-0 gap-4">
+      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{label}</p>
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        <span className="text-[12px] text-foreground font-medium text-right">
+          {value || <span className="text-muted-foreground/40 italic font-normal">Not set</span>}
+        </span>
+        {badge}
+      </div>
+    </div>
+  );
+}
+
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 type TabKey = "profile" | "security" | "contact" | "danger";
@@ -276,7 +302,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function AdminSettings() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState(false);
@@ -322,7 +348,9 @@ function AdminSettings() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // ── Queries & mutations ────────────────────────────────────────────────────
-  const { data: settings, isLoading } = useGetMySettings();
+  const { data: settingsResponse, isLoading } = useGetMySettings();
+  const settings = settingsResponse?.data;
+
   const updateProfile  = useUpdateProfile();
   const updateAvatar   = useUpdateAvatar();
   const deleteAvatar   = useDeleteAvatar();
@@ -348,7 +376,6 @@ function AdminSettings() {
     }
   }, [settings]);
 
-  // Open profile edit — seed fresh values from current settings
   const openProfileEdit = () => {
     setProfileForm({
       name: settings?.name ?? "",
@@ -483,18 +510,17 @@ function AdminSettings() {
   };
 
   // ── Avatar display helper ─────────────────────────────────────────────────
-
   const showAvatar = settings?.avatar && !avatarError;
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
-
   if (isLoading) {
     return (
       <DashboardLayout role="admin">
         <div className="flex flex-col h-full">
           <PageHeader title="Settings" subtitle="Manage your account" />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+            <div className="h-36 rounded-sm border border-border/60 bg-card animate-pulse" />
+            {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="h-40 rounded-sm border border-border/60 bg-card animate-pulse" />
             ))}
           </main>
@@ -512,9 +538,115 @@ function AdminSettings() {
         />
 
         <main className="flex-1 overflow-y-auto">
-          {/* Tabs */}
+
+          {/* ── Identity Hero Banner ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 mt-3 sm:mt-4">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/40 border border-border/40">
+            <div className="rounded-sm border border-border/60 bg-card shadow-sm overflow-hidden">
+              {/* Subtle teal gradient top strip */}
+              <div className="px-5 py-4 flex items-center gap-4">
+                {/* Avatar — large, prominent */}
+                <div className="relative shrink-0 group">
+                  {showAvatar ? (
+                    <img
+                      src={settings!.avatar!}
+                      alt={settings?.name ?? "Avatar"}
+                      onError={() => setAvatarError(true)}
+                      className="h-[72px] w-[72px] rounded-sm object-cover border-2 border-primary/30 shadow-md"
+                    />
+                  ) : (
+                    <div className="h-[72px] w-[72px] rounded-sm bg-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-md">
+                      <User className="w-8 h-8 text-primary/60" />
+                    </div>
+                  )}
+                  {/* Upload overlay on hover */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={updateAvatar.isPending}
+                    className="absolute inset-0 rounded-sm bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Change photo"
+                  >
+                    {updateAvatar.isPending
+                      ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      : <Camera className="w-5 h-5 text-white" />
+                    }
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                </div>
+
+                {/* Name + meta */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-semibold text-foreground leading-tight truncate">
+                    {settings?.name ?? "—"}
+                  </p>
+                  <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
+                    {settings?.email ?? ""}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    {/* Account status */}
+                    {settings?.is_verified ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-sm">
+                        <BadgeCheck className="w-3 h-3" />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-sm">
+                        <Clock className="w-3 h-3" />
+                        Unverified
+                      </span>
+                    )}
+                    {/* Roles */}
+                    {settings?.roles?.map((role) => (
+                      <span
+                        key={role}
+                        className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick avatar actions */}
+                <div className="shrink-0 flex flex-col gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2.5 text-[11px] rounded-sm gap-1.5"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={updateAvatar.isPending}
+                  >
+                    <Upload className="w-3 h-3" />
+                    {showAvatar ? "Change photo" : "Upload photo"}
+                  </Button>
+                  {showAvatar && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2.5 text-[11px] rounded-sm border border-border/40 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 gap-1.5"
+                      onClick={handleDeleteAvatar}
+                      disabled={deleteAvatar.isPending}
+                    >
+                      {deleteAvatar.isPending
+                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                        : <Trash2 className="w-3 h-3" />
+                      }
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="px-3 sm:px-4 mt-3">
+            <div className="flex items-center gap-1 p-1 rounded-sm bg-secondary/40 border border-border/40">
               {TABS.map((tab) => {
                 const Icon   = tab.icon;
                 const active = activeTab === tab.key;
@@ -523,7 +655,7 @@ function AdminSettings() {
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-md transition-all duration-200",
+                      "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-sm transition-all duration-200",
                       active
                         ? "bg-card text-foreground shadow-sm border border-border/40"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
@@ -543,182 +675,116 @@ function AdminSettings() {
 
             {/* ── Profile Tab ─────────────────────────────────────────────── */}
             {activeTab === "profile" && (
-              <>
-                {/* Avatar */}
-                <SectionCard
-                  icon={Camera}
-                  title="Avatar"
-                  description="Your profile picture (JPG, PNG, WEBP — max 2 MB)"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Avatar preview */}
-                    <div className="relative shrink-0">
-                      {showAvatar ? (
-                        <img
-                          src={settings.avatar!}
-                          alt="Avatar"
-                          className="h-16 w-16 rounded-sm object-cover border border-border/60"
-                          onError={() => setAvatarError(true)}
-                        />
-                      ) : (
-                        <div className="h-16 w-16 rounded-sm bg-primary/10 border border-primary/20 flex items-center justify-center">
-                          <User className="w-6 h-6 text-primary" />
-                        </div>
-                      )}
-                      {updateAvatar.isPending && (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-sm bg-black/40">
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
-                        </div>
-                      )}
+              <SectionCard
+                icon={UserCog}
+                title="Profile"
+                description="Your account details and preferences"
+                onEdit={openProfileEdit}
+                isEditing={editingProfile}
+              >
+                {!editingProfile ? (
+                  <div className="-my-1">
+                    {/* ID row */}
+                    <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
+                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36 flex items-center gap-1.5">
+                        <Hash className="w-3 h-3 text-muted-foreground/40" />
+                        User ID
+                      </p>
+                      <span className="text-[12px] text-foreground font-medium font-mono">
+                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">Not set</span>}
+                      </span>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".jpg,.jpeg,.png,.webp"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={updateAvatar.isPending}
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        {showAvatar ? "Change photo" : "Upload photo"}
-                      </Button>
-                      {showAvatar && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-[11px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 gap-1.5"
-                          onClick={handleDeleteAvatar}
-                          disabled={deleteAvatar.isPending}
-                        >
-                          {deleteAvatar.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                          )}
-                          Remove
-                        </Button>
-                      )}
-                    </div>
+                    <InfoRow label="Full name" value={settings?.name} />
+
+                    <InfoRow
+                      label="Email address"
+                      value={settings?.email}
+                      badge={
+                        settings?.email ? (
+                          <VerifiedBadge verified={!!settings.email_verified_at} date={settings.email_verified_at} />
+                        ) : undefined
+                      }
+                    />
+
+                    <InfoRow
+                      label="Phone number"
+                      value={
+                        settings?.phone
+                          ? `${settings?.country_code ?? ""} ${settings?.phone}`.trim()
+                          : null
+                      }
+                      badge={
+                        settings?.phone ? (
+                          <VerifiedBadge verified={!!settings.phone_verified_at} date={settings.phone_verified_at} />
+                        ) : undefined
+                      }
+                    />
+
+                    <InfoRow
+                      label="Preferred language"
+                      value={LANGUAGE_LABELS[settings?.preferred_language ?? "en"]}
+                    />
+
+                    <InfoRow
+                      label="Member since"
+                      value={settings?.created_at ? formatDate(settings.created_at) : null}
+                    />
                   </div>
-                </SectionCard>
-
-                {/* Profile info */}
-                <SectionCard
-                  icon={UserCog}
-                  title="Profile"
-                  description="Your display name and language preference"
-                  onEdit={openProfileEdit}
-                  isEditing={editingProfile}
-                >
-                  {!editingProfile ? (
-                    /* ── Display mode ── */
-                    <div className="space-y-4">
-                      <DisplayField label="Full name" value={settings?.name} />
-                      <DisplayField
-                        label="Preferred language"
-                        value={LANGUAGE_LABELS[settings?.preferred_language ?? "en"]}
+                ) : (
+                  <>
+                    <Field label="Full name" required>
+                      <input
+                        type="text"
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+                        placeholder="John Doe"
+                        className={inputCls}
+                        autoFocus
                       />
-                      {/* Roles */}
-                      {settings?.roles && settings.roles.length > 0 && (
-                        <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
-                            Roles
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {settings.roles.map((role) => (
-                              <span
-                                key={role}
-                                className="inline-flex items-center px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20"
-                              >
-                                {role}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Account status */}
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1.5">
-                          Account status
-                        </p>
-                        {settings?.is_verified ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-sm">
-                            <BadgeCheck className="w-3 h-3" />
-                            Verified account
-                          </span>
+                    </Field>
+                    <Field label="Preferred language" required>
+                      <select
+                        value={profileForm.preferred_language}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            preferred_language: e.target.value as "en" | "fr" | "rw",
+                          }))
+                        }
+                        className={selectCls}
+                      >
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                        <option value="rw">Kinyarwanda</option>
+                      </select>
+                    </Field>
+                    <div className="flex gap-2">
+                      <Button
+                        className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
+                        onClick={handleProfileSave}
+                        disabled={updateProfile.isPending}
+                      >
+                        {updateProfile.isPending ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-sm">
-                            <Clock className="w-3 h-3" />
-                            Pending verification
-                          </span>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
                         )}
-                      </div>
+                        Save changes
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-9 px-4 text-[12px] rounded-sm"
+                        onClick={() => setEditingProfile(false)}
+                        disabled={updateProfile.isPending}
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" />
+                        Cancel
+                      </Button>
                     </div>
-                  ) : (
-                    /* ── Edit mode ── */
-                    <>
-                      <Field label="Full name" required>
-                        <input
-                          type="text"
-                          value={profileForm.name}
-                          onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
-                          placeholder="John Doe"
-                          className={inputCls}
-                          autoFocus
-                        />
-                      </Field>
-                      <Field label="Preferred language" required>
-                        <select
-                          value={profileForm.preferred_language}
-                          onChange={(e) =>
-                            setProfileForm((p) => ({
-                              ...p,
-                              preferred_language: e.target.value as "en" | "fr" | "rw",
-                            }))
-                          }
-                          className={selectCls}
-                        >
-                          <option value="en">English</option>
-                          <option value="fr">Français</option>
-                          <option value="rw">Kinyarwanda</option>
-                        </select>
-                      </Field>
-                      <div className="flex gap-2">
-                        <Button
-                          className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
-                          onClick={handleProfileSave}
-                          disabled={updateProfile.isPending}
-                        >
-                          {updateProfile.isPending ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          Save changes
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="h-9 px-4 text-[12px] rounded-sm"
-                          onClick={() => setEditingProfile(false)}
-                          disabled={updateProfile.isPending}
-                        >
-                          <X className="w-3.5 h-3.5 mr-1.5" />
-                          Cancel
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </SectionCard>
-              </>
+                  </>
+                )}
+              </SectionCard>
             )}
 
             {/* ── Security Tab ────────────────────────────────────────────── */}
@@ -731,34 +797,22 @@ function AdminSettings() {
                 isEditing={editingPassword}
               >
                 {!editingPassword ? (
-                  /* ── Display mode ── */
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex gap-1">
-                          {Array.from({ length: 10 }).map((_, i) => (
-                            <span key={i} className="w-2 h-2 rounded-full bg-foreground/25" />
-                          ))}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground/50">
-                          Password is set. Click Edit to change it.
-                        </p>
+                  <div className="-my-1">
+                    <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
+                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">Password</p>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
+                        ))}
+                        <span className="ml-2 text-[11px] text-muted-foreground/50">Set</span>
                       </div>
                     </div>
-                    {/* Member since */}
-                    {settings?.created_at && (
-                      <div className="pt-3 border-t border-border/40">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
-                          Member since
-                        </p>
-                        <p className="text-[12px] text-foreground font-medium">
-                          {formatDate(settings.created_at)}
-                        </p>
-                      </div>
-                    )}
+                    <InfoRow
+                      label="Member since"
+                      value={settings?.created_at ? formatDate(settings.created_at) : null}
+                    />
                   </div>
                 ) : (
-                  /* ── Edit mode ── */
                   <>
                     <Field label="Current password" required>
                       <PasswordInput
@@ -828,29 +882,27 @@ function AdminSettings() {
                   isEditing={editingEmail}
                 >
                   {!editingEmail ? (
-                    /* ── Display mode ── */
-                    <div className="space-y-1">
-                      <DisplayField
+                    <div className="-my-1">
+                      <InfoRow
                         label="Current email"
                         value={settings?.email}
                         badge={
                           settings?.email ? (
-                            <VerifiedBadge
-                              verified={!!settings.email_verified_at}
-                              date={settings.email_verified_at}
-                            />
+                            <VerifiedBadge verified={!!settings.email_verified_at} date={settings.email_verified_at} />
                           ) : undefined
                         }
                       />
+                      <InfoRow
+                        label="Verified at"
+                        value={settings?.email_verified_at ? formatDate(settings.email_verified_at) : null}
+                      />
                     </div>
                   ) : (
-                    /* ── Edit mode ── */
                     <>
-                      {/* Current email reminder */}
                       {settings?.email && (
-                        <div className="px-3 py-2 rounded-sm bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60">Changing from</p>
-                          <p className="text-[12px] font-medium text-foreground mt-0.5">{settings.email}</p>
+                        <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[12px] font-medium text-foreground mt-1">{settings.email}</p>
                         </div>
                       )}
                       <Field label="New email" required>
@@ -920,31 +972,32 @@ function AdminSettings() {
                   isEditing={editingPhone}
                 >
                   {!editingPhone ? (
-                    /* ── Display mode ── */
-                    <DisplayField
-                      label="Current phone"
-                      value={
-                        settings?.phone
-                          ? `${settings.country_code ?? ""} ${settings.phone}`.trim()
-                          : null
-                      }
-                      badge={
-                        settings?.phone ? (
-                          <VerifiedBadge
-                            verified={!!settings.phone_verified_at}
-                            date={settings.phone_verified_at}
-                          />
-                        ) : undefined
-                      }
-                    />
+                    <div className="-my-1">
+                      <InfoRow
+                        label="Current phone"
+                        value={
+                          settings?.phone
+                            ? `${settings.country_code ?? ""} ${settings.phone}`.trim()
+                            : null
+                        }
+                        badge={
+                          settings?.phone ? (
+                            <VerifiedBadge verified={!!settings.phone_verified_at} date={settings.phone_verified_at} />
+                          ) : undefined
+                        }
+                      />
+                      <InfoRow label="Country code" value={settings?.country_code} />
+                      <InfoRow
+                        label="Verified at"
+                        value={settings?.phone_verified_at ? formatDate(settings.phone_verified_at) : null}
+                      />
+                    </div>
                   ) : (
-                    /* ── Edit mode ── */
                     <>
-                      {/* Current phone reminder */}
                       {settings?.phone && (
-                        <div className="px-3 py-2 rounded-sm bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60">Changing from</p>
-                          <p className="text-[12px] font-medium text-foreground mt-0.5">
+                        <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[12px] font-medium text-foreground mt-1">
                             {settings.country_code} {settings.phone}
                           </p>
                         </div>
@@ -1027,6 +1080,7 @@ function AdminSettings() {
             {/* ── Danger Tab ──────────────────────────────────────────────── */}
             {activeTab === "danger" && (
               <div className="rounded-sm border border-red-200 bg-card overflow-hidden shadow-sm dark:border-red-900/50">
+                <div className="h-0.5 bg-gradient-to-r from-red-400/60 via-red-500 to-red-400/40" />
                 <div className="px-5 py-4 border-b border-red-200/80 dark:border-red-900/50 flex items-center gap-3 bg-red-50/50 dark:bg-red-950/20">
                   <div className="h-8 w-8 rounded-sm bg-red-100 flex items-center justify-center border border-red-200 shrink-0 dark:bg-red-950/40 dark:border-red-900">
                     <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -1036,7 +1090,7 @@ function AdminSettings() {
                       Delete account
                     </p>
                     <p className="text-[10px] text-red-500/70 dark:text-red-500/60 mt-0.5">
-                      This will permanently remove your account and revoke all active sessions
+                      Permanently removes your account and revokes all active sessions
                     </p>
                   </div>
                 </div>
@@ -1060,7 +1114,7 @@ function AdminSettings() {
                     </>
                   ) : (
                     <>
-                      <div className="p-3 rounded-lg bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
+                      <div className="p-3 rounded-sm bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
                         <p className="text-[11px] text-red-700 dark:text-red-400 font-medium">
                           Enter your password to confirm account deletion.
                         </p>

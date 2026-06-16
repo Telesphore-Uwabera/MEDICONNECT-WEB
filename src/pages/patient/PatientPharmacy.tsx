@@ -58,7 +58,7 @@ const RWANDA_REGIONS = [
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PatientPharmacy = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Search
   const [query, setQuery] = useState("");

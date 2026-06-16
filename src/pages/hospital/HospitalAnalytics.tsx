@@ -173,7 +173,7 @@ function MiniBar({
 /* ── Component ───────────────────────────────────────────────────── */
 
 const HospitalAnalytics = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
 
   /* ── Aliases ── */
@@ -284,7 +284,7 @@ const HospitalAnalytics = () => {
                   />
                   <StatCard
                     label={t("pages.hospital.stat_revenue")}
-                    value={`$${(grossRevenue / 1000).toFixed(0)}k`}
+                    value={`RWF${(grossRevenue / 1000).toFixed(0)}k`}
                     icon={CreditCard}
                     accent="success"
                   />

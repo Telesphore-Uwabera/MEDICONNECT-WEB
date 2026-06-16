@@ -487,7 +487,7 @@ function DetailDrawer({
 // ─── Action buttons ────────────────────────────────────────────────────────────
 
 function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const review  = useReviewPrescription();
   const approve = useApprovePrescription();
   const reject  = useRejectPrescription();
@@ -753,7 +753,7 @@ function PrescriptionTableRow({
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const PharmacyPrescriptions = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters,    setFilters]    = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [drawerRx,   setDrawerRx]   = useState<PrescriptionRequest | null>(null);

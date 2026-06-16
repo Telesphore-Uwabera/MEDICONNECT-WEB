@@ -474,7 +474,7 @@ function BulkEditDialog({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageServicePricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [editingItem, setEditingItem] = useState<ApiPricingItem | null>(null);

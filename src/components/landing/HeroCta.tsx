@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Video, Stethoscope, Pill, Hospital, ArrowRight, LayoutDashboard } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Video,
+  Stethoscope,
+  Pill,
+  Hospital,
+  ArrowRight,
+  LayoutDashboard,
+} from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ConnectDialogContent } from "@/components/ConnectDialog";
 import { useMe } from "@/hooks/useAuth";
-import { dashboardPath } from "@/lib/auth-store";
 
 const HeroCta = () => {
-    
   const { t } = useTranslation();
   const { data: user } = useMe();
   const [connectOpen, setConnectOpen] = useState(false);
@@ -30,7 +34,10 @@ const HeroCta = () => {
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none truncate">
-                    {t("pages.landing.instant_consultation", "Instant Consultation")}
+                    {t(
+                      "pages.landing.instant_consultation",
+                      "Instant Consultation",
+                    )}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
                     {t("pages.landing.title", "connect in under 5 minutes")}
@@ -77,7 +84,7 @@ const HeroCta = () => {
             </button>
           </Link>
 
-          <Link to="/patient/search-hospitals" className="group">
+          <Link to="/patient/search-facilities" className="group">
             <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
               <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-accent text-primary shrink-0">
                 <Hospital className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -161,13 +168,13 @@ const HeroCta = () => {
                 {t("pages.landing.open_marketplace")}
               </p>
               <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate">
-                500+ pharmacies 
+                500+ pharmacies
               </p>
             </div>
           </button>
         </Link>
 
-        <Link to="/patient/search-hospitals" className="group">
+        <Link to="/patient/search-facilities" className="group">
           <button className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm border border-border bg-card hover:border-primary/40 hover:bg-accent transition-smooth">
             <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-accent text-primary shrink-0">
               <Hospital className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

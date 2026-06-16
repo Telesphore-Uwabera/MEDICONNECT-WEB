@@ -492,6 +492,7 @@ export const ConnectDialogContent = ({
     session.clear();
     resumeDeclinedRef.current = true;
     setGuestChatAuth(null);
+    setGuestChatAuth(null);
     setSavedSession(null);
     setConsultationToken(null);  // cleared — next request will be fresh
     setConsultationId(null);
@@ -514,6 +515,7 @@ export const ConnectDialogContent = ({
   //   - paymentInfo already set  → go to payment
   //   - no paymentInfo           → payment was completed, go to polling
   //
+
   const handleRequest = useCallback(async (override?: { name: string; phone: string, password?: string }) => {
     const name = override?.name ?? me?.name ?? guestName;
     const phone = override?.phone ?? me?.phone ?? guestPhone;
@@ -587,6 +589,7 @@ export const ConnectDialogContent = ({
       // Fallback for different backend keys
       const extractedId = res.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
       setConsultationId(extractedId);
+
 
       setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
 

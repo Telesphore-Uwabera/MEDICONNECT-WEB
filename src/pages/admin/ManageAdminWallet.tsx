@@ -1059,7 +1059,7 @@ function MainWalletCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageAdminWallet() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabKey>("doctors");

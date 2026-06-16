@@ -10,6 +10,7 @@ export interface DoctorProfile {
   specialization: string;
   doctor_degree: string;
   medical_license: string;
+  designations?: string;                          // ← add
   consultation_type: "online" | "in_person" | "both";
   preferred_language: string;
   status: "approved" | "pending" | "rejected";
@@ -17,6 +18,19 @@ export interface DoctorProfile {
   slug: string;
   image: string | null;
   bio_en?: string;
+  bio_fr?: string;                                // ← add
+  bio_kiny?: string;                              // ← add
+  consultation_fee?: string | number;             // ← add
+  currency?: string;                              // ← add
+  specialization_fee_id?: number | null;          // ← add
+  years_of_experience?: number;                   // ← add
+  specialization_fee?: {                          // ← add
+    sub_specialization?: string;
+    tier_name?: string;
+    online_fee?: string | number;
+    in_person_fee?: string | number;
+    currency?: string;
+  };
   educations: Education[];
   experiences: Experience[];
   qualifications: Qualification[];

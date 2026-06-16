@@ -1399,7 +1399,7 @@
 // // ─── Page ─────────────────────────────────────────────────────────────────────
 
 // const PatientPrescriptions = () => {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 
 //   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 //   const [view, setView] = useState<ViewMode>("table");
@@ -2183,7 +2183,7 @@ import {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const PatientPrescriptions = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");

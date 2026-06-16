@@ -34,7 +34,7 @@
 //   open: boolean;
 //   onOpenChange: (v: boolean) => void;
 // }) {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const schedule = useHospitalSchedule(hospital.name);
 //   const activeDays = schedule?.days?.filter((d) => d.active) ?? [];
 //   const totalCapacity = activeDays.reduce((s, d) => s + d.capacity, 0);
@@ -222,7 +222,7 @@
 // // ─────────────────────────────────────────────────────────────────────────────
 // export const HospitalCard = ({ hospital }: { hospital: HospitalInfo }) => {
 //   console.log("Rendering card for hospital:", hospital);
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const [bookOpen,     setBookOpen]     = useState(false);
 //   const [scheduleOpen, setScheduleOpen] = useState(false);
 //   const schedule = useHospitalSchedule(hospital.name);
@@ -397,7 +397,7 @@ import HospitalViewDrawer from "./hospital/HospitalViewDrawer";
 // Hospital Card
 // ─────────────────────────────────────────────────────────────────────────────
 export const HospitalCard = ({ hospital }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [bookOpen,     setBookOpen]     = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const schedule = useHospitalSchedule(hospital.name_en);

@@ -24,6 +24,7 @@ export interface RegisterPayload {
   password: string;
   password_confirmation: string;
   accepted_terms: boolean;
+  gender:string
 }
 
 export interface RegisterResponse {

@@ -14,7 +14,7 @@ import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 
 const Auth = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";

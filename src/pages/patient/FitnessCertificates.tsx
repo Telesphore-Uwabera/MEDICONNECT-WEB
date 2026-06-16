@@ -432,7 +432,7 @@ function SentCertificates() {
 type Tab = "request" | "certificates";
 
 const PatientFitnessCertificates = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("request");
 
   const { data: certsData } = useGetPatientCertificates();

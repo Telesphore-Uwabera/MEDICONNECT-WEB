@@ -118,7 +118,7 @@ const SliderSkeleton = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const Index = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
@@ -278,7 +278,7 @@ const Index = () => {
 
   const footerPlatformLinks = [
     { label: "Doctors", to: "/patient/search-doctors" },
-    { label: "Hospitals", to: "/patient/search-hospitals" },
+    { label: "Hospitals", to: "/patient/search-facilities" },
     { label: "Pharmacy", to: "/patient/pharmacy" },
     { label: "Sign in", to: "/auth" },
   ];
@@ -583,7 +583,7 @@ const Index = () => {
                 {t("pages.landing.hospitals_sub")}
               </p>
             </div>
-            <Link to="/patient/search-hospitals">
+            <Link to="/patient/search-facilities">
               <Button variant="outline" size="sm">
                 {t("pages.landing.see_all_hospitals")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />

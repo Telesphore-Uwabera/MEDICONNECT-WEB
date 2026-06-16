@@ -1075,7 +1075,7 @@ function RequestDetail({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DoctorFitnessCertificates() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [activeFilter, setActiveFilter] = useState<CertStatus | "all">("all");
   const [search, setSearch] = useState("");

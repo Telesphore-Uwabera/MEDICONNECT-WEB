@@ -65,7 +65,7 @@ function filtersToParams(filters: FilterState): GetAppointmentsParams {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AppointmentsTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const call = useCallStore();
   const { startCall } = useCallContext();
 

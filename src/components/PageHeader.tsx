@@ -111,7 +111,7 @@ const ROLE_CONFIG: Record<
 /* ─── Component ──────────────────────────────────────────────────── */
 
 export const PageHeader = ({ title, subtitle, actions }: Props) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);

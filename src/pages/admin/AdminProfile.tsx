@@ -1177,7 +1177,7 @@ function EmptyAdminProfile({ onCreate }: { onCreate: () => void }) {
 type Mode = "view" | "create" | "edit";
 
 const AdminProfile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [profileData, setProfileData] = useState<AdminProfileData | null>(null);
   const [mode, setMode] = useState<Mode>("create");
   const [currentStep, setCurrentStep] = useState(0);

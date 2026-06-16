@@ -624,7 +624,7 @@
 // // ─── Page ─────────────────────────────────────────────────────────────────────
 
 // function ManageHospitals() {
-//   const { t } = useTranslation();
+//   const { t, i18n } = useTranslation();
 //   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 //   const [selected, setSelected]     = useState<ApiHospital | null>(null);
 //   const [filterOpen, setFilterOpen] = useState(false);
@@ -1144,7 +1144,7 @@ import { getErrorMessage } from "./components/hospital/Utils";
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageHospitals() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [selected, setSelected]     = useState<ApiHospital | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);

@@ -638,7 +638,7 @@ function RequestActions({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const RestockRequests = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [showCreate, setShowCreate] = useState(false);

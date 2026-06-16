@@ -16,7 +16,7 @@
   "hospital": "Hospital",
   "pharmacy": "Pharmacy",
   "admin": "Admin",
-
+ "facilities": "Facilities",
   "group": {
     "account": "Account",
     "people": "People",
@@ -82,7 +82,7 @@
 
   "medicalInfo": "Medical Info",
   "searchDoctors": "Search Doctors",
-  "searchHospitals": "Search Hospitals",
+  "searchHospitals": "Search Facilities",
   "searchPharmacies": "Search Pharmacies",
 
   "medicines": "Medicines",

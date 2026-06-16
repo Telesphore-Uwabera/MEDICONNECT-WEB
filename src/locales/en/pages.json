@@ -136,7 +136,7 @@
   },
   "doctor": {
     "overview_title": "Good morning, Dr. Vance",
-    "overview_sub": "Tuesday, April 28 · 6 patients on your schedule today",
+    "overview_sub": "{{date}} · patients on your schedule today",
     "instant_title": "Instant Consultation",
     "instant_visible": "You're visible to patients seeking immediate help",
     "instant_hidden": "You're hidden from the instant pool",

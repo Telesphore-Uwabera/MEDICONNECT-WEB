@@ -360,7 +360,7 @@ function PrescriptionCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const DoctorPrescriptions = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -663,7 +663,7 @@ const DoctorPrescriptions = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub")}
+          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
