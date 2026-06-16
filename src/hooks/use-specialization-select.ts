@@ -1,5 +1,3 @@
-// hooks/use-specialization-select.ts
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";

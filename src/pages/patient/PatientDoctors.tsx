@@ -33,7 +33,7 @@ import { SpecializationSelect, type SpecializationValue } from "./components/Spe
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 type SortOption = "rating" | "fee-asc" | "fee-desc";
-type ConsultationType = "all" | "online" | "in_person" | "both" | "booking" | "instant";
+type ConsultationType = "all" | "instant" | "booking" | "both" | "booking" | "instant";
 type ViewMode = "grid" | "list";
 
 interface FilterState {
@@ -104,11 +104,11 @@ function buildApiParams(
   }
 
  if (filters.type !== "all") {
-  const typeMap: Partial<Record<ConsultationType, "online" | "in_person" | "both">> = {
-    booking: "in_person",
-    instant: "online",
+  const typeMap: Partial<Record<ConsultationType, "booking" | "instant" | "both">> = {
+    booking: "booking",
+    instant: "instant",
   };
-  const apiType = typeMap[filters.type] ?? (filters.type as "online" | "in_person" | "both");
+  const apiType = typeMap[filters.type] ?? (filters.type as "booking" | "instant" | "both");
   params.type = apiType;
 }
 
@@ -248,13 +248,13 @@ function ConsultationTypeBadge({
   type: ApiDoctor["consultation_type"];
 }) {
   const configs = {
-    online: {
-      label: "Online",
+    instant: {
+      label: "Instant",
       className:
         "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
     },
-    in_person: {
-      label: "In-Person",
+    booking: {
+      label: "Booking",
       className:
         "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
     },

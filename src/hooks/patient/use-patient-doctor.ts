@@ -35,7 +35,7 @@ export interface ApiDoctor {
   is_available: boolean;
   instant_consultation: boolean;
   bookings_paused: boolean;
-  consultation_type: "online" | "in_person" | "both";
+  consultation_type: "instant" | "booking" | "both";
   image: string | null;
   preferred_language: string;
   city: string | null;
@@ -79,7 +79,7 @@ export interface DoctorSearchParams {
   q?: string;
   specialization?: string;
   specialization_fee_id?: number;
-  type?: "online" | "in_person" | "both";
+  type?: "instant" | "booking" | "both";
   language?: string;
   city?: string;
   gender?: "male" | "female";
