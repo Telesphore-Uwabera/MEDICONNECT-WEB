@@ -378,7 +378,11 @@ export const ConnectDialogContent = ({
   useEffect(() => {
     const existing = resumeDeclinedRef.current ? null : session.read();
 
-    if (existing && !resumeDeclinedRef) {
+    // NOTE: the `resumeDeclinedRef.current` guard is already applied above when
+    // computing `existing`. (A previous `!resumeDeclinedRef` check here was always
+    // false — a ref object is truthy — so the restore branch never ran and every
+    // remount reset the flow to idle, discarding an in-progress payment/queue.)
+    if (existing) {
       // Pre-load everything from the saved session right away
       setSavedSession(existing);
       setConsultationToken(existing.token);   // ← key fix: token is live immediately
