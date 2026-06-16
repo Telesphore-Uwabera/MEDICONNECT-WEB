@@ -231,7 +231,6 @@ const App = () => (
               <Route path="/doctor/referrals" element={<MyReferrals />} />
 
             {/* Settings */}
-            <Route path="/doctor/settings" element={<Settings />} />
             <Route path="/doctor" element={<DoctorOverview />} />
             <Route path="/doctor/availability" element={<DoctorAvailability />} />
             <Route path="/doctor/appointments" element={<DoctorAppointments />} />
@@ -413,7 +412,7 @@ const App = () => (
               element={<ChecklistQuestions />}
             />
             {/* AdminSettings */}
-            <Route path="/settings" element={<AdminSettings />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             {/* ManageAdminWallet */}
             <Route path="/admin/manage-wallet" element={<ManageAdminWallet />} />
             <Route path="/admin" element={<AdminOverview />} />
