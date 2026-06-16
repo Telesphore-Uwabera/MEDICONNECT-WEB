@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 // Base matches the actual API: /api/v1/reviews (no /patient/ prefix)
-const BASE = "/reviews";
+const BASE = "/patient/reviews";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
