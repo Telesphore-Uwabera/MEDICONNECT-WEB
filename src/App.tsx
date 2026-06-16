@@ -81,6 +81,7 @@ import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import PatientSettings from "./pages/patient/PatientSettings.tsx";
 import DoctorSettings from "./pages/doctor/DoctorSettings.tsx";
+import AdminReviews from "./pages/admin/AdminReviews.tsx";
 
 const queryClient = new QueryClient();
 
@@ -410,6 +411,11 @@ const App = () => (
             <Route
               path="/admin/manage-checklist-questions"
               element={<ChecklistQuestions />}
+            />
+            {/* AdminReviews */}
+            <Route
+              path="/admin/reviews"
+              element={<AdminReviews/>}
             />
 
             <Route path="*" element={<NotFound />} />
