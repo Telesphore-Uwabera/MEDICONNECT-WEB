@@ -87,7 +87,9 @@ function Field({
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
-      {hint && <p className="mt-1 text-[10px] text-muted-foreground/50">{hint}</p>}
+      {hint && (
+        <p className="mt-1 text-[10px] text-muted-foreground/50">{hint}</p>
+      )}
     </div>
   );
 }
@@ -110,7 +112,11 @@ function DisplayField({
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <p className="text-[13px] text-foreground font-medium">
-          {value || <span className="text-muted-foreground/40 font-normal italic">Not set</span>}
+          {value || (
+            <span className="text-muted-foreground/40 font-normal italic">
+              Not set
+            </span>
+          )}
         </p>
         {badge}
       </div>
@@ -120,7 +126,13 @@ function DisplayField({
 
 // ─── VerifiedBadge ────────────────────────────────────────────────────────────
 
-function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
+function VerifiedBadge({
+  verified,
+  date,
+}: {
+  verified: boolean;
+  date?: string | null;
+}) {
   if (verified) {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-sm">
@@ -164,7 +176,11 @@ function PasswordInput({
         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
         tabIndex={-1}
       >
-        {show ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+        {show ? (
+          <EyeOff className="w-3.5 h-3.5" />
+        ) : (
+          <Eye className="w-3.5 h-3.5" />
+        )}
       </button>
     </div>
   );
@@ -194,8 +210,12 @@ function SectionCard({
           <Icon className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-foreground leading-tight">{title}</p>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{description}</p>
+          <p className="text-[13px] font-semibold text-foreground leading-tight">
+            {title}
+          </p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+            {description}
+          </p>
         </div>
         {onEdit && !isEditing && (
           <button
@@ -247,10 +267,20 @@ function OtpStep({
           onClick={() => onVerify(otp)}
           disabled={isPending || otp.length < 6}
         >
-          {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+          {isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3" />
+          )}
           Verify
         </Button>
-        <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={onCancel} disabled={isPending}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 text-[11px]"
+          onClick={onCancel}
+          disabled={isPending}
+        >
           Cancel
         </Button>
       </div>
@@ -271,10 +301,16 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start justify-between py-3 border-b border-border/40 last:border-0 gap-4">
-      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{label}</p>
+      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">
+        {label}
+      </p>
       <div className="flex items-center gap-2 flex-wrap justify-end">
         <span className="text-[12px] text-foreground font-medium text-right">
-          {value || <span className="text-muted-foreground/40 italic font-normal">Not set</span>}
+          {value || (
+            <span className="text-muted-foreground/40 italic font-normal">
+              Not set
+            </span>
+          )}
         </span>
         {badge}
       </div>
@@ -287,10 +323,10 @@ function InfoRow({
 type TabKey = "profile" | "security" | "contact" | "danger";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "profile",  label: "Profile",  icon: UserCog    },
-  { key: "security", label: "Security", icon: KeyRound   },
-  { key: "contact",  label: "Contact",  icon: Mail       },
-  { key: "danger",   label: "Danger",   icon: ShieldAlert },
+  { key: "profile", label: "Profile", icon: UserCog },
+  { key: "security", label: "Security", icon: KeyRound },
+  { key: "contact", label: "Contact", icon: Mail },
+  { key: "danger", label: "Danger", icon: ShieldAlert },
 ];
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -310,9 +346,9 @@ function AdminSettings() {
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
   // Edit mode toggles
-  const [editingProfile, setEditingProfile]   = useState(false);
-  const [editingEmail, setEditingEmail]       = useState(false);
-  const [editingPhone, setEditingPhone]       = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
 
   // Profile form
@@ -351,15 +387,15 @@ function AdminSettings() {
   const { data: settingsResponse, isLoading } = useGetMySettings();
   const settings = settingsResponse?.data;
 
-  const updateProfile  = useUpdateProfile();
-  const updateAvatar   = useUpdateAvatar();
-  const deleteAvatar   = useDeleteAvatar();
+  const updateProfile = useUpdateProfile();
+  const updateAvatar = useUpdateAvatar();
+  const deleteAvatar = useDeleteAvatar();
   const updatePassword = useUpdatePassword();
-  const requestEmail   = useRequestEmailChange();
-  const verifyEmail    = useVerifyEmailChange();
-  const requestPhone   = useRequestPhoneChange();
-  const verifyPhone    = useVerifyPhoneChange();
-  const deleteAccount  = useDeleteAccount();
+  const requestEmail = useRequestEmailChange();
+  const verifyEmail = useVerifyEmailChange();
+  const requestPhone = useRequestPhoneChange();
+  const verifyPhone = useVerifyPhoneChange();
+  const deleteAccount = useDeleteAccount();
 
   // Reset avatar error when URL changes
   useEffect(() => {
@@ -428,7 +464,10 @@ function AdminSettings() {
 
   const handlePasswordSave = async () => {
     if (!passwordForm.current_password || !passwordForm.password) {
-      toast({ title: "All password fields are required", variant: "destructive" });
+      toast({
+        title: "All password fields are required",
+        variant: "destructive",
+      });
       return;
     }
     if (passwordForm.password !== passwordForm.password_confirmation) {
@@ -437,8 +476,14 @@ function AdminSettings() {
     }
     try {
       await updatePassword.mutateAsync(passwordForm);
-      toast({ title: "Password updated. Other sessions have been logged out." });
-      setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
+      toast({
+        title: "Password updated. Other sessions have been logged out.",
+      });
+      setPasswordForm({
+        current_password: "",
+        password: "",
+        password_confirmation: "",
+      });
       setEditingPassword(false);
     } catch (err) {
       toast({ title: getErrorMessage(err), variant: "destructive" });
@@ -521,7 +566,10 @@ function AdminSettings() {
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
             <div className="h-36 rounded-sm border border-border/60 bg-card animate-pulse" />
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-sm border border-border/60 bg-card animate-pulse" />
+              <div
+                key={i}
+                className="h-40 rounded-sm border border-border/60 bg-card animate-pulse"
+              />
             ))}
           </main>
         </div>
@@ -534,11 +582,11 @@ function AdminSettings() {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.admin.settings_title", { defaultValue: "Settings" })}
-          subtitle={t("pages.admin.settings_sub", { defaultValue: "Manage your profile, security, and account" })}
+          subtitle={t("pages.admin.settings_sub", {
+            defaultValue: "Manage your profile, security, and account",
+          })}
         />
-
         <main className="flex-1 overflow-y-auto">
-
           {/* ── Identity Hero Banner ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 mt-3 sm:mt-4">
             <div className="rounded-sm border border-border/60 bg-card shadow-sm overflow-hidden">
@@ -565,10 +613,11 @@ function AdminSettings() {
                     className="absolute inset-0 rounded-sm bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Change photo"
                   >
-                    {updateAvatar.isPending
-                      ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                      : <Camera className="w-5 h-5 text-white" />
-                    }
+                    {updateAvatar.isPending ? (
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-5 h-5 text-white" />
+                    )}
                   </button>
                   <input
                     ref={fileInputRef}
@@ -632,10 +681,11 @@ function AdminSettings() {
                       onClick={handleDeleteAvatar}
                       disabled={deleteAvatar.isPending}
                     >
-                      {deleteAvatar.isPending
-                        ? <Loader2 className="w-3 h-3 animate-spin" />
-                        : <Trash2 className="w-3 h-3" />
-                      }
+                      {deleteAvatar.isPending ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
                       Remove
                     </Button>
                   )}
@@ -648,7 +698,7 @@ function AdminSettings() {
           <div className="px-3 sm:px-4 mt-3">
             <div className="flex items-center gap-1 p-1 rounded-sm bg-secondary/40 border border-border/40">
               {TABS.map((tab) => {
-                const Icon   = tab.icon;
+                const Icon = tab.icon;
                 const active = activeTab === tab.key;
                 return (
                   <button
@@ -662,7 +712,12 @@ function AdminSettings() {
                       tab.key === "danger" && active && "text-destructive",
                     )}
                   >
-                    <Icon className={cn("w-3.5 h-3.5", tab.key === "danger" && "text-destructive")} />
+                    <Icon
+                      className={cn(
+                        "w-3.5 h-3.5",
+                        tab.key === "danger" && "text-destructive",
+                      )}
+                    />
                     <span className="hidden sm:inline">{tab.label}</span>
                   </button>
                 );
@@ -672,7 +727,6 @@ function AdminSettings() {
 
           {/* Content */}
           <div className="p-3 sm:p-4 space-y-4 max-w-2xl">
-
             {/* ── Profile Tab ─────────────────────────────────────────────── */}
             {activeTab === "profile" && (
               <SectionCard
@@ -691,7 +745,11 @@ function AdminSettings() {
                         User ID
                       </p>
                       <span className="text-[12px] text-foreground font-medium font-mono">
-                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">Not set</span>}
+                        {settings?.id ?? (
+                          <span className="text-muted-foreground/40 italic font-sans font-normal">
+                            Not set
+                          </span>
+                        )}
                       </span>
                     </div>
 
@@ -702,7 +760,10 @@ function AdminSettings() {
                       value={settings?.email}
                       badge={
                         settings?.email ? (
-                          <VerifiedBadge verified={!!settings.email_verified_at} date={settings.email_verified_at} />
+                          <VerifiedBadge
+                            verified={!!settings.email_verified_at}
+                            date={settings.email_verified_at}
+                          />
                         ) : undefined
                       }
                     />
@@ -716,19 +777,28 @@ function AdminSettings() {
                       }
                       badge={
                         settings?.phone ? (
-                          <VerifiedBadge verified={!!settings.phone_verified_at} date={settings.phone_verified_at} />
+                          <VerifiedBadge
+                            verified={!!settings.phone_verified_at}
+                            date={settings.phone_verified_at}
+                          />
                         ) : undefined
                       }
                     />
 
                     <InfoRow
                       label="Preferred language"
-                      value={LANGUAGE_LABELS[settings?.preferred_language ?? "en"]}
+                      value={
+                        LANGUAGE_LABELS[settings?.preferred_language ?? "en"]
+                      }
                     />
 
                     <InfoRow
                       label="Member since"
-                      value={settings?.created_at ? formatDate(settings.created_at) : null}
+                      value={
+                        settings?.created_at
+                          ? formatDate(settings.created_at)
+                          : null
+                      }
                     />
                   </div>
                 ) : (
@@ -737,7 +807,12 @@ function AdminSettings() {
                       <input
                         type="text"
                         value={profileForm.name}
-                        onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+                        onChange={(e) =>
+                          setProfileForm((p) => ({
+                            ...p,
+                            name: e.target.value,
+                          }))
+                        }
                         placeholder="John Doe"
                         className={inputCls}
                         autoFocus
@@ -749,7 +824,10 @@ function AdminSettings() {
                         onChange={(e) =>
                           setProfileForm((p) => ({
                             ...p,
-                            preferred_language: e.target.value as "en" | "fr" | "rw",
+                            preferred_language: e.target.value as
+                              | "en"
+                              | "fr"
+                              | "rw",
                           }))
                         }
                         className={selectCls}
@@ -799,17 +877,28 @@ function AdminSettings() {
                 {!editingPassword ? (
                   <div className="-my-1">
                     <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
-                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">Password</p>
+                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">
+                        Password
+                      </p>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 8 }).map((_, i) => (
-                          <span key={i} className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
+                          <span
+                            key={i}
+                            className="w-1.5 h-1.5 rounded-full bg-foreground/20"
+                          />
                         ))}
-                        <span className="ml-2 text-[11px] text-muted-foreground/50">Set</span>
+                        <span className="ml-2 text-[11px] text-muted-foreground/50">
+                          Set
+                        </span>
                       </div>
                     </div>
                     <InfoRow
                       label="Member since"
-                      value={settings?.created_at ? formatDate(settings.created_at) : null}
+                      value={
+                        settings?.created_at
+                          ? formatDate(settings.created_at)
+                          : null
+                      }
                     />
                   </div>
                 ) : (
@@ -817,21 +906,33 @@ function AdminSettings() {
                     <Field label="Current password" required>
                       <PasswordInput
                         value={passwordForm.current_password}
-                        onChange={(v) => setPasswordForm((p) => ({ ...p, current_password: v }))}
+                        onChange={(v) =>
+                          setPasswordForm((p) => ({
+                            ...p,
+                            current_password: v,
+                          }))
+                        }
                         placeholder="Your current password"
                       />
                     </Field>
                     <Field label="New password" required>
                       <PasswordInput
                         value={passwordForm.password}
-                        onChange={(v) => setPasswordForm((p) => ({ ...p, password: v }))}
+                        onChange={(v) =>
+                          setPasswordForm((p) => ({ ...p, password: v }))
+                        }
                         placeholder="At least 8 characters"
                       />
                     </Field>
                     <Field label="Confirm new password" required>
                       <PasswordInput
                         value={passwordForm.password_confirmation}
-                        onChange={(v) => setPasswordForm((p) => ({ ...p, password_confirmation: v }))}
+                        onChange={(v) =>
+                          setPasswordForm((p) => ({
+                            ...p,
+                            password_confirmation: v,
+                          }))
+                        }
                         placeholder="Repeat new password"
                       />
                     </Field>
@@ -853,7 +954,11 @@ function AdminSettings() {
                         className="h-9 px-4 text-[12px] rounded-sm"
                         onClick={() => {
                           setEditingPassword(false);
-                          setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
+                          setPasswordForm({
+                            current_password: "",
+                            password: "",
+                            password_confirmation: "",
+                          });
                         }}
                         disabled={updatePassword.isPending}
                       >
@@ -888,28 +993,44 @@ function AdminSettings() {
                         value={settings?.email}
                         badge={
                           settings?.email ? (
-                            <VerifiedBadge verified={!!settings.email_verified_at} date={settings.email_verified_at} />
+                            <VerifiedBadge
+                              verified={!!settings.email_verified_at}
+                              date={settings.email_verified_at}
+                            />
                           ) : undefined
                         }
                       />
                       <InfoRow
                         label="Verified at"
-                        value={settings?.email_verified_at ? formatDate(settings.email_verified_at) : null}
+                        value={
+                          settings?.email_verified_at
+                            ? formatDate(settings.email_verified_at)
+                            : null
+                        }
                       />
                     </div>
                   ) : (
                     <>
                       {settings?.email && (
                         <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
-                          <p className="text-[12px] font-medium text-foreground mt-1">{settings.email}</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">
+                            Changing from
+                          </p>
+                          <p className="text-[12px] font-medium text-foreground mt-1">
+                            {settings.email}
+                          </p>
                         </div>
                       )}
                       <Field label="New email" required>
                         <input
                           type="email"
                           value={emailForm.email}
-                          onChange={(e) => setEmailForm((p) => ({ ...p, email: e.target.value }))}
+                          onChange={(e) =>
+                            setEmailForm((p) => ({
+                              ...p,
+                              email: e.target.value,
+                            }))
+                          }
                           placeholder="newemail@example.com"
                           className={inputCls}
                           disabled={emailOtpStep}
@@ -919,7 +1040,9 @@ function AdminSettings() {
                       <Field label="Current password" required>
                         <PasswordInput
                           value={emailForm.current_password}
-                          onChange={(v) => setEmailForm((p) => ({ ...p, current_password: v }))}
+                          onChange={(v) =>
+                            setEmailForm((p) => ({ ...p, current_password: v }))
+                          }
                           placeholder="Confirm your identity"
                         />
                       </Field>
@@ -965,7 +1088,11 @@ function AdminSettings() {
                   title="Phone number"
                   description="An OTP will be sent to your new number to confirm the change."
                   onEdit={() => {
-                    setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
+                    setPhoneForm({
+                      phone: "",
+                      country_code: "+250",
+                      current_password: "",
+                    });
                     setPhoneOtpStep(false);
                     setEditingPhone(true);
                   }}
@@ -982,21 +1109,33 @@ function AdminSettings() {
                         }
                         badge={
                           settings?.phone ? (
-                            <VerifiedBadge verified={!!settings.phone_verified_at} date={settings.phone_verified_at} />
+                            <VerifiedBadge
+                              verified={!!settings.phone_verified_at}
+                              date={settings.phone_verified_at}
+                            />
                           ) : undefined
                         }
                       />
-                      <InfoRow label="Country code" value={settings?.country_code} />
+                      <InfoRow
+                        label="Country code"
+                        value={settings?.country_code}
+                      />
                       <InfoRow
                         label="Verified at"
-                        value={settings?.phone_verified_at ? formatDate(settings.phone_verified_at) : null}
+                        value={
+                          settings?.phone_verified_at
+                            ? formatDate(settings.phone_verified_at)
+                            : null
+                        }
                       />
                     </div>
                   ) : (
                     <>
                       {settings?.phone && (
                         <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">
+                            Changing from
+                          </p>
                           <p className="text-[12px] font-medium text-foreground mt-1">
                             {settings.country_code} {settings.phone}
                           </p>
@@ -1006,7 +1145,12 @@ function AdminSettings() {
                         <Field label="Code" required>
                           <select
                             value={phoneForm.country_code}
-                            onChange={(e) => setPhoneForm((p) => ({ ...p, country_code: e.target.value }))}
+                            onChange={(e) =>
+                              setPhoneForm((p) => ({
+                                ...p,
+                                country_code: e.target.value,
+                              }))
+                            }
                             className={selectCls}
                             disabled={phoneOtpStep}
                           >
@@ -1024,7 +1168,12 @@ function AdminSettings() {
                           <input
                             type="tel"
                             value={phoneForm.phone}
-                            onChange={(e) => setPhoneForm((p) => ({ ...p, phone: e.target.value }))}
+                            onChange={(e) =>
+                              setPhoneForm((p) => ({
+                                ...p,
+                                phone: e.target.value,
+                              }))
+                            }
                             placeholder="0781234567"
                             className={inputCls}
                             disabled={phoneOtpStep}
@@ -1035,7 +1184,9 @@ function AdminSettings() {
                       <Field label="Current password" required>
                         <PasswordInput
                           value={phoneForm.current_password}
-                          onChange={(v) => setPhoneForm((p) => ({ ...p, current_password: v }))}
+                          onChange={(v) =>
+                            setPhoneForm((p) => ({ ...p, current_password: v }))
+                          }
                           placeholder="Confirm your identity"
                         />
                       </Field>
@@ -1090,7 +1241,8 @@ function AdminSettings() {
                       Delete account
                     </p>
                     <p className="text-[10px] text-red-500/70 dark:text-red-500/60 mt-0.5">
-                      Permanently removes your account and revokes all active sessions
+                      Permanently removes your account and revokes all active
+                      sessions
                     </p>
                   </div>
                 </div>
@@ -1098,9 +1250,13 @@ function AdminSettings() {
                   {!showDeleteConfirm ? (
                     <>
                       <p className="text-[12px] text-muted-foreground leading-relaxed">
-                        Once you delete your account, all your data will be permanently erased and a farewell email
-                        will be sent. This action{" "}
-                        <span className="font-semibold text-foreground">cannot be undone</span>.
+                        Once you delete your account, all your data will be
+                        permanently erased and a farewell email will be sent.
+                        This action{" "}
+                        <span className="font-semibold text-foreground">
+                          cannot be undone
+                        </span>
+                        .
                       </p>
                       <Button
                         variant="outline"
@@ -1159,7 +1315,6 @@ function AdminSettings() {
                 </div>
               </div>
             )}
-
           </div>
         </main>
       </div>
