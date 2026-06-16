@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
-const BASE = "/patient/reviews";
+// Base matches the actual API: /api/v1/reviews (no /patient/ prefix)
+const BASE = "/reviews";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -11,10 +12,10 @@ export type ReviewStatus = "pending" | "approved" | "rejected";
 
 export interface ReviewDoctor {
   id: number;
-  name: string;           // from doctor.user.name
+  name: string;
   specialization: string;
   designations: string;
-  avatar: string | null;  // from doctor.user.avatar
+  avatar: string | null;
 }
 
 export interface Review {
@@ -33,7 +34,7 @@ export interface Review {
   doctor: ReviewDoctor;
 }
 
-// Raw shape from the API — we normalise it into Review above
+// Raw shape from the API — normalised into Review above
 interface RawDoctor {
   id: number;
   specialization: string;
@@ -72,6 +73,22 @@ interface ReviewsResponse {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Review list query params  (matches API optional query params)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ReviewListParams {
+  status?: ReviewStatus;
+  rating?: number;
+  doctor_id?: number;
+  from_date?: string;
+  to_date?: string;
+  sort_by?: "created_at" | "rating";
+  sort_order?: "asc" | "desc";
+  per_page?: number;
+  page?: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Normalise raw API doctor → flat ReviewDoctor
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -88,35 +105,100 @@ function normaliseReview(raw: RawReview): Review {
   };
 }
 
+function buildReviewUrl(params: ReviewListParams = {}): string {
+  const sp = new URLSearchParams();
+  if (params.status) sp.set("status", params.status);
+  if (params.rating) sp.set("rating", String(params.rating));
+  if (params.doctor_id) sp.set("doctor_id", String(params.doctor_id));
+  if (params.from_date) sp.set("from_date", params.from_date);
+  if (params.to_date) sp.set("to_date", params.to_date);
+  if (params.sort_by) sp.set("sort_by", params.sort_by);
+  if (params.sort_order) sp.set("sort_order", params.sort_order);
+  if (params.per_page) sp.set("per_page", String(params.per_page));
+  if (params.page && params.page > 1) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  return qs ? `${BASE}?${qs}` : BASE;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Query Keys
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const reviewKeys = {
   all: ["patient-reviews"] as const,
-  list: (status?: ReviewStatus) =>
-    status
-      ? [...reviewKeys.all, "list", status]
-      : [...reviewKeys.all, "list"],
+  list: (params?: ReviewListParams) =>
+    params
+      ? ([...reviewKeys.all, "list", params] as const)
+      : ([...reviewKeys.all, "list"] as const),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. List my reviews   GET /patient/reviews
+// 1. List my reviews   GET /reviews
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function useGetMyReviews(status?: ReviewStatus) {
+export function useGetMyReviews(params: ReviewListParams = {}) {
   return useQuery<Review[]>({
-    queryKey: reviewKeys.list(status),
+    queryKey: reviewKeys.list(params),
     queryFn: async () => {
-      const url = status ? `${BASE}?status=${status}` : BASE;
-      const res = (await apiFetch(url)) as ReviewsResponse;
+      const res = (await apiFetch(buildReviewUrl(params))) as ReviewsResponse;
       return (res.reviews ?? []).map(normaliseReview);
     },
   });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Update review (pending only)   PUT /patient/reviews/:id
+// 2. Submit review   POST /reviews
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SubmitReviewPayload {
+  appointment_id: number;
+  rating: number;
+  comment?: string | null;
+  is_anonymous?: boolean;
+}
+
+interface SubmitReviewResponse {
+  message: string;
+  review: Omit<RawReview, "doctor"> & {
+    // POST response has minimal review fields per the API spec
+    id: number;
+    appointment_id: number;
+    patient_id: number;
+    doctor_id: number;
+    rating: number;
+    comment: string | null;
+    is_anonymous: boolean;
+    status: ReviewStatus;
+  };
+}
+
+export function useSubmitReview() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, Error, SubmitReviewPayload>({
+    mutationFn: async (payload) => {
+      const res = (await apiFetch(BASE, {
+        method: "POST",
+        body: {
+          appointment_id: payload.appointment_id,
+          rating: payload.rating,
+          comment: payload.comment ?? null,
+          is_anonymous: payload.is_anonymous ?? false,
+        },
+      })) as SubmitReviewResponse;
+      return { message: res.message };
+    },
+    onSuccess: () => {
+      // Invalidate so the list re-fetches with the new review
+      queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+      // Also invalidate appointments so can_review reflects the change
+      queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. Update review (pending only)   PUT /reviews/:id
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface UpdateReviewPayload {
@@ -125,7 +207,6 @@ export interface UpdateReviewPayload {
   is_anonymous?: boolean;
 }
 
-// Shape returned by PUT — no doctor relation included
 interface UpdateReviewResponse {
   message: string;
   review: Omit<RawReview, "doctor">;
@@ -138,24 +219,29 @@ export function useUpdateReview(id: number) {
     mutationFn: async (payload) => {
       const res = (await apiFetch(`${BASE}/${id}`, {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: payload,
       })) as UpdateReviewResponse;
 
-      // PUT response has no doctor — pull it from the existing cache
+      // PUT response has no doctor — pull it from the existing list cache
       const cached: Review[] = queryClient.getQueryData(reviewKeys.list()) ?? [];
       const existing = cached.find((r) => r.id === id);
 
       const merged: Review = {
         ...(existing ?? ({} as Review)),
         ...res.review,
-        // keep the doctor from cache; API doesn't return it on update
-        doctor: existing?.doctor ?? ({ name: "Unknown", specialization: "", designations: "", avatar: null, id: 0 } as Review["doctor"]),
+        doctor: existing?.doctor ?? {
+          id: 0,
+          name: "Unknown",
+          specialization: "",
+          designations: "",
+          avatar: null,
+        },
       };
 
       return { review: merged, message: res.message };
     },
     onSuccess: ({ review }) => {
-      // Optimistically update the list cache so the UI reflects the change immediately
+      // Update the list cache immediately so the UI reflects the change
       queryClient.setQueryData<Review[]>(reviewKeys.list(), (old = []) =>
         old.map((r) => (r.id === id ? review : r)),
       );
@@ -164,7 +250,7 @@ export function useUpdateReview(id: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Delete review (pending only)   DELETE /patient/reviews/:id
+// 4. Delete review (pending only)   DELETE /reviews/:id
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useDeleteReview() {
@@ -176,6 +262,8 @@ export function useDeleteReview() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.all });
+      // Invalidate appointments so can_review becomes true again if applicable
+      queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
     },
   });
 }
