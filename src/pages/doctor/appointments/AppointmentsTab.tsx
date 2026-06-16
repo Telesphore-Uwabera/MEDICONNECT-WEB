@@ -50,10 +50,10 @@ const MOCK_DOCTOR = doctors?.[0] ?? {
 
 function filtersToParams(filters: FilterState): GetAppointmentsParams {
   const params: GetAppointmentsParams = {};
-  if (filters.status !== "All") params.status   = filters.status;
-  if (filters.type   !== "All") params.type     = filters.type;
-  if (filters.today)             params.today    = true;
-  if (filters.upcoming)          params.upcoming = true;
+  if (filters.status !== "All") params.status = filters.status;
+  if (filters.type !== "All") params.type = filters.type;
+  if (filters.today) params.today = true;
+  if (filters.upcoming) params.upcoming = true;
   if (filters.date) {
     params.date = filters.date;
     delete params.today;
@@ -69,12 +69,12 @@ export function AppointmentsTab() {
   const call = useCallStore();
   const { startCall } = useCallContext();
 
-  const [filters,             setFilters]             = useState<FilterState>(INITIAL_FILTERS);
-  const [view,                setView]                = useState<ViewMode>("table");
-  const [filterOpen,          setFilterOpen]          = useState(false);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [view, setView] = useState<ViewMode>("table");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [scheduledCallActive, setScheduledCallActive] = useState(false);
-  const [detailAppt,          setDetailAppt]          = useState<Appointment | null>(null);
-  const [runningLateAppt,     setRunningLateAppt]     = useState<Appointment | null>(null);
+  const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
+  const [runningLateAppt, setRunningLateAppt] = useState<Appointment | null>(null);
 
   const hasActiveFilters = useMemo(
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS), [filters]
@@ -98,7 +98,7 @@ export function AppointmentsTab() {
 
   const joinSession = useJoinSession();
   const acceptQuick = useAcceptQuick();
-  const readyNext   = useReadyNext();
+  const readyNext = useReadyNext();
 
   const appointments: Appointment[] = data?.data ?? [];
   console.log("appointments:", appointments);
@@ -129,10 +129,10 @@ export function AppointmentsTab() {
   }, [appointments, filters.search, filters.sort]);
 
   // Status counts for toolbar chips
-  const pendingCount    = filtered.filter((a) => a.status === "pending").length;
-  const confirmedCount  = filtered.filter((a) => a.status === "confirmed").length;
+  const pendingCount = filtered.filter((a) => a.status === "pending").length;
+  const confirmedCount = filtered.filter((a) => a.status === "confirmed").length;
   const inProgressCount = filtered.filter((a) => a.status === "in_progress").length;
-  const completedCount  = filtered.filter((a) => a.status === "completed").length;
+  const completedCount = filtered.filter((a) => a.status === "completed").length;
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -140,12 +140,12 @@ export function AppointmentsTab() {
   const startOrRejoin = useCallback(
     (appt: Appointment, isRejoin = false) => {
       const apptCtx: AppointmentContext = {
-        id:           String(appt.id),
+        id: String(appt.id),
         patientLabel: appt.patient?.name ?? "Patient",
-        specialty:    apptSpecialty(appt),
-        date:         appt.appointment_date,
-        time:         appt.appointment_time,
-        type:         appt.type === "online" ? "video" : "in-person",
+        specialty: apptSpecialty(appt),
+        date: appt.appointment_date,
+        time: appt.appointment_time,
+        type: appt.type === "online" ? "video" : "in-person",
       };
 
       // Open the in-app ConsultationRoom (same call + chat as instant consults)
@@ -187,8 +187,8 @@ export function AppointmentsTab() {
     [call, acceptQuick, joinSession, startCall]
   );
 
-  const handleStart  = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
-  const handleRejoin = useCallback((appt: Appointment) => startOrRejoin(appt, true),  [startOrRejoin]);
+  const handleStart = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
+  const handleRejoin = useCallback((appt: Appointment) => startOrRejoin(appt, true), [startOrRejoin]);
 
   const handleReadyNext = useCallback((appt: Appointment) => {
     readyNext.mutate(appt.id, {
@@ -315,12 +315,12 @@ export function AppointmentsTab() {
 
             {/* Status chips */}
             <div className="hidden lg:flex items-center gap-2">
-              {pendingCount    > 0 && (
+              {pendingCount > 0 && (
                 <span className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />{pendingCount} pending
                 </span>
               )}
-              {confirmedCount  > 0 && (
+              {confirmedCount > 0 && (
                 <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />{confirmedCount} confirmed
                 </span>
@@ -330,7 +330,7 @@ export function AppointmentsTab() {
                   <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />{inProgressCount} active
                 </span>
               )}
-              {completedCount  > 0 && (
+              {completedCount > 0 && (
                 <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{completedCount} done
                 </span>
@@ -455,154 +455,154 @@ export function AppointmentsTab() {
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : filtered.map((a) => {
-                        const status      = a.status as UIStatus;
-                        const canStart    = status === "confirmed" || status === "pending";
-                        const isInProgress = status === "in_progress";
-                        const hasNotes    = !!a.notes;
-
-                        return (
-                          <tr
-                            key={a.id}
-                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
-                          >
-                            {/* Patient */}
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <div className="h-9 w-9 rounded-sm bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0 border border-primary/10">
-                                  {a.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-[12px] text-foreground">{apptLabel(a)}</p>
-                                  <p className="text-[10px] text-muted-foreground/70 capitalize">{a.booking_type}</p>
-                                </div>
+                      const status = a.status as UIStatus;
+                      const canStart = status === "confirmed" || status === "pending";
+                      const isInProgress = status === "in_progress";
+                      const hasNotes = !!a.notes;
+                      return (
+                        <tr
+                          key={a.id}
+                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
+                        >
+                          {/* Patient */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 rounded-sm bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0 border border-primary/10">
+                                {a.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
                               </div>
-                            </td>
-
-                            {/* When */}
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="flex items-center gap-1 font-medium text-foreground">
-                                  <Calendar className="h-3 w-3 text-muted-foreground/40" />
-                                  {fmtDate(a.appointment_date)}
-                                </span>
-                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                  <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                  {fmtTime(a.appointment_time)}
-                                </span>
+                              <div>
+                                <p className="font-semibold text-[12px] text-foreground">{apptLabel(a)}</p>
+                                <p className="text-[10px] text-muted-foreground/70 capitalize">{a.booking_type}</p>
                               </div>
-                            </td>
+                            </div>
+                          </td>
 
-                            {/* Type */}
-                            <td className="px-4 py-3">
-                              <span className="inline-flex items-center gap-1.5 text-muted-foreground/80">
-                                {a.type === "online"
-                                  ? <Video className="h-3.5 w-3.5 text-sky-500" />
-                                  : <MapPin className="h-3.5 w-3.5 text-amber-500" />}
-                                <span>{a.type === "online" ? "Video" : "In-person"}</span>
+                          {/* When */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="flex items-center gap-1 font-medium text-foreground">
+                                <Calendar className="h-3 w-3 text-muted-foreground/40" />
+                                {fmtDate(a.appointment_date)}
                               </span>
-                            </td>
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <Clock className="h-3 w-3 text-muted-foreground/40" />
 
-                            {/* Status */}
-                            <td className="px-4 py-3">
-                              <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium", STATUS_STYLES[status])}>
-                                <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status])} />
-                                {statusLabel(status)}
-                              </Badge>
-                            </td>
+                                {fmtTime(a.appointment_time)}
+                              </span>
+                            </div>
+                          </td>
 
-                            {/* Actions */}
-                            <td className="px-4 py-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                {hasNotes && (
-                                  <span className="text-[9px] text-emerald-600 dark:text-emerald-500 flex items-center gap-1">
-                                    <FileText className="h-3 w-3" /> {t("consult.booking.has_notes")}
-                                  </span>
-                                )}
+                          {/* Type */}
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1.5 text-muted-foreground/80">
+                              {a.type === "online"
+                                ? <Video className="h-3.5 w-3.5 text-sky-500" />
+                                : <MapPin className="h-3.5 w-3.5 text-amber-500" />}
+                              <span>{a.type === "online" ? "Video" : "In-person"}</span>
+                            </span>
+                          </td>
 
-                                {/* Details */}
+                          {/* Status */}
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium", STATUS_STYLES[status])}>
+                              <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status])} />
+                              {statusLabel(status)}
+                            </Badge>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {hasNotes && (
+                                <span className="text-[9px] text-emerald-600 dark:text-emerald-500 flex items-center gap-1">
+                                  <FileText className="h-3 w-3" /> {t("consult.booking.has_notes")}
+                                </span>
+                              )}
+
+                              {/* Details */}
+                              <button
+                                onClick={() => setDetailAppt(a)}
+                                className="h-7 px-2 rounded-sm border border-border/60 text-[10px] text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1"
+                                title="View details"
+                              >
+                                <Eye className="h-3 w-3" />
+                                <span className="hidden xl:inline">{t("consult.booking.details")}</span>
+                              </button>
+
+                              {/* Running late */}
+                              {isInProgress && (
                                 <button
-                                  onClick={() => setDetailAppt(a)}
-                                  className="h-7 px-2 rounded-sm border border-border/60 text-[10px] text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1"
-                                  title="View details"
+                                  onClick={() => setRunningLateAppt(a)}
+                                  className="h-7 px-2 rounded-sm border border-amber-200 dark:border-amber-900 text-[10px] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors flex items-center gap-1"
+                                  title="Running late"
                                 >
-                                  <Eye className="h-3 w-3" />
-                                  <span className="hidden xl:inline">{t("consult.booking.details")}</span>
+                                  <Timer className="h-3 w-3" />
+                                  <span className="hidden xl:inline">{t("consult.booking.late")}</span>
                                 </button>
+                              )}
 
-                                {/* Running late */}
-                                {isInProgress && (
-                                  <button
-                                    onClick={() => setRunningLateAppt(a)}
-                                    className="h-7 px-2 rounded-sm border border-amber-200 dark:border-amber-900 text-[10px] text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors flex items-center gap-1"
-                                    title="Running late"
-                                  >
-                                    <Timer className="h-3 w-3" />
-                                    <span className="hidden xl:inline">{t("consult.booking.late")}</span>
-                                  </button>
-                                )}
+                              {/* Ready for next */}
+                              {isInProgress && (
+                                <button
+                                  onClick={() => handleReadyNext(a)}
+                                  disabled={readyNext.isPending}
+                                  className="h-7 px-2 rounded-sm border border-emerald-200 dark:border-emerald-900 text-[10px] text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors flex items-center gap-1 disabled:opacity-50"
+                                  title="Ready for next patient"
+                                >
+                                  {readyNext.isPending
+                                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                                    : <ChevronRight className="h-3 w-3" />}
+                                  <span className="hidden xl:inline">
+                                    {t("consult.booking.ready")}
+                                  </span>
+                                </button>
+                              )}
 
-                                {/* Ready for next */}
-                                {isInProgress && (
-                                  <button
-                                    onClick={() => handleReadyNext(a)}
-                                    disabled={readyNext.isPending}
-                                    className="h-7 px-2 rounded-sm border border-emerald-200 dark:border-emerald-900 text-[10px] text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors flex items-center gap-1 disabled:opacity-50"
-                                    title="Ready for next patient"
-                                  >
-                                    {readyNext.isPending
-                                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                                      : <ChevronRight className="h-3 w-3" />}
-                                    <span className="hidden xl:inline">
-                                      {t("consult.booking.ready")}
-                                    </span>
-                                  </button>
-                                )}
+                              {/* ── REJOIN — in_progress ── */}
+                              {isInProgress && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleRejoin(a)}
+                                  disabled={isJoining}
+                                  className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1"
+                                  title="Rejoin session"
+                                >
+                                  {isJoining
+                                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                                    : <Video className="h-3 w-3" />}
+                                  <span>{t("consult.booking.rejoin")}</span>
+                                </Button>
+                              )}
 
-                                {/* ── REJOIN — in_progress ── */}
-                                {isInProgress && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleRejoin(a)}
-                                    disabled={isJoining}
-                                    className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1"
-                                    title="Rejoin session"
-                                  >
-                                    {isJoining
-                                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                                      : <Video className="h-3 w-3" />}
-                                    <span>{t("consult.booking.rejoin")}</span>
-                                  </Button>
-                                )}
+                              {/* Start — pending / confirmed */}
+                              {canStart && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleStart(a)}
+                                  disabled={isJoining}
+                                  className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm"
+                                >
+                                  {isJoining
+                                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                                    : t("pages.doctor.start")}
+                                </Button>
+                              )}
 
-                                {/* Start — pending / confirmed */}
-                                {canStart && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleStart(a)}
-                                    disabled={isJoining}
-                                    className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm"
-                                  >
-                                    {isJoining
-                                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                                      : t("pages.doctor.start")}
-                                  </Button>
-                                )}
-
-                                {/* Notes — completed */}
-                                {!canStart && !isInProgress && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm"
-                                  >
-                                    {t("pages.doctor.notes")}
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              {/* Notes — completed */}
+                              {!canStart && !isInProgress && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm"
+                                >
+                                  {t("pages.doctor.notes")}
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -612,18 +612,18 @@ export function AppointmentsTab() {
             <div className="flex flex-col gap-2">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="h-16 rounded-sm bg-muted/40 animate-pulse border border-border/40" />
-                  ))
+                  <div key={i} className="h-16 rounded-sm bg-muted/40 animate-pulse border border-border/40" />
+                ))
                 : filtered.map((a) => (
-                    <AppointmentCard
-                      key={a.id}
-                      appt={a}
-                      onStart={handleStart}
-                      onRejoin={handleRejoin}
-                      onView={setDetailAppt}
-                      hasNotes={!!a.notes}
-                    />
-                  ))}
+                  <AppointmentCard
+                    key={a.id}
+                    appt={a}
+                    onStart={handleStart}
+                    onRejoin={handleRejoin}
+                    onView={setDetailAppt}
+                    hasNotes={!!a.notes}
+                  />
+                ))}
             </div>
           )}
         </div>

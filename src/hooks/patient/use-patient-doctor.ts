@@ -35,7 +35,7 @@ export interface ApiDoctor {
   is_available: boolean;
   instant_consultation: boolean;
   bookings_paused: boolean;
-  consultation_type: "online" | "in_person" | "both";
+  consultation_type: "instant" | "booking" | "both";
   image: string | null;
   preferred_language: string;
   city: string | null;
@@ -79,7 +79,7 @@ export interface DoctorSearchParams {
   q?: string;
   specialization?: string;
   specialization_fee_id?: number;
-  type?: "online" | "in_person" | "both";
+  type?: "instant" | "booking" | "both";
   language?: string;
   city?: string;
   gender?: "male" | "female";
@@ -88,6 +88,7 @@ export interface DoctorSearchParams {
   available_today?: boolean;
   instant?: boolean;
   page?: number;
+  per_page?: number;
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
@@ -119,6 +120,8 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     sp.set("instant", "true");
   if (params.page && params.page > 1)
     sp.set("page", String(params.page));
+  if (params.per_page)
+    sp.set("per_page", String(params.per_page));
 
   const queryString = sp.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;

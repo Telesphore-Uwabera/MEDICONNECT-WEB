@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { DoctorCard } from "@/components/DoctorCard";
+import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
 import {
   useGetSearchDoctors,
   type ApiDoctor,
@@ -32,7 +33,7 @@ import { SpecializationSelect, type SpecializationValue } from "./components/Spe
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 type SortOption = "rating" | "fee-asc" | "fee-desc";
-type ConsultationType = "all" | "online" | "in_person" | "both" | "booking" | "instant";
+type ConsultationType = "all" | "instant" | "booking" | "both" | "booking" | "instant";
 type ViewMode = "grid" | "list";
 
 interface FilterState {
@@ -103,11 +104,11 @@ function buildApiParams(
   }
 
  if (filters.type !== "all") {
-  const typeMap: Partial<Record<ConsultationType, "online" | "in_person" | "both">> = {
-    booking: "in_person",
-    instant: "online",
+  const typeMap: Partial<Record<ConsultationType, "booking" | "instant" | "both">> = {
+    booking: "booking",
+    instant: "instant",
   };
-  const apiType = typeMap[filters.type] ?? (filters.type as "online" | "in_person" | "both");
+  const apiType = typeMap[filters.type] ?? (filters.type as "booking" | "instant" | "both");
   params.type = apiType;
 }
 
@@ -247,13 +248,13 @@ function ConsultationTypeBadge({
   type: ApiDoctor["consultation_type"];
 }) {
   const configs = {
-    online: {
-      label: "Online",
+    instant: {
+      label: "Instant",
       className:
         "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
     },
-    in_person: {
-      label: "In-Person",
+    booking: {
+      label: "Booking",
       className:
         "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
     },
@@ -280,13 +281,19 @@ function DoctorGridCard({ doctor }: { doctor: ApiDoctor }) {
   return <DoctorCard doctor={doctor} />;
 }
 
-function DoctorListItem({ doctor }: { doctor: ApiDoctor }) {
+function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
+  const a = useDoctorActions(doctorProp);
+  const doctor = a.doctor;
   const fee = parseFloat(doctor.consultation_fee);
   const rating = parseFloat(doctor.rating_avg);
-  const canBook = doctor.is_available && !doctor.bookings_paused;
+  const canBook = a.canBook;
 
   return (
-    <div className="bg-card border border-border/70 rounded-sm px-3.5 py-2.5 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+    <>
+    <div
+      className="bg-card border border-border/70 rounded-sm px-3.5 py-2.5 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer"
+      onClick={a.openDetails}
+    >
       <div className="w-9 h-9 rounded-sm overflow-hidden flex-shrink-0 border border-border/40">
         <DoctorAvatar doctor={doctor} />
       </div>
@@ -330,7 +337,7 @@ function DoctorListItem({ doctor }: { doctor: ApiDoctor }) {
         <ConsultationTypeBadge type={doctor.consultation_type} />
       </div>
 
-      <div className="flex items-center gap-2.5 flex-shrink-0">
+      <div className="flex items-center gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <div className="text-right hidden sm:block">
           <p className="text-[12px] font-bold text-foreground">
             {fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`}
@@ -338,38 +345,41 @@ function DoctorListItem({ doctor }: { doctor: ApiDoctor }) {
           <p className="text-[9px] text-muted-foreground/60">per visit</p>
         </div>
 
-        {doctor.instant_consultation ? (
+        {/* Book — always shown (opens BookingDialog), same as the grid card */}
+        <button
+          disabled={!canBook || a.isCallInProgress}
+          onClick={a.openBook}
+          className={cn(
+            "px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-all duration-200 active:scale-95",
+            canBook && !a.isCallInProgress
+              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+              : "bg-muted text-muted-foreground cursor-not-allowed",
+          )}
+        >
+          {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
+        </button>
+
+        {/* Connect — only for instant-consult doctors (opens the connect modal) */}
+        {a.canConnect && (
           <button
-            disabled={!canBook}
+            onClick={a.openConnect}
             className={cn(
               "px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1",
-              canBook
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                : "bg-muted text-muted-foreground cursor-not-allowed",
+              a.isConnected
+                ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
+                : a.isCallInProgress
+                  ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm",
             )}
           >
             <Zap className="w-3 h-3" />
-            Connect
-          </button>
-        ) : (
-          <button
-            disabled={!canBook}
-            className={cn(
-              "px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-all duration-200 active:scale-95",
-              canBook
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-                : "bg-muted text-muted-foreground cursor-not-allowed",
-            )}
-          >
-            {canBook
-              ? "Book"
-              : doctor.bookings_paused
-                ? "Paused"
-                : "Unavailable"}
+            {a.isConnected ? "Resume" : a.isCallInProgress ? "Open" : "Connect"}
           </button>
         )}
       </div>
     </div>
+    <DoctorActionModals a={a} />
+    </>
   );
 }
 

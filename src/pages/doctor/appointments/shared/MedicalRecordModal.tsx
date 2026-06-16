@@ -32,13 +32,16 @@ interface Props {
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const FILE_TYPES: FileType[] = ["lab_result", "scan", "report", "prescription", "other"];
 
+// Store i18n KEYS (not resolved strings) — the labels are translated at render
+// time via t(f.label). Resolving t() here at module load runs before i18next is
+// initialized, which baked in empty labels.
 const RECORD_FIELDS: Array<{ key: keyof MedicalRecordUpdate; label: string }> = [
-  { key: "chronic_conditions", label: t("consult.record.chronic_conditions") },
-  { key: "known_allergies", label: t("consult.record.known_allergies") },
-  { key: "current_medications", label: t("consult.record.current_medications") },
-  { key: "family_history", label: t("consult.record.family_history") },
-  { key: "surgical_history", label: t("consult.record.surgical_history") },
-  { key: "disabilities", label: t("consult.record.disabilities") },
+  { key: "chronic_conditions", label: "consult.record.chronic_conditions" },
+  { key: "known_allergies", label: "consult.record.known_allergies" },
+  { key: "current_medications", label: "consult.record.current_medications" },
+  { key: "family_history", label: "consult.record.family_history" },
+  { key: "surgical_history", label: "consult.record.surgical_history" },
+  { key: "disabilities", label: "consult.record.disabilities" },
 ];
 
 const inputCls =

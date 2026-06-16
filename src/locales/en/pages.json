@@ -53,8 +53,7 @@
     "pharmacies_d": "Incoming scripts, stock, fulfillment",
     "open_dashboard": "Open dashboard",
     "footer": "© 2026 MEDICONNECT. Bringing care to your fingertips",
-    "health_facility":"Health Facilities"
-
+    "health_facility": "Health Facilities"
   },
   "patient": {
     "overview_title": "Welcome back, John",
@@ -68,7 +67,7 @@
     "join": "Join",
     "available_now_title": "Available Now",
     "available_now_sub": "Connect instantly",
-    "go": "Meet",
+    "go": "Connect",
     "recommended": "Recommended doctors",
     "doctors_title": "Find a doctor",
     "doctors_sub": "{{count}} verified specialists across our network",

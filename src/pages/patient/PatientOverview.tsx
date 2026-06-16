@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import PatientStats from "./components/PatientStats";
-import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
+import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
+import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
 import { format, parseISO } from "date-fns";
 import moment from "moment";
@@ -38,6 +39,51 @@ function formatAppointmentTime(iso: string) {
   return format(date, "hh:mm a");
 }
 
+// One "Available now" row. Reuses the shared connect actions so the Go button
+// opens the same instant-consult dialog as the doctor cards.
+function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
+  const { t } = useTranslation();
+  const a = useDoctorActions(doctorProp);
+  const d = a.doctor;
+
+  return (
+    <>
+      <div className="flex items-center justify-between p-2.5 rounded-sm bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden">
+            {(d.image ?? d.user?.avatar) ? (
+              <img
+                src={(d.image ?? d.user.avatar)!}
+                alt={d.user?.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              d.user?.name?.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold text-foreground truncate">
+              {d.designations ?? d.user?.name}
+            </div>
+            <div className="text-[10px] text-muted-foreground/70 truncate">
+              {d.specialization ?? "—"}
+            </div>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={a.openConnect}
+          disabled={!a.canConnect}
+          className="h-6 px-2.5 text-[10px] rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+        >
+          {a.isConnected || a.isCallInProgress ? "Open" : t("pages.patient.go")}
+        </Button>
+      </div>
+      <DoctorActionModals a={a} />
+    </>
+  );
+}
+
 const PatientOverview = () => {
   const { t, i18n } = useTranslation();
 
@@ -60,9 +106,10 @@ const PatientOverview = () => {
     .slice(0, 3); // show at most 5 in the overview
 
   // ── Available now (instant consultation doctors) ─────────────────────────
+  // /patient/search/doctors?instant=true&page=2&per_page=10
   const { data: availableData, isLoading: availableLoading } =
-    useGetSearchDoctors({ instant: true });
-  const availableNow = availableData?.data?.slice(0, 3) ?? [];
+    useGetSearchDoctors({ instant: true, page: 1, per_page: 6 });
+  const availableNow = availableData?.data ?? [];
 
   // ── Recommended doctors ──────────────────────────────────────────────────
   const { data: recommendedData, isLoading: recommendedLoading } =
@@ -260,38 +307,7 @@ const PatientOverview = () => {
                     </div>
                   ) : (
                     availableNow.map((d) => (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between p-2.5 rounded-sm bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden">
-                            {(d.image ?? d.user?.avatar) ? (
-                              <img
-                                src={(d.image ?? d.user.avatar)!}
-                                alt={d.user?.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              d.user?.name?.charAt(0).toUpperCase()
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-[11px] font-semibold text-foreground truncate">
-                              {d.designations ?? d.user?.name}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground/70 truncate">
-                              {d.specialization ?? "—"}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="h-6 px-2.5 text-[10px] rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
-                        >
-                          {t("pages.patient.go")}
-                        </Button>
-                      </div>
+                      <AvailableNowRow key={d.id} doctor={d} />
                     ))
                   )}
                 </div>
@@ -324,48 +340,48 @@ const PatientOverview = () => {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {recommendedLoading
                   ? Array.from({ length: 3 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
-                          <div className="flex-1 space-y-1.5">
-                            <div className="h-3 w-2/3 rounded bg-muted" />
-                            <div className="h-2.5 w-1/2 rounded bg-muted" />
-                            <div className="h-2 w-1/3 rounded bg-muted" />
+                    <div
+                      key={i}
+                      className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-2/3 rounded bg-muted" />
+                          <div className="h-2.5 w-1/2 rounded bg-muted" />
+                          <div className="h-2 w-1/3 rounded bg-muted" />
+                        </div>
+                        <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
+                      </div>
+                      <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                        {Array.from({ length: 3 }).map((_, j) => (
+                          <div
+                            key={j}
+                            className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
+                          >
+                            <div className="h-2 w-2 rounded-full bg-muted" />
+                            <div className="h-2.5 w-8 rounded bg-muted" />
+                            <div className="h-2 w-6 rounded bg-muted" />
                           </div>
-                          <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
-                        </div>
-                        <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
-                          {Array.from({ length: 3 }).map((_, j) => (
-                            <div
-                              key={j}
-                              className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
-                            >
-                              <div className="h-2 w-2 rounded-full bg-muted" />
-                              <div className="h-2.5 w-8 rounded bg-muted" />
-                              <div className="h-2 w-6 rounded bg-muted" />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="h-4 w-24 rounded-sm bg-muted" />
-                          <div className="h-3 w-16 rounded bg-muted" />
-                        </div>
-                        <div className="border-t border-border" />
-                        <div className="flex items-center justify-between">
-                          <div className="h-3 w-28 rounded bg-muted" />
-                          <div className="flex gap-1.5">
-                            <div className="h-6 w-12 rounded-sm bg-muted" />
-                            <div className="h-6 w-16 rounded-sm bg-muted" />
-                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-4 w-24 rounded-sm bg-muted" />
+                        <div className="h-3 w-16 rounded bg-muted" />
+                      </div>
+                      <div className="border-t border-border" />
+                      <div className="flex items-center justify-between">
+                        <div className="h-3 w-28 rounded bg-muted" />
+                        <div className="flex gap-1.5">
+                          <div className="h-6 w-12 rounded-sm bg-muted" />
+                          <div className="h-6 w-16 rounded-sm bg-muted" />
                         </div>
                       </div>
-                    ))
+                    </div>
+                  ))
                   : recommended.map((d) => (
-                      <DoctorCard key={d.id} doctor={d} />
-                    ))}
+                    <DoctorCard key={d.id} doctor={d} />
+                  ))}
               </div>
             </section>
           </div>
