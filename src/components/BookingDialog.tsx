@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -253,6 +254,7 @@ export const BookingDialog = ({
   onConfirmed?: (updatedDoctor: Doctor) => void;
 }) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // ── Local state ────────────────────────────────────────────────────────────
   const [date,      setDate]      = useState<Date | undefined>(undefined);
@@ -395,6 +397,9 @@ export const BookingDialog = ({
                     toast.success("Payment successful", { description: "Your appointment is confirmed and paid." });
                     // Invalidate appointments to refresh the UI
                     queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+                    // Send the patient to their appointments list to see / join it.
+                    onOpenChange(false);
+                    navigate("/patient/appointments");
                   },
                   (msg) => {
                     setVerifyingPayment(false);
@@ -435,8 +440,14 @@ export const BookingDialog = ({
   const showBody    = !slotsLoading && !slotsError && !confirmed && !!slotsData;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
-      <DialogContent className="max-w-[680px] p-0 overflow-hidden gap-0">
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }} modal={false}>
+      {/* modal={false} + the prevent handlers keep this open and interactive while
+          the IremboPay widget (rendered outside this dialog) is on screen. */}
+      <DialogContent
+        className="max-w-[680px] p-0 overflow-hidden gap-0"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
 
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/60">

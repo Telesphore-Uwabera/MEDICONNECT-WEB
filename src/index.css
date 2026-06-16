@@ -142,6 +142,15 @@
 }
 .animate-pulse-ring { animation: pulse-ring 2s infinite; }
 
+/* Prevent double-overlay when IremboPay injects its own backdrop */
+/* Target Irembo's overlay iframe (usually iframe within an existing iframe) */
+html > body > iframe[src*="web-pay"],
+html > body > iframe[src*="payments"],
+html > body > [id*="modal-container"] > iframe[src*="irembo"],
+html > body > [class*="modal-container"] > iframe[src*="irembo"] {
+  z-index: 9999 !important;
+}
+
 /* Ensure IremboPay widget stays interactive even if a Radix modal is open */
 body[data-scroll-locked] iframe,
 body[data-scroll-locked] [id*="irembo"],

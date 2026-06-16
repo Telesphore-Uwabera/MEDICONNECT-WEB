@@ -88,6 +88,7 @@ export interface DoctorSearchParams {
   available_today?: boolean;
   instant?: boolean;
   page?: number;
+  per_page?: number;
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
@@ -119,6 +120,8 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     sp.set("instant", "true");
   if (params.page && params.page > 1)
     sp.set("page", String(params.page));
+  if (params.per_page)
+    sp.set("per_page", String(params.per_page));
 
   const queryString = sp.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;
