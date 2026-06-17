@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch, type ApiError } from "@/lib/Api";
+import { apiFetch, type ApiError } from "@/lib/api";
 
 const BASE = "/doctor/service-bookings";
 

@@ -312,6 +312,12 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           label: t("sidebar.prescriptions"),
           icon: FileText,
         },
+        // PatientPharmacyOrders
+         {
+          to: "/patient/pharmacy/orders",
+          label: t("sidebar.orders"),
+          icon: FileText,
+        },
         {
           to: "/patient/my-reviews",
           label: t("sidebar.myReviews"),
