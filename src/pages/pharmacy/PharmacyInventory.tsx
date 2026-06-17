@@ -5,6 +5,14 @@ import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
   Plus,
   Package,
   Search,
@@ -18,6 +26,13 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  Eye,
+  Tag,
+  Barcode,
+  ShieldCheck,
+  Calendar,
+  Clock,
+  Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
@@ -100,6 +115,29 @@ const INITIAL_FILTERS: FilterState = {
   sort: "name",
 };
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatPrice(price: string, currency: string) {
+  const n = parseFloat(price);
+  return `${Number.isNaN(n) ? price : n.toLocaleString()} ${currency}`;
+}
+
 // ─── Sidebar atoms (identical to PharmacyOrders / RestockRequests) ────────────
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -150,41 +188,11 @@ function PillGroup<T extends string | number>({
   );
 }
 
-// ─── Modal shell ──────────────────────────────────────────────────────────────
-
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border/70 rounded-sm shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90dvh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/60 flex-shrink-0">
-          <h2 className="text-[12px] font-semibold text-foreground">{title}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="px-5 py-4 overflow-y-auto flex-1">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 const inputCls =
   "w-full bg-background border border-border/60 rounded-sm px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
-// ─── Add / Edit Medicine Modal ────────────────────────────────────────────────
+// ─── Add / Edit Medicine Drawer ────────────────────────────────────────────────
 
 type MedicineFormData = {
   name: string;
@@ -237,7 +245,9 @@ function medicineToForm(m: Medicine): MedicineFormData {
   };
 }
 
-function MedicineFormModal({
+const MEDICINE_FORM_ID = "medicine-form";
+
+function MedicineFormDrawer({
   open,
   onClose,
   editing,
@@ -299,88 +309,97 @@ function MedicineFormModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Medicine" : "Add Medicine"}>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {/* Row 1: name + generic */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Name <span className="text-red-500">*</span></label>
-            <input required value={form.name} onChange={(e) => set("name", e.target.value)}
-              className={inputCls} placeholder="Amoxicillin 500mg" />
-          </div>
-          <div>
-            <label className={labelCls}>Generic Name</label>
-            <input value={form.generic_name} onChange={(e) => set("generic_name", e.target.value)}
-              className={inputCls} placeholder="Amoxicillin" />
-          </div>
-        </div>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col">
+        <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
+          <SheetTitle className="text-[13px] font-semibold text-foreground">
+            {isEdit ? "Edit Medicine" : "Add Medicine"}
+          </SheetTitle>
+          <SheetDescription className="text-[10px] text-muted-foreground/70">
+            {isEdit ? `Editing "${editing?.name}"` : "Add a new medicine to your inventory"}
+          </SheetDescription>
+        </SheetHeader>
 
-        {/* Row 2: category + unit */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Category</label>
-            <select value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
-              className={inputCls}>
-              <option value="">— None —</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+        <form id={MEDICINE_FORM_ID} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          {/* Row 1: name + generic */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Name <span className="text-red-500">*</span></label>
+              <input required value={form.name} onChange={(e) => set("name", e.target.value)}
+                className={inputCls} placeholder="Amoxicillin 500mg" />
+            </div>
+            <div>
+              <label className={labelCls}>Generic Name</label>
+              <input value={form.generic_name} onChange={(e) => set("generic_name", e.target.value)}
+                className={inputCls} placeholder="Amoxicillin" />
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Unit <span className="text-red-500">*</span></label>
-            <select required value={form.unit} onChange={(e) => set("unit", e.target.value as MedicineUnit)}
-              className={inputCls}>
-              {UNIT_OPTIONS.map((u) => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
-          </div>
-        </div>
 
-        {/* Row 3: price + currency */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Price <span className="text-red-500">*</span></label>
-            <input required type="number" min={0} step="0.01" value={form.price}
-              onChange={(e) => set("price", e.target.value)}
-              className={inputCls} placeholder="1200" />
+          {/* Row 2: category + unit */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Category</label>
+              <select value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
+                className={inputCls}>
+                <option value="">— None —</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Unit <span className="text-red-500">*</span></label>
+              <select required value={form.unit} onChange={(e) => set("unit", e.target.value as MedicineUnit)}
+                className={inputCls}>
+                {UNIT_OPTIONS.map((u) => (
+                  <option key={u} value={u}>{u}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label className={labelCls}>Currency</label>
-            <input value={form.currency} onChange={(e) => set("currency", e.target.value)}
-              className={inputCls} placeholder="RWF" />
-          </div>
-        </div>
 
-        {/* Description */}
-        <div>
-          <label className={labelCls}>Description</label>
-          <textarea rows={2} value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            className={cn(inputCls, "resize-none")} placeholder="Optional description…" />
-        </div>
+          {/* Row 3: price + currency */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Price <span className="text-red-500">*</span></label>
+              <input required type="number" min={0} step="0.01" value={form.price}
+                onChange={(e) => set("price", e.target.value)}
+                className={inputCls} placeholder="1200" />
+            </div>
+            <div>
+              <label className={labelCls}>Currency</label>
+              <input value={form.currency} onChange={(e) => set("currency", e.target.value)}
+                className={inputCls} placeholder="RWF" />
+            </div>
+          </div>
 
-        {/* Barcode + Prescription */}
-        <div className="grid grid-cols-2 gap-3">
+          {/* Description */}
           <div>
-            <label className={labelCls}>Barcode</label>
-            <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
-              className={inputCls} placeholder="123456789" />
+            <label className={labelCls}>Description</label>
+            <textarea rows={2} value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              className={cn(inputCls, "resize-none")} placeholder="Optional description…" />
           </div>
-          <div className="flex items-end pb-0.5">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input type="checkbox" checked={form.requires_prescription}
-                onChange={(e) => set("requires_prescription", e.target.checked)}
-                className="w-3.5 h-3.5 accent-primary" />
-              <span className="text-[11px] text-muted-foreground">Requires prescription</span>
-            </label>
-          </div>
-        </div>
 
-        {/* Stock fields — create only */}
-        {!isEdit && (
-          <>
+          {/* Barcode + Prescription */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Barcode</label>
+              <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
+                className={inputCls} placeholder="123456789" />
+            </div>
+            <div className="flex items-end pb-0.5">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.requires_prescription}
+                  onChange={(e) => set("requires_prescription", e.target.checked)}
+                  className="w-3.5 h-3.5 accent-primary" />
+                <span className="text-[11px] text-muted-foreground">Requires prescription</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Stock fields — create only */}
+          {!isEdit && (
             <div className="pt-1 border-t border-border/40">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
                 Initial Stock
@@ -412,34 +431,34 @@ function MedicineFormModal({
                 </div>
               </div>
             </div>
-          </>
-        )}
+          )}
 
-        {error && (
-          <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
-            {error.message}
-          </p>
-        )}
+          {error && (
+            <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
+              {error.message}
+            </p>
+          )}
+        </form>
 
-        <div className="flex gap-2 pt-1">
+        <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2 flex-shrink-0">
           <Button type="button" size="sm" variant="outline" onClick={onClose}
             className="flex-1 h-7 text-[11px] rounded-sm">
             Cancel
           </Button>
-          <Button type="submit" size="sm" disabled={isPending}
+          <Button type="submit" form={MEDICINE_FORM_ID} size="sm" disabled={isPending}
             className="flex-1 h-7 text-[11px] font-semibold rounded-sm shadow-sm">
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
             {isEdit ? "Save Changes" : "Add Medicine"}
           </Button>
-        </div>
-      </form>
-    </Modal>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
-// ─── Delete confirm modal ─────────────────────────────────────────────────────
+// ─── Delete confirm drawer ─────────────────────────────────────────────────────
 
-function DeleteConfirmModal({
+function DeleteConfirmDrawer({
   medicine,
   onClose,
 }: {
@@ -447,48 +466,232 @@ function DeleteConfirmModal({
   onClose: () => void;
 }) {
   const { mutate, isPending, error } = useDeleteMedicine();
-  if (!medicine) return null;
+
   return (
-    <Modal open={!!medicine} onClose={onClose} title="Remove Medicine">
-      <p className="text-[11px] text-muted-foreground mb-4">
-        This will permanently remove{" "}
-        <strong className="text-foreground">{medicine.name}</strong> from your inventory.
-        This action cannot be undone.
-      </p>
-      {error && (
-        <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 mb-3">
-          {error.message}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={onClose}
-          className="flex-1 h-7 text-[11px] rounded-sm">
-          Cancel
-        </Button>
-        <Button size="sm" disabled={isPending}
-          onClick={() => mutate(medicine.id, { onSuccess: onClose })}
-          className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-sm shadow-sm">
-          {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-          Remove
-        </Button>
+    <Sheet open={!!medicine} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
+        <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0">
+          <SheetTitle className="text-[13px] font-semibold text-foreground">Remove Medicine</SheetTitle>
+        </SheetHeader>
+
+        {medicine && (
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            <p className="text-[11px] text-muted-foreground">
+              This will permanently remove{" "}
+              <strong className="text-foreground">{medicine.name}</strong> from your inventory.
+              This action cannot be undone.
+            </p>
+            {error && (
+              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 mt-3">
+                {error.message}
+              </p>
+            )}
+          </div>
+        )}
+
+        <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={onClose}
+            className="flex-1 h-7 text-[11px] rounded-sm">
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            disabled={isPending || !medicine}
+            onClick={() => medicine && mutate(medicine.id, { onSuccess: onClose })}
+            className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-sm shadow-sm"
+          >
+            {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
+            Remove
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// ─── View Details Drawer ───────────────────────────────────────────────────────
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="w-3 h-3 text-muted-foreground/60 mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[10px] text-muted-foreground/70">{label}</p>
+        <p className="text-[11px] text-foreground">{value}</p>
       </div>
-    </Modal>
+    </div>
+  );
+}
+
+function MedicineDetailsDrawer({
+  medicine,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  medicine: Medicine | null;
+  onClose: () => void;
+  onEdit: (m: Medicine) => void;
+  onDelete: (m: Medicine) => void;
+}) {
+  if (!medicine) return null;
+  const status = resolveStockStatus(medicine);
+
+  return (
+    <Sheet open={!!medicine} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
+        <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+              <Package className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <SheetTitle className="text-[13px] font-semibold text-foreground truncate">
+                {medicine.name}
+              </SheetTitle>
+              <SheetDescription className="text-[10px] text-muted-foreground/70 truncate">
+                {medicine.generic_name || "Medicine details"}
+              </SheetDescription>
+            </div>
+          </div>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Status badges */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium", STOCK_STYLES[status])}>
+              <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status], status === "low" && "animate-pulse")} />
+              {STATUS_LABELS[status]}
+            </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "border text-[9px] px-1.5 py-0 font-medium",
+                medicine.is_active
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900"
+                  : "bg-secondary/40 text-muted-foreground border-border/50",
+              )}
+            >
+              {medicine.is_active ? "Active" : "Inactive"}
+            </Badge>
+            {medicine.requires_prescription && (
+              <Badge variant="outline" className="border text-[9px] px-1.5 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900">
+                <ShieldCheck className="w-2.5 h-2.5 mr-1" /> Prescription
+              </Badge>
+            )}
+          </div>
+
+          {/* Price */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              Price
+            </p>
+            <p className="text-[15px] font-bold text-foreground">
+              {formatPrice(medicine.price, medicine.currency)}
+            </p>
+          </div>
+
+          {/* Description */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              Description
+            </p>
+            <p className="text-[11px] text-foreground/90 leading-relaxed">
+              {medicine.description || <span className="text-muted-foreground/50">No description provided</span>}
+            </p>
+          </div>
+
+          {/* Category / unit / barcode */}
+          <div className="grid grid-cols-2 gap-2.5">
+            <DetailRow icon={Tag} label="Category" value={medicine.category?.name ?? "Uncategorized"} />
+            <DetailRow icon={Package} label="Unit" value={<span className="capitalize">{medicine.unit}</span>} />
+            <DetailRow icon={Barcode} label="Barcode" value={medicine.barcode ?? "—"} />
+            <DetailRow icon={Hash} label="Medicine ID" value={`#${medicine.id}`} />
+          </div>
+
+          {/* Stock */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              Stock
+            </p>
+            <div className="rounded-sm border border-border/60 bg-secondary/10 p-3 grid grid-cols-2 gap-2.5">
+              <div>
+                <p className="text-[10px] text-muted-foreground/70">Quantity</p>
+                <p
+                  className={cn(
+                    "text-[12px] font-mono font-semibold tabular-nums",
+                    status === "out" ? "text-red-600" : status === "low" ? "text-amber-600" : "text-foreground",
+                  )}
+                >
+                  {medicine.stock?.quantity ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground/70">Low Stock Threshold</p>
+                <p className="text-[12px] font-mono font-semibold tabular-nums text-foreground">
+                  {medicine.stock?.low_stock_threshold ?? "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground/70">Batch Number</p>
+                <p className="text-[11px] text-foreground">{medicine.stock?.batch_number ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground/70">Expiry Date</p>
+                <p className="text-[11px] text-foreground">
+                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Timestamps */}
+          <div className="grid grid-cols-1 gap-2.5">
+            <DetailRow icon={Calendar} label="Created" value={formatDateTime(medicine.created_at)} />
+            <DetailRow icon={Clock} label="Last updated" value={formatDateTime(medicine.updated_at)} />
+          </div>
+        </div>
+
+        <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2">
+          <Button size="sm" variant="outline" onClick={() => onEdit(medicine)} className="flex-1 h-7 text-[11px] rounded-sm">
+            <Pencil className="w-3 h-3 mr-1.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onDelete(medicine)}
+            className="flex-1 h-7 text-[11px] rounded-sm text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
+          >
+            <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PharmacyInventory = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // ── filter state ────────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // ── modal state ─────────────────────────────────────────────────────────────
+  // ── modal / drawer state ─────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Medicine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
+  const [viewTarget, setViewTarget] = useState<Medicine | null>(null);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -571,6 +774,10 @@ const PharmacyInventory = () => {
       out:      all.filter((m) => resolveStockStatus(m) === "out").length,
     };
   }, [medicines]);
+
+  const openCreate = () => { setEditTarget(null); setFormOpen(true); };
+  const openEdit = (m: Medicine) => { setViewTarget(null); setEditTarget(m); setFormOpen(true); };
+  const openDelete = (m: Medicine) => { setViewTarget(null); setDeleteTarget(m); };
 
   // ── sidebar ──────────────────────────────────────────────────────────────────
   const sidebarContent = (
@@ -732,7 +939,7 @@ const PharmacyInventory = () => {
                 label="Out of Stock"
                 value={isLoading ? "—" : counts.out}
                 icon={AlertCircle}
-                accent="danger"
+                accent="warning"
               />
             </div>
 
@@ -824,7 +1031,7 @@ const PharmacyInventory = () => {
                 {/* Add medicine button */}
                 <Button
                   size="sm"
-                  onClick={() => { setEditTarget(null); setFormOpen(true); }}
+                  onClick={openCreate}
                   className="hidden sm:flex h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
                 >
                   <Plus className="h-3 w-3 mr-1" />
@@ -918,7 +1125,7 @@ const PharmacyInventory = () => {
                       Clear all filters
                     </button>
                   ) : (
-                    <Button size="sm" onClick={() => { setEditTarget(null); setFormOpen(true); }}
+                    <Button size="sm" onClick={openCreate}
                       className="h-7 px-3 text-[11px] rounded-sm mt-1">
                       <Plus className="w-3 h-3 mr-1.5" />
                       Add Medicine
@@ -957,7 +1164,8 @@ const PharmacyInventory = () => {
                         return (
                           <tr
                             key={m.id}
-                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
+                            onClick={() => setViewTarget(m)}
+                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
                           >
                             {/* Medicine name + generic */}
                             <td className="px-4 py-3 font-semibold text-[11px] text-foreground">
@@ -1024,12 +1232,20 @@ const PharmacyInventory = () => {
                             </td>
 
                             {/* Actions */}
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-end gap-1.5">
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => { setEditTarget(m); setFormOpen(true); }}
+                                  onClick={() => setViewTarget(m)}
+                                  className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => openEdit(m)}
                                   className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
                                 >
                                   <Pencil className="w-3 h-3" />
@@ -1037,7 +1253,7 @@ const PharmacyInventory = () => {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => setDeleteTarget(m)}
+                                  onClick={() => openDelete(m)}
                                   className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -1065,16 +1281,22 @@ const PharmacyInventory = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      <MedicineFormModal
+      {/* Drawers */}
+      <MedicineFormDrawer
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditTarget(null); }}
         editing={editTarget}
         categories={categories}
       />
-      <DeleteConfirmModal
+      <DeleteConfirmDrawer
         medicine={deleteTarget}
         onClose={() => setDeleteTarget(null)}
+      />
+      <MedicineDetailsDrawer
+        medicine={viewTarget}
+        onClose={() => setViewTarget(null)}
+        onEdit={openEdit}
+        onDelete={openDelete}
       />
     </DashboardLayout>
   );
