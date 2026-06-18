@@ -361,22 +361,22 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
           {stepContent()}
         </div>
 
-        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-4 bg-muted/30 border-t border-border/40">
           <Button
             variant="outline"
             onClick={() => currentStep > 0 ? goTo(currentStep - 1) : undefined}
             disabled={currentStep === 0}
-            className="border-border text-xs"
+            className="border-border/60 text-xs font-bold h-8 px-3 rounded-[8px] hover:bg-muted/50"
           >
             ← Back
           </Button>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground/80">
             Step {currentStep + 1} of {FORM_STEPS.length}
           </span>
           <Button
             onClick={handleNext}
             disabled={isSaving || submitMutation.isPending}
-            className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 min-w-[110px]"
+            className="text-primary-foreground text-xs font-bold bg-primary hover:bg-primary/90 min-w-[110px] h-8 px-3 rounded-[8px] shadow-sm hover:shadow"
           >
             {(isSaving || submitMutation.isPending) && (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
@@ -431,19 +431,19 @@ function SentCertificates() {
   return (
     <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-3">
       {hasDraftOrPending && (
-        <div className="flex items-center justify-between p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-[11px]">
-          <p className="text-muted-foreground">You have an active request in progress.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] border border-amber-500/30 bg-amber-500/10 text-xs font-medium">
+          <p className="text-amber-700 dark:text-amber-400">You have an active request in progress.</p>
           <Button
             size="sm"
             variant="outline"
             onClick={handleWithdraw}
             disabled={withdrawMutation.isPending}
-            className="h-7 text-[11px] gap-1 border-destructive/30 text-destructive hover:bg-destructive/5"
+            className="h-8 text-xs font-bold gap-1.5 px-3 rounded-[8px] border-destructive/30 text-destructive hover:bg-destructive/10"
           >
             {withdrawMutation.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <XCircle className="h-3 w-3" />
+              <XCircle className="h-3.5 w-3.5" />
             )}
             Withdraw
           </Button>
@@ -489,8 +489,8 @@ const PatientFitnessCertificates = () => {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col min-h-[560px]">
-            <div className="flex items-center border-b border-border bg-muted/30 px-3 sm:px-4">
+          <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-lg flex flex-col min-h-[560px]">
+            <div className="flex items-center border-b border-border/60 bg-muted/20 px-3 sm:px-4">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -499,10 +499,10 @@ const PatientFitnessCertificates = () => {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 sm:py-3.5 text-xs font-medium border-b-2 transition-all duration-150 -mb-px",
+                      "flex items-center gap-2 px-4 py-3.5 text-xs font-bold border-b-2 transition-all duration-200 -mb-px",
                       isActive
                         ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60",
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0" />

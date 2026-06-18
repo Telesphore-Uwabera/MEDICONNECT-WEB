@@ -126,7 +126,7 @@ function isActionable(status: ApiAppointmentStatus) {
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="py-4 border-b border-border/60 last:border-b-0">
+    <div className="py-4 text-xs border-b border-border/60 last:border-b-0">
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/80 mb-3">
         {title}
       </p>
@@ -143,13 +143,13 @@ function PillGroup<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 text-xs">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-3 py-2 rounded-md text-sm border transition-all duration-200 text-left",
+            "px-3 py-2 rounded-md text-xs border transition-all duration-200 text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -190,7 +190,7 @@ function AppointmentCardSkeleton() {
     <div className="bg-card border border-border/70 rounded-sm p-3.5 flex items-center gap-3 animate-pulse">
       <div className="w-9 h-9 rounded-sm bg-muted shrink-0" />
       <div className="flex-1 space-y-1.5">
-        <div className="h-3 w-32 rounded bg-muted" />
+        <div className="h-4 w-42 rounded bg-muted" />
         <div className="h-2.5 w-20 rounded bg-muted" />
       </div>
       <div className="space-y-1.5 items-end hidden sm:flex flex-col">
@@ -230,16 +230,16 @@ function AppointmentCardItem({
         {avatar ? (
           <img src={avatar} alt={getDoctorName(appt)} className="h-full w-full object-cover" />
         ) : appt.type === "online" ? (
-          <Video className="w-3.5 h-3.5" />
+          <Video className="w-4 h-4" />
         ) : (
-          <MapPin className="w-3.5 h-3.5" />
+          <MapPin className="w-4 h-4" />
         )}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold text-foreground">{getDoctorName(appt)}</span>
-          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 font-medium border", STATUS_STYLES[appt.status])}>
+          <Badge variant="outline" className={cn("text-xs px-1.5 py-0 font-medium border", STATUS_STYLES[appt.status])}>
             <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[appt.status])} />
             {STATUS_LABEL[appt.status]}
           </Badge>
@@ -250,11 +250,11 @@ function AppointmentCardItem({
       <div className="flex items-center gap-4 flex-shrink-0">
         <div className="text-right hidden sm:block">
           <p className="text-xs font-medium text-foreground flex items-center justify-end gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <Calendar className="h-4 w-4 text-muted-foreground/50" />
             {formatDate(appt.appointment_date)}
           </p>
           <p className="text-xs text-muted-foreground/70 flex items-center justify-end gap-1.5 mt-1">
-            <Clock className="h-3.5 w-3.5" />
+            <Clock className="h-4 w-4" />
             {formatTime(appt.appointment_time)}
           </p>
         </div>
@@ -392,24 +392,24 @@ const PatientAppointments = () => {
 
   const sidebarContent = (
     <>
-      <div className="px-4 pt-5 pb-4 flex items-center justify-between border-b border-border/60">
+      <div className="px-4 pt-5 pb-4 flex  text-xs items-center justify-between border-b border-border/60">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-sm font-semibold text-foreground">Filters</span>
+          <span className="text-xs font-semibold text-foreground">Filters</span>
         </div>
         {hasActiveFilters && (
           <button
             onClick={clearAll}
             className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"
           >
-            <X className="w-3.5 h-3.5" /> Reset all
+            <X className="w-4 h-4" /> Reset all
           </button>
         )}
       </div>
 
-      <div className="px-4">
+      <div className="px-4 text-xs">
         <FilterSection title="Status">
           <PillGroup<ApiAppointmentStatus | "all">
             value={filters.status}
@@ -445,7 +445,7 @@ const PatientAppointments = () => {
                 type="date"
                 value={filters.date_from}
                 onChange={(e) => set("date_from", e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
+                className="w-full px-3 py-2 text-xs bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
               />
             </div>
             <div>
@@ -455,7 +455,7 @@ const PatientAppointments = () => {
                 value={filters.date_to}
                 min={filters.date_from}
                 onChange={(e) => set("date_to", e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
+                className="w-full px-3 py-2 text-xs bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
               />
             </div>
             {(filters.date_from || filters.date_to) && (
@@ -523,7 +523,7 @@ const PatientAppointments = () => {
             <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
               <button
                 onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all"
+                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold transition-all"
               >
                 Show {data?.total ?? 0} appointments
               </button>
@@ -561,13 +561,13 @@ const PatientAppointments = () => {
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all font-medium",
+                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-xs transition-all font-medium",
                     hasActiveFilters
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
                   )}
                 >
-                  <SlidersHorizontal className="w-3 h-3" />
+                  <SlidersHorizontal className="w-4 h-4" />
                   Filters
                   {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
                 </button>
@@ -582,7 +582,7 @@ const PatientAppointments = () => {
                       view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18" />
                     </svg>
                   </button>
@@ -594,7 +594,7 @@ const PatientAppointments = () => {
                       view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                       <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
                     </svg>
                   </button>
@@ -635,11 +635,11 @@ const PatientAppointments = () => {
                     <Calendar className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">No appointments found</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Try adjusting your filters</p>
+                    <p className="text-xs font-semibold text-foreground">No appointments found</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Try adjusting your filters</p>
                   </div>
                   {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline mt-1">
+                    <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline mt-1">
                       Clear all filters
                     </button>
                   )}
@@ -761,7 +761,7 @@ const PatientAppointments = () => {
               {/* Pagination */}
               {!isLoading && totalPages > 1 && (
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Page <span className="font-semibold text-foreground">{filters.page}</span> of{" "}
                     <span className="font-semibold text-foreground">{totalPages}</span>
                   </p>
@@ -771,9 +771,9 @@ const PatientAppointments = () => {
                       variant="outline"
                       disabled={filters.page <= 1}
                       onClick={() => set("page", filters.page - 1)}
-                      className="h-7 px-2.5 text-[10px] rounded-sm"
+                      className="h-7 px-2.5 text-xs rounded-sm"
                     >
-                      <ChevronLeft className="h-3 w-3" />
+                      <ChevronLeft className="h-4 w-4" />
                     </Button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((p) => p === 1 || p === totalPages || Math.abs(p - filters.page) <= 1)
@@ -784,14 +784,14 @@ const PatientAppointments = () => {
                       }, [])
                       .map((p, i) =>
                         p === "…" ? (
-                          <span key={`ellipsis-${i}`} className="text-[10px] text-muted-foreground px-1">…</span>
+                          <span key={`ellipsis-${i}`} className="text-xs text-muted-foreground px-1">…</span>
                         ) : (
                           <Button
                             key={p}
                             size="sm"
                             variant={filters.page === p ? "default" : "outline"}
                             onClick={() => set("page", p as number)}
-                            className="h-7 w-7 p-0 text-[10px] rounded-sm"
+                            className="h-7 w-7 p-0 text-xs rounded-sm"
                           >
                             {p}
                           </Button>
@@ -802,9 +802,9 @@ const PatientAppointments = () => {
                       variant="outline"
                       disabled={filters.page >= totalPages}
                       onClick={() => set("page", filters.page + 1)}
-                      className="h-7 px-2.5 text-[10px] rounded-sm"
+                      className="h-7 px-2.5 text-xs rounded-sm"
                     >
-                      <ChevronRight className="h-3 w-3" />
+                      <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

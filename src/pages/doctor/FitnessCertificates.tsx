@@ -164,12 +164,12 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
-      <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border">
-        <div className="w-7 h-7 rounded-md flex items-center justify-center bg-primary/10 shrink-0">
-          <Icon size={13} className="text-primary" />
+    <div className="rounded-[12px] border border-border/60 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-2.5 px-3 sm:px-4 py-3 sm:py-3.5 border-b border-border/60 bg-muted/20">
+        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center bg-primary/10 shrink-0 border border-primary/10">
+          <Icon size={14} className="text-primary" />
         </div>
-        <h3 className="text-xs font-semibold tracking-tight text-foreground">
+        <h3 className="text-sm font-bold tracking-tight text-foreground">
           {title}
         </h3>
       </div>
@@ -307,20 +307,20 @@ function RequestCard({
   return (
     <div
       onClick={onOpen}
-      className="rounded-lg border border-border bg-card p-3 sm:p-4 flex items-start gap-3 cursor-pointer hover:border-primary/40 hover:bg-card/80 transition-all group"
+      className="rounded-[12px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
     >
       <div
         className={cn(
-          "w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0",
+          "w-12 h-12 rounded-[10px] flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border shadow-sm shrink-0",
           compact && "hidden sm:flex",
         )}
       >
         {getInitials(cert.patient_full_name)}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-1.5 flex-wrap">
-          <span className="text-xs font-semibold text-foreground leading-tight">
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-start gap-2 flex-wrap">
+          <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
             {cert.patient_full_name}
           </span>
           <Badge
@@ -1230,27 +1230,27 @@ function DoctorFitnessCertificates() {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex min-h-[580px]">
+          <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-lg flex min-h-[580px]">
             {/* ── Left panel ── */}
             <div
               className={cn(
-                "flex flex-col border-border",
+                "flex flex-col border-border/60",
                 selectedId !== null
                   ? "hidden sm:flex sm:w-72 sm:border-r lg:w-80 shrink-0"
                   : "flex-1",
               )}
             >
               {/* Filter tabs */}
-              <div className="flex items-center border-b border-border bg-muted/30 px-2 sm:px-3 overflow-x-auto">
+              <div className="flex items-center border-b border-border/60 bg-muted/20 px-2 sm:px-3 overflow-x-auto">
                 {FILTER_TABS.map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setActiveFilter(id)}
                     className={cn(
-                      "flex items-center gap-1.5 px-2.5 sm:px-3 py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
+                      "flex items-center gap-1.5 px-2.5 sm:px-3 py-3.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
                       activeFilter === id
                         ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60",
                     )}
                   >
                     {label}

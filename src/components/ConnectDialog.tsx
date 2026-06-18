@@ -10,6 +10,7 @@ import {
   type RejoinTarget,
 } from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
+import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import {
   useInstantConsultationRequest,
   useInstantConsultationRequestAny,
@@ -22,7 +23,7 @@ import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Phone,
   ShieldCheck, Loader2, CheckCircle2, AlertCircle,
   MessageSquare, Wifi, ArrowRight, Sparkles, Activity,
-  User, Maximize2, Minimize2, Minus, X, RotateCcw, Clock, Ban,
+  User, Maximize2, Minimize2, Minus, X, RotateCcw, Clock, Ban, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -62,6 +63,7 @@ declare global {
 }
 
 type CallPhase =
+  | "search"
   | "idle"
   | "guest_form"
   | "requesting"
@@ -293,13 +295,16 @@ const setGuestChatAuth = (token: string | null) => {
 };
 
 export const ConnectDialogContent = ({
-  doctor, onMinimize, onCloseCompletely, onRegisterCancel,
+  doctor: initialDoctor, onMinimize, onCloseCompletely, onRegisterCancel,
 }: ConnectDialogContentProps) => {
+  const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | undefined>(undefined);
+  const doctor = initialDoctor || (selectedDoctor as unknown as Doctor);
+  
   const { startCall } = useCallContext();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const call = useCallStore();
-  const isGeneral = !doctor;
+  const isGeneral = !initialDoctor && !selectedDoctor;
   const session = useConsultationSession(doctor?.id ?? 0);
 
   const handleRejoinActive = () => {
@@ -315,6 +320,14 @@ export const ConnectDialogContent = ({
   const [phase, setPhase] = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: searchDoctorsData, isLoading: searchLoading } = useGetSearchDoctors({
+    instant: true,
+    q: searchQuery,
+    per_page: 20,
+  });
+  const searchDoctors = searchDoctorsData?.data || [];
 
   // ── Resume state ──────────────────────────────────────────────────────────
   // savedSession: non-null while the resume banner is visible
@@ -418,7 +431,11 @@ export const ConnectDialogContent = ({
       setPaymentInfo(null);
       setGuestName(me?.name ?? "");
       setGuestPhone(me?.phone ?? "");
-      setPhase(isProfileComplete ? "idle" : "guest_form");
+      if (!initialDoctor) {
+        setPhase("search");
+      } else {
+        setPhase(isProfileComplete ? "idle" : "guest_form");
+      }
     }
 
     setFullscreen(false);
@@ -982,7 +999,7 @@ export const ConnectDialogContent = ({
           {/* ── Guest form ── */}
           {phase === "guest_form" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+              <div className=" flex items-center gap-2 p-3 rounded-xl bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm text-muted-foreground">
                   {isLoggedIn ? "Please confirm your contact details to continue."
@@ -1052,6 +1069,59 @@ export const ConnectDialogContent = ({
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                   Minimize
                 </Button>
+              </div>
+            </div>
+          )}
+          {/* ── Search ── */}
+          {phase === "search" && (
+            <div className="space-y-4 pt-1 pb-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Search for a doctor</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or specialty..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 h-10 bg-muted/30"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                {searchLoading ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : searchDoctors.length > 0 ? (
+                  searchDoctors.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => {
+                        setSelectedDoctor(doc as any);
+                        setPhase(isProfileComplete ? "idle" : "guest_form");
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                          {nameInitial(doc.user.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{doc.user.name}</p>
+                          {doc.specialization && (
+                            <p className="text-xs text-muted-foreground truncate">{doc.specialization}</p>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    No available doctors found.
+                  </div>
+                )}
               </div>
             </div>
           )}

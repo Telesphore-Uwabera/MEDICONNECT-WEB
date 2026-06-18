@@ -135,14 +135,14 @@ const HeroCta = () => {
           <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
-                <Video className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </span>
               <div className="text-left min-w-0">
                 <p className="text-xs sm:text-sm font-semibold leading-none truncate">
-                  {t("pages.landing.instant_cta")}
+                  {t("pages.landing.instant_consultation", "Instant Consultation")}
                 </p>
                 <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
-                  {t("pages.landing.connect_under_minutes")}
+                  {t("pages.landing.title", "connect in under 5 minutes")}
                 </p>
               </div>
             </div>

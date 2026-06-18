@@ -1,6 +1,7 @@
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import { useCallContext } from "@/context/CallContext";
+import { decodeCallToken } from "@/lib/scheduled-call";
 
 const ConsultationRoomPage = () => {
   const { roomName } = useParams<{ roomName: string }>();
@@ -11,19 +12,16 @@ const ConsultationRoomPage = () => {
   const { startCall } = useCallContext();
 
   const parsed = useMemo(() => {
-    if (!token) return null;
-    try {
-      const obj = JSON.parse(atob(decodeURIComponent(token)));
-      if (!obj || typeof obj !== "object") return null;
-      if (mode === "appointment") obj.chat_mode = "appointment";
-      if (cid != null && obj.consultation_id == null) {
-        const n = Number(cid);
-        obj.consultation_id = Number.isFinite(n) ? n : cid;
-      }
-      return obj;
-    } catch {
-      return null;
+    // decodeCallToken handles single- AND double-base64-encoded tokens (the
+    // email/SMS verification links double-encode the token).
+    const obj = decodeCallToken(token);
+    if (!obj || typeof obj !== "object") return null;
+    if (mode === "appointment") obj.chat_mode = "appointment";
+    if (cid != null && obj.consultation_id == null) {
+      const n = Number(cid);
+      obj.consultation_id = Number.isFinite(n) ? n : cid;
     }
+    return obj;
   }, [token, mode, cid]);
 
   useEffect(() => {

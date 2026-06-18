@@ -56,7 +56,7 @@ export function StatusBadge({ status }: { status: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "text-[9px] px-1.5 py-0 gap-1 h-4.5 font-medium",
+        "text-xs px-1.5 py-0 gap-1 h-4.5 font-medium",
         STATUS_STYLES[status] ?? "bg-muted text-muted-foreground border-border",
       )}
     >
@@ -86,7 +86,7 @@ export function DrawerSection({
     <div>
       <div className="flex items-center gap-1.5 mb-2">
         <span className="text-muted-foreground/60">{icon}</span>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
           {title}
         </p>
       </div>
@@ -98,8 +98,8 @@ export function DrawerSection({
 function MedDetail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wide">{label}</p>
-      <p className="text-[10px] font-medium text-foreground mt-0.5">{value}</p>
+      <p className="text-xs text-muted-foreground/50 uppercase tracking-wide">{label}</p>
+      <p className="text-xs font-medium text-foreground mt-0.5">{value}</p>
     </div>
   );
 }
@@ -115,11 +115,11 @@ function AppointmentDetail({
 }) {
   return (
     <div className="px-3 py-2">
-      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wide flex items-center gap-1">
+      <p className="text-xs text-muted-foreground/50 uppercase tracking-wide flex items-center gap-1">
         <span className="text-muted-foreground/40">{icon}</span>
         {label}
       </p>
-      <p className="text-[11px] font-medium text-foreground mt-0.5 capitalize">{value}</p>
+      <p className="text-xs font-medium text-foreground mt-0.5 capitalize">{value}</p>
     </div>
   );
 }
@@ -135,7 +135,7 @@ export function FilterSection({
 }) {
   return (
     <div className="py-3 border-b border-border/50 last:border-b-0">
-      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
         {title}
       </p>
       {children}
@@ -159,7 +159,7 @@ export function PillGroup<T extends string | boolean>({
           key={String(o.value)}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2 py-1 rounded-sm text-[10px] border transition-all text-left",
+            "px-2 py-1 rounded-sm text-xs border transition-all text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary font-medium"
               : "border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-secondary/30",
@@ -186,22 +186,22 @@ export function DateRangeInput({
   return (
     <div className="flex flex-col gap-1">
       <div>
-        <label className="text-[9px] text-muted-foreground/60 mb-1 block uppercase tracking-wide">From</label>
+        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">From</label>
         <input
           type="date"
           value={from}
           onChange={(e) => onFrom(e.target.value)}
-          className="w-full px-2 py-1 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
         />
       </div>
       <div>
-        <label className="text-[9px] text-muted-foreground/60 mb-1 block uppercase tracking-wide">To</label>
+        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">To</label>
         <input
           type="date"
           value={to}
           min={from || undefined}
           onChange={(e) => onTo(e.target.value)}
-          className="w-full px-2 py-1 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
         />
       </div>
     </div>
@@ -290,11 +290,11 @@ export function PrescriptionDrawer({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/60 flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center">
-              <FileText className="w-3.5 h-3.5 text-primary" />
+              <FileText className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-[11px] font-semibold text-foreground leading-none">Prescription details</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5 font-mono">{p.prescription_number}</p>
+              <p className="text-xs font-semibold text-foreground leading-none">Prescription details</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">{p.prescription_number}</p>
             </div>
           </div>
           <button
@@ -302,7 +302,7 @@ export function PrescriptionDrawer({
             className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             aria-label="Close drawer"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -321,7 +321,7 @@ export function PrescriptionDrawer({
             <Badge
               variant="outline"
               className={cn(
-                "text-[9px] px-1.5 py-0 gap-1 h-5",
+                "text-xs px-1.5 py-0 gap-1 h-5",
                 STATUS_STYLES[p.status] ?? "bg-muted text-muted-foreground border-border",
               )}
             >
@@ -329,15 +329,15 @@ export function PrescriptionDrawer({
               {STATUS_LABEL[p.status] ?? p.status}
             </Badge>
             {p.is_signed && (
-              <span className="flex items-center gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">
-                <BadgeCheck className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <BadgeCheck className="w-4 h-4" />
                 Doctor signed
               </span>
             )}
           </div>
           <span
             className={cn(
-              "text-[10px] flex items-center gap-1",
+              "text-xs flex items-center gap-1",
               expiring
                 ? "text-amber-600 dark:text-amber-400 font-medium"
                 : expired
@@ -345,7 +345,7 @@ export function PrescriptionDrawer({
                   : "text-muted-foreground/70",
             )}
           >
-            <CalendarRange className="h-3 w-3" />
+            <CalendarRange className="h-4 w-4" />
             {expired ? "Expired" : "Valid until"} {formatDate(p.valid_until)}
             {expiring && " · Expiring soon"}
           </span>
@@ -355,24 +355,24 @@ export function PrescriptionDrawer({
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
             {p.diagnosis && (
-              <DrawerSection icon={<Stethoscope className="w-3.5 h-3.5" />} title="Diagnosis">
-                <p className="text-[12px] font-medium text-foreground">{p.diagnosis}</p>
-                {p.notes && <p className="text-[11px] text-muted-foreground/70 mt-1 italic">{p.notes}</p>}
+              <DrawerSection icon={<Stethoscope className="w-4 h-4" />} title="Diagnosis">
+                <p className="text-xs font-medium text-foreground">{p.diagnosis}</p>
+                {p.notes && <p className="text-xs text-muted-foreground/70 mt-1 italic">{p.notes}</p>}
               </DrawerSection>
             )}
 
-            <DrawerSection icon={<Pill className="w-3.5 h-3.5" />} title="Medications">
+            <DrawerSection icon={<Pill className="w-4 h-4" />} title="Medications">
               <div className="space-y-2">
                 {p.items.map((item, idx) => (
                   <div key={item.id} className="rounded-sm border border-border/40 bg-secondary/20 overflow-hidden">
                     <div className="px-3 py-2 flex items-center justify-between bg-secondary/30 border-b border-border/30">
                       <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-[9px] font-bold flex items-center justify-center shrink-0">
+                        <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <p className="text-[11px] font-semibold text-foreground">{item.medicine_name}</p>
+                        <p className="text-xs font-semibold text-foreground">{item.medicine_name}</p>
                       </div>
-                      <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                      <span className="text-xs font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
                         {item.dosage}
                       </span>
                     </div>
@@ -383,8 +383,8 @@ export function PrescriptionDrawer({
                     </div>
                     {item.instructions && (
                       <div className="px-3 pb-2 flex items-start gap-1.5">
-                        <Info className="w-3 h-3 text-muted-foreground/50 mt-0.5 shrink-0" />
-                        <p className="text-[10px] text-muted-foreground/70 italic">{item.instructions}</p>
+                        <Info className="w-4 h-4 text-muted-foreground/50 mt-0.5 shrink-0" />
+                        <p className="text-xs text-muted-foreground/70 italic">{item.instructions}</p>
                       </div>
                     )}
                   </div>
@@ -392,9 +392,9 @@ export function PrescriptionDrawer({
               </div>
             </DrawerSection>
 
-            <DrawerSection icon={<User className="w-3.5 h-3.5" />} title="Prescribing doctor">
+            <DrawerSection icon={<User className="w-4 h-4" />} title="Prescribing doctor">
               <div className="flex items-start gap-3 p-3 rounded-sm bg-secondary/20 border border-border/40">
-                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-[12px] font-semibold flex items-center justify-center shrink-0 overflow-hidden">
+                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
                   {p.doctor.image ? (
                     <img
                       src={p.doctor.image.startsWith("http") ? p.doctor.image : `${BASE_URL}/storage/${p.doctor.image}`}
@@ -407,8 +407,8 @@ export function PrescriptionDrawer({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold text-foreground">{p.doctor.user.name}</p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  <p className="text-xs font-semibold text-foreground">{p.doctor.user.name}</p>
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
                     {p.doctor.specialization}
                     {p.doctor.doctor_degree && (
                       <span className="ml-1 text-primary font-medium">· {p.doctor.doctor_degree}</span>
@@ -416,13 +416,13 @@ export function PrescriptionDrawer({
                   </p>
                   <div className="mt-1.5 flex flex-col gap-0.5">
                     {p.doctor.user.email && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                        <Mail className="w-2.5 h-2.5" />{p.doctor.user.email}
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                        <Mail className="w-4 h-4" />{p.doctor.user.email}
                       </span>
                     )}
                     {p.doctor.user.phone && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
-                        <Phone className="w-2.5 h-2.5" />{p.doctor.user.phone}
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                        <Phone className="w-4 h-4" />{p.doctor.user.phone}
                       </span>
                     )}
                   </div>
@@ -430,30 +430,30 @@ export function PrescriptionDrawer({
               </div>
             </DrawerSection>
 
-            <DrawerSection icon={<ClipboardList className="w-3.5 h-3.5" />} title="Appointment">
+            <DrawerSection icon={<ClipboardList className="w-4 h-4" />} title="Appointment">
               <div className="rounded-sm border border-border/40 bg-secondary/20 overflow-hidden">
                 <div className="grid grid-cols-2 divide-x divide-border/30">
                   <AppointmentDetail
                     label="Type"
                     value={p.appointment.type === "online" ? "Online" : "In-person"}
-                    icon={<Building2 className="w-3 h-3" />}
+                    icon={<Building2 className="w-4 h-4" />}
                   />
                   <AppointmentDetail
                     label="Status"
                     value={p.appointment.status.replace(/_/g, " ")}
-                    icon={<Clock className="w-3 h-3" />}
+                    icon={<Clock className="w-4 h-4" />}
                   />
                 </div>
                 <div className="border-t border-border/30 grid grid-cols-2 divide-x divide-border/30">
                   <AppointmentDetail
                     label="Date"
                     value={formatDate(p.appointment.appointment_date)}
-                    icon={<CalendarRange className="w-3 h-3" />}
+                    icon={<CalendarRange className="w-4 h-4" />}
                   />
                   <AppointmentDetail
                     label="Issued at"
                     value={formatDate(p.created_at)}
-                    icon={<FileText className="w-3 h-3" />}
+                    icon={<FileText className="w-4 h-4" />}
                   />
                 </div>
               </div>
@@ -461,8 +461,8 @@ export function PrescriptionDrawer({
 
             {p.is_signed && p.signed_at && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/60">
-                <BadgeCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
                   Digitally signed by doctor on {formatDateTime(p.signed_at)}
                 </p>
               </div>
@@ -475,30 +475,30 @@ export function PrescriptionDrawer({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 px-3 text-[11px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+            className="h-8 px-3 text-xs rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
             onClick={() => onAction(p, "pdf")}
           >
-            <Download className="h-3 w-3 mr-1.5" />
+            <Download className="h-4 w-4 mr-1.5" />
             Download PDF
           </Button>
           {p.qr_code && (
             <Button
               size="sm"
               variant="outline"
-              className="h-8 px-3 text-[11px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+              className="h-8 px-3 text-xs rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
               onClick={() => window.open(getPdfUrl(p.qr_code), "_blank")}
             >
-              <QrCode className="h-3 w-3 mr-1.5" />
+              <QrCode className="h-4 w-4 mr-1.5" />
               QR code
             </Button>
           )}
           {p.status === "issued" && (
             <Button
               size="sm"
-              className="h-8 px-3 text-[11px] flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all"
+              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all"
               onClick={() => onAction(p, "send")}
             >
-              <Send className="h-3 w-3 mr-1.5" />
+              <Send className="h-4 w-4 mr-1.5" />
               Send to pharmacy
             </Button>
           )}
@@ -543,7 +543,7 @@ export function PrescriptionCard({
       <div className="p-3.5">
         <div className="flex items-start justify-between gap-2 mb-2.5">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
               {p.doctor.image ? (
                 <img
                   src={p.doctor.image.startsWith("http") ? p.doctor.image : `${BASE_URL}/storage/${p.doctor.image}`}
@@ -556,15 +556,15 @@ export function PrescriptionCard({
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-foreground truncate">{p.doctor.user.name}</p>
-              <p className="text-[9px] text-muted-foreground/60 truncate">{p.doctor.specialization}</p>
+              <p className="text-xs font-semibold text-foreground truncate">{p.doctor.user.name}</p>
+              <p className="text-xs text-muted-foreground/60 truncate">{p.doctor.specialization}</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <StatusBadge status={p.status} />
             {p.is_signed && (
-              <span className="flex items-center gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-2.5 h-2.5" />Signed
+              <span className="flex items-center gap-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />Signed
               </span>
             )}
           </div>
@@ -572,23 +572,23 @@ export function PrescriptionCard({
 
         {p.diagnosis && (
           <div className="mb-2 px-2 py-1 rounded-sm bg-secondary/30 border border-border/25">
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wide">Diagnosis</p>
-            <p className="text-[10px] font-medium text-foreground mt-0.5">{p.diagnosis}</p>
+            <p className="text-xs text-muted-foreground/50 uppercase tracking-wide">Diagnosis</p>
+            <p className="text-xs font-medium text-foreground mt-0.5">{p.diagnosis}</p>
           </div>
         )}
 
         <div className="space-y-0.5 mb-2.5">
           {p.items.slice(0, 2).map((item) => (
-            <div key={item.id} className="flex items-center gap-1.5 text-[10px]">
-              <Pill className="h-2.5 w-2.5 text-primary shrink-0" />
+            <div key={item.id} className="flex items-center gap-1.5 text-xs">
+              <Pill className="h-4 w-4 text-primary shrink-0" />
               <span className="font-medium text-foreground">{item.medicine_name}</span>
               <span className="text-muted-foreground/50">·</span>
               <span className="text-muted-foreground/60">{item.dosage}</span>
-              <span className="text-muted-foreground/40 text-[9px]">{item.frequency}</span>
+              <span className="text-muted-foreground/40 text-xs">{item.frequency}</span>
             </div>
           ))}
           {p.items.length > 2 && (
-            <p className="text-[9px] text-muted-foreground/50 pl-4">
+            <p className="text-xs text-muted-foreground/50 pl-4">
               +{p.items.length - 2} more medication{p.items.length - 2 > 1 ? "s" : ""}
             </p>
           )}
@@ -597,43 +597,43 @@ export function PrescriptionCard({
         <div className="flex items-center justify-between mb-2.5">
           <span
             className={cn(
-              "text-[9px] flex items-center gap-1",
+              "text-xs flex items-center gap-1",
               expiring ? "text-amber-600 dark:text-amber-400 font-medium"
                 : expired ? "text-muted-foreground/40 line-through"
                 : "text-muted-foreground/60",
             )}
           >
-            <CalendarRange className="h-2.5 w-2.5" />
+            <CalendarRange className="h-4 w-4" />
             {expired ? "Expired" : "Valid until"} {formatDate(p.valid_until)}
             {expiring && <span className="font-semibold">· Expiring soon</span>}
           </span>
-          <span className="text-[9px] text-muted-foreground/40 font-mono">{formatDate(p.created_at)}</span>
+          <span className="text-xs text-muted-foreground/40 font-mono">{formatDate(p.created_at)}</span>
         </div>
 
         <div className="flex gap-1.5 pt-2 border-t border-border/30">
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[9px] rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
+            className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
             onClick={() => onViewDetails(p)}
           >
-            <Eye className="h-2.5 w-2.5" />Details
+            <Eye className="h-4 w-4" />Details
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[9px] rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
+            className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
             onClick={() => onAction(p, "pdf")}
           >
-            <Download className="h-2.5 w-2.5" />PDF
+            <Download className="h-4 w-4" />PDF
           </Button>
           {p.status === "issued" && (
             <Button
               size="sm"
-              className="h-6 px-2 text-[9px] flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm gap-1"
+              className="h-6 px-2 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm gap-1"
               onClick={() => onAction(p, "send")}
             >
-              <Send className="h-2.5 w-2.5" />Send to pharmacy
+              <Send className="h-4 w-4" />Send to pharmacy
             </Button>
           )}
         </div>
@@ -743,15 +743,15 @@ export function PharmacySelectionModal({
                 className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                 aria-label="Back to pharmacy list"
               >
-                <ChevronDown className="w-3.5 h-3.5 rotate-90" />
+                <ChevronDown className="w-4 h-4 rotate-90" />
               </button>
               <div>
-                <p className="text-[11px] font-semibold text-foreground leading-none">Delivery options</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate max-w-[220px]">{selectedPharmacy.name}</p>
+                <p className="text-xs font-semibold text-foreground leading-none">Delivery options</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5 truncate max-w-[220px]">{selectedPharmacy.name}</p>
               </div>
             </div>
             <button onClick={onClose} className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -760,21 +760,21 @@ export function PharmacySelectionModal({
             <div className="flex items-center gap-2 mb-1">
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-primary" />
+                  <Check className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-[9px] text-muted-foreground/60">Pharmacy</span>
+                <span className="text-xs text-muted-foreground/60">Pharmacy</span>
               </div>
               <div className="flex-1 h-px bg-border/50" />
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                   <span className="text-[8px] font-bold text-primary-foreground">2</span>
                 </div>
-                <span className="text-[9px] font-medium text-foreground">Delivery</span>
+                <span className="text-xs font-medium text-foreground">Delivery</span>
               </div>
             </div>
 
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
                 How would you like to receive it?
               </p>
               <div className="space-y-2">
@@ -792,8 +792,8 @@ export function PharmacySelectionModal({
                           <Package className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-[11px] font-semibold text-foreground">Pick up in store</p>
-                          <p className="text-[9px] text-muted-foreground/60 mt-0.5">{selectedPharmacy.address}, {selectedPharmacy.city}</p>
+                          <p className="text-xs font-semibold text-foreground">Pick up in store</p>
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">{selectedPharmacy.address}, {selectedPharmacy.city}</p>
                         </div>
                       </div>
                       <div className={cn("w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0", deliveryType === "pickup" ? "border-primary" : "border-border/50")}>
@@ -817,8 +817,8 @@ export function PharmacySelectionModal({
                           <Truck className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-[11px] font-semibold text-foreground">Home delivery</p>
-                          <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                          <p className="text-xs font-semibold text-foreground">Home delivery</p>
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">
                             {selectedPharmacy.delivery_fee} {selectedPharmacy.delivery_currency}
                             {selectedPharmacy.estimated_delivery_minutes ? ` · ~${selectedPharmacy.estimated_delivery_minutes} min` : ""}
                           </p>
@@ -832,7 +832,7 @@ export function PharmacySelectionModal({
                 )}
 
                 {!canDeliver && !canPickup && (
-                  <p className="text-[11px] text-muted-foreground/60 text-center py-6">
+                  <p className="text-xs text-muted-foreground/60 text-center py-6">
                     This pharmacy has no available fulfillment options.
                   </p>
                 )}
@@ -841,8 +841,8 @@ export function PharmacySelectionModal({
 
             {deliveryType === "home_delivery" && (
               <div className="space-y-1.5">
-                <label className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
-                  <Navigation className="w-2.5 h-2.5" />
+                <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
+                  <Navigation className="w-4 h-4" />
                   Delivery address
                   <span className="text-red-500 ml-0.5">*</span>
                 </label>
@@ -851,11 +851,11 @@ export function PharmacySelectionModal({
                   onChange={(e) => setDeliveryAddress(e.target.value)}
                   placeholder="Enter your full delivery address…"
                   rows={3}
-                  className="w-full px-2.5 py-2 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
+                  className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
                 />
                 {deliveryAddress.trim().length === 0 && (
-                  <p className="text-[9px] text-red-500/70 flex items-center gap-1">
-                    <AlertCircle className="w-2.5 h-2.5" />
+                  <p className="text-xs text-red-500/70 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
                     Address is required for home delivery
                   </p>
                 )}
@@ -863,8 +863,8 @@ export function PharmacySelectionModal({
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
-                <FileText className="w-2.5 h-2.5" />
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
+                <FileText className="w-4 h-4" />
                 Notes
                 <span className="text-muted-foreground/40 font-normal ml-1">(optional)</span>
               </label>
@@ -873,19 +873,19 @@ export function PharmacySelectionModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Any special instructions for the pharmacy…"
                 rows={2}
-                className="w-full px-2.5 py-2 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
+                className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
               />
             </div>
           </div>
 
           <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex gap-2">
-            <Button size="sm" variant="outline" className="h-8 px-3 text-[11px] rounded-sm border-border/60" onClick={resetDelivery}>
+            <Button size="sm" variant="outline" className="h-8 px-3 text-xs rounded-sm border-border/60" onClick={resetDelivery}>
               Back
             </Button>
             <Button
               size="sm"
               disabled={!canSubmit}
-              className="h-8 px-3 text-[11px] flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
                 if (canSubmit && deliveryType) {
                   onSelect(
@@ -898,9 +898,9 @@ export function PharmacySelectionModal({
               }}
             >
               {isSending ? (
-                <><Loader2 className="h-3 w-3 animate-spin" />Sending…</>
+                <><Loader2 className="h-4 w-4 animate-spin" />Sending…</>
               ) : (
-                <><Send className="h-3 w-3" />Confirm & send</>
+                <><Send className="h-4 w-4" />Confirm & send</>
               )}
             </Button>
           </div>
@@ -920,27 +920,27 @@ export function PharmacySelectionModal({
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/60 flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center">
-              <Store className="w-3.5 h-3.5 text-primary" />
+              <Store className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-[11px] font-semibold text-foreground leading-none">Select Pharmacy</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Choose where to send your prescription</p>
+              <p className="text-xs font-semibold text-foreground leading-none">Select Pharmacy</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Choose where to send your prescription</p>
             </div>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="px-4 py-2.5 border-b border-border/40 flex-shrink-0">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name, city, or address…"
-              className="w-full pl-8 pr-3 py-1.5 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
             />
           </div>
         </div>
@@ -961,7 +961,7 @@ export function PharmacySelectionModal({
           ) : filteredPharmacies.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
               <Store className="w-8 h-8 text-muted-foreground/25" />
-              <p className="text-[11px] font-medium text-muted-foreground/60">
+              <p className="text-xs font-medium text-muted-foreground/60">
                 {searchTerm ? "No pharmacies match your search" : "No pharmacies available"}
               </p>
             </div>
@@ -988,33 +988,33 @@ export function PharmacySelectionModal({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-[11px] font-semibold text-foreground truncate">{pharmacy.name}</p>
-                        {pharmacy.is_verified && <BadgeCheck className="w-3 h-3 text-emerald-500 shrink-0" />}
+                        <p className="text-xs font-semibold text-foreground truncate">{pharmacy.name}</p>
+                        {pharmacy.is_verified && <BadgeCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
                       </div>
-                      <p className="text-[9px] text-muted-foreground/60 mt-0.5 truncate">{pharmacy.address}, {pharmacy.city}</p>
+                      <p className="text-xs text-muted-foreground/60 mt-0.5 truncate">{pharmacy.address}, {pharmacy.city}</p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {pharmacy.offers_delivery && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
-                            <Truck className="w-2.5 h-2.5" />Delivery
+                          <span className="inline-flex items-center gap-0.5 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                            <Truck className="w-4 h-4" />Delivery
                           </span>
                         )}
                         {pharmacy.offers_pickup && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground bg-secondary/40 px-1.5 py-0.5 rounded-sm">
-                            <Package className="w-2.5 h-2.5" />Pickup
+                          <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground bg-secondary/40 px-1.5 py-0.5 rounded-sm">
+                            <Package className="w-4 h-4" />Pickup
                           </span>
                         )}
                         {pharmacy.is_open_24h && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-sm">
-                            <Clock className="w-2.5 h-2.5" />24h
+                          <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-sm">
+                            <Clock className="w-4 h-4" />24h
                           </span>
                         )}
                         {pharmacy.estimated_delivery_minutes && (
-                          <span className="text-[9px] text-muted-foreground/50">~{pharmacy.estimated_delivery_minutes} min</span>
+                          <span className="text-xs text-muted-foreground/50">~{pharmacy.estimated_delivery_minutes} min</span>
                         )}
                       </div>
                     </div>
                     <div className="w-6 h-6 rounded-full border border-border/50 flex items-center justify-center shrink-0 group-hover:border-primary/50 group-hover:bg-primary/10 transition-colors">
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                     </div>
                   </div>
                 </button>
@@ -1024,8 +1024,8 @@ export function PharmacySelectionModal({
         </div>
 
         <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex items-center justify-between">
-          <p className="text-[9px] text-muted-foreground/50">{filteredPharmacies.length} pharmacies available</p>
-          <button onClick={onClose} className="text-[10px] text-muted-foreground hover:text-foreground font-medium px-3 py-1.5 rounded-sm hover:bg-secondary/40 transition-colors">
+          <p className="text-xs text-muted-foreground/50">{filteredPharmacies.length} pharmacies available</p>
+          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground font-medium px-3 py-1.5 rounded-sm hover:bg-secondary/40 transition-colors">
             Cancel
           </button>
         </div>
