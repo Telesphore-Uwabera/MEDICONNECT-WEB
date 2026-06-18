@@ -26,7 +26,6 @@ import {
   RefreshCw,
   Plus,
   Eye,
-  Pencil,
   Trash2,
   Package,
   User,
@@ -52,9 +51,16 @@ import {
   type CreateStockRequestPayload,
   type ReceiveStockPayload,
 } from "@/hooks/pharmacy/use-inventory-stock";
-import {
-  useGetInventoryMedicines,
-} from "@/hooks/pharmacy/use-inventory-medicines";
+import { useGetInventoryMedicines } from "@/hooks/pharmacy/use-inventory-medicines";
+import { MedicineCombobox } from "./components/MedicineCombobox";
+
+// ─── Augmented type ───────────────────────────────────────────────────────────
+
+type FullStockRequest = StockRequest & {
+  rejection_reason?: string | null;
+  approved_at?: string | null;
+  received_at?: string | null;
+};
 
 // ─── Visual config ────────────────────────────────────────────────────────────
 
@@ -106,7 +112,7 @@ function formatDateTime(iso: string) {
   });
 }
 
-// ─── Sidebar sub-components (mirrors PharmacyOrders exactly) ─────────────────
+// ─── Sidebar sub-components ───────────────────────────────────────────────────
 
 function FilterSection({
   title,
@@ -162,13 +168,12 @@ function PillGroup<T extends string>({
   );
 }
 
-// shared input class to keep forms consistent
 const inputCls =
   "w-full bg-background border border-border/60 rounded-sm px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
-// ─── Create Request Drawer ─────────────────────────────────────────────────────
+// ─── Create Request Drawer ────────────────────────────────────────────────────
 
 const CREATE_FORM_ID = "create-stock-request-form";
 
@@ -180,8 +185,8 @@ function CreateRequestDrawer({
   onClose: () => void;
 }) {
   const { mutate, isPending, error } = useCreateStockRequest();
-  const { data: medicinesData, isLoading: loadingMeds } = useGetInventoryMedicines();
-  const [search, setSearch] = useState("");
+  const { data: medicinesData, isLoading: loadingMeds } =
+    useGetInventoryMedicines();
   const [form, setForm] = useState<CreateStockRequestPayload>({
     medicine_id: 0,
     requested_quantity: 1,
@@ -189,18 +194,6 @@ function CreateRequestDrawer({
   });
 
   const medicines = medicinesData?.data ?? [];
-
-  const filteredMeds = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return medicines;
-    return medicines.filter(
-      (m) =>
-        m.name.toLowerCase().includes(q) ||
-        (m.generic_name ?? "").toLowerCase().includes(q),
-    );
-  }, [medicines, search]);
-
-  const selectedMed = medicines.find((m) => m.id === form.medicine_id);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,86 +205,42 @@ function CreateRequestDrawer({
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
-          <SheetTitle className="text-[13px] font-semibold text-foreground">New Stock Request</SheetTitle>
+          <SheetTitle className="text-[13px] font-semibold text-foreground">
+            New Stock Request
+          </SheetTitle>
           <SheetDescription className="text-[10px] text-muted-foreground/70">
             Request a medicine restock from your supplier
           </SheetDescription>
         </SheetHeader>
 
-        <form id={CREATE_FORM_ID} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          {/* Medicine dropdown */}
+        <form
+          id={CREATE_FORM_ID}
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
+        >
+          {/* Medicine combobox */}
           <div>
-            <label className={labelCls}>Medicine <span className="text-red-500">*</span></label>
+            <label className={labelCls}>
+              Medicine <span className="text-red-500">*</span>
+            </label>
             {loadingMeds ? (
-              <div className={cn(inputCls, "flex items-center gap-2 text-muted-foreground/60")}>
+              <div
+                className={cn(
+                  inputCls,
+                  "flex items-center gap-2 text-muted-foreground/60",
+                )}
+              >
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Loading medicines…
               </div>
             ) : (
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search medicine…"
-                    className={cn(inputCls, "pl-7")}
-                  />
-                </div>
-
-                {selectedMed && (
-                  <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 rounded-sm bg-primary/8 border border-primary/20 text-[10px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                    <span className="font-semibold text-primary">{selectedMed.name}</span>
-                    {selectedMed.generic_name && (
-                      <span className="text-muted-foreground/60">· {selectedMed.generic_name}</span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => { setForm((f) => ({ ...f, medicine_id: 0 })); setSearch(""); }}
-                      className="ml-auto text-muted-foreground/50 hover:text-foreground"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-
-                {(!selectedMed || search) && filteredMeds.length > 0 && (
-                  <div className="mt-1 border border-border/60 rounded-sm bg-card shadow-md max-h-44 overflow-y-auto">
-                    {filteredMeds.map((med) => (
-                      <button
-                        key={med.id}
-                        type="button"
-                        onClick={() => {
-                          setForm((f) => ({ ...f, medicine_id: med.id }));
-                          setSearch("");
-                        }}
-                        className={cn(
-                          "w-full text-left px-3 py-2 text-[11px] hover:bg-secondary/40 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-b-0",
-                          form.medicine_id === med.id && "bg-primary/8 text-primary",
-                        )}
-                      >
-                        <span>
-                          <span className="font-medium">{med.name}</span>
-                          {med.generic_name && (
-                            <span className="text-muted-foreground/60 ml-1.5">{med.generic_name}</span>
-                          )}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/50 shrink-0">
-                          #{med.id}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {!selectedMed && search && filteredMeds.length === 0 && (
-                  <p className="mt-1 text-[10px] text-muted-foreground/60 px-1">
-                    No medicines match "{search}"
-                  </p>
-                )}
-              </div>
+              <MedicineCombobox
+                medicines={medicines}
+                value={form.medicine_id}
+                onChange={(id) =>
+                  setForm((f) => ({ ...f, medicine_id: id }))
+                }
+              />
             )}
           </div>
 
@@ -304,7 +253,10 @@ function CreateRequestDrawer({
               min={1}
               value={form.requested_quantity}
               onChange={(e) =>
-                setForm((f) => ({ ...f, requested_quantity: Number(e.target.value) }))
+                setForm((f) => ({
+                  ...f,
+                  requested_quantity: Number(e.target.value),
+                }))
               }
               className={inputCls}
             />
@@ -314,12 +266,16 @@ function CreateRequestDrawer({
           <div>
             <label className={labelCls}>
               Notes{" "}
-              <span className="text-muted-foreground/50 font-normal">(optional)</span>
+              <span className="text-muted-foreground/50 font-normal">
+                (optional)
+              </span>
             </label>
             <textarea
               rows={3}
               value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, notes: e.target.value }))
+              }
               className={cn(inputCls, "resize-none")}
               placeholder="e.g. Running low on this one"
             />
@@ -333,7 +289,13 @@ function CreateRequestDrawer({
         </form>
 
         <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2 flex-shrink-0">
-          <Button type="button" size="sm" variant="outline" onClick={onClose} className="flex-1 h-7 text-[11px] rounded-sm">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 h-7 text-[11px] rounded-sm"
+          >
             Cancel
           </Button>
           <Button
@@ -352,7 +314,7 @@ function CreateRequestDrawer({
   );
 }
 
-// ─── Receive Drawer ────────────────────────────────────────────────────────────
+// ─── Receive Drawer ───────────────────────────────────────────────────────────
 
 const RECEIVE_FORM_ID = "receive-stock-form";
 
@@ -390,23 +352,35 @@ function ReceiveDrawer({
     <Sheet open={!!request} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
-          <SheetTitle className="text-[13px] font-semibold text-foreground">Receive Stock</SheetTitle>
+          <SheetTitle className="text-[13px] font-semibold text-foreground">
+            Receive Stock
+          </SheetTitle>
         </SheetHeader>
 
         {request && (
-          <form id={RECEIVE_FORM_ID} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <form
+            id={RECEIVE_FORM_ID}
+            onSubmit={handleSubmit}
+            className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
+          >
             <p className="text-[11px] text-muted-foreground">
               Confirming receipt for{" "}
               <strong className="text-foreground">
                 {request.medicine?.name ?? `Medicine #${request.medicine_id}`}
               </strong>
-              . Requested: <strong className="text-foreground">{request.requested_quantity}</strong> units.
+              . Requested:{" "}
+              <strong className="text-foreground">
+                {request.requested_quantity}
+              </strong>{" "}
+              units.
             </p>
 
             <div>
               <label className={labelCls}>
                 Received Quantity{" "}
-                <span className="text-muted-foreground/50 font-normal">(leave blank for full amount)</span>
+                <span className="text-muted-foreground/50 font-normal">
+                  (leave blank for full amount)
+                </span>
               </label>
               <input
                 type="number"
@@ -415,7 +389,9 @@ function ReceiveDrawer({
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    received_quantity: e.target.value ? Number(e.target.value) : undefined,
+                    received_quantity: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
                   }))
                 }
                 className={inputCls}
@@ -429,7 +405,9 @@ function ReceiveDrawer({
                 <input
                   type="text"
                   value={form.batch_number}
-                  onChange={(e) => setForm((f) => ({ ...f, batch_number: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, batch_number: e.target.value }))
+                  }
                   className={inputCls}
                   placeholder="BATCH-003"
                 />
@@ -439,7 +417,9 @@ function ReceiveDrawer({
                 <input
                   type="date"
                   value={form.expiry_date}
-                  onChange={(e) => setForm((f) => ({ ...f, expiry_date: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, expiry_date: e.target.value }))
+                  }
                   className={inputCls}
                 />
               </div>
@@ -454,7 +434,13 @@ function ReceiveDrawer({
         )}
 
         <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2 flex-shrink-0">
-          <Button type="button" size="sm" variant="outline" onClick={onClose} className="flex-1 h-7 text-[11px] rounded-sm">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 h-7 text-[11px] rounded-sm"
+          >
             Cancel
           </Button>
           <Button
@@ -473,7 +459,7 @@ function ReceiveDrawer({
   );
 }
 
-// ─── Reject Drawer ─────────────────────────────────────────────────────────────
+// ─── Reject Drawer ────────────────────────────────────────────────────────────
 
 const REJECT_FORM_ID = "reject-stock-request-form";
 
@@ -497,11 +483,17 @@ function RejectDrawer({
     <Sheet open={!!request} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
-          <SheetTitle className="text-[13px] font-semibold text-foreground">Reject Request</SheetTitle>
+          <SheetTitle className="text-[13px] font-semibold text-foreground">
+            Reject Request
+          </SheetTitle>
         </SheetHeader>
 
         {request && (
-          <form id={REJECT_FORM_ID} onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <form
+            id={REJECT_FORM_ID}
+            onSubmit={handleSubmit}
+            className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
+          >
             <p className="text-[11px] text-muted-foreground">
               Rejecting request for{" "}
               <strong className="text-foreground">
@@ -531,7 +523,13 @@ function RejectDrawer({
         )}
 
         <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2 flex-shrink-0">
-          <Button type="button" size="sm" variant="outline" onClick={onClose} className="flex-1 h-7 text-[11px] rounded-sm">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 h-7 text-[11px] rounded-sm"
+          >
             Cancel
           </Button>
           <Button
@@ -550,7 +548,7 @@ function RejectDrawer({
   );
 }
 
-// ─── View Details Drawer ───────────────────────────────────────────────────────
+// ─── View Details Drawer ──────────────────────────────────────────────────────
 
 function DetailRow({
   icon: Icon,
@@ -578,7 +576,7 @@ function RequestDetailsDrawer({
   onReceive,
   onReject,
 }: {
-  request: StockRequest | null;
+  request: FullStockRequest | null;
   onClose: () => void;
   onReceive: (r: StockRequest) => void;
   onReject: (r: StockRequest) => void;
@@ -588,8 +586,6 @@ function RequestDetailsDrawer({
 
   if (!request) return null;
 
-  // medicine carries extra fields (price, unit, barcode…) that the shared
-  // Medicine type doesn't declare — read them defensively for display only.
   const med = request.medicine as
     | (StockRequest["medicine"] & {
         price?: string;
@@ -622,12 +618,27 @@ function RequestDetailsDrawer({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Status */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize", STATUS_STYLES[request.status])}>
-              <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[request.status], request.status === "pending" && "animate-pulse")} />
+            <Badge
+              variant="outline"
+              className={cn(
+                "border text-[9px] px-1.5 py-0 font-medium capitalize",
+                STATUS_STYLES[request.status],
+              )}
+            >
+              <span
+                className={cn(
+                  "w-1 h-1 rounded-full mr-1",
+                  STATUS_DOT[request.status],
+                  request.status === "pending" && "animate-pulse",
+                )}
+              />
               {request.status}
             </Badge>
             {med?.requires_prescription && (
-              <Badge variant="outline" className="border text-[9px] px-1.5 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900">
+              <Badge
+                variant="outline"
+                className="border text-[9px] px-1.5 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900"
+              >
                 <ShieldCheck className="w-2.5 h-2.5 mr-1" /> Prescription
               </Badge>
             )}
@@ -644,72 +655,133 @@ function RequestDetailsDrawer({
             <div>
               <p className="text-[10px] text-muted-foreground/70">Received</p>
               <p className="text-[14px] font-bold tabular-nums text-foreground">
-                {request.received_quantity != null ? request.received_quantity.toLocaleString() : "—"}
+                {request.received_quantity != null
+                  ? request.received_quantity.toLocaleString()
+                  : "—"}
               </p>
             </div>
             {request.batch_number && (
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Batch Number</p>
-                <p className="text-[11px] text-foreground">{request.batch_number}</p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Batch Number
+                </p>
+                <p className="text-[11px] text-foreground">
+                  {request.batch_number}
+                </p>
               </div>
             )}
             {request.expiry_date && (
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Expiry Date</p>
-                <p className="text-[11px] text-foreground">{formatDate(request.expiry_date)}</p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  Expiry Date
+                </p>
+                <p className="text-[11px] text-foreground">
+                  {formatDate(request.expiry_date)}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Notes / rejection reason */}
+          {/* Notes */}
           {request.notes && (
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Notes</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                Notes
+              </p>
               <div className="flex items-start gap-2 rounded-sm border border-border/50 bg-secondary/10 px-3 py-2">
                 <StickyNote className="w-3 h-3 text-muted-foreground/60 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-foreground/90 leading-relaxed">{request.notes}</p>
+                <p className="text-[11px] text-foreground/90 leading-relaxed">
+                  {request.notes}
+                </p>
               </div>
             </div>
           )}
-          {request.status === "rejected" && (request.reason || request.rejection_reason) && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Rejection Reason</p>
-              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 leading-relaxed">
-                {request.reason ?? (request as { rejection_reason?: string }).rejection_reason}
-              </p>
-            </div>
-          )}
+
+          {/* Rejection reason */}
+          {request.status === "rejected" &&
+            (request.reason || request.rejection_reason) && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                  Rejection Reason
+                </p>
+                <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 leading-relaxed">
+                  {request.reason ?? request.rejection_reason}
+                </p>
+              </div>
+            )}
 
           {/* Medicine details */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Medicine</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              Medicine
+            </p>
             <div className="grid grid-cols-2 gap-2.5">
-              <DetailRow icon={Tag} label="Category" value={med?.category?.name ?? "Uncategorized"} />
-              <DetailRow icon={Package} label="Unit" value={<span className="capitalize">{med?.unit ?? "—"}</span>} />
-              <DetailRow icon={Barcode} label="Barcode" value={med?.barcode ?? "—"} />
+              <DetailRow
+                icon={Tag}
+                label="Category"
+                value={med?.category?.name ?? "Uncategorized"}
+              />
+              <DetailRow
+                icon={Package}
+                label="Unit"
+                value={
+                  <span className="capitalize">{med?.unit ?? "—"}</span>
+                }
+              />
+              <DetailRow
+                icon={Barcode}
+                label="Barcode"
+                value={med?.barcode ?? "—"}
+              />
               <DetailRow
                 icon={Hash}
                 label="Price"
-                value={med?.price ? `${parseFloat(med.price).toLocaleString()} ${med.currency ?? ""}` : "—"}
+                value={
+                  med?.price
+                    ? `${parseFloat(med.price).toLocaleString()} ${med.currency ?? ""}`
+                    : "—"
+                }
               />
             </div>
           </div>
 
           {/* Requester */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Requested By</p>
-            <DetailRow icon={User} label="Name" value={request.requester?.name ?? "—"} />
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              Requested By
+            </p>
+            <DetailRow
+              icon={User}
+              label="Name"
+              value={request.requester?.name ?? "—"}
+            />
           </div>
 
           {/* Timeline */}
           <div className="grid grid-cols-1 gap-2.5">
-            <DetailRow icon={Calendar} label="Created" value={formatDateTime(request.created_at)} />
-            <DetailRow icon={Clock} label="Last updated" value={formatDateTime(request.updated_at)} />
-            {(request as { approved_at?: string | null }).approved_at && (
-              <DetailRow icon={CheckCircle2} label="Approved" value={formatDateTime((request as { approved_at: string }).approved_at)} />
+            <DetailRow
+              icon={Calendar}
+              label="Created"
+              value={formatDateTime(request.created_at)}
+            />
+            <DetailRow
+              icon={Clock}
+              label="Last updated"
+              value={formatDateTime(request.updated_at)}
+            />
+            {request.approved_at && (
+              <DetailRow
+                icon={CheckCircle2}
+                label="Approved"
+                value={formatDateTime(request.approved_at)}
+              />
             )}
-            {(request as { received_at?: string | null }).received_at && (
-              <DetailRow icon={PackagePlus} label="Received" value={formatDateTime((request as { received_at: string }).received_at)} />
+            {request.received_at && (
+              <DetailRow
+                icon={PackagePlus}
+                label="Received"
+                value={formatDateTime(request.received_at)}
+              />
             )}
           </div>
         </div>
@@ -724,7 +796,13 @@ function RequestDetailsDrawer({
                 onClick={() => deleteReq(request.id, { onSuccess: onClose })}
                 className="flex-1 h-7 text-[11px] rounded-sm"
               >
-                {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Trash2 className="w-3 h-3 mr-1.5" /> Delete</>}
+                {deleting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+                  </>
+                )}
               </Button>
               <Button
                 size="sm"
@@ -741,7 +819,11 @@ function RequestDetailsDrawer({
                 onClick={() => approve(request.id)}
                 className="flex-1 h-7 text-[11px] font-semibold rounded-sm shadow-sm"
               >
-                {approving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Approve"}
+                {approving ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  "Approve"
+                )}
               </Button>
             </>
           )}
@@ -765,7 +847,12 @@ function RequestDetailsDrawer({
             </>
           )}
           {(request.status === "received" || request.status === "rejected") && (
-            <Button size="sm" variant="outline" onClick={onClose} className="flex-1 h-7 text-[11px] rounded-sm">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 h-7 text-[11px] rounded-sm"
+            >
               Close
             </Button>
           )}
@@ -812,7 +899,11 @@ function RequestActions({
             onClick={() => deleteReq(request.id)}
             className="h-7 px-3 text-[10px] rounded-sm border-border/60 text-muted-foreground hover:bg-secondary/50 transition-all duration-200"
           >
-            {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : "Delete"}
+            {deleting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              "Delete"
+            )}
           </Button>
           <Button
             size="sm"
@@ -829,7 +920,11 @@ function RequestActions({
             onClick={() => approve(request.id)}
             className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm transition-all duration-200"
           >
-            {approving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Approve"}
+            {approving ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              "Approve"
+            )}
           </Button>
         </>
       )}
@@ -875,7 +970,7 @@ const RestockRequests = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState<StockRequest | null>(null);
   const [rejectTarget, setRejectTarget] = useState<StockRequest | null>(null);
-  const [viewTarget, setViewTarget] = useState<StockRequest | null>(null);
+  const [viewTarget, setViewTarget] = useState<FullStockRequest | null>(null);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -896,7 +991,6 @@ const RestockRequests = () => {
 
   const requests: StockRequest[] = data?.data ?? [];
 
-  // client-side search only (status is server-side)
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
     if (!q) return requests;
@@ -910,7 +1004,7 @@ const RestockRequests = () => {
 
   const counts = useMemo(
     () => ({
-      pending:  requests.filter((r) => r.status === "pending").length,
+      pending: requests.filter((r) => r.status === "pending").length,
       approved: requests.filter((r) => r.status === "approved").length,
       received: requests.filter((r) => r.status === "received").length,
       rejected: requests.filter((r) => r.status === "rejected").length,
@@ -918,11 +1012,18 @@ const RestockRequests = () => {
     [requests],
   );
 
-  const openView = (r: StockRequest) => setViewTarget(r);
-  const openReceive = (r: StockRequest) => { setViewTarget(null); setReceiveTarget(r); };
-  const openReject = (r: StockRequest) => { setViewTarget(null); setRejectTarget(r); };
+  const openView = (r: StockRequest) =>
+    setViewTarget(r as FullStockRequest);
+  const openReceive = (r: StockRequest) => {
+    setViewTarget(null);
+    setReceiveTarget(r);
+  };
+  const openReject = (r: StockRequest) => {
+    setViewTarget(null);
+    setRejectTarget(r);
+  };
 
-  // ─── Sidebar ────────────────────────────────────────────────────────────────
+  // ─── Sidebar ──────────────────────────────────────────────────────────────
 
   const sidebarContent = (
     <>
@@ -952,8 +1053,8 @@ const RestockRequests = () => {
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "all",      label: "All statuses" },
-              { value: "pending",  label: "Pending",  dot: "bg-amber-500" },
+              { value: "all", label: "All statuses" },
+              { value: "pending", label: "Pending", dot: "bg-amber-500" },
               { value: "approved", label: "Approved", dot: "bg-sky-500" },
               { value: "received", label: "Received", dot: "bg-emerald-500" },
               { value: "rejected", label: "Rejected", dot: "bg-red-500" },
@@ -970,7 +1071,10 @@ const RestockRequests = () => {
               {filters.status !== "all" && (
                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
                   {filters.status}
-                  <button onClick={() => set("status", "all")} className="hover:opacity-70">
+                  <button
+                    onClick={() => set("status", "all")}
+                    className="hover:opacity-70"
+                  >
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -978,7 +1082,10 @@ const RestockRequests = () => {
               {filters.search && (
                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
                   "{filters.search}"
-                  <button onClick={() => set("search", "")} className="hover:opacity-70">
+                  <button
+                    onClick={() => set("search", "")}
+                    className="hover:opacity-70"
+                  >
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </span>
@@ -990,25 +1097,27 @@ const RestockRequests = () => {
     </>
   );
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.pharmacy.restock_title", "Restock Requests")}
-          subtitle={t("pages.pharmacy.restock_sub", "Manage and track stock replenishment requests")}
+          subtitle={t(
+            "pages.pharmacy.restock_sub",
+            "Manage and track stock replenishment requests",
+          )}
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* ── Sidebar ── */}
+          {/* Sidebar */}
           <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* ── Main content ── */}
+          {/* Main content */}
           <main className="flex-1 overflow-y-auto">
-
             {/* Stat cards */}
             <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
@@ -1039,7 +1148,6 @@ const RestockRequests = () => {
 
             {/* Meta bar */}
             <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              {/* Left: count + quick-filter pills */}
               <div className="flex items-center gap-3">
                 {isLoading ? (
                   <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -1063,7 +1171,6 @@ const RestockRequests = () => {
                   </p>
                 )}
 
-                {/* Clickable status pills */}
                 {!isLoading && (
                   <div className="hidden lg:flex items-center gap-2">
                     {counts.pending > 0 && (
@@ -1106,17 +1213,17 @@ const RestockRequests = () => {
                 )}
               </div>
 
-              {/* Right: refresh + search + new request */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => refetch()}
                   title="Refresh"
                   className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
                 >
-                  <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
+                  <RefreshCw
+                    className={cn("w-3 h-3", isLoading && "animate-spin")}
+                  />
                 </button>
 
-                {/* Client-side search */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
@@ -1141,7 +1248,6 @@ const RestockRequests = () => {
 
             {/* Table area */}
             <div className="p-4">
-
               {/* Error state */}
               {isError && (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
@@ -1174,13 +1280,22 @@ const RestockRequests = () => {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        {["Medicine", "Requested", "Received", "Status", "Requester", "Date", ""].map(
-                          (h) => (
-                            <th key={h} className="text-left px-4 py-3 font-semibold">
-                              {h}
-                            </th>
-                          ),
-                        )}
+                        {[
+                          "Medicine",
+                          "Requested",
+                          "Received",
+                          "Status",
+                          "Requester",
+                          "Date",
+                          "",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="text-left px-4 py-3 font-semibold"
+                          >
+                            {h}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -1190,7 +1305,9 @@ const RestockRequests = () => {
                             <td key={j} className="px-4 py-3.5">
                               <div
                                 className="h-2.5 rounded bg-muted/60 animate-pulse"
-                                style={{ width: `${50 + ((i * 3 + j * 7) % 40)}%` }}
+                                style={{
+                                  width: `${50 + ((i * 3 + j * 7) % 40)}%`,
+                                }}
                               />
                             </td>
                           ))}
@@ -1236,12 +1353,24 @@ const RestockRequests = () => {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Medicine</th>
-                        <th className="text-left px-4 py-3 font-semibold">Requested</th>
-                        <th className="text-left px-4 py-3 font-semibold">Received</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
-                        <th className="text-left px-4 py-3 font-semibold">Requester</th>
-                        <th className="text-left px-4 py-3 font-semibold">Date</th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Medicine
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Requested
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Received
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Status
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Requester
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          Date
+                        </th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>
@@ -1252,9 +1381,9 @@ const RestockRequests = () => {
                           onClick={() => openView(req)}
                           className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
                         >
-                          {/* Medicine */}
                           <td className="px-4 py-3 font-semibold text-[11px] text-foreground">
-                            {req.medicine?.name ?? `Medicine #${req.medicine_id}`}
+                            {req.medicine?.name ??
+                              `Medicine #${req.medicine_id}`}
                             {req.medicine?.category?.name && (
                               <span className="block text-[10px] font-normal text-muted-foreground/60 mt-0.5">
                                 {req.medicine.category.name}
@@ -1262,19 +1391,20 @@ const RestockRequests = () => {
                             )}
                           </td>
 
-                          {/* Requested qty */}
                           <td className="px-4 py-3 tabular-nums font-bold text-[12px] text-foreground">
                             {req.requested_quantity.toLocaleString()}
                           </td>
 
-                          {/* Received qty */}
                           <td className="px-4 py-3 tabular-nums text-foreground">
-                            {req.received_quantity != null
-                              ? req.received_quantity.toLocaleString()
-                              : <span className="text-muted-foreground/40">—</span>}
+                            {req.received_quantity != null ? (
+                              req.received_quantity.toLocaleString()
+                            ) : (
+                              <span className="text-muted-foreground/40">
+                                —
+                              </span>
+                            )}
                           </td>
 
-                          {/* Status badge */}
                           <td className="px-4 py-3">
                             <Badge
                               variant="outline"
@@ -1294,20 +1424,22 @@ const RestockRequests = () => {
                             </Badge>
                           </td>
 
-                          {/* Requester */}
                           <td className="px-4 py-3 text-muted-foreground">
                             {req.requester?.name ?? (
-                              <span className="text-muted-foreground/40">—</span>
+                              <span className="text-muted-foreground/40">
+                                —
+                              </span>
                             )}
                           </td>
 
-                          {/* Date */}
                           <td className="px-4 py-3 text-muted-foreground/70 text-[10px] whitespace-nowrap">
                             {formatDate(req.created_at)}
                           </td>
 
-                          {/* Actions */}
-                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <td
+                            className="px-4 py-3 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <RequestActions
                               request={req}
                               onView={openView}
@@ -1320,11 +1452,11 @@ const RestockRequests = () => {
                     </tbody>
                   </table>
 
-                  {/* Pagination footer */}
                   {data && data.last_page > 1 && (
                     <div className="px-4 py-2.5 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between bg-secondary/10">
                       <span>
-                        Page {data.current_page} of {data.last_page} · {data.total} total
+                        Page {data.current_page} of {data.last_page} ·{" "}
+                        {data.total} total
                       </span>
                     </div>
                   )}
@@ -1336,9 +1468,18 @@ const RestockRequests = () => {
       </div>
 
       {/* Drawers */}
-      <CreateRequestDrawer open={showCreate} onClose={() => setShowCreate(false)} />
-      <ReceiveDrawer request={receiveTarget} onClose={() => setReceiveTarget(null)} />
-      <RejectDrawer request={rejectTarget} onClose={() => setRejectTarget(null)} />
+      <CreateRequestDrawer
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+      />
+      <ReceiveDrawer
+        request={receiveTarget}
+        onClose={() => setReceiveTarget(null)}
+      />
+      <RejectDrawer
+        request={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+      />
       <RequestDetailsDrawer
         request={viewTarget}
         onClose={() => setViewTarget(null)}

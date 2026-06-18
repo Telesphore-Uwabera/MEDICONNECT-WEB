@@ -8,14 +8,6 @@ import {
   Activity,
   TrendingUp,
   Star,
-  CalendarCheck,
-  Clock,
-  Stethoscope,
-  ClipboardList,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Ban,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -32,7 +24,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
 
 /* ── Types ──────────────────────────────────────────────────────── */
@@ -57,6 +48,146 @@ export interface HospitalDashboardParams {
   search?: string;
 }
 
+/* ── API response shape interfaces ─────────────────────────────── */
+
+interface BookingStatusCounts {
+  total: number;
+  pending: number;
+  accepted: number;
+  completed: number;
+  rejected: number;
+  cancelled: number;
+  unique_patients?: number;
+  unique_services?: number;
+}
+
+interface AppointmentStatusCounts {
+  total: number;
+  completed: number;
+  confirmed: number;
+  pending: number;
+  cancelled: number;
+  online_count?: number;
+  in_person_count?: number;
+  avg_duration_minutes?: number;
+  unique_doctors?: number;
+  unique_patients?: number;
+}
+
+interface TodaySnapshot {
+  service_bookings: BookingStatusCounts;
+  appointments: AppointmentStatusCounts;
+}
+
+interface RevenueStats {
+  gross: number;
+  insurance_covered: number;
+  patient_paid: number;
+  avg_booking_value: number;
+  booking_count: number;
+  change_percent: number | null;
+}
+
+interface BookingsChartPoint {
+  label: string;
+  total: number;
+  completed: number;
+  pending: number;
+  revenue?: number;
+}
+
+interface DailyAppointmentPoint {
+  date: string;
+  total: number;
+  completed: number;
+}
+
+interface UpcomingAppointment {
+  id: number;
+  patient_name: string;
+  doctor_name: string;
+  appointment_date: string;
+  appointment_time: string;
+  type: string;
+}
+
+interface Department {
+  id: number;
+  name: string;
+  period_bookings: number;
+}
+
+interface TopService {
+  service_id: number;
+  service_name: string;
+  booking_count: number;
+  revenue: number;
+}
+
+interface ServicesStats {
+  total: number;
+  active: number;
+  inactive: number;
+  available: number;
+  insurance_covered: number;
+  requires_appointment: number;
+  requires_referral: number;
+  top_services: TopService[];
+}
+
+interface TopDoctor {
+  doctor_id: number;
+  doctor_name: string;
+  appointment_count: number;
+  avg_duration_min: number;
+}
+
+interface DoctorsStats {
+  total: number;
+  active: number;
+  inactive: number;
+  top_doctors: TopDoctor[];
+}
+
+interface RecentReview {
+  id: number;
+  doctor_name: string;
+  rating: number;
+  comment: string;
+  time: string;
+}
+
+interface ReviewsStats {
+  avg_rating: number | null;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
+  five_star: number;
+  four_star: number;
+  three_star: number;
+  low_star: number;
+  recent: RecentReview[];
+}
+
+interface HospitalDashboardData {
+  today?: TodaySnapshot;
+  period_stats?: {
+    service_bookings?: BookingStatusCounts;
+    appointments?: AppointmentStatusCounts;
+  };
+  revenue?: RevenueStats;
+  bookings_chart?: BookingsChartPoint[];
+  appointments?: {
+    daily_breakdown?: DailyAppointmentPoint[];
+    upcoming?: UpcomingAppointment[];
+  };
+  departments?: Department[];
+  services?: ServicesStats;
+  doctors?: DoctorsStats;
+  reviews?: ReviewsStats;
+}
+
 /* ── Hook ───────────────────────────────────────────────────────── */
 
 const BASE = "/hospital/dashboard";
@@ -73,7 +204,7 @@ export function useGetHospitalStats(params: HospitalDashboardParams = {}) {
   if (params.search) query.set("search", params.search);
   const qs = query.toString();
   const url = qs ? `${BASE}?${qs}` : BASE;
-  return useQuery({
+  return useQuery<HospitalDashboardData>({
     queryKey: ["hospital-stats", params],
     queryFn: () => apiFetch(url),
   });
@@ -126,7 +257,6 @@ function Card({
   );
 }
 
-/** Mini badge row: label + coloured value */
 function StatusRow({
   label,
   value,
@@ -149,7 +279,6 @@ function StatusRow({
   );
 }
 
-/** Horizontal progress bar */
 function MiniBar({
   value,
   total,
@@ -170,21 +299,41 @@ function MiniBar({
   );
 }
 
+/* ── Derived data types (for local chart arrays) ─────────────────── */
+
+interface DeptPieSlice {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface StatusSlice {
+  name: string;
+  value: number;
+  fill: string;
+}
+
+interface StarRow {
+  label: string;
+  value: number;
+}
+
 /* ── Component ───────────────────────────────────────────────────── */
 
 const HospitalAnalytics = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
 
   /* ── Aliases ── */
   const today = data?.today;
-  const periodSB = data?.period_stats?.service_bookings; // service bookings
+  const periodSB = data?.period_stats?.service_bookings;
   const periodAppts = data?.period_stats?.appointments;
   const revenue = data?.revenue;
-  const bookingsChart = data?.bookings_chart ?? [];
-  const dailyAppts = data?.appointments?.daily_breakdown ?? [];
-  const upcoming = data?.appointments?.upcoming ?? [];
-  const departments = data?.departments ?? [];
+  const bookingsChart: BookingsChartPoint[] = data?.bookings_chart ?? [];
+  const dailyAppts: DailyAppointmentPoint[] =
+    data?.appointments?.daily_breakdown ?? [];
+  const upcoming: UpcomingAppointment[] = data?.appointments?.upcoming ?? [];
+  const departments: Department[] = data?.departments ?? [];
   const services = data?.services;
   const doctors = data?.doctors;
   const reviews = data?.reviews;
@@ -194,14 +343,13 @@ const HospitalAnalytics = () => {
   const changePercent = revenue?.change_percent ?? null;
   const avgRating = reviews?.avg_rating ?? null;
 
-  const deptPieData = departments.map((d: any, i: number) => ({
+  const deptPieData: DeptPieSlice[] = departments.map((d, i) => ({
     name: d.name,
     value: d.period_bookings,
     color: DEPT_COLORS[i % DEPT_COLORS.length],
   }));
 
-  // Booking status breakdown for stacked bar
-  const bookingStatusData = periodSB
+  const bookingStatusData: StatusSlice[] = periodSB
     ? [
         {
           name: "Completed",
@@ -231,8 +379,7 @@ const HospitalAnalytics = () => {
       ]
     : [];
 
-  // Review star breakdown for horizontal bars
-  const starBreakdown = reviews
+  const starBreakdown: StarRow[] = reviews
     ? [
         { label: "5★", value: reviews.five_star ?? 0 },
         { label: "4★", value: reviews.four_star ?? 0 },
@@ -241,16 +388,6 @@ const HospitalAnalytics = () => {
       ]
     : [];
   const totalReviewsCount = starBreakdown.reduce((s, r) => s + r.value, 0);
-
-  // if (isError) {
-  //   return (
-  //     <DashboardLayout role="hospital">
-  //       <div className="flex h-full items-center justify-center text-destructive text-sm">
-  //         {t("common.error_loading")}
-  //       </div>
-  //     </DashboardLayout>
-  //   );
-  // }
 
   return (
     <DashboardLayout role="hospital">
@@ -300,7 +437,6 @@ const HospitalAnalytics = () => {
 
             {/* ── TODAY SNAPSHOT ── */}
             <div className="grid grid-cols-2 gap-4">
-              {/* Today — Service Bookings */}
               <Card>
                 <SectionTitle>
                   {t("pages.hospital.today_bookings")}
@@ -342,7 +478,6 @@ const HospitalAnalytics = () => {
                 )}
               </Card>
 
-              {/* Today — Appointments */}
               <Card>
                 <SectionTitle>
                   {t("pages.hospital.today_appointments")}
@@ -429,8 +564,8 @@ const HospitalAnalytics = () => {
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                       Avg Booking Value
                     </span>
-                    <span className="text-2xl font-bold tabular-nums text-foreground">
-                      ${(revenue?.avg_booking_value ?? 0).toLocaleString()}
+                    <span className="text-xl font-bold tabular-nums text-foreground">
+                      RWF{(revenue?.avg_booking_value ?? 0).toLocaleString()}
                     </span>
                     <span className="text-[10px] text-muted-foreground">
                       {revenue?.booking_count ?? 0} paid bookings
@@ -442,7 +577,6 @@ const HospitalAnalytics = () => {
 
             {/* ── BOOKINGS CHART + DEPT PIE ── */}
             <div className="grid lg:grid-cols-3 gap-4">
-              {/* Bookings over time */}
               <Card className="lg:col-span-2">
                 <SectionTitle>{t("pages.hospital.patient_flow")}</SectionTitle>
                 {isLoading ? (
@@ -460,7 +594,9 @@ const HospitalAnalytics = () => {
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(v) => String(v).split(",")[0] ?? v}
+                        tickFormatter={(v: string) =>
+                          String(v).split(",")[0] ?? v
+                        }
                       />
                       <YAxis
                         stroke="hsl(var(--muted-foreground))"
@@ -501,7 +637,6 @@ const HospitalAnalytics = () => {
                 )}
               </Card>
 
-              {/* Department pie */}
               <Card>
                 <SectionTitle>{t("pages.hospital.by_department")}</SectionTitle>
                 {isLoading ? (
@@ -524,7 +659,7 @@ const HospitalAnalytics = () => {
                           outerRadius={62}
                           paddingAngle={3}
                         >
-                          {deptPieData.map((d: any, i: number) => (
+                          {deptPieData.map((d, i) => (
                             <Cell key={i} fill={d.color} />
                           ))}
                         </Pie>
@@ -540,7 +675,7 @@ const HospitalAnalytics = () => {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="mt-2 space-y-2">
-                      {departments.map((d: any, i: number) => (
+                      {departments.map((d, i) => (
                         <div key={d.id} className="space-y-0.5">
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -652,19 +787,20 @@ const HospitalAnalytics = () => {
                 <Skeleton className="h-[200px]" />
               ) : (
                 <>
-                  {/* Revenue cards row */}
                   <div className="grid grid-cols-3 gap-2 mb-4">
-                    {[
-                      { label: "Gross", value: revenue?.gross ?? 0 },
-                      {
-                        label: "Insurance Covered",
-                        value: revenue?.insurance_covered ?? 0,
-                      },
-                      {
-                        label: "Patient Paid",
-                        value: revenue?.patient_paid ?? 0,
-                      },
-                    ].map((r) => (
+                    {(
+                      [
+                        { label: "Gross", value: revenue?.gross ?? 0 },
+                        {
+                          label: "Insurance Covered",
+                          value: revenue?.insurance_covered ?? 0,
+                        },
+                        {
+                          label: "Patient Paid",
+                          value: revenue?.patient_paid ?? 0,
+                        },
+                      ] as const
+                    ).map((r) => (
                       <div
                         key={r.label}
                         className="rounded border border-border/50 p-2"
@@ -678,7 +814,6 @@ const HospitalAnalytics = () => {
                       </div>
                     ))}
                   </div>
-                  {/* Bookings chart revenue line */}
                   <ResponsiveContainer width="100%" height={180}>
                     <AreaChart data={bookingsChart}>
                       <defs>
@@ -705,7 +840,9 @@ const HospitalAnalytics = () => {
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(v) => String(v).split(",")[0] ?? v}
+                        tickFormatter={(v: string) =>
+                          String(v).split(",")[0] ?? v
+                        }
                       />
                       <YAxis
                         stroke="hsl(var(--muted-foreground))"
@@ -739,7 +876,6 @@ const HospitalAnalytics = () => {
 
             {/* ── APPOINTMENTS DAILY + UPCOMING ── */}
             <div className="grid lg:grid-cols-3 gap-4">
-              {/* Daily appointments area */}
               <Card className="lg:col-span-2">
                 <SectionTitle>Daily Appointments</SectionTitle>
                 {isLoading ? (
@@ -775,7 +911,7 @@ const HospitalAnalytics = () => {
                         fontSize={10}
                         tickLine={false}
                         axisLine={false}
-                        tickFormatter={(v) => {
+                        tickFormatter={(v: string) => {
                           const d = new Date(v);
                           return isNaN(d.getTime())
                             ? v
@@ -822,7 +958,6 @@ const HospitalAnalytics = () => {
                 )}
               </Card>
 
-              {/* Upcoming appointments */}
               <Card>
                 <SectionTitle>Upcoming Appointments</SectionTitle>
                 {isLoading ? (
@@ -837,7 +972,7 @@ const HospitalAnalytics = () => {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {upcoming.map((a: any) => (
+                    {upcoming.map((a) => (
                       <div
                         key={a.id}
                         className="rounded border border-border/40 p-2 space-y-0.5"
@@ -869,7 +1004,6 @@ const HospitalAnalytics = () => {
 
             {/* ── SERVICES + DOCTORS ── */}
             <div className="grid lg:grid-cols-2 gap-4">
-              {/* Services summary */}
               <Card>
                 <SectionTitle>Services</SectionTitle>
                 {isLoading ? (
@@ -877,11 +1011,16 @@ const HospitalAnalytics = () => {
                 ) : (
                   <>
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                      {[
-                        { label: "Total", value: services?.total ?? 0 },
-                        { label: "Active", value: services?.active ?? 0 },
-                        { label: "Inactive", value: services?.inactive ?? 0 },
-                      ].map((s) => (
+                      {(
+                        [
+                          { label: "Total", value: services?.total ?? 0 },
+                          { label: "Active", value: services?.active ?? 0 },
+                          {
+                            label: "Inactive",
+                            value: services?.inactive ?? 0,
+                          },
+                        ] as const
+                      ).map((s) => (
                         <div
                           key={s.label}
                           className="text-center rounded border border-border/40 p-2"
@@ -922,7 +1061,7 @@ const HospitalAnalytics = () => {
                           Top Services
                         </p>
                         <div className="space-y-1.5">
-                          {services.top_services.map((s: any) => (
+                          {services!.top_services.map((s) => (
                             <div
                               key={s.service_id}
                               className="flex items-center justify-between text-[11px]"
@@ -947,7 +1086,6 @@ const HospitalAnalytics = () => {
                 )}
               </Card>
 
-              {/* Doctors summary */}
               <Card>
                 <SectionTitle>Doctors</SectionTitle>
                 {isLoading ? (
@@ -955,11 +1093,16 @@ const HospitalAnalytics = () => {
                 ) : (
                   <>
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                      {[
-                        { label: "Total", value: doctors?.total ?? 0 },
-                        { label: "Active", value: doctors?.active ?? 0 },
-                        { label: "Inactive", value: doctors?.inactive ?? 0 },
-                      ].map((d) => (
+                      {(
+                        [
+                          { label: "Total", value: doctors?.total ?? 0 },
+                          { label: "Active", value: doctors?.active ?? 0 },
+                          {
+                            label: "Inactive",
+                            value: doctors?.inactive ?? 0,
+                          },
+                        ] as const
+                      ).map((d) => (
                         <div
                           key={d.label}
                           className="text-center rounded border border-border/40 p-2"
@@ -979,7 +1122,7 @@ const HospitalAnalytics = () => {
                           Top Doctors
                         </p>
                         <div className="space-y-1.5">
-                          {doctors.top_doctors.map((d: any) => (
+                          {doctors!.top_doctors.map((d) => (
                             <div
                               key={d.doctor_id}
                               className="flex items-center justify-between text-[11px]"
@@ -1027,31 +1170,32 @@ const HospitalAnalytics = () => {
                 <Skeleton className="h-24" />
               ) : (
                 <div className="grid lg:grid-cols-2 gap-6">
-                  {/* Star breakdown */}
                   <div className="space-y-2">
                     <div className="grid grid-cols-4 gap-2 mb-2">
-                      {[
-                        {
-                          label: "Approved",
-                          value: reviews?.approved ?? 0,
-                          color: "text-success",
-                        },
-                        {
-                          label: "Pending",
-                          value: reviews?.pending ?? 0,
-                          color: "text-warning",
-                        },
-                        {
-                          label: "Rejected",
-                          value: reviews?.rejected ?? 0,
-                          color: "text-destructive",
-                        },
-                        {
-                          label: "Total",
-                          value: reviews?.total ?? 0,
-                          color: "text-foreground",
-                        },
-                      ].map((r) => (
+                      {(
+                        [
+                          {
+                            label: "Approved",
+                            value: reviews?.approved ?? 0,
+                            color: "text-success",
+                          },
+                          {
+                            label: "Pending",
+                            value: reviews?.pending ?? 0,
+                            color: "text-warning",
+                          },
+                          {
+                            label: "Rejected",
+                            value: reviews?.rejected ?? 0,
+                            color: "text-destructive",
+                          },
+                          {
+                            label: "Total",
+                            value: reviews?.total ?? 0,
+                            color: "text-foreground",
+                          },
+                        ] as const
+                      ).map((r) => (
                         <div
                           key={r.label}
                           className="text-center rounded border border-border/40 p-1.5"
@@ -1086,14 +1230,13 @@ const HospitalAnalytics = () => {
                     ))}
                   </div>
 
-                  {/* Recent reviews list */}
                   <div className="space-y-3">
                     {(reviews?.recent ?? []).length === 0 ? (
                       <p className="text-[11px] text-muted-foreground">
                         {t("pages.common.no_data")}
                       </p>
                     ) : (
-                      (reviews?.recent ?? []).map((r: any) => (
+                      (reviews?.recent ?? []).map((r) => (
                         <div key={r.id} className="space-y-0.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-medium text-foreground">

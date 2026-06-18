@@ -61,6 +61,7 @@ export interface DocumentsInfo {
   license_document?: File | null;
   national_id_document?: File | null;
   existing?: {
+    profile_image_url?: string | null;        // ← ADD THIS
     degree_document_url: string | null;
     medical_license_document_url: string | null;
     national_id_document_url: string | null;
