@@ -38,21 +38,23 @@ export async function apiFetch<T>(
           : JSON.stringify(body),
   });
 
-  if (res.status === 401) {
-    localStorage.removeItem("auth_token");
+ // api.ts
 
-    // Guard against multiple simultaneous 401s all triggering a redirect,
-    // which would cause a cascade of /auth navigations and cache wipes.
-    if (!isRedirectingToAuth) {
-      isRedirectingToAuth = true;
-      window.location.href = "/auth";
-      // Reset after a tick so the flag doesn't permanently block future
-      // auth flows (e.g. user logs back in same session).
-      setTimeout(() => { isRedirectingToAuth = false; }, 3000);
-    }
+if (res.status === 401) {
+  const hadToken = !!localStorage.getItem("auth_token");
+  localStorage.removeItem("auth_token");
 
-    return Promise.reject(new Error("Unauthorized"));
+  // Only redirect if there was actually a token that got rejected
+  // (expired session). If there was no token, this is just an
+  // unauthenticated request — let the caller handle the rejection.
+  if (hadToken && !isRedirectingToAuth) {
+    isRedirectingToAuth = true;
+    window.location.href = "/auth";
+    setTimeout(() => { isRedirectingToAuth = false; }, 3000);
   }
+
+  return Promise.reject(new Error("Unauthorized"));
+}
 
   // Reset redirect guard on any successful response — token is valid.
   isRedirectingToAuth = false;

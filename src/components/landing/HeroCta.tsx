@@ -101,13 +101,13 @@ const HeroCta = () => {
             </Link>
           </div>
         </div>
-        {/* modal={false} is required so the IremboPay widget (rendered outside this
-          dialog) stays interactive — a modal Radix dialog sets pointer-events:none
-          on everything outside it and traps focus, which blocks typing/clicking in
-          the payment widget. We still prevent outside-click/Escape from closing it. */}
+        {/* Blur overlay + Dialog */}
+        {connectOpen && (
+          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
+        )}
         <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
           <DialogContent
-            className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
+            className="z-50 p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
             onInteractOutside={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => e.preventDefault()}
           >
@@ -199,13 +199,13 @@ const HeroCta = () => {
           </Link>
         </div>
       </div>
-      {/* modal={false} is required so the IremboPay widget (rendered outside this
-          dialog) stays interactive — a modal Radix dialog sets pointer-events:none
-          on everything outside it and traps focus, which blocks typing/clicking in
-          the payment widget. We still prevent outside-click/Escape from closing it. */}
+      {/* Blur overlay + Dialog */}
+      {connectOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" />
+      )}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
         <DialogContent
-          className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
+          className="z-50 p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >

@@ -982,12 +982,12 @@ export const ConnectDialogContent = ({
           {/* ── Guest form ── */}
           {phase === "guest_form" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+              <div className=" flex items-center gap-2 p-3 rounded-xl bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-[11px] text-muted-foreground">
-                  {isLoggedIn ? "Please confirm your contact details to continue."
-                    : "You're not logged in. Please enter your details to continue."}
-                </p>
+                <span className="text-[11px] font-semibold text-muted-foreground ">
+                  {isLoggedIn ? "Please confirm your contact details to continue"
+                    : "You're not logged in. Please enter your details to continue"}
+                </span>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
                 <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
