@@ -877,7 +877,7 @@ const PatientDoctors = () => {
                 <div
                   className={cn(
                     view === "grid"
-                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2"
+                      ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2"
                       : "flex flex-col gap-2",
                   )}
                 >
@@ -908,7 +908,7 @@ const PatientDoctors = () => {
                   )}
                 </div>
               ) : view === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2">
                   {doctors.map((d) => (
                     <DoctorGridCard key={d.id} doctor={d} />
                   ))}
