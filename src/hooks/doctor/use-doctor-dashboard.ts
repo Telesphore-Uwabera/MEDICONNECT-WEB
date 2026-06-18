@@ -107,6 +107,11 @@ export interface DashboardData {
   };
 }
 
+interface ToggleStatusResponse {
+  instant_consultation: boolean;
+  bookings_paused: boolean;
+}
+
 interface ToggleInstantResponse {
   message: string;
   instant_consultation: boolean;
@@ -123,6 +128,7 @@ export const doctorDashboardKeys = {
   all: ["doctor-dashboard"] as const,
   stats: (filters: DashboardFilters) =>
     [...doctorDashboardKeys.all, "stats", filters] as const,
+  status: () => [...doctorDashboardKeys.all, "toggle-status"] as const,
 };
 
 // ─── Query string builder ─────────────────────────────────────────────────────
@@ -175,6 +181,15 @@ export function useDoctorDashboard(
 
   const refresh = useCallback(() => refetch(), [refetch]);
 
+  // ── Toggle status query (seeds real on/off state on mount) ───────────────
+
+  const { data: statusData } = useQuery({
+    queryKey: doctorDashboardKeys.status(),
+    queryFn: () =>
+      apiFetch<ToggleStatusResponse>("/doctor/toggle/mystatus"),
+    staleTime: 30_000,
+  });
+
   // ── Toggle: Instant Consultation ─────────────────────────────────────────
 
   const instantMutation = useMutation({
@@ -184,6 +199,12 @@ export function useDoctorDashboard(
       }),
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: doctorDashboardKeys.all });
+    },
+    onSuccess: () => {
+      // Re-fetch real status so the cache stays in sync
+      queryClient.invalidateQueries({
+        queryKey: doctorDashboardKeys.status(),
+      });
     },
     onError: (err) => {
       console.error("Toggle instant consultation failed:", err);
@@ -200,16 +221,23 @@ export function useDoctorDashboard(
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: doctorDashboardKeys.all });
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: doctorDashboardKeys.status(),
+      });
+    },
     onError: (err) => {
       console.error("Toggle pause bookings failed:", err);
     },
   });
 
-  // ── Derive toggle state from mutation results ─────────────────────────────
+  // ── Derive toggle state ───────────────────────────────────────────────────
+  // Priority: mutation response (just fired) → server status (fetched on mount) → false
+  const serverInstant = statusData?.instant_consultation ?? false;
+  const serverPaused  = statusData?.bookings_paused      ?? false;
 
-  const instantConsultation =
-    instantMutation.data?.instant_consultation ?? false;
-  const bookingsPaused = pauseMutation.data?.bookings_paused ?? false;
+  const instantBase = instantMutation.data?.instant_consultation ?? serverInstant;
+  const pausedBase  = pauseMutation.data?.bookings_paused        ?? serverPaused;
 
   return {
     // ── Data ──────────────────────────────────────────────────────────────
@@ -224,12 +252,13 @@ export function useDoctorDashboard(
 
     // ── Toggle state ──────────────────────────────────────────────────────
     toggleState: {
+      // While a PATCH is in-flight, flip optimistically; else use real value
       instant_consultation: instantMutation.isPending
-        ? !instantConsultation
-        : instantConsultation,
+        ? !instantBase
+        : instantBase,
       bookings_paused: pauseMutation.isPending
-        ? !bookingsPaused
-        : bookingsPaused,
+        ? !pausedBase
+        : pausedBase,
     },
     toggleLoading: {
       instant_consultation: instantMutation.isPending,

@@ -15,9 +15,6 @@ import {
   CheckCircle2,
   XCircle,
   Star,
-  Video,
-  MapPin,
-  ArrowUpRight,
   PauseCircle,
   PlayCircle,
   RefreshCw,
@@ -90,11 +87,11 @@ const DoctorOverview = () => {
 
   // ── Derived values ──────────────────────────────────────────────────────
 
-  const today = data?.today;
-  const period = data?.period_stats;
-  const revenue = data?.revenue;
-  const reviews = data?.reviews;
-  const prescriptions = data?.prescriptions;
+  const today        = data?.today;
+  const period       = data?.period_stats;
+  const revenue      = data?.revenue;
+  const reviews      = data?.reviews;
+  const prescriptions  = data?.prescriptions;
   const instantStats = data?.instant;
 
   const patientFlowData = (data?.patient_flow ?? []).map((d) => ({
@@ -110,10 +107,10 @@ const DoctorOverview = () => {
   const revenueChangePct = revenue?.change_percent ?? null;
   const revenueUp = revenueChangePct === null ? null : revenueChangePct >= 0;
 
-  const totalRevenue = revenue?.total ?? 0;
-  const onlineRevTotal = revenue?.breakdown.online.total ?? 0;
+  const totalRevenue    = revenue?.total ?? 0;
+  const onlineRevTotal  = revenue?.breakdown.online.total ?? 0;
   const inPersonRevTotal = revenue?.breakdown.in_person.total ?? 0;
-  const combinedRev = onlineRevTotal + inPersonRevTotal;
+  const combinedRev     = onlineRevTotal + inPersonRevTotal;
   const onlinePct =
     combinedRev > 0 ? Math.round((onlineRevTotal / combinedRev) * 100) : 61;
   const inPersonPct =
@@ -149,11 +146,18 @@ const DoctorOverview = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+          subtitle={t("pages.doctor.overview_sub", {
+            date: new Date().toLocaleDateString(i18n.language, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            }),
+          })}
         />
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
+
             {/* ── Toolbar: period picker + chart group + refresh ── */}
             <div className="flex flex-wrap items-center gap-2">
               {PERIOD_OPTIONS.map((opt) => (
@@ -210,6 +214,7 @@ const DoctorOverview = () => {
 
             {/* ── Toggles + today quick stats ── */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+
               {/* Instant Consultation toggle */}
               <div
                 className={cn(
@@ -345,39 +350,37 @@ const DoctorOverview = () => {
             </div>
 
             {/* ── Stats strip (period) ── */}
+            {/* loading prop removed — StatCard doesn't accept it */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
                 label={t("pages.doctor.stat_today")}
                 value={today?.total ?? 0}
                 icon={Calendar}
                 accent="primary"
-                loading={loading}
               />
               <StatCard
                 label="Unique Patients"
                 value={period?.unique_patients ?? 0}
                 icon={Users}
                 accent="info"
-                loading={loading}
               />
               <StatCard
                 label="Prescriptions"
                 value={prescriptions?.issued ?? 0}
                 icon={FileText}
                 accent="success"
-                loading={loading}
               />
               <StatCard
                 label="Instant Queue"
                 value={instantStats?.current_queue ?? 0}
                 icon={Activity}
                 accent="warning"
-                loading={loading}
               />
             </div>
 
             {/* ── Main grid ── */}
             <div className="grid lg:grid-cols-3 gap-3">
+
               {/* Patient flow chart */}
               <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-3">
@@ -466,11 +469,11 @@ const DoctorOverview = () => {
                     label: "Total Appointments",
                     value: period?.total_appointments ?? 0,
                   },
-                  { label: "Completed", value: period?.completed ?? 0 },
-                  { label: "Pending", value: period?.pending ?? 0 },
-                  { label: "Cancelled", value: period?.cancelled ?? 0 },
-                  { label: "Online", value: period?.online_count ?? 0 },
-                  { label: "In-person", value: period?.in_person_count ?? 0 },
+                  { label: "Completed",  value: period?.completed ?? 0 },
+                  { label: "Pending",    value: period?.pending ?? 0 },
+                  { label: "Cancelled",  value: period?.cancelled ?? 0 },
+                  { label: "Online",     value: period?.online_count ?? 0 },
+                  { label: "In-person",  value: period?.in_person_count ?? 0 },
                   {
                     label: "Avg Duration",
                     value: period?.avg_duration_minutes
@@ -505,7 +508,7 @@ const DoctorOverview = () => {
                     <div className="grid grid-cols-3 gap-1">
                       {[
                         { label: "Total", value: instantStats.total },
-                        { label: "Done", value: instantStats.completed },
+                        { label: "Done",  value: instantStats.completed },
                         { label: "Queue", value: instantStats.current_queue },
                       ].map((s) => (
                         <div
@@ -533,13 +536,13 @@ const DoctorOverview = () => {
 
             {/* ── Bottom row ── */}
             <div className="grid lg:grid-cols-3 gap-3">
+
               {/* Completion rate bar chart */}
               <div className="rounded-md border border-border/70 bg-card p-4 shadow-soft">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-[11px] font-semibold text-foreground">
                     Appointment Completion
                   </h3>
-                  {/* Show trend only when we have data */}
                   {completionData.length > 0 &&
                     (() => {
                       const avg =
@@ -641,10 +644,7 @@ const DoctorOverview = () => {
                             <span className="text-[9px] text-muted-foreground flex-shrink-0">
                               {new Date(r.created_at).toLocaleDateString(
                                 undefined,
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                },
+                                { month: "short", day: "numeric" },
                               )}
                             </span>
                           </div>
@@ -688,9 +688,9 @@ const DoctorOverview = () => {
                 {reviews && reviews.period.total > 0 && (
                   <div className="mt-3 pt-3 border-t border-border/40 space-y-1">
                     {[
-                      { label: "5★", value: reviews.period.five_star },
-                      { label: "4★", value: reviews.period.four_star },
-                      { label: "3★", value: reviews.period.three_star },
+                      { label: "5★",  value: reviews.period.five_star },
+                      { label: "4★",  value: reviews.period.four_star },
+                      { label: "3★",  value: reviews.period.three_star },
                       { label: "1-2★", value: reviews.period.low_star },
                     ].map((row) => (
                       <div key={row.label} className="flex items-center gap-2">
@@ -806,6 +806,7 @@ const DoctorOverview = () => {
                 </div>
               </div>
             </div>
+
           </div>
         </main>
       </div>

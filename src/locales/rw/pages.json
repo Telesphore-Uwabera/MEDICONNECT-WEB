@@ -55,7 +55,7 @@
     "footer": "© 2026 MEDICONNECT. Tuzanye ubuvuzi ku ntoki zawe"
   },
   "patient": {
-    "overview_title": "Murakaza neza, John",
+    "overview_title": "Murakaza neza",
     "overview_sub": "Dore ibibera mu kuvuzwa kwawe uyu munsi",
     "stat_upcoming": "Bizaza",
     "stat_active_rx": "Imiti ikora",
@@ -133,7 +133,7 @@
     "bookings_sub":"Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
-    "overview_title": "Mwaramutse, Dr. Vance",
+    "overview_title": "Mwaramutse",
    "overview_sub": "{{date}} · abarwayi muri gahunda yawe uyu munsi",
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",

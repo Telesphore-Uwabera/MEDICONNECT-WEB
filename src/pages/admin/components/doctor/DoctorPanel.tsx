@@ -1506,12 +1506,7 @@ function LinksTab({ doctor }: { doctor: ApiDoctor }) {
   );
 }
 
-// ─── Tab: Instant Consultation ────────────────────────────────────────────────
-
 // ─── Tab: Instant ─────────────────────────────────────────────────────────────
-// Replace the entire InstantTab function in DoctorPanel.tsx with this.
-// Imports needed (add to the hook import block):
-//   useGetInstantStatus, useToggleInstant, useGetPausedStatus, useTogglePaused
 
 function InstantTab({ doctor }: { doctor: ApiDoctor }) {
   const doctorId = doctor.id;
@@ -2672,6 +2667,12 @@ export function DoctorPanel({
 }: DoctorPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("overview");
+  // Tracks which footer action button was clicked, so only that one shows
+  // a loading spinner while `isActing` is true — the other buttons stay
+  // disabled but keep their normal icon instead of also spinning.
+  const [actingAction, setActingAction] = useState<
+    "approve" | "reject" | "suspend" | "reactivate" | null
+  >(null);
   const open = !!doctor;
 
   const { data: fullDoctor, isLoading: profileLoading } = useGetAdminDoctor(
@@ -2697,6 +2698,29 @@ export function DoctorPanel({
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Reset the tracked action once the in-flight mutation resolves, so the
+  // panel is ready for the next click.
+  useEffect(() => {
+    if (!isActing) setActingAction(null);
+  }, [isActing]);
+
+  const handleApprove = (doc: ApiDoctor) => {
+    setActingAction("approve");
+    onApprove(doc);
+  };
+  const handleReject = (doc: ApiDoctor) => {
+    setActingAction("reject");
+    onReject(doc);
+  };
+  const handleSuspend = (doc: ApiDoctor) => {
+    setActingAction("suspend");
+    onSuspend(doc);
+  };
+  const handleReactivate = (doc: ApiDoctor) => {
+    setActingAction("reactivate");
+    onApprove(doc);
+  };
 
   return (
     <>
@@ -2858,9 +2882,9 @@ export function DoctorPanel({
                     size="sm"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing}
-                    onClick={() => onApprove(d)}
+                    onClick={() => handleApprove(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "approve" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldCheck className="h-3.5 w-3.5" />
@@ -2874,9 +2898,9 @@ export function DoctorPanel({
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={isActing}
-                    onClick={() => onSuspend(d)}
+                    onClick={() => handleSuspend(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "suspend" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldOff className="h-3.5 w-3.5" />
@@ -2890,9 +2914,9 @@ export function DoctorPanel({
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
                     disabled={isActing}
-                    onClick={() => onReject(d)}
+                    onClick={() => handleReject(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "reject" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Ban className="h-3.5 w-3.5" />
@@ -2905,9 +2929,9 @@ export function DoctorPanel({
                     size="sm"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing}
-                    onClick={() => onApprove(d)}
+                    onClick={() => handleReactivate(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "reactivate" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldCheck className="h-3.5 w-3.5" />

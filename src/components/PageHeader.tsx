@@ -2,7 +2,6 @@ import { ReactNode, useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Bell,
-  Search,
   Settings,
   LogOut,
   User,
@@ -16,15 +15,17 @@ import {
   Building2,
   Pill,
   ChevronRight,
+  Sun,
+  Sunset,
+  Moon,
+  Sunrise,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { NavLink, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
-// import { MyNotifications } from "@/components/MyNotifications";
 import { useGetNotifications } from "@/hooks/use-notifications";
 import MyNotifications from "@/pages/notifications/Mynotifications";
 
@@ -46,7 +47,7 @@ export interface User {
 /* ─── Props ──────────────────────────────────────────────────────── */
 
 interface Props {
-  title: string;
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
 }
@@ -60,6 +61,18 @@ const getInitials = (name: string) =>
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+/**
+ * Returns a greeting + icon based on current local hour.
+ * 05–11 → Morning, 12–16 → Afternoon, 17–20 → Evening, 21–04 → Night
+ */
+const getGreeting = (): { text: string; Icon: React.ElementType } => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return { text: "Good morning", Icon: Sunrise };
+  if (h >= 12 && h < 17) return { text: "Good afternoon", Icon: Sun };
+  if (h >= 17 && h < 21) return { text: "Good evening", Icon: Sunset };
+  return { text: "Good night", Icon: Moon };
+};
 
 const ROLE_CONFIG: Record<
   string,
@@ -111,11 +124,10 @@ const ROLE_CONFIG: Record<
 /* ─── Component ──────────────────────────────────────────────────── */
 
 export const PageHeader = ({ title, subtitle, actions }: Props) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const { data: user, isLoading } = useMe();
@@ -152,6 +164,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   const displayRole = user?.role ?? "";
   const displayInitials = user?.name ? getInitials(user.name) : "?";
   const userRole = user?.role ?? null;
+  const firstName = displayName;
 
   const roleCfg = ROLE_CONFIG[displayRole] ?? {
     label: displayRole,
@@ -162,53 +175,71 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   };
   const RoleIcon = roleCfg.icon;
 
+  const { text: greetingText, Icon: GreetingIcon } = getGreeting();
+
   return (
     <>
-      <header className="border-b border-border/60 bg-card/90 backdrop-blur-2xl sticky top-0 z-50 shadow-sm shadow-black/5">
-        <div className="px-5 py-3 flex items-center justify-between gap-4">
-          {/* Title */}
-          <div className="min-w-0">
-            <h1 className="text-[13px] font-bold uppercase tracking-tight text-foreground truncate leading-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                {subtitle}
-              </p>
-            )}
+      <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-50 shadow-sm shadow-black/5">
+        <div className="px-6 py-3 flex items-center justify-between gap-6">
+
+          {/* ── Left: Greeting ───────────────────────────────── */}
+          <div className="min-w-0 flex items-center gap-2.5">
+            <div className="p-1.5 rounded-[6px] bg-primary/8 shrink-0">
+              <GreetingIcon className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              {isLoading ? (
+                <div className="space-y-1">
+                  <div className="h-3 w-36 bg-muted animate-pulse rounded" />
+                  <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-[12px] uppercase font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
+                    {greetingText}
+                    {firstName && firstName !== "—" ? (
+                      <span className="text-primary">, {firstName}</span>
+                    ) : null}
+                   
+                  </h1>
+                  {subtitle && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                      {subtitle}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Right controls */}
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Search */}
-            <div
-              className={cn(
-                "relative hidden md:flex items-center transition-all duration-300 ease-out",
-                searchFocused ? "w-72" : "w-56"
-              )}
-            >
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder={t("pages.header.search")}
-                className="pl-9 pr-4 h-8 text-[11px] rounded-[5px] border-border/40 bg-secondary/60 focus:bg-background focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-              />
-            </div>
+          {/* ── Right controls ──────────────────────────────── */}
+          <div className="flex items-center gap-1.5 shrink-0">
 
-            {actions}
+            {/* Custom actions slot */}
+            {actions && (
+              <div className="flex items-center gap-1.5 mr-1 pr-1.5 border-r border-border/50">
+                {actions}
+              </div>
+            )}
+
+            {/* Theme toggle */}
             <ThemeToggle />
+
+            {/* Language switcher */}
             <LanguageSwitcher />
 
-            {/* Bell — opens notifications drawer */}
+            {/* Divider */}
+            <div className="h-5 w-px bg-border/50 mx-1" />
+
+            {/* Bell */}
             <button
               onClick={() => setNotificationsOpen(true)}
-              className="relative p-2 rounded-[5px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
+              className="relative p-2 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
               aria-label="Open notifications"
             >
-              <Bell className="h-4 w-4" />
+              <Bell className="h-[25px] w-[25px]" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold ring-[1.5px] ring-card leading-none">
+                <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[8px] font-bold ring-[1.5px] ring-card leading-none">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -219,7 +250,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
               <button
                 onClick={() => setProfileOpen((o) => !o)}
                 className={cn(
-                  "flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-[5px] transition-all duration-200 border",
+                  "flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-[6px] transition-all duration-200 border",
                   profileOpen
                     ? "bg-secondary border-border text-foreground shadow-sm"
                     : "border-transparent hover:bg-secondary/60 hover:border-border/30 text-muted-foreground hover:text-foreground"
@@ -235,33 +266,26 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                     className="h-7 w-7 rounded-full object-cover ring-[1.5px] ring-primary/20"
                   />
                 ) : (
-                  <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary flex items-center justify-center text-[10px] font-bold ring-[1.5px] ring-primary/20">
+                  <div className="h-7 w-7  rounded-full bg-gradient-to-br from-primary/25 to-primary/8 text-primary flex items-center justify-center text-[10px] font-bold ring-[1.5px] ring-primary/20">
                     {displayInitials}
                   </div>
                 )}
 
-                {/* Name + role (desktop) */}
+                {/* Name + role (sm+) */}
                 <div className="hidden sm:block text-left min-w-0">
                   {isLoading ? (
                     <div className="space-y-1">
-                      <div className="h-2.5 w-20 bg-muted animate-pulse rounded-[5px]" />
-                      <div className="h-2 w-12 bg-muted animate-pulse rounded-[5px]" />
+                      <div className="h-2.5 w-20 bg-muted animate-pulse rounded" />
+                      <div className="h-2 w-12 bg-muted animate-pulse rounded" />
                     </div>
                   ) : (
                     <>
-                      <p className="text-[11px] font-bold text-foreground leading-tight truncate max-w-[100px]">
-                        {displayName.split(" ")[0]}
+                      <p className="text-[11px] capitalize font-semibold text-foreground leading-tight truncate max-w-[100px]">
+                        {firstName}
                       </p>
                       <div className="flex items-center gap-1 mt-0.5">
-                        <RoleIcon
-                          className={cn("h-2.5 w-2.5", roleCfg.color)}
-                        />
-                        <p
-                          className={cn(
-                            "text-[10px] font-semibold leading-tight capitalize",
-                            roleCfg.color
-                          )}
-                        >
+                        <RoleIcon className={cn("h-2.5 w-2.5 shrink-0", roleCfg.color)} />
+                        <p className={cn("text-[10px] font-semibold leading-tight capitalize truncate max-w-[80px]", roleCfg.color)}>
                           {roleCfg.label}
                         </p>
                       </div>
@@ -271,7 +295,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
                 <ChevronDown
                   className={cn(
-                    "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 shrink-0",
+                    "h-3 w-3 text-muted-foreground transition-transform duration-200 shrink-0",
                     profileOpen && "rotate-180"
                   )}
                 />
@@ -279,7 +303,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
               {/* ── Profile Popover ──────────────────────────────── */}
               {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[5px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[8px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
                   {/* User info header */}
                   <div
                     className={cn(
@@ -320,9 +344,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                           {displayEmail && (
                             <div className="flex items-center gap-1.5 text-muted-foreground">
                               <Mail className="h-2.5 w-2.5 shrink-0" />
-                              <p className="text-[10px] truncate">
-                                {displayEmail}
-                              </p>
+                              <p className="text-[10px] truncate">{displayEmail}</p>
                             </div>
                           )}
                           {displayPhone && (
@@ -372,18 +394,14 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                       icon={User}
                       label={t("header.profile", "Profile")}
                       description="View & edit your details"
-                      to={
-                        userRole ? `${dashboardPath(userRole)}/profile` : "#"
-                      }
+                      to={userRole ? `${dashboardPath(userRole)}/profile` : "#"}
                       onClick={() => setProfileOpen(false)}
                     />
                     <PopItem
                       icon={Settings}
                       label={t("header.settings", "Settings")}
                       description="Preferences & security"
-                      to={
-                        userRole ? `${dashboardPath(userRole)}/settings` : "#"
-                      }
+                      to={userRole ? `${dashboardPath(userRole)}/settings` : "#"}
                       onClick={() => setProfileOpen(false)}
                     />
                     <PopItem
@@ -403,7 +421,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                         handleLogout();
                       }}
                       disabled={logout.isPending}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[5px] text-[11px] text-destructive hover:bg-destructive/10 transition-colors font-semibold disabled:opacity-50"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[11px] text-destructive hover:bg-destructive/10 transition-colors font-semibold disabled:opacity-50"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                       {logout.isPending
@@ -418,7 +436,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
         </div>
       </header>
 
-      {/* Notifications Drawer — rendered outside header to avoid z-index clipping */}
+      {/* Notifications Drawer */}
       <MyNotifications
         open={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
@@ -445,7 +463,7 @@ const PopItem = ({
   <NavLink
     to={to}
     onClick={onClick}
-    className="flex items-center gap-2.5 px-3 py-2 rounded-[5px] text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-all duration-200 group"
+    className="flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/70 transition-all duration-200 group"
   >
     <div className="p-1 rounded-[5px] bg-secondary group-hover:bg-primary/10 transition-colors">
       <Icon className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
@@ -453,9 +471,7 @@ const PopItem = ({
     <div className="flex-1 min-w-0">
       <p className="font-semibold text-[11px] text-foreground">{label}</p>
       {description && (
-        <p className="text-[10px] text-muted-foreground truncate">
-          {description}
-        </p>
+        <p className="text-[10px] text-muted-foreground truncate">{description}</p>
       )}
     </div>
     <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-200 -translate-x-1 group-hover:translate-x-0" />
