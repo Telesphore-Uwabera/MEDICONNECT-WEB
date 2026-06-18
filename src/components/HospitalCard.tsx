@@ -50,14 +50,14 @@
 //         {/* Header */}
 //         <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
 //           <div className="flex items-center gap-3">
-//             <div className="h-8 w-8 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15">
+//             <div className="h-8 w-8 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-sm shrink-0 border border-primary/15">
 //               {hospital.image}
 //             </div>
 //             <div className="min-w-0 flex-1">
-//               <SheetTitle className="text-[13px] font-semibold text-foreground leading-tight truncate">
+//               <SheetTitle className="text-base font-semibold text-foreground leading-tight truncate">
 //                 {hospital.name}
 //               </SheetTitle>
-//               <SheetDescription className="text-[10px] text-muted-foreground mt-0.5">
+//               <SheetDescription className="text-xs text-muted-foreground mt-0.5">
 //                 {t("pages.cards.upcoming_availability")}
 //               </SheetDescription>
 //             </div>
@@ -67,10 +67,10 @@
 //           {activeDays.length > 0 && (
 //             <div className="mt-3 pt-3 border-t border-border/60">
 //               <div className="flex items-center justify-between mb-1.5">
-//                 <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-//                   <Activity className="h-2.5 w-2.5" /> Overall utilisation
+//                 <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+//                   <Activity className="h-4 w-4" /> Overall utilisation
 //                 </span>
-//                 <span className="text-[10px] font-semibold tabular-nums text-foreground">
+//                 <span className="text-xs font-semibold tabular-nums text-foreground">
 //                   {overallPct}%
 //                 </span>
 //               </div>
@@ -88,7 +88,7 @@
 //                   }}
 //                 />
 //               </div>
-//               <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+//               <p className="text-sm text-muted-foreground mt-1 tabular-nums">
 //                 {totalBooked} booked of {totalCapacity} total spots
 //               </p>
 //             </div>
@@ -101,13 +101,13 @@
 //             <>
 //               {/* Column headers */}
 //               <div className="flex items-center gap-3 px-5 pt-3 pb-2 border-b border-border/60 bg-muted/20 sticky top-0 z-10">
-//                 <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex-1">
+//                 <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground flex-1">
 //                   Date
 //                 </span>
-//                 <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground w-14 text-center">
+//                 <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground w-14 text-center">
 //                   Fill
 //                 </span>
-//                 <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground w-20 text-right">
+//                 <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground w-20 text-right">
 //                   Status
 //                 </span>
 //               </div>
@@ -129,11 +129,11 @@
 //                     >
 //                       {/* Date */}
 //                       <div className="flex-1 min-w-0">
-//                         <p className="text-[11px] font-semibold text-foreground leading-tight">
+//                         <p className="text-sm font-semibold text-foreground leading-tight">
 //                           {d.date}
 //                         </p>
 //                         {!d.active && (
-//                           <p className="text-[9px] text-muted-foreground mt-0.5">
+//                           <p className="text-sm text-muted-foreground mt-0.5">
 //                             {t("pages.cards.closed")}
 //                           </p>
 //                         )}
@@ -157,7 +157,7 @@
 //                                 }}
 //                               />
 //                             </div>
-//                             <p className="text-[9px] text-muted-foreground tabular-nums">
+//                             <p className="text-sm text-muted-foreground tabular-nums">
 //                               {d.booked}/{d.capacity}
 //                             </p>
 //                           </div>
@@ -165,18 +165,18 @@
 //                           {/* Status */}
 //                           <div className="w-20 text-right">
 //                             {spots > 0 ? (
-//                               <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+//                               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
 //                                 {t("pages.cards.spots_left", { count: spots })}
 //                               </span>
 //                             ) : (
-//                               <span className="text-[9px] font-medium text-muted-foreground">
+//                               <span className="text-sm font-medium text-muted-foreground">
 //                                 {t("pages.cards.fully_booked")}
 //                               </span>
 //                             )}
 //                           </div>
 //                         </>
 //                       ) : (
-//                         <span className="text-[9px] text-muted-foreground ml-auto">—</span>
+//                         <span className="text-sm text-muted-foreground ml-auto">—</span>
 //                       )}
 //                     </li>
 //                   );
@@ -189,8 +189,8 @@
 //                 <CalendarDays className="h-5 w-5 text-muted-foreground/40" />
 //               </div>
 //               <div>
-//                 <p className="text-[12px] font-semibold text-foreground">No schedule yet</p>
-//                 <p className="text-[10px] text-muted-foreground mt-0.5">
+//                 <p className="text-sm font-semibold text-foreground">No schedule yet</p>
+//                 <p className="text-xs text-muted-foreground mt-0.5">
 //                   {t("pages.cards.no_published")}
 //                 </p>
 //               </div>
@@ -200,14 +200,14 @@
 
 //         {/* Footer */}
 //         <SheetFooter className="px-5 py-3 border-t border-border bg-muted/30 shrink-0 flex items-center justify-between sm:justify-between">
-//           <p className="text-[9px] text-muted-foreground">
+//           <p className="text-sm text-muted-foreground">
 //             <span className="font-semibold text-foreground">{activeDays.length}</span> active day{activeDays.length !== 1 ? "s" : ""}
 //           </p>
 //           <Button
 //             size="sm"
 //             variant="outline"
 //             onClick={() => onOpenChange(false)}
-//             className="h-7 px-3 text-[10px] font-medium rounded-sm"
+//             className="h-7 px-3 text-xs font-medium rounded-sm"
 //           >
 //             Close
 //           </Button>
@@ -242,12 +242,12 @@
 
 //         {/* ── Top strip ── */}
 //         <div className="flex items-center justify-between px-3.5 py-1.5 bg-muted/60 border-b border-border">
-//           <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+//           <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
 //             {hospital.type ?? "Hospital"}
 //           </span>
 //           <span
 //             className={cn(
-//               "text-[10px] font-semibold",
+//               "text-xs font-semibold",
 //               stats.openSpots > 0
 //                 ? "text-emerald-600 dark:text-emerald-400"
 //                 : "text-muted-foreground",
@@ -264,15 +264,15 @@
 
 //           {/* Identity row */}
 //           <div className="flex items-center gap-3">
-//             <div className="h-9 w-9 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 select-none border border-primary/15">
+//             <div className="h-9 w-9 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-sm shrink-0 select-none border border-primary/15">
 //               {hospital.image}
 //             </div>
 //             <div className="min-w-0 flex-1">
-//               <h3 className="text-[12px] font-semibold text-foreground leading-tight truncate">
+//               <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
 //                 {hospital.name}
 //               </h3>
-//               <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5 truncate">
-//                 <MapPin className="h-2.5 w-2.5 shrink-0" />
+//               <p className="text-xs text-muted-foreground flex items-center gap-0.5 mt-0.5 truncate">
+//                 <MapPin className="h-4 w-4 shrink-0" />
 //                 {hospital.address}
 //               </p>
 //             </div>
@@ -282,17 +282,17 @@
 //           <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
 //             {[
 //               {
-//                 icon: <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />,
+//                 icon: <Star className="h-4 w-4 fill-amber-400 text-amber-400" />,
 //                 label: "Rating",
 //                 value: hospital.rating,
 //               },
 //               {
-//                 icon: <BedDouble className="h-2.5 w-2.5 text-muted-foreground" />,
+//                 icon: <BedDouble className="h-4 w-4 text-muted-foreground" />,
 //                 label: "Beds",
 //                 value: t("pages.cards.beds", { count: hospital.beds }),
 //               },
 //               {
-//                 icon: <CalendarCheck className="h-2.5 w-2.5 text-muted-foreground" />,
+//                 icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />,
 //                 label: "Open days",
 //                 value: t("pages.cards.open_days", { count: stats.activeDays }),
 //               },
@@ -302,7 +302,7 @@
 //                   {icon}
 //                   <span className="text-[8px] uppercase tracking-wider font-semibold">{label}</span>
 //                 </div>
-//                 <span className="text-[10px] font-semibold text-foreground">{value}</span>
+//                 <span className="text-xs font-semibold text-foreground">{value}</span>
 //               </div>
 //             ))}
 //           </div>
@@ -322,7 +322,7 @@
 //           )}
 
 //           {/* Services count */}
-//           <p className="mt-2 text-[9px] text-muted-foreground">
+//           <p className="mt-2 text-sm text-muted-foreground">
 //             {t("pages.cards.services_available", { count: hospital.services.length })}
 //           </p>
 
@@ -332,15 +332,15 @@
 //               size="sm"
 //               variant="outline"
 //               onClick={() => setScheduleOpen(true)}
-//               className="h-7 px-2.5 text-[10px] font-medium rounded-sm border-border gap-1.5 flex-1"
+//               className="h-7 px-2.5 text-xs font-medium rounded-sm border-border gap-1.5 flex-1"
 //             >
-//               <CalendarDays className="h-3 w-3" />
+//               <CalendarDays className="h-4 w-4" />
 //               {t("pages.cards.view_schedule")}
 //             </Button>
 //             <Button
 //               size="sm"
 //               onClick={() => setBookOpen(true)}
-//               className="h-7 px-2.5 text-[10px] font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
+//               className="h-7 px-2.5 text-xs font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
 //             >
 //               {t("pages.cards.book_spot")}
 //             </Button>
@@ -420,12 +420,12 @@ export const HospitalCard = ({ hospital }) => {
 
         {/* ── Top strip ── */}
         <div className="flex items-center justify-between px-3.5 py-1.5 bg-muted/60 border-b border-border">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
             {hospital.type ?? "Hospital"}
           </span>
           <span
             className={cn(
-              "text-[10px] font-semibold",
+              "text-xs font-semibold",
               hospital.is_accepting_bookings
                 ? "text-emerald-600 dark:text-emerald-400"
                 : "text-muted-foreground",
@@ -444,7 +444,7 @@ export const HospitalCard = ({ hospital }) => {
 
           {/* Identity row */}
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 select-none border border-primary/15 overflow-hidden">
+            <div className="h-9 w-9 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-sm shrink-0 select-none border border-primary/15 overflow-hidden">
               {hospital.logo ? (
                 <img src={hospital.logo} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -452,11 +452,11 @@ export const HospitalCard = ({ hospital }) => {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-[12px] font-semibold text-foreground leading-tight truncate">
+              <h3 className="text-base font-semibold text-foreground leading-tight truncate">
                 {hospital.name_en}
               </h3>
-              <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5 truncate">
-                <MapPin className="h-2.5 w-2.5 shrink-0" />
+              <p className="text-sm text-muted-foreground flex items-center gap-0.5 mt-0.5 truncate">
+                <MapPin className="h-4 w-4 shrink-0" />
                 {hospital.city}{hospital.address ? `, ${hospital.address}` : ""}
               </p>
             </div>
@@ -466,17 +466,17 @@ export const HospitalCard = ({ hospital }) => {
           <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
             {[
               {
-                icon: <Users className="h-2.5 w-2.5 text-muted-foreground" />,
+                icon: <Users className="h-4 w-4 text-muted-foreground" />,
                 label: "Doctors",
                 value: hospital.doctors_count ?? 0,
               },
               {
-                icon: <Building2 className="h-2.5 w-2.5 text-muted-foreground" />,
+                icon: <Building2 className="h-4 w-4 text-muted-foreground" />,
                 label: "Depts",
                 value: hospital.departments_count ?? 0,
               },
               {
-                icon: <CalendarCheck className="h-2.5 w-2.5 text-muted-foreground" />,
+                icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />,
                 label: "Open days",
                 value: t("pages.cards.open_days", { count: stats.activeDays }),
               },
@@ -484,9 +484,9 @@ export const HospitalCard = ({ hospital }) => {
               <div key={label} className="flex flex-col items-center py-2 px-1 bg-muted/20">
                 <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                   {icon}
-                  <span className="text-[8px] uppercase tracking-wider font-semibold">{label}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-semibold">{label}</span>
                 </div>
-                <span className="text-[10px] font-semibold text-foreground">{value}</span>
+                <span className="text-xs font-semibold text-foreground">{value}</span>
               </div>
             ))}
           </div>
@@ -497,13 +497,13 @@ export const HospitalCard = ({ hospital }) => {
               {hospital.departments.slice(0, 4).map((dept) => (
                 <span
                   key={dept.id ?? dept.name_en}
-                  className="text-[8px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60"
+                  className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60"
                 >
                   {dept.name_en}
                 </span>
               ))}
               {hospital.departments.length > 4 && (
-                <span className="text-[8px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+                <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
                   +{hospital.departments.length - 4}
                 </span>
               )}
@@ -511,7 +511,7 @@ export const HospitalCard = ({ hospital }) => {
           )}
 
           {/* Insurances count — replaces old services count */}
-          <p className="mt-2 text-[9px] text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             {hospital.insurances?.length > 0
               ? `${hospital.insurances.length} insurance${hospital.insurances.length !== 1 ? "s" : ""} accepted`
               : "No insurances listed"}
@@ -523,16 +523,16 @@ export const HospitalCard = ({ hospital }) => {
               size="sm"
               variant="outline"
               onClick={() => setScheduleOpen(true)}
-              className="h-7 px-2.5 text-[10px] font-medium rounded-sm border-border gap-1.5 flex-1"
+              className="h-8 px-3 text-sm font-medium rounded-sm border-border gap-1.5 flex-1"
             >
-              <CalendarDays className="h-3 w-3" />
+              <CalendarDays className="h-4 w-4" />
               {t("pages.cards.view_schedule")}
             </Button>
             <Button
               size="sm"
               onClick={() => setBookOpen(true)}
               disabled={!hospital.is_accepting_bookings}
-              className="h-7 px-2.5 text-[10px] font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
+              className="h-8 px-3 text-sm font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 flex-1"
             >
               {t("pages.cards.book_spot")}
             </Button>

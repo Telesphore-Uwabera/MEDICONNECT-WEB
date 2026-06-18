@@ -69,21 +69,21 @@ function DetailRow({ label, value, icon }: { label: string; value: ReactNode; ic
     <div className="flex items-start justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
       <div className="flex items-center gap-1.5 shrink-0">
         {icon && <span className="text-muted-foreground/50">{icon}</span>}
-        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+        <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <span className="text-[11px] font-medium text-foreground text-right">{value}</span>
+      <span className="text-sm font-medium text-foreground text-right">{value}</span>
     </div>
   );
 }
 
 function Section({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="px-4 py-2">
-      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
+    <div className="px-5 py-3">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
         {icon}
         {title}
       </p>
-      <div className="bg-background rounded-lg border border-border/50 px-3 py-1">{children}</div>
+      <div className="bg-background rounded-lg border border-border/50 px-4 py-2">{children}</div>
     </div>
   );
 }
@@ -93,9 +93,9 @@ const StatusBadge = ({ status }: { status: string }) => {
   return (
     <Badge
       variant="outline"
-      className={cn("text-[9px] px-1.5 py-0 font-medium border capitalize", STATUS_STYLES[st] ?? "bg-muted text-muted-foreground border-border")}
+      className={cn("text-xs px-2.5 py-0.5 font-medium border capitalize", STATUS_STYLES[st] ?? "bg-muted text-muted-foreground border-border")}
     >
-      <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOTS[st] ?? "bg-muted-foreground")} />
+      <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOTS[st] ?? "bg-muted-foreground")} />
       {st}
     </Badge>
   );
@@ -103,10 +103,10 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 type DrawerTab = "details" | "record" | "visits" | "files";
 const DRAWER_TABS: Array<{ id: DrawerTab; label: string; icon: ReactNode }> = [
-  { id: "details", label: "Details", icon: <Calendar className="h-3.5 w-3.5" /> },
-  { id: "record", label: "Record", icon: <HeartPulse className="h-3.5 w-3.5" /> },
-  { id: "visits", label: "Visits", icon: <Stethoscope className="h-3.5 w-3.5" /> },
-  { id: "files", label: "Files", icon: <ClipboardList className="h-3.5 w-3.5" /> },
+  { id: "details", label: "Details", icon: <Calendar className="h-4 w-4" /> },
+  { id: "record", label: "Record", icon: <HeartPulse className="h-4 w-4" /> },
+  { id: "visits", label: "Visits", icon: <Stethoscope className="h-4 w-4" /> },
+  { id: "files", label: "Files", icon: <ClipboardList className="h-4 w-4" /> },
 ];
 
 export function ServiceBookingsTab() {
@@ -165,7 +165,7 @@ export function ServiceBookingsTab() {
             key={f.value}
             onClick={() => setStatus(f.value)}
             className={cn(
-              "px-3 h-7 rounded-full text-[11px] font-medium border transition-colors",
+              "px-4 h-9 rounded-full text-sm font-medium border transition-colors",
               status === f.value
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -187,15 +187,15 @@ export function ServiceBookingsTab() {
 
       {/* Empty */}
       {!isLoading && bookings.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-          <div className="h-14 w-14 rounded-[8px] bg-muted/50 border border-border flex items-center justify-center">
-            <CalendarX2 className="h-6 w-6 text-muted-foreground/40" />
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <div className="h-16 w-16 rounded-lg bg-muted/50 border border-border flex items-center justify-center">
+            <CalendarX2 className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-foreground">
+            <p className="text-sm font-semibold text-foreground">
               {t("consult.bookings.empty_title")}
             </p>
-            <p className="text-[10px] text-muted-foreground/70 mt-1 max-w-[280px] leading-relaxed">
+            <p className="text-sm text-muted-foreground/70 mt-1 max-w-[280px] leading-relaxed">
               {t("consult.bookings.empty_desc")}
             </p>
           </div>
@@ -212,21 +212,21 @@ export function ServiceBookingsTab() {
               setConfirming(false);
               setDrawerTab("details");
             }}
-            className="w-full text-left rounded-[6px] border border-border bg-card p-3 hover:bg-muted/40 hover:border-primary/30 transition-colors flex items-center gap-3"
+            className="w-full text-left rounded-[6px] border border-border bg-card p-4 hover:bg-muted/40 hover:border-primary/30 transition-colors flex items-center gap-4"
           >
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] font-semibold text-foreground truncate flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+              <p className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary shrink-0" />
                 {hospitalName(b)}
                 <span className="text-muted-foreground font-normal truncate">· {serviceName(b)}</span>
               </p>
-              <p className="text-[10px] text-muted-foreground flex items-center gap-x-3 gap-y-0.5 flex-wrap mt-1">
-                <span className="flex items-center gap-1"><User className="h-2.5 w-2.5" />{patientName(b)}</span>
-                <span className="flex items-center gap-1"><CalendarClock className="h-2.5 w-2.5" />{fmtDate(b.preferred_date)} · {fmtTime(b.preferred_time)}</span>
+              <p className="text-xs text-muted-foreground flex items-center gap-x-3 gap-y-0.5 flex-wrap mt-1">
+                <span className="flex items-center gap-1.5"><User className="h-3.5 w-3.5" />{patientName(b)}</span>
+                <span className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" />{fmtDate(b.preferred_date)} · {fmtTime(b.preferred_time)}</span>
               </p>
             </div>
             <StatusBadge status={String(b.status)} />
-            <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground/40 shrink-0" />
           </button>
         ))}
 
@@ -236,20 +236,20 @@ export function ServiceBookingsTab() {
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeDrawer} />
           <div className="relative flex flex-col bg-card border-l border-border shadow-2xl w-full max-w-md h-full overflow-hidden animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 bg-card shrink-0">
-              <div className="h-9 w-9 rounded-sm bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-[11px] flex-shrink-0 border border-primary/10">
+            <div className="flex items-center gap-4 px-5 py-4 border-b border-border/60 bg-card shrink-0">
+              <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
                 {initials(patientName(detail))}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-foreground truncate">{hospitalName(detail)}</p>
-                <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-base font-semibold text-foreground truncate">{hospitalName(detail)}</p>
+                <div className="flex items-center gap-3 mt-1">
                   <StatusBadge status={String(detail.status)} />
-                  <span className="text-[10px] text-muted-foreground">#{detail.id}</span>
+                  <span className="text-xs text-muted-foreground">#{detail.id}</span>
                 </div>
               </div>
               <button
                 onClick={closeDrawer}
-                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+                className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -262,7 +262,7 @@ export function ServiceBookingsTab() {
                   key={t.id}
                   onClick={() => setDrawerTab(t.id)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2.5 text-[11px] font-medium border-b-2 transition-colors",
+                    "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
                     drawerTab === t.id
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
@@ -283,47 +283,47 @@ export function ServiceBookingsTab() {
               {drawerTab === "details" && (
                 <>
                   {loadingDetail && (
-                    <p className="px-4 text-[10px] text-muted-foreground flex items-center gap-1.5">
-                      <Loader2 className="h-3 w-3 animate-spin" /> {t("consult.bookings.loading_detail")}
+                    <p className="px-5 text-xs text-muted-foreground flex items-center gap-2 mt-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> {t("consult.bookings.loading_detail")}
                     </p>
                   )}
 
-                  <Section title={t("consult.bookings.schedule")} icon={<Calendar className="h-3 w-3" />}>
-                    <DetailRow label="Date" value={fmtDate(detail.preferred_date)} icon={<Calendar className="h-3 w-3" />} />
-                    <DetailRow label="Time" value={fmtTime(detail.preferred_time)} icon={<Clock className="h-3 w-3" />} />
+                  <Section title={t("consult.bookings.schedule")} icon={<Calendar className="h-4 w-4" />}>
+                    <DetailRow label="Date" value={fmtDate(detail.preferred_date)} icon={<Calendar className="h-4 w-4" />} />
+                    <DetailRow label="Time" value={fmtTime(detail.preferred_time)} icon={<Clock className="h-4 w-4" />} />
                   </Section>
 
-                  <Section title={t("consult.booking.hospital")} icon={<Building2 className="h-3 w-3" />}>
+                  <Section title={t("consult.booking.hospital")} icon={<Building2 className="h-4 w-4" />}>
                     <DetailRow label="Name" value={hospitalName(detail)} />
                     {hospitalCity(detail) && (
                       <DetailRow label="City" value={
-                        <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3 text-muted-foreground/60" />{hospitalCity(detail)}</span>
+                        <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-muted-foreground/60" />{hospitalCity(detail)}</span>
                       } />
                     )}
                   </Section>
 
-                  <Section title={t("consult.booking.service")} icon={<Stethoscope className="h-3 w-3" />}>
+                  <Section title={t("consult.booking.service")} icon={<Stethoscope className="h-4 w-4" />}>
                     <DetailRow label="Name" value={serviceName(detail)} />
                     {deptName(detail) && <DetailRow label="Department" value={deptName(detail)} />}
                   </Section>
 
-                  <Section title={t("consult.bookings.patient")} icon={<User className="h-3 w-3" />}>
+                  <Section title={t("consult.bookings.patient")} icon={<User className="h-4 w-4" />}>
                     <DetailRow label="Name" value={patientName(detail)} />
                     {patientPhone(detail) && (
                       <DetailRow label="Phone" value={
-                        <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3 text-muted-foreground/60" />{patientPhone(detail)}</span>
+                        <span className="inline-flex items-center gap-1.5"><Phone className="h-4 w-4 text-muted-foreground/60" />{patientPhone(detail)}</span>
                       } />
                     )}
                   </Section>
 
                   {detail.notes && (
-                    <Section title={t("consult.booking.notes")} icon={<FileText className="h-3 w-3" />}>
-                      <p className="text-[11px] text-foreground whitespace-pre-wrap leading-relaxed py-1">{detail.notes}</p>
+                    <Section title={t("consult.booking.notes")} icon={<FileText className="h-4 w-4" />}>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed py-1">{detail.notes}</p>
                     </Section>
                   )}
 
                   {detail.created_at && (
-                    <p className="px-4 pt-2 pb-4 text-[10px] text-muted-foreground/50 text-center">
+                    <p className="px-5 pt-2 pb-4 text-xs text-muted-foreground/50 text-center">
                       {t("consult.bookings.created", { date: dayjs(detail.created_at).format("MMM D, YYYY") })}
                     </p>
                   )}
@@ -333,31 +333,31 @@ export function ServiceBookingsTab() {
 
             {/* Cancel */}
             {CANCELLABLE.has(String(detail.status).toLowerCase()) && (
-              <div className="px-4 py-3 border-t border-border/60 bg-secondary/20 shrink-0 flex items-center justify-end gap-2">
+              <div className="px-5 py-4 border-t border-border/60 bg-secondary/20 shrink-0 flex items-center justify-end gap-3">
                 {confirming ? (
                   <>
-                    <span className="text-[10px] text-muted-foreground mr-auto">{t("consult.bookings.cancel_confirm")}</span>
+                    <span className="text-xs text-muted-foreground mr-auto">{t("consult.bookings.cancel_confirm")}</span>
                     <button
                       onClick={() => setConfirming(false)}
-                      className="h-7 px-3 rounded-sm text-[10px] font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
+                      className="h-9 px-4 rounded-md text-sm font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
                     >
                       {t("consult.bookings.keep")}
                     </button>
                     <button
                       onClick={() => handleCancel(detail.id)}
                       disabled={cancelBooking.isPending}
-                      className="h-7 px-3 rounded-sm text-[10px] font-semibold bg-rose-500 text-white hover:bg-rose-600 transition-colors flex items-center gap-1 disabled:opacity-50"
+                      className="h-9 px-4 rounded-md text-sm font-semibold bg-rose-500 text-white hover:bg-rose-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
-                      {cancelBooking.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                      {cancelBooking.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("consult.bookings.yes_cancel")}
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={() => setConfirming(true)}
-                    className="h-7 px-3 rounded-sm text-[10px] font-medium border border-border text-muted-foreground hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center gap-1.5"
+                    className="h-9 px-4 rounded-md text-sm font-medium border border-border text-muted-foreground hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center gap-1.5"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                     {t("consult.booking.cancel")}
                   </button>
                 )}

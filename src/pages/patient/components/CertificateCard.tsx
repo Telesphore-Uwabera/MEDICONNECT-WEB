@@ -31,12 +31,16 @@ import {
 
 import {
   useDownloadCertificate,
+  useJoinConfirmationSession,
   isDownloadPaymentRequired,
   isDownloadReady,
   type Certificate,
   type DownloadPaymentRequired,
   type CertificateAnswer,
 } from "@/hooks/patient/use-patient-certificates";
+import { useCallContext } from "@/context/CallContext";
+import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { Video } from "lucide-react";
 
 import PaymentPanel from "./Paymentpanel";
 
@@ -461,6 +465,37 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
   const downloadMutation = useDownloadCertificate();
   const isApproved = cert.status === "approved";
 
+  // ── Video identity verification (join the doctor's session) ────────────────
+  const { startCall } = useCallContext();
+  const joinSession = useJoinConfirmationSession(cert.id);
+  // Show while a review is in progress and identity hasn't been verified yet.
+  const canVerify =
+    (cert.status === "pending" || cert.status === "in_review") &&
+    !cert.identity_verified_via_video;
+
+  const handleJoinVerification = () => {
+    joinSession.mutate(undefined, {
+      onSuccess: (res) => {
+        console.log("[Certificate] patient verification session:", res);
+        const token = res.patient_token ?? res.token ?? res.doctor_token;
+        const started = startInAppCallFromJoin(
+          startCall,
+          { token, room_name: res.room_name, room_url: res.room_url, join_url: res.join_url },
+          { isOwner: false },
+        );
+        if (started) {
+          toast.success("Joining the verification call…");
+          return;
+        }
+        const url = res.join_url || res.room_url;
+        if (url) window.open(url, "_blank", "noopener,noreferrer");
+        else toast.error("The verification call isn't ready yet. Please wait for your doctor to start it.");
+      },
+      onError: (err) =>
+        toast.error((err as Error)?.message || "Could not join the verification call."),
+    });
+  };
+
   const handleDownload = async () => {
     setDownloadPhase("loading");
     setErrorMsg(null);
@@ -637,6 +672,23 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
             </Button>
 
             <div className="flex-1" />
+
+            {/* Join verification call — while a review is pending identity check */}
+            {canVerify && (
+              <Button
+                size="sm"
+                onClick={handleJoinVerification}
+                disabled={joinSession.isPending}
+                className="h-7 text-[11px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {joinSession.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Video className="h-3.5 w-3.5" />
+                )}
+                Join verification call
+              </Button>
+            )}
 
             {/* Download — only for approved */}
             {isApproved && downloadPhase === "idle" && (

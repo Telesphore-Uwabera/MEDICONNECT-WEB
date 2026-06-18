@@ -104,10 +104,14 @@ const HeroCta = () => {
         {/* modal={false} is required so the IremboPay widget (rendered outside this
           dialog) stays interactive — a modal Radix dialog sets pointer-events:none
           on everything outside it and traps focus, which blocks typing/clicking in
-          the payment widget. We still prevent outside-click/Escape from closing it. */}
+          the payment widget. We still prevent outside-click/Escape from closing it.
+          Because modal=false disables the Radix overlay, we add our own manual overlay. */}
+        {connectOpen && (
+          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md pointer-events-none" />
+        )}
         <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
           <DialogContent
-            className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
+            className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card/80 backdrop-blur-2xl shadow-2xl"
             onInteractOutside={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => e.preventDefault()}
           >
@@ -202,10 +206,14 @@ const HeroCta = () => {
       {/* modal={false} is required so the IremboPay widget (rendered outside this
           dialog) stays interactive — a modal Radix dialog sets pointer-events:none
           on everything outside it and traps focus, which blocks typing/clicking in
-          the payment widget. We still prevent outside-click/Escape from closing it. */}
+          the payment widget. We still prevent outside-click/Escape from closing it.
+          Because modal=false disables the Radix overlay, we add our own manual overlay. */}
+      {connectOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md pointer-events-none" />
+      )}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
         <DialogContent
-          className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
+          className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card/80 backdrop-blur-2xl shadow-2xl"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >

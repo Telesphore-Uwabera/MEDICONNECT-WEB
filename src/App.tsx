@@ -76,7 +76,7 @@ import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ConsultationRoomPage from "./pages/ConsultationRoom.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
-import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx"; 
+import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
 import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import PatientSettings from "./pages/patient/PatientSettings.tsx";
@@ -87,14 +87,14 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider> 
+    <TooltipProvider>
       <BrowserRouter>
         <CallProvider>
           <Toaster />
           <Sonner />
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
-          <Routes> 
+          <Routes>
             <Route path="/" element={<Index />} />
             <Route
               path="/consultation/:roomName"
@@ -103,40 +103,6 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding/:role" element={<Onboarding />} />
 
-              <Route path="/patient" element={<PatientOverview />} />
-              <Route
-              path="/patient/search-doctors"
-              element={<PatientDoctors />}
-            />
-              <Route
-                path="/patient/search-facilities"
-                element={<PatientHospitals />}
-              />
-              <Route path="/patient/instant" element={<PatientInstant />} />
-              <Route
-                path="/patient/appointments"
-                element={<PatientAppointments />}
-              />
-              <Route
-                path="/patient/prescriptions"
-                element={<PatientPrescriptions />}
-              />
-              <Route
-                path="/patient/fitness-certificates"
-                element={<PatientFitnessCertificates />}
-              />
-              <Route
-                path="/patient/search-pharmacy"
-                element={<PatientPharmacy />}
-              />
-              <Route path="/patient/profile" element={<PatientProfile />} />
-              <Route path="/patient/medical-info" element={<MedicalInfo />} />
-              <Route path="/patient/insurance" element={<PatientInsurence />} />
-              <Route
-                path="/patient/service-bookings"
-                element={<ServiceBookings />}
-              />
-              <Route path="/patient/my-reviews" element={<MyReviews />} />
             <Route path="/patient" element={<PatientOverview />} />
             <Route
               path="/patient/search-doctors"
@@ -165,7 +131,41 @@ const App = () => (
             />
             <Route path="/patient/profile" element={<PatientProfile />} />
             <Route path="/patient/medical-info" element={<MedicalInfo />} />
-            <Route path="/patient/settings" element={<PatientSettings />} /> 
+            <Route path="/patient/insurance" element={<PatientInsurence />} />
+            <Route
+              path="/patient/service-bookings"
+              element={<ServiceBookings />}
+            />
+            <Route path="/patient/my-reviews" element={<MyReviews />} />
+            <Route path="/patient" element={<PatientOverview />} />
+            <Route
+              path="/patient/search-doctors"
+              element={<PatientDoctors />}
+            />
+            <Route
+              path="/patient/search-facilities"
+              element={<PatientHospitals />}
+            />
+            <Route path="/patient/instant" element={<PatientInstant />} />
+            <Route
+              path="/patient/appointments"
+              element={<PatientAppointments />}
+            />
+            <Route
+              path="/patient/prescriptions"
+              element={<PatientPrescriptions />}
+            />
+            <Route
+              path="/patient/fitness-certificates"
+              element={<PatientFitnessCertificates />}
+            />
+            <Route
+              path="/patient/search-pharmacy"
+              element={<PatientPharmacy />}
+            />
+            <Route path="/patient/profile" element={<PatientProfile />} />
+            <Route path="/patient/medical-info" element={<MedicalInfo />} />
+            <Route path="/patient/settings" element={<PatientSettings />} />
             <Route path="/patient/insurance" element={<PatientInsurence />} />
             <Route
               path="/patient/service-bookings"
@@ -186,12 +186,12 @@ const App = () => (
             <Route path="/patient/service-bookings" element={<ServiceBookings />} />
             <Route path="/patient/my-reviews" element={<MyReviews />} />
 
-              <Route path="/doctor" element={<DoctorOverview />} />
-              <Route
+            <Route path="/doctor" element={<DoctorOverview />} />
+            <Route
               path="/doctor/availability"
               element={<DoctorAvailability />}
             />
-              <Route
+            <Route
               path="/doctor/appointments"
               element={<DoctorAppointments />}
             />
@@ -217,17 +217,17 @@ const App = () => (
               path="/doctor/appointments"
               element={<DoctorAppointments />}
             />
-              <Route path="/doctor/patients" element={<DoctorPatients />} />
-              <Route
-                path="/doctor/prescriptions"
-                element={<DoctorPrescriptions />}
-              />
-              <Route
-                path="/doctor/fitness-certificates"
-                element={<DoctorFitnessCertificates />}
-              />
-              <Route path="/doctor/profile" element={<DoctorProfile />} />
-              <Route path="/doctor/referrals" element={<MyReferrals />} />
+            <Route path="/doctor/patients" element={<DoctorPatients />} />
+            <Route
+              path="/doctor/prescriptions"
+              element={<DoctorPrescriptions />}
+            />
+            <Route
+              path="/doctor/fitness-certificates"
+              element={<DoctorFitnessCertificates />}
+            />
+            <Route path="/doctor/profile" element={<DoctorProfile />} />
+            <Route path="/doctor/referrals" element={<MyReferrals />} />
 
             {/* Settings */}
             <Route path="/doctor/settings" element={<Settings />} />
@@ -240,26 +240,26 @@ const App = () => (
             <Route path="/doctor/profile" element={<DoctorProfile />} />
             <Route path="/doctor/referrals" element={<MyReferrals />} />
 
-              {/* Settings */}
-             <Route path="/doctor/settings" element={<DoctorSettings/>} />
+            {/* Settings */}
+            <Route path="/doctor/settings" element={<DoctorSettings />} />
 
-              <Route path="/hospital" element={<HospitalAnalytics />} />
-              <Route
-                path="/hospital/appointments"
-                element={<HospitalAppointments />}
-              />
-              <Route path="/hospital/doctors" element={<HospitalDoctors />} />
-              <Route
-                path="/hospital/departments"
-                element={<HospitalDepartments />}
-              />
-              <Route path="/hospital/schedule" element={<HospitalSchedule />} />
-              <Route
-                path="/hospital/prescriptions"
-                element={<HospitalPrescriptions />}
-              />
-              <Route path="/hospital/profile" element={<HospitalProfile />} />
-              <Route
+            <Route path="/hospital" element={<HospitalAnalytics />} />
+            <Route
+              path="/hospital/appointments"
+              element={<HospitalAppointments />}
+            />
+            <Route path="/hospital/doctors" element={<HospitalDoctors />} />
+            <Route
+              path="/hospital/departments"
+              element={<HospitalDepartments />}
+            />
+            <Route path="/hospital/schedule" element={<HospitalSchedule />} />
+            <Route
+              path="/hospital/prescriptions"
+              element={<HospitalPrescriptions />}
+            />
+            <Route path="/hospital/profile" element={<HospitalProfile />} />
+            <Route
               path="/hospital/insurances"
               element={<HospitalInsurances />}
             />
@@ -290,13 +290,13 @@ const App = () => (
               path="/hospital/insurances"
               element={<HospitalInsurances />}
             />
-              {/* ServiceBookings */}
-              <Route
-                path="/hospital/service-bookings"
-                element={<HospitalServiceBookings />}
-              />
-              {/* HospitalSettings */}
-              <Route path="/hospital/settings" element={<HospitalSettings />} />
+            {/* ServiceBookings */}
+            <Route
+              path="/hospital/service-bookings"
+              element={<HospitalServiceBookings />}
+            />
+            {/* HospitalSettings */}
+            <Route path="/hospital/settings" element={<HospitalSettings />} />
             <Route path="/hospital" element={<HospitalAnalytics />} />
             <Route path="/hospital/appointments" element={<HospitalAppointments />} />
             <Route path="/hospital/doctors" element={<HospitalDoctors />} />
@@ -310,16 +310,16 @@ const App = () => (
             {/* HospitalSettings */}
             <Route path="/hospital/settings" element={<HospitalSettings />} />
 
-              <Route path="/pharmacy/orders" element={<PharmacyOrders />} />
-              <Route path="/pharmacy/inventory" element={<PharmacyInventory />} />
-              <Route
-                path="/pharmacy/prescriptions"
-                element={<PharmacyPrescriptions />}
-              />
-              <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
-              <Route path="/pharmacy/overview" element={<PharmacyDashboard />} />
-              {/* PharmacyCategories */}
-              <Route
+            <Route path="/pharmacy/orders" element={<PharmacyOrders />} />
+            <Route path="/pharmacy/inventory" element={<PharmacyInventory />} />
+            <Route
+              path="/pharmacy/prescriptions"
+              element={<PharmacyPrescriptions />}
+            />
+            <Route path="/pharmacy/profile" element={<PharmacyProfile />} />
+            <Route path="/pharmacy/overview" element={<PharmacyDashboard />} />
+            {/* PharmacyCategories */}
+            <Route
               path="/pharmacy/categories"
               element={<PharmacyCategories />}
             />
@@ -348,18 +348,18 @@ const App = () => (
               path="/pharmacy/categories"
               element={<PharmacyCategories />}
             />
-              {/* PharmacyDeliveries */}
-              <Route
+            {/* PharmacyDeliveries */}
+            <Route
               path="/pharmacy/deliveries"
               element={<PharmacyDeliveries />}
             />
-              {/* PharmacySettings */}
-              <Route path="/pharmacy/settings" element={<PharmacySettings />} />
-              {/* RestockRequests */}
-              <Route
-                path="/pharmacy/restock-requests"
-                element={<RestockRequests />}
-              />
+            {/* PharmacySettings */}
+            <Route path="/pharmacy/settings" element={<PharmacySettings />} />
+            {/* RestockRequests */}
+            <Route
+              path="/pharmacy/restock-requests"
+              element={<RestockRequests />}
+            />
             <Route path="/pharmacy/orders" element={<PharmacyOrders />} />
             <Route path="/pharmacy/inventory" element={<PharmacyInventory />} />
             <Route path="/pharmacy/prescriptions" element={<PharmacyPrescriptions />} />

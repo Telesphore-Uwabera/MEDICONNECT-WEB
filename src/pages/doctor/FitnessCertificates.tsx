@@ -43,6 +43,8 @@ import {
   useRevokeCertificate,
   useSignCertificate,
   useDownloadCertificate,
+  useCreateConfirmationSession,
+  useConfirmIdentity,
   type Certificate,
   type CertStatus,
   type CertDecision,
@@ -53,6 +55,9 @@ import {
   canMakeDecision,
   canSign,
 } from "@/hooks/doctor/use-doctor-certificates";
+import { toast } from "sonner";
+import { useCallContext } from "@/context/CallContext";
+import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -64,6 +69,7 @@ const FILTER_TABS: { id: CertStatus | "all"; label: string }[] = [
   { id: "in_review", label: "In Review" },
   { id: "draft", label: "Draft" },
   { id: "issued", label: "Issued" },
+  { id: "approved", label: "Approved" },
   { id: "rejected", label: "Rejected" },
   { id: "revoked", label: "Revoked" },
 ];
@@ -382,9 +388,47 @@ function RequestDetail({
   const revokeMut = useRevokeCertificate(certId);
   const signMut = useSignCertificate(certId);
   const downloadMut = useDownloadCertificate();
+  const sessionMut = useCreateConfirmationSession(certId);
+  const confirmIdentityMut = useConfirmIdentity(certId);
+  const { startCall } = useCallContext();
+
+  // Create the video confirmation session, then open the SAME in-app
+  // ConsultationRoom the consultations use (the response is the WebRTC token
+  // shape: doctor_token + ice_servers). The patient is notified by SMS.
+  const handleStartVerification = () => {
+    sessionMut.mutate(undefined, {
+      onSuccess: (res) => {
+        console.log("[Certificate] confirmation session:", res);
+        const started = startInAppCallFromJoin(
+          startCall,
+          { token: res.doctor_token, room_url: res.room_url },
+          { isOwner: true },
+        );
+        if (started) {
+          toast.success("Verification call started — the patient has been notified by SMS.");
+        } else if (res.room_url) {
+          window.open(res.room_url, "_blank", "noopener,noreferrer");
+        } else {
+          toast.error("Could not open the verification session.");
+        }
+      },
+      onError: (err) =>
+        toast.error((err as Error)?.message || "Could not start verification session."),
+    });
+  };
+
+  const handleConfirmIdentity = () => {
+    confirmIdentityMut.mutate(undefined, {
+      onSuccess: () =>
+        toast.success("Identity confirmed. You can now sign the certificate."),
+      onError: (err) =>
+        toast.error((err as Error)?.message || "Could not confirm identity."),
+    });
+  };
 
   const [decision, setDecision] = useState<CertDecision | "">("");
   const [doctorNotes, setDoctorNotes] = useState("");
+  const [validUntil, setValidUntil] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [revokeReason, setRevokeReason] = useState("");
   const [showReject, setShowReject] = useState(false);
@@ -395,6 +439,10 @@ function RequestDetail({
     if (cert) {
       setDecision(cert.decision ?? "");
       setDoctorNotes(cert.doctor_notes ?? "");
+      // Default validity to one year out when none is set yet.
+      const oneYear = new Date();
+      oneYear.setFullYear(oneYear.getFullYear() + 1);
+      setValidUntil(cert.valid_until?.slice(0, 10) ?? oneYear.toISOString().slice(0, 10));
     }
   }, [cert?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -443,14 +491,26 @@ function RequestDetail({
       {
         decision: decision as CertDecision,
         doctor_notes: doctorNotes || undefined,
+        // A fit decision needs an expiry; send it for any decision that has one.
+        valid_until: validUntil || undefined,
       },
       {
-        onSuccess: ({ certificate }) => {
+        onSuccess: ({ certificate, red_flags_found, requires_inperson }) => {
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
           setDecision(certificate.decision ?? "");
           setDoctorNotes(certificate.doctor_notes ?? "");
+          // Surface what the backend flagged so the doctor knows why signing may
+          // be blocked (these gate the sign step per the API rules).
+          if (red_flags_found && red_flags_found.length > 0) {
+            toast.warning(`Red flags found: ${red_flags_found.join(", ")}`);
+          } else if (requires_inperson) {
+            toast.warning("This case requires an in-person examination — it can't be signed online.");
+          } else {
+            toast.success("Decision saved.");
+          }
         },
+        onError: (err) => toast.error((err as Error)?.message || "Could not save the decision."),
       },
     );
   };
@@ -542,16 +602,7 @@ function RequestDetail({
               </Button>
             </>
           )}
-          {decidable && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs border-destructive/40 text-destructive hover:bg-destructive/10 gap-1.5"
-              onClick={() => setShowReject(true)}
-            >
-              <XCircle className="h-3 w-3" /> Reject
-            </Button>
-          )}
+         
         </div>
       </div>
 
@@ -817,6 +868,42 @@ function RequestDetail({
               }
             />
           </div>
+
+          {/* ── Video verification actions ── */}
+          {!isIssued && (
+            <div className="mt-3 pt-3 border-t border-border flex flex-col sm:flex-row gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleStartVerification}
+                disabled={sessionMut.isPending}
+                className="flex-1 h-9 text-xs gap-1.5"
+              >
+                {sessionMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Video className="h-3.5 w-3.5" />
+                )}
+                {cert.confirmation_session ? "Rejoin verification call" : "Start video verification"}
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={handleConfirmIdentity}
+                disabled={
+                  confirmIdentityMut.isPending || cert.identity_verified_via_video
+                }
+                className="flex-1 h-9 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {confirmIdentityMut.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                )}
+                {cert.identity_verified_via_video ? "Identity verified" : "Confirm identity"}
+              </Button>
+            </div>
+          )}
         </SectionCard>
 
         {/* ── 8. Documents ── */}
@@ -911,6 +998,21 @@ function RequestDetail({
                 />
               </div>
 
+              {decision === "fit" && (
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Valid until
+                  </Label>
+                  <Input
+                    type="date"
+                    value={validUntil}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                    className="h-9 text-xs w-full sm:w-52"
+                  />
+                </div>
+              )}
+
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   onClick={handleSaveDecision}
@@ -939,7 +1041,17 @@ function RequestDetail({
 
                 {signable && (
                   <Button
-                    onClick={() => signMut.mutate()}
+                    onClick={() =>
+                      signMut.mutate(undefined, {
+                        onSuccess: () =>
+                          toast.success("Certificate signed and issued."),
+                        onError: (err) =>
+                          toast.error(
+                            (err as Error)?.message ||
+                              "Could not sign the certificate.",
+                          ),
+                      })
+                    }
                     disabled={signMut.isPending}
                     className="text-xs gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                   >

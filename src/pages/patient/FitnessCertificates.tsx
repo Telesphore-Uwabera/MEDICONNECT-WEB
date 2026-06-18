@@ -193,9 +193,20 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
   // ── Multi-step form ──────────────────────────────────────────────────────
   const step = FORM_STEPS[currentStep];
 
+  // Build a { fieldKey: "Yes"/"No"/value } map to prefill the answer steps.
+  // The API returns answers in the real shape ({ question_key, answer,
+  // boolean_answer }); older/normalized responses use { field, value }. Support
+  // both so resuming a pending request actually re-populates the saved answers.
   const savedAnswerMap: Record<string, string> = {};
   if (stepData?.answers) {
-    stepData.answers.forEach((a) => { savedAnswerMap[a.field] = a.value; });
+    stepData.answers.forEach((a) => {
+      const key = a.field ?? a.question_key;
+      const val =
+        a.value ??
+        a.answer ??
+        (a.boolean_answer != null ? (a.boolean_answer ? "Yes" : "No") : undefined);
+      if (key != null && val != null) savedAnswerMap[key] = val;
+    });
   }
 
   const stepContent = () => {
@@ -315,7 +326,9 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               variant="outline"
               className="ml-1 text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary"
             >
-              Draft saved
+              {requestData.certificate.status === "draft"
+                ? "Draft saved"
+                : `Updating ${requestData.certificate.certificate_number}`}
             </Badge>
           )}
           <span className="ml-auto text-[10px] text-muted-foreground">
@@ -324,6 +337,27 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+          {/* Make it explicit that we're continuing/updating an existing request
+              (the same one in the backend), not starting a brand-new certificate. */}
+          {requestData?.certificate &&
+            requestData.certificate.status !== "approved" &&
+            requestData.certificate.status !== "rejected" && (
+              <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] text-muted-foreground">
+                <FilePlus2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                <p>
+                  You're continuing your{" "}
+                  <span className="font-semibold text-foreground">
+                    {requestData.certificate.status}
+                  </span>{" "}
+                  request{" "}
+                  <span className="font-semibold text-foreground">
+                    {requestData.certificate.certificate_number}
+                  </span>
+                  . Your saved answers are pre-filled — saving updates this request
+                  instead of creating a new one.
+                </p>
+              </div>
+            )}
           {stepContent()}
         </div>
 

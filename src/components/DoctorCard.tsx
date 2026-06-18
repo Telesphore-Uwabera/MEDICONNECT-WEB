@@ -46,15 +46,15 @@ function DoctorAvatar({ doctor, size = "sm" }: { doctor: ApiDoctor; size?: "sm" 
 
 function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   const map = {
-    online:    { label: "Online",             icon: Video,     cls: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
-    in_person: { label: "In-Person",          icon: Building2, cls: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
-    both:      { label: "Online & In-Person", icon: Globe,     cls: "text-teal-600 bg-teal-500/10 border-teal-500/20" },
+    online: { label: "Online", icon: Video, cls: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
+    in_person: { label: "In-Person", icon: Building2, cls: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
+    both: { label: "Online & In-Person", icon: Globe, cls: "text-teal-600 bg-teal-500/10 border-teal-500/20" },
   };
   const cfg = map[type] ?? map.both;
   const Icon = cfg.icon;
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border", cfg.cls)}>
-      <Icon className="h-2.5 w-2.5" />{cfg.label}
+    <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-1 py-0.5 rounded-sm border", cfg.cls)}>
+      <Icon className="h-3 w-3" />{cfg.label}
     </span>
   );
 }
@@ -67,11 +67,11 @@ function DetailRow({ icon: Icon, label, value, accent }: {
   return (
     <div className="flex items-start gap-2.5 py-2 border-b border-border/40 last:border-b-0">
       <div className={cn("mt-0.5 flex-shrink-0 w-5 h-5 rounded-sm flex items-center justify-center", accent ? "bg-primary/10" : "bg-muted/60")}>
-        <Icon className={cn("h-2.5 w-2.5", accent ? "text-primary" : "text-muted-foreground")} />
+        <Icon className={cn("h-4 w-4", accent ? "text-primary" : "text-muted-foreground")} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[9px] font-medium text-muted-foreground/70 uppercase tracking-wider mb-0.5">{label}</p>
-        <p className="text-[11px] font-medium text-foreground leading-relaxed">{value}</p>
+        <p className="text-sm font-medium text-muted-foreground/70 uppercase tracking-wider mb-0.5">{label}</p>
+        <p className="text-sm font-medium text-foreground leading-relaxed">{value}</p>
       </div>
     </div>
   );
@@ -89,19 +89,19 @@ function ResumePill({ doctorName, phase, onResume, onEndCompletely }: {
     <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
       <button onClick={onEndCompletely} title="End call completely"
         className="h-8 w-8 rounded-full bg-destructive/90 hover:bg-destructive text-white flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95">
-        <X className="h-3.5 w-3.5" />
+        <X className="h-4 w-4" />
       </button>
       <button onClick={onResume}
         className={cn(
           "flex items-center gap-2.5 pl-3 pr-4 h-10 rounded-full shadow-xl border transition-all hover:scale-[1.02] active:scale-[0.98]",
           isLive ? "bg-emerald-500 hover:bg-emerald-600 border-emerald-400/30 text-white"
-                 : "bg-card border-border text-foreground hover:bg-muted",
+            : "bg-card border-border text-foreground hover:bg-muted",
         )}>
         {isLive && <span className="h-2 w-2 rounded-full bg-white animate-pulse shrink-0" />}
-        <span className="text-[11px] font-semibold leading-none truncate max-w-[120px]">
+        <span className="text-sm font-semibold leading-none truncate max-w-[120px]">
           {isLive ? "Live · " : ""}{doctorName}
         </span>
-        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-70" />
+        <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
       </button>
     </div>,
     document.body,
@@ -118,15 +118,15 @@ function SavedSessionPill({ doctorName, onResume, onDismiss }: {
     <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
       <button onClick={onDismiss} title="Dismiss"
         className="h-8 w-8 rounded-full bg-muted hover:bg-muted/80 border border-border text-muted-foreground flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95">
-        <X className="h-3.5 w-3.5" />
+        <X className="h-4 w-4" />
       </button>
       <button onClick={onResume}
         className="flex items-center gap-2.5 pl-3 pr-4 h-10 rounded-full shadow-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 text-violet-700 dark:text-violet-300 transition-all hover:scale-[1.02] active:scale-[0.98]">
-        <RotateCcw className="h-3 w-3 shrink-0" />
-        <span className="text-[11px] font-semibold leading-none truncate max-w-[130px]">
+        <RotateCcw className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-semibold leading-none truncate max-w-[130px]">
           Resume · {doctorName}
         </span>
-        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 opacity-70" />
+        <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
       </button>
     </div>,
     document.body,
@@ -176,18 +176,18 @@ export function UnifiedModal({
 
   if (!open) return null;
 
-  const fee      = parseFloat(doctor.consultation_fee);
-  const rating   = parseFloat(doctor.rating_avg);
+  const fee = parseFloat(doctor.consultation_fee);
+  const rating = parseFloat(doctor.rating_avg);
   const feeLabel = fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused ? "online"
-    : doctor.bookings_paused ? "busy" : "offline";
+      : doctor.bookings_paused ? "busy" : "offline";
 
   const statusStyles = {
-    online:  { dot: "bg-emerald-500", pulse: "animate-pulse", label: "Available",  text: "text-emerald-600",      bg: "bg-emerald-500/10 border-emerald-500/20" },
-    busy:    { dot: "bg-amber-500",   pulse: "",              label: "Paused",      text: "text-amber-600",        bg: "bg-amber-500/10 border-amber-500/20" },
-    offline: { dot: "bg-zinc-400",    pulse: "",              label: "Unavailable", text: "text-muted-foreground", bg: "bg-muted border-border" },
+    online: { dot: "bg-emerald-500", pulse: "animate-pulse", label: "Available", text: "text-emerald-600", bg: "bg-emerald-500/10 border-emerald-500/20" },
+    busy: { dot: "bg-amber-500", pulse: "", label: "Paused", text: "text-amber-600", bg: "bg-amber-500/10 border-amber-500/20" },
+    offline: { dot: "bg-zinc-400", pulse: "", label: "Unavailable", text: "text-muted-foreground", bg: "bg-muted border-border" },
   };
   const s = statusStyles[status];
   const langMap: Record<string, string> = { en: "English", fr: "French", kiny: "Kinyarwanda" };
@@ -204,7 +204,7 @@ export function UnifiedModal({
           className={cn(
             "pointer-events-auto w-full",
             mode === "connect" ? "max-w-[420px]" : "max-w-md",
-            "bg-card border border-border/60 rounded-xl shadow-2xl",
+            "bg-card/80 backdrop-blur-2xl border border-border/60 rounded-xl shadow-2xl",
             "flex flex-col max-h-[90dvh] overflow-hidden",
             "animate-in fade-in-0 zoom-in-95 duration-200",
           )}
@@ -217,10 +217,10 @@ export function UnifiedModal({
                 <button onClick={() => setMode("details")}
                   className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shrink-0"
                   title="Back to details">
-                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
               )}
-              <span className="text-[11px] font-semibold text-foreground/70 truncate">
+              <span className="text-sm font-semibold text-foreground/70 truncate">
                 {mode === "details" ? doctor.user.name : "Instant consultation"}
               </span>
             </div>
@@ -235,16 +235,16 @@ export function UnifiedModal({
                 <button
                   onClick={cancelFn}
                   title="Cancel request completely"
-                  className="h-7 px-2 rounded-md flex items-center gap-1 text-[10px] font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
+                  className="h-7 px-2 rounded-md flex items-center gap-1 text-xs font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
                 >
-                  <Ban className="h-3 w-3" />
+                  <Ban className="h-4 w-4" />
                   <span className="hidden sm:inline">Cancel</span>
                 </button>
               )}
               {/* Minus — always minimizes */}
               <button onClick={onMinimize} title="Minimize (keep session alive)"
                 className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all">
-                <Minus className="h-3.5 w-3.5" />
+                <Minus className="h-4 w-4" />
               </button>
               {/* X — minimizes in connect mode, closes completely in details mode */}
               <button
@@ -256,7 +256,7 @@ export function UnifiedModal({
                     ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     : "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
                 )}>
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -267,33 +267,33 @@ export function UnifiedModal({
               {/* Doctor header band */}
               <div className="relative bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border-b border-border/50 px-4 pt-4 pb-3 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-sm overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
+                  <div className="w-40 h-40 rounded-sm overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
                     <DoctorAvatar doctor={doctor} size="lg" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <h2 className="text-[13px] font-semibold text-foreground leading-tight truncate">{doctor.user.name}</h2>
+                      <h2 className="text-base font-semibold text-foreground leading-tight truncate">{doctor.user.name}</h2>
                       {doctor.is_featured && (
-                        <span className="px-1 py-px text-[9px] font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900 flex-shrink-0">
+                        <span className="px-1 py-px text-sm font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900 flex-shrink-0">
                           Featured
                         </span>
                       )}
-                      {doctor.verified_at && <BadgeCheck className="h-3 w-3 text-primary flex-shrink-0" />}
+                      {doctor.verified_at && <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />}
                     </div>
-                    <p className="text-[10px] text-primary font-medium truncate">
+                    <p className="text-xs text-primary font-medium truncate">
                       {doctor.specialization}{doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
                     </p>
                     {doctor.designations && (
-                      <p className="text-[9px] text-muted-foreground/70 mt-0.5 truncate">{doctor.designations}</p>
+                      <p className="text-sm text-muted-foreground/70 mt-0.5 truncate">{doctor.designations}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      <span className={cn("inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border", s.text, s.bg)}>
+                      <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border", s.text, s.bg)}>
                         <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", s.dot, s.pulse)} />{s.label}
                       </span>
                       <ConsultBadge type={doctor.consultation_type} />
                       {doctor.instant_consultation && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-                          <Zap className="h-2.5 w-2.5" />Instant
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                          <Zap className="h-3 w-3" />Instant
                         </span>
                       )}
                     </div>
@@ -301,14 +301,14 @@ export function UnifiedModal({
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-1.5">
                   {[
-                    { icon: <Star className={cn("h-2.5 w-2.5", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />, top: rating > 0 ? rating.toFixed(1) : "New", bot: "Rating" },
-                    { icon: <Clock className="h-2.5 w-2.5 text-muted-foreground" />, top: feeLabel, bot: "Per visit" },
-                    { icon: <CalendarCheck className="h-2.5 w-2.5 text-muted-foreground" />, top: doctor.instant_consultation ? "Instant" : "Scheduled", bot: "Consult" },
+                    { icon: <Star className={cn("h-4 w-4", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />, top: rating > 0 ? rating.toFixed(1) : "New", bot: "Rating" },
+                    { icon: <Clock className="h-4 w-4 text-muted-foreground" />, top: feeLabel, bot: "Per visit" },
+                    { icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />, top: doctor.instant_consultation ? "Instant" : "Scheduled", bot: "Consult" },
                   ].map(({ icon, top, bot }) => (
                     <div key={bot} className="flex flex-col items-center py-1.5 px-2 bg-background/60 rounded-sm border border-border/40">
                       <div className="flex items-center gap-1 mb-0.5">{icon}</div>
-                      <span className="text-[11px] font-bold text-foreground leading-tight">{top}</span>
-                      <span className="text-[9px] text-muted-foreground leading-tight">{bot}</span>
+                      <span className="text-sm font-bold text-foreground leading-tight">{top}</span>
+                      <span className="text-sm text-muted-foreground leading-tight">{bot}</span>
                     </div>
                   ))}
                 </div>
@@ -318,8 +318,8 @@ export function UnifiedModal({
               <div className="flex-1 overflow-y-auto px-4 py-3">
                 {bio && (
                   <div className="mb-3 p-2.5 rounded-sm bg-muted/30 border border-border/40">
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">About</p>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed">{bio}</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">About</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{bio}</p>
                   </div>
                 )}
                 <div className="rounded-sm border border-border/40 bg-card overflow-hidden divide-y divide-border/40">
@@ -329,14 +329,14 @@ export function UnifiedModal({
                     <DetailRow icon={Languages} label="Language" value={langMap[doctor.preferred_language] ?? doctor.preferred_language} />
                   )}
                   <DetailRow icon={FileText} label="Agreement Status" value={
-                    <span className={cn("capitalize text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border",
+                    <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
                       doctor.agreement_status === "approved"
                         ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
                         : "text-amber-600 bg-amber-500/10 border-amber-500/20")}>
                       {doctor.agreement_status}
                     </span>} />
                   <DetailRow icon={User} label="Profile Status" value={
-                    <span className={cn("capitalize text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border",
+                    <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
                       doctor.is_active ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" : "text-zinc-500 bg-muted border-border")}>
                       {doctor.is_active ? "Active" : "Inactive"}
                     </span>} />
@@ -347,12 +347,12 @@ export function UnifiedModal({
                 </div>
                 {doctor.hospitals && doctor.hospitals.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Hospitals</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Hospitals</p>
                     <div className="space-y-1">
                       {doctor.hospitals.map((h: ApiDoctorHospital, i: number) => (
                         <div key={i} className="flex items-center gap-2 p-2 rounded-sm border border-border/40 bg-muted/20">
-                          <Building2 className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
-                          <span className="text-[10px] text-foreground font-medium truncate">{h.name}</span>
+                          <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs text-foreground font-medium truncate">{h.name}</span>
                         </div>
                       ))}
                     </div>
@@ -360,10 +360,10 @@ export function UnifiedModal({
                 )}
                 {doctor.specializations && doctor.specializations.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Specializations</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Specializations</p>
                     <div className="flex flex-wrap gap-1">
                       {doctor.specializations.map((sp: ApiDoctorSpecialization, i: number) => (
-                        <span key={i} className="px-2 py-0.5 text-[9px] font-medium rounded-sm bg-primary/8 text-primary border border-primary/20">
+                        <span key={i} className="px-2 py-0.5 text-sm font-medium rounded-sm bg-primary/8 text-primary border border-primary/20">
                           {sp.name}
                         </span>
                       ))}
@@ -376,13 +376,13 @@ export function UnifiedModal({
               <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex items-center gap-2 bg-card/80">
                 <Button variant="outline" size="sm" disabled={!canBook}
                   onClick={() => { onMinimize(); onBook(); }}
-                  className="flex-1 h-7 text-[10px] font-semibold rounded-sm">
-                  <CalendarCheck className="h-3 w-3 mr-1.5" />Book Appointment
+                  className="flex-1 h-7 text-xs font-semibold rounded-sm">
+                  <CalendarCheck className="h-4 w-4 mr-1.5" />Book Appointment
                 </Button>
                 {canConnect && (
                   <Button size="sm" onClick={() => setMode("connect")}
-                    className="flex-1 h-7 text-[10px] font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Wifi className="h-3 w-3 mr-1.5" />Connect Now
+                    className="flex-1 h-7 text-xs font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Wifi className="h-4 w-4 mr-1.5" />Connect Now
                   </Button>
                 )}
               </div>
@@ -420,8 +420,8 @@ export const DoctorCard = ({
   compact?: boolean;
 }) => {
   const { t, i18n } = useTranslation();
-  const [bookOpen,    setBookOpen]    = useState(false);
-  const [modalOpen,   setModalOpen]   = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [initialMode, setInitialMode] = useState<ModalMode>("details");
   const call = useCallStore();
 
@@ -431,7 +431,7 @@ export const DoctorCard = ({
   // We read sessionStorage on mount, on every modal close, AND on a 2-second
   // interval while the modal is closed — this catches the case where the user
   // closes the modal mid-request and the session gets saved asynchronously.
-  const [hasSavedSession,          setHasSavedSession]          = useState(() => !!readConsultSession(doctorProp.id));
+  const [hasSavedSession, setHasSavedSession] = useState(() => !!readConsultSession(doctorProp.id));
   const [savedSessionPillDismissed, setSavedSessionPillDismissed] = useState(false);
 
   // Poll sessionStorage while the modal is closed so the pill appears
@@ -456,18 +456,18 @@ export const DoctorCard = ({
 
   const handleDoctorUpdated = (updatedDoctor: ApiDoctor) => setDoctor(updatedDoctor);
 
-  const fee      = parseFloat(doctor.consultation_fee);
-  const rating   = parseFloat(doctor.rating_avg);
+  const fee = parseFloat(doctor.consultation_fee);
+  const rating = parseFloat(doctor.rating_avg);
   const feeLabel = fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused ? "online"
-    : doctor.bookings_paused ? "busy" : "offline";
+      : doctor.bookings_paused ? "busy" : "offline";
 
   const statusStyles = {
-    online:  { dot: "bg-emerald-500", pulse: "animate-pulse", label: "Available",  text: "text-emerald-600",      bg: "bg-emerald-500/10 border-emerald-500/20" },
-    busy:    { dot: "bg-amber-500",   pulse: "",              label: "Paused",      text: "text-amber-600",        bg: "bg-amber-500/10 border-amber-500/20" },
-    offline: { dot: "bg-zinc-400",    pulse: "",              label: "Unavailable", text: "text-muted-foreground", bg: "bg-muted border-border" },
+    online: { dot: "bg-emerald-500", pulse: "animate-pulse", label: "Available", text: "text-emerald-600", bg: "bg-emerald-500/10 border-emerald-500/20" },
+    busy: { dot: "bg-amber-500", pulse: "", label: "Paused", text: "text-amber-600", bg: "bg-amber-500/10 border-amber-500/20" },
+    offline: { dot: "bg-zinc-400", pulse: "", label: "Unavailable", text: "text-muted-foreground", bg: "bg-muted border-border" },
   };
   const s = statusStyles[status];
 
@@ -477,12 +477,12 @@ export const DoctorCard = ({
     specialization: doctor.specialization,
   };
 
-  const isThisDoctor     = call.doctor?.id === doctor.id;
+  const isThisDoctor = call.doctor?.id === doctor.id;
   const isCallInProgress = isThisDoctor && call.phase !== "idle" && call.phase !== "ended";
-  const isConnected      = isThisDoctor && call.phase === "connected";
+  const isConnected = isThisDoctor && call.phase === "connected";
 
   const canConnect = doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation;
-  const canBook    = doctor.is_available && !doctor.bookings_paused;
+  const canBook = doctor.is_available && !doctor.bookings_paused;
 
   // Live-call resume pill: CallStore call running, modal closed
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
@@ -544,9 +544,9 @@ export const DoctorCard = ({
       >
         <div className="p-3.5">
           {/* Top row */}
-          <div className="flex items-start gap-2.5">
+          <div className="flex items-center justify-start gap-2">
             <div className="relative shrink-0">
-              <div className="h-9 w-9 rounded-sm overflow-hidden border border-border/40">
+              <div className="h-14 w-14 rounded-sm overflow-hidden border border-border/40">
                 <DoctorAvatar doctor={doctor} />
               </div>
               <span className={cn("absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-card", s.dot, s.pulse)} />
@@ -556,67 +556,43 @@ export const DoctorCard = ({
               <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1 flex-wrap">
-                    <h3 className="text-[12px] font-semibold text-foreground truncate leading-tight">{doctor.user.name}</h3>
-                    {doctor.is_featured && (
-                      <span className="px-1 py-px text-[9px] font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-                        Featured
-                      </span>
-                    )}
+                    <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{doctor.user.name}</h3>
                   </div>
-                  <p className="text-[10px] text-primary font-medium mt-0.5 truncate">
+                  <p className="text-xs text-primary font-medium mt-0.5 truncate">
                     {doctor.specialization}{doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
                   </p>
                 </div>
 
                 {isConnected ? (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
                     <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />In call
                   </span>
                 ) : isCallInProgress ? (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-sky-600 bg-sky-500/10 border-sky-500/20">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-sky-600 bg-sky-500/10 border-sky-500/20">
                     <span className="h-1 w-1 rounded-full bg-sky-500 animate-pulse shrink-0" />Connecting
                   </span>
                 ) : hasSavedSession ? (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-violet-600 bg-violet-500/10 border-violet-500/20">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-violet-600 bg-violet-500/10 border-violet-500/20">
                     <RotateCcw className="h-2 w-2 shrink-0" />In queue
                   </span>
                 ) : (
-                  <span className={cn("inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-sm border shrink-0", s.text, s.bg)}>
-                    <span className={cn("h-1 w-1 rounded-full shrink-0", s.dot)} />{s.label}
-                  </span>
+                  <></>
                 )}
               </div>
 
               {locationLabel && (
-                <p className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1 truncate">
-                  <MapPin className="h-2.5 w-2.5 shrink-0" />{locationLabel}
+                <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1 truncate">
+                  <MapPin className="h-4 w-4 shrink-0" />{locationLabel}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Stats row */}
           {!compact && (
-            <div className="mt-2.5 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
-              {[
-                { icon: <Star className={cn("h-2.5 w-2.5", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />, top: rating > 0 ? rating.toFixed(1) : "New", bot: "rating" },
-                { icon: <Clock className="h-2.5 w-2.5 text-muted-foreground" />, top: feeLabel, bot: "per visit" },
-                { icon: <BriefcaseMedical className="h-2.5 w-2.5 text-muted-foreground" />, top: doctor.instant_consultation ? "Instant" : "Scheduled", bot: "consult" },
-              ].map(({ icon, top, bot }) => (
-                <div key={bot} className="flex flex-col items-center py-1.5 px-1 bg-muted/30">
-                  <div className="flex items-center gap-1 mb-0.5">{icon}</div>
-                  <span className="text-[11px] font-semibold text-foreground leading-tight">{top}</span>
-                  <span className="text-[9px] text-muted-foreground leading-tight">{bot}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!compact && (
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-3 flex items-center justify-between">
               <ConsultBadge type={doctor.consultation_type} />
-              <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground/50 font-medium">
-                View details <ChevronRight className="h-2.5 w-2.5" />
+              <span className="flex items-center gap-0.5 text-sm text-muted-foreground/50 font-medium">
+                View details <ChevronRight className="h-4 w-4" />
               </span>
             </div>
           )}
@@ -629,16 +605,16 @@ export const DoctorCard = ({
             <div className="flex items-center gap-1">
               {isConnected ? (
                 <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-medium text-emerald-600">Call in progress</span></>
+                  <span className="text-xs font-medium text-emerald-600">Call in progress</span></>
               ) : isCallInProgress ? (
                 <><span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
-                  <span className="text-[10px] font-medium text-sky-600">Connecting…</span></>
+                  <span className="text-xs font-medium text-sky-600">Connecting…</span></>
               ) : hasSavedSession ? (
-                <><RotateCcw className="h-2.5 w-2.5 text-violet-500" />
-                  <span className="text-[10px] font-medium text-violet-600 dark:text-violet-400">Queue session saved</span></>
+                <><RotateCcw className="h-4 w-4 text-violet-500" />
+                  <span className="text-xs font-medium text-violet-600 dark:text-violet-400">Queue session saved</span></>
               ) : (
-                <><Zap className={cn("h-2.5 w-2.5", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground")} />
-                  <span className={cn("text-[10px] font-medium", doctor.instant_consultation ? "text-emerald-600" : "text-muted-foreground")}>
+                <><Zap className={cn("h-4 w-4", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground")} />
+                  <span className={cn("text-xs font-medium", doctor.instant_consultation ? "text-emerald-600" : "text-muted-foreground")}>
                     {doctor.instant_consultation ? "Usually replies in 2 min" : "Replies within 24h"}
                   </span></>
               )}
@@ -649,7 +625,7 @@ export const DoctorCard = ({
               <Button variant="outline" size="sm"
                 disabled={!canBook || isCallInProgress}
                 onClick={() => canBook && !isCallInProgress && setBookOpen(true)}
-                className="h-6 px-2.5 text-[10px] font-medium rounded-sm border-border">
+                className="h-6 px-2.5 text-xs font-medium rounded-sm border-border">
                 {t("pages.cards.book")}
               </Button>
 
@@ -662,8 +638,8 @@ export const DoctorCard = ({
               */}
               {hasSavedSession && !isCallInProgress ? (
                 <Button size="sm" onClick={openResume}
-                  className="h-6 px-2.5 text-[10px] font-semibold rounded-sm bg-violet-600 hover:bg-violet-700 text-white">
-                  <RotateCcw className="h-2.5 w-2.5 mr-1" />Resume
+                  className="h-6 px-2.5 text-xs font-semibold rounded-sm bg-violet-600 hover:bg-violet-700 text-white">
+                  <RotateCcw className="h-4 w-4 mr-1" />Resume
                 </Button>
               ) : canConnect ? (
                 <Button size="sm"
@@ -676,18 +652,18 @@ export const DoctorCard = ({
                     }
                   }}
                   className={cn(
-                    "h-6 px-2.5 text-[10px] font-semibold rounded-sm",
-                    isConnected    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                    : isCallInProgress ? "bg-sky-500 hover:bg-sky-600 text-white"
-                    : "bg-primary hover:bg-primary/90 text-primary-foreground",
+                    "h-6 px-2.5 text-xs font-semibold rounded-sm",
+                    isConnected ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                      : isCallInProgress ? "bg-sky-500 hover:bg-sky-600 text-white"
+                        : "bg-primary hover:bg-primary/90 text-primary-foreground",
                   )}>
-                  {isConnected ? <><Maximize2 className="h-2.5 w-2.5 mr-1" />Resume</>
-                   : isCallInProgress ? <><Wifi className="h-2.5 w-2.5 mr-1" />Open</>
-                   : <><Wifi className="h-2.5 w-2.5 mr-1" />{t("pages.cards.connect")}</>}
+                  {isConnected ? <><Maximize2 className="h-4 w-4 mr-1" />Resume</>
+                    : isCallInProgress ? <><Wifi className="h-4 w-4 mr-1" />Open</>
+                      : <><Wifi className="h-4 w-4 mr-1" />{t("pages.cards.connect")}</>}
                 </Button>
               ) : (
                 <Button size="sm" variant="secondary" disabled
-                  className="h-6 px-2.5 text-[10px] rounded-sm opacity-50 cursor-not-allowed">
+                  className="h-6 px-2.5 text-xs rounded-sm opacity-50 cursor-not-allowed">
                   {s.label}
                 </Button>
               )}

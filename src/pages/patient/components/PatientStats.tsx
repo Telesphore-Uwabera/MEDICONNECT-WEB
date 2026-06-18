@@ -254,29 +254,29 @@ function KpiCard({
   loading,
 }: KpiCardProps) {
   return (
-    <div className="rounded-sm border border-border/70 bg-card p-3 shadow-sm flex flex-col gap-2">
+    <div className="rounded-md border border-border/70 bg-card p-4 shadow-sm flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide leading-none">
+        <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide leading-none">
           {label}
         </span>
         <div
           className={cn(
-            "w-6 h-6 rounded-sm border flex items-center justify-center flex-shrink-0",
+            "w-8 h-8 rounded-md border flex items-center justify-center flex-shrink-0",
             accentMap[accent],
           )}
         >
-          <Icon className="w-3 h-3" />
+          <Icon className="w-4 h-4" />
         </div>
       </div>
       {loading ? (
-        <div className="h-6 w-14 rounded bg-muted animate-pulse" />
+        <div className="h-7 w-16 rounded bg-muted animate-pulse" />
       ) : (
-        <div className="flex items-end gap-1.5">
-          <span className="text-xl font-bold text-foreground leading-none">
+        <div className="flex items-end gap-2">
+          <span className="text-2xl font-bold text-foreground leading-none">
             {value}
           </span>
           {sub && (
-            <span className="text-[10px] text-muted-foreground mb-0.5 leading-none">
+            <span className="text-xs text-muted-foreground mb-0.5 leading-none">
               {sub}
             </span>
           )}
@@ -303,14 +303,14 @@ interface CustomTooltipProps {
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-sm border border-border/60 bg-card shadow-lg p-2.5 text-[10px]">
-      <p className="font-semibold text-foreground mb-1">
+    <div className="rounded-md border border-border/60 bg-card shadow-lg p-3 text-xs">
+      <p className="font-semibold text-foreground mb-1.5">
         {String(label ?? "")}
       </p>
       {payload.map((p) => (
-        <div key={p.name} className="flex items-center gap-1.5">
+        <div key={p.name} className="flex items-center gap-2 mb-1 last:mb-0">
           <span
-            className="w-1.5 h-1.5 rounded-full"
+            className="w-2 h-2 rounded-full"
             style={{ background: p.color }}
           />
           <span className="text-muted-foreground capitalize">{p.name}:</span>
@@ -325,7 +325,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
       {children}
     </p>
   );
@@ -385,10 +385,10 @@ const PatientStats = () => {
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 space-y-4">
           {/* ── Filter Bar ── */}
-          <div className="rounded-sm border border-border/70 bg-card shadow-sm p-2.5 space-y-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium mr-1">
-                <Filter className="w-3 h-3" />
+          <div className="rounded-md border border-border/70 bg-card shadow-sm p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-2">
+                <Filter className="w-4 h-4" />
                 Filters
               </div>
 
@@ -398,19 +398,19 @@ const PatientStats = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1"
+                    className="h-8 px-3 text-xs rounded-md border-border/60 gap-1.5"
                   >
-                    <Calendar className="w-2.5 h-2.5" />
+                    <Calendar className="w-3.5 h-3.5" />
                     {PERIOD_LABELS[filters.period]}
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="text-[10px]">
+                <DropdownMenuContent align="start" className="text-xs">
                   {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
                     <DropdownMenuItem
                       key={p}
                       className={cn(
-                        "text-[10px]",
+                        "text-xs",
                         filters.period === p && "text-primary font-semibold",
                       )}
                       onSelect={() => set("period", p)}
@@ -426,14 +426,14 @@ const PatientStats = () => {
                 <>
                   <Input
                     type="date"
-                    className="h-6 text-[10px] rounded-sm w-28"
+                    className="h-8 text-xs rounded-md w-32"
                     value={filters.start_date ?? ""}
                     onChange={(e) => set("start_date", e.target.value)}
                   />
-                  <span className="text-[10px] text-muted-foreground">→</span>
+                  <span className="text-xs text-muted-foreground">→</span>
                   <Input
                     type="date"
-                    className="h-6 text-[10px] rounded-sm w-28"
+                    className="h-8 text-xs rounded-md w-32"
                     value={filters.end_date ?? ""}
                     onChange={(e) => set("end_date", e.target.value)}
                   />
@@ -447,13 +447,13 @@ const PatientStats = () => {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
+                      "h-8 px-3 text-xs rounded-md border-border/60 gap-1.5",
                       filters.appointment_type !== "all" &&
                         "border-primary/40 text-primary bg-primary/5",
                     )}
                   >
                     {TYPE_LABELS[filters.appointment_type]}
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -461,7 +461,7 @@ const PatientStats = () => {
                     <DropdownMenuItem
                       key={t}
                       className={cn(
-                        "text-[10px]",
+                        "text-xs",
                         filters.appointment_type === t &&
                           "text-primary font-semibold",
                       )}
@@ -480,13 +480,13 @@ const PatientStats = () => {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1",
+                      "h-8 px-3 text-xs rounded-md border-border/60 gap-1.5",
                       filters.status !== "all" &&
                         "border-primary/40 text-primary bg-primary/5",
                     )}
                   >
                     {STATUS_LABELS[filters.status]}
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -494,7 +494,7 @@ const PatientStats = () => {
                     <DropdownMenuItem
                       key={s}
                       className={cn(
-                        "text-[10px]",
+                        "text-xs",
                         filters.status === s && "text-primary font-semibold",
                       )}
                       onSelect={() => set("status", s)}
@@ -511,11 +511,11 @@ const PatientStats = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 text-[10px] rounded-sm border-border/60 gap-1"
+                    className="h-8 px-3 text-xs rounded-md border-border/60 gap-1.5"
                   >
-                    <BarChart2 className="w-2.5 h-2.5" />
+                    <BarChart2 className="w-3.5 h-3.5" />
                     {GROUP_LABELS[filters.chart_group]}
-                    <ChevronDown className="w-2.5 h-2.5 opacity-50" />
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
@@ -523,7 +523,7 @@ const PatientStats = () => {
                     <DropdownMenuItem
                       key={g}
                       className={cn(
-                        "text-[10px]",
+                        "text-xs",
                         filters.chart_group === g &&
                           "text-primary font-semibold",
                       )}
@@ -536,13 +536,13 @@ const PatientStats = () => {
               </DropdownMenu>
 
               {/* Search */}
-              <div className="flex items-center gap-1 ml-auto">
+              <div className="flex items-center gap-2 ml-auto">
                 <div className="relative">
-                  <Search className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
                     placeholder="Search doctor, hospital…"
                     className={cn(
-                      "h-6 pl-5 pr-2 text-[8px] rounded-sm w-40 transition-colors",
+                      "h-8 pl-8 pr-3 text-xs rounded-md w-48 transition-colors",
                       filters.search && "border-primary/40 bg-primary/5",
                     )}
                     value={searchInput}
@@ -553,19 +553,19 @@ const PatientStats = () => {
                   />
                   {searchInput && (
                     <button
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       onClick={() => {
                         setSearchInput("");
                         set("search", "");
                       }}
                     >
-                      <XCircle className="w-2.5 h-2.5" />
+                      <XCircle className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
                 <Button
                   size="sm"
-                  className="h-6 px-2.5 text-[10px] rounded-sm"
+                  className="h-8 px-4 text-xs rounded-md"
                   onClick={() => set("search", searchInput)}
                 >
                   Search
@@ -573,56 +573,56 @@ const PatientStats = () => {
               </div>
 
               {isFetching && (
-                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               )}
             </div>
 
             {/* Active Filter Pills */}
             {hasActiveFilters && (
-              <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-border/40">
-                <span className="text-[9px] text-muted-foreground font-medium">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
+                <span className="text-xs text-muted-foreground font-medium mr-1">
                   Active:
                 </span>
 
                 {filters.appointment_type !== "all" && (
                   <Badge
                     variant="secondary"
-                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
                     onClick={() => set("appointment_type", "all")}
                   >
                     {TYPE_LABELS[filters.appointment_type]}
-                    <XCircle className="w-2 h-2" />
+                    <XCircle className="w-3 h-3" />
                   </Badge>
                 )}
 
                 {filters.status !== "all" && (
                   <Badge
                     variant="secondary"
-                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
                     onClick={() => set("status", "all")}
                   >
                     {STATUS_LABELS[filters.status]}
-                    <XCircle className="w-2 h-2" />
+                    <XCircle className="w-3 h-3" />
                   </Badge>
                 )}
 
                 {filters.search && (
                   <Badge
                     variant="secondary"
-                    className="text-[9px] h-4 px-1.5 gap-1 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
                     onClick={() => {
                       set("search", "");
                       setSearchInput("");
                     }}
                   >
                     &ldquo;{filters.search}&rdquo;
-                    <XCircle className="w-2 h-2" />
+                    <XCircle className="w-3 h-3" />
                   </Badge>
                 )}
 
                 <button
                   onClick={clearAllFilters}
-                  className="text-[9px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-0.5 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-2 transition-colors"
                 >
                   Clear all
                 </button>
@@ -796,11 +796,11 @@ const PatientStats = () => {
           {/* ── Instant / Prescriptions / Certificates ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5">
             {/* Instant Consults */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-500" /> Instant Consults
+            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-amber-500" /> Instant Consults
               </p>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: "Total", val: instant?.total ?? 0 },
                   { label: "Completed", val: instant?.completed ?? 0 },
@@ -814,7 +814,7 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div
                     key={label}
-                    className="flex justify-between border-b border-border/40 pb-1"
+                    className="flex justify-between border-b border-border/40 pb-1.5"
                   >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground">{val}</span>
@@ -824,11 +824,11 @@ const PatientStats = () => {
             </div>
 
             {/* Prescriptions */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-                <Pill className="w-3 h-3 text-emerald-500" /> Prescriptions
+            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Pill className="w-4 h-4 text-emerald-500" /> Prescriptions
               </p>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: "Total", val: prescriptions?.total ?? 0 },
                   { label: "Active", val: prescriptions?.active ?? 0 },
@@ -842,7 +842,7 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div
                     key={label}
-                    className="flex justify-between border-b border-border/40 pb-1"
+                    className="flex justify-between border-b border-border/40 pb-1.5"
                   >
                     <span className="text-muted-foreground">{label}</span>
                     <span
@@ -861,11 +861,11 @@ const PatientStats = () => {
             </div>
 
             {/* Certificates */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-                <FileText className="w-3 h-3 text-sky-500" /> Certificates
+            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-sky-500" /> Certificates
               </p>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: "Total", val: certificates?.total ?? 0 },
                   { label: "Issued", val: certificates?.issued ?? 0 },
@@ -879,7 +879,7 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div
                     key={label}
-                    className="flex justify-between border-b border-border/40 pb-1"
+                    className="flex justify-between border-b border-border/40 pb-1.5"
                   >
                     <span className="text-muted-foreground">{label}</span>
                     <span
@@ -899,13 +899,13 @@ const PatientStats = () => {
           </div>
 
           {/* ── Activity Chart ── */}
-          <div className="rounded-sm border border-border/70 bg-card shadow-sm overflow-hidden">
-            <div className="px-3 py-2.5 border-b border-border/60 flex items-center justify-between">
+          <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
               <div>
-                <h2 className="text-[11px] font-semibold text-foreground">
+                <h2 className="text-sm font-semibold text-foreground">
                   Appointment Activity
                 </h2>
-                <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+                <p className="text-xs text-muted-foreground/70 mt-1">
                   {PERIOD_LABELS[filters.period]} · Grouped{" "}
                   {GROUP_LABELS[filters.chart_group].toLowerCase()}
                   {filters.appointment_type !== "all" &&
@@ -914,13 +914,13 @@ const PatientStats = () => {
                     ` · ${STATUS_LABELS[filters.status]}`}
                 </p>
               </div>
-              <div className="flex items-center gap-1 rounded-sm border border-border/60 p-0.5 bg-muted/30">
+              <div className="flex items-center gap-1 rounded-md border border-border/60 p-1 bg-muted/30">
                 {(["area", "bar"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setChartType(t)}
                     className={cn(
-                      "px-2 py-0.5 text-[9px] rounded-[2px] font-medium transition-colors capitalize",
+                      "px-3 py-1 text-xs rounded-sm font-medium transition-colors capitalize",
                       chartType === t
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
@@ -932,15 +932,15 @@ const PatientStats = () => {
               </div>
             </div>
 
-            <div className="p-3">
+            <div className="p-4">
               {isLoading ? (
                 <div className="h-44 flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : chartData.length === 0 ? (
                 <div className="h-44 flex flex-col items-center justify-center gap-2 text-center">
-                  <BarChart2 className="w-5 h-5 text-muted-foreground/30" />
-                  <p className="text-[10px] text-muted-foreground">
+                  <BarChart2 className="w-6 h-6 text-muted-foreground/30" />
+                  <p className="text-xs text-muted-foreground">
                     No chart data for this period
                   </p>
                 </div>
@@ -990,7 +990,7 @@ const PatientStats = () => {
                     <XAxis
                       dataKey="label"
                       tick={{
-                        fontSize: 9,
+                        fontSize: 10,
                         fill: "hsl(var(--muted-foreground))",
                       }}
                       axisLine={false}
@@ -998,7 +998,7 @@ const PatientStats = () => {
                     />
                     <YAxis
                       tick={{
-                        fontSize: 9,
+                        fontSize: 10,
                         fill: "hsl(var(--muted-foreground))",
                       }}
                       axisLine={false}
@@ -1006,7 +1006,7 @@ const PatientStats = () => {
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend
-                      wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }}
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
                       formatter={(val) => (
                         <span
                           style={{
@@ -1057,7 +1057,7 @@ const PatientStats = () => {
                     <XAxis
                       dataKey="label"
                       tick={{
-                        fontSize: 9,
+                        fontSize: 10,
                         fill: "hsl(var(--muted-foreground))",
                       }}
                       axisLine={false}
@@ -1065,7 +1065,7 @@ const PatientStats = () => {
                     />
                     <YAxis
                       tick={{
-                        fontSize: 9,
+                        fontSize: 10,
                         fill: "hsl(var(--muted-foreground))",
                       }}
                       axisLine={false}
@@ -1073,7 +1073,7 @@ const PatientStats = () => {
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend
-                      wrapperStyle={{ fontSize: "9px", paddingTop: "6px" }}
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
                       formatter={(val) => (
                         <span
                           style={{
@@ -1114,11 +1114,11 @@ const PatientStats = () => {
           {/* ── Reviews & Medical Profile ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
             {/* Reviews */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-                <Star className="w-3 h-3 text-amber-400" /> Reviews
+            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Star className="w-4 h-4 text-amber-400" /> Reviews
               </p>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: "Total", val: reviews?.total ?? 0 },
                   {
@@ -1138,7 +1138,7 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div
                     key={label}
-                    className="flex justify-between border-b border-border/40 pb-1"
+                    className="flex justify-between border-b border-border/40 pb-1.5"
                   >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground">{val}</span>
@@ -1148,19 +1148,19 @@ const PatientStats = () => {
             </div>
 
             {/* Medical Profile */}
-            <div className="rounded-sm border border-border/70 bg-card shadow-sm p-3">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-                <Stethoscope className="w-3 h-3 text-sky-500" /> Medical Profile
+            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <Stethoscope className="w-4 h-4 text-sky-500" /> Medical Profile
                 {medProfile?.complete && (
                   <Badge
                     variant="outline"
-                    className="ml-auto text-[9px] px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/10"
+                    className="ml-auto text-xs px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10"
                   >
                     Complete
                   </Badge>
                 )}
               </p>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
                   {
@@ -1177,7 +1177,7 @@ const PatientStats = () => {
                 ].map(({ label, val }) => (
                   <div
                     key={label}
-                    className="flex justify-between border-b border-border/40 pb-1"
+                    className="flex justify-between border-b border-border/40 pb-1.5"
                   >
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-semibold text-foreground capitalize">
@@ -1187,8 +1187,8 @@ const PatientStats = () => {
                 ))}
               </div>
               {medProfile?.has_family_history && (
-                <div className="mt-1.5 flex items-center gap-1 text-[9px] text-amber-500">
-                  <AlertTriangle className="w-2.5 h-2.5" /> Has family history
+                <div className="mt-2.5 flex items-center gap-1.5 text-xs text-amber-500">
+                  <AlertTriangle className="w-3.5 h-3.5" /> Has family history
                   recorded
                 </div>
               )}

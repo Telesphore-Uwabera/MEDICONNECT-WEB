@@ -1832,7 +1832,7 @@
 //                                   </button>
 //                                 )}
 
-                                
+
 //                                   <Button
 //                                     size="sm"
 //                                     onClick={() => handleStart(a)}
@@ -1843,14 +1843,14 @@
 //                                       ? <Loader2 className="h-3 w-3 animate-spin" />
 //                                       : t("pages.doctor.start")}
 //                                   </Button>
-                               
+
 //                                     <Button
 //                                       size="sm" variant="ghost"
 //                                       className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm"
 //                                     >
 //                                       {t("pages.doctor.notes")}
 //                                     </Button>
-                                 
+
 //                               </div>
 //                             </td>
 //                           </tr>
@@ -2172,7 +2172,7 @@ const DoctorAppointmentsPage = () => {
             key={id}
             onClick={() => setTab(id)}
             className={cn(
-              "relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium border-b-2 transition-all duration-200 shrink-0 whitespace-nowrap",
+              "relative flex items-center gap-2 px-3 sm:px-5 py-4 text-sm sm:text-base font-medium border-b-2 transition-all duration-200 shrink-0 whitespace-nowrap",
               tab === id
                 ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
@@ -2180,7 +2180,7 @@ const DoctorAppointmentsPage = () => {
           >
             {id === "appointments" && (
               <>
-                <Calendar className="h-3.5 w-3.5 shrink-0" />
+                <Calendar className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">
                   {t('consult.bookings.appointments')}
                 </span>
@@ -2191,26 +2191,26 @@ const DoctorAppointmentsPage = () => {
             )}
             {id === "instant" && (
               <>
-                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <Sparkles className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">
                   {t('consult.bookings.instant')}
-                  </span>
+                </span>
                 <span className="sm:hidden">
                   {t('consult.bookings.instant_short')}
-                  </span>
+                </span>
                 {pendingCount > 0 && (
-                  <span className="h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center leading-none">
                     {pendingCount}
                   </span>
                 )}
                 {call.phase === "connected" && call.role === "doctor" && call.activeRequest && (
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
                 )}
               </>
             )}
             {id === "bookings" && (
               <>
-                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <Building2 className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">
                   {t('consult.bookings.service_bookings')}
                 </span>
@@ -2224,7 +2224,7 @@ const DoctorAppointmentsPage = () => {
       </div>
 
       {/* Tab content */}
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 ">
         {tab === "appointments" ? (
           <AppointmentsTab />
         ) : tab === "instant" ? (

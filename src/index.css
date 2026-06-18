@@ -54,7 +54,7 @@
     --gradient-soft: linear-gradient(135deg, hsl(168 76% 95%), hsl(180 30% 98%));
     --gradient-charcoal: linear-gradient(135deg, hsl(215 35% 15%), hsl(215 30% 22%));
     --gradient-hero: radial-gradient(ellipse at top right, hsl(168 76% 92%), transparent 60%),
-                    radial-gradient(ellipse at bottom left, hsl(180 60% 95%), transparent 60%);
+      radial-gradient(ellipse at bottom left, hsl(180 60% 95%), transparent 60%);
 
     --shadow-soft: 0 2px 8px -2px hsl(172 50% 30% / 0.08);
     --shadow-medium: 0 8px 24px -8px hsl(172 50% 30% / 0.15);
@@ -97,7 +97,7 @@
     /* Dark gradients — THE FIX */
     --gradient-soft: linear-gradient(135deg, hsl(215 30% 12%), hsl(215 28% 18%));
     --gradient-hero: radial-gradient(ellipse at top right, hsl(215 30% 18%), transparent 60%),
-                    radial-gradient(ellipse at bottom left, hsl(215 28% 15%), transparent 60%);
+      radial-gradient(ellipse at bottom left, hsl(215 28% 15%), transparent 60%);
 
     /* Sidebar dark tokens */
     --sidebar-background: 215 32% 10%;
@@ -112,42 +112,88 @@
 }
 
 @layer base {
-  * { @apply border-border; }
+  * {
+    @apply border-border;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-feature-settings: "ss01";
     letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
-  .bg-gradient-primary { background: var(--gradient-primary); }
-  .bg-gradient-soft { background: var(--gradient-soft); }
-  .bg-gradient-charcoal { background: var(--gradient-charcoal); }
-  .bg-gradient-hero { background: var(--gradient-hero); }
-  .shadow-soft { box-shadow: var(--shadow-soft); }
-  .shadow-medium { box-shadow: var(--shadow-medium); }
-  .shadow-large { box-shadow: var(--shadow-large); }
-  .shadow-glow { box-shadow: var(--shadow-glow); }
-  .transition-smooth { transition: var(--transition-smooth); }
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-soft {
+    background: var(--gradient-soft);
+  }
+
+  .bg-gradient-charcoal {
+    background: var(--gradient-charcoal);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-large {
+    box-shadow: var(--shadow-large);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
 }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 hsl(var(--success) / 0.5); }
-  70% { box-shadow: 0 0 0 8px hsl(var(--success) / 0); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--success) / 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px hsl(var(--success) / 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--success) / 0);
+  }
 }
-.animate-pulse-ring { animation: pulse-ring 2s infinite; }
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s infinite;
+}
 
 /* Prevent double-overlay when IremboPay injects its own backdrop */
 /* Target Irembo's overlay iframe (usually iframe within an existing iframe) */
-html > body > iframe[src*="web-pay"],
-html > body > iframe[src*="payments"],
-html > body > [id*="modal-container"] > iframe[src*="irembo"],
-html > body > [class*="modal-container"] > iframe[src*="irembo"] {
+html>body>iframe[src*="web-pay"],
+html>body>iframe[src*="payments"],
+html>body>[id*="modal-container"]>iframe[src*="irembo"],
+html>body>[class*="modal-container"]>iframe[src*="irembo"] {
   z-index: 9999 !important;
 }
 
@@ -156,4 +202,9 @@ body[data-scroll-locked] iframe,
 body[data-scroll-locked] [id*="irembo"],
 body[data-scroll-locked] [class*="irembo"] {
   pointer-events: auto !important;
+}
+
+
+body {
+  font-size: 17px;
 }

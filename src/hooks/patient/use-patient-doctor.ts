@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 const BASE = "/public/doctors";
@@ -126,10 +126,47 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
   const queryString = sp.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;
 
+  // /patient/search/doctors?instant=true&page=2&per_page=10
   return useQuery({
     queryKey: ["patient-search-doctors", url],
+
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => res as ApiDoctorListResponse),
     staleTime: url === BASE ? 30_000 : 0,
+  });
+}
+
+export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {
+  return useInfiniteQuery({
+    queryKey: ["patient-search-doctors-infinite", params],
+    queryFn: ({ pageParam = 1 }): Promise<ApiDoctorListResponse> => {
+      const sp = new URLSearchParams();
+      
+      if (params.q && params.q.trim().length >= 2) sp.set("q", params.q.trim());
+      if (params.specialization) sp.set("specialization", params.specialization);
+      if (params.specialization_fee_id != null) sp.set("specialization_fee_id", String(params.specialization_fee_id));
+      if (params.type) sp.set("type", params.type);
+      if (params.language) sp.set("language", params.language);
+      if (params.city) sp.set("city", params.city);
+      if (params.gender) sp.set("gender", params.gender);
+      if (params.hospital_id != null) sp.set("hospital_id", String(params.hospital_id));
+      if (params.insurance_id != null) sp.set("insurance_id", String(params.insurance_id));
+      if (params.available_today) sp.set("available_today", "true");
+      if (params.instant) sp.set("instant", "true");
+      sp.set("page", String(pageParam));
+      if (params.per_page) sp.set("per_page", String(params.per_page));
+
+      const queryString = sp.toString();
+      const url = queryString ? `${BASE}?${queryString}` : BASE;
+      
+      return apiFetch(url).then((res) => res as ApiDoctorListResponse);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.current_page < lastPage.last_page) {
+        return lastPage.current_page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
   });
 }

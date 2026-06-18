@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/Api";
 
 const BASE = "/public/hospitals";
@@ -57,6 +57,7 @@ export interface HospitalSearchParams {
   insurance_id?: number;
   open_now?: boolean;
   page?: number;
+  per_page?: number;
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
@@ -73,6 +74,8 @@ export function useGetSearchHospitals(params: HospitalSearchParams = {}) {
   if (params.open_now) searchParams.set("open_now", "true");
   if (params.page && params.page > 1)
     searchParams.set("page", String(params.page));
+  if (params.per_page)
+    searchParams.set("per_page", String(params.per_page));
 
   const queryString = searchParams.toString();
   const url = queryString ? `${BASE}?${queryString}` : BASE;
@@ -85,5 +88,34 @@ export function useGetSearchHospitals(params: HospitalSearchParams = {}) {
         return res as ApiHospitalListResponse;
       }),
     staleTime: 30_000,
+  });
+}
+
+export function useInfiniteSearchHospitals(params: HospitalSearchParams = {}) {
+  return useInfiniteQuery({
+    queryKey: ["search-hospitals-infinite", params],
+    queryFn: ({ pageParam = 1 }): Promise<ApiHospitalListResponse> => {
+      const searchParams = new URLSearchParams();
+
+      if (params.q && params.q.trim().length >= 2) searchParams.set("q", params.q.trim());
+      if (params.city) searchParams.set("city", params.city);
+      if (params.type) searchParams.set("type", params.type);
+      if (params.insurance_id != null) searchParams.set("insurance_id", String(params.insurance_id));
+      if (params.open_now) searchParams.set("open_now", "true");
+      searchParams.set("page", String(pageParam));
+      if (params.per_page) searchParams.set("per_page", String(params.per_page));
+
+      const queryString = searchParams.toString();
+      const url = queryString ? `${BASE}?${queryString}` : BASE;
+
+      return apiFetch(url).then((res) => res as ApiHospitalListResponse);
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.last_page && lastPage.current_page < lastPage.last_page) {
+        return lastPage.current_page + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
   });
 }
