@@ -55,7 +55,7 @@
     "footer": "© 2026 MEDICONNECT. Les soins au bout de vos doigts"
   },
   "patient": {
-    "overview_title": "Bon retour, John",
+    "overview_title": "Bon retour",
     "overview_sub": "Voici l'actualité de vos soins aujourd'hui",
     "stat_upcoming": "À venir",
     "stat_active_rx": "Ordonnances actives",
@@ -133,7 +133,7 @@
     "bookings_sub": "Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
-    "overview_title": "Bonjour, Dr. Vance",
+    "overview_title": "Bonjour",
    "overview_sub": "{{date}} · patients à votre programme aujourd'hui",
     "instant_title": "Consultation instantanée",
     "instant_visible": "Vous êtes visible aux patients cherchant une aide immédiate",

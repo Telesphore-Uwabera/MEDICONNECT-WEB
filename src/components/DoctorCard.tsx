@@ -30,14 +30,14 @@ function DoctorAvatar({ doctor, size = "sm" }: { doctor: ApiDoctor; size?: "sm" 
   const sizeClass = size === "lg" ? "h-full w-full text-xl" : "h-full w-full text-sm";
   if (!doctor.image || imgError) {
     return (
-      <div className={cn(sizeClass, "rounded-sm bg-primary/10 text-primary flex items-center justify-center font-bold select-none")}>
+      <div className={cn(sizeClass, "rounded-[inherit] bg-primary/10 text-primary flex items-center justify-center font-bold select-none")}>
         {initials}
       </div>
     );
   }
   return (
     <img src={doctor.image} alt={doctor.user.name}
-      className="h-full w-full object-cover rounded-sm"
+      className="h-full w-full object-cover rounded-[inherit]"
       onError={() => setImgError(true)} />
   );
 }
@@ -46,15 +46,15 @@ function DoctorAvatar({ doctor, size = "sm" }: { doctor: ApiDoctor; size?: "sm" 
 
 function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   const map = {
-    online: { label: "Online", icon: Video, cls: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
-    in_person: { label: "In-Person", icon: Building2, cls: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
-    both: { label: "Online & In-Person", icon: Globe, cls: "text-teal-600 bg-teal-500/10 border-teal-500/20" },
+    online: { label: "Online", icon: Video, cls: "text-sky-700 bg-sky-500/15 border-sky-500/30 dark:text-sky-400" },
+    in_person: { label: "In-Person", icon: Building2, cls: "text-violet-700 bg-violet-500/15 border-violet-500/30 dark:text-violet-400" },
+    both: { label: "Online & In-Person", icon: Globe, cls: "text-teal-700 bg-teal-500/15 border-teal-500/30 dark:text-teal-400" },
   };
   const cfg = map[type] ?? map.both;
   const Icon = cfg.icon;
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-1 py-0.5 rounded-sm border", cfg.cls)}>
-      <Icon className="h-3 w-3" />{cfg.label}
+    <span className={cn("inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-[6px] border", cfg.cls)}>
+      <Icon className="h-3.5 w-3.5" />{cfg.label}
     </span>
   );
 }
@@ -534,112 +534,89 @@ export const DoctorCard = ({
       {/* ── Card ── */}
       <div
         className={cn(
-          "relative rounded-sm border border-border bg-card",
-          "overflow-hidden transition-all duration-200 cursor-pointer",
-          "hover:shadow-md hover:-translate-y-px shadow-sm",
-          isConnected && "ring-1 ring-emerald-500/30",
-          hasSavedSession && !isCallInProgress && "ring-1 ring-violet-500/25",
+          "relative rounded-[16px] border bg-card",
+          "overflow-hidden transition-all duration-300 cursor-pointer",
+          "hover:shadow-xl hover:-translate-y-1 hover:border-primary/30",
+          isConnected ? "border-emerald-500/30 ring-1 ring-emerald-500/30" :
+            hasSavedSession && !isCallInProgress ? "border-violet-500/30 ring-1 ring-violet-500/25" : "border-border/60 shadow-sm",
         )}
         onClick={openDetails}
       >
-        <div className="p-3.5">
+        <div className="p-4 sm:p-5">
           {/* Top row */}
-          <div className="flex items-center justify-start gap-2">
+          <div className="flex items-center justify-start gap-3.5">
             <div className="relative shrink-0">
-              <div className="h-14 w-14 rounded-sm overflow-hidden border border-border/40">
+              <div className="h-20 w-20 rounded-[14px] overflow-hidden border shadow-sm">
                 <DoctorAvatar doctor={doctor} />
               </div>
-              <span className={cn("absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-card", s.dot, s.pulse)} />
+              <span className={cn("absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-[2.5px] border-card", s.dot, s.pulse)} />
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 item-center min-w-0 pt-0.5">
               <div className="flex items-start justify-between gap-1.5">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <h3 className="text-sm font-semibold text-foreground truncate leading-tight">{doctor.user.name}</h3>
-                  </div>
-                  <p className="text-xs text-primary font-medium mt-0.5 truncate">
+                  <h3 className="text-base font-bold tracking-tight text-foreground/90 truncate leading-tight">{doctor.user.name}</h3>
+                  <p className="text-[13px] text-primary/90 font-semibold mt-1 truncate">
                     {doctor.specialization}{doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
                   </p>
                 </div>
 
-                {isConnected ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-emerald-600 bg-emerald-500/10 border-emerald-500/20">
-                    <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse shrink-0" />In call
-                  </span>
-                ) : isCallInProgress ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-sky-600 bg-sky-500/10 border-sky-500/20">
-                    <span className="h-1 w-1 rounded-full bg-sky-500 animate-pulse shrink-0" />Connecting
-                  </span>
-                ) : hasSavedSession ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border shrink-0 text-violet-600 bg-violet-500/10 border-violet-500/20">
-                    <RotateCcw className="h-2 w-2 shrink-0" />In queue
-                  </span>
-                ) : (
-                  <></>
-                )}
               </div>
 
               {locationLabel && (
-                <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1 truncate">
-                  <MapPin className="h-4 w-4 shrink-0" />{locationLabel}
+                <p className="mt-1.5 text-[11px] sm:text-xs font-medium text-muted-foreground/80 flex items-center gap-1 truncate">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />{locationLabel}
                 </p>
               )}
             </div>
           </div>
 
           {!compact && (
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-between">
               <ConsultBadge type={doctor.consultation_type} />
-              <span className="flex items-center gap-0.5 text-sm text-muted-foreground/50 font-medium">
-                View details <ChevronRight className="h-4 w-4" />
+              <span className="flex items-center gap-0.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/50 hover:text-primary transition-colors">
+                View details <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </div>
           )}
 
-          <div className="mt-2.5 border-t border-border" />
+          <div className="mt-4 border-t border-border/40" />
 
           {/* Bottom actions */}
-          <div className="mt-2.5 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3" onClick={(e) => e.stopPropagation()}>
             {/* Left hint */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {isConnected ? (
-                <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-medium text-emerald-600">Call in progress</span></>
+                <><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="text-xs font-bold tracking-tight text-emerald-600 dark:text-emerald-400">Call in progress</span></>
               ) : isCallInProgress ? (
-                <><span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
-                  <span className="text-xs font-medium text-sky-600">Connecting…</span></>
+                <><span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
+                  <span className="text-xs font-bold tracking-tight text-sky-600 dark:text-sky-400">Connecting…</span></>
               ) : hasSavedSession ? (
-                <><RotateCcw className="h-4 w-4 text-violet-500" />
-                  <span className="text-xs font-medium text-violet-600 dark:text-violet-400">Queue session saved</span></>
+                <><RotateCcw className="h-4 w-4 text-violet-500 shrink-0" />
+                  <span className="text-xs font-bold tracking-tight text-violet-600 dark:text-violet-400">Queue session saved</span></>
               ) : (
-                <><Zap className={cn("h-4 w-4", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground")} />
-                  <span className={cn("text-xs font-medium", doctor.instant_consultation ? "text-emerald-600" : "text-muted-foreground")}>
+                <><Zap className={cn("h-4 w-4 shrink-0", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground/50")} />
+                  <span className={cn("text-xs font-bold tracking-tight", doctor.instant_consultation ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70")}>
                     {doctor.instant_consultation ? "Usually replies in 2 min" : "Replies within 24h"}
                   </span></>
               )}
             </div>
 
             {/* Right buttons */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Button variant="outline" size="sm"
                 disabled={!canBook || isCallInProgress}
                 onClick={() => canBook && !isCallInProgress && setBookOpen(true)}
-                className="h-6 px-2.5 text-xs font-medium rounded-sm border-border">
+                className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors">
                 {t("pages.cards.book")}
               </Button>
 
-              {/*
-                Priority:
-                1. Saved queue session + no live call → violet "Resume"
-                2. Live call (connected or connecting) → re-open modal
-                3. canConnect → fresh "Connect"
-                4. Otherwise → disabled
-              */}
+              {/* Connected / In-progress buttons */}
               {hasSavedSession && !isCallInProgress ? (
                 <Button size="sm" onClick={openResume}
-                  className="h-6 px-2.5 text-xs font-semibold rounded-sm bg-violet-600 hover:bg-violet-700 text-white">
-                  <RotateCcw className="h-4 w-4 mr-1" />Resume
+                  className="h-8 px-3 text-xs font-bold rounded-[8px] bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow transition-all">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />Resume
                 </Button>
               ) : canConnect ? (
                 <Button size="sm"
@@ -652,18 +629,18 @@ export const DoctorCard = ({
                     }
                   }}
                   className={cn(
-                    "h-6 px-2.5 text-xs font-semibold rounded-sm",
+                    "h-8 px-3 text-xs font-bold rounded-[8px] shadow-sm hover:shadow transition-all",
                     isConnected ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                       : isCallInProgress ? "bg-sky-500 hover:bg-sky-600 text-white"
                         : "bg-primary hover:bg-primary/90 text-primary-foreground",
                   )}>
-                  {isConnected ? <><Maximize2 className="h-4 w-4 mr-1" />Resume</>
-                    : isCallInProgress ? <><Wifi className="h-4 w-4 mr-1" />Open</>
-                      : <><Wifi className="h-4 w-4 mr-1" />{t("pages.cards.connect")}</>}
+                  {isConnected ? <><Maximize2 className="h-3.5 w-3.5 mr-1.5" />Resume</>
+                    : isCallInProgress ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />Open</>
+                      : <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.connect")}</>}
                 </Button>
               ) : (
                 <Button size="sm" variant="secondary" disabled
-                  className="h-6 px-2.5 text-xs rounded-sm opacity-50 cursor-not-allowed">
+                  className="h-8 px-3 text-xs font-bold rounded-[8px] opacity-50 cursor-not-allowed border border-border/40 bg-muted">
                   {s.label}
                 </Button>
               )}

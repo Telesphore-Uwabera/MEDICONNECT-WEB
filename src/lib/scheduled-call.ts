@@ -11,6 +11,39 @@ export interface JoinTokenResponse {
 }
 
 /**
+ * Decode a call token into its JSON object. The token is base64-encoded JSON,
+ * but some link/notification generators base64-encode it more than once (the
+ * email/SMS verification links do this — the value decodes to *another* base64
+ * string). Peel up to a few base64 layers until we reach parseable JSON.
+ * Returns null if it never resolves to a JSON object (e.g. a Daily.co JWT).
+ */
+export function decodeCallToken(raw: string | undefined | null): any | null {
+  if (!raw) return null;
+  let s: string;
+  try {
+    s = decodeURIComponent(raw);
+  } catch {
+    s = raw;
+  }
+  for (let i = 0; i < 3; i++) {
+    let decoded: string;
+    try {
+      decoded = atob(s);
+    } catch {
+      return null; // not base64 — give up
+    }
+    try {
+      const obj = JSON.parse(decoded);
+      if (obj && typeof obj === "object") return obj;
+    } catch {
+      // not JSON yet — assume another base64 layer and keep peeling
+    }
+    s = decoded;
+  }
+  return null;
+}
+
+/**
  * If the join response carries a custom WebRTC token (same shape as instant
  * consults), open the in-app ConsultationRoom via startCall and return true.
  * Returns false when the token is absent or isn't our format (e.g. a Daily.co
@@ -23,10 +56,8 @@ export function startInAppCallFromJoin(
 ): boolean {
   if (!res?.token) return false;
 
-  let decoded: any;
-  try {
-    decoded = JSON.parse(atob(decodeURIComponent(res.token)));
-  } catch {
+  const decoded: any = decodeCallToken(res.token);
+  if (decoded == null) {
     console.warn("[scheduled-call] join token is not base64-JSON (likely a Daily.co JWT)");
     return false; // not a base64-JSON WebRTC token
   }

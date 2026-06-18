@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -14,19 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  useSearchPharmacies,
-  useNearbyPharmacies,
-  parseDeliveryMins,
-  type Pharmacy,
-} from "@/hooks/patient/use-patient-search-pharmacy";
+import { cn } from "@/lib/utils";
 import {
   Search,
   MapPin,
@@ -39,9 +27,23 @@ import {
   Clock,
   Navigation,
   Loader2,
+  AlertCircle,
+  RefreshCw,
+  Building2,
+  ChevronLeft,
+  ChevronDown,
+  Wifi,
+  Shield,
+  Stethoscope,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
+import {
+  useSearchPharmacies,
+  useNearbyPharmacies,
+  parseDeliveryMins,
+  type Pharmacy,
+} from "@/hooks/patient/use-patient-search-pharmacy";
 import { PharmacyDrawer } from "./components/Pharmacydrawer";
 import { PharmacyCart } from "./components/PharmacyCart";
 
@@ -55,32 +57,406 @@ const RWANDA_REGIONS = [
   { province: "Western Province", city: "Karongi"   },
 ] as const;
 
+// ─── Types ──────────────────────────────────────────────────────────────────────
+
+type SortOption = "name" | "delivery-asc" | "fee-asc";
+type ViewMode = "grid" | "list";
+
+interface FilterState {
+  q: string;
+  province: string;
+  city: string;
+  offers_delivery: boolean;
+  offers_pickup: boolean;
+  is_open_24h: boolean;
+  open_now: boolean;
+  sort: SortOption;
+}
+
+const INITIAL_FILTERS: FilterState = {
+  q: "",
+  province: "",
+  city: "",
+  offers_delivery: false,
+  offers_pickup: false,
+  is_open_24h: false,
+  open_now: false,
+  sort: "name",
+};
+
+const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
+  { value: "name", label: "Name (A–Z)" },
+  { value: "delivery-asc", label: "Fastest delivery" },
+  { value: "fee-asc", label: "Lowest fee" },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function sortPharmacies(pharmacies: Pharmacy[], sort: SortOption): Pharmacy[] {
+  return [...pharmacies].sort((a, b) => {
+    switch (sort) {
+      case "delivery-asc": {
+        const da = parseDeliveryMins(a.estimated_delivery_minutes) ?? Infinity;
+        const db = parseDeliveryMins(b.estimated_delivery_minutes) ?? Infinity;
+        return da - db;
+      }
+      case "fee-asc": {
+        const fa = a.delivery_fee ?? Infinity;
+        const fb = b.delivery_fee ?? Infinity;
+        return fa - fb;
+      }
+      default: return a.name.localeCompare(b.name);
+    }
+  });
+}
+
+// ─── Sidebar atoms ──────────────────────────────────────────────────────────────
+
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="py-3 border-b border-border/60 last:border-b-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2.5">
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function PillGroup<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string; icon?: React.ElementType }[];
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      {options.map((o) => {
+        const Icon = o.icon;
+        return (
+          <button
+            key={o.value}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              "px-2.5 py-1.5 rounded-sm text-xs border transition-all duration-200 text-left flex items-center gap-1.5",
+              value === o.value
+                ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
+                : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
+            )}
+          >
+            {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ToggleButton({
+  value,
+  onChange,
+  label,
+  icon: Icon,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  icon?: React.ElementType;
+}) {
+  return (
+    <button
+      onClick={() => onChange(!value)}
+      className={cn(
+        "px-2.5 py-1.5 rounded-sm text-xs border transition-all duration-200 text-left flex items-center gap-1.5 w-full",
+        value
+          ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
+          : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
+      )}
+    >
+      {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
+      {label}
+    </button>
+  );
+}
+
+// ─── Pharmacy Grid Card (Hospital-style) ─────────────────────────────────────
+
+function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
+  const todayName = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
+  const todayHours = ph.working_hours?.find((h) => h.day_of_week === todayName);
+  const isClosedToday = todayHours?.is_closed ?? true;
+
+  return (
+    <>
+      <div className="bg-card border border-border/70 rounded-sm p-3 flex flex-col gap-2.5 hover:border-primary/30 hover:shadow-md transition-all duration-200">
+        {/* Header */}
+        <div className="flex items-start gap-2.5">
+          <div className="w-9 h-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10 overflow-hidden">
+            {ph.logo
+              ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
+              : <Pill className="w-4.5 h-4.5" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <h3 className="text-xs font-semibold text-foreground leading-tight line-clamp-2">
+                {ph.name}
+              </h3>
+              {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground/70">
+              <MapPin className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{ph.city}</span>
+              {ph.address && <span className="truncate">· {ph.address}</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="flex flex-wrap gap-1">
+          {ph.offers_delivery && (
+            <span className="flex items-center gap-0.5 px-1.5 py-px text-xs font-semibold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+              <Truck className="w-4 h-4" />
+              Delivery
+            </span>
+          )}
+          {ph.offers_pickup && (
+            <span className="px-1.5 py-px text-xs font-semibold rounded-sm bg-secondary/60 text-muted-foreground border border-border/40">
+              Pickup
+            </span>
+          )}
+          {ph.is_open_24h && (
+            <span className="flex items-center gap-0.5 px-1.5 py-px text-xs font-semibold rounded-sm bg-primary/10 text-primary border border-primary/20">
+              <Clock className="w-4 h-4" />
+              24h
+            </span>
+          )}
+        </div>
+
+        {/* Info rows */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+            <MapPin className="w-4 h-4 flex-shrink-0 text-primary/60" />
+            {ph.city}, {ph.province}
+            {ph.distance_km != null && (
+              <span className="ml-auto text-xs font-semibold text-primary">{ph.distance_km.toFixed(1)} km</span>
+            )}
+          </div>
+          {deliveryMins != null && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+              <Truck className="w-4 h-4 flex-shrink-0 text-primary/60" />
+              ~{deliveryMins} min delivery
+            </div>
+          )}
+          {todayHours && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
+              <Clock className="w-4 h-4 flex-shrink-0 text-primary/60" />
+              {isClosedToday
+                ? <span className="text-destructive font-medium">Closed today</span>
+                : `${todayHours.open_time?.slice(0, 5)} – ${todayHours.close_time?.slice(0, 5)}`}
+            </div>
+          )}
+        </div>
+
+        {/* Stats + CTA */}
+        <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
+          {ph.delivery_fee && ph.offers_delivery ? (
+            <div className="text-xs text-muted-foreground/70">
+              Fee: <span className="font-semibold text-foreground">{ph.delivery_fee} {ph.delivery_currency}</span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground/40">No delivery</div>
+          )}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="px-2.5 py-1 rounded-sm text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm"
+          >
+            View medicines
+          </button>
+        </div>
+      </div>
+
+      <PharmacyDrawer pharmacy={ph} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
+  );
+}
+
+// ─── Pharmacy List Item ──────────────────────────────────────────────────────
+
+function PharmacyListItem({ pharmacy: ph }: { pharmacy: Pharmacy }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
+  const todayName = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
+  const todayHours = ph.working_hours?.find((h) => h.day_of_week === todayName);
+  const isClosedToday = todayHours?.is_closed ?? true;
+
+  return (
+    <>
+      <div className="bg-card border border-border/70 rounded-sm p-3 flex items-center gap-3 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+        onClick={() => setDrawerOpen(true)}>
+        <div className="w-10 h-10 rounded-sm bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10 overflow-hidden">
+          {ph.logo
+            ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
+            : <Pill className="w-5 h-5" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <h3 className="text-xs font-semibold text-foreground truncate">{ph.name}</h3>
+            {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground/70">
+            <span className="truncate">{ph.address}</span>
+            <span>·</span>
+            <span>{ph.city}</span>
+            {deliveryMins != null && (
+              <>
+                <span>·</span>
+                <span className="flex items-center gap-0.5">
+                  <Truck className="w-4 h-4" />~{deliveryMins} min
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-col items-end gap-0.5">
+            {ph.offers_delivery && (
+              <span className="px-1.5 py-px text-xs font-semibold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Delivery
+              </span>
+            )}
+            {isClosedToday ? (
+              <span className="text-xs text-destructive font-medium">Closed</span>
+            ) : (
+              <span className="text-xs text-emerald-600 font-medium">Open</span>
+            )}
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/40" />
+        </div>
+      </div>
+
+      <PharmacyDrawer pharmacy={ph} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
+  );
+}
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────────
+
+function PharmacyCardSkeleton() {
+  return (
+    <div className="bg-card border border-border/50 rounded-sm p-3 flex flex-col gap-2.5 animate-pulse">
+      <div className="flex items-start gap-2.5">
+        <div className="w-9 h-9 rounded-sm bg-muted flex-shrink-0" />
+        <div className="flex-1 space-y-1.5">
+          <div className="h-3 bg-muted rounded-sm w-3/4" />
+          <div className="h-2.5 bg-muted/70 rounded-sm w-1/2" />
+        </div>
+      </div>
+      <div className="flex gap-1">
+        <div className="h-4 bg-muted rounded-sm w-16" />
+        <div className="h-4 bg-muted/70 rounded-sm w-14" />
+      </div>
+      <div className="space-y-1">
+        <div className="h-2.5 bg-muted/60 rounded-sm w-full" />
+        <div className="h-2.5 bg-muted/50 rounded-sm w-3/4" />
+      </div>
+      <div className="flex justify-between pt-1.5 border-t border-border/40">
+        <div className="h-3 bg-muted rounded-sm w-20" />
+        <div className="h-6 bg-muted/80 rounded-sm w-24" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Pagination ──────────────────────────────────────────────────────────────────
+
+function Pagination({
+  currentPage,
+  lastPage,
+  total,
+  perPage,
+  onPageChange,
+}: {
+  currentPage: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
+  onPageChange: (p: number) => void;
+}) {
+  if (lastPage <= 1) return null;
+  const from = (currentPage - 1) * perPage + 1;
+  const to = Math.min(currentPage * perPage, total);
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-card/50">
+      <p className="text-xs text-muted-foreground">
+        Showing <span className="font-semibold text-foreground">{from}–{to}</span> of{" "}
+        <span className="font-semibold text-foreground">{total}</span> pharmacies
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        {Array.from({ length: Math.min(lastPage, 5) }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => onPageChange(p)}
+            className={cn(
+              "w-7 h-7 flex items-center justify-center rounded-sm border text-xs font-medium transition-all",
+              currentPage === p
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
+            )}
+          >
+            {p}
+          </button>
+        ))}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= lastPage}
+          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PatientPharmacy = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
-  // Search
-  const [query, setQuery] = useState("");
-  const debouncedQuery = useDebounce(query, 400);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [view, setView] = useState<ViewMode>("grid");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Location filters
-  const [selectedProvince, setSelectedProvince] = useState<string>("");
-  const [selectedCity, setSelectedCity]         = useState<string>("");
+  // Debounce search query
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQ(filters.q);
+      setPage(1);
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [filters.q]);
 
-  const availableCities = selectedProvince
-    ? RWANDA_REGIONS.filter((r) => r.province === selectedProvince).map((r) => r.city)
-    : RWANDA_REGIONS.map((r) => r.city);
-
-  // Boolean filters
-  const [offersDelivery, setOffersDelivery] = useState(false);
-  const [offersPickup,   setOffersPickup]   = useState(false);
-  const [isOpen24h,      setIsOpen24h]      = useState(false);
-  const [openNow,        setOpenNow]        = useState(false);
-
-  // Nearby
+  // Location
   const [nearbyCoords, setNearbyCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [locLoading,   setLocLoading]   = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
 
   const handleUseMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
@@ -103,21 +479,23 @@ const PatientPharmacy = () => {
 
   const handleClearLocation = useCallback(() => setNearbyCoords(null), []);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
-  // All filtering — including search — goes through useSearchPharmacies.
-  // q param is sent only when user has typed ≥2 chars.
+  const availableCities = filters.province
+    ? RWANDA_REGIONS.filter((r) => r.province === filters.province).map((r) => r.city)
+    : RWANDA_REGIONS.map((r) => r.city);
 
-  const searchQ = debouncedQuery.trim().length >= 2 ? debouncedQuery.trim() : undefined;
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  const searchQ = debouncedQ.trim().length >= 2 ? debouncedQ.trim() : undefined;
 
   const { data: pharmaciesResp, isLoading: loadingPharmacies } = useSearchPharmacies({
     q:               searchQ,
     per_page:        50,
-    province:        selectedProvince || undefined,
-    city:            selectedCity     || undefined,
-    offers_delivery: offersDelivery   || undefined,
-    offers_pickup:   offersPickup     || undefined,
-    is_open_24h:     isOpen24h        || undefined,
-    open_now:        openNow          || undefined,
+    page:            page,
+    province:        filters.province || undefined,
+    city:            filters.city     || undefined,
+    offers_delivery: filters.offers_delivery || undefined,
+    offers_pickup:   filters.offers_pickup   || undefined,
+    is_open_24h:     filters.is_open_24h        || undefined,
+    open_now:        filters.open_now          || undefined,
   });
 
   const { data: nearbyResp, isLoading: loadingNearby } = useNearbyPharmacies({
@@ -127,7 +505,6 @@ const PatientPharmacy = () => {
     enabled:  !!nearbyCoords,
   });
 
-  // When nearby is active, filter the nearby results locally by the search query
   const nearbyPharmacies: Pharmacy[] = useMemo(() => {
     const list = nearbyResp?.data ?? [];
     if (!searchQ) return list;
@@ -140,387 +517,392 @@ const PatientPharmacy = () => {
     );
   }, [nearbyResp, searchQ]);
 
-  const pharmacies: Pharmacy[] = nearbyCoords ? nearbyPharmacies : (pharmaciesResp?.data ?? []);
-  const isLoading               = nearbyCoords ? loadingNearby   : loadingPharmacies;
+  const rawPharmacies: Pharmacy[] = nearbyCoords ? nearbyPharmacies : (pharmaciesResp?.data ?? []);
+  const pharmacies = useMemo(() => sortPharmacies(rawPharmacies, filters.sort), [rawPharmacies, filters.sort]);
+  const isLoading = nearbyCoords ? loadingNearby : loadingPharmacies;
 
-  const hasActiveFilters =
-    !!nearbyCoords || !!selectedProvince || !!selectedCity ||
-    offersDelivery || offersPickup || isOpen24h || openNow;
+  const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    if (key !== "q" && key !== "sort") setPage(1);
+  }, []);
 
-  // ── Filter panel ───────────────────────────────────────────────────────────
+  const clearAll = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+    setDebouncedQ("");
+    setNearbyCoords(null);
+    setPage(1);
+  }, []);
 
-  const filtersPanel = (
-    <div className="space-y-5">
-      <FilterSection label="Province">
-        <Select
-          value={selectedProvince || "all"}
-          onValueChange={(v) => {
-            const province = v === "all" ? "" : v;
-            setSelectedProvince(province);
-            setSelectedCity("");
-            if (province) setNearbyCoords(null);
-          }}
-        >
-          <SelectTrigger className="h-8 text-xs rounded-[5px]">
-            <SelectValue placeholder="All provinces" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">All provinces</SelectItem>
-            {RWANDA_REGIONS.map((r) => (
-              <SelectItem key={r.province} value={r.province} className="text-xs">
-                {r.province}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FilterSection>
+  const hasActiveFilters = useMemo(
+    () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) || !!nearbyCoords,
+    [filters, nearbyCoords],
+  );
 
-      <FilterSection label="City">
-        <Select
-          value={selectedCity || "all"}
-          onValueChange={(v) => {
-            const city = v === "all" ? "" : v;
-            setSelectedCity(city);
-            if (city) setNearbyCoords(null);
-          }}
-        >
-          <SelectTrigger className="h-8 text-xs rounded-[5px]">
-            <SelectValue placeholder={selectedProvince ? "Select city" : "All cities"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="text-xs">
-              {selectedProvince ? "All cities in province" : "All cities"}
-            </SelectItem>
-            {availableCities.map((city) => (
-              <SelectItem key={city} value={city} className="text-xs">{city}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FilterSection>
+  useEffect(() => {
+    if (filterOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [filterOpen]);
 
-      <FilterSection label="Nearby">
-        {nearbyCoords ? (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-[5px] bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
-              <Navigation className="h-3 w-3 shrink-0" />
-              Using your location
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 rounded-[5px] text-muted-foreground hover:text-foreground"
-              onClick={handleClearLocation}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+  const deliveryCount = pharmacies.filter((p) => p.offers_delivery).length;
+  const open24hCount = pharmacies.filter((p) => p.is_open_24h).length;
+  const lastPage = pharmaciesResp?.last_page ?? (pharmaciesResp ? Math.ceil(pharmaciesResp.total / pharmaciesResp.per_page) : 1);
+
+  // ── Sidebar content ─────────────────────────────────────────────────────────
+  const sidebarContent = (
+    <>
+      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
+            <SlidersHorizontal className="w-4 h-4 text-primary" />
           </div>
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-8 text-xs rounded-[5px] justify-start gap-2"
-            onClick={handleUseMyLocation}
-            disabled={locLoading}
-          >
-            {locLoading
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Navigation className="h-3.5 w-3.5" />}
-            {locLoading ? "Detecting location…" : "Use my location"}
-          </Button>
-        )}
-      </FilterSection>
-
-      <FilterSection label="Availability">
-        <div className="space-y-2">
-          {[
-            { label: "Offers delivery", value: offersDelivery, set: setOffersDelivery },
-            { label: "Offers pickup",   value: offersPickup,   set: setOffersPickup   },
-            { label: "Open 24 h",       value: isOpen24h,      set: setIsOpen24h      },
-            { label: "Open now",        value: openNow,        set: setOpenNow        },
-          ].map(({ label, value, set }) => (
-            <label key={label} className="flex items-center gap-2 cursor-pointer select-none group">
-              <Checkbox
-                checked={value}
-                onCheckedChange={(v) => set(!!v)}
-                className="rounded-[3px] h-3.5 w-3.5"
-              />
-              <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                {label}
-              </span>
-            </label>
-          ))}
+          <span className="text-xs font-semibold text-foreground">Filters</span>
         </div>
-      </FilterSection>
-    </div>
+        {hasActiveFilters && (
+          <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
+            <X className="w-4 h-4" />
+            Reset all
+          </button>
+        )}
+      </div>
+
+      <div className="px-3.5">
+        {/* Search */}
+        <FilterSection title="Search">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Name, city, or address…"
+              value={filters.q}
+              onChange={(e) => set("q", e.target.value)}
+              className="w-full pl-7 pr-7 py-1.5 text-xs bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+            />
+            {filters.q && (
+              <button
+                onClick={() => set("q", "")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </FilterSection>
+
+        {/* Province */}
+        <FilterSection title="Province">
+          <Select
+            value={filters.province || "all"}
+            onValueChange={(v) => {
+              const province = v === "all" ? "" : v;
+              set("province", province);
+              set("city", "");
+              if (province) setNearbyCoords(null);
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs rounded-sm border-border/60">
+              <SelectValue placeholder="All provinces" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">All provinces</SelectItem>
+              {RWANDA_REGIONS.map((r) => (
+                <SelectItem key={r.province} value={r.province} className="text-xs">
+                  {r.province}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
+
+        {/* City */}
+        <FilterSection title="City">
+          <Select
+            value={filters.city || "all"}
+            onValueChange={(v) => {
+              const city = v === "all" ? "" : v;
+              set("city", city);
+              if (city) setNearbyCoords(null);
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs rounded-sm border-border/60">
+              <SelectValue placeholder={filters.province ? "Select city" : "All cities"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">
+                {filters.province ? "All cities in province" : "All cities"}
+              </SelectItem>
+              {availableCities.map((city) => (
+                <SelectItem key={city} value={city} className="text-xs">{city}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
+
+        {/* Nearby */}
+        <FilterSection title="Nearby">
+          {nearbyCoords ? (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
+                <Navigation className="h-4 w-4 shrink-0" />
+                Using your location
+              </div>
+              <button
+                className="h-7 w-7 rounded-sm border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleClearLocation}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <ToggleButton
+              value={false}
+              onChange={() => handleUseMyLocation()}
+              label={locLoading ? "Detecting…" : "Use my location"}
+              icon={locLoading ? Loader2 : Navigation}
+            />
+          )}
+        </FilterSection>
+
+        {/* Availability */}
+        <FilterSection title="Availability">
+          <div className="flex flex-col gap-1">
+            <ToggleButton
+              value={filters.offers_delivery}
+              onChange={(v) => set("offers_delivery", v)}
+              label="Offers delivery"
+              icon={Truck}
+            />
+            <ToggleButton
+              value={filters.offers_pickup}
+              onChange={(v) => set("offers_pickup", v)}
+              label="Offers pickup"
+              icon={MapPin}
+            />
+            <ToggleButton
+              value={filters.is_open_24h}
+              onChange={(v) => set("is_open_24h", v)}
+              label="Open 24h"
+              icon={Clock}
+            />
+            <ToggleButton
+              value={filters.open_now}
+              onChange={(v) => set("open_now", v)}
+              label="Open now"
+              icon={Wifi}
+            />
+          </div>
+        </FilterSection>
+      </div>
+    </>
   );
 
   return (
     <DashboardLayout role="patient">
-      <PageHeader
-        title={t("pages.patient.pharmacy_title")}
-        subtitle={t("pages.patient.pharmacy_sub")}
-        actions={<PharmacyCart variant="trigger" />}
-      />
+      <div className="flex flex-col h-full">
+        <PageHeader
+          title={t("pages.patient.pharmacy_title", "Pharmacy Marketplace")}
+          subtitle={t("pages.patient.pharmacy_sub", "Order medicines and healthcare products from registered pharmacies")}
+          actions={<PharmacyCart variant="trigger" />}
+        />
 
-      <div className="p-6 grid lg:grid-cols-[220px_1fr] gap-6">
-        {/* ── Sidebar ───────────────────────────────────────────────── */}
-        <aside className="hidden lg:block">
-          <div className="rounded-[5px] border border-border bg-card p-4 sticky top-24">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Filters
-              </span>
-              <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
-            {filtersPanel}
-          </div>
-        </aside>
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:flex lg:flex-col w-52 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
+            {sidebarContent}
+          </aside>
 
-        {/* ── Main ──────────────────────────────────────────────────── */}
-        <div className="min-w-0 space-y-4">
-
-          {/* Search bar */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search pharmacies by name, address or city…"
-                className="pl-8 h-9 text-sm rounded-[5px]"
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Mobile filter trigger */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="lg:hidden h-9 rounded-[5px] text-xs gap-1.5">
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                      {[nearbyCoords, selectedProvince, selectedCity, offersDelivery, offersPickup, isOpen24h, openNow].filter(Boolean).length}
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <SheetHeader>
-                  <SheetTitle className="text-sm">Filters</SheetTitle>
-                </SheetHeader>
-                <div className="mt-5">{filtersPanel}</div>
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Active filter chips */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-1.5">
-              {nearbyCoords && <FilterChip label="Near me" onRemove={handleClearLocation} />}
-              {selectedProvince && (
-                <FilterChip label={selectedProvince} onRemove={() => { setSelectedProvince(""); setSelectedCity(""); }} />
-              )}
-              {selectedCity     && <FilterChip label={selectedCity}   onRemove={() => setSelectedCity("")}       />}
-              {offersDelivery   && <FilterChip label="Delivery"       onRemove={() => setOffersDelivery(false)}  />}
-              {offersPickup     && <FilterChip label="Pickup"         onRemove={() => setOffersPickup(false)}    />}
-              {isOpen24h        && <FilterChip label="24 h"           onRemove={() => setIsOpen24h(false)}       />}
-              {openNow          && <FilterChip label="Open now"       onRemove={() => setOpenNow(false)}         />}
-            </div>
-          )}
-
-          {/* Results count */}
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground">
-              {isLoading
-                ? "Searching…"
-                : `${pharmacies.length} pharmac${pharmacies.length === 1 ? "y" : "ies"} found${searchQ ? ` for "${searchQ}"` : ""}`}
-            </p>
-            {searchQ && !isLoading && pharmacies.length === 0 && (
-              <button
-                onClick={() => setQuery("")}
-                className="text-[11px] text-primary hover:underline"
-              >
-                Clear search
-              </button>
+          {/* Mobile backdrop */}
+          <div
+            onClick={() => setFilterOpen(false)}
+            className={cn(
+              "fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-300 backdrop-blur-sm",
+              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
+          />
+
+          {/* Mobile bottom drawer */}
+          <div
+            className={cn(
+              "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
+              "bg-card rounded-t-lg border-t border-border/60",
+              "max-h-[85dvh] flex flex-col overflow-hidden",
+              "transition-transform duration-300 ease-out shadow-2xl",
+              filterOpen ? "translate-y-0" : "translate-y-full",
+            )}
+          >
+            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-border" />
+            </div>
+            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
+            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
+              <button
+                onClick={() => setFilterOpen(false)}
+                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold transition-all duration-200 shadow-sm"
+              >
+                Show {pharmacies.length} {pharmacies.length === 1 ? "pharmacy" : "pharmacies"}
+              </button>
+            </div>
           </div>
 
-          {/* Skeletons */}
-          {isLoading && (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => <PharmacySkeleton key={i} />)}
-            </div>
-          )}
+          {/* ── Results ── */}
+          <main className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* Empty state */}
-          {!isLoading && pharmacies.length === 0 && (
-            <EmptyState
-              icon={<MapPin className="h-8 w-8" />}
-              message={
-                searchQ
-                  ? `No pharmacies found for "${searchQ}". Try a different name or city.`
-                  : "No pharmacies match your filters."
-              }
-            />
-          )}
+            {/* Meta bar */}
+            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {isLoading ? (
+                    <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{pharmacies.length}</span>{" "}
+                      {pharmacies.length === 1 ? "pharmacy" : "pharmacies"} found
+                      {searchQ && ` for "${searchQ}"`}
+                      {hasActiveFilters && (
+                        <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-xs font-medium transition-colors">
+                          Reset
+                        </button>
+                      )}
+                    </>
+                  )}
+                </p>
 
-          {/* Pharmacy grid */}
-          {!isLoading && pharmacies.length > 0 && (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {pharmacies.map((ph) => <PharmacyCard key={ph.id} pharmacy={ph} />)}
+                {/* Live stats */}
+                {!isLoading && deliveryCount > 0 && (
+                  <span className="hidden lg:flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
+                    <Truck className="w-4 h-4" />
+                    {deliveryCount} with delivery
+                  </span>
+                )}
+                {!isLoading && open24hCount > 0 && (
+                  <span className="hidden lg:flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-sm">
+                    <Clock className="w-4 h-4" />
+                    {open24hCount} open 24h
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Sort */}
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as SortOption)}
+                  className="hidden sm:block px-2 py-1.5 text-xs bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+
+                {/* Mobile filter button */}
+                <button
+                  onClick={() => setFilterOpen(true)}
+                  className={cn(
+                    "lg:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-xs transition-all duration-200 font-medium",
+                    hasActiveFilters
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
+                  )}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filters
+                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
+                </button>
+
+                {/* View toggle */}
+                <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
+                  {(["grid", "list"] as const).map((v, i) => (
+                    <button
+                      key={v}
+                      onClick={() => setView(v)}
+                      aria-label={`${v} view`}
+                      className={cn(
+                        "px-2.5 py-1.5 transition-all duration-200",
+                        i > 0 && "border-l border-border/60",
+                        view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                      )}
+                    >
+                      {v === "grid" ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <rect x="3" y="3" width="7" height="7" rx="1" />
+                          <rect x="14" y="3" width="7" height="7" rx="1" />
+                          <rect x="3" y="14" width="7" height="7" rx="1" />
+                          <rect x="14" y="14" width="7" height="7" rx="1" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <line x1="3" y1="6" x2="21" y2="6" />
+                          <line x1="3" y1="12" x2="21" y2="12" />
+                          <line x1="3" y1="18" x2="21" y2="18" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Content */}
+            <div className="p-4 flex-1">
+              {isLoading ? (
+                <div className={cn(
+                  view === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
+                    : "flex flex-col gap-1.5",
+                )}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <PharmacyCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : pharmacies.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                    <Pill className="w-6 h-6 text-muted-foreground/50" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">
+                      {searchQ ? `No pharmacies found for "${searchQ}"` : "No pharmacies match your filters"}
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      {searchQ ? "Try a different name or city." : "Try widening your search criteria"}
+                    </p>
+                  </div>
+                  {hasActiveFilters && (
+                    <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                      Clear all filters
+                    </button>
+                  )}
+                </div>
+              ) : view === "grid" ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {pharmacies.map((ph) => (
+                    <PharmacyGridCard key={ph.id} pharmacy={ph} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {pharmacies.map((ph) => (
+                    <PharmacyListItem key={ph.id} pharmacy={ph} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {pharmaciesResp && lastPage > 1 && (
+              <Pagination
+                currentPage={pharmaciesResp.current_page}
+                lastPage={lastPage}
+                total={pharmaciesResp.total}
+                perPage={pharmaciesResp.per_page}
+                onPageChange={setPage}
+              />
+            )}
+          </main>
         </div>
       </div>
     </DashboardLayout>
   );
 };
-
-// ─── Filter chip ──────────────────────────────────────────────────────────────
-
-const FilterChip = ({ label, onRemove }: { label: string; onRemove: () => void }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium">
-    {label}
-    <button onClick={onRemove} className="ml-0.5 hover:text-primary/60 transition-colors">
-      <X className="h-2.5 w-2.5" />
-    </button>
-  </span>
-);
-
-// ─── Pharmacy Card ────────────────────────────────────────────────────────────
-
-const PharmacyCard = ({ pharmacy: ph }: { pharmacy: Pharmacy }) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
-  const todayName  = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
-  const todayHours = ph.working_hours?.find((h) => h.day_of_week === todayName);
-  const isClosedToday = todayHours?.is_closed ?? true;
-
-  return (
-    <>
-      <div className="rounded-[5px] border border-border bg-card p-4 shadow-soft hover:shadow-medium hover:border-primary/20 transition-all duration-150 flex flex-col group">
-        <div className="flex items-start gap-2.5">
-          <div className="h-11 w-11 rounded-[5px] bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-primary/10">
-            {ph.logo
-              ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
-              : <Pill className="h-5 w-5 text-primary" />}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-semibold truncate">{ph.name}</span>
-              {ph.is_verified && <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
-            </div>
-            <div className="text-[11px] text-muted-foreground truncate mt-0.5">{ph.address}</div>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {ph.offers_delivery && (
-                <Badge className="rounded-[3px] bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-emerald-500/20 text-[10px] px-1.5 py-0 h-4">
-                  <Truck className="h-2 w-2 mr-1" /> Delivery
-                </Badge>
-              )}
-              {ph.offers_pickup && (
-                <Badge variant="secondary" className="rounded-[3px] text-[10px] px-1.5 py-0 h-4">Pickup</Badge>
-              )}
-              {ph.is_open_24h && (
-                <Badge className="rounded-[3px] bg-primary/10 text-primary hover:bg-primary/10 border-primary/20 text-[10px] px-1.5 py-0 h-4">24h</Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 space-y-1">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
-            {ph.city}, {ph.province}
-            {ph.distance_km != null && (
-              <span className="ml-auto text-[10px] font-semibold text-primary">{ph.distance_km.toFixed(1)} km</span>
-            )}
-          </div>
-          {deliveryMins != null && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Truck className="h-3 w-3 shrink-0 text-primary/60" />
-              ~{deliveryMins} min delivery
-            </div>
-          )}
-          {todayHours && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Clock className="h-3 w-3 shrink-0 text-primary/60" />
-              {isClosedToday
-                ? <span className="text-destructive font-medium">Closed today</span>
-                : `${todayHours.open_time?.slice(0, 5)} – ${todayHours.close_time?.slice(0, 5)}`}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-2">
-          {ph.delivery_fee && ph.offers_delivery ? (
-            <div className="text-[11px] text-muted-foreground">
-              Fee: <span className="font-medium text-foreground">{ph.delivery_fee} {ph.delivery_currency}</span>
-            </div>
-          ) : <div />}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-[11px] rounded-[5px] px-2.5 shrink-0 group-hover:border-primary/40 group-hover:text-primary transition-colors"
-            onClick={() => setDrawerOpen(true)}
-          >
-            View medicines
-            <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
-        </div>
-      </div>
-
-      <PharmacyDrawer pharmacy={ph} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-    </>
-  );
-};
-
-// ─── Skeletons ────────────────────────────────────────────────────────────────
-
-const PharmacySkeleton = () => (
-  <div className="rounded-[5px] border border-border bg-card p-4 space-y-3">
-    <div className="flex items-start gap-2.5">
-      <Skeleton className="h-11 w-11 rounded-[5px] shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <Skeleton className="h-3 w-3/4" />
-        <Skeleton className="h-2.5 w-1/2" />
-        <Skeleton className="h-4 w-1/3 rounded-[3px]" />
-      </div>
-    </div>
-    <div className="space-y-1.5">
-      <Skeleton className="h-2.5 w-full" />
-      <Skeleton className="h-2.5 w-3/4" />
-    </div>
-    <div className="flex items-center justify-between pt-1">
-      <Skeleton className="h-2.5 w-1/3" />
-      <Skeleton className="h-7 w-24 rounded-[5px]" />
-    </div>
-  </div>
-);
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-const EmptyState = ({ icon, message }: { icon: React.ReactNode; message: string }) => (
-  <div className="rounded-[5px] border border-dashed border-border p-14 text-center">
-    <div className="flex justify-center text-muted-foreground/40 mb-3">{icon}</div>
-    <p className="text-xs text-muted-foreground">{message}</p>
-  </div>
-);
-
-// ─── FilterSection ────────────────────────────────────────────────────────────
-
-const FilterSection = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1.5">
-    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</p>
-    {children}
-  </div>
-);
 
 export default PatientPharmacy;

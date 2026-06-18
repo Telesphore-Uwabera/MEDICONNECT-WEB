@@ -135,7 +135,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.system"),
       items: [
         { to: "/admin/settings", label: t("sidebar.settings"), icon: Settings },
-        // { to: "/admin/audit-logs", label: t("sidebar.auditLogs"), icon: History },
+        { to: "/admin/reviews", label: t("sidebar.reviews"), icon: History },
         // { to: "/admin/maintenance", label: t("sidebar.maintenance"), icon: Wrench },
       ],
     },
@@ -303,8 +303,19 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.records"),
       items: [
         {
+          to: "/patient/medical-records",
+          label: "Medical Records",
+          icon: FileText,
+        },
+        {
           to: "/patient/prescriptions",
           label: t("sidebar.prescriptions"),
+          icon: FileText,
+        },
+        // PatientPharmacyOrders
+        {
+          to: "/patient/pharmacy/orders",
+          label: t("sidebar.orders"),
           icon: FileText,
         },
         {

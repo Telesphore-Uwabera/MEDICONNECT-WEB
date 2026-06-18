@@ -3,51 +3,182 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ShoppingCart,
-  Pill,
-  Trash2,
-  Plus,
-  Minus,
-  Package,
-  X,
+  ShoppingCart, Pill, Trash2, Plus, Minus, Package, X,
+  Truck, MapPin, AlertCircle, Loader2,
 } from "lucide-react";
 import {
-  useCart,
-  useCartCount,
-  useCartTotal,
-  removeFromCart,
-  updateCartQty,
-  clearCart,
-} from "@/lib/marketplace-store";
+  useDraftOrder,
+  useAddOrderItem,
+  useUpdateOrderItem,
+  useRemoveOrderItem,
+  usePlaceOrder,
+  type OrderItem,
+} from "@/hooks/patient/use-pharmacy-orders";
+import { useActivePharmacy } from "@/lib/marketplace-store";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PharmacyCartProps {
-  /**
-   * "trigger" — renders the top-bar icon button (used in PageHeader)
-   * "inline"  — renders a full-width bar (used at bottom of PharmacyDrawer)
-   */
   variant?: "trigger" | "inline";
   currency?: string;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Cart item row ────────────────────────────────────────────────────────────
+
+function CartItemRow({
+  item,
+  orderId,
+  pharmacyId,
+  currency,
+}: {
+  item: OrderItem;
+  orderId: number;
+  pharmacyId: number;
+  currency: string;
+}) {
+  const update = useUpdateOrderItem();
+  const remove = useRemoveOrderItem();
+
+  const isPending = update.isPending || remove.isPending;
+
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-[5px] border border-border bg-card">
+      <div className="h-9 w-9 rounded-[5px] bg-primary/10 flex items-center justify-center shrink-0">
+        <Pill className="h-4 w-4 text-primary" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] font-semibold truncate">{item.medicine.name}</div>
+        <div className="text-[10px] text-muted-foreground">
+          {parseFloat(item.unit_price).toLocaleString()} {item.medicine.currency ?? currency} /{" "}
+          {item.medicine.unit ?? "unit"}
+        </div>
+      </div>
+
+      {/* Qty controls */}
+      <div className={cn("flex items-center gap-1 shrink-0", isPending && "opacity-50 pointer-events-none")}>
+        <button
+          onClick={() =>
+            update.mutate({
+              orderId,
+              itemId: item.id,
+              quantity: item.quantity - 1,
+              pharmacyId,
+            })
+          }
+          className="h-6 w-6 rounded-[3px] border border-border flex items-center justify-center hover:bg-muted transition-colors"
+        >
+          <Minus className="h-3 w-3" />
+        </button>
+        <span className="text-xs font-bold w-5 text-center tabular-nums">{item.quantity}</span>
+        <button
+          onClick={() =>
+            update.mutate({
+              orderId,
+              itemId: item.id,
+              quantity: item.quantity + 1,
+              pharmacyId,
+            })
+          }
+          className="h-6 w-6 rounded-[3px] border border-border flex items-center justify-center hover:bg-muted transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Line total */}
+      <div className="text-xs font-bold tabular-nums shrink-0 min-w-[64px] text-right">
+        {parseFloat(item.subtotal).toLocaleString()} {item.medicine.currency ?? currency}
+      </div>
+
+      {/* Remove */}
+      <button
+        disabled={isPending}
+        onClick={() => remove.mutate({ orderId, itemId: item.id, pharmacyId })}
+        className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors shrink-0 disabled:opacity-40"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Delivery type toggle ─────────────────────────────────────────────────────
+
+function DeliveryToggle({
+  value,
+  onChange,
+}: {
+  value: "delivery" | "pickup";
+  onChange: (v: "delivery" | "pickup") => void;
+}) {
+  return (
+    <div className="flex rounded-[5px] border border-border overflow-hidden text-[11px] font-medium">
+      {(["pickup", "delivery"] as const).map((t) => (
+        <button
+          key={t}
+          onClick={() => onChange(t)}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-all",
+            t === "delivery" && "border-l border-border",
+            value === t
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted/50",
+          )}
+        >
+          {t === "pickup" ? <MapPin className="h-3 w-3" /> : <Truck className="h-3 w-3" />}
+          {t.charAt(0).toUpperCase() + t.slice(1)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: PharmacyCartProps) => {
   const [open, setOpen] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
 
-  const items = useCart();
-  const count = useCartCount();
-  const total = useCartTotal();
+  const { pharmacyId, deliveryType, setDeliveryType } = useActivePharmacy();
 
-  const handleCheckout = () => {
-    clearCart();
-    setOpen(false);
-    toast.success("Order placed successfully!");
+  const { data: draftData, isLoading: draftLoading } = useDraftOrder(pharmacyId);
+  const placeOrder = usePlaceOrder();
+
+  const order = draftData?.order ?? null;
+  const items = order?.items ?? [];
+  const count = items.reduce((n, i) => n + i.quantity, 0);
+  const total = order ? parseFloat(order.total_amount) : 0;
+
+  const handlePlaceOrder = () => {
+    if (!order) return;
+    if (deliveryType === "delivery" && !deliveryAddress.trim()) {
+      toast.error("Please enter a delivery address.");
+      return;
+    }
+    placeOrder.mutate(
+      {
+        orderId: order.id,
+        delivery_type: deliveryType,
+        delivery_address: deliveryType === "delivery" ? deliveryAddress.trim() : undefined,
+        pharmacyId: order.pharmacy_id,
+      },
+      {
+        onSuccess: (res) => {
+          toast.success(res.message ?? "Order placed successfully!");
+          setOpen(false);
+          setDeliveryAddress("");
+        },
+        onError: (err) => {
+          toast.error(err.message ?? "Failed to place order.");
+        },
+      },
+    );
   };
 
-  // ── Trigger ───────────────────────────────────────────────────────────────
+  // ── Trigger ──────────────────────────────────────────────────────────────
 
   const trigger =
     variant === "trigger" ? (
@@ -83,17 +214,14 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
       </button>
     );
 
-  // ── Sheet ─────────────────────────────────────────────────────────────────
+  // ── Sheet ────────────────────────────────────────────────────────────────
 
   return (
     <>
       {trigger}
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:w-[400px] flex flex-col p-0 gap-0"
-        >
+        <SheetContent side="right" className="w-full sm:w-[420px] flex flex-col p-0 gap-0">
           {/* Header */}
           <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
             <div className="flex items-center justify-between">
@@ -108,65 +236,29 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
 
           {/* Items */}
           <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
-            {items.length === 0 ? (
+            {draftLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                   <ShoppingCart className="h-5 w-5 text-muted-foreground/40" />
                 </div>
                 <p className="text-xs font-medium text-foreground">Your cart is empty</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Add medicines from any pharmacy to get started.
+                  Add medicines from this pharmacy to get started.
                 </p>
               </div>
             ) : (
-              items.map(({ productId, medicine: med, qty }) => (
-                <div
-                  key={productId}
-                  className="flex items-center gap-3 p-3 rounded-[5px] border border-border bg-card"
-                >
-                  {/* Icon */}
-                  <div className="h-9 w-9 rounded-[5px] bg-primary-soft flex items-center justify-center shrink-0">
-                    <Pill className="h-4 w-4 text-primary" />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold truncate">{med.name}</div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {parseFloat(med.price).toLocaleString()} {med.currency ?? currency} / {med.unit ?? "unit"}
-                    </div>
-                  </div>
-
-                  {/* Qty controls */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => updateCartQty(productId, qty - 1)}
-                      className="h-6 w-6 rounded-[3px] border border-border flex items-center justify-center hover:bg-muted transition-colors"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="text-xs font-bold w-5 text-center tabular-nums">{qty}</span>
-                    <button
-                      onClick={() => updateCartQty(productId, qty + 1)}
-                      className="h-6 w-6 rounded-[3px] border border-border flex items-center justify-center hover:bg-muted transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-
-                  {/* Line total */}
-                  <div className="text-xs font-bold tabular-nums shrink-0 min-w-[64px] text-right">
-                    {(parseFloat(med.price) * qty).toLocaleString()} {med.currency ?? currency}
-                  </div>
-
-                  {/* Remove */}
-                  <button
-                    onClick={() => removeFromCart(productId)}
-                    className="h-6 w-6 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors shrink-0"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+              items.map((item) => (
+                <CartItemRow
+                  key={item.id}
+                  item={item}
+                  orderId={order!.id}
+                  pharmacyId={order!.pharmacy_id}
+                  currency={currency}
+                />
               ))
             )}
           </div>
@@ -174,6 +266,30 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
           {/* Footer */}
           {items.length > 0 && (
             <div className="px-5 py-4 border-t border-border shrink-0 space-y-3 bg-card">
+              {/* Delivery type */}
+              <DeliveryToggle value={deliveryType} onChange={setDeliveryType} />
+
+              {/* Delivery address */}
+              {deliveryType === "delivery" && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Delivery address
+                  </label>
+                  <input
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="e.g. KG 123 St, Kigali"
+                    className="w-full px-3 py-2 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                  />
+                  {deliveryType === "delivery" && !deliveryAddress.trim() && (
+                    <p className="flex items-center gap-1 text-[10px] text-amber-600">
+                      <AlertCircle className="h-3 w-3" /> Required for delivery
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Total */}
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold">Total</span>
                 <span className="font-bold tabular-nums text-primary">
@@ -181,24 +297,19 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
                 </span>
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-[5px] text-xs h-9 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
-                  onClick={() => clearCart()}
-                >
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  Clear
-                </Button>
-                <Button
-                  className="flex-1 rounded-[5px] bg-gradient-primary hover:opacity-90 text-xs h-9"
-                  onClick={handleCheckout}
-                >
+              {/* CTA */}
+              <Button
+                className="w-full rounded-[5px] bg-gradient-primary hover:opacity-90 text-xs h-9"
+                onClick={handlePlaceOrder}
+                disabled={placeOrder.isPending}
+              >
+                {placeOrder.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
                   <Package className="h-3.5 w-3.5 mr-1.5" />
-                  Place Order
-                </Button>
-              </div>
+                )}
+                {placeOrder.isPending ? "Placing order…" : "Place Order"}
+              </Button>
             </div>
           )}
         </SheetContent>

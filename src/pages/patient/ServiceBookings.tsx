@@ -33,6 +33,7 @@ import {
   Hash,
   HeartPulse,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
@@ -1207,6 +1208,17 @@ function ServiceBookings() {
                   </span>
                   <span className="sm:hidden">
                     {t('consult.bookings.appointments_short')}
+                  </span>
+                </Link>
+
+                <Link to='/patient/instant' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">
+                    {t('consult.bookings.instant')}
+                  </span>
+                  <span className="sm:hidden">
+
+                    {t('consult.bookings.instant_short')}
                   </span>
                 </Link>
 

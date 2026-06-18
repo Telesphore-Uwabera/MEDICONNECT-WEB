@@ -143,6 +143,9 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
       license_document: null,
       national_id_document: null,
       existing: {
+        // ── profile image from top-level `image` field ──────────────────
+        profile_image_url: doc.image ?? null,
+        // ── documents ───────────────────────────────────────────────────
         degree_document_url: doc.documents?.degree_document?.url
           ? doc.documents.degree_document.url
           : doc.documents?.degree_document?.path
@@ -186,6 +189,17 @@ function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
   if (d.experience.length) s["experience"] = "saved";
   if (d.qualifications.length) s["qualifications"] = "saved";
   if (Object.values(d.linksSection).some(Boolean)) s["linksSection"] = "saved";
+
+  // ── ADD THIS ────────────────────────────────────────────────────────────
+  if (
+    d.documents.existing?.profile_image_url ||
+    d.documents.existing?.degree_document_url ||
+    d.documents.existing?.medical_license_document_url ||
+    d.documents.existing?.national_id_document_url
+  )
+    s["documents"] = "saved";
+  // ────────────────────────────────────────────────────────────────────────
+
   return s;
 }
 
@@ -208,6 +222,7 @@ function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
         data.documents.degree_document ||
         data.documents.license_document ||
         data.documents.national_id_document ||
+        data.documents.existing?.profile_image_url ||
         data.documents.existing?.degree_document_url ||
         data.documents.existing?.medical_license_document_url ||
         data.documents.existing?.national_id_document_url
@@ -664,11 +679,15 @@ const ViewQualifications = React.memo(function ViewQualifications({
   );
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ViewDocuments
+// ─────────────────────────────────────────────────────────────────────────────
 const ViewDocuments = React.memo(function ViewDocuments({
   data,
 }: {
   data: DoctorProfileData;
 }) {
+  // Newly selected (unsaved) files
   const newFiles = useMemo<[string, File][]>(
     () =>
       (
@@ -682,11 +701,13 @@ const ViewDocuments = React.memo(function ViewDocuments({
     [data.documents],
   );
 
+  // Already-uploaded files/images from the API
   const existingFiles = useMemo<[string, string][]>(() => {
     const ex = data.documents.existing;
     if (!ex) return [];
     return (
       [
+        ["Profile photo", ex.profile_image_url],
         ["Degree document", ex.degree_document_url],
         ["Medical license scan", ex.medical_license_document_url],
         ["National ID", ex.national_id_document_url],
@@ -698,6 +719,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
 
   return (
     <div className="space-y-3">
+      {/* Pending new files (not yet saved) */}
       {newFiles.map(([label, file]) => (
         <div
           key={label}
@@ -714,25 +736,50 @@ const ViewDocuments = React.memo(function ViewDocuments({
           </div>
         </div>
       ))}
-      {existingFiles.map(([label, url]) => (
-        
-       <a   key={`existing-${label}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
-        >
-          <FileText className="h-4 w-4 text-primary shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-              {label}
-            </p>
-            <p className="text-[13px] font-medium text-primary truncate group-hover:underline">
-              View uploaded file
-            </p>
+
+      {/* Existing uploaded files from API */}
+      {existingFiles.map(([label, url]) =>
+        label === "Profile photo" ? (
+          // ── Profile image: show as avatar thumbnail ──────────────────────
+          <div
+            key="existing-profile-photo"
+            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+          >
+            <img
+              src={url}
+              alt="Profile photo"
+              className="h-10 w-10 rounded-full object-cover shrink-0 border border-border"
+            />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Profile photo
+              </p>
+              <p className="text-[13px] font-medium text-foreground">
+                Uploaded
+              </p>
+            </div>
           </div>
-        </a>
-      ))}
+        ) : (
+          // ── Other documents: link to open in new tab ─────────────────────
+          <a
+            key={`existing-${label}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+          >
+            <FileText className="h-4 w-4 text-primary shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                {label}
+              </p>
+              <p className="text-[13px] font-medium text-primary truncate group-hover:underline">
+                View uploaded file
+              </p>
+            </div>
+          </a>
+        ),
+      )}
     </div>
   );
 });
@@ -750,8 +797,8 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({
   return (
     <div className="grid grid-cols-1 gap-2">
       {filledLinks.map(({ key, label }) => (
-        
-    <a      key={key}
+        <a
+          key={key}
           href={data.linksSection[key]}
           target="_blank"
           rel="noopener noreferrer"
@@ -1246,13 +1293,17 @@ const DoctorProfile = () => {
             if (data.specializations?.primary)
               payload.specialization = data.specializations.primary;
             if (data.specializations?.specialization_fee_id !== undefined)
-              payload.specialization_fee_id = data.specializations.specialization_fee_id;
+              payload.specialization_fee_id =
+                data.specializations.specialization_fee_id;
             if (data.specializations?.years_of_experience !== undefined)
-              payload.years_of_experience = data.specializations.years_of_experience;
+              payload.years_of_experience =
+                data.specializations.years_of_experience;
             if (Object.keys(payload).length > 0)
               await upsertProfile.mutateAsync(payload);
             setProfileData((prev) =>
-              prev ? { ...prev, specializations: data.specializations! } : null,
+              prev
+                ? { ...prev, specializations: data.specializations! }
+                : null,
             );
             break;
           }
@@ -1419,9 +1470,21 @@ const DoctorProfile = () => {
               >
                 <StatCard label="Degree" value={stats.degree} />
                 <StatCard label="License" value={stats.license} />
-                <StatCard label="Education" value={stats.education} sub="entries" />
-                <StatCard label="Experience" value={stats.experience} sub="positions" />
-                <StatCard label="Qualifications" value={stats.qualifications} sub="certs" />
+                <StatCard
+                  label="Education"
+                  value={stats.education}
+                  sub="entries"
+                />
+                <StatCard
+                  label="Experience"
+                  value={stats.experience}
+                  sub="positions"
+                />
+                <StatCard
+                  label="Qualifications"
+                  value={stats.qualifications}
+                  sub="certs"
+                />
               </div>
               {isFetchingProfile && (
                 <span className="absolute top-1 right-1 flex h-2 w-2">

@@ -88,7 +88,7 @@ function CertStatusBadge({ status }: { status: string }) {
   const cfg =
     STATUS_CONFIG[status] ?? {
       label: status,
-      badgeCls: "bg-muted text-muted-foreground border-border",
+      badgeCls: "bg-muted/20 text-muted-foreground border-border",
       icon: Clock,
       dotCls: "bg-muted-foreground",
     };
@@ -96,7 +96,7 @@ function CertStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] text-[10px] sm:text-xs font-bold border",
         cfg.badgeCls,
       )}
     >
@@ -568,10 +568,10 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
   return (
     <>
-      <div className="border border-border rounded-xl overflow-hidden bg-card hover:border-border/80 transition-colors group">
+      <div className="border border-border/60 rounded-[16px] overflow-hidden bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
         {/* Progress bar for draft */}
         {cert.status === "draft" && (
-          <div className="h-0.5 bg-muted">
+          <div className="h-1 bg-muted">
             <div
               className="h-full bg-primary/60 transition-all"
               style={{ width: `${progressPct}%` }}
@@ -580,12 +580,12 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
         )}
 
         {/* Main card body */}
-        <div className="p-4">
-          <div className="flex items-start gap-3">
+        <div className="p-4 sm:p-5">
+          <div className="flex items-start gap-3.5">
             {/* Left icon */}
             <div
               className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border mt-0.5",
+                "w-12 h-12 rounded-[12px] flex items-center justify-center flex-shrink-0 border shadow-sm",
                 isApproved
                   ? "bg-emerald-500/10 border-emerald-500/20"
                   : cert.status === "rejected"
@@ -595,7 +595,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
             >
               <FileText
                 className={cn(
-                  "h-4 w-4",
+                  "h-5 w-5",
                   isApproved
                     ? "text-emerald-600"
                     : cert.status === "rejected"
@@ -606,16 +606,16 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-foreground truncate">
+                  <p className="text-base font-bold text-foreground tracking-tight truncate">
                     {cert.certificate_number || `Certificate #${cert.id}`}
                   </p>
-                  <p className="text-[11px] text-muted-foreground capitalize mt-0.5">
+                  <p className="text-xs font-medium text-primary/80 capitalize mt-0.5 truncate">
                     {purposeLabel(cert.purpose)}
                     {cert.job_type && cert.job_type !== "None of the above" && (
-                      <span className="text-muted-foreground/50"> · {cert.job_type}</span>
+                      <span className="text-muted-foreground/60"> · {cert.job_type}</span>
                     )}
                   </p>
                 </div>
@@ -623,26 +623,26 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               </div>
 
               {/* Meta row */}
-              <div className="flex items-center gap-2.5 flex-wrap pt-0.5">
-                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                  <Calendar className="h-3 w-3" />
+              <div className="flex items-center gap-2.5 flex-wrap pt-1">
+                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/80">
+                  <Calendar className="h-3.5 w-3.5" />
                   {fmt(cert.created_at)}
                 </span>
                 {cert.valid_until && (
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-[4px]">
                     <Shield className="h-3 w-3" />
                     Valid until {fmt(cert.valid_until)}
                   </span>
                 )}
                 {cert.has_red_flags && (
-                  <span className="flex items-center gap-1 text-[10px] text-amber-600">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded-[4px]">
                     <AlertTriangle className="h-3 w-3" />
                     Red flags
                   </span>
                 )}
                 {cert.doctor && (
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                    <User className="h-3 w-3" />
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/80">
+                    <User className="h-3.5 w-3.5" />
                     {cert.doctor.name}
                   </span>
                 )}
@@ -650,7 +650,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
               {/* Doctor notes snippet */}
               {cert.doctor_notes && (
-                <p className="text-[11px] text-muted-foreground/60 italic line-clamp-1 pt-0.5">
+                <p className="text-[12px] text-muted-foreground/70 italic line-clamp-1 pt-1">
                   "{cert.doctor_notes}"
                 </p>
               )}
@@ -658,37 +658,37 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
           </div>
 
           {/* Actions row */}
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border/40">
             {/* View details — always visible */}
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setDrawerOpen(true)}
-              className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground px-2.5"
+              className="h-8 text-xs font-bold gap-1.5 text-muted-foreground hover:text-foreground px-3 rounded-[8px] hover:bg-muted/50"
             >
-              <Eye className="h-3.5 w-3.5" />
+              <Eye className="h-4 w-4" />
               View details
-              <ChevronRight className="h-3 w-3 opacity-50" />
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
             </Button>
 
             <div className="flex-1" />
 
             {/* Join verification call — while a review is pending identity check */}
-            {canVerify && (
+            {/* {canVerify && (
               <Button
                 size="sm"
                 onClick={handleJoinVerification}
                 disabled={joinSession.isPending}
-                className="h-7 text-[11px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-8 text-xs font-bold gap-1.5 rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow"
               >
                 {joinSession.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Video className="h-3.5 w-3.5" />
+                  <Video className="h-4 w-4" />
                 )}
                 Join verification call
               </Button>
-            )}
+            )} */}
 
             {/* Download — only for approved */}
             {isApproved && downloadPhase === "idle" && (
@@ -696,15 +696,15 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 size="sm"
                 variant="outline"
                 onClick={handleDownload}
-                className="h-7 text-[11px] gap-1.5 border-border"
+                className="h-8 text-xs font-bold gap-1.5 border-border/60 hover:bg-muted/50 rounded-[8px]"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-4 w-4 text-primary" />
                 Download PDF
               </Button>
             )}
             {isApproved && downloadPhase === "loading" && (
-              <Button size="sm" variant="outline" disabled className="h-7 text-[11px] gap-1.5">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Button size="sm" variant="outline" disabled className="h-8 text-xs font-bold gap-1.5 rounded-[8px]">
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Loading…
               </Button>
             )}
