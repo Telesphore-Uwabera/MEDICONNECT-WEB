@@ -96,35 +96,28 @@ export interface DoctorSearchParams {
 export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
   const sp = new URLSearchParams();
 
-  if (params.q && params.q.trim().length >= 2)
-    sp.set("q", params.q.trim());
-  if (params.specialization)
-    sp.set("specialization", params.specialization);
+  if (params.q && params.q.trim().length >= 2) sp.set("q", params.q.trim());
+  if (params.specialization) sp.set("specialization", params.specialization);
   if (params.specialization_fee_id != null)
     sp.set("specialization_fee_id", String(params.specialization_fee_id));
-  if (params.type)
-    sp.set("type", params.type);
-  if (params.language)
-    sp.set("language", params.language);
-  if (params.city)
-    sp.set("city", params.city);
-  if (params.gender)
-    sp.set("gender", params.gender);
+  if (params.type) sp.set("type", params.type);
+  if (params.language) sp.set("language", params.language);
+  if (params.city) sp.set("city", params.city);
+  if (params.gender) sp.set("gender", params.gender);
   if (params.hospital_id != null)
     sp.set("hospital_id", String(params.hospital_id));
   if (params.insurance_id != null)
     sp.set("insurance_id", String(params.insurance_id));
-  if (params.available_today)
-    sp.set("available_today", "true");
-  if (params.instant)
-    sp.set("instant", "true");
-  if (params.page && params.page > 1)
-    sp.set("page", String(params.page));
-  if (params.per_page)
-    sp.set("per_page", String(params.per_page));
+  if (params.available_today) sp.set("available_today", "true");
+  if (params.instant) sp.set("instant", "true");
+  if (params.page && params.page > 1) sp.set("page", String(params.page));
+  if (params.per_page) sp.set("per_page", String(params.per_page));
 
   const queryString = sp.toString();
-  const url = queryString ? `${BASE}?${queryString}` : BASE;
+  const available_doctors_url = `${BASE}/available-doctors`;
+  const url = queryString
+    ? `${BASE}/available-doctors?${queryString}`
+    : available_doctors_url;
 
   // /patient/search/doctors?instant=true&page=2&per_page=10
   return useQuery({
@@ -141,24 +134,31 @@ export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {
     queryKey: ["patient-search-doctors-infinite", params],
     queryFn: ({ pageParam = 1 }): Promise<ApiDoctorListResponse> => {
       const sp = new URLSearchParams();
-      
+
       if (params.q && params.q.trim().length >= 2) sp.set("q", params.q.trim());
-      if (params.specialization) sp.set("specialization", params.specialization);
-      if (params.specialization_fee_id != null) sp.set("specialization_fee_id", String(params.specialization_fee_id));
+      if (params.specialization)
+        sp.set("specialization", params.specialization);
+      if (params.specialization_fee_id != null)
+        sp.set("specialization_fee_id", String(params.specialization_fee_id));
       if (params.type) sp.set("type", params.type);
       if (params.language) sp.set("language", params.language);
       if (params.city) sp.set("city", params.city);
       if (params.gender) sp.set("gender", params.gender);
-      if (params.hospital_id != null) sp.set("hospital_id", String(params.hospital_id));
-      if (params.insurance_id != null) sp.set("insurance_id", String(params.insurance_id));
+      if (params.hospital_id != null)
+        sp.set("hospital_id", String(params.hospital_id));
+      if (params.insurance_id != null)
+        sp.set("insurance_id", String(params.insurance_id));
       if (params.available_today) sp.set("available_today", "true");
       if (params.instant) sp.set("instant", "true");
       sp.set("page", String(pageParam));
       if (params.per_page) sp.set("per_page", String(params.per_page));
 
       const queryString = sp.toString();
-      const url = queryString ? `${BASE}?${queryString}` : BASE;
-      
+      const available_doctors_url = `${BASE}/available-doctors`;
+      const url = queryString
+        ? `${BASE}/available-doctors?${queryString}`
+        : available_doctors_url;
+
       return apiFetch(url).then((res) => res as ApiDoctorListResponse);
     },
     getNextPageParam: (lastPage) => {
