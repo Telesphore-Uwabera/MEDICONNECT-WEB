@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   MessageSquare,
 } from "lucide-react";
 import {
@@ -23,7 +22,7 @@ import {
 } from "@/hooks/admin/use-admin-reviews";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
-import AdminReviewDetail from "./components/Adminreviewdetail"; // adjust path if needed
+import AdminReviewDetail from "./components/Adminreviewdetail";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -238,7 +237,7 @@ function ReviewRow({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) => 
   );
 }
 
-// ─── Mobile card ──────────────────────────────────────────────────────────────
+// ─── Mobile / tablet card ─────────────────────────────────────────────────────
 
 function ReviewCard({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) => void }) {
   return (
@@ -309,15 +308,9 @@ function SkeletonRows() {
   );
 }
 
-// ─── Review Panel (shell only — body delegated to AdminReviewDetail) ──────────
+// ─── Review Panel ─────────────────────────────────────────────────────────────
 
-function ReviewPanel({
-  reviewId,
-  onClose,
-}: {
-  reviewId: number | null;
-  onClose: () => void;
-}) {
+function ReviewPanel({ reviewId, onClose }: { reviewId: number | null; onClose: () => void }) {
   const open = !!reviewId;
 
   useEffect(() => {
@@ -355,7 +348,6 @@ function ReviewPanel({
       >
         {open && (
           <>
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
               <div>
                 <p className="text-[14px] font-semibold text-foreground leading-tight">
@@ -373,8 +365,6 @@ function ReviewPanel({
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
-
-            {/* Body — fully delegated to AdminReviewDetail */}
             <div className="flex-1 overflow-y-auto">
               <AdminReviewDetail reviewId={reviewId} onClose={onClose} />
             </div>
@@ -388,9 +378,9 @@ function ReviewPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function AdminReviews() {
-  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters]         = useState<FilterState>(INITIAL_FILTERS);
+  const [selectedId, setSelectedId]   = useState<number | null>(null);
+  const [filterOpen, setFilterOpen]   = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -401,11 +391,11 @@ function AdminReviews() {
 
   const { data, isLoading, isError } = useGetAdminReviews({
     status: filters.status !== "all" ? filters.status : undefined,
-    page: filters.page,
+    page:   filters.page,
   });
 
-  const reviews    = data?.data ?? [];
-  const total      = data?.total ?? 0;
+  const reviews    = data?.data     ?? [];
+  const total      = data?.total    ?? 0;
   const perPage    = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
@@ -447,21 +437,18 @@ function AdminReviews() {
     [filters],
   );
 
+  // Lock body scroll when filter sheet is open
   useEffect(() => {
     document.body.style.overflow = filterOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  const openPanel = useCallback((r: ApiReview) => {
-    setSelectedId(r.id);
-  }, []);
-
-  const closePanel = useCallback(() => {
-    setSelectedId(null);
-  }, []);
+  const openPanel  = useCallback((r: ApiReview) => setSelectedId(r.id), []);
+  const closePanel = useCallback(() => setSelectedId(null), []);
 
   const pendingCount = statusCounts["pending"] ?? 0;
 
+  // ── Sidebar content (shared: desktop sidebar + mobile/tablet bottom-sheet) ──
   const sidebarContent = (
     <>
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
@@ -505,24 +492,31 @@ function AdminReviews() {
         <PageHeader title="Reviews" subtitle="Moderate and manage patient reviews" />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
+          {/*
+           * Desktop sidebar — only at lg+ (1024px+).
+           * Tablets (md, 768–1023px) use the bottom-sheet instead.
+           */}
+          <aside className="hidden lg:flex lg:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile backdrop */}
+          {/*
+           * Filter backdrop — phone AND tablet (hidden at lg+).
+           */}
           <div
             onClick={() => setFilterOpen(false)}
             className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
+              "fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity duration-300",
               filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
           />
 
-          {/* Mobile bottom-sheet */}
+          {/*
+           * Bottom-sheet — phone AND tablet (hidden at lg+).
+           */}
           <div
             className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
+              "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
               "bg-card rounded-t-2xl border-t border-border",
               "max-h-[85dvh] flex flex-col overflow-hidden",
               "transition-transform duration-300 ease-out",
@@ -545,15 +539,20 @@ function AdminReviews() {
 
           {/* ── Main ── */}
           <main className="flex-1 overflow-y-auto">
-            {/* Stats */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard label="Total reviews" value={total}                           icon={MessageSquare} accent="primary" />
-              <StatCard label="Pending"        value={statusCounts["pending"]  ?? 0}   icon={Clock}         accent="warning" />
-              <StatCard label="Approved"       value={statusCounts["approved"] ?? 0}   icon={CheckCircle2}  accent="success" />
-              <StatCard label="Rejected"       value={statusCounts["rejected"] ?? 0}   icon={XCircle}       accent="warning" />
+
+            {/*
+             * Stat cards:
+             *   phone  → 2 columns
+             *   tablet (md+) → 4 columns
+             */}
+            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+              <StatCard label="Total reviews" value={total}                          icon={MessageSquare} accent="primary" />
+              <StatCard label="Pending"       value={statusCounts["pending"]  ?? 0}  icon={Clock}         accent="warning" />
+              <StatCard label="Approved"      value={statusCounts["approved"] ?? 0}  icon={CheckCircle2}  accent="success" />
+              <StatCard label="Rejected"      value={statusCounts["rejected"] ?? 0}  icon={XCircle}       accent="warning" />
             </div>
 
-            {/* Mobile search */}
+            {/* Phone-only search (below stat cards) */}
             <div className="sm:hidden px-3 pt-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -575,7 +574,7 @@ function AdminReviews() {
               </div>
             </div>
 
-            {/* Meta bar */}
+            {/* Sticky meta bar */}
             <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <p className="text-[11px] text-muted-foreground shrink-0">
@@ -597,8 +596,11 @@ function AdminReviews() {
                   )}
                 </p>
 
+                {/*
+                 * Pending badge — visible at md+ to avoid cramping phone meta bar.
+                 */}
                 {pendingCount > 0 && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                  <span className="hidden md:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     {pendingCount} pending
                   </span>
@@ -606,7 +608,11 @@ function AdminReviews() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Desktop search */}
+                {/*
+                 * Search input in meta bar — visible at sm+ (tablet + desktop).
+                 * Phone uses the dedicated block above instead.
+                 * Wider at md+ now that the sidebar isn't competing for space.
+                 */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
@@ -614,11 +620,11 @@ function AdminReviews() {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search patient, doctor…"
-                    className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
-                {/* Sort */}
+                {/* Sort select */}
                 <div className="relative">
                   <select
                     value={filters.sort}
@@ -632,11 +638,14 @@ function AdminReviews() {
                   <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
-                {/* Mobile filter button */}
+                {/*
+                 * Filter button — phone AND tablet (hidden at lg+ where
+                 * the sidebar takes over).
+                 */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
+                    "lg:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
                     hasActiveFilters
                       ? "bg-primary text-white border-primary"
                       : "border-border/60 text-muted-foreground bg-card",
@@ -674,8 +683,13 @@ function AdminReviews() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  {/*
+                   * Desktop table — only at lg+ (1024px+).
+                   * Tablets get the 2-column card grid below.
+                   * This table has 7 columns including a long Comment column,
+                   * so lg+ is the right threshold — it genuinely needs the space.
+                   */}
+                  <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                     <table className="w-full text-[11px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
@@ -696,8 +710,12 @@ function AdminReviews() {
                     </table>
                   </div>
 
-                  {/* Mobile cards */}
-                  <div className="md:hidden flex flex-col gap-2">
+                  {/*
+                   * Card layout — phone AND tablet (hidden at lg+).
+                   * Single column on phone, 2-column grid on tablet for
+                   * better use of the wider screen.
+                   */}
+                  <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     {isLoading
                       ? Array.from({ length: 4 }).map((_, i) => (
                           <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
