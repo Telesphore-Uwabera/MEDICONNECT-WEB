@@ -50,7 +50,7 @@ export function useGetSlots(doctorSlug: string, enabled = true) {
   return useQuery<SlotsResponse>({
     queryKey: ["doctor-slots", doctorSlug],
     queryFn: () =>
-      apiFetch<SlotsResponse>(`/patient/doctors/${doctorSlug}/slots`),
+      apiFetch<SlotsResponse>(`/public/doctors/${doctorSlug}/slots`),
     enabled: !!doctorSlug && enabled,
     staleTime: 60_000, // 1 min
   });
@@ -80,7 +80,7 @@ export function useGetSlotsByDate(
     queryKey: ["doctor-slots", doctorSlug, date],
     queryFn: () =>
       apiFetch<SlotsResponse>(
-        `/patient/doctors/${doctorSlug}/slots?date=${date}`,
+        `/public/doctors/${doctorSlug}/slots?date=${date}`,
       ),
     enabled: !!doctorSlug && !!date && enabled,
     staleTime: 30_000,
