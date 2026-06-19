@@ -148,12 +148,12 @@ function ManageInstantDoctors() {
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
+          {/* Desktop / tablet sidebar — narrower rail from md, full width from lg */}
+          <aside className="hidden md:flex md:flex-col w-44 lg:w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile filter sheet */}
+          {/* Mobile filter sheet (also used on tablet widths below md) */}
           <div onClick={() => setFilterOpen(false)}
             className={cn("fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
               filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")} />
@@ -168,9 +168,9 @@ function ManageInstantDoctors() {
             </div>
           </div>
 
-          <main className="flex-1 overflow-y-auto">
-            {/* Stats */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <main className="flex-1 overflow-y-auto min-w-0">
+            {/* Stats — 2 cols on phone, 4 cols from md (tablet) up */}
+            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatCard label="Total consultations" value={total}         icon={Stethoscope}  accent="primary" />
               <StatCard label="Active"              value={activeCount}   icon={CheckCircle2} accent="success" />
               <StatCard label="Inactive"            value={inactiveCount} icon={XCircle}      accent="warning" />
@@ -192,8 +192,8 @@ function ManageInstantDoctors() {
               </div>
             </div>
 
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+            {/* Meta bar — wraps cleanly instead of clipping on tablet widths */}
+            <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 min-w-0">
                 <p className="text-[11px] text-muted-foreground shrink-0">
                   {isLoading
@@ -216,17 +216,17 @@ function ManageInstantDoctors() {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search name, specialization…"
-                    className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
+                    className="w-32 md:w-40 lg:w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
                 </div>
                 <div className="relative">
                   <select value={filters.sort} onChange={(e) => set("sort", e.target.value as SortOption)}
-                    className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer max-w-[130px] sm:max-w-none">
+                    className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer max-w-[110px] md:max-w-[130px] lg:max-w-none">
                     {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                   <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
                 <button onClick={() => refetch()} disabled={isFetching}
-                  className="hidden sm:flex p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 transition-colors" title="Refresh">
+                  className="hidden md:flex p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 transition-colors" title="Refresh">
                   <RefreshCw className={cn("w-3.5 h-3.5", isFetching && "animate-spin")} />
                 </button>
                 {/* <Button size="sm" className="h-8 px-3 text-[11px] rounded-sm gap-1.5" onClick={() => setAssignOpen(true)}>
@@ -266,18 +266,18 @@ function ManageInstantDoctors() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
+                  {/* Desktop / tablet table — Specialization & In-Person Fee collapse below lg, table scrolls horizontally as a fallback rather than clipping */}
+                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-x-auto shadow-sm">
+                    <table className="w-full text-[11px] min-w-[640px] lg:min-w-0">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                          <th className="text-left px-4 py-3 font-semibold">Specialization</th>
-                          <th className="text-left px-4 py-3 font-semibold">Online Fee</th>
-                          <th className="text-left px-4 py-3 font-semibold">In-Person Fee</th>
-                          <th className="text-left px-4 py-3 font-semibold">Instant</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="px-4 py-3" />
+                          <th className="text-left px-3 lg:px-4 py-3 font-semibold">Doctor</th>
+                          <th className="hidden lg:table-cell text-left px-4 py-3 font-semibold">Specialization</th>
+                          <th className="text-left px-3 lg:px-4 py-3 font-semibold">Online Fee</th>
+                          <th className="hidden lg:table-cell text-left px-4 py-3 font-semibold">In-Person Fee</th>
+                          <th className="text-left px-3 lg:px-4 py-3 font-semibold">Instant</th>
+                          <th className="text-left px-3 lg:px-4 py-3 font-semibold">Status</th>
+                          <th className="px-3 lg:px-4 py-3" />
                         </tr>
                       </thead>
                       <tbody>

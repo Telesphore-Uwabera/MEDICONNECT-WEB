@@ -1,4 +1,3 @@
-// export default ManageDoctors;
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -54,11 +53,8 @@ const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 function ManageDoctors() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
-
-  console.log("spec",spec)
-
-  const [selected, setSelected] = useState<ApiDoctor | null>(null);
+  const [spec, setSpec]       = useState<SpecializationValue>(INITIAL_SPEC);
+  const [selected, setSelected]     = useState<ApiDoctor | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const { toast } = useToast();
 
@@ -75,22 +71,22 @@ function ManageDoctors() {
   }, [spec]);
 
   // ── API ──
-const { data, isLoading, isError } = useGetAdminDoctors({
-  status: filters.status !== "all" ? filters.status : undefined,
-  consultation_type: filters.consultation_type !== "all" ? filters.consultation_type : undefined,
-  specialization:        spec.specialization?.name        || undefined,
-  specialization_fee_id: spec.fee?.id                     || undefined,
-  search: filters.search || undefined,
-  page: filters.page,
-});
+  const { data, isLoading, isError } = useGetAdminDoctors({
+    status:                filters.status !== "all"             ? filters.status             : undefined,
+    consultation_type:     filters.consultation_type !== "all"  ? filters.consultation_type  : undefined,
+    specialization:        spec.specialization?.name            || undefined,
+    specialization_fee_id: spec.fee?.id                         || undefined,
+    search:                filters.search                       || undefined,
+    page:                  filters.page,
+  });
 
   const approveMutation = useApproveDoctor();
-  const rejectMutation = useRejectDoctor();
+  const rejectMutation  = useRejectDoctor();
   const suspendMutation = useSuspendDoctor();
 
-  const doctors = data?.data ?? [];
-  const total = data?.total ?? 0;
-  const perPage = data?.per_page ?? 20;
+  const doctors    = data?.data     ?? [];
+  const total      = data?.total    ?? 0;
+  const perPage    = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
   const statusCounts = useMemo(() => {
@@ -114,15 +110,11 @@ const { data, isLoading, isError } = useGetAdminDoctors({
     return [...doctors].sort((a, b) => {
       switch (filters.sort) {
         case "joined-asc":
-          return (
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          );
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         case "name":
           return a.user.name.localeCompare(b.user.name);
         default:
-          return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          );
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
     });
   }, [doctors, filters.sort]);
@@ -141,21 +133,20 @@ const { data, isLoading, isError } = useGetAdminDoctors({
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setSearchInput("");
-    setSpec(INITIAL_SPEC); // ← also reset spec
+    setSpec(INITIAL_SPEC);
   }, []);
 
   const hasActiveFilters = useMemo(
     () =>
       JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) ||
-      spec.specialization !== null, // ← include spec in active check
+      spec.specialization !== null,
     [filters, spec],
   );
 
+  // Lock body scroll when filter sheet is open
   useEffect(() => {
     document.body.style.overflow = filterOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
   // ── Actions ──
@@ -206,12 +197,12 @@ const { data, isLoading, isError } = useGetAdminDoctors({
 
   const isActing =
     approveMutation.isPending ||
-    rejectMutation.isPending ||
+    rejectMutation.isPending  ||
     suspendMutation.isPending;
 
   const pendingCount = statusCounts["pending"] ?? 0;
 
-  // ── Sidebar ──
+  // ── Sidebar content (shared: desktop sidebar + mobile/tablet bottom-sheet) ──
   const sidebarContent = (
     <>
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
@@ -219,9 +210,7 @@ const { data, isLoading, isError } = useGetAdminDoctors({
           <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
+          <span className="text-[11px] font-semibold text-foreground">Filters</span>
         </div>
         {hasActiveFilters && (
           <button
@@ -240,27 +229,11 @@ const { data, isLoading, isError } = useGetAdminDoctors({
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "all", label: "All" },
-              {
-                value: "active",
-                label: "Active",
-                count: statusCounts["active"] ?? 0,
-              },
-              {
-                value: "pending",
-                label: "Pending",
-                count: statusCounts["pending"] ?? 0,
-              },
-              {
-                value: "suspended",
-                label: "Suspended",
-                count: statusCounts["suspended"] ?? 0,
-              },
-              {
-                value: "rejected",
-                label: "Rejected",
-                count: statusCounts["rejected"] ?? 0,
-              },
+              { value: "all",       label: "All" },
+              { value: "active",    label: "Active",    count: statusCounts["active"]    ?? 0 },
+              { value: "pending",   label: "Pending",   count: statusCounts["pending"]   ?? 0 },
+              { value: "suspended", label: "Suspended", count: statusCounts["suspended"] ?? 0 },
+              { value: "rejected",  label: "Rejected",  count: statusCounts["rejected"]  ?? 0 },
             ]}
           />
         </FilterSection>
@@ -270,22 +243,9 @@ const { data, isLoading, isError } = useGetAdminDoctors({
             value={filters.consultation_type}
             onChange={(v) => set("consultation_type", v)}
             options={[
-              { value: "all", label: "All types" },
-              {
-                value: "instant",
-                label: "Instant",
-                count: consultationCounts["instant"] ?? 0,
-              },
-              {
-                value: "booking",
-                label: "Booking",
-                count: consultationCounts["booking"] ?? 0,
-              },
-              // {
-              //   value: "both",
-              //   label: "Both",
-              //   count: consultationCounts["both"] ?? 0,
-              // },
+              { value: "all",     label: "All types" },
+              { value: "instant", label: "Instant", count: consultationCounts["instant"] ?? 0 },
+              { value: "booking", label: "Booking", count: consultationCounts["booking"] ?? 0 },
             ]}
           />
         </FilterSection>
@@ -293,15 +253,12 @@ const { data, isLoading, isError } = useGetAdminDoctors({
         {/* Specialization — wired to spec state */}
         <FilterSection title="Specialization">
           <SpecializationSelect value={spec} onChange={setSpec} />
-          {/* Active badge with inline clear */}
           {spec.specialization && (
             <div className="mt-2 flex flex-wrap gap-1">
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
                 {spec.specialization.name}
                 {spec.fee && (
-                  <span className="text-primary/70">
-                    · {spec.fee.sub_specialization}
-                  </span>
+                  <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
                 )}
                 <button
                   onClick={() => setSpec(INITIAL_SPEC)}
@@ -326,26 +283,31 @@ const { data, isLoading, isError } = useGetAdminDoctors({
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
+          {/*
+           * Desktop sidebar — only at lg+ (1024px+).
+           * Tablets (md, 768–1023px) use the bottom-sheet instead.
+           */}
+          <aside className="hidden lg:flex lg:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile backdrop */}
+          {/*
+           * Filter backdrop — phone AND tablet (hidden at lg+).
+           */}
           <div
             onClick={() => setFilterOpen(false)}
             className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
+              "fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity duration-300",
+              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
           />
 
-          {/* Mobile bottom-sheet */}
+          {/*
+           * Bottom-sheet — phone AND tablet (hidden at lg+).
+           */}
           <div
             className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
+              "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
               "bg-card rounded-t-2xl border-t border-border",
               "max-h-[85dvh] flex flex-col overflow-hidden",
               "transition-transform duration-300 ease-out",
@@ -367,36 +329,21 @@ const { data, isLoading, isError } = useGetAdminDoctors({
           </div>
 
           {/* ── Main ── */}
-          <main className="flex-1 overflow-y-auto">
-            {/* Stats */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label="Total doctors"
-                value={total}
-                icon={Stethoscope}
-                accent="primary"
-              />
-              <StatCard
-                label="Active"
-                value={statusCounts["active"] ?? 0}
-                icon={CheckCircle2}
-                accent="success"
-              />
-              <StatCard
-                label="Pending review"
-                value={statusCounts["pending"] ?? 0}
-                icon={Clock}
-                accent="warning"
-              />
-              <StatCard
-                label="Suspended"
-                value={statusCounts["suspended"] ?? 0}
-                icon={XCircle}
-                accent="warning"
-              />
+          <main className="flex-1 overflow-y-auto min-w-0">
+
+            {/*
+             * Stat cards:
+             *   phone  → 2 columns
+             *   tablet (md+) → 4 columns
+             */}
+            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+              <StatCard label="Total doctors"   value={total}                          icon={Stethoscope}  accent="primary" />
+              <StatCard label="Active"          value={statusCounts["active"]    ?? 0} icon={CheckCircle2} accent="success" />
+              <StatCard label="Pending review"  value={statusCounts["pending"]   ?? 0} icon={Clock}        accent="warning" />
+              <StatCard label="Suspended"       value={statusCounts["suspended"] ?? 0} icon={XCircle}      accent="warning" />
             </div>
 
-            {/* Mobile search */}
+            {/* Phone-only search (below stat cards) */}
             <div className="sm:hidden px-3 pt-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -418,7 +365,7 @@ const { data, isLoading, isError } = useGetAdminDoctors({
               </div>
             </div>
 
-            {/* Meta bar */}
+            {/* Sticky meta bar */}
             <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <p className="text-[11px] text-muted-foreground shrink-0">
@@ -440,8 +387,11 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                   )}
                 </p>
 
+                {/*
+                 * Pending badge — visible at md+ to avoid cramping phone meta bar.
+                 */}
                 {pendingCount > 0 && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                  <span className="hidden md:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     {pendingCount} pending
                   </span>
@@ -449,7 +399,11 @@ const { data, isLoading, isError } = useGetAdminDoctors({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Desktop search */}
+                {/*
+                 * Search input in meta bar — visible at sm+ (tablet + desktop).
+                 * Phone uses the dedicated search block above instead.
+                 * Grows at md and lg to fill available space comfortably.
+                 */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
@@ -457,11 +411,11 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search name, phone, email…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-36 md:w-48 lg:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
-                {/* Sort */}
+                {/* Sort select */}
                 <div className="relative">
                   <select
                     value={filters.sort}
@@ -477,11 +431,14 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                   <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
-                {/* Mobile filter button */}
+                {/*
+                 * Filter button — phone AND tablet (hidden at lg+ where
+                 * the sidebar takes over).
+                 */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
+                    "lg:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
                     hasActiveFilters
                       ? "bg-primary text-white border-primary"
                       : "border-border/60 text-muted-foreground bg-card",
@@ -529,26 +486,20 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                 </div>
               ) : (
                 <>
-                  {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  {/*
+                   * Desktop table — only at lg+ (1024px+).
+                   * Tablets get the 2-column card grid below instead of a
+                   * horizontally-scrolling cramped table.
+                   */}
+                  <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                     <table className="w-full text-[11px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            Doctor
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            Specialization
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            Consultation
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            Status
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            Joined
-                          </th>
+                          <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                          <th className="text-left px-4 py-3 font-semibold">Specialization</th>
+                          <th className="text-left px-4 py-3 font-semibold">Consultation</th>
+                          <th className="text-left px-4 py-3 font-semibold">Status</th>
+                          <th className="text-left px-4 py-3 font-semibold">Joined</th>
                           <th className="px-4 py-3" />
                         </tr>
                       </thead>
@@ -557,19 +508,19 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                           <SkeletonRows />
                         ) : (
                           sorted.map((d) => (
-                            <DoctorRow
-                              key={d.id}
-                              d={d}
-                              onManage={setSelected}
-                            />
+                            <DoctorRow key={d.id} d={d} onManage={setSelected} />
                           ))
                         )}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Mobile cards */}
-                  <div className="md:hidden flex flex-col gap-2">
+                  {/*
+                   * Card layout — phone AND tablet (hidden at lg+).
+                   * Single column on phone, 2-column grid on tablet (sm:grid-cols-2)
+                   * for better use of wider screens.
+                   */}
+                  <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     {isLoading
                       ? Array.from({ length: 4 }).map((_, i) => (
                           <div
@@ -587,13 +538,9 @@ const { data, isLoading, isError } = useGetAdminDoctors({
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
                       <p className="text-[11px] text-muted-foreground">
                         Page{" "}
-                        <span className="font-semibold text-foreground">
-                          {filters.page}
-                        </span>{" "}
-                        of{" "}
-                        <span className="font-semibold text-foreground">
-                          {totalPages}
-                        </span>
+                        <span className="font-semibold text-foreground">{filters.page}</span>
+                        {" "}of{" "}
+                        <span className="font-semibold text-foreground">{totalPages}</span>
                       </p>
                       <div className="flex items-center gap-1.5">
                         <button
@@ -633,4 +580,3 @@ const { data, isLoading, isError } = useGetAdminDoctors({
 }
 
 export default ManageDoctors;
-
