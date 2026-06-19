@@ -12,6 +12,7 @@ export type CertStatus =
   | "pending"
   | "in_review"
   | "issued"
+  | "approved"
   | "rejected"
   | "revoked";
 

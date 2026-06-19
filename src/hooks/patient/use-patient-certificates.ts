@@ -411,6 +411,34 @@ export function useDownloadCertificate() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Join the doctor-initiated video identity-verification session.
+//
+// The doctor starts it via POST /doctor/certificates/{id}/confirmation-session.
+// The patient then joins the SAME room. The exact patient endpoint/method isn't
+// confirmed yet — adjust the URL/method below once the backend is known. We read
+// the token defensively (patient_token | token | doctor_token) so it works with
+// whatever shape the backend returns.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ConfirmationSessionJoin {
+  message?: string;
+  room_url?: string;
+  room_name?: string;
+  join_url?: string;
+  token?: string;
+  patient_token?: string;
+  doctor_token?: string;
+  ice_servers?: unknown[];
+}
+
+export function useJoinConfirmationSession(id: number) {
+  return useMutation<ConfirmationSessionJoin, ApiError, void>({
+    // ⚠️ Best-guess endpoint — confirm with the backend.
+    mutationFn: () => apiFetch(`${BASE}/${id}/confirmation-session`),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /patient/certificates/withdraw
 // ─────────────────────────────────────────────────────────────────────────────
 

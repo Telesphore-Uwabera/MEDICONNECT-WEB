@@ -48,9 +48,9 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 
   return (
     <>
-      <div className="flex items-center justify-between p-2.5 rounded-sm bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden">
+      <div className="flex items-center justify-between p-3 rounded-md bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
             {(d.image ?? d.user?.avatar) ? (
               <img
                 src={(d.image ?? d.user.avatar)!}
@@ -62,10 +62,10 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
             )}
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-foreground truncate">
+            <div className="text-sm font-semibold text-foreground truncate">
               {d.designations ?? d.user?.name}
             </div>
-            <div className="text-[10px] text-muted-foreground/70 truncate">
+            <div className="text-xs text-muted-foreground/70 truncate">
               {d.specialization ?? "—"}
             </div>
           </div>
@@ -74,7 +74,7 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
           size="sm"
           onClick={a.openConnect}
           disabled={!a.canConnect}
-          className="h-6 px-2.5 text-[10px] rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+          className="h-8 px-3 text-xs rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
         >
           {a.isConnected || a.isCallInProgress ? "Open" : t("pages.patient.go")}
         </Button>
@@ -132,13 +132,13 @@ const PatientOverview = () => {
             {/* Main content grid — 50/50 split */}
             <section className="grid grid-cols-2 gap-4">
               {/* ── Upcoming appointments ─────────────────────────────── */}
-              <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+              <div className="rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
                   <div>
-                    <h2 className="text-[12px] font-semibold text-foreground">
+                    <h2 className="text-sm font-semibold text-foreground">
                       {t("pages.patient.upcoming_appointments")}
                     </h2>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {upcomingAppointments.length} scheduled
                     </p>
                   </div>
@@ -146,38 +146,38 @@ const PatientOverview = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-[11px] text-primary hover:text-primary/80"
+                      className="h-8 px-3 text-xs text-primary hover:text-primary/80"
                     >
                       {t("pages.patient.view_all")}
-                      <ChevronRight className="h-3 w-3 ml-0.5" />
+                      <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>
                 </div>
 
-                <div className="p-3 space-y-2">
+                <div className="p-4 space-y-3">
                   {appointmentsLoading ? (
                     // Skeleton
                     Array.from({ length: 3 }).map((_, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-3 rounded-sm bg-secondary/20 border border-border/30 animate-pulse"
+                        className="flex items-center justify-between p-4 rounded-md bg-secondary/20 border border-border/30 animate-pulse"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-sm bg-muted shrink-0" />
-                          <div className="space-y-1.5">
-                            <div className="h-2.5 w-28 rounded bg-muted" />
-                            <div className="h-2 w-20 rounded bg-muted" />
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-md bg-muted shrink-0" />
+                          <div className="space-y-2">
+                            <div className="h-3 w-32 rounded bg-muted" />
+                            <div className="h-2 w-24 rounded bg-muted" />
                           </div>
                         </div>
-                        <div className="h-7 w-16 rounded-sm bg-muted" />
+                        <div className="h-8 w-20 rounded-md bg-muted" />
                       </div>
                     ))
                   ) : upcomingAppointments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-                      <div className="w-10 h-10 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                        <Calendar className="w-4 h-4 text-muted-foreground/50" />
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                      <div className="w-12 h-12 rounded-md bg-muted/60 flex items-center justify-center border border-border/40">
+                        <Calendar className="w-5 h-5 text-muted-foreground/50" />
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         No upcoming appointments
                       </p>
                     </div>
@@ -196,37 +196,37 @@ const PatientOverview = () => {
                       return (
                         <div
                           key={a.id}
-                          className="flex items-center justify-between p-3 rounded-sm bg-secondary/30 border border-border/40 hover:bg-secondary/50 transition-colors duration-150"
+                          className="flex items-center justify-between p-4 rounded-md bg-secondary/30 border border-border/40 hover:bg-secondary/50 transition-colors duration-150"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-4">
                             {/* Date badge */}
-                            <div className="h-10 w-10 rounded-sm bg-primary/10 text-primary flex flex-col items-center justify-center font-bold shrink-0">
-                              <span className="text-[9px] font-medium uppercase leading-none">
+                            <div className="h-12 w-12 rounded-md bg-primary/10 text-primary flex flex-col items-center justify-center font-bold shrink-0">
+                              <span className="text-[10px] font-medium uppercase leading-none mb-1">
                                 {month}
                               </span>
-                              <span className="text-sm leading-none mt-0.5">
+                              <span className="text-lg leading-none">
                                 {day}
                               </span>
                             </div>
 
                             <div className="min-w-0">
-                              <div className="text-[11px] font-semibold text-foreground truncate">
+                              <div className="text-sm font-semibold text-foreground truncate">
                                 {doctorName}
                               </div>
-                              <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5">
-                                <Stethoscope className="h-2.5 w-2.5" />
+                              <span className="text-xs text-muted-foreground/70 flex items-center gap-1.5 mt-0.5">
+                                <Stethoscope className="h-3.5 w-3.5" />
                                 {specialty}
                                 <span className="text-border">·</span>
                                 {time}
                                 <Badge
                                   variant="outline"
-                                  className="text-[9px] px-1 py-0 border-primary/20 bg-primary/5 text-primary capitalize"
+                                  className="text-[10px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary capitalize"
                                 >
                                   {a.type}
                                 </Badge>
                                 {/* Status badge — highlight in_progress */}
                                 {a.status === "in_progress" && (
-                                  <Badge className="text-[9px] px-1 py-0 bg-green-500/10 text-green-600 border border-green-500/20">
+                                  <Badge className="text-[10px] px-1.5 py-0 bg-green-500/10 text-green-600 border border-green-500/20">
                                     Live
                                   </Badge>
                                 )}
@@ -242,9 +242,9 @@ const PatientOverview = () => {
                             >
                               <Button
                                 size="sm"
-                                className="h-7 px-2.5 text-[10px] rounded-sm bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
+                                className="h-8 px-3 text-xs rounded-md bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
                               >
-                                <Video className="h-3 w-3 mr-1" />
+                                <Video className="h-4 w-4 mr-1.5" />
                                 {t("pages.patient.join")}
                               </Button>
                             </a>
@@ -253,10 +253,10 @@ const PatientOverview = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+                                className="h-8 px-3 text-xs rounded-md border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
                                 disabled
                               >
-                                <Video className="h-3 w-3 mr-1" />
+                                <Video className="h-4 w-4 mr-1.5" />
                                 {t("pages.patient.join")}
                               </Button>
                             </Link>
@@ -269,39 +269,39 @@ const PatientOverview = () => {
               </div>
 
               {/* ── Available now ─────────────────────────────────────── */}
-              <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                <div className="px-4 py-3 border-b border-border/60">
-                  <h2 className="text-[12px] font-semibold text-foreground">
+              <div className="rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-border/60">
+                  <h2 className="text-sm font-semibold text-foreground">
                     {t("pages.patient.available_now_title")}
                   </h2>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
                     {t("pages.patient.available_now_sub")}
                   </p>
                 </div>
 
-                <div className="p-3 space-y-2">
+                <div className="p-4 space-y-3">
                   {availableLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-2.5 rounded-sm bg-secondary/20 border border-border/30 animate-pulse"
+                        className="flex items-center justify-between p-3 rounded-md bg-secondary/20 border border-border/30 animate-pulse"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-muted shrink-0" />
-                          <div className="space-y-1.5">
-                            <div className="h-2.5 w-24 rounded bg-muted" />
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-muted shrink-0" />
+                          <div className="space-y-2">
+                            <div className="h-3 w-24 rounded bg-muted" />
                             <div className="h-2 w-16 rounded bg-muted" />
                           </div>
                         </div>
-                        <div className="h-6 w-10 rounded-sm bg-muted" />
+                        <div className="h-8 w-12 rounded-md bg-muted" />
                       </div>
                     ))
                   ) : availableNow.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-                      <div className="w-10 h-10 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                        <Activity className="w-4 h-4 text-muted-foreground/50" />
+                    <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                      <div className="w-12 h-12 rounded-md bg-muted/60 flex items-center justify-center border border-border/40">
+                        <Activity className="w-5 h-5 text-muted-foreground/50" />
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         No doctors available now
                       </p>
                     </div>
@@ -316,12 +316,12 @@ const PatientOverview = () => {
 
             {/* ── Recommended doctors ───────────────────────────────────── */}
             <section>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-[12px] font-semibold text-foreground">
+                  <h2 className="text-sm font-semibold text-foreground">
                     {t("pages.patient.recommended")}
                   </h2>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                  <p className="text-xs text-muted-foreground/70 mt-0.5">
                     Top rated specialists for you
                   </p>
                 </div>
@@ -329,10 +329,10 @@ const PatientOverview = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-[11px] text-primary hover:text-primary/80"
+                    className="h-8 px-3 text-xs text-primary hover:text-primary/80"
                   >
                     View all
-                    <ChevronRight className="h-3 w-3 ml-0.5" />
+                    <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </Link>
               </div>

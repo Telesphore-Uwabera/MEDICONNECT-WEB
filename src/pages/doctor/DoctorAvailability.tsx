@@ -127,17 +127,17 @@ function StatusMenuItem({
     <button
       onClick={onSelect}
       className={cn(
-        "w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-left transition-colors",
+        "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-left transition-colors",
         current
           ? "bg-accent text-accent-foreground"
           : "text-foreground hover:bg-accent/50 hover:text-accent-foreground",
       )}
     >
-      <span className={cn("h-2 w-2 rounded-full flex-shrink-0", cfg.dot)} />
+      <span className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0", cfg.dot)} />
       {cfg.label}
       {current && (
         <span className="ml-auto text-primary">
-          <CheckCircle2 size={11} />
+          <CheckCircle2 size={14} />
         </span>
       )}
     </button>
@@ -184,13 +184,13 @@ function SlotChip({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "w-full rounded-sm border px-2 py-2 text-[11px] font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
+          "w-full rounded-md border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
           cfg.card,
           isPending && "opacity-50 cursor-wait",
         )}
       >
         {isPending ? (
-          <Loader2 size={11} className="mx-auto animate-spin" />
+          <Loader2 size={14} className="mx-auto animate-spin" />
         ) : (
           displayTime
         )}
@@ -200,9 +200,9 @@ function SlotChip({
         <div
           role="listbox"
           aria-label="Set slot status"
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-32 rounded-sm border border-border bg-popover  overflow-hidden py-1"
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-md border border-border bg-popover overflow-hidden py-1"
         >
-          <p className="px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
+          <p className="px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
             Set status
           </p>
           {ALL_STATUSES.filter((s) => s !== "booked").map((s) => (
@@ -255,17 +255,17 @@ function DayCard({
     <button
       onClick={() => onSelect(index)}
       className={cn(
-        "shrink-0 w-[68px] flex flex-col items-center rounded-xl border p-2 transition-all duration-200 relative",
+        "shrink-0 w-20 flex flex-col items-center rounded-xl border p-3 transition-all duration-200 relative",
         isSelected
-          ? "bg-primary border-primary  scale-[1.03] z-10"
-          : "bg-card border-border/70 hover:border-primary/30  hover:scale-[1.02]",
+          ? "bg-primary border-primary scale-[1.03] z-10"
+          : "bg-card border-border/70 hover:border-primary/30 hover:scale-[1.02]",
         isToday && !isSelected && "ring-1 ring-primary/30",
       )}
     >
       {isToday && (
         <span
           className={cn(
-            "absolute -top-1 left-1/2 -translate-x-1/2 text-[7px] font-bold px-1 py-0.5 rounded-full leading-none whitespace-nowrap",
+            "absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none whitespace-nowrap",
             isSelected
               ? "bg-primary-foreground text-primary"
               : "bg-primary text-primary-foreground",
@@ -278,7 +278,7 @@ function DayCard({
       <div className="flex flex-row justify-around items-center w-full">
         <span
           className={cn(
-            "text-[9px] font-semibold uppercase tracking-wider ",
+            "text-xs font-semibold uppercase tracking-wider",
             isSelected
               ? "text-primary-foreground/60"
               : "text-muted-foreground/50",
@@ -289,7 +289,7 @@ function DayCard({
 
         <span
           className={cn(
-            "text-[10px] font-bold leading-tight ",
+            "text-sm font-bold leading-tight",
             isSelected ? "text-primary-foreground" : "text-foreground",
           )}
         >
@@ -324,11 +324,11 @@ function DayCard({
         )}
       </div>
 
-      <div className="flex gap-0.5 mt-1.5 justify-center">
+      <div className="flex gap-1 mt-2 justify-center">
         {dayBooked > 0 && (
           <span
             className={cn(
-              "text-[8px] font-bold px-1 py-0.5 rounded leading-none",
+              "text-xs font-bold px-1.5 py-0.5 rounded leading-none",
               isSelected
                 ? "bg-primary-foreground/20 text-primary-foreground"
                 : "bg-primary/10 text-primary",
@@ -340,7 +340,7 @@ function DayCard({
         {dayAvail > 0 && (
           <span
             className={cn(
-              "text-[8px] font-bold px-1 py-0.5 rounded leading-none",
+              "text-xs font-bold px-1.5 py-0.5 rounded leading-none",
               isSelected
                 ? "bg-primary-foreground/10 text-primary-foreground/80"
                 : "bg-muted text-muted-foreground",
@@ -400,15 +400,15 @@ function MonthSection({
   return (
     <div className="space-y-1.5">
       {/* Month header */}
-      <div className="flex items-center gap-2 px-1">
-        <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+      <div className="flex items-center gap-2.5 px-1">
+        <div className="w-2 h-2 rounded-full bg-primary/60" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {monthLabel}
         </span>
-        <span className="text-[10px] text-muted-foreground/50">
+        <span className="text-xs text-muted-foreground/50">
           ({days.length} days)
         </span>
-        <div className="flex-1 h-px bg-border/40 ml-1" />
+        <div className="flex-1 h-px bg-border/40 ml-2" />
       </div>
 
       {/* Days row */}
@@ -476,18 +476,18 @@ function DayPickerByMonth({
 
   if (slotsLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Array.from({ length: 2 }).map((_, gi) => (
-          <div key={gi} className="space-y-1.5">
-            <div className="flex items-center gap-2 px-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary/30 animate-pulse" />
-              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+          <div key={gi} className="space-y-2">
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-2 h-2 rounded-full bg-primary/30 animate-pulse" />
+              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
             </div>
             <div className="flex gap-2 overflow-hidden">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className="shrink-0 w-[68px] h-[88px] rounded-xl bg-muted animate-pulse"
+                  className="shrink-0 w-20 h-28 rounded-xl bg-muted animate-pulse"
                 />
               ))}
             </div>
@@ -837,9 +837,9 @@ const DoctorAvailability = () => {
           <div className="p-4 space-y-4">
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
-              <div className="flex items-center gap-3 rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
+              <div className="flex items-center gap-3 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
                 <AlertTriangle
-                  size={14}
+                  size={16}
                   className="flex-shrink-0 text-red-500"
                 />
                 <span className="font-medium">
@@ -852,22 +852,22 @@ const DoctorAvailability = () => {
             <div className="rounded-sm bg-card border border-border/70 p-4">
               <div className="flex flex-wrap justify-between items-center gap-4">
                 {/* Instant consultation */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
                       instant
                         ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
-                    {instant ? <Zap size={13} /> : <ZapOff size={13} />}
+                    {instant ? <Zap size={16} /> : <ZapOff size={16} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground leading-tight">
+                    <p className="text-sm font-semibold text-foreground leading-tight">
                       Instant Consultation
                     </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {instant ? "Visible to patients" : "Hidden"}
                     </p>
                   </div>
@@ -882,22 +882,22 @@ const DoctorAvailability = () => {
                 <div className="hidden sm:block h-6 w-px bg-border/60" />
 
                 {/* Disable schedule */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
                       scheduleDisabled
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
-                    <PowerOff size={13} />
+                    <PowerOff size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground leading-tight">
+                    <p className="text-sm font-semibold text-foreground leading-tight">
                       Disable Schedule
                     </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {scheduleDisabled ? "Paused" : "Active"}
                     </p>
                   </div>
@@ -912,22 +912,22 @@ const DoctorAvailability = () => {
                 <div className="hidden sm:block h-6 w-px bg-border/60" />
 
                 {/* ── Reset Schedule ── */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
                       resetConfirming
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-foreground leading-tight">
+                    <p className="text-sm font-semibold text-foreground leading-tight">
                       Reset Schedule
                     </p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
                       Remove all slots &amp; periods
                     </p>
                   </div>
@@ -935,16 +935,16 @@ const DoctorAvailability = () => {
                     onClick={handleResetSchedule}
                     disabled={isResetting}
                     className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+                      "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
                       resetConfirming
                         ? "border-red-500 bg-red-500 text-white hover:bg-red-600 animate-pulse"
                         : "border-border/60 bg-muted text-muted-foreground hover:border-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30",
                     )}
                   >
                     {isResetting ? (
-                      <Loader2 size={11} className="animate-spin" />
+                      <Loader2 size={14} className="animate-spin" />
                     ) : (
-                      <Trash2 size={11} />
+                      <Trash2 size={14} />
                     )}
                     {isResetting
                       ? "Resetting…"
@@ -993,24 +993,24 @@ const DoctorAvailability = () => {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="rounded-sm bg-card border border-border/70 p-3"
+                    className="rounded-sm bg-card border border-border/70 p-4"
                   >
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground/80 font-medium">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground/80 font-medium">
                       {s.label}
                     </p>
                     {slotsLoading ? (
-                      <div className="h-6 w-10 bg-muted animate-pulse rounded mt-0.5" />
+                      <div className="h-8 w-12 bg-muted animate-pulse rounded mt-1" />
                     ) : (
                       <p
                         className={cn(
-                          "text-lg font-semibold mt-0.5",
+                          "text-xl font-semibold mt-1",
                           s.valueClass,
                         )}
                       >
                         {s.value}
                       </p>
                     )}
-                    <p className="text-[10px] text-muted-foreground/60">
+                    <p className="text-sm text-muted-foreground/60 mt-1">
                       {s.sub}
                     </p>
                   </div>
@@ -1022,24 +1022,24 @@ const DoctorAvailability = () => {
               {/* ── Left column ── */}
               <div className="lg:col-span-4 space-y-3">
                 {/* Schedule config card */}
-                <div className="rounded-sm border border-border/70 bg-card p-4 space-y-3">
-                  <h3 className="text-[12px] font-semibold text-foreground flex items-center gap-1.5">
-                    <LayoutGrid size={13} className="text-primary" />
+                <div className="rounded-sm border border-border/70 bg-card p-5 space-y-4">
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <LayoutGrid size={16} className="text-primary" />
                     Custom date range
                   </h3>
 
                   {/* Date range */}
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                       {t("pages.doctor.pick_range")}
                     </Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full h-9 justify-start gap-2 font-normal border-border/60 hover:border-primary/40 hover:bg-primary/5 px-2.5 text-[11px]"
+                          className="w-full h-10 justify-start gap-2.5 font-normal border-border/60 hover:border-primary/40 hover:bg-primary/5 px-3 text-sm"
                         >
-                          <CalendarIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <CalendarIcon className="h-4 w-4 text-primary shrink-0" />
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             {range?.from && range?.to ? (
                               <span className="font-medium text-foreground">
@@ -1053,11 +1053,11 @@ const DoctorAvailability = () => {
                             )}
                           </div>
                           {dayCount !== null && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary shrink-0">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-sm bg-primary/10 text-primary shrink-0">
                               {dayCount}d
                             </span>
                           )}
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                          <ChevronDown className="h-4 w-4 text-muted-foreground/50 shrink-0" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -1082,55 +1082,55 @@ const DoctorAvailability = () => {
                   </div>
 
                   {/* Time inputs */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                         {t("pages.doctor.start_time")}
                       </Label>
                       <div className="relative">
                         <Clock
-                          size={12}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
+                          size={14}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
                         />
                         <Input
                           type="time"
                           value={startTime}
                           onChange={(e) => setStartTime(e.target.value)}
-                          className="pl-6 h-8 text-[11px] border-border/60"
+                          className="pl-8 h-10 text-sm border-border/60"
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                         {t("pages.doctor.end_time")}
                       </Label>
                       <div className="relative">
                         <Clock
-                          size={12}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
+                          size={14}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none"
                         />
                         <Input
                           type="time"
                           value={endTime}
                           onChange={(e) => setEndTime(e.target.value)}
-                          className="pl-6 h-8 text-[11px] border-border/60"
+                          className="pl-8 h-10 text-sm border-border/60"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Interval */}
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                       {t("pages.doctor.interval")}
                     </Label>
-                    <div className="grid grid-cols-5 gap-1">
+                    <div className="grid grid-cols-5 gap-1.5">
                       {intervalOptions.map((m) => (
                         <button
                           key={m}
                           onClick={() => setInterval(m)}
                           className={cn(
-                            "py-1.5 rounded-sm text-[11px] font-semibold border transition-all duration-150",
+                            "py-2 rounded-md text-sm font-semibold border transition-all duration-150",
                             interval === m
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-muted/50 border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5",
@@ -1145,12 +1145,12 @@ const DoctorAvailability = () => {
                   <Button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="w-full h-8 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-[11px] gap-1.5"
+                    className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm gap-2"
                   >
                     {isGenerating ? (
-                      <Loader2 size={12} className="animate-spin" />
+                      <Loader2 size={16} className="animate-spin" />
                     ) : (
-                      <RefreshCw size={12} />
+                      <RefreshCw size={16} />
                     )}
                     {isGenerating
                       ? "Generating..."
@@ -1159,28 +1159,28 @@ const DoctorAvailability = () => {
                 </div>
 
                 {/* Legend */}
-                <div className="rounded-sm border border-border/70 bg-card p-3">
-                  <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
+                <div className="rounded-sm border border-border/70 bg-card p-4">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
                     {t("pages.doctor.legend")}
                   </h4>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {(
                       Object.entries(slotConfig) as [
                         SlotStatus,
                         (typeof slotConfig)[SlotStatus],
                       ][]
                     ).map(([key, cfg]) => (
-                      <div key={key} className="flex items-center gap-2">
+                      <div key={key} className="flex items-center gap-2.5">
                         <span
                           className={cn(
-                            "h-2.5 w-2.5 rounded-full flex-shrink-0",
+                            "h-3 w-3 rounded-full flex-shrink-0",
                             cfg.dot,
                           )}
                         />
-                        <span className="text-[11px] text-foreground capitalize">
+                        <span className="text-sm text-foreground capitalize">
                           {cfg.label}
                         </span>
-                        <span className="ml-auto text-[10px] text-muted-foreground/60">
+                        <span className="ml-auto text-xs text-muted-foreground/60">
                           {cfg.canChange ? "click to change" : "locked"}
                         </span>
                       </div>
@@ -1192,18 +1192,18 @@ const DoctorAvailability = () => {
               {/* ── Right column ── */}
               <div className="lg:col-span-8 space-y-3">
                 {/* Day Picker — grouped by month */}
-                <div className="rounded-sm border border-border/70 bg-card p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center">
-                        <CalendarDays size={14} className="text-primary" />
+                <div className="rounded-sm border border-border/70 bg-card p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                        <CalendarDays size={16} className="text-primary" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-foreground leading-tight">
+                        <h3 className="text-base font-semibold text-foreground leading-tight">
                           {t("pages.doctor.day_picker")}
                         </h3>
                         {days.length > 0 && (
-                          <p className="text-[10px] text-muted-foreground/60">
+                          <p className="text-sm text-muted-foreground/60">
                             {days.length} days · {interval}-min intervals
                           </p>
                         )}
@@ -1211,15 +1211,15 @@ const DoctorAvailability = () => {
                     </div>
 
                     {days.length > 0 && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() =>
                             setSelectedDay(Math.max(0, selectedDay - 1))
                           }
                           disabled={selectedDay === 0}
-                          className="w-7 h-7 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
-                          <ChevronLeft size={14} />
+                          <ChevronLeft size={16} />
                         </button>
                         <button
                           onClick={() =>
@@ -1228,9 +1228,9 @@ const DoctorAvailability = () => {
                             )
                           }
                           disabled={selectedDay >= days.length - 1}
-                          className="w-7 h-7 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
-                          <ChevronRight size={14} />
+                          <ChevronRight size={16} />
                         </button>
                       </div>
                     )}
@@ -1246,38 +1246,38 @@ const DoctorAvailability = () => {
 
                 {/* Slots panel */}
                 {currentDay && dayStats && (
-                  <div className="rounded-sm border border-border/70 bg-card p-4">
+                  <div className="rounded-sm border border-border/70 bg-card p-5">
                     {/* Header */}
-                    <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                    <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                       <div>
-                        <h3 className="text-[12px] font-semibold text-foreground flex items-center gap-1.5">
+                        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                           {moment(currentDay.date).format("dddd, MMMM D")}
                           {slotsFetching && (
                             <Loader2
-                              size={11}
+                              size={14}
                               className="animate-spin text-muted-foreground"
                             />
                           )}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                        <p className="text-sm text-muted-foreground/70 mt-1">
                           {currentDay.slots.length} slots · {interval} min each
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
                         {dayStats.available > 0 && (
                           <Badge
                             variant="outline"
-                            className="text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary gap-1"
+                            className="text-xs px-2 py-0.5 border-primary/20 bg-primary/5 text-primary gap-1.5"
                           >
-                            <span className="h-1 w-1 rounded-full bg-primary" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                             {dayStats.available} avail
                           </Badge>
                         )}
                         {dayStats.booked > 0 && (
                           <Badge
                             variant="outline"
-                            className="text-[9px] px-1.5 py-0 border-foreground/20 bg-foreground text-background gap-1"
+                            className="text-xs px-2 py-0.5 border-foreground/20 bg-foreground text-background gap-1.5"
                           >
                             {dayStats.booked} booked
                           </Badge>
@@ -1285,7 +1285,7 @@ const DoctorAvailability = () => {
                         {dayStats.blocked > 0 && (
                           <Badge
                             variant="outline"
-                            className="text-[9px] px-1.5 py-0 border-muted bg-muted text-muted-foreground gap-1"
+                            className="text-xs px-2 py-0.5 border-muted bg-muted text-muted-foreground gap-1.5"
                           >
                             {dayStats.blocked} blocked
                           </Badge>
@@ -1293,7 +1293,7 @@ const DoctorAvailability = () => {
                         {dayStats.reserved > 0 && (
                           <Badge
                             variant="outline"
-                            className="text-[9px] px-1.5 py-0 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1"
+                            className="text-xs px-2 py-0.5 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1.5"
                           >
                             {dayStats.reserved} reserved
                           </Badge>
@@ -1302,38 +1302,38 @@ const DoctorAvailability = () => {
                     </div>
 
                     {/* Bulk actions */}
-                    <div className="flex flex-wrap items-center gap-1.5 mb-3 pb-3 border-b border-border/60">
-                      <span className="text-[10px] text-muted-foreground/70 uppercase tracking-wide font-medium mr-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border/60">
+                      <span className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium mr-2">
                         Bulk:
                       </span>
                       <button
                         onClick={() => handleBulkSetDay("available")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1 text-[10px] text-primary font-medium px-2 py-1 rounded-sm border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-md border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
-                        <CheckCircle2 size={11} />
+                        <CheckCircle2 size={14} />
                         Open
                       </button>
                       <button
                         onClick={() => handleBulkSetDay("blocked")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium px-2 py-1 rounded-sm border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-md border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
-                        <Ban size={11} />
+                        <Ban size={14} />
                         Block
                       </button>
                       <button
                         onClick={() => handleBulkSetDay("reserved")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 font-medium px-2 py-1 rounded-sm border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
-                        <BookMarked size={11} />
+                        <BookMarked size={14} />
                         Reserve
                       </button>
                       {isBulkUpdating && (
                         <Loader2
-                          size={12}
-                          className="animate-spin text-muted-foreground ml-1"
+                          size={14}
+                          className="animate-spin text-muted-foreground ml-2"
                         />
                       )}
                     </div>
@@ -1354,13 +1354,13 @@ const DoctorAvailability = () => {
 
                     {/* Utilisation bar */}
                     {currentDay.slots.length > 0 && (
-                      <div className="mt-4 pt-3 border-t border-border/60">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
-                            <TrendingUp size={10} />
+                      <div className="mt-5 pt-4 border-t border-border/60">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-muted-foreground/70 flex items-center gap-1.5">
+                            <TrendingUp size={14} />
                             Utilisation
                           </span>
-                          <span className="text-[10px] font-semibold text-foreground">
+                          <span className="text-sm font-semibold text-foreground">
                             {Math.round(
                               (dayStats.booked / currentDay.slots.length) * 100,
                             )}

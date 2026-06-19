@@ -226,7 +226,7 @@ function DoctorAvatar({ doctor }: { doctor: ApiDoctor }) {
 
   if (!doctor.image || imgError) {
     return (
-      <div className="w-full h-full rounded-sm bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-base border border-primary/10">
+      <div className="w-full h-full rounded-[inherit] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold text-base border border-primary/10">
         {initials}
       </div>
     );
@@ -236,7 +236,7 @@ function DoctorAvatar({ doctor }: { doctor: ApiDoctor }) {
     <img
       src={doctor.image}
       alt={doctor.user.name}
-      className="w-full h-full object-cover rounded-sm"
+      className="w-full h-full object-cover rounded-[inherit]"
       onError={() => setImgError(true)}
     />
   );
@@ -268,7 +268,7 @@ function ConsultationTypeBadge({
   return (
     <span
       className={cn(
-        "px-1.5 py-px text-[9px] font-semibold rounded-sm border",
+        "px-2 py-0.5 text-[10px] font-bold rounded-[6px] border",
         cfg.className,
       )}
     >
@@ -291,91 +291,95 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
   return (
     <>
     <div
-      className="bg-card border border-border/70 rounded-sm px-3.5 py-2.5 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer"
+      className="bg-card border border-border/70 rounded-[12px] p-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
       onClick={a.openDetails}
     >
-      <div className="w-9 h-9 rounded-sm overflow-hidden flex-shrink-0 border border-border/40">
-        <DoctorAvatar doctor={doctor} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-foreground leading-tight">
-            {doctor.user.name}
-          </span>
-          {doctor.instant_consultation && (
-            <span className="flex items-center gap-0.5 px-1 py-px text-[9px] font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-              <Zap className="w-2.5 h-2.5" />
-              INSTANT
-            </span>
-          )}
-          {doctor.is_featured && (
-            <span className="px-1 py-px text-[9px] font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-              Featured
-            </span>
-          )}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-12 h-12 rounded-[10px] overflow-hidden flex-shrink-0 border border-border/40 shadow-sm">
+          <DoctorAvatar doctor={doctor} />
         </div>
-        <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
-          {doctor.specialization} · {doctor.doctor_degree}
-        </p>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
+              {doctor.user.name}
+            </span>
+            {doctor.instant_consultation && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                <Zap className="w-3 h-3" />
+                INSTANT
+              </span>
+            )}
+            {doctor.is_featured && (
+              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
+                Featured
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground/80 font-medium mt-1 truncate">
+            {doctor.specialization} {doctor.doctor_degree ? `· ${doctor.doctor_degree}` : ""}
+          </p>
+        </div>
       </div>
 
-      <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70 flex-shrink-0">
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center gap-4 text-xs text-muted-foreground/80 flex-shrink-0">
         <span className="flex items-center gap-1">
           <Star
             className={cn(
-              "w-3 h-3",
+              "w-3.5 h-3.5",
               rating > 0
                 ? "fill-amber-400 text-amber-400"
-                : "text-muted-foreground/30",
+                : "text-muted-foreground/40",
             )}
           />
-          <span className="font-semibold text-foreground">
+          <span className="font-bold text-foreground">
             {rating > 0 ? rating.toFixed(1) : "New"}
           </span>
         </span>
         <ConsultationTypeBadge type={doctor.consultation_type} />
       </div>
 
-      <div className="flex items-center gap-2.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-        <div className="text-right hidden sm:block">
-          <p className="text-[12px] font-bold text-foreground">
+      <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40" onClick={(e) => e.stopPropagation()}>
+        <div className="text-left sm:text-right">
+          <p className="text-sm font-bold text-foreground">
             {fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`}
           </p>
-          <p className="text-[9px] text-muted-foreground/60">per visit</p>
+          <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">per visit</p>
         </div>
 
-        {/* Book — always shown (opens BookingDialog), same as the grid card */}
-        <button
-          disabled={!canBook || a.isCallInProgress}
-          onClick={a.openBook}
-          className={cn(
-            "px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-all duration-200 active:scale-95",
-            canBook && !a.isCallInProgress
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-              : "bg-muted text-muted-foreground cursor-not-allowed",
-          )}
-        >
-          {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
-        </button>
-
-        {/* Connect — only for instant-consult doctors (opens the connect modal) */}
-        {a.canConnect && (
+        <div className="flex items-center gap-2">
+          {/* Book — always shown (opens BookingDialog), same as the grid card */}
           <button
-            onClick={a.openConnect}
+            disabled={!canBook || a.isCallInProgress}
+            onClick={a.openBook}
             className={cn(
-              "px-2.5 py-1 rounded-sm text-[11px] font-semibold transition-all duration-200 active:scale-95 flex items-center gap-1",
-              a.isConnected
-                ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
-                : a.isCallInProgress
-                  ? "bg-sky-500 hover:bg-sky-600 text-white shadow-sm"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm",
+              "h-8 px-3 rounded-[8px] text-xs font-bold transition-all duration-200 active:scale-95",
+              canBook && !a.isCallInProgress
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow"
+                : "bg-muted text-muted-foreground cursor-not-allowed border border-border/40",
             )}
           >
-            <Zap className="w-3 h-3" />
-            {a.isConnected ? "Resume" : a.isCallInProgress ? "Open" : "Connect"}
+            {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
           </button>
-        )}
+
+          {/* Connect — only for instant-consult doctors (opens the connect modal) */}
+          {a.canConnect && (
+            <button
+              onClick={a.openConnect}
+              className={cn(
+                "h-8 px-3 rounded-[8px] text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 shadow-sm hover:shadow",
+                a.isConnected
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : a.isCallInProgress
+                    ? "bg-sky-500 hover:bg-sky-600 text-white"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white",
+              )}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              {a.isConnected ? "Resume" : a.isCallInProgress ? "Open" : "Connect"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
     <DoctorActionModals a={a} />

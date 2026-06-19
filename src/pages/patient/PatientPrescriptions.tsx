@@ -158,15 +158,15 @@ const PatientPrescriptions = () => {
     <>
       <div className="px-3 pt-3.5 pb-2.5 flex items-center justify-between border-b border-border/50">
         <div className="flex items-center gap-1.5">
-          <SlidersHorizontal className="w-3 h-3 text-primary" />
-          <span className="text-[10px] font-semibold text-foreground">Filters</span>
+          <SlidersHorizontal className="w-4 h-4 text-primary" />
+          <span className="text-xs font-semibold text-foreground">Filters</span>
         </div>
         {hasActiveFilters && (
           <button
             onClick={clearAll}
-            className="text-[9px] text-primary hover:text-primary/70 font-medium flex items-center gap-1 transition-colors"
+            className="text-xs text-primary hover:text-primary/70 font-medium flex items-center gap-1 transition-colors"
           >
-            <X className="w-2.5 h-2.5" />Reset
+            <X className="w-4 h-4" />Reset
           </button>
         )}
       </div>
@@ -256,7 +256,7 @@ const PatientPrescriptions = () => {
             <div className="flex-shrink-0 px-4 py-4 border-t border-border">
               <button
                 onClick={() => setFilterOpen(false)}
-                className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-[11px] font-semibold transition-colors"
+                className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors"
               >
                 Show results
               </button>
@@ -276,8 +276,8 @@ const PatientPrescriptions = () => {
             {/* Expiring soon banner */}
             {expiringSoonCount > 0 && (
               <div className="mx-4 mt-3 px-3 py-2 rounded-sm bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-900 flex items-center gap-2">
-                <CalendarRange className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-                <p className="text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                <CalendarRange className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
                   {expiringSoonCount} prescription{expiringSoonCount > 1 ? "s" : ""} expiring within 3 days — collect soon.
                 </p>
               </div>
@@ -286,7 +286,7 @@ const PatientPrescriptions = () => {
             {/* Toolbar */}
             <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-2 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {isLoading ? (
                     <span className="text-muted-foreground/40">Loading…</span>
                   ) : (
@@ -296,27 +296,27 @@ const PatientPrescriptions = () => {
                     </>
                   )}
                   {hasActiveFilters && !isLoading && (
-                    <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-[9px] font-medium">
+                    <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-xs font-medium">
                       Reset filters
                     </button>
                   )}
                 </p>
                 {isFetching && !isLoading && (
-                  <span className="flex items-center gap-1 text-[9px] text-muted-foreground/50">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin" />Refreshing
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                    <Loader2 className="w-4 h-4 animate-spin" />Refreshing
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-1.5">
                 <div className="relative hidden sm:block">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/40" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                   <input
                     type="text"
                     value={filters.search}
                     onChange={(e) => set("search", e.target.value)}
                     placeholder="Search diagnosis, doctor…"
-                    className="w-48 pl-7 pr-2.5 py-1 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
+                    className="w-48 pl-7 pr-2.5 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
                   />
                 </div>
 
@@ -324,12 +324,12 @@ const PatientPrescriptions = () => {
                   <select
                     value={filters.sort}
                     onChange={(e) => set("sort", e.target.value as FilterState["sort"])}
-                    className="appearance-none pl-2 pr-6 py-1 text-[10px] bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+                    className="appearance-none pl-2 pr-6 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                   >
                     <option value="date-desc">Latest first</option>
                     <option value="date-asc">Oldest first</option>
                   </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-muted-foreground/40 pointer-events-none" />
+                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
                 </div>
 
                 <div className="flex rounded-sm border border-border/50 overflow-hidden bg-card">
@@ -338,25 +338,25 @@ const PatientPrescriptions = () => {
                     aria-label="Table view"
                     className={cn("px-2 py-1 transition-colors", view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                   >
-                    <Rows3 className="w-3 h-3" />
+                    <Rows3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setView("cards")}
                     aria-label="Card view"
                     className={cn("px-2 py-1 border-l border-border/50 transition-colors", view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                   >
-                    <LayoutGrid className="w-3 h-3" />
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                 </div>
 
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1 px-2.5 py-1 rounded-sm border text-[10px] transition-colors",
+                    "md:hidden flex items-center gap-1 px-2.5 py-1 rounded-sm border text-xs transition-colors",
                     hasActiveFilters ? "bg-primary text-white border-primary" : "border-border/50 text-muted-foreground bg-card",
                   )}
                 >
-                  <SlidersHorizontal className="w-3 h-3" />
+                  <SlidersHorizontal className="w-4 h-4" />
                   Filters
                   {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                 </button>
@@ -371,11 +371,11 @@ const PatientPrescriptions = () => {
                     <AlertCircle className="w-5 h-5 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold text-foreground">Failed to load prescriptions</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
+                    <p className="text-xs font-semibold text-foreground">Failed to load prescriptions</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
                   </div>
-                  <button onClick={() => refetch()} className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/70 font-semibold">
-                    <RefreshCw className="w-3 h-3" />Retry
+                  <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-primary hover:text-primary/70 font-semibold">
+                    <RefreshCw className="w-4 h-4" />Retry
                   </button>
                 </div>
               )}
@@ -383,8 +383,8 @@ const PatientPrescriptions = () => {
               {isLoading && !isError && (
                 view === "table" ? (
                   <div className="rounded-sm border border-border/60 bg-card overflow-hidden">
-                    <table className="w-full text-[10px]">
-                      <thead className="bg-secondary/30 text-[9px] uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
+                    <table className="w-full text-xs">
+                      <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                         <tr>
                           {["Doctor", "Medications", "Issued", "Valid Until", "Status", ""].map((h) => (
                             <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
@@ -409,15 +409,15 @@ const PatientPrescriptions = () => {
                     <Pill className="w-5 h-5 text-muted-foreground/40" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold text-foreground">
+                    <p className="text-xs font-semibold text-foreground">
                       {hasActiveFilters ? "No prescriptions match your filters" : "No prescriptions yet"}
                     </p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    <p className="text-xs text-muted-foreground/60 mt-1">
                       {hasActiveFilters ? "Try widening your search criteria" : "Prescriptions issued by your doctor will appear here"}
                     </p>
                   </div>
                   {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/70 font-semibold hover:underline">
+                    <button onClick={clearAll} className="text-xs text-primary hover:text-primary/70 font-semibold hover:underline">
                       Clear all filters
                     </button>
                   )}
@@ -427,8 +427,8 @@ const PatientPrescriptions = () => {
               {/* Table view */}
               {!isLoading && !isError && prescriptions.length > 0 && view === "table" && (
                 <div className="rounded-sm border border-border/60 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[10px]">
-                    <thead className="bg-secondary/30 text-[9px] uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
+                  <table className="w-full text-xs">
+                    <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                       <tr>
                         {["Doctor", "Medications", "Issued", "Valid until", "Status", ""].map((h) => (
                           <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
@@ -450,7 +450,7 @@ const PatientPrescriptions = () => {
                           >
                             <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[9px] font-semibold flex items-center justify-center shrink-0 overflow-hidden">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
                                   {p.doctor.image ? (
                                     <img
                                       src={p.doctor.image.startsWith("http") ? p.doctor.image : `${import.meta.env.VITE_APP_BASE_URL}/storage/${p.doctor.image}`}
@@ -461,10 +461,10 @@ const PatientPrescriptions = () => {
                                   ) : p.doctor.user.name.charAt(0)}
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-[10px] text-foreground">{p.doctor.user.name}</p>
-                                  <p className="text-[9px] text-muted-foreground/60">{p.doctor.specialization}</p>
+                                  <p className="font-semibold text-xs text-foreground">{p.doctor.user.name}</p>
+                                  <p className="text-xs text-muted-foreground/60">{p.doctor.specialization}</p>
                                   {p.is_signed && (
-                                    <span className="flex items-center gap-0.5 mt-0.5 text-[9px] text-emerald-600 dark:text-emerald-400">
+                                    <span className="flex items-center gap-0.5 mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="w-2 h-2" />Signed
                                     </span>
                                   )}
@@ -474,22 +474,22 @@ const PatientPrescriptions = () => {
                             <td className="px-3 py-2.5">
                               <div className="flex flex-col gap-0.5">
                                 {p.items.slice(0, 2).map((item) => (
-                                  <span key={item.id} className="inline-flex items-center gap-1 text-[9px] text-muted-foreground/70">
+                                  <span key={item.id} className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
                                     <Pill className="h-2 w-2 text-primary shrink-0" />
                                     <span className="font-medium text-foreground/80">{item.medicine_name}</span>
                                     <span className="text-muted-foreground/45">· {item.dosage}</span>
                                   </span>
                                 ))}
                                 {p.items.length > 2 && (
-                                  <span className="text-[9px] text-muted-foreground/40 pl-3">+{p.items.length - 2} more</span>
+                                  <span className="text-xs text-muted-foreground/40 pl-3">+{p.items.length - 2} more</span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-[9px]">
+                            <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-xs">
                               {new Date(p.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                             </td>
                             <td className="px-3 py-2.5 whitespace-nowrap">
-                              <span className={cn("text-[9px]", expiring ? "text-amber-600 dark:text-amber-400 font-medium" : expired ? "text-muted-foreground/40" : "text-muted-foreground/60")}>
+                              <span className={cn("text-xs", expiring ? "text-amber-600 dark:text-amber-400 font-medium" : expired ? "text-muted-foreground/40" : "text-muted-foreground/60")}>
                                 {new Date(p.valid_until).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                                 {expiring && <span className="ml-1">⚠</span>}
                               </span>
@@ -502,7 +502,7 @@ const PatientPrescriptions = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-6 px-2 text-[9px] rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 gap-1"
+                                  className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 gap-1"
                                   onClick={() => handleViewDetails(p)}
                                 >
                                   Details
@@ -510,7 +510,7 @@ const PatientPrescriptions = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-6 px-2 text-[9px] rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 gap-1"
+                                  className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 gap-1"
                                   onClick={() => handleAction(p, "pdf")}
                                 >
                                   <Download className="h-2 w-2" />PDF
@@ -518,10 +518,10 @@ const PatientPrescriptions = () => {
                                 {p.status === "issued" && (
                                   <Button
                                     size="sm"
-                                    className="h-6 px-2 text-[9px] bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1"
+                                    className="h-6 px-2 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1"
                                     onClick={() => handleAction(p, "send")}
                                   >
-                                    <Send className="h-2.5 w-2.5" />Send
+                                    <Send className="h-4 w-4" />Send
                                   </Button>
                                 )}
                               </div>

@@ -18,11 +18,11 @@ export function DetailRow({
 }: { label: string; value: React.ReactNode; icon?: React.ReactNode; className?: string }) {
   return (
     <div className={cn("flex items-start justify-between gap-3 py-2 border-b border-border/40 last:border-b-0", className)}>
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {icon && <span className="text-muted-foreground/50">{icon}</span>}
-        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+        <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <span className="text-[11px] font-medium text-foreground text-right">{value}</span>
+      <span className="text-sm font-medium text-foreground text-right">{value}</span>
     </div>
   );
 }
@@ -83,35 +83,35 @@ export function AppointmentDetailDrawer({
         "animate-in slide-in-from-right duration-300",
       )}>
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 bg-card shrink-0">
-          <div className="h-9 w-9 rounded-sm bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-[11px] flex-shrink-0 border border-primary/10">
+        <div className="flex items-center gap-4 px-5 py-4 border-b border-border/60 bg-card shrink-0">
+          <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
             {appt.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground truncate">{apptLabel(appt)}</p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 font-medium border", STATUS_STYLES[status])}>
-                <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status])} />
+            <p className="text-base font-semibold text-foreground truncate">{apptLabel(appt)}</p>
+            <div className="flex items-center gap-3 mt-1">
+              <Badge variant="outline" className={cn("text-xs px-2.5 py-0.5 font-medium border", STATUS_STYLES[status])}>
+                <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[status])} />
                 {statusLabel(status)}
               </Badge>
-              <span className="text-[10px] text-muted-foreground">#{appt.id}</span>
+              <span className="text-xs text-muted-foreground">#{appt.id}</span>
             </div>
           </div>
-          <button onClick={onClose} className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
+          <button onClick={onClose} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Action bar */}
-        <div className="px-4 py-3 border-b border-border/40 bg-secondary/20 flex items-center gap-2 flex-wrap shrink-0">
+        <div className="px-5 py-3 border-b border-border/40 bg-secondary/20 flex items-center gap-3 flex-wrap shrink-0">
           {canStart && (
             <Button
               size="sm"
               onClick={() => { onStart(appt); onClose(); }}
               disabled={isJoining}
-              className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm flex items-center gap-1.5"
+              className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shadow-sm flex items-center gap-2"
             >
-              {isJoining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Video className="h-3 w-3" />}
+              {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
               Start session
             </Button>
           )}
@@ -122,9 +122,9 @@ export function AppointmentDetailDrawer({
               size="sm"
               onClick={() => { onRejoin(appt); onClose(); }}
               disabled={isJoining}
-              className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm shadow-sm flex items-center gap-1.5 border-0"
+              className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md shadow-sm flex items-center gap-2 border-0"
             >
-              {isJoining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Video className="h-3 w-3" />}
+              {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
               Rejoin session
             </Button>
           )}
@@ -135,18 +135,18 @@ export function AppointmentDetailDrawer({
                 size="sm"
                 variant="outline"
                 onClick={() => onRunningLate(appt)}
-                className="h-7 px-3 text-[10px] font-medium rounded-sm border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-1.5"
+                className="h-9 px-4 text-sm font-medium rounded-md border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2"
               >
-                <Timer className="h-3 w-3" />Running late
+                <Timer className="h-4 w-4" />Running late
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => onReadyNext(appt)}
                 disabled={isReadyNextPending}
-                className="h-7 px-3 text-[10px] font-medium rounded-sm border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-1.5"
+                className="h-9 px-4 text-sm font-medium rounded-md border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2"
               >
-                {isReadyNextPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCheck className="h-3 w-3" />}
+                {isReadyNextPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
                 Ready for next
               </Button>
             </>
@@ -156,28 +156,28 @@ export function AppointmentDetailDrawer({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           {/* Appointment info */}
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-              <Calendar className="h-3 w-3" />Appointment
+          <div className="px-5 pt-5 pb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+              <Calendar className="h-4 w-4" />Appointment
             </p>
-            <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
-              <DetailRow label="Date"  value={fmtDate(appt.appointment_date)}  icon={<Calendar className="h-3 w-3" />} />
-              <DetailRow label="Time"  value={fmtTime(appt.appointment_time)}  icon={<Clock className="h-3 w-3" />} />
+            <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
+              <DetailRow label="Date"  value={fmtDate(appt.appointment_date)}  icon={<Calendar className="h-4 w-4" />} />
+              <DetailRow label="Time"  value={fmtTime(appt.appointment_time)}  icon={<Clock className="h-4 w-4" />} />
               {raw.duration_minutes && (
-                <DetailRow label="Duration" value={`${raw.duration_minutes} min`} icon={<Timer className="h-3 w-3" />} />
+                <DetailRow label="Duration" value={`${raw.duration_minutes} min`} icon={<Timer className="h-4 w-4" />} />
               )}
               <DetailRow label="Type" value={
-                <span className="inline-flex items-center gap-1">
+                <span className="inline-flex items-center gap-1.5">
                   {appt.type === "online"
-                    ? <><Video className="h-3 w-3 text-sky-500" />Video consult</>
-                    : <><MapPin className="h-3 w-3 text-amber-500" />In-person</>}
+                    ? <><Video className="h-4 w-4 text-sky-500" />Video consult</>
+                    : <><MapPin className="h-4 w-4 text-amber-500" />In-person</>}
                 </span>
               } />
               <DetailRow label="Booking type" value={<span className="capitalize">{appt.booking_type}</span>} />
               {raw.is_running_late && (
                 <DetailRow label="Running late" value={
-                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />{raw.estimated_delay_minutes ?? 0}min delay
+                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4" />{raw.estimated_delay_minutes ?? 0}min delay
                   </span>
                 } />
               )}
@@ -185,11 +185,11 @@ export function AppointmentDetailDrawer({
           </div>
 
           {/* Patient */}
-          <div className="px-4 py-2">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-              <UserCheck className="h-3 w-3" />Patient
+          <div className="px-5 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />Patient
             </p>
-            <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+            <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
               <DetailRow label="Name"  value={appt.patient?.name  ?? "—"} />
               <DetailRow label="Email" value={appt.patient?.email ?? "—"} />
               <DetailRow label="Phone" value={appt.patient?.phone ?? "—"} />
@@ -198,11 +198,11 @@ export function AppointmentDetailDrawer({
 
           {/* Hospital */}
           {appt.hospital && (
-            <div className="px-4 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                <Building2 className="h-3 w-3" />Hospital
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+                <Building2 className="h-4 w-4" />Hospital
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
                 <DetailRow label="Name" value={appt.hospital.name} />
                 {appt.hospital.address && <DetailRow label="Address" value={appt.hospital.address} />}
               </div>
@@ -211,15 +211,15 @@ export function AppointmentDetailDrawer({
 
           {/* Insurance */}
           {appt.insurance && (
-            <div className="px-4 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                <Shield className="h-3 w-3" />Insurance
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4" />Insurance
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
                 <DetailRow label="Provider" value={
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-2">
                     {(appt.insurance as Appointment["insurance"] & { logo?: string })?.logo && (
-                      <img src={(appt.insurance as Appointment["insurance"] & { logo?: string }).logo} alt="" className="h-4 w-4 rounded object-contain" />
+                      <img src={(appt.insurance as Appointment["insurance"] & { logo?: string }).logo} alt="" className="h-5 w-5 rounded object-contain" />
                     )}
                     {(appt.insurance as Appointment["insurance"] & { name?: string })?.name ?? appt.insurance.provider ?? "—"}
                   </span>
@@ -234,11 +234,11 @@ export function AppointmentDetailDrawer({
 
           {/* Payment */}
           {(raw.consultation_fee !== undefined || raw.payment_status) && (
-            <div className="px-4 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                <CreditCard className="h-3 w-3" />Payment
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />Payment
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
                 {raw.consultation_fee !== undefined && (
                   <DetailRow label="Consultation fee" value={`${raw.consultation_fee} ${raw.currency ?? ""}`} />
                 )}
@@ -252,17 +252,17 @@ export function AppointmentDetailDrawer({
                 )}
                 {raw.payment_status && (
                   <DetailRow label="Payment status" value={
-                    <span className={cn("inline-flex items-center gap-1 capitalize",
+                    <span className={cn("inline-flex items-center gap-1.5 capitalize",
                       raw.payment_status === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                     )}>
-                      {raw.payment_status === "paid" && <CheckCircle2 className="h-3 w-3" />}
+                      {raw.payment_status === "paid" && <CheckCircle2 className="h-4 w-4" />}
                       {raw.payment_status}
                     </span>
                   } />
                 )}
                 {raw.payment_method && <DetailRow label="Method" value={formatPaymentMethod(raw.payment_method)} />}
                 {raw.payment_reference && (
-                  <DetailRow label="Reference" value={<span className="font-mono text-[10px]">{raw.payment_reference}</span>} />
+                  <DetailRow label="Reference" value={<span className="font-mono text-xs">{raw.payment_reference}</span>} />
                 )}
                 {raw.paid_at && <DetailRow label="Paid at" value={fmtDateTime(raw.paid_at)} />}
               </div>
@@ -271,19 +271,19 @@ export function AppointmentDetailDrawer({
 
           {/* Session */}
           {(raw.session_started_at || raw.daily_room_name) && (
-            <div className="px-4 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                <Video className="h-3 w-3" />Session
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+                <Video className="h-4 w-4" />Session
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
                 {raw.daily_room_name && (
-                  <DetailRow label="Room" value={<span className="font-mono text-[10px] truncate max-w-[200px]">{raw.daily_room_name}</span>} />
+                  <DetailRow label="Room" value={<span className="font-mono text-xs truncate max-w-[200px]">{raw.daily_room_name}</span>} />
                 )}
                 {raw.session_started_at && (
                   <DetailRow label="Started" value={
                     <span>
                       {fmtDateTime(raw.session_started_at)}
-                      <span className="text-muted-foreground ml-1 text-[9px]">({fmtRelative(raw.session_started_at)})</span>
+                      <span className="text-muted-foreground ml-1.5 text-xs">({fmtRelative(raw.session_started_at)})</span>
                     </span>
                   } />
                 )}
@@ -294,11 +294,11 @@ export function AppointmentDetailDrawer({
 
           {/* Notes */}
           {appt.notes && (
-            <div className="px-4 py-2">
-              <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2 flex items-center gap-1.5">
-                <FileText className="h-3 w-3" />Clinical notes
+            <div className="px-5 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4" />Clinical notes
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-3 py-1">
+              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
                 {appt.notes.chief_complaint  && <DetailRow label="Chief complaint" value={appt.notes.chief_complaint} />}
                 {appt.notes.diagnosis        && <DetailRow label="Diagnosis"        value={appt.notes.diagnosis} />}
                 {appt.notes.treatment_plan   && <DetailRow label="Treatment plan"   value={appt.notes.treatment_plan} />}
@@ -310,8 +310,8 @@ export function AppointmentDetailDrawer({
             </div>
           )}
 
-          <div className="px-4 pt-2 pb-4">
-            <p className="text-[10px] text-muted-foreground/50 text-center">
+          <div className="px-5 pt-3 pb-6">
+            <p className="text-xs text-muted-foreground/50 text-center">
               Created {fmtRelative(raw.created_at)}
             </p>
           </div>

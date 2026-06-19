@@ -103,7 +103,7 @@ function MiniCalendar({
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-[12px] font-semibold text-foreground tracking-wide">
+        <span className="text-sm font-semibold text-foreground tracking-wide">
           {moment(cursor).format("MMMM YYYY")}
         </span>
         <button
@@ -116,7 +116,7 @@ function MiniCalendar({
 
       <div className="grid grid-cols-7 mb-1">
         {DOW.map((d) => (
-          <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground/60 py-1">
+          <div key={d} className="text-center text-xs font-semibold text-muted-foreground/60 py-1">
             {d}
           </div>
         ))}
@@ -138,7 +138,7 @@ function MiniCalendar({
                 disabled={isDisabled}
                 onClick={() => !isDisabled && onSelect(day)}
                 className={cn(
-                  "relative flex items-center justify-center h-8 w-full rounded-md text-[12px] transition-all duration-150",
+                  "relative flex items-center justify-center h-8 w-full rounded-md text-sm transition-all duration-150",
                   !inMonth && "invisible",
                   isDisabled && inMonth && "text-muted-foreground/30 cursor-not-allowed",
                   !isDisabled && !isSel && "text-foreground hover:bg-primary/10 hover:text-primary cursor-pointer",
@@ -192,7 +192,7 @@ function TimeSlotGrid({
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-6">
         <CalendarDays className="h-7 w-7 text-muted-foreground/30" />
-        <p className="text-[11px] text-muted-foreground">Select a date to see available slots</p>
+        <p className="text-sm text-muted-foreground">Select a date to see available slots</p>
       </div>
     );
   }
@@ -202,15 +202,15 @@ function TimeSlotGrid({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1.5">
-        <Clock className="h-3 w-3 text-muted-foreground/60" />
-        <span className="text-[10px] text-muted-foreground">
+        <Clock className="h-4 w-4 text-muted-foreground/60" />
+        <span className="text-xs text-muted-foreground">
           <span className="font-semibold text-foreground">{available}</span> of {slots.length} slots open
         </span>
       </div>
 
       {periods.map(({ label, icon, items }) => (
         <div key={label}>
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1.5 flex items-center gap-1">
+          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1.5 flex items-center gap-1">
             <span>{icon}</span> {label}
           </p>
           <div className="grid grid-cols-3 gap-1.5">
@@ -223,7 +223,7 @@ function TimeSlotGrid({
                   disabled={!avail}
                   onClick={() => avail && onSelect(s.time)}
                   className={cn(
-                    "py-1.5 rounded-md text-[11px] font-mono tabular-nums border transition-all duration-150",
+                    "py-1.5 rounded-md text-sm font-mono tabular-nums border transition-all duration-150",
                     sel   && "bg-primary text-primary-foreground border-primary shadow-sm font-semibold",
                     !sel && avail  && "border-border text-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary",
                     !avail && "bg-muted/40 text-muted-foreground/30 border-border/40 line-through cursor-not-allowed",
@@ -442,9 +442,13 @@ export const BookingDialog = ({
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }} modal={false}>
       {/* modal={false} + the prevent handlers keep this open and interactive while
-          the IremboPay widget (rendered outside this dialog) is on screen. */}
+          the IremboPay widget (rendered outside this dialog) is on screen.
+          Because modal=false disables the Radix overlay, we add our own manual overlay. */}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md pointer-events-none" />
+      )}
       <DialogContent
-        className="max-w-[680px] p-0 overflow-hidden gap-0"
+        className="max-w-[680px] p-0 overflow-hidden gap-0 bg-card/80 backdrop-blur-2xl"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -461,9 +465,9 @@ export const BookingDialog = ({
               <DialogTitle className="text-[14px] font-semibold leading-tight truncate">
                 {doctorName}
               </DialogTitle>
-              <DialogDescription className="text-[11px] mt-0.5 flex items-center gap-2">
+              <DialogDescription className="text-sm mt-0.5 flex items-center gap-2">
                 <span className="flex items-center gap-1">
-                  <Stethoscope className="h-3 w-3" />
+                  <Stethoscope className="h-4 w-4" />
                   {doctor.specialization}
                 </span>
                 {doctor.consultation_fee !== undefined && (
@@ -478,7 +482,7 @@ export const BookingDialog = ({
                 )}
                 <span className="text-border">·</span>
                 <span className="flex items-center gap-1">
-                  <Video className="h-3 w-3" /> Video consult
+                  <Video className="h-4 w-4" /> Video consult
                 </span>
               </DialogDescription>
             </div>
@@ -489,7 +493,7 @@ export const BookingDialog = ({
         {showLoading && (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <p className="text-[12px]">Loading available slots…</p>
+            <p className="text-sm">Loading available slots…</p>
           </div>
         )}
 
@@ -497,7 +501,7 @@ export const BookingDialog = ({
         {showError && (
           <div className="flex flex-col items-center justify-center py-12 gap-2 text-destructive">
             <AlertTriangle className="h-6 w-6" />
-            <p className="text-[12px]">Could not load availability. Please try again.</p>
+            <p className="text-sm">Could not load availability. Please try again.</p>
           </div>
         )}
 
@@ -509,26 +513,26 @@ export const BookingDialog = ({
             </div>
             <div className="space-y-1">
               <h3 className="text-[15px] font-semibold">Appointment confirmed</h3>
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {moment(confirmed.date).format("dddd, MMMM D, YYYY")} at {confirmed.time}
               </p>
-              <p className="text-[11px] text-muted-foreground/70 mt-2 inline-flex items-center gap-1.5 border border-border/60 rounded-full px-3 py-1">
-                <Video className="h-3 w-3" />
+              <p className="text-sm text-muted-foreground/70 mt-2 inline-flex items-center gap-1.5 border border-border/60 rounded-full px-3 py-1">
+                <Video className="h-4 w-4" />
                 Video link will be sent before the session
               </p>
 
               {/* NEW: subtle "syncing" badge while fresh doctor data loads */}
               {shouldRefetchDoctor && !freshDoctorData && !verifyingPayment && (
-                <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center justify-center gap-1">
-                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                <p className="text-xs text-muted-foreground/50 mt-1 flex items-center justify-center gap-1">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Syncing availability…
                 </p>
               )}
 
               {/* Verifying payment */}
               {verifyingPayment && (
-                <p className="text-[11px] text-primary mt-2 flex items-center justify-center gap-1.5 font-medium">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                <p className="text-sm text-primary mt-2 flex items-center justify-center gap-1.5 font-medium">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Verifying payment status…
                 </p>
               )}
@@ -545,7 +549,7 @@ export const BookingDialog = ({
             <div className="grid grid-cols-[1fr_1px_1fr] min-h-[320px]">
               {/* Left — calendar */}
               <div className="px-5 py-5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
                   Select date
                 </p>
                 <MiniCalendar
@@ -557,8 +561,8 @@ export const BookingDialog = ({
                   allowedDates={allowedDates}
                 />
                 {date && (
-                  <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground border border-border/60 rounded-md px-2.5 py-1.5 bg-muted/30">
-                    <CalendarDays className="h-3 w-3 shrink-0" />
+                  <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground border border-border/60 rounded-md px-2.5 py-1.5 bg-muted/30">
+                    <CalendarDays className="h-4 w-4 shrink-0" />
                     <span className="font-medium text-foreground">{moment(date).format("ddd, MMM D")}</span>
                     <span className="text-muted-foreground/50">·</span>
                     <span>{slotsData.dates.length} day{slotsData.dates.length !== 1 ? "s" : ""} avail.</span>
@@ -571,21 +575,21 @@ export const BookingDialog = ({
 
               {/* Right — time slots */}
               <div className="px-5 py-5 overflow-y-auto max-h-[380px]">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
                   Select time · {daySlots[0]?.duration ?? 30} min
                 </p>
 
                 {dayLoading && dateKey && (
                   <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <p className="text-[11px]">Loading slots…</p>
+                    <p className="text-sm">Loading slots…</p>
                   </div>
                 )}
 
                 {dayError && !dayLoading && (
                   <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-destructive">
                     <AlertTriangle className="h-5 w-5" />
-                    <p className="text-[11px]">Could not load slots for this date.</p>
+                    <p className="text-sm">Could not load slots for this date.</p>
                   </div>
                 )}
 
@@ -601,7 +605,7 @@ export const BookingDialog = ({
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-border/60 flex items-center justify-between gap-3 bg-muted/20">
-              <div className="text-[11px] text-muted-foreground min-w-0">
+              <div className="text-sm text-muted-foreground min-w-0">
                 {date && time ? (
                   <span className="font-medium text-foreground truncate">
                     {moment(date).format("ddd, MMM D")} · {time}
@@ -616,7 +620,7 @@ export const BookingDialog = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-4 text-[12px] rounded-md"
+                  className="h-8 px-4 text-sm rounded-md"
                   onClick={() => onOpenChange(false)}
                 >
                   Cancel
@@ -625,10 +629,10 @@ export const BookingDialog = ({
                   size="sm"
                   disabled={!date || !time || bookAppointment.isPending}
                   onClick={handleConfirm}
-                  className="h-8 px-5 text-[12px] rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+                  className="h-8 px-5 text-sm rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 >
                   {bookAppointment.isPending
-                    ? <><Loader2 className="h-3 w-3 animate-spin mr-1.5" /> Booking…</>
+                    ? <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Booking…</>
                     : "Confirm appointment"}
                 </Button>
               </div>

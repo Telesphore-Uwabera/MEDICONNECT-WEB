@@ -8,10 +8,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ConnectDialog } from "@/components/ConnectDialog";
+import { UnifiedModal } from "@/components/DoctorCard";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type ModalMode = "details" | "connect";
 
 interface ApiDoctor {
   id: number;
@@ -113,18 +116,27 @@ function DoctorSlide({
   const isMinimized      = isConnected && call.minimized;
 
   const canConnect = doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation;
-  const connectOpen = isThisDoctor && call.dialogOpen;
-
-  const handleOpenChange = (v: boolean) => {
-    if (!v && isCallInProgress) call.setMinimized(true);
-    else call.setDialogOpen(v);
-  };
+  const [modalOpen, setModalOpen] = useState(false);
+  const [initialMode, setInitialMode] = useState<ModalMode>("connect");
 
   const handleConnect = () => {
     if (!canConnect) return;
-    if (isMinimized)           call.setMinimized(false);
-    else if (isCallInProgress) call.setDialogOpen(true);
-    else                       call.startCall(callDoctor);
+    setInitialMode("connect");
+    setModalOpen(true);
+  };
+
+  const handleMinimize = () => {
+    if (call.phase !== "idle") {
+      call.setMinimized(true);
+    }
+    setModalOpen(false);
+  };
+
+  const handleCloseCompletely = () => {
+    setModalOpen(false);
+    if (isThisDoctor && call.phase !== "idle") {
+      call.endCallCompletely();
+    }
   };
 
   return (
@@ -223,11 +235,17 @@ function DoctorSlide({
         </div>
       </div>
 
-      {/* ConnectDialog — must render outside the slide div so it's never clipped */}
-      <ConnectDialog
-        doctor={callDoctor}
-        open={connectOpen}
-        onOpenChange={handleOpenChange}
+      {/* UnifiedModal — opens when they click Connect on the slide */}
+      <UnifiedModal
+        doctor={doctor as any}
+        callDoctor={callDoctor}
+        initialMode={initialMode}
+        open={modalOpen}
+        onMinimize={handleMinimize}
+        onCloseCompletely={handleCloseCompletely}
+        onBook={() => {}}
+        canBook={false}
+        canConnect={canConnect}
       />
     </>
   );

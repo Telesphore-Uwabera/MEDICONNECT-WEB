@@ -34,8 +34,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
     { href: "#features", label: t("pages.landing.what_we_do") },
     { href: "#doctors", label: t("nav.available_doctors") },
     { href: "#hospitals", label: t("nav.hospitals") },
-    { href: "#pharmacy", label: t("nav.pharmacy") },
-    { href: "#roles", label: t("nav.forYou") },
+    { href: "#pharmacy", label: t("nav.pharmacy") }
   ];
 
   // Close on outside click

@@ -196,13 +196,13 @@ function InfoRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-border/30 last:border-b-0">
-      <Icon className="w-3.5 h-3.5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
-      <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-        <p className="text-[11px] text-muted-foreground/70 whitespace-nowrap">{label}</p>
+    <div className="flex items-start gap-3 py-3 border-b border-border/30 last:border-b-0">
+      <Icon className="w-4 h-4 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+        <p className="text-sm text-muted-foreground/70 whitespace-nowrap">{label}</p>
         <p
           className={cn(
-            "text-[12px] text-foreground text-right",
+            "text-sm text-foreground text-right",
             mono && "font-mono"
           )}
         >
@@ -227,18 +227,18 @@ function Section({
     <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-muted/20 hover:bg-muted/40 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
         </span>
         {open ? (
-          <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/50" />
+          <ChevronUp className="w-4 h-4 text-muted-foreground/50" />
         ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/50" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground/50" />
         )}
       </button>
-      {open && <div className="px-4 py-1">{children}</div>}
+      {open && <div className="px-4 py-2">{children}</div>}
     </div>
   );
 }
@@ -270,18 +270,18 @@ function CancelDialog({
       <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border/50">
-          <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center mb-3">
-            <XCircle className="w-5 h-5 text-red-500" />
+          <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center mb-4">
+            <XCircle className="w-6 h-6 text-red-500" />
           </div>
-          <p className="text-[13px] font-semibold">Cancel appointment?</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-base font-semibold">Cancel appointment?</p>
+          <p className="text-sm text-muted-foreground mt-1">
             This action cannot be undone. Refund policies may apply.
           </p>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-5">
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5 block">
+            <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2 block">
               Reason <span className="normal-case font-normal">(optional)</span>
             </label>
             <textarea
@@ -289,35 +289,35 @@ function CancelDialog({
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. I can't make it at this time"
               rows={3}
-              className="w-full rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[12px] placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
+              className="w-full rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
             />
           </div>
 
           {isError && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-              <p className="text-[11px] text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600 dark:text-red-400">
                 {(error as any)?.message ?? "Could not cancel. Please try again."}
               </p>
             </div>
           )}
 
           {isSuccess && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
-              <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                 Appointment cancelled.
               </p>
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={onClose}
               disabled={isPending}
-              className="flex-1 h-9 rounded-lg text-[12px]"
+              className="flex-1 h-10 rounded-lg text-sm"
             >
               Keep it
             </Button>
@@ -325,12 +325,12 @@ function CancelDialog({
               size="sm"
               onClick={handleCancel}
               disabled={isPending || isSuccess}
-              className="flex-1 h-9 rounded-lg text-[12px] font-semibold bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white gap-1.5"
+              className="flex-1 h-10 rounded-lg text-sm font-semibold bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white gap-2"
             >
               {isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <XCircle className="w-3.5 h-3.5" />
+                <XCircle className="w-4 h-4" />
               )}
               {isPending ? "Cancelling…" : "Yes, cancel"}
             </Button>
@@ -403,17 +403,17 @@ function ActionBar({
   if (!canPay && !canJoin && !canCancel) return null;
 
   return (
-    <div className="flex gap-2 flex-wrap">
+    <div className="flex gap-3 flex-wrap">
       {canJoin && (
         <Button
           onClick={onJoin}
           disabled={joinPending}
-          className="flex-1 h-9 rounded-sm text-[12px] font-semibold gap-2 bg-violet-600 hover:bg-violet-700 border-violet-600 hover:border-violet-700 text-white shadow-sm shadow-violet-500/20"
+          className="flex-1 h-10 rounded-sm text-sm font-semibold gap-2 bg-violet-600 hover:bg-violet-700 border-violet-600 hover:border-violet-700 text-white shadow-sm shadow-violet-500/20"
         >
           {joinPending ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <Video className="w-3.5 h-3.5" />
+            <Video className="w-4 h-4" />
           )}
           {joinPending ? "Joining…" : "Join Session"}
         </Button>
@@ -422,12 +422,12 @@ function ActionBar({
         <Button
           onClick={onPay}
           disabled={payPending}
-          className="flex-1 h-9 rounded-sm text-[12px] font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
+          className="flex-1 h-10 rounded-sm text-sm font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
         >
           {payPending ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
-            <CreditCard className="w-3.5 h-3.5" />
+            <CreditCard className="w-4 h-4" />
           )}
           {payPending ? "Processing…" : "Pay Now"}
         </Button>
@@ -436,9 +436,9 @@ function ActionBar({
         <Button
           variant="outline"
           onClick={onCancel}
-          className="h-9 rounded-sm text-[12px] gap-1.5 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
+          className="h-10 rounded-sm text-sm gap-2 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
         >
-          <XCircle className="w-3.5 h-3.5" />
+          <XCircle className="w-4 h-4" />
           Cancel
         </Button>
       )}
@@ -559,25 +559,25 @@ export function AppointmentDetailContent({
   return (
     <div className="flex flex-col h-full">
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-2.5 flex items-center justify-between flex-shrink-0">
+      <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/50 px-5 py-3 flex items-center justify-between flex-shrink-0">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-4 h-4" />
           Appointments
         </button>
         {status && (
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] px-2.5 py-0.5 font-semibold border rounded-full",
+              "text-xs px-3 py-1 font-semibold border rounded-full",
               STATUS_STYLES[status]
             )}
           >
             <span
               className={cn(
-                "w-1.5 h-1.5 rounded-full mr-1.5 inline-block",
+                "w-2 h-2 rounded-full mr-2 inline-block",
                 STATUS_DOT[status]
               )}
             />
@@ -592,12 +592,12 @@ export function AppointmentDetailContent({
 
         {isError && (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center px-6">
-            <div className="w-14 h-14 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-red-500" />
+            <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center">
+              <AlertCircle className="w-7 h-7 text-red-500" />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-foreground">Failed to load</p>
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-base font-semibold text-foreground">Failed to load</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Couldn't fetch appointment details
               </p>
             </div>
@@ -605,9 +605,9 @@ export function AppointmentDetailContent({
               size="sm"
               variant="outline"
               onClick={onClose}
-              className="rounded-lg text-[11px]"
+              className="rounded-lg text-sm h-10 px-5"
             >
-              <ArrowLeft className="w-3 h-3 mr-1.5" /> Go back
+              <ArrowLeft className="w-4 h-4 mr-2" /> Go back
             </Button>
           </div>
         )}
@@ -619,26 +619,26 @@ export function AppointmentDetailContent({
             <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
 
 
-              <div className="p-5 space-y-4">
+              <div className="p-5 space-y-5">
                 {/* Provider row */}
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-start gap-4">
                   {/* Avatar */}
-                  <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0 border border-primary/15 overflow-hidden ring-2 ring-background">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl shrink-0 border border-primary/15 overflow-hidden ring-2 ring-background">
                     {avatarSrc ? (
                       <img src={avatarSrc} alt={doctorName} className="h-full w-full object-cover" />
                     ) : hospital ? (
-                      <Building2 className="w-6 h-6" />
+                      <Building2 className="w-7 h-7" />
                     ) : (
-                      <User className="w-6 h-6" />
+                      <User className="w-7 h-7" />
                     )}
                   </div>
 
                   {/* Name + meta */}
-                  <div className="flex-1 min-w-0 pt-0.5">
-                    <h2 className="text-[15px] font-semibold text-foreground leading-tight truncate">
+                  <div className="flex-1 min-w-0 pt-1">
+                    <h2 className="text-lg font-semibold text-foreground leading-tight truncate">
                       {doctorName}
                     </h2>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                    <p className="text-sm text-muted-foreground mt-1 truncate">
                       {doctor
                         ? doctor.specialization || doctor.doctor_degree
                         : hospital
@@ -646,12 +646,12 @@ export function AppointmentDetailContent({
                           : "—"}
                     </p>
                     {doctor?.rating_avg && parseFloat(doctor.rating_avg) > 0 && (
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[11px] font-semibold text-foreground">
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-semibold text-foreground">
                           {parseFloat(doctor.rating_avg).toFixed(1)}
                         </span>
-                        <span className="text-[10px] text-muted-foreground/60">rating</span>
+                        <span className="text-xs text-muted-foreground/60">rating</span>
                       </div>
                     )}
                   </div>
@@ -679,21 +679,21 @@ export function AppointmentDetailContent({
                       color: "text-muted-foreground",
                     },
                   ].map(({ icon: Icon, label, value, color }) => (
-                    <div key={label} className="flex flex-col items-center py-3 px-2">
-                      <Icon className={cn("w-3.5 h-3.5 mb-1", color)} />
-                      <p className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground/50">
+                    <div key={label} className="flex flex-col items-center py-4 px-3">
+                      <Icon className={cn("w-4 h-4 mb-1.5", color)} />
+                      <p className="text-xs uppercase tracking-widest font-semibold text-muted-foreground/50">
                         {label}
                       </p>
-                      <p className="text-[11px] font-semibold text-foreground mt-0.5">{value}</p>
+                      <p className="text-sm font-semibold text-foreground mt-1">{value}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Unpaid warning */}
                 {unpaid && appt.status !== "cancelled" && (
-                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
+                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <p className="text-sm text-amber-700 dark:text-amber-400">
                       Payment of{" "}
                       <span className="font-semibold">
                         {formatCurrency(appt.patient_pays, appt.currency)}
@@ -715,9 +715,9 @@ export function AppointmentDetailContent({
 
                 {/* Join error */}
                 {joinMutation.isError && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-                    <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                    <p className="text-[11px] text-red-600 dark:text-red-400">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <p className="text-sm text-red-600 dark:text-red-400">
                       {(joinMutation.error as any)?.message ?? "Could not start session."}
                     </p>
                   </div>
@@ -893,17 +893,17 @@ export function AppointmentDetailContent({
             {/* ── Insurance ── */}
             {insurance && (
               <Section title="Insurance">
-                <div className="py-2.5 flex items-center gap-3 border-b border-border/30">
+                <div className="py-3 flex items-center gap-3 border-b border-border/30">
                   {insurance.logo && (
                     <img
                       src={insurance.logo}
                       alt={insurance.name}
-                      className="h-8 w-8 object-contain rounded-lg"
+                      className="h-10 w-10 object-contain rounded-lg"
                     />
                   )}
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">{insurance.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{insurance.code}</p>
+                    <p className="text-sm font-semibold text-foreground">{insurance.name}</p>
+                    <p className="text-xs text-muted-foreground">{insurance.code}</p>
                   </div>
                 </div>
                 <InfoRow
@@ -947,7 +947,7 @@ export function AppointmentDetailContent({
                   icon={Video}
                   label="Room"
                   value={
-                    <span className="flex items-center gap-1 font-mono text-[10px]">
+                    <span className="flex items-center gap-2 font-mono text-xs">
                       {appt.daily_room_name}
                       <CopyButton value={appt.daily_room_url} />
                     </span>
@@ -972,25 +972,25 @@ export function AppointmentDetailContent({
 
             {/* ── Review CTA ── */}
             {canReview && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-4 py-4 flex items-center justify-between gap-4">
+              <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-5 py-5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
-                    <Star className="w-4 h-4 text-amber-500" />
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
+                    <Star className="w-5 h-5 text-amber-500" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
                       How was your visit?
                     </p>
-                    <p className="text-[10px] text-amber-700/70 dark:text-amber-400/70 mt-0.5">
+                    <p className="text-xs text-amber-700/70 dark:text-amber-400/70 mt-1">
                       Help others find the right doctor
                     </p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  className="h-8 px-4 text-[11px] font-semibold rounded-lg shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm gap-1.5"
+                  className="h-9 px-4 text-sm font-semibold rounded-lg shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm gap-2"
                 >
-                  <Star className="w-3 h-3" />
+                  <Star className="w-4 h-4" />
                   Review
                 </Button>
               </div>
@@ -998,17 +998,17 @@ export function AppointmentDetailContent({
 
             {/* ── Cancellation info ── */}
             {appt.status === "cancelled" && appt.cancellation_reason && (
-              <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-4 py-3.5 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+              <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-5 py-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[11px] font-semibold text-red-700 dark:text-red-400">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-400">
                     Cancellation reason
                   </p>
-                  <p className="text-[11px] text-red-600/80 dark:text-red-400/70 mt-0.5">
+                  <p className="text-sm text-red-600/80 dark:text-red-400/70 mt-1">
                     {appt.cancellation_reason}
                   </p>
                   {appt.cancelled_at && (
-                    <p className="text-[10px] text-red-500/60 mt-1">
+                    <p className="text-xs text-red-500/60 mt-1.5">
                       Cancelled on {format(parseISO(appt.cancelled_at), "MMM dd, yyyy · hh:mm a")}
                     </p>
                   )}
@@ -1084,10 +1084,10 @@ export function AppointmentDetailModal({
         {/* Close ✕ */}
         <button
           onClick={onClose}
-          className="absolute top-2.5 right-3 z-10 w-7 h-7 rounded-lg bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-lg bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
           aria-label="Close"
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-4 h-4" />
         </button>
 
         {appointmentId && (

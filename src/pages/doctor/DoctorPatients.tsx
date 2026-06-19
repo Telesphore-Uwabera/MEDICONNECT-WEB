@@ -103,8 +103,8 @@ function FilterSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-4 border-b border-border last:border-b-0">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+    <div className="py-5 border-b border-border last:border-b-0">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
         {title}
       </p>
       {children}
@@ -128,7 +128,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-md text-sm border transition-all text-left",
+            "px-3 py-2 rounded-md text-sm border transition-all text-left",
             value === o.value
               ? "bg-teal-600 text-white border-teal-600"
               : "border-border text-muted-foreground hover:border-teal-400 hover:text-foreground",
@@ -151,7 +151,7 @@ function Avatar({ name }: { name: string }) {
     .join("")
     .toUpperCase();
   return (
-    <div className="h-9 w-9 rounded-full bg-primary-soft text-primary flex items-center justify-center font-semibold text-xs flex-shrink-0">
+    <div className="h-10 w-10 rounded-full bg-primary-soft text-primary flex items-center justify-center font-semibold text-sm flex-shrink-0">
       {initials}
     </div>
   );
@@ -197,7 +197,7 @@ function PatientCard({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-3 text-xs"
+          className="h-9 px-4 text-sm"
           onClick={() => onAction(p)}
         >
           View
@@ -291,14 +291,14 @@ const DoctorPatients = () => {
               value={filters.search}
               onChange={(e) => set("search", e.target.value)}
               placeholder="Search name or condition…"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-border rounded-md outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
+              className="w-full h-10 pl-10 pr-4 text-sm bg-background border border-border rounded-md outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
             />
           </div>
           <div className="relative flex-shrink-0">
             <select
               value={filters.sort}
               onChange={(e) => set("sort", e.target.value as SortOption)}
-              className="appearance-none pl-3 pr-8 py-2 text-sm bg-background border border-border rounded-md text-foreground outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
+              className="appearance-none h-10 pl-4 pr-10 text-sm bg-background border border-border rounded-md text-foreground outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -349,7 +349,7 @@ const DoctorPatients = () => {
             {hasActiveFilters && (
               <button
                 onClick={clearAll}
-                className="text-xs text-teal-600 hover:underline"
+                className="text-sm text-teal-600 hover:underline"
               >
                 Reset all
               </button>
@@ -384,7 +384,7 @@ const DoctorPatients = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearAll}
-                  className="ml-2 text-teal-600 hover:underline text-xs"
+                  className="ml-3 text-teal-600 hover:underline text-sm"
                 >
                   Reset filters
                 </button>
@@ -393,8 +393,8 @@ const DoctorPatients = () => {
 
             <div className="flex items-center gap-3">
               {highRiskCount > 0 && (
-                <span className="hidden sm:flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 px-2.5 py-1 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                <span className="hidden sm:flex items-center gap-2 text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
                   {highRiskCount} high risk
                 </span>
               )}
@@ -405,7 +405,7 @@ const DoctorPatients = () => {
                   onClick={() => setView("table")}
                   aria-label="Table view"
                   className={cn(
-                    "px-2.5 py-1.5 transition-colors",
+                    "px-3 py-2 transition-colors",
                     view === "table"
                       ? "bg-teal-600 text-white"
                       : "text-muted-foreground hover:text-foreground",
@@ -426,7 +426,7 @@ const DoctorPatients = () => {
                   onClick={() => setView("cards")}
                   aria-label="Card view"
                   className={cn(
-                    "px-2.5 py-1.5 border-l border-border transition-colors",
+                    "px-3 py-2 border-l border-border transition-colors",
                     view === "cards"
                       ? "bg-teal-600 text-white"
                       : "text-muted-foreground hover:text-foreground",
@@ -529,7 +529,7 @@ const DoctorPatients = () => {
                         <td className="px-5 py-4">
                           <span
                             className={cn(
-                              "text-xs font-medium px-2 py-1 rounded-sm",
+                              "text-xs font-medium px-2.5 py-1 rounded-md",
                               RISK_STYLES[p.risk],
                             )}
                           >
