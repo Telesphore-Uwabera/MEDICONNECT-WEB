@@ -1467,21 +1467,40 @@ function ScheduleTab({ doctor }: { doctor: ApiDoctor }) {
 }
 
 // ─── Tab: Links ───────────────────────────────────────────────────────────────
+//
+// NOTE: the backend returns `social_links` as a single object keyed by
+// platform name, e.g.
+//   { id, doctor_id, facebook, twitter, linkedin, instagram, is_active, ... }
+// — not an array of `{ id, platform, url }` records. We normalize it into
+// a small array here so the render logic below stays simple.
+
+const SOCIAL_PLATFORMS = [
+  { key: "facebook", label: "Facebook" },
+  { key: "twitter", label: "Twitter" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "instagram", label: "Instagram" },
+] as const;
 
 function LinksTab({ doctor }: { doctor: ApiDoctor }) {
-  const list =
-    doctor.social_links ??
-    (doctor as unknown as { socialLinks?: typeof doctor.social_links })
-      .socialLinks ??
-    [];
-  if (!list || list.length === 0)
+  const raw = doctor.social_links as unknown as
+    | Record<string, unknown>
+    | null
+    | undefined;
+
+  const links = SOCIAL_PLATFORMS.map((p) => ({
+    key: p.key,
+    platform: p.label,
+    url: raw?.[p.key] as string | undefined,
+  })).filter((l) => !!l.url);
+
+  if (!raw || links.length === 0)
     return <SectionEmpty label="No social links have been added yet" />;
 
   return (
     <ContentWrap>
       <div className="flex flex-col gap-2">
-        {list.map((l) => (
-          <Card key={l.id} className="flex items-center gap-3">
+        {links.map((l) => (
+          <Card key={l.key} className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center shrink-0 border border-primary/20">
               <Globe className="w-3 h-3 text-primary/60" />
             </div>
