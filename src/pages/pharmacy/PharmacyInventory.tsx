@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -779,89 +780,32 @@ const PharmacyInventory = () => {
   const openEdit = (m: Medicine) => { setViewTarget(null); setEditTarget(m); setFormOpen(true); };
   const openDelete = (m: Medicine) => { setViewTarget(null); setDeleteTarget(m); };
 
-  // ── sidebar ──────────────────────────────────────────────────────────────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Stock status */}
-        <FilterSection title="Stock Status">
-          <PillGroup<StockStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all",      label: "All statuses" },
-              { value: "in-stock", label: "In stock",      dot: "bg-emerald-500" },
-              { value: "low",      label: "Low stock",     dot: "bg-amber-500" },
-              { value: "out",      label: "Out of stock",  dot: "bg-red-500" },
-            ]}
-          />
-        </FilterSection>
-
-        {/* Category — driven by real API data */}
-        <FilterSection title="Category">
-          <PillGroup<number | "all">
-            value={filters.categoryId}
-            onChange={(v) => set("categoryId", v)}
-            options={[
-              { value: "all", label: "All categories" },
-              ...categories.map((c) => ({ value: c.id, label: c.name })),
-            ]}
-          />
-        </FilterSection>
-
-        {/* Active filter chips */}
-        {hasActiveFilters && (
-          <div className="py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2">
-              Active filters
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {filters.status !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {STATUS_LABELS[filters.status]}
-                  <button onClick={() => set("status", "all")} className="hover:opacity-70">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.categoryId !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {categories.find((c) => c.id === filters.categoryId)?.name ?? "Category"}
-                  <button onClick={() => set("categoryId", "all")} className="hover:opacity-70">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  "{filters.search}"
-                  <button onClick={() => set("search", "")} className="hover:opacity-70">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Stock Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "in-stock", label: "In stock" },
+        { value: "low", label: "Low stock" },
+        { value: "out", label: "Out of stock" },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "categoryId",
+      label: "Category",
+      value: String(filters.categoryId),
+      options: [
+        { value: "all", label: "All categories" },
+        ...categories.map((c) => ({ value: String(c.id), label: c.name }))
+      ],
+      onChange: (v: string) => set("categoryId", v === "all" ? "all" : Number(v))
+    }
+  ], [filters.status, filters.categoryId, categories, set]);
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -873,47 +817,16 @@ const PharmacyInventory = () => {
           subtitle={t("pages.pharmacy.inventory_sub", "Manage medicines, stock levels and pricing")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile bottom-sheet */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-2xl border-t border-border",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-4 border-t border-border">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors"
-              >
-                Show results
-              </button>
-            </div>
-          </div>
-
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
             {/* Stat cards */}
             <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1038,20 +951,11 @@ const PharmacyInventory = () => {
                   {t("pages.pharmacy.add_stock", "Add Medicine")}
                 </Button>
 
-                {/* Mobile filters button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
-                    hasActiveFilters
-                      ? "bg-primary text-white border-primary"
-                      : "border-border/60 text-muted-foreground bg-card",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -1278,7 +1182,6 @@ const PharmacyInventory = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       {/* Drawers */}

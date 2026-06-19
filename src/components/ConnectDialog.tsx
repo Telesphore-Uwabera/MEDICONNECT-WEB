@@ -36,6 +36,8 @@ import { useLogin } from "@/hooks/useAuth";
 import { useCallContext } from "@/context/CallContext";
 import { useNavigate } from "react-router-dom";
 import { ChatPanel } from "./consultatioRoom/ChatPanel";
+import { decodeCallToken } from "@/lib/scheduled-call";
+import { apiFetch } from "@/lib/api";
 
 // ─── IremboPay window type ────────────────────────────────────────────────────
 // Declared here so we never need `(window as any)` throughout the file.
@@ -355,6 +357,10 @@ export const ConnectDialogContent = ({
   // Set when the backend rejects a new request because one is already active —
   // holds the in-progress consultation so we can offer a one-click rejoin.
   const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: any } | null>(null);
+  // A backend-confirmed in-progress instant for this doctor (or any, for general).
+  // When present, the idle screen offers "Join" instead of starting a new one.
+  const [activeInstant, setActiveInstant] = useState<{ id: number } | null>(null);
+  const [joiningActive, setJoiningActive] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentInfo, setPaymentInfo] = useState<{
     amount: number;
@@ -536,6 +542,64 @@ export const ConnectDialogContent = ({
   //   - paymentInfo already set  → go to payment
   //   - no paymentInfo           → payment was completed, go to polling
   //
+
+  // ── Detect an existing in-progress instant for this doctor ────────────────
+  // If the logged-in patient already has a live instant, the idle screen offers
+  // to JOIN it (via /patient/quick/{id}) instead of starting a duplicate.
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setActiveInstant(null);
+      return;
+    }
+    let cancelled = false;
+    apiFetch<{ data: Array<any> }>("/patient/quick")
+      .then((res) => {
+        if (cancelled) return;
+        const list = res?.data ?? [];
+        const match = list.find(
+          (a) =>
+            a?.booking_type === "instant" &&
+            (a?.status === "in_progress" || a?.status === "confirmed") &&
+            (isGeneral || a?.doctor?.id === doctor?.id),
+        );
+        setActiveInstant(match ? { id: Number(match.id) } : null);
+      })
+      .catch(() => {
+        if (!cancelled) setActiveInstant(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, isGeneral, doctor?.id]);
+
+  // Join the existing instant via its /patient/quick/{id} detail (patient token).
+  const handleJoinActiveInstant = useCallback(async () => {
+    if (!activeInstant) return;
+    setJoiningActive(true);
+    try {
+      const detail = await apiFetch<any>(`/patient/quick/${activeInstant.id}`);
+      const decoded = decodeCallToken(detail?.daily_guest_token);
+      const roomName = detail?.daily_room_name || decoded?.room;
+      if (decoded && roomName) {
+        decoded.consultation_id = Number(activeInstant.id);
+        decoded.is_owner = false;
+        onCloseCompletely();
+        startCall(roomName, decoded);
+        return;
+      }
+      if (detail?.daily_room_url) {
+        onCloseCompletely();
+        window.open(detail.daily_room_url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      toast.error("Could not open your active consultation.");
+    } catch (err) {
+      toast.error((err as Error)?.message || "Could not join your active consultation.");
+    } finally {
+      setJoiningActive(false);
+    }
+  }, [activeInstant, onCloseCompletely, startCall]);
 
   const handleRequest = useCallback(async (override?: { name: string; phone: string, password?: string }) => {
     const name = override?.name ?? me?.name ?? guestName;
@@ -1129,24 +1193,47 @@ export const ConnectDialogContent = ({
           {/* ── Idle ── */}
           {phase === "idle" && (
             <div className="space-y-3 pt-1">
-              {isGeneral && (
-                <div className="space-y-1.5 mb-2">
-                  <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
-                  <textarea
-                    placeholder="e.g. I have a headache"
-                    value={guestDescription}
-                    onChange={(e) => setGuestDescription(e.target.value)}
-                    className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </div>
+              {activeInstant ? (
+                // Already has a live instant → join it instead of starting a new one.
+                <>
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[12px] text-emerald-700 dark:text-emerald-400">
+                    <Activity className="h-4 w-4 shrink-0" />
+                    You already have an active consultation{doctor ? " with this doctor" : ""}.
+                  </div>
+                  <Button
+                    onClick={handleJoinActiveInstant}
+                    disabled={joiningActive}
+                    className="w-full h-10 text-sm font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+                  >
+                    {joiningActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
+                    Join your consultation<ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                    Minimize
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isGeneral && (
+                    <div className="space-y-1.5 mb-2">
+                      <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
+                      <textarea
+                        placeholder="e.g. I have a headache"
+                        value={guestDescription}
+                        onChange={(e) => setGuestDescription(e.target.value)}
+                        className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  )}
+                  <DeviceToggles compact={false} />
+                  <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                    <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                    Minimize
+                  </Button>
+                </>
               )}
-              <DeviceToggles compact={false} />
-              <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
-                <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
-                Minimize
-              </Button>
             </div>
           )}
 

@@ -333,7 +333,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const PatientStats = () => {
+const PatientStats = ({ activeTab }: { activeTab: string }) => {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [chartType, setChartType] = useState<"area" | "bar">("area");
@@ -380,13 +380,15 @@ const PatientStats = () => {
     return Math.round((ps.completed / ps.total_appointments) * 100);
   }, [ps]);
 
+  if (!["overview", "clinical", "financial"].includes(activeTab)) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col h-full">
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
-          {/* ── Filter Bar ── */}
-          <div className="rounded-md border border-border/70 bg-card shadow-sm p-4 space-y-3">
-            <div className="flex flex-wrap items-center gap-2.5">
+    <div className="space-y-4">
+      {/* ── Filter Bar ── */}
+      <div className="rounded-md border border-border/70 bg-card shadow-sm p-4 space-y-3">
+        <div className="flex flex-wrap items-center gap-2.5">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-2">
                 <Filter className="w-4 h-4" />
                 Filters
@@ -630,8 +632,11 @@ const PatientStats = () => {
             )}
           </div>
 
-          {/* ── Today's Snapshot ── */}
-          <div>
+          {/* ── Tab Content ── */}
+          {activeTab === "overview" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {/* ── Today's Snapshot ── */}
+              <div>
             <SectionLabel>Today</SectionLabel>
             <div className="grid grid-cols-3 lg:grid-cols-6 gap-1.5">
               <KpiCard
@@ -753,159 +758,14 @@ const PatientStats = () => {
             </div>
           </div>
 
-          {/* ── Spending ── */}
-          <div>
-            <SectionLabel>Spending</SectionLabel>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
-              <KpiCard
-                label="Total Spent"
-                value={`RWF${spending?.total ?? 0}`}
-                icon={TrendingUp}
-                accent="primary"
-                loading={isLoading}
-                sub={
-                  spending?.change_percent != null
-                    ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
-                    : undefined
-                }
-              />
-              <KpiCard
-                label="Insurance Saved"
-                value={`RWF${spending?.total_insurance_saved ?? 0}`}
-                icon={ShieldCheck}
-                accent="success"
-                loading={isLoading}
-              />
-              <KpiCard
-                label="Avg / Appointment"
-                value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
-                icon={BarChart2}
-                accent="info"
-                loading={isLoading}
-              />
-              <KpiCard
-                label="Service Bookings"
-                value={spending?.breakdown.service_bookings.booking_count ?? 0}
-                icon={FileText}
-                accent="violet"
-                loading={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* ── Instant / Prescriptions / Certificates ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5">
-            {/* Instant Consults */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-amber-500" /> Instant Consults
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Total", val: instant?.total ?? 0 },
-                  { label: "Completed", val: instant?.completed ?? 0 },
-                  { label: "Pending", val: instant?.pending ?? 0 },
-                  { label: "Declined", val: instant?.declined ?? 0 },
-                  { label: "Active Now", val: instant?.active_now ?? 0 },
-                  {
-                    label: "Avg Duration",
-                    val: `${instant?.avg_duration_min ?? 0}m`,
-                  },
-                ].map(({ label, val }) => (
-                  <div
-                    key={label}
-                    className="flex justify-between border-b border-border/40 pb-1.5"
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold text-foreground">{val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Prescriptions */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Pill className="w-4 h-4 text-emerald-500" /> Prescriptions
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Total", val: prescriptions?.total ?? 0 },
-                  { label: "Active", val: prescriptions?.active ?? 0 },
-                  { label: "Issued", val: prescriptions?.issued ?? 0 },
-                  { label: "Signed", val: prescriptions?.signed ?? 0 },
-                  { label: "Draft", val: prescriptions?.draft ?? 0 },
-                  {
-                    label: "Expiring Soon",
-                    val: prescriptions?.expiring_soon ?? 0,
-                  },
-                ].map(({ label, val }) => (
-                  <div
-                    key={label}
-                    className="flex justify-between border-b border-border/40 pb-1.5"
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span
-                      className={cn(
-                        "font-semibold text-foreground",
-                        label === "Expiring Soon" &&
-                          (val as number) > 0 &&
-                          "text-amber-500",
-                      )}
-                    >
-                      {val}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Certificates */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-sky-500" /> Certificates
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Total", val: certificates?.total ?? 0 },
-                  { label: "Issued", val: certificates?.issued ?? 0 },
-                  { label: "Pending", val: certificates?.pending ?? 0 },
-                  { label: "Signed", val: certificates?.signed ?? 0 },
-                  { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
-                  {
-                    label: "Req. In-Person",
-                    val: certificates?.required_inperson ?? 0,
-                  },
-                ].map(({ label, val }) => (
-                  <div
-                    key={label}
-                    className="flex justify-between border-b border-border/40 pb-1.5"
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span
-                      className={cn(
-                        "font-semibold text-foreground",
-                        label === "Red Flags" &&
-                          (val as number) > 0 &&
-                          "text-rose-500",
-                      )}
-                    >
-                      {val}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
           {/* ── Activity Chart ── */}
-          <div className="rounded-md border border-border/70 bg-card shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+          <div className="rounded-[16px] border border-border/80 bg-card shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
               <div>
-                <h2 className="text-sm font-semibold text-foreground">
+                <h2 className="text-sm font-bold text-foreground">
                   Appointment Activity
                 </h2>
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                <p className="text-xs font-medium text-muted-foreground/70 mt-1">
                   {PERIOD_LABELS[filters.period]} · Grouped{" "}
                   {GROUP_LABELS[filters.chart_group].toLowerCase()}
                   {filters.appointment_type !== "all" &&
@@ -914,16 +774,16 @@ const PatientStats = () => {
                     ` · ${STATUS_LABELS[filters.status]}`}
                 </p>
               </div>
-              <div className="flex items-center gap-1 rounded-md border border-border/60 p-1 bg-muted/30">
+              <div className="flex items-center gap-1 rounded-[8px] border border-border/60 p-1 bg-background/50">
                 {(["area", "bar"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setChartType(t)}
                     className={cn(
-                      "px-3 py-1 text-xs rounded-sm font-medium transition-colors capitalize",
+                      "px-3 py-1.5 text-xs rounded-[6px] font-bold transition-colors capitalize",
                       chartType === t
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     {t}
@@ -932,20 +792,20 @@ const PatientStats = () => {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 sm:p-5">
               {isLoading ? (
-                <div className="h-44 flex items-center justify-center">
+                <div className="h-48 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : chartData.length === 0 ? (
-                <div className="h-44 flex flex-col items-center justify-center gap-2 text-center">
+                <div className="h-48 flex flex-col items-center justify-center gap-3 text-center">
                   <BarChart2 className="w-6 h-6 text-muted-foreground/30" />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs font-medium text-muted-foreground">
                     No chart data for this period
                   </p>
                 </div>
               ) : chartType === "area" ? (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={220}>
                   <AreaChart
                     data={chartData}
                     margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
@@ -1012,6 +872,7 @@ const PatientStats = () => {
                           style={{
                             color: "hsl(var(--muted-foreground))",
                             textTransform: "capitalize",
+                            fontWeight: 600,
                           }}
                         >
                           {val}
@@ -1022,32 +883,32 @@ const PatientStats = () => {
                       type="monotone"
                       dataKey="appointments"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={1.5}
+                      strokeWidth={2}
                       fill="url(#gTotal)"
                     />
                     <Area
                       type="monotone"
                       dataKey="completed"
                       stroke="#10b981"
-                      strokeWidth={1.5}
+                      strokeWidth={2}
                       fill="url(#gCompleted)"
                     />
                     <Area
                       type="monotone"
                       dataKey="online"
                       stroke="#0ea5e9"
-                      strokeWidth={1}
+                      strokeWidth={1.5}
                       fill="none"
-                      strokeDasharray="3 3"
+                      strokeDasharray="4 4"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={220}>
                   <BarChart
                     data={chartData}
                     margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
-                    barSize={6}
+                    barSize={8}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -1079,6 +940,7 @@ const PatientStats = () => {
                           style={{
                             color: "hsl(var(--muted-foreground))",
                             textTransform: "capitalize",
+                            fontWeight: 600,
                           }}
                         >
                           {val}
@@ -1088,115 +950,281 @@ const PatientStats = () => {
                     <Bar
                       dataKey="appointments"
                       fill="hsl(var(--primary))"
-                      radius={[2, 2, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                     <Bar
                       dataKey="completed"
                       fill="#10b981"
-                      radius={[2, 2, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                     <Bar
                       dataKey="online"
                       fill="#0ea5e9"
-                      radius={[2, 2, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                     <Bar
                       dataKey="in_person"
                       fill="#8b5cf6"
-                      radius={[2, 2, 0, 0]}
+                      radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
           </div>
-
-          {/* ── Reviews & Medical Profile ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-            {/* Reviews */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-amber-400" /> Reviews
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Total", val: reviews?.total ?? 0 },
-                  {
-                    label: "Avg Rating",
-                    val:
-                      reviews?.avg_rating != null
-                        ? reviews.avg_rating.toFixed(1)
-                        : "—",
-                  },
-                  { label: "5 Star", val: reviews?.five_star ?? 0 },
-                  { label: "4 Star", val: reviews?.four_star ?? 0 },
-                  { label: "3 Star", val: reviews?.three_star ?? 0 },
-                  {
-                    label: "Pending Review",
-                    val: reviews?.pending_review ?? 0,
-                  },
-                ].map(({ label, val }) => (
-                  <div
-                    key={label}
-                    className="flex justify-between border-b border-border/40 pb-1.5"
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold text-foreground">{val}</span>
-                  </div>
-                ))}
-              </div>
             </div>
+          )}
 
-            {/* Medical Profile */}
-            <div className="rounded-md border border-border/70 bg-card shadow-sm p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <Stethoscope className="w-4 h-4 text-sky-500" /> Medical Profile
-                {medProfile?.complete && (
-                  <Badge
-                    variant="outline"
-                    className="ml-auto text-xs px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10"
-                  >
-                    Complete
-                  </Badge>
-                )}
-              </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
-                  {
-                    label: "Conditions",
-                    val: medProfile?.conditions_count ?? 0,
-                  },
-                  {
-                    label: "Medications",
-                    val: medProfile?.medications_count ?? 0,
-                  },
-                  { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
-                  { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
-                  { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
-                ].map(({ label, val }) => (
-                  <div
-                    key={label}
-                    className="flex justify-between border-b border-border/40 pb-1.5"
-                  >
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold text-foreground capitalize">
-                      {val}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {medProfile?.has_family_history && (
-                <div className="mt-2.5 flex items-center gap-1.5 text-xs text-amber-500">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Has family history
-                  recorded
+          {activeTab === "financial" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {/* ── Spending ── */}
+              <div>
+                <SectionLabel>Spending</SectionLabel>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+                  <KpiCard
+                    label="Total Spent"
+                    value={`RWF${spending?.total ?? 0}`}
+                    icon={TrendingUp}
+                    accent="primary"
+                    loading={isLoading}
+                    sub={
+                      spending?.change_percent != null
+                        ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
+                        : undefined
+                    }
+                  />
+                  <KpiCard
+                    label="Insurance Saved"
+                    value={`RWF${spending?.total_insurance_saved ?? 0}`}
+                    icon={ShieldCheck}
+                    accent="success"
+                    loading={isLoading}
+                  />
+                  <KpiCard
+                    label="Avg / Appointment"
+                    value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
+                    icon={BarChart2}
+                    accent="info"
+                    loading={isLoading}
+                  />
+                  <KpiCard
+                    label="Service Bookings"
+                    value={spending?.breakdown.service_bookings.booking_count ?? 0}
+                    icon={FileText}
+                    accent="violet"
+                    loading={isLoading}
+                  />
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {activeTab === "clinical" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {/* ── Instant / Prescriptions / Certificates ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
+                {/* Instant Consults */}
+                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-amber-500/10">
+                      <Zap className="w-4 h-4 text-amber-500" />
+                    </div>
+                    Instant Consults
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {[
+                      { label: "Total", val: instant?.total ?? 0 },
+                      { label: "Completed", val: instant?.completed ?? 0 },
+                      { label: "Pending", val: instant?.pending ?? 0 },
+                      { label: "Declined", val: instant?.declined ?? 0 },
+                      { label: "Active Now", val: instant?.active_now ?? 0 },
+                      {
+                        label: "Avg Duration",
+                        val: `${instant?.avg_duration_min ?? 0}m`,
+                      },
+                    ].map(({ label, val }) => (
+                      <div
+                        key={label}
+                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                      >
+                        <span className="text-muted-foreground font-medium">{label}</span>
+                        <span className="font-bold text-foreground text-sm">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prescriptions */}
+                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-emerald-500/10">
+                      <Pill className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    Prescriptions
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {[
+                      { label: "Total", val: prescriptions?.total ?? 0 },
+                      { label: "Active", val: prescriptions?.active ?? 0 },
+                      { label: "Issued", val: prescriptions?.issued ?? 0 },
+                      { label: "Signed", val: prescriptions?.signed ?? 0 },
+                      { label: "Draft", val: prescriptions?.draft ?? 0 },
+                      {
+                        label: "Expiring Soon",
+                        val: prescriptions?.expiring_soon ?? 0,
+                      },
+                    ].map(({ label, val }) => (
+                      <div
+                        key={label}
+                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                      >
+                        <span className="text-muted-foreground font-medium">{label}</span>
+                        <span
+                          className={cn(
+                            "font-bold text-foreground text-sm",
+                            label === "Expiring Soon" &&
+                              (val as number) > 0 &&
+                              "text-amber-500",
+                          )}
+                        >
+                          {val}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Certificates */}
+                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-sky-500/10">
+                      <FileText className="w-4 h-4 text-sky-500" />
+                    </div>
+                    Certificates
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {[
+                      { label: "Total", val: certificates?.total ?? 0 },
+                      { label: "Issued", val: certificates?.issued ?? 0 },
+                      { label: "Pending", val: certificates?.pending ?? 0 },
+                      { label: "Signed", val: certificates?.signed ?? 0 },
+                      { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
+                      {
+                        label: "Req. In-Person",
+                        val: certificates?.required_inperson ?? 0,
+                      },
+                    ].map(({ label, val }) => (
+                      <div
+                        key={label}
+                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                      >
+                        <span className="text-muted-foreground font-medium">{label}</span>
+                        <span
+                          className={cn(
+                            "font-bold text-foreground text-sm",
+                            label === "Red Flags" &&
+                              (val as number) > 0 &&
+                              "text-rose-500",
+                          )}
+                        >
+                          {val}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* ── Reviews & Medical Profile ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+                {/* Reviews */}
+                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-amber-400/10">
+                      <Star className="w-4 h-4 text-amber-400" />
+                    </div>
+                    Reviews
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {[
+                      { label: "Total", val: reviews?.total ?? 0 },
+                      {
+                        label: "Avg Rating",
+                        val:
+                          reviews?.avg_rating != null
+                            ? reviews.avg_rating.toFixed(1)
+                            : "—",
+                      },
+                      { label: "5 Star", val: reviews?.five_star ?? 0 },
+                      { label: "4 Star", val: reviews?.four_star ?? 0 },
+                      { label: "3 Star", val: reviews?.three_star ?? 0 },
+                      {
+                        label: "Pending Review",
+                        val: reviews?.pending_review ?? 0,
+                      },
+                    ].map(({ label, val }) => (
+                      <div
+                        key={label}
+                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                      >
+                        <span className="text-muted-foreground font-medium">{label}</span>
+                        <span className="font-bold text-foreground text-sm">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Medical Profile */}
+                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-sky-500/10">
+                      <Stethoscope className="w-4 h-4 text-sky-500" />
+                    </div>
+                    Medical Profile
+                    {medProfile?.complete && (
+                      <Badge
+                        variant="outline"
+                        className="ml-auto text-[10px] px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10 rounded-[4px]"
+                      >
+                        Complete
+                      </Badge>
+                    )}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    {[
+                      { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
+                      {
+                        label: "Conditions",
+                        val: medProfile?.conditions_count ?? 0,
+                      },
+                      {
+                        label: "Medications",
+                        val: medProfile?.medications_count ?? 0,
+                      },
+                      { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
+                      { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
+                      { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
+                    ].map(({ label, val }) => (
+                      <div
+                        key={label}
+                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                      >
+                        <span className="text-muted-foreground font-medium">{label}</span>
+                        <span className="font-bold text-foreground text-sm capitalize">
+                          {val}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {medProfile?.has_family_history && (
+                    <div className="mt-4 p-2.5 rounded-md border border-amber-500/20 bg-amber-500/10 flex items-center gap-2 text-xs font-medium text-amber-600">
+                      <AlertTriangle className="w-4 h-4" /> Has family history recorded
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </main>
-    </div>
   );
 };
 

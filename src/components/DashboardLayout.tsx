@@ -447,13 +447,10 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-12 w-auto flex-shrink-0 rounded-sm"
+            className="h-16 w-auto flex-shrink-0 rounded-sm"
           />
         </NavLink>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          <ThemeToggle />
-          <LanguageSwitcher compact />
-        </div>
+
       </div>
 
       {/* ── Role badge ── */}

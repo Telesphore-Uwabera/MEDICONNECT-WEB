@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
+import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
 import { LogIn, X, ShieldAlert } from "lucide-react";
 
 import Index from "./pages/Index.tsx";
@@ -31,7 +32,7 @@ import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
 import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
 import MyReviews from "./pages/patient/MyReviews.tsx";
 import PatientSettings from "./pages/patient/PatientSettings.tsx";
-import Orders from "./pages/patient/orders.tsx";
+import Orders from "./pages/patient/Orders.tsx";
 
 /* ── Doctor ── */
 import DoctorOverview from "./pages/doctor/DoctorOverview";
@@ -193,6 +194,7 @@ const App = () => (
           <Sonner />
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
+          <GlobalInstantPill />
           <Routes>
 
             {/* ── Public ──────────────────────────────────────── */}

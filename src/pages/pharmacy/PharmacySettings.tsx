@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { SkeletonCard } from "@/components/SkeletonCard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -524,9 +525,9 @@ function PharmacySettings() {
         <div className="flex flex-col h-full">
           <PageHeader title="Settings" subtitle="Manage your account" />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-            <div className="h-36 rounded-sm border border-border/60 bg-card animate-pulse" />
+            <SkeletonCard />
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-sm border border-border/60 bg-card animate-pulse" />
+              <SkeletonCard key={i} />
             ))}
           </main>
         </div>

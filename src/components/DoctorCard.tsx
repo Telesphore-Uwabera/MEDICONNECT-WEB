@@ -17,6 +17,7 @@ import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import type { ApiDoctor, ApiDoctorHospital, ApiDoctorSpecialization } from "@/hooks/patient/use-patient-doctor";
 import { readConsultSession } from "@/hooks/patient/se-consultation-session";
+import { Card } from "@/components/ui/card";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,19 +60,33 @@ function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   );
 }
 
-// ─── Detail row ───────────────────────────────────────────────────────────────
+// ─── Detail row (compact card variant, used inside a responsive grid) ─────────
 
 function DetailRow({ icon: Icon, label, value, accent }: {
   icon: React.ElementType; label: string; value: React.ReactNode; accent?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-border/40 last:border-b-0">
-      <div className={cn("mt-0.5 flex-shrink-0 w-5 h-5 rounded-sm flex items-center justify-center", accent ? "bg-primary/10" : "bg-muted/60")}>
+    <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-card/60">
+      <div className={cn("mt-0.5 flex-shrink-0 w-7 h-7 rounded-sm flex items-center justify-center", accent ? "bg-primary/10" : "bg-muted/60")}>
         <Icon className={cn("h-4 w-4", accent ? "text-primary" : "text-muted-foreground")} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-muted-foreground/70 uppercase tracking-wider mb-0.5">{label}</p>
-        <p className="text-sm font-medium text-foreground leading-relaxed">{value}</p>
+        <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-0.5">{label}</p>
+        <p className="text-sm font-medium text-foreground leading-snug truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Quick stat (used in the sidebar) ──────────────────────────────────────────
+
+function QuickStat({ icon, top, bot }: { icon: React.ReactNode; top: React.ReactNode; bot: string }) {
+  return (
+    <div className="flex items-center gap-2.5 py-2 px-2.5 bg-background/60 rounded-md border border-border/40">
+      <div className="flex items-center justify-center w-7 h-7 rounded-sm bg-muted/60 shrink-0">{icon}</div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-foreground leading-tight truncate">{top}</p>
+        <p className="text-[10px] text-muted-foreground leading-tight">{bot}</p>
       </div>
     </div>
   );
@@ -203,7 +218,7 @@ export function UnifiedModal({
         <div
           className={cn(
             "pointer-events-auto w-full",
-            mode === "connect" ? "max-w-[420px]" : "max-w-md",
+            mode === "connect" ? "max-w-[420px]" : "max-w-3xl",
             "bg-card/80 backdrop-blur-2xl border border-border/60 rounded-xl shadow-2xl",
             "flex flex-col max-h-[90dvh] overflow-hidden",
             "animate-in fade-in-0 zoom-in-95 duration-200",
@@ -264,124 +279,128 @@ export function UnifiedModal({
           {/* ── Content area ── */}
           {mode === "details" ? (
             <>
-              {/* Doctor header band */}
-              <div className="relative bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border-b border-border/50 px-4 pt-4 pb-3 flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-40 h-40 rounded-sm overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
-                    <DoctorAvatar doctor={doctor} size="lg" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                      <h2 className="text-base font-semibold text-foreground leading-tight truncate">{doctor.user.name}</h2>
-                      {doctor.is_featured && (
-                        <span className="px-1 py-px text-sm font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900 flex-shrink-0">
-                          Featured
-                        </span>
-                      )}
+              {/* Body: sidebar (identity + quick facts) + scrollable detail panel */}
+              <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+                {/* ── Sidebar ── */}
+                <div className="md:w-[260px] flex-shrink-0 border-b md:border-b-0 md:border-r border-border/50 bg-gradient-to-b from-primary/8 via-primary/4 to-transparent overflow-y-auto">
+                  <div className="p-4 flex flex-col items-center text-center">
+                    <div className="w-28 h-28 rounded-lg overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
+                      <DoctorAvatar doctor={doctor} size="lg" />
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-center gap-1.5 flex-wrap">
+                      <h2 className="text-base font-semibold text-foreground leading-tight">{doctor.user.name}</h2>
                       {doctor.verified_at && <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />}
                     </div>
-                    <p className="text-xs text-primary font-medium truncate">
+                    {doctor.is_featured && (
+                      <span className="mt-1 px-1.5 py-px text-[10px] font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
+                        Featured
+                      </span>
+                    )}
+                    <p className="text-xs text-primary font-medium mt-1">
                       {doctor.specialization}{doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
                     </p>
                     {doctor.designations && (
-                      <p className="text-sm text-muted-foreground/70 mt-0.5 truncate">{doctor.designations}</p>
+                      <p className="text-[11px] text-muted-foreground/70 mt-0.5">{doctor.designations}</p>
                     )}
-                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                      <span className={cn("inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-sm border", s.text, s.bg)}>
+
+                    <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
+                      <span className={cn("inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border", s.text, s.bg)}>
                         <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", s.dot, s.pulse)} />{s.label}
                       </span>
-                      <ConsultBadge type={doctor.consultation_type} />
                       {doctor.instant_consultation && (
-                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                           <Zap className="h-3 w-3" />Instant
                         </span>
                       )}
                     </div>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-1.5">
-                  {[
-                    { icon: <Star className={cn("h-4 w-4", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />, top: rating > 0 ? rating.toFixed(1) : "New", bot: "Rating" },
-                    { icon: <Clock className="h-4 w-4 text-muted-foreground" />, top: feeLabel, bot: "Per visit" },
-                    { icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />, top: doctor.instant_consultation ? "Instant" : "Scheduled", bot: "Consult" },
-                  ].map(({ icon, top, bot }) => (
-                    <div key={bot} className="flex flex-col items-center py-1.5 px-2 bg-background/60 rounded-sm border border-border/40">
-                      <div className="flex items-center gap-1 mb-0.5">{icon}</div>
-                      <span className="text-sm font-bold text-foreground leading-tight">{top}</span>
-                      <span className="text-sm text-muted-foreground leading-tight">{bot}</span>
+                    <div className="mt-2">
+                      <ConsultBadge type={doctor.consultation_type} />
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Scrollable body */}
-              <div className="flex-1 overflow-y-auto px-4 py-3">
-                {bio && (
-                  <div className="mb-3 p-2.5 rounded-sm bg-muted/30 border border-border/40">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">About</p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{bio}</p>
+                    <div className="w-full mt-4 space-y-1.5 text-left">
+                      <QuickStat
+                        icon={<Star className={cn("h-4 w-4", rating > 0 ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40")} />}
+                        top={rating > 0 ? rating.toFixed(1) : "New"} bot="Rating" />
+                      <QuickStat icon={<Clock className="h-4 w-4 text-muted-foreground" />} top={feeLabel} bot="Per visit" />
+                      <QuickStat icon={<CalendarCheck className="h-4 w-4 text-muted-foreground" />}
+                        top={doctor.instant_consultation ? "Instant" : "Scheduled"} bot="Consult" />
+                    </div>
                   </div>
-                )}
-                <div className="rounded-sm border border-border/40 bg-card overflow-hidden divide-y divide-border/40">
-                  {locationLabel && <DetailRow icon={MapPin} label="Location" value={locationLabel} />}
-                  {doctor.medical_license && <DetailRow icon={ShieldCheck} label="Medical License" value={doctor.medical_license} accent />}
-                  {doctor.preferred_language && (
-                    <DetailRow icon={Languages} label="Language" value={langMap[doctor.preferred_language] ?? doctor.preferred_language} />
+                </div>
+
+                {/* ── Scrollable detail panel ── */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 min-w-0">
+                  {bio && (
+                    <div className="mb-4 p-3 rounded-md bg-muted/30 border border-border/40">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">About</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{bio}</p>
+                    </div>
                   )}
-                  <DetailRow icon={FileText} label="Agreement Status" value={
-                    <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
-                      doctor.agreement_status === "approved"
-                        ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
-                        : "text-amber-600 bg-amber-500/10 border-amber-500/20")}>
-                      {doctor.agreement_status}
-                    </span>} />
-                  <DetailRow icon={User} label="Profile Status" value={
-                    <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
-                      doctor.is_active ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" : "text-zinc-500 bg-muted border-border")}>
-                      {doctor.is_active ? "Active" : "Inactive"}
-                    </span>} />
-                  {doctor.verified_at && (
-                    <DetailRow icon={BadgeCheck} label="Verified" accent
-                      value={new Date(doctor.verified_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {locationLabel && <DetailRow icon={MapPin} label="Location" value={locationLabel} />}
+                    {doctor.medical_license && <DetailRow icon={ShieldCheck} label="Medical License" value={doctor.medical_license} accent />}
+                    {doctor.preferred_language && (
+                      <DetailRow icon={Languages} label="Language" value={langMap[doctor.preferred_language] ?? doctor.preferred_language} />
+                    )}
+                    <DetailRow icon={FileText} label="Agreement Status" value={
+                      <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
+                        doctor.agreement_status === "approved"
+                          ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
+                          : "text-amber-600 bg-amber-500/10 border-amber-500/20")}>
+                        {doctor.agreement_status}
+                      </span>} />
+                    <DetailRow icon={User} label="Profile Status" value={
+                      <span className={cn("capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
+                        doctor.is_active ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20" : "text-zinc-500 bg-muted border-border")}>
+                        {doctor.is_active ? "Active" : "Inactive"}
+                      </span>} />
+                    {doctor.verified_at && (
+                      <DetailRow icon={BadgeCheck} label="Verified" accent
+                        value={new Date(doctor.verified_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })} />
+                    )}
+                  </div>
+
+                  {doctor.hospitals && doctor.hospitals.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Hospitals</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {doctor.hospitals.map((h: ApiDoctorHospital, i: number) => (
+                          <div key={i} className="flex items-center gap-2 p-2 rounded-md border border-border/40 bg-muted/20">
+                            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs text-foreground font-medium truncate">{h.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {doctor.specializations && doctor.specializations.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Specializations</p>
+                      <div className="flex flex-wrap gap-1">
+                        {doctor.specializations.map((sp: ApiDoctorSpecialization, i: number) => (
+                          <span key={i} className="px-2 py-0.5 text-xs font-medium rounded-sm bg-primary/8 text-primary border border-primary/20">
+                            {sp.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {doctor.hospitals && doctor.hospitals.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Hospitals</p>
-                    <div className="space-y-1">
-                      {doctor.hospitals.map((h: ApiDoctorHospital, i: number) => (
-                        <div key={i} className="flex items-center gap-2 p-2 rounded-sm border border-border/40 bg-muted/20">
-                          <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-xs text-foreground font-medium truncate">{h.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {doctor.specializations && doctor.specializations.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">Specializations</p>
-                    <div className="flex flex-wrap gap-1">
-                      {doctor.specializations.map((sp: ApiDoctorSpecialization, i: number) => (
-                        <span key={i} className="px-2 py-0.5 text-sm font-medium rounded-sm bg-primary/8 text-primary border border-primary/20">
-                          {sp.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Footer */}
-              <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex items-center gap-2 bg-card/80">
+              <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex items-center justify-end gap-2 bg-card/80">
                 <Button variant="outline" size="sm" disabled={!canBook}
                   onClick={() => { onMinimize(); onBook(); }}
-                  className="flex-1 h-7 text-xs font-semibold rounded-sm">
+                  className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-sm">
                   <CalendarCheck className="h-4 w-4 mr-1.5" />Book Appointment
                 </Button>
                 {canConnect && (
                   <Button size="sm" onClick={() => setMode("connect")}
-                    className="flex-1 h-7 text-xs font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground">
+                    className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Wifi className="h-4 w-4 mr-1.5" />Connect Now
                   </Button>
                 )}
@@ -532,15 +551,12 @@ export const DoctorCard = ({
   return (
     <>
       {/* ── Card ── */}
-      <div
-        className={cn(
-          "relative rounded-[16px] border bg-card",
-          "overflow-hidden transition-all duration-300 cursor-pointer",
-          "hover:shadow-xl hover:-translate-y-1 hover:border-primary/30",
-          isConnected ? "border-emerald-500/30 ring-1 ring-emerald-500/30" :
-            hasSavedSession && !isCallInProgress ? "border-violet-500/30 ring-1 ring-violet-500/25" : "border-border/60 shadow-sm",
-        )}
+      <Card
         onClick={openDetails}
+        className={cn(
+          "rounded-[6px] overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300",
+          isConnected ? "border-emerald-500/30 ring-1 ring-emerald-500/30" : hasSavedSession && !isCallInProgress ? "border-violet-500/30 ring-1 ring-violet-500/25" : "border-border/60 shadow-sm"
+        )}
       >
         <div className="p-4 sm:p-5">
           {/* Top row */}
@@ -597,7 +613,7 @@ export const DoctorCard = ({
                   <span className="text-xs font-bold tracking-tight text-violet-600 dark:text-violet-400">Queue session saved</span></>
               ) : (
                 <><Zap className={cn("h-4 w-4 shrink-0", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground/50")} />
-                  <span className={cn("text-xs font-bold tracking-tight", doctor.instant_consultation ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70")}>
+                  <span className={cn("text-[10px] font-bold tracking-tight", doctor.instant_consultation ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70")}>
                     {doctor.instant_consultation ? "Usually replies in 2 min" : "Replies within 24h"}
                   </span></>
               )}
@@ -615,8 +631,8 @@ export const DoctorCard = ({
               {/* Connected / In-progress buttons */}
               {hasSavedSession && !isCallInProgress ? (
                 <Button size="sm" onClick={openResume}
-                  className="h-8 px-3 text-xs font-bold rounded-[8px] bg-violet-600 hover:bg-violet-700 text-white shadow-sm hover:shadow transition-all">
-                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />Resume
+                  className="h-8 px-3 text-xs font-bold rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
+                  <Wifi className="h-3.5 w-3.5 mr-1.5" />Join
                 </Button>
               ) : canConnect ? (
                 <Button size="sm"
@@ -630,13 +646,13 @@ export const DoctorCard = ({
                   }}
                   className={cn(
                     "h-8 px-3 text-xs font-bold rounded-[8px] shadow-sm hover:shadow transition-all",
-                    isConnected ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                      : isCallInProgress ? "bg-sky-500 hover:bg-sky-600 text-white"
-                        : "bg-primary hover:bg-primary/90 text-primary-foreground",
+                    isConnected || isCallInProgress
+                      ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                      : "bg-primary hover:bg-primary/90 text-primary-foreground",
                   )}>
-                  {isConnected ? <><Maximize2 className="h-3.5 w-3.5 mr-1.5" />Resume</>
-                    : isCallInProgress ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />Open</>
-                      : <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.connect")}</>}
+                  {isConnected || isCallInProgress
+                    ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />Join</>
+                    : <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.connect")}</>}
                 </Button>
               ) : (
                 <Button size="sm" variant="secondary" disabled
@@ -647,7 +663,7 @@ export const DoctorCard = ({
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* ── Live-call resume pill ── */}
       {showResumePill && (

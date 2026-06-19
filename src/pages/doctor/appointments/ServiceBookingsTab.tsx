@@ -165,7 +165,7 @@ export function ServiceBookingsTab() {
             key={f.value}
             onClick={() => setStatus(f.value)}
             className={cn(
-              "px-4 h-9 rounded-full text-sm font-medium border transition-colors",
+              "px-4 h-9 rounded-full  font-medium border  text-xs transition-colors",
               status === f.value
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",

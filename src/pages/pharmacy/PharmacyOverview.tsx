@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   ChevronRight,
+  ChevronLeft,
   Star,
   Pill,
   Activity,
@@ -649,6 +650,31 @@ function PharmacyDashboard() {
   const [chartGroup, setChartGroup] = useState<ChartGroup>("day");
   const [dateRange,  setDateRange]  = useState({ from: "", to: "" });
 
+  const [activeTab, setActiveTab] = useState<"overview" | "inventory" | "prescriptions">("overview");
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [showLeftScroll, setShowLeftScroll] = useState(false);
+  const [showRightScroll, setShowRightScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!tabsRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = tabsRef.current;
+      setShowLeftScroll(scrollLeft > 0);
+      setShowRightScroll(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
+    };
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    tabsRef.current?.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("resize", handleScroll);
+      tabsRef.current?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollBy = (offset: number) => {
+    tabsRef.current?.scrollBy({ left: offset, behavior: "smooth" });
+  };
+
   const params = useMemo(() => ({
     period,
     chart_group: chartGroup,
@@ -665,7 +691,7 @@ function PharmacyDashboard() {
           subtitle={t("pages.pharmacy.overview_sub")}
         />
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
           {/* Period / chart-group controls */}
           <PeriodBar
@@ -694,8 +720,74 @@ function PharmacyDashboard() {
               {/* External sync banner (only renders if applicable) */}
               {data?.external_sync && <ExternalSyncBanner sync={data.external_sync} />}
 
-              {/* Quick actions */}
-              <QuickActions />
+           
+              {/* ── Scrollable Tabs ── */}
+              <div className="relative flex items-center border-b border-border/60 mb-2">
+                <div
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 flex items-center transition-opacity duration-300",
+                    showLeftScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  <button
+                    onClick={() => scrollBy(-200)}
+                    className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div 
+                  ref={tabsRef}
+                  className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-px [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full relative z-0"
+                >
+                  <button
+                    onClick={() => setActiveTab("overview")}
+                    className={cn(
+                      "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                      activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                    )}
+                  >
+                    Overview & Orders
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("inventory")}
+                    className={cn(
+                      "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                      activeTab === "inventory" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                    )}
+                  >
+                    Inventory
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("prescriptions")}
+                    className={cn(
+                      "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                      activeTab === "prescriptions" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                    )}
+                  >
+                    Prescriptions
+                  </button>
+                </div>
+
+                <div
+                  className={cn(
+                    "absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 flex items-center justify-end transition-opacity duration-300",
+                    showRightScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  <button
+                    onClick={() => scrollBy(200)}
+                    className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* OVERVIEW TAB */}
+              {activeTab === "overview" && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
 
               {/* KPI cards */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -743,25 +835,24 @@ function PharmacyDashboard() {
                 </div>
                 <RevenueBreakdownCard revenue={data?.revenue} loading={isLoading} />
               </div>
+            </div>
+          )}
 
-              {/* Top medicines + Prescriptions */}
+          {/* INVENTORY TAB */}
+          {activeTab === "inventory" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {/* Top medicines + Stock alerts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <TopMedicines medicines={data?.top_medicines ?? []} loading={isLoading} />
-                <AwaitingPrescriptions
-                  items={data?.prescriptions.awaiting_action ?? []}
-                  counts={{ pending: data?.prescriptions.pending ?? 0, reviewing: data?.prescriptions.reviewing ?? 0 }}
+                <StockAlertsSection
+                  lowStock={data?.stock_alerts.low_stock ?? []}
+                  outOfStock={data?.stock_alerts.out_of_stock ?? []}
+                  expiringSoon={data?.stock_alerts.expiring_soon ?? []}
                   loading={isLoading}
                 />
               </div>
 
-              {/* Stock alerts */}
-              <StockAlertsSection
-                lowStock={data?.stock_alerts.low_stock ?? []}
-                outOfStock={data?.stock_alerts.out_of_stock ?? []}
-                expiringSoon={data?.stock_alerts.expiring_soon ?? []}
-                loading={isLoading}
-              />
-
+              {/* Inventory summary strip */}
               {/* Inventory summary strip */}
               {!isLoading && data && (
                 <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
@@ -793,6 +884,19 @@ function PharmacyDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* PRESCRIPTIONS TAB */}
+          {activeTab === "prescriptions" && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <AwaitingPrescriptions
+                items={data?.prescriptions.awaiting_action ?? []}
+                counts={{ pending: data?.prescriptions.pending ?? 0, reviewing: data?.prescriptions.reviewing ?? 0 }}
+                loading={isLoading}
+              />
+            </div>
+          )}
             </>
           )}
         </div>

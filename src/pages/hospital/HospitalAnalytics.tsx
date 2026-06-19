@@ -1,13 +1,17 @@
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
+import { cn } from "@/lib/utils";
 import {
   Users,
   CreditCard,
   Activity,
   TrendingUp,
   Star,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -324,6 +328,31 @@ const HospitalAnalytics = () => {
   const { t } = useTranslation();
   const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
 
+  const [activeTab, setActiveTab] = useState<"overview" | "financial" | "clinical" | "reviews">("overview");
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [showLeftScroll, setShowLeftScroll] = useState(false);
+  const [showRightScroll, setShowRightScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!tabsRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = tabsRef.current;
+      setShowLeftScroll(scrollLeft > 0);
+      setShowRightScroll(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
+    };
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    tabsRef.current?.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("resize", handleScroll);
+      tabsRef.current?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollBy = (offset: number) => {
+    tabsRef.current?.scrollBy({ left: offset, behavior: "smooth" });
+  };
+
   /* ── Aliases ── */
   const today = data?.today;
   const periodSB = data?.period_stats?.service_bookings;
@@ -399,7 +428,83 @@ const HospitalAnalytics = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
-            {/* ── TOP STAT STRIP ── */}
+            {/* ── Scrollable Tabs ── */}
+            <div className="relative flex items-center border-b border-border/60 mb-2">
+              <div
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 flex items-center transition-opacity duration-300",
+                  showLeftScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <button
+                  onClick={() => scrollBy(-200)}
+                  className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div 
+                ref={tabsRef}
+                className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-px [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full relative z-0"
+              >
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab("clinical")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "clinical" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Clinical & Operations
+                </button>
+                <button
+                  onClick={() => setActiveTab("financial")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "financial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Financials
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "reviews" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Reviews
+                </button>
+              </div>
+
+              <div
+                className={cn(
+                  "absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 flex items-center justify-end transition-opacity duration-300",
+                  showRightScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <button
+                  onClick={() => scrollBy(200)}
+                  className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* OVERVIEW TAB */}
+            {activeTab === "overview" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* ── TOP STAT STRIP ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
@@ -765,7 +870,13 @@ const HospitalAnalytics = () => {
               )}
             </Card>
 
-            {/* ── REVENUE ── */}
+              </div>
+            )}
+
+            {/* FINANCIAL TAB */}
+            {activeTab === "financial" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* ── REVENUE ── */}
             <Card>
               <div className="flex items-center justify-between mb-3">
                 <SectionTitle>Revenue</SectionTitle>
@@ -874,7 +985,13 @@ const HospitalAnalytics = () => {
               )}
             </Card>
 
-            {/* ── APPOINTMENTS DAILY + UPCOMING ── */}
+              </div>
+            )}
+
+            {/* CLINICAL TAB */}
+            {activeTab === "clinical" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* ── APPOINTMENTS DAILY + UPCOMING ── */}
             <div className="grid lg:grid-cols-3 gap-4">
               <Card className="lg:col-span-2">
                 <SectionTitle>Daily Appointments</SectionTitle>
@@ -1152,7 +1269,13 @@ const HospitalAnalytics = () => {
               </Card>
             </div>
 
-            {/* ── REVIEWS ── */}
+              </div>
+            )}
+
+            {/* REVIEWS TAB */}
+            {activeTab === "reviews" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* ── REVIEWS ── */}
             <Card>
               <div className="flex items-center justify-between mb-3">
                 <SectionTitle>Reviews</SectionTitle>
@@ -1264,6 +1387,8 @@ const HospitalAnalytics = () => {
                 </div>
               )}
             </Card>
+              </div>
+            )}
           </div>
         </main>
       </div>
