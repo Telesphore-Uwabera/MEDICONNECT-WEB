@@ -30,7 +30,7 @@ import PatientInsurence from "./pages/patient/PatientInsurence.tsx";
 import ServiceBookings from "./pages/patient/ServiceBookings.tsx";
 import MyReviews from "./pages/patient/MyReviews.tsx";
 import PatientSettings from "./pages/patient/PatientSettings.tsx";
-import Orders from "./pages/patient/orders.tsx";
+import Orders from "./pages/patient/Orders.tsx";
 
 /* ── Doctor ── */
 import DoctorOverview from "./pages/doctor/DoctorOverview";
