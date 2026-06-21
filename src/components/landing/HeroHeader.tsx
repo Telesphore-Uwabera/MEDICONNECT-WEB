@@ -1,8 +1,15 @@
-import { useRef, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import {
+  Menu,
+  X,
+  LogOut,
+  LayoutDashboard,
+  ChevronDown,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -12,52 +19,56 @@ import { dashboardPath } from "@/lib/auth-store";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import {
+  SpecializationSelect,
+  SpecializationValue,
+} from "@/pages/patient/components/SpecializationSelect";
 
-interface NavbarProps {
+interface HeroHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
 }
 
-const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
-  const { t, i18n } = useTranslation();
+export function HeroHeader({
+  mobileMenuOpen,
+  setMobileMenuOpen,
+}: HeroHeaderProps) {
+  const { t } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const location = useLocation();
   const navigate = useNavigate();
-  const activeHash = location.hash || "#doctors";
+  const activeHash = location.hash || "#features";
   const menuRef = useRef<HTMLDivElement>(null);
-
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState<SpecializationValue>({ specialization: null, fee: null });
   const { data: user } = useMe();
   const logout = useLogout();
 
-  // NOTE: ids updated to match the actual section ids in Index.tsx
-  // (the old list pointed "#features" at two different sections — that
-  // collision is what made the active-state underline behave oddly).
   const navLinks = [
+    { href: "#features", label: t("pages.landing.what_we_do") },
     { href: "#doctors", label: t("nav.available_doctors") },
-    { href: "#specialities", label: t("pages.landing.what_we_do") },
     { href: "#hospitals", label: t("nav.hospitals") },
     { href: "#pharmacy", label: t("nav.pharmacy") },
-    { href: "#team", label: t("nav.our_team", "Our Team") },
   ];
 
-  // Close on outside click
+  // ── Side effects ────────────────────────────────────────────────────────
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
       }
     };
-    if (mobileMenuOpen) document.addEventListener("mousedown", handleClickOutside);
+    if (mobileMenuOpen)
+      document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [mobileMenuOpen, setMobileMenuOpen]);
 
-  // Close on hash change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.hash, setMobileMenuOpen]);
 
-  // Lock scroll
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
     return () => {
@@ -65,35 +76,22 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
     };
   }, [mobileMenuOpen]);
 
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
   const handleLogout = () => {
     logout.mutate(undefined, {
       onSuccess: () => navigate("/auth"),
     });
   };
 
-  const getInitials = (name: string) =>
-    name
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
-  /**
-   * Navigates to home (if not already there) and scrolls to the
-   * target section. If already on home, just scrolls.
-   */
   const handleNavClick = (hash: string) => {
     const sectionId = hash.replace("#", "");
-
     if (location.pathname !== "/") {
       navigate("/" + hash);
-      // Give the home page time to mount before scrolling
       setTimeout(() => {
-        const el = document.getElementById(sectionId);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth" });
-        }
+        document
+          .getElementById(sectionId)
+          ?.scrollIntoView({ behavior: "smooth" });
       }, 150);
     } else {
       const el = document.getElementById(sectionId);
@@ -106,23 +104,32 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
     }
   };
 
-  return (
-    <header
-      ref={menuRef}
-      className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50"
-    >
-      <div className="container flex items-center justify-between py-2">
-        {/* Logo — simplified to a plain wordmark, no custom underline hack.
-            Swap back to the <img> logo below if you'd rather use the asset;
-            keeping text for now since that's what was active. */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <span className="font-display text-xl font-bold tracking-tight text-foreground">
-            MEDI<span className="text-primary">CONNECT</span>
-          </span>
-        </Link>
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
 
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1 text-xs font-medium">
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <header ref={menuRef} className="relative z-10">
+      <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
+        {/* Logo */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-primary">
+            MEDI
+            <span className="relative">
+              CONNECT
+              <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-primary rounded-full" />
+            </span>
+          </span>
+        </div>
+
+        {/* Desktop nav — hidden below lg since the filter + actions need the room */}
+        <nav className="hidden lg:flex items-center gap-1 text-xs font-medium shrink-0">
           {navLinks.map((l) => {
             const active = activeHash === l.href;
             return (
@@ -130,10 +137,10 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 key={l.href}
                 onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-sm transition-smooth cursor-pointer",
+                  "relative px-3 py-2 rounded-sm transition-smooth cursor-pointer whitespace-nowrap",
                   active
                     ? "text-foreground bg-accent"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                 )}
               >
                 {l.label}
@@ -145,13 +152,20 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
           })}
         </nav>
 
+        {/* Specialization filter — hidden on mobile/tablet, shown from lg up, flexes instead of fixed width */}
+        <div className="hidden lg:block lg:flex-1 lg:max-w-[260px] xl:max-w-[320px]">
+          <SpecializationSelect
+            value={selectedSpecialization}
+            onChange={setSelectedSpecialization}
+          />
+        </div>
+
         {/* Desktop right actions */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           <ThemeToggle />
           <LanguageSwitcher />
 
           {user ? (
-            // ── Authenticated ──────────────────────────
             <div className="flex items-center gap-2">
               <Link to={dashboardPath(user.role)}>
                 <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
@@ -160,8 +174,6 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 </Button>
               </Link>
 
-              {/* Avatar + name — rounded-sm to match the icon-badge language
-                  used everywhere else (HospitalCard, OurTeam, Specialities) */}
               <Link
                 to={dashboardPath(user.role)}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm hover:bg-accent transition-colors"
@@ -170,10 +182,10 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-7 h-7 rounded-sm object-cover border border-border"
+                    className="w-7 h-7 rounded-full object-cover border border-border"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">
+                  <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
                     {getInitials(user.name)}
                   </div>
                 )}
@@ -194,7 +206,6 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               </Button>
             </div>
           ) : (
-            // ── Guest ──────────────────────────────────
             <>
               <Link to="/auth">
                 <Button variant="ghost" size="sm">
@@ -202,9 +213,10 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 </Button>
               </Link>
               <Link to="/auth?mode=signup">
-                {/* Removed bg-gradient-primary — your other primary CTAs
-                    (Book a spot, Open marketplace) use solid bg-primary now */}
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button
+                  size="sm"
+                  className="bg-gradient-primary hover:opacity-90"
+                >
                   {t("common.SignUp")}
                 </Button>
               </Link>
@@ -212,8 +224,8 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
           )}
         </div>
 
-        {/* Mobile right: theme + lang + hamburger */}
-        <div className="flex md:hidden items-center gap-1">
+        {/* Mobile/tablet: theme + lang + hamburger (shown below lg) */}
+        <div className="flex lg:hidden items-center gap-1 shrink-0">
           <ThemeToggle />
           <LanguageSwitcher />
           <button
@@ -222,12 +234,16 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
             aria-expanded={mobileMenuOpen}
             className="ml-1 w-9 h-9 rounded-sm flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* ── Mobile drawer ── */}
+      {/* Mobile/tablet drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -236,9 +252,17 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: "easeOut" }}
-            className="md:hidden border-t border-border bg-background/95 backdrop-blur"
+            className="lg:hidden border-t border-border bg-background/95 backdrop-blur-sm max-h-[calc(100vh-56px)] overflow-y-auto"
           >
-            <nav className="container py-3 flex flex-col gap-0.5">
+            {/* Specialization filter — now reachable on mobile/tablet */}
+            <div className="px-4 sm:px-6 pt-4">
+              <SpecializationSelect
+                value={selectedSpecialization}
+                onChange={setSelectedSpecialization}
+              />
+            </div>
+
+            <nav className="px-4 sm:px-6 py-3 flex flex-col gap-0.5">
               {navLinks.map((l) => {
                 const active = activeHash === l.href;
                 return (
@@ -252,13 +276,13 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                       "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth text-left",
                       active
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                     )}
                   >
                     <span
                       className={cn(
                         "h-1.5 w-1.5 rounded-full shrink-0",
-                        active ? "bg-primary" : ""
+                        active ? "bg-primary" : "",
                       )}
                     />
                     {l.label}
@@ -267,33 +291,37 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               })}
             </nav>
 
-            <div className="border-t border-border mx-4" />
+            <div className="border-t border-border mx-4 sm:mx-6" />
 
-            <div className="container py-4 flex flex-col gap-2">
+            <div className="px-4 sm:px-6 py-4 flex flex-col gap-2">
               {user ? (
                 <>
-                  {/* User info row */}
                   <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm bg-muted/50 mb-1">
                     {user.avatar ? (
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-8 h-8 rounded-sm object-cover"
+                        className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
                         {getInitials(user.name)}
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">{user.name}</p>
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {user.name}
+                      </p>
                       <p className="text-[10px] text-muted-foreground truncate">
                         {user.email ?? user.phone}
                       </p>
                     </div>
                   </div>
 
-                  <Link to={dashboardPath(user.role)} onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    to={dashboardPath(user.role)}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     <Button
                       className="w-full bg-primary text-primary-foreground text-xs gap-1.5"
                       size="sm"
@@ -321,8 +349,14 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                       {t("common.signIn")}
                     </Button>
                   </Link>
-                  <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Link
+                    to="/auth?mode=signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Button
+                      size="sm"
+                      className="w-full bg-gradient-primary hover:opacity-90"
+                    >
                       {t("common.Register")}
                     </Button>
                   </Link>
@@ -334,6 +368,4 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
       </AnimatePresence>
     </header>
   );
-};
-
-export default Navbar;
+}
