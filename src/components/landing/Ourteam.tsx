@@ -1,8 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Star, MapPin, BadgeCheck } from 'lucide-react';
-
-// Swap these for your real imports — name each variable after the doctor
-// it actually points to, so it doesn't drift from the photo as the roster changes.
+import { MapPin } from 'lucide-react';
 import docDowner from '@/assets/doctor-hero.png';
 import docJohn from '@/assets/doc-john.png';
 import docAviles from '@/assets/doc-david.png';
@@ -69,7 +66,7 @@ interface OurTeamProps {
 function OurTeam({ members = DEFAULT_TEAM }: OurTeamProps) {
   return (
     <section className="w-full px-6 py-10 md:px-10">
-      {/* Header — same eyebrow + title pattern used by Specialities and the landing page sections */}
+      {/* Header */}
       <div className="mb-6">
         <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90">
           Meet the specialists
@@ -88,34 +85,19 @@ function OurTeam({ members = DEFAULT_TEAM }: OurTeamProps) {
             to={`/doctors/${member.id}`}
             className="group flex flex-col overflow-hidden rounded-sm border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
           >
-            {/* Photo */}
+            {/* Photo — reduced height */}
             <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
               <img
                 src={member.image}
                 alt={member.name}
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
               />
               <span className="absolute right-2 top-2 rounded-sm bg-card/95 border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground backdrop-blur">
                 {member.specialty}
               </span>
             </div>
 
-            {/* Top strip — rating, mirrors the muted strip on HospitalCard */}
-            <div className="flex items-center justify-between px-3.5 py-1.5 bg-muted/60 border-b border-border">
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-                Verified
-              </span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-foreground">
-                <Star size={12} className="fill-amber-400 text-amber-400" />
-                {member.rating}
-                <span className="text-[10px] font-normal text-muted-foreground">
-                  ({member.reviewCount})
-                </span>
-              </span>
-            </div>
-
-            {/* Info */}
+            {/* Info — no background */}
             <div className="px-3.5 pt-3 pb-3">
               <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
                 {member.name}
@@ -124,15 +106,15 @@ function OurTeam({ members = DEFAULT_TEAM }: OurTeamProps) {
                 {member.specialty}
               </p>
 
-              {/* Stat row, same shape as HospitalCard's two-stat grid */}
+              {/* Stat row */}
               <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-sm border border-border overflow-hidden">
-                <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
+                <div className="flex items-center justify-center gap-1.5 py-1.5">
                   <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="text-xs font-semibold text-foreground truncate">
                     {member.location}
                   </span>
                 </div>
-                <div className="flex items-center justify-center gap-1 py-1.5 bg-muted/20">
+                <div className="flex items-center justify-center gap-1 py-1.5">
                   <span className="text-xs font-semibold text-foreground">
                     {member.yearsExperience}
                   </span>
