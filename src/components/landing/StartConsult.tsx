@@ -34,13 +34,13 @@ const StartConsult = () => {
                   <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold leading-none truncate">
+                  <p className="text-xs sm:text-sm font-semibold leading-none">
                     {t(
                       "pages.landing.instant_consultation",
                       "Instant Consultation",
                     )}
                   </p>
-                  <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
+                  <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                     {t("pages.landing.title", "connect in under 5 minutes")}
                   </p>
                 </div>
@@ -55,10 +55,10 @@ const StartConsult = () => {
                     <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </span>
                   <div className="text-left min-w-0">
-                    <p className="text-xs sm:text-sm font-semibold leading-none truncate">
+                    <p className="text-xs sm:text-sm font-semibold leading-none">
                       {t("pages.landing.browse_doctors")}
                     </p>
-                    <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
+                    <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                       500+ specialists
                     </p>
                   </div>
@@ -139,10 +139,10 @@ const StartConsult = () => {
                 <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </span>
               <div className="text-left min-w-0">
-                <p className="text-xs sm:text-sm font-semibold leading-none truncate">
+                <p className="text-xs sm:text-sm font-semibold leading-none">
                   {t("pages.landing.instant_consultation", "Instant Consultation")}
                 </p>
-                <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
+                <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                   {t("pages.landing.title", "connect in under 5 minutes")}
                 </p>
               </div>
@@ -157,10 +157,10 @@ const StartConsult = () => {
                   <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold leading-none truncate">
+                  <p className="text-xs sm:text-sm font-semibold leading-none">
                    Book Appointment
                   </p>
-                  <p className="text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5 truncate">
+<p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                     500+ specialists
                   </p>
                 </div>
