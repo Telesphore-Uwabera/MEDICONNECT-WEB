@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useGetDoctorReferrals,
@@ -528,6 +529,44 @@ function ReferralCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SkeletonReferralCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SkeletonReferralCard() {
+  return (
+    <div className="w-full text-left rounded-xl border border-border bg-card shadow-sm p-4">
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="w-full max-w-[200px]">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-3/4 mt-1.5" />
+            </div>
+            <Skeleton className="h-4 w-4 shrink-0 mt-0.5" />
+          </div>
+
+          {/* Badges row */}
+          <div className="flex items-center gap-2 flex-wrap mt-2.5">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-border/60">
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EmptyState
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -621,10 +660,16 @@ function MyReferrals() {
 
           {/* ── Content ── */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-20 gap-3 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-sm">Loading referrals…</span>
-            </div>
+            <>
+              {/* Count placeholder */}
+              <Skeleton className="h-3 w-24 mb-3" />
+              {/* Grid placeholder */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonReferralCard key={i} />
+                ))}
+              </div>
+            </>
           ) : isError ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
