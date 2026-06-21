@@ -1,5 +1,3 @@
-// hooks/use-specialization-select.ts
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -14,6 +12,7 @@ export interface Specialization {
   name_fr: string;
   name_kiny: string | null;
   slug: string;
+   doctorCount?: number;
 }
 
 export interface SpecializationFee {

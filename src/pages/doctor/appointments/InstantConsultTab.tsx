@@ -45,12 +45,12 @@ function SectionLabel({
   count: number;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", dotCls)} />
-      <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+    <div className="flex items-center gap-3">
+      <span className={cn("h-2 w-2 rounded-full shrink-0", dotCls)} />
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         {label}
       </span>
-      <span className="ml-auto text-[9px] font-semibold text-muted-foreground/50 tabular-nums">
+      <span className="ml-auto text-xs font-semibold text-muted-foreground/50 tabular-nums">
         {count}
       </span>
     </div>
@@ -61,13 +61,13 @@ function SectionLabel({
 
 function SkeletonCard() {
   return (
-    <div className="rounded-[5px] border border-border bg-card p-3 flex items-center gap-3 animate-pulse">
-      <div className="h-10 w-10 rounded-[5px] bg-muted shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="h-2.5 w-28 bg-muted rounded-full" />
-        <div className="h-2 w-40 bg-muted rounded-full" />
+    <div className="rounded-md border border-border bg-card p-4 flex items-center gap-4 animate-pulse">
+      <div className="h-12 w-12 rounded-md bg-muted shrink-0" />
+      <div className="flex-1 space-y-3">
+        <div className="h-3 w-32 bg-muted rounded-full" />
+        <div className="h-2 w-48 bg-muted rounded-full" />
       </div>
-      <div className="h-7 w-16 rounded-[5px] bg-muted" />
+      <div className="h-9 w-20 rounded-md bg-muted" />
     </div>
   );
 }
@@ -86,13 +86,13 @@ function StatTile({
   iconWrapCls: string;
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-[5px] border border-border/60 bg-background">
-      <div className={cn("h-8 w-8 rounded-[5px] flex items-center justify-center shrink-0", iconWrapCls)}>
+    <div className="flex items-center gap-4 p-4 rounded-md border border-border/60 bg-background">
+      <div className={cn("h-10 w-10 rounded-md flex items-center justify-center shrink-0", iconWrapCls)}>
         {icon}
       </div>
       <div>
-        <p className="text-[11px] font-semibold text-foreground tabular-nums">{value}</p>
-        <p className="text-[9px] text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold text-foreground tabular-nums">{value}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>
   );
@@ -226,38 +226,38 @@ export function InstantConsultTab() {
     return (
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border bg-card shrink-0">
+          <div className="flex items-center gap-4 px-5 py-3 border-b border-border bg-card shrink-0">
             {/* Live chip */}
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-[5px] bg-destructive/10 border border-destructive/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse shrink-0" />
-              <span className="text-[9px] font-bold text-destructive uppercase tracking-widest">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-destructive/10 border border-destructive/20">
+              <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+              <span className="text-xs font-bold text-destructive uppercase tracking-widest">
                 {t("consult.bookings.online")}
               </span>
             </div>
 
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-foreground font-mono shrink-0 truncate max-w-[140px]">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
+              <span className="text-sm font-semibold text-foreground font-mono shrink-0 truncate max-w-[160px]">
                 {call.activeRequest?.patientName}
               </span>
-              <span className="text-[10px] text-muted-foreground truncate">
+              <span className="text-xs text-muted-foreground truncate">
                 — {call.activeRequest?.reason}
               </span>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+            <div className="flex items-center gap-4 shrink-0">
+              <span className="text-sm font-mono text-muted-foreground tabular-nums">
                 {fmt(call.elapsed)}
               </span>
               <button
                 onClick={() => setNotesOpen((v) => !v)}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-[5px] text-[10px] font-medium border transition-smooth",
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-smooth",
                   notesOpen
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
                 )}
               >
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-4 w-4" />
                 {notesOpen ? t("consult.notes.hide_notes") : t("consult.notes.notes")}
               </button>
             </div>
@@ -288,35 +288,35 @@ export function InstantConsultTab() {
 
         {/* Rejoin in-progress consultation */}
         {liveTarget && (
-          <div className="flex items-center gap-3 p-3 rounded-[5px] border border-primary/30 bg-primary/5">
-            <span className="relative flex h-2 w-2 shrink-0">
+          <div className="flex items-center gap-4 p-4 rounded-md border border-primary/30 bg-primary/5">
+            <span className="relative flex h-3 w-3 shrink-0">
               <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold text-foreground">
+              <p className="text-sm font-semibold text-foreground">
                 {t("consult.bookings.in_progress")}
               </p>
-              <p className="text-[10px] text-muted-foreground">{t("consult.bookings.rejoin_info")}</p>
+              <p className="text-xs text-muted-foreground">{t("consult.bookings.rejoin_info")}</p>
             </div>
             <button
               onClick={handleRejoinLive}
-              className="flex items-center gap-1.5 px-3 h-8 rounded-[5px] bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
+              className="flex items-center gap-2 px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
             >
-              <Video className="h-3.5 w-3.5" /> {t("consult.bookings.rejoin")}
+              <Video className="h-4 w-4" /> {t("consult.bookings.rejoin")}
             </button>
           </div>
         )}
 
         {/* Online header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-[5px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))] animate-pulse" />
-            <span className="text-[9px] font-bold text-[hsl(var(--success))] uppercase tracking-widest">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
+            <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
+            <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
               {t("consult.bookings.online")}
             </span>
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-sm text-muted-foreground">
             {queueLoading
               ? t("consult.bookings.loading_queue")
               : activeCount === 0
@@ -335,12 +335,12 @@ export function InstantConsultTab() {
         {/* Empty state */}
         {!queueLoading && activeCount === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-            <div className="h-14 w-14 rounded-[5px] bg-muted/50 border border-border flex items-center justify-center">
-              <Stethoscope className="h-6 w-6 text-muted-foreground/40" />
+            <div className="h-16 w-16 rounded-md bg-muted/50 border border-border flex items-center justify-center">
+              <Stethoscope className="h-8 w-8 text-muted-foreground/40" />
             </div>
             <div>
-              <p className="text-[12px] font-semibold text-foreground">{t("consult.bookings.ready_for_patients")}</p>
-              <p className="text-[10px] text-muted-foreground/70 mt-1 max-w-[260px] leading-relaxed">
+              <p className="text-sm font-semibold text-foreground">{t("consult.bookings.ready_for_patients")}</p>
+              <p className="text-sm text-muted-foreground/70 mt-1 max-w-[260px] leading-relaxed">
                 {t("consult.bookings.confirmed_paid_requests")}
               </p>
             </div>
@@ -431,41 +431,41 @@ export function InstantConsultTab() {
       </div>
 
       {/* Stats sidebar */}
-      <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 border-l border-border/60 bg-card/40 p-4 gap-3 overflow-y-auto">
-        <div className="flex items-center gap-1.5">
-          <Activity className="h-3 w-3 text-muted-foreground/60" />
-          <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+      <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 border-l border-border/60 bg-card/40 p-5 gap-4 overflow-y-auto">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-muted-foreground/60" />
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
             {t("consult.bookings.today_stats")}
           </p>
         </div>
 
         <StatTile
-          icon={<UserCheck className="h-4 w-4 text-[hsl(var(--success))]" />}
+          icon={<UserCheck className="h-5 w-5 text-[hsl(var(--success))]" />}
           label={t("consult.bookings.seen_today")}
           value={stats ? String(stats.seen_today) : "—"}
           iconWrapCls="bg-[hsl(var(--success)/0.1)]"
         />
         <StatTile
-          icon={<Clock3 className="h-4 w-4 text-primary" />}
+          icon={<Clock3 className="h-5 w-5 text-primary" />}
           label={t("consult.bookings.avg_duration")}
           value={stats ? stats.avg_duration : "—"}
           iconWrapCls="bg-accent"
         />
         <StatTile
-          icon={<Users className="h-4 w-4 text-[hsl(var(--info))]" />}
+          icon={<Users className="h-5 w-5 text-[hsl(var(--info))]" />}
           label={t("consult.bookings.in_queue")}
           value={stats ? String(stats.in_queue) : String(queue.length)}
           iconWrapCls="bg-[hsl(var(--info)/0.1)]"
         />
         <StatTile
-          icon={<CheckCircle2 className="h-4 w-4 text-[hsl(var(--warning))]" />}
+          icon={<CheckCircle2 className="h-5 w-5 text-[hsl(var(--warning))]" />}
           label={t("consult.bookings.resolved")}
           value={stats ? String(stats.resolved) : "—"}
           iconWrapCls="bg-[hsl(var(--warning)/0.1)]"
         />
 
-        <div className="border-t border-border/60 pt-3 mt-auto">
-          <p className="text-[9px] text-muted-foreground/50 leading-relaxed">
+        <div className="border-t border-border/60 pt-4 mt-auto">
+          <p className="text-xs text-muted-foreground/50 leading-relaxed">
             {t("consult.bookings.stats_reset_daily")}
           </p>
         </div>

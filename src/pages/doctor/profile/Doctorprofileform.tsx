@@ -267,11 +267,12 @@ export function DoctorProfileForm({
             </FormField>
 
             <FormField
-              label="Bio (French)"
+              label="Bio (French) *" // add *
+              error={errors.bio_fr?.message} // add error
               className="col-span-1 sm:col-span-2"
             >
               <Textarea
-                {...register("bio_fr")}
+                {...register("bio_fr", { required: "Required" })} // add required
                 placeholder="Médecin expérimenté avec 10 ans en médecine générale"
                 className="border-border focus-visible:ring-primary text-xs resize-none"
                 rows={2}
@@ -279,11 +280,12 @@ export function DoctorProfileForm({
             </FormField>
 
             <FormField
-              label="Bio (Kinyarwanda)"
+              label="Bio (Kinyarwanda) *" // add *
+              error={errors.bio_kiny?.message} // add error
               className="col-span-1 sm:col-span-2"
             >
               <Textarea
-                {...register("bio_kiny")}
+                {...register("bio_kiny", { required: "Required" })} // add required
                 placeholder="Umuganga w'inzobere ufite imyaka 10"
                 className="border-border focus-visible:ring-primary text-xs resize-none"
                 rows={2}

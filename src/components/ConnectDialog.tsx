@@ -10,6 +10,7 @@ import {
   type RejoinTarget,
 } from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
+import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import {
   useInstantConsultationRequest,
   useInstantConsultationRequestAny,
@@ -22,7 +23,7 @@ import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Phone,
   ShieldCheck, Loader2, CheckCircle2, AlertCircle,
   MessageSquare, Wifi, ArrowRight, Sparkles, Activity,
-  User, Maximize2, Minimize2, Minus, X, RotateCcw, Clock, Ban,
+  User, Maximize2, Minimize2, Minus, X, RotateCcw, Clock, Ban, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -62,6 +63,7 @@ declare global {
 }
 
 type CallPhase =
+  | "search"
   | "idle"
   | "guest_form"
   | "requesting"
@@ -109,20 +111,20 @@ const SignalBars = ({ strength }: { strength: number }) => (
 
 const StatusBadge = ({ phase }: { phase: CallPhase }) => {
   const map: Record<string, { icon: React.ReactNode; text: string; cls: string }> = {
-    requesting: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Requesting…", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
-    payment_verifying: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Verifying payment…", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
-    polling: { icon: <Loader2 className="h-3 w-3 animate-spin" />, text: "Waiting for doctor…", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
-    accepted: { icon: <Phone className="h-3 w-3 animate-pulse" />, text: "Doctor ready", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    in_progress: { icon: <Activity className="h-3 w-3 animate-pulse" />, text: "In progress", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    connected: { icon: <CheckCircle2 className="h-3 w-3" />, text: "Connected", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    rejected: { icon: <AlertCircle className="h-3 w-3" />, text: "Declined", cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    failed: { icon: <AlertCircle className="h-3 w-3" />, text: "Failed", cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    ended: { icon: <PhoneOff className="h-3 w-3" />, text: "Ended", cls: "bg-muted text-muted-foreground border-border" },
+    requesting: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Requesting…", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
+    payment_verifying: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Verifying payment…", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
+    polling: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Waiting for doctor…", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
+    accepted: { icon: <Phone className="h-4 w-4 animate-pulse" />, text: "Doctor ready", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    in_progress: { icon: <Activity className="h-4 w-4 animate-pulse" />, text: "In progress", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    connected: { icon: <CheckCircle2 className="h-4 w-4" />, text: "Connected", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    rejected: { icon: <AlertCircle className="h-4 w-4" />, text: "Declined", cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    failed: { icon: <AlertCircle className="h-4 w-4" />, text: "Failed", cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    ended: { icon: <PhoneOff className="h-4 w-4" />, text: "Ended", cls: "bg-muted text-muted-foreground border-border" },
   };
   const c = map[phase];
   if (!c) return null;
   return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium border", c.cls)}>
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border", c.cls)}>
       {c.icon}{c.text}
     </span>
   );
@@ -142,28 +144,28 @@ const ResumeSessionBanner = ({
   )}>
     <div className="flex items-start gap-2.5">
       <div className="h-8 w-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
-        <RotateCcw className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+        <RotateCcw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-semibold text-foreground leading-tight">Resume your session?</p>
-        <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
-          <Clock className="h-2.5 w-2.5 shrink-0" />Session saved {timeAgo(savedAt)}
+        <p className="text-sm font-semibold text-foreground leading-tight">Resume your session?</p>
+        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+          <Clock className="h-4 w-4 shrink-0" />Session saved {timeAgo(savedAt)}
         </p>
       </div>
     </div>
-    <p className="text-[11px] text-muted-foreground leading-relaxed">
+    <p className="text-sm text-muted-foreground leading-relaxed">
       You were waiting in queue. Your position may still be held — tap{" "}
       <strong className="text-foreground font-medium">Resume</strong> to continue where you left off.
     </p>
     <div className="flex gap-2 pt-0.5">
       <Button size="sm" onClick={onResume} disabled={isResuming}
-        className="flex-1 h-8 text-[11px] font-semibold gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white">
+        className="flex-1 h-8 text-sm font-semibold gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white">
         {isResuming
-          ? <><Loader2 className="h-3 w-3 animate-spin" />Resuming…</>
-          : <><RotateCcw className="h-3 w-3" />Resume session</>}
+          ? <><Loader2 className="h-4 w-4 animate-spin" />Resuming…</>
+          : <><RotateCcw className="h-4 w-4" />Resume session</>}
       </Button>
       <Button size="sm" variant="outline" onClick={onDiscard} disabled={isResuming}
-        className="flex-1 h-8 text-[11px] rounded-lg">
+        className="flex-1 h-8 text-sm rounded-lg">
         Start fresh
       </Button>
     </div>
@@ -184,11 +186,11 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
         ] as const).map(({ on, toggle, OnIcon, OffIcon, onLabel, offLabel }) => (
           <button key={onLabel} onClick={toggle}
             className={cn(
-              "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all duration-150",
+              "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25"
                 : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
             )}>
-            {on ? <OnIcon className="h-3.5 w-3.5" /> : <OffIcon className="h-3.5 w-3.5" />}
+            {on ? <OnIcon className="h-4 w-4" /> : <OffIcon className="h-4 w-4" />}
             {on ? onLabel : offLabel}
           </button>
         ))}
@@ -214,15 +216,15 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
               {on ? <OnIcon className="h-5 w-5" /> : <OffIcon className="h-5 w-5" />}
             </div>
             <div className="text-center space-y-0.5">
-              <p className="text-[11px] font-semibold leading-none">{label}</p>
-              <p className={cn("text-[10px] leading-none", on ? "text-primary/70" : "text-muted-foreground/50")}>
+              <p className="text-sm font-semibold leading-none">{label}</p>
+              <p className={cn("text-xs leading-none", on ? "text-primary/70" : "text-muted-foreground/50")}>
                 {on ? onSub : offSub}
               </p>
             </div>
           </button>
         ))}
       </div>
-      <p className="text-[10px] text-muted-foreground/60 text-center">
+      <p className="text-xs text-muted-foreground/60 text-center">
         {!call.videoEnabled && !call.audioEnabled
           ? "⚠ Camera and mic are both off"
           : !call.videoEnabled
@@ -293,13 +295,16 @@ const setGuestChatAuth = (token: string | null) => {
 };
 
 export const ConnectDialogContent = ({
-  doctor, onMinimize, onCloseCompletely, onRegisterCancel,
+  doctor: initialDoctor, onMinimize, onCloseCompletely, onRegisterCancel,
 }: ConnectDialogContentProps) => {
+  const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | undefined>(undefined);
+  const doctor = initialDoctor || (selectedDoctor as unknown as Doctor);
+  
   const { startCall } = useCallContext();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const call = useCallStore();
-  const isGeneral = !doctor;
+  const isGeneral = !initialDoctor && !selectedDoctor;
   const session = useConsultationSession(doctor?.id ?? 0);
 
   const handleRejoinActive = () => {
@@ -315,6 +320,14 @@ export const ConnectDialogContent = ({
   const [phase, setPhase] = useState<CallPhase>("idle");
   const [fullscreen, setFullscreen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: searchDoctorsData, isLoading: searchLoading } = useGetSearchDoctors({
+    instant: true,
+    q: searchQuery,
+    per_page: 20,
+  });
+  const searchDoctors = searchDoctorsData?.data || [];
 
   // ── Resume state ──────────────────────────────────────────────────────────
   // savedSession: non-null while the resume banner is visible
@@ -378,7 +391,11 @@ export const ConnectDialogContent = ({
   useEffect(() => {
     const existing = resumeDeclinedRef.current ? null : session.read();
 
-    if (existing && !resumeDeclinedRef) {
+    // NOTE: the `resumeDeclinedRef.current` guard is already applied above when
+    // computing `existing`. (A previous `!resumeDeclinedRef` check here was always
+    // false — a ref object is truthy — so the restore branch never ran and every
+    // remount reset the flow to idle, discarding an in-progress payment/queue.)
+    if (existing) {
       // Pre-load everything from the saved session right away
       setSavedSession(existing);
       setConsultationToken(existing.token);   // ← key fix: token is live immediately
@@ -414,7 +431,11 @@ export const ConnectDialogContent = ({
       setPaymentInfo(null);
       setGuestName(me?.name ?? "");
       setGuestPhone(me?.phone ?? "");
-      setPhase(isProfileComplete ? "idle" : "guest_form");
+      if (!initialDoctor) {
+        setPhase("search");
+      } else {
+        setPhase(isProfileComplete ? "idle" : "guest_form");
+      }
     }
 
     setFullscreen(false);
@@ -814,7 +835,7 @@ export const ConnectDialogContent = ({
 
     return (
       <div className={cn(
-        "relative flex bg-[#0c0c0c] overflow-hidden",
+        "relative flex bg-black/80 overflow-hidden backdrop-blur-md",
         fullscreen ? "h-screen w-screen fixed inset-0 z-[70]" : "h-[520px]",
       )}>
         <div className="relative flex-1 flex flex-col min-w-0 transition-all duration-300"
@@ -833,7 +854,7 @@ export const ConnectDialogContent = ({
                     {doctorInitial}
                   </div>
                 </div>
-                <p className="text-[13px] text-white/50">Connecting to room…</p>
+                <p className="text-base text-white/50">Connecting to room…</p>
               </div>
             </div>
           )}
@@ -842,21 +863,21 @@ export const ConnectDialogContent = ({
           <div className="absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
             <div className="flex items-center gap-2 pointer-events-none">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-[10px] text-white/70 font-mono tracking-wide">LIVE · {fmt(call.elapsed)}</span>
+              <span className="text-xs text-white/70 font-mono tracking-wide">LIVE · {fmt(call.elapsed)}</span>
             </div>
             <div className="flex items-center gap-1 pointer-events-auto">
               <SignalBars strength={call.signalStrength} />
               <button onClick={onMinimize} title="Minimize"
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
-                <Minus className="h-3.5 w-3.5" />
+                <Minus className="h-4 w-4" />
               </button>
               <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
-                {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
               <button onClick={onCloseCompletely} title="End and close"
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors">
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -871,7 +892,7 @@ export const ConnectDialogContent = ({
                 <MessageSquare className="h-4 w-4" />
               </button>
               {call.unreadCount > 0 && !chatOpen && (
-                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center leading-none">
                   {call.unreadCount > 9 ? "9+" : call.unreadCount}
                 </span>
               )}
@@ -905,8 +926,8 @@ export const ConnectDialogContent = ({
 
       {/* Title */}
       <div className="flex items-center gap-2">
-        <Sparkles className="h-3.5 w-3.5 text-primary" />
-        <span className="text-[11px] font-medium text-muted-foreground">{titleText()}</span>
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium text-muted-foreground">{titleText()}</span>
       </div>
 
       {/* ── Resume banner ── */}
@@ -923,8 +944,8 @@ export const ConnectDialogContent = ({
       {isResuming && (
         <div className="flex flex-col items-center gap-3 py-6">
           <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
-          <p className="text-[12px] font-medium text-foreground">Reconnecting to your session…</p>
-          <p className="text-[10px] text-muted-foreground">Picking up where you left off</p>
+          <p className="text-sm font-medium text-foreground">Reconnecting to your session…</p>
+          <p className="text-xs text-muted-foreground">Picking up where you left off</p>
         </div>
       )}
 
@@ -939,16 +960,16 @@ export const ConnectDialogContent = ({
               {doctorInitial}
             </div>
             {showProgress && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-card bg-amber-400 animate-pulse" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground truncate">{doctorName}</p>
+            <p className="text-base font-semibold text-foreground truncate">{doctorName}</p>
             {doctor?.specialization && (
-              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{doctor.specialization}</p>
+              <p className="text-sm text-muted-foreground truncate mt-0.5">{doctor.specialization}</p>
             )}
             {queueInfo && phase === "polling" && (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Position {queueInfo.position} · {queueInfo.ahead === 0 ? "You're next" : `${queueInfo.ahead} ahead`}
               </p>
             )}
@@ -962,7 +983,7 @@ export const ConnectDialogContent = ({
         <div className="space-y-2">
           <Progress value={progressValue()}
             className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-xs text-muted-foreground text-center">
             {phase === "requesting" && "Sending consultation request…"}
             {phase === "payment_verifying" && "Confirming your payment with provider…"}
             {phase === "polling" && "Waiting for doctor to accept…"}
@@ -978,9 +999,9 @@ export const ConnectDialogContent = ({
           {/* ── Guest form ── */}
           {phase === "guest_form" && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/60 border border-border">
+              <div className=" flex items-center gap-2 p-3 rounded-xl bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {isLoggedIn ? "Please confirm your contact details to continue."
                     : "You're not logged in. Please enter your details to continue."}
                 </p>
@@ -990,64 +1011,117 @@ export const ConnectDialogContent = ({
                   {doctorInitial}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold text-foreground truncate">{doctorName}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{doctorName}</p>
                   {doctor?.specialization && (
-                    <p className="text-[10px] text-muted-foreground truncate">{doctor.specialization}</p>
+                    <p className="text-xs text-muted-foreground truncate">{doctor.specialization}</p>
                   )}
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">Full name</Label>
+                  <Label className="text-sm font-medium">Full name</Label>
                   <Input placeholder="e.g. Alain Honore" value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)} className="h-9 text-[12px]"
+                    onChange={(e) => setGuestName(e.target.value)} className="h-9 text-sm"
                     onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">Phone number</Label>
+                  <Label className="text-sm font-medium">Phone number</Label>
                   <Input
                     placeholder="e.g. 0733334512"
                     value={guestPhone}
                     onChange={(e) => setGuestPhone(e.target.value)}
-                    className="h-9 text-[12px]"
+                    className="h-9 text-sm"
                     onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">Password</Label>
+                  <Label className="text-sm font-medium">Password</Label>
                   <Input
                     placeholder="**********"
 
                     type="password"
                     onChange={(e) => setGuestPassword(e.target.value)}
-                    className="h-9 text-[12px]"
+                    className="h-9 text-sm"
                     onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
                   />
                 </div>
                 {isGeneral && (
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-medium">Symptoms / Issue (Optional)</Label>
+                    <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
                     <textarea
                       placeholder="e.g. I have a headache"
                       value={guestDescription}
                       onChange={(e) => setGuestDescription(e.target.value)}
-                      className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-[12px] shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     />
                   </div>
                 )}
                 {guestError && (
-                  <p className="text-[11px] text-destructive flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> {guestError}
+                  <p className="text-sm text-destructive flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" /> {guestError}
                   </p>
                 )}
               </div>
               <div className="space-y-2">
-                <Button onClick={handleGuestSubmit} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-                  <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-3.5 w-3.5" />
+                <Button onClick={handleGuestSubmit} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                  <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                   Minimize
                 </Button>
+              </div>
+            </div>
+          )}
+          {/* ── Search ── */}
+          {phase === "search" && (
+            <div className="space-y-4 pt-1 pb-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Search for a doctor</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or specialty..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 h-10 bg-muted/30"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                {searchLoading ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : searchDoctors.length > 0 ? (
+                  searchDoctors.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => {
+                        setSelectedDoctor(doc as any);
+                        setPhase(isProfileComplete ? "idle" : "guest_form");
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                          {nameInitial(doc.user.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{doc.user.name}</p>
+                          {doc.specialization && (
+                            <p className="text-xs text-muted-foreground truncate">{doc.specialization}</p>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    No available doctors found.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1057,20 +1131,20 @@ export const ConnectDialogContent = ({
             <div className="space-y-3 pt-1">
               {isGeneral && (
                 <div className="space-y-1.5 mb-2">
-                  <Label className="text-[11px] font-medium">Symptoms / Issue (Optional)</Label>
+                  <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
                   <textarea
                     placeholder="e.g. I have a headache"
                     value={guestDescription}
                     onChange={(e) => setGuestDescription(e.target.value)}
-                    className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-[12px] shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
               )}
               <DeviceToggles compact={false} />
-              <Button onClick={() => handleRequest()} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
-                <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-3.5 w-3.5" />
+              <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                 Minimize
               </Button>
             </div>
@@ -1080,7 +1154,7 @@ export const ConnectDialogContent = ({
           {phase === "requesting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-[11px] text-muted-foreground">Connecting you to the doctor…</p>
+              <p className="text-sm text-muted-foreground">Connecting you to the doctor…</p>
             </div>
           )}
 
@@ -1089,7 +1163,7 @@ export const ConnectDialogContent = ({
             <div className="space-y-3">
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                   Close — your place is saved
                 </Button>
               </div>
@@ -1100,20 +1174,20 @@ export const ConnectDialogContent = ({
           {phase === "payment" && (
             <div className="space-y-4">
               <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
-                <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
-                <div className="flex justify-between text-[12px]">
+                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Patient</span>
                   <span className="font-medium text-foreground">{guestName || me?.name}</span>
                 </div>
-                <div className="flex justify-between text-[12px]">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Phone</span>
                   <span className="font-medium text-foreground">{guestPhone || me?.phone}</span>
                 </div>
-                <div className="flex justify-between text-[12px]">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Doctor</span>
                   <span className="font-medium text-foreground">{doctorName}</span>
                 </div>
-                <div className="border-t border-border pt-2 flex justify-between text-[13px]">
+                <div className="border-t border-border pt-2 flex justify-between text-base">
                   <span className="font-semibold text-foreground">Amount</span>
                   <span className="font-bold text-primary">
                     {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
@@ -1121,16 +1195,16 @@ export const ConnectDialogContent = ({
                 </div>
               </div>
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
                 </div>
               )}
               <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
-                className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
                 {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                 {paymentLoading ? "Initiating…" : "Pay now"}
               </Button>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">Minimize</Button>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">Minimize</Button>
             </div>
           )}
 
@@ -1139,12 +1213,12 @@ export const ConnectDialogContent = ({
             <div className="space-y-3">
               <div className="flex flex-col items-center gap-3 py-6 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-[12px] font-medium text-foreground">Confirming your payment…</p>
-                <p className="text-[11px] text-muted-foreground max-w-[280px]">
+                <p className="text-sm font-medium text-foreground">Confirming your payment…</p>
+                <p className="text-sm text-muted-foreground max-w-[280px]">
                   This usually takes a few seconds. Please don't close this window.
                 </p>
               </div>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                 Minimize — verification continues in background
               </Button>
             </div>
@@ -1156,10 +1230,10 @@ export const ConnectDialogContent = ({
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
                 <Button onClick={handleJoin}
-                  className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
-                  <Phone className="h-4 w-4" />Join call<ArrowRight className="h-3.5 w-3.5" />
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
+                  <Phone className="h-4 w-4" />Join call<ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-[11px] rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
                   Minimize — I'll join later
                 </Button>
               </div>
@@ -1170,25 +1244,25 @@ export const ConnectDialogContent = ({
           {(phase === "failed" || phase === "rejected") && (
             <div className="space-y-3">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-[11px] text-destructive flex items-start gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />{errorMsg}
+                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
                 </div>
               )}
               {phase === "rejected" && (
-                <div className="p-3 rounded-xl bg-muted border border-border text-center text-[11px] text-muted-foreground">
+                <div className="p-3 rounded-xl bg-muted border border-border text-center text-sm text-muted-foreground">
                   The doctor is currently unavailable. Please try again later or book an appointment.
                 </div>
               )}
               <div className="space-y-2 pt-1">
                 {activeRejoin && (
-                  <Button onClick={handleRejoinActive} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                  <Button onClick={handleRejoinActive} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
                     <Phone className="h-4 w-4" />Rejoin active consultation
                   </Button>
                 )}
-                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
                   <Phone className="h-4 w-4" />Try again
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-xl">Close</Button>
               </div>
             </div>
           )}
@@ -1197,14 +1271,14 @@ export const ConnectDialogContent = ({
           {phase === "ended" && (
             <div className="space-y-3">
               <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
-                <p className="text-[12px] font-medium text-foreground/60">Your consultation has ended</p>
-                <p className="text-[10px] text-muted-foreground">Duration: session complete</p>
+                <p className="text-sm font-medium text-foreground/60">Your consultation has ended</p>
+                <p className="text-xs text-muted-foreground">Duration: session complete</p>
               </div>
               <div className="space-y-2">
-                <Button onClick={handleRetry} className="w-full h-10 text-[12px] font-semibold gap-2 rounded-xl">
+                <Button onClick={handleRetry} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
                   <Phone className="h-4 w-4" />Reconnect with {doctorName}
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-[11px] rounded-xl">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-xl">Close</Button>
               </div>
             </div>
           )}
@@ -1213,14 +1287,14 @@ export const ConnectDialogContent = ({
 
       {/* Trust footer */}
       {["idle", "guest_form", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase) && (
-        <div className="flex items-center justify-center gap-1.5 text-[9px] text-muted-foreground/50 pt-1">
-          <ShieldCheck className="h-3 w-3" />HIPAA compliant · End-to-end encrypted
+        <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground/50 pt-1">
+          <ShieldCheck className="h-4 w-4" />HIPAA compliant · End-to-end encrypted
         </div>
       )}
 
       {/* In-flight hint */}
       {isInFlight && (
-        <p className="text-center text-[9px] text-muted-foreground/40">
+        <p className="text-center text-sm text-muted-foreground/40">
           Minimizing this dialog won't cancel your request
         </p>
       )}

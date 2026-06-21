@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import {
   Star,
@@ -109,7 +110,7 @@ function ReviewCardSkeleton({ compact = false }: { compact?: boolean }) {
         <Skeleton className="h-2.5 w-full rounded" />
         <Skeleton className="h-2.5 w-20 rounded" />
       </div>
-      <Skeleton className="h-3 w-3 rounded shrink-0 mt-0.5" />
+      <Skeleton className="h-4 w-4 rounded shrink-0 mt-0.5" />
     </div>
   );
 }
@@ -120,7 +121,7 @@ function ReviewDetailSkeleton() {
       <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-border bg-muted/30">
         <Skeleton className="h-6 w-16 rounded-[6px]" />
         <div className="flex-1 min-w-0 space-y-1">
-          <Skeleton className="h-3 w-32 rounded" />
+          <Skeleton className="h-4 w-42 rounded" />
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Skeleton className="h-6 w-14 rounded-[6px]" />
@@ -212,7 +213,7 @@ function StarRating({
   const active = hovered ?? rating;
 
   const sizeClass =
-    size === "lg" ? "h-5 w-5" : size === "md" ? "h-4 w-4" : "h-3 w-3";
+    size === "lg" ? "h-5 w-5" : size === "md" ? "h-4 w-4" : "h-4 w-4";
 
   return (
     <div className="flex items-center gap-0.5">
@@ -255,7 +256,7 @@ function SectionCard({
         <div className="w-5 h-5 rounded-[4px] flex items-center justify-center bg-primary/10 shrink-0">
           <Icon size={11} className="text-primary" />
         </div>
-        <h3 className="text-[10px] font-semibold tracking-tight text-foreground uppercase">
+        <h3 className="text-xs font-semibold tracking-tight text-foreground uppercase">
           {title}
         </h3>
       </div>
@@ -267,10 +268,10 @@ function SectionCard({
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 py-1.5 border-b border-border last:border-0">
-      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
-      <span className="text-[10px] font-medium text-foreground">
+      <span className="text-xs font-medium text-foreground">
         {value ?? (
           <span className="text-muted-foreground italic font-normal">—</span>
         )}
@@ -283,13 +284,13 @@ function StatusChip({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[9px] font-medium border w-fit",
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-xs font-medium border w-fit",
         ok
           ? "bg-emerald-500/10 text-emerald-600 border-emerald-400/30"
           : "bg-destructive/10 text-destructive border-destructive/25",
       )}
     >
-      {ok ? <Check className="h-2.5 w-2.5" /> : <X className="h-2.5 w-2.5" />}
+      {ok ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
       {label}
     </span>
   );
@@ -391,10 +392,10 @@ function AppointmentSearchSelect({
     return (
       <div className="flex flex-col items-center justify-center py-5 gap-1.5 text-center">
         <ClipboardList className="h-5 w-5 text-muted-foreground" />
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           No completed appointments available to review.
         </p>
-        <p className="text-[9px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Only completed appointments that haven&apos;t been reviewed yet are shown.
         </p>
       </div>
@@ -496,50 +497,127 @@ function AppointmentSearchSelect({
       : null;
 
   return (
-    <>
-      {/* Trigger */}
-      <div
-        ref={triggerRef}
-        onClick={handleToggle}
-        className={cn(
-          "w-full flex items-center gap-2 px-2.5 py-2 rounded-[6px] border transition-all cursor-pointer",
-          isOpen
-            ? "border-primary ring-1 ring-primary bg-primary/5"
-            : "border-border hover:border-primary/40 hover:bg-muted/40",
-          selectedAppt && "bg-primary/5",
-        )}
-      >
-        <Search className="h-3 w-3 text-muted-foreground shrink-0" />
-        {selectedAppt ? (
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground bg-primary border border-primary/20 shrink-0">
-              {getInitials(doctorName(selectedAppt))}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold text-foreground truncate">
-                {doctorDesig(selectedAppt) || doctorName(selectedAppt)}
-              </p>
-              <p className="text-[9px] text-muted-foreground truncate">
-                {fmtDate(selectedAppt.appointment_date)} · {doctorSpec(selectedAppt)}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <span className="text-[10px] text-muted-foreground flex-1">
-            Search and select an appointment…
-          </span>
-        )}
-        <ChevronDown
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <div
           className={cn(
-            "h-3 w-3 text-muted-foreground shrink-0 transition-transform duration-200",
-            isOpen && "rotate-180",
+            "w-full flex items-center gap-2 px-2.5 py-2 rounded-[6px] border transition-all cursor-pointer",
+            isOpen
+              ? "border-primary ring-1 ring-primary bg-primary/5"
+              : "border-border hover:border-primary/40 hover:bg-muted/40",
+            selectedAppt && "bg-primary/5"
           )}
-        />
-      </div>
+        >
+          <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+          {selectedAppt ? (
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground bg-primary border border-primary/20 shrink-0">
+                {getInitials(doctorName(selectedAppt))}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {doctorDesig(selectedAppt) || doctorName(selectedAppt)}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {fmtDate(selectedAppt.appointment_date)} · {doctorSpec(selectedAppt)}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <span className="text-xs text-muted-foreground flex-1">
+              Search and select an appointment…
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-muted-foreground shrink-0 transition-transform",
+              isOpen && "rotate-180"
+            )}
+          />
+        </div>
+      </PopoverTrigger>
 
-      {/* Portal dropdown — renders into document.body, escapes all overflow contexts */}
-      {dropdownContent}
-    </>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-[6px] border-border shadow-lg" align="start">
+        {/* Search inside dropdown */}
+        <div className="p-2 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by doctor, specialization, or clinic…"
+              className="pl-7 h-7 text-xs rounded-[6px] border-border focus-visible:ring-primary"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+
+        {/* Results */}
+        <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+          {filteredAppointments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-4 gap-1.5 text-center">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                No appointments match your search.
+              </p>
+            </div>
+          ) : (
+            filteredAppointments.map((appt) => (
+              <button
+                key={appt.id}
+                type="button"
+                onClick={() => {
+                  onSelect(appt);
+                  setIsOpen(false);
+                  setSearchQuery("");
+                }}
+                className={cn(
+                  "w-full text-left flex items-start gap-2.5 p-2 rounded-[6px] border transition-all",
+                  selectedAppt?.id === appt.id
+                    ? "border-primary bg-primary/5"
+                    : "border-transparent hover:border-border hover:bg-muted/40",
+                )}
+              >
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
+                  {getInitials(doctorName(appt))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    {doctorDesig(appt) || doctorName(appt)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {doctorSpec(appt)}
+                  </p>
+                  {clinicName(appt) && (
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      <Building2 className="h-2 w-2 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground truncate">
+                        {clinicName(appt)}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {fmtDate(appt.appointment_date)} ·{" "}
+                    <span className="capitalize">{appt.type.replace("_", " ")}</span>
+                  </p>
+                </div>
+                {selectedAppt?.id === appt.id && (
+                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                )}
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Footer count */}
+        <div className="px-2.5 py-1.5 border-t border-border bg-muted/30">
+          <p className="text-xs text-muted-foreground text-center">
+            {filteredAppointments.length} of {appointments.length} appointment{appointments.length !== 1 ? "s" : ""} available
+          </p>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -611,13 +689,13 @@ function SubmitReviewPanel({
           variant="outline"
           size="sm"
           onClick={onBack}
-          className="h-6 text-[10px] rounded-[6px] border-border gap-1 shrink-0 px-2"
+          className="h-6 text-xs rounded-[6px] border-border gap-1 shrink-0 px-2"
         >
-          <ArrowLeft className="h-2.5 w-2.5" /> Back
+          <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         <div>
-          <p className="text-[11px] font-semibold text-foreground">Write a Review</p>
-          <p className="text-[9px] text-muted-foreground hidden sm:block">
+          <p className="text-xs font-semibold text-foreground">Write a Review</p>
+          <p className="text-xs text-muted-foreground hidden sm:block">
             Share your experience with a completed appointment
           </p>
         </div>
@@ -629,8 +707,8 @@ function SubmitReviewPanel({
 
           {done && (
             <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-emerald-400/30 bg-emerald-500/10">
-              <Check className="h-3 w-3 text-emerald-600 shrink-0" />
-              <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+              <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
                 {doneMessage || "Review submitted! It will appear after approval."}
               </p>
             </div>
@@ -638,8 +716,8 @@ function SubmitReviewPanel({
 
           {error && (
             <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
-              <AlertCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
-              <p className="text-[10px] text-destructive">{error}</p>
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">{error}</p>
             </div>
           )}
 
@@ -656,9 +734,9 @@ function SubmitReviewPanel({
                   variant="ghost"
                   size="sm"
                   onClick={handleClearSelection}
-                  className="h-5 text-[9px] text-muted-foreground hover:text-destructive gap-1 px-1"
+                  className="h-5 text-xs text-muted-foreground hover:text-destructive gap-1 px-1"
                 >
-                  <X className="h-2.5 w-2.5" /> Clear selection
+                  <X className="h-4 w-4" /> Clear selection
                 </Button>
               )}
             </div>
@@ -672,34 +750,36 @@ function SubmitReviewPanel({
                     {getInitials(selectedAppt.doctor?.user?.name)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-foreground truncate">
+                    <p className="text-xs font-semibold text-foreground truncate">
                       {selectedAppt.doctor?.designations || selectedAppt.doctor?.user?.name}
                     </p>
-                    <p className="text-[9px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {fmtDate(selectedAppt.appointment_date)}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Rating <span className="text-destructive">*</span>
                   </span>
                   <div className="flex items-center gap-2">
                     <StarRating rating={rating} size="lg" interactive onChange={setRating} />
                     {rating > 0 && (
-                      <span className="text-[10px] font-semibold text-foreground">
+                      <span className="text-xs font-semibold text-foreground">
                         {rating}/5
                       </span>
                     )}
                   </div>
                   {rating === 0 && (
-                    <p className="text-[9px] text-muted-foreground">Click a star to rate</p>
+                    <p className="text-xs text-muted-foreground">
+                    Click a star to rate
+                  </p>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Comment (optional)
                   </span>
                   <textarea
@@ -707,7 +787,7 @@ function SubmitReviewPanel({
                     onChange={(e) => setComment(e.target.value)}
                     rows={3}
                     placeholder="Share your experience…"
-                    className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-[10px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                    className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                   />
                 </div>
 
@@ -717,11 +797,11 @@ function SubmitReviewPanel({
                     id="anon-submit"
                     checked={isAnonymous}
                     onChange={(e) => setIsAnonymous(e.target.checked)}
-                    className="h-3 w-3 accent-primary rounded-[3px]"
+                    className="h-4 w-4 accent-primary rounded-[3px]"
                   />
                   <label
                     htmlFor="anon-submit"
-                    className="text-[10px] text-muted-foreground cursor-pointer select-none"
+                    className="text-xs text-muted-foreground cursor-pointer select-none"
                   >
                     Submit anonymously
                   </label>
@@ -731,14 +811,20 @@ function SubmitReviewPanel({
                   onClick={handleSubmit}
                   disabled={!rating || submitMut.isPending || done}
                   size="sm"
-                  className="text-[10px] gap-1.5 h-7 rounded-[6px] w-full"
+                  className="text-xs gap-1.5 h-7 rounded-[6px] w-full"
                 >
                   {done ? (
-                    <><Check className="h-3 w-3" /> Submitted</>
+                    <>
+                      <Check className="h-4 w-4" /> Submitted
+                    </>
                   ) : submitMut.isPending ? (
-                    <><Loader2 className="h-3 w-3 animate-spin" /> Submitting…</>
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Submitting…
+                    </>
                   ) : (
-                    <><Star className="h-3 w-3" /> Submit Review</>
+                    <>
+                      <Star className="h-4 w-4" /> Submit Review
+                    </>
                   )}
                 </Button>
               </div>
@@ -779,7 +865,7 @@ function ReviewCard({
     >
       <div
         className={cn(
-          "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0",
+          "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0",
           compact && "hidden sm:flex",
         )}
       >
@@ -788,12 +874,12 @@ function ReviewCard({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5 flex-wrap">
-          <span className="text-[10px] font-semibold text-foreground leading-tight">
+          <span className="text-xs font-semibold text-foreground leading-tight">
             {review.doctor.designations || review.doctor.name}
           </span>
           <Badge
             className={cn(
-              "text-[9px] font-medium rounded-[4px] px-1.5 py-0 border flex items-center gap-0.5 h-4 shrink-0",
+              "text-xs font-medium rounded-[4px] px-1.5 py-0 border flex items-center gap-0.5 h-4 shrink-0",
               meta.colorClass,
             )}
           >
@@ -801,7 +887,7 @@ function ReviewCard({
             {meta.label}
           </Badge>
           {review.is_anonymous && (
-            <Badge className="text-[9px] font-medium rounded-[4px] px-1.5 py-0 border h-4 bg-secondary text-muted-foreground border-border flex items-center gap-0.5">
+            <Badge className="text-xs font-medium rounded-[4px] px-1.5 py-0 border h-4 bg-secondary text-muted-foreground border-border flex items-center gap-0.5">
               <EyeOff className="h-2 w-2" />
               Anon
             </Badge>
@@ -810,23 +896,23 @@ function ReviewCard({
 
         <div className="flex items-center gap-1.5 mt-0.5">
           <StarRating rating={review.rating} />
-          <span className="text-[9px] text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate">
             · {review.doctor.specialization}
           </span>
         </div>
 
         {review.comment && (
-          <p className="text-[9px] text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
             {review.comment}
           </p>
         )}
 
-        <p className="text-[9px] text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {fmtDate(review.created_at)}
         </p>
       </div>
 
-      <ChevronRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+      <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-0.5" />
     </div>
   );
 }
@@ -915,21 +1001,21 @@ function ReviewDetail({
             variant="outline"
             size="sm"
             onClick={onBack}
-            className="h-6 text-[10px] rounded-[6px] border-border gap-1 shrink-0 px-2"
+            className="h-6 text-xs rounded-[6px] border-border gap-1 shrink-0 px-2"
           >
-            <ArrowLeft className="h-2.5 w-2.5" /> Back
+            <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           <div className="flex-1 min-w-0 sm:flex-none">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] font-semibold text-foreground truncate">
+              <span className="text-xs font-semibold text-foreground truncate">
                 {review.doctor.designations || review.doctor.name}
               </span>
-              <span className="text-[9px] text-muted-foreground hidden sm:inline">
+              <span className="text-xs text-muted-foreground hidden sm:inline">
                 #{review.id}
               </span>
               <Badge
                 className={cn(
-                  "text-[9px] font-medium rounded-[4px] px-1.5 border flex items-center gap-0.5",
+                  "text-xs font-medium rounded-[4px] px-1.5 border flex items-center gap-0.5",
                   meta.colorClass,
                 )}
               >
@@ -945,21 +1031,21 @@ function ReviewDetail({
             <Button
               variant="outline"
               size="sm"
-              className="h-6 text-[10px] rounded-[6px] border-border gap-1 px-2"
+              className="h-6 text-xs rounded-[6px] border-border gap-1 px-2"
               onClick={() => {
                 setEditing((v) => !v);
                 setConfirmDelete(false);
               }}
               disabled={updateMut.isPending || deleteMut.isPending}
             >
-              <Pencil className="h-2.5 w-2.5" />
+              <Pencil className="h-4 w-4" />
               {editing ? "Cancel" : "Edit"}
             </Button>
             <Button
               variant="outline"
               size="sm"
               className={cn(
-                "h-6 text-[10px] rounded-[6px] gap-1 px-2 transition-colors",
+                "h-6 text-xs rounded-[6px] gap-1 px-2 transition-colors",
                 confirmDelete
                   ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   : "border-destructive/40 text-destructive hover:bg-destructive/10",
@@ -968,9 +1054,9 @@ function ReviewDetail({
               disabled={deleteMut.isPending}
             >
               {deleteMut.isPending ? (
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-2.5 w-2.5" />
+                <Trash2 className="h-4 w-4" />
               )}
               {confirmDelete ? "Confirm" : "Delete"}
             </Button>
@@ -978,7 +1064,7 @@ function ReviewDetail({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 text-[10px] rounded-[6px] border-border gap-1 px-2"
+                className="h-6 text-xs rounded-[6px] border-border gap-1 px-2"
                 onClick={() => setConfirmDelete(false)}
               >
                 Cancel
@@ -993,8 +1079,8 @@ function ReviewDetail({
 
         {saved && savedMessage && (
           <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-emerald-400/30 bg-emerald-500/10">
-            <Check className="h-3 w-3 text-emerald-600 shrink-0" />
-            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
               {savedMessage}
             </p>
           </div>
@@ -1002,15 +1088,15 @@ function ReviewDetail({
 
         {deleteError && (
           <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
-            <AlertCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
-            <p className="text-[10px] text-destructive">{deleteError}</p>
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive">{deleteError}</p>
           </div>
         )}
 
         {review.status === "rejected" && review.rejection_reason && (
           <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
-            <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />
-            <p className="text-[10px] text-destructive">
+            <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive">
               <strong>Rejection reason: </strong>
               {review.rejection_reason}
             </p>
@@ -1019,18 +1105,18 @@ function ReviewDetail({
 
         <SectionCard icon={Stethoscope} title="Doctor">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
               {getInitials(review.doctor.name)}
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-foreground">
+              <p className="text-xs font-semibold text-foreground">
                 {review.doctor.designations || review.doctor.name}
               </p>
-              <p className="text-[9px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {review.doctor.specialization}
               </p>
               {review.doctor.designations && (
-                <p className="text-[9px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {review.doctor.name}
                 </p>
               )}
@@ -1062,19 +1148,24 @@ function ReviewDetail({
           {editing ? (
             <div className="space-y-3">
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Rating <span className="text-destructive">*</span>
                 </span>
                 <div className="flex items-center gap-2">
-                  <StarRating rating={rating} size="md" interactive onChange={setRating} />
-                  <span className="text-[10px] font-semibold text-foreground">
+                  <StarRating
+                    rating={rating}
+                    size="md"
+                    interactive
+                    onChange={setRating}
+                  />
+                  <span className="text-xs font-semibold text-foreground">
                     {rating}/5
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Comment (optional)
                 </span>
                 <textarea
@@ -1082,7 +1173,7 @@ function ReviewDetail({
                   onChange={(e) => setComment(e.target.value)}
                   rows={3}
                   placeholder="Share your experience…"
-                  className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-[10px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
 
@@ -1092,11 +1183,11 @@ function ReviewDetail({
                   id="anon-edit"
                   checked={isAnonymous}
                   onChange={(e) => setIsAnonymous(e.target.checked)}
-                  className="h-3 w-3 accent-primary"
+                  className="h-4 w-4 accent-primary"
                 />
                 <label
                   htmlFor="anon-edit"
-                  className="text-[10px] text-muted-foreground cursor-pointer select-none"
+                  className="text-xs text-muted-foreground cursor-pointer select-none"
                 >
                   Submit anonymously
                 </label>
@@ -1107,18 +1198,24 @@ function ReviewDetail({
                 disabled={!rating || updateMut.isPending}
                 size="sm"
                 className={cn(
-                  "text-[10px] gap-1.5 h-7 rounded-[6px] w-full transition-all",
+                  "text-xs gap-1.5 h-7 rounded-[6px] w-full transition-all",
                   saved
                     ? "bg-emerald-500 text-white hover:bg-emerald-500"
                     : "bg-primary text-primary-foreground hover:bg-primary/90",
                 )}
               >
                 {saved ? (
-                  <><Check className="h-2.5 w-2.5" /> Saved</>
+                  <>
+                    <Check className="h-4 w-4" /> Saved
+                  </>
                 ) : updateMut.isPending ? (
-                  <><Loader2 className="h-2.5 w-2.5 animate-spin" /> Saving…</>
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+                  </>
                 ) : (
-                  <><Pencil className="h-2.5 w-2.5" /> Save changes</>
+                  <>
+                    <Pencil className="h-4 w-4" /> Save changes
+                  </>
                 )}
               </Button>
             </div>
@@ -1126,22 +1223,22 @@ function ReviewDetail({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <StarRating rating={review.rating} size="md" />
-                <span className="text-[11px] font-semibold text-foreground">
+                <span className="text-xs font-semibold text-foreground">
                   {review.rating}/5
                 </span>
               </div>
               {review.comment ? (
-                <p className="text-[10px] text-foreground leading-relaxed">
+                <p className="text-xs text-foreground leading-relaxed">
                   {review.comment}
                 </p>
               ) : (
-                <p className="text-[10px] text-muted-foreground italic">
+                <p className="text-xs text-muted-foreground italic">
                   No comment provided.
                 </p>
               )}
               {review.is_anonymous && (
-                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                  <EyeOff className="h-2.5 w-2.5" />
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <EyeOff className="h-4 w-4" />
                   Submitted anonymously
                 </div>
               )}
@@ -1156,7 +1253,7 @@ function ReviewDetail({
               value={
                 <Badge
                   className={cn(
-                    "text-[9px] font-medium rounded-[4px] px-1.5 border flex items-center gap-0.5 w-fit",
+                    "text-xs font-medium rounded-[4px] px-1.5 border flex items-center gap-0.5 w-fit",
                     meta.colorClass,
                   )}
                 >
@@ -1165,7 +1262,7 @@ function ReviewDetail({
                 </Badge>
               }
             />
-            <p className="text-[10px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {review.status === "pending"
                 ? "Your review is awaiting moderation. It will appear publicly once approved."
                 : review.status === "approved"
@@ -1262,7 +1359,7 @@ function PatientReviews() {
                       key={id}
                       onClick={() => setActiveFilter(id)}
                       className={cn(
-                        "flex items-center gap-1 px-2 py-2.5 text-[10px] font-medium border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
+                        "flex items-center gap-1 px-2 py-2.5 text-xs font-medium border-b-2 transition-all whitespace-nowrap -mb-px shrink-0",
                         activeFilter === id
                           ? "border-primary text-primary"
                           : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
@@ -1271,7 +1368,7 @@ function PatientReviews() {
                       {label}
                       <span
                         className={cn(
-                          "text-[9px] font-semibold rounded-full px-1 py-0 min-w-[16px] text-center leading-4",
+                          "text-xs font-semibold rounded-full px-1 py-0 min-w-[16px] text-center leading-4",
                           activeFilter === id
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground",
@@ -1286,10 +1383,10 @@ function PatientReviews() {
                 {reviewableCount > 0 && (
                   <Button
                     size="sm"
-                    className="h-6 text-[9px] gap-0.5 px-1.5 rounded-[6px] shrink-0 ml-1"
+                    className="h-6 text-xs gap-0.5 px-1.5 rounded-[6px] shrink-0 ml-1"
                     onClick={() => setPanel({ mode: "submit" })}
                   >
-                    <Plus className="h-2.5 w-2.5" />
+                    <Plus className="h-4 w-4" />
                     <span className="hidden sm:inline">Review</span>
                     <span className="sm:hidden">+</span>
                   </Button>
@@ -1299,12 +1396,12 @@ function PatientReviews() {
               {/* Search */}
               <div className="px-2.5 py-2 border-b border-border">
                 <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search doctor or comment…"
-                    className="pl-7 h-7 text-[10px] rounded-[6px] border-border focus-visible:ring-primary"
+                    className="pl-7 h-7 text-xs rounded-[6px] border-border focus-visible:ring-primary"
                   />
                 </div>
               </div>
@@ -1315,11 +1412,11 @@ function PatientReviews() {
                   className="mx-2.5 mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] border border-primary/20 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
                   onClick={() => setPanel({ mode: "submit" })}
                 >
-                  <Star className="h-3 w-3 text-primary shrink-0" />
-                  <p className="text-[10px] text-primary font-medium">
+                  <Star className="h-4 w-4 text-primary shrink-0" />
+                  <p className="text-xs text-primary font-medium">
                     {reviewableCount} appointment{reviewableCount !== 1 ? "s" : ""} awaiting review
                   </p>
-                  <ChevronRight className="h-2.5 w-2.5 text-primary ml-auto shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-primary ml-auto shrink-0" />
                 </div>
               )}
 
@@ -1334,7 +1431,7 @@ function PatientReviews() {
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-28 gap-2">
                     <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-[10px] text-muted-foreground text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       {search || activeFilter !== "all"
                         ? "No reviews match your filter."
                         : "No reviews yet."}
@@ -1376,10 +1473,10 @@ function PatientReviews() {
                     <Star className="h-5 w-5 text-primary" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[11px] font-medium text-foreground">
+                    <p className="text-xs font-medium text-foreground">
                       Select a review
                     </p>
-                    <p className="text-[10px] text-muted-foreground max-w-[200px]">
+                    <p className="text-xs text-muted-foreground max-w-[200px]">
                       Click any review to see details, edit, or delete it.
                     </p>
                   </div>
@@ -1387,10 +1484,10 @@ function PatientReviews() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-[10px] gap-1 h-7 rounded-[6px] mt-1"
+                      className="text-xs gap-1 h-7 rounded-[6px] mt-1"
                       onClick={() => setPanel({ mode: "submit" })}
                     >
-                      <Plus className="h-2.5 w-2.5" />
+                      <Plus className="h-4 w-4" />
                       Write a review
                     </Button>
                   )}

@@ -38,10 +38,10 @@ import { PageHeader } from "@/components/PageHeader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StatusFilter = "all" | "confirmed" | "pending" | "in_progress" | "cancelled" | "completed" | "no_show";
-type TypeFilter   = "all" | "online" | "in_person";
+type StatusFilter  = "all" | "confirmed" | "pending" | "in_progress" | "cancelled" | "completed" | "no_show";
+type TypeFilter    = "all" | "online" | "in_person";
 type BookingFilter = "all" | "scheduled" | "walk_in";
-type SortOption   = "date-desc" | "date-asc" | "patient";
+type SortOption    = "date-desc" | "date-asc" | "patient";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Date: Newest first" },
@@ -116,12 +116,10 @@ function formatDate(date: string): string {
 
 function formatTime(time: string): string {
   if (!time) return "—";
-  // Handle both "HH:MM:SS" and full ISO "2026-06-01T11:00:00.000000Z"
   const d = new Date(time);
   if (!isNaN(d.getTime())) {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
-  // Fallback: plain HH:MM
   const [h, m] = time.split(":");
   const hour = parseInt(h, 10);
   const ampm = hour >= 12 ? "PM" : "AM";
@@ -310,7 +308,7 @@ function AppointmentRow({
   );
 }
 
-// ─── Mobile card ──────────────────────────────────────────────────────────────
+// ─── Mobile / tablet card ─────────────────────────────────────────────────────
 
 function AppointmentCard({
   a,
@@ -438,7 +436,6 @@ function AppointmentPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const open = !!appointmentId;
 
-  // Fetch full detail when panel opens
   const { data: detailData, isLoading: detailLoading } =
     useGetAdminAppointment(appointmentId);
 
@@ -533,7 +530,6 @@ function AppointmentPanel({
                           </p>
                         )}
                         <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                          {/* Status badge */}
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
@@ -544,7 +540,6 @@ function AppointmentPanel({
                             {appt.status.replace("_", " ")}
                           </span>
 
-                          {/* Type badge */}
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium",
@@ -559,7 +554,6 @@ function AppointmentPanel({
                             {appt.type.replace("_", " ")}
                           </span>
 
-                          {/* Booking type */}
                           <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-medium bg-secondary text-foreground border-border/60">
                             <ClipboardList className="w-3 h-3" />
                             {appt.booking_type.replace("_", " ")}
@@ -654,13 +648,13 @@ function AppointmentPanel({
 function ManageAppointments() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId]           = useState<number | null>(null);
   const [selectedPreview, setSelectedPreview] = useState<ApiAppointment | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpen, setFilterOpen]           = useState(false);
   const { toast } = useToast();
 
-  // Debounced search (client-side since API doesn't advertise search param)
-  const [searchInput, setSearchInput] = useState("");
+  // Debounced search (client-side)
+  const [searchInput, setSearchInput]       = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 400);
@@ -675,12 +669,12 @@ function ManageAppointments() {
     page:         filters.page,
   });
 
-  const appointments = data?.data ?? [];
-  const total        = data?.total ?? 0;
+  const appointments = data?.data     ?? [];
+  const total        = data?.total    ?? 0;
   const perPage      = data?.per_page ?? 20;
   const totalPages   = Math.ceil(total / perPage);
 
-  // ── Counts (from current page data for sidebar counters) ──
+  // ── Counts ──
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     appointments.forEach((a) => {
@@ -698,9 +692,10 @@ function ManageAppointments() {
   }, [appointments]);
 
   // ── Client-side search + sort ──
-  const filtered = useMemo(() => {
-    return appointments.filter((a) => matchesSearch(a, debouncedSearch));
-  }, [appointments, debouncedSearch]);
+  const filtered = useMemo(
+    () => appointments.filter((a) => matchesSearch(a, debouncedSearch)),
+    [appointments, debouncedSearch],
+  );
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -743,9 +738,9 @@ function ManageAppointments() {
     [filters],
   );
 
+  // Lock body scroll when filter sheet is open
   useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
+    document.body.style.overflow = filterOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
@@ -761,7 +756,7 @@ function ManageAppointments() {
 
   const pendingCount = statusCounts["pending"] ?? 0;
 
-  // ── Sidebar ──
+  // ── Sidebar content (shared: desktop sidebar + mobile/tablet bottom-sheet) ──
   const sidebarContent = (
     <>
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
@@ -804,9 +799,9 @@ function ManageAppointments() {
             value={filters.type}
             onChange={(v) => set("type", v)}
             options={[
-              { value: "all",       label: "All types",  count: appointments.length },
-              { value: "online",    label: "Online",     count: typeCounts["online"]    ?? 0 },
-              { value: "in_person", label: "In-person",  count: typeCounts["in_person"] ?? 0 },
+              { value: "all",       label: "All types", count: appointments.length },
+              { value: "online",    label: "Online",    count: typeCounts["online"]    ?? 0 },
+              { value: "in_person", label: "In-person", count: typeCounts["in_person"] ?? 0 },
             ]}
           />
         </FilterSection>
@@ -835,24 +830,31 @@ function ManageAppointments() {
         />
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
+          {/*
+           * Desktop sidebar — only at lg+ (1024px+).
+           * Tablets (md, 768–1023px) use the bottom-sheet instead.
+           */}
+          <aside className="hidden lg:flex lg:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
             {sidebarContent}
           </aside>
 
-          {/* Mobile backdrop */}
+          {/*
+           * Filter backdrop — phone AND tablet (hidden at lg+).
+           */}
           <div
             onClick={() => setFilterOpen(false)}
             className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
+              "fixed inset-0 z-40 bg-black/50 lg:hidden transition-opacity duration-300",
               filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
             )}
           />
 
-          {/* Mobile bottom-sheet */}
+          {/*
+           * Bottom-sheet — phone AND tablet (hidden at lg+).
+           */}
           <div
             className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
+              "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
               "bg-card rounded-t-2xl border-t border-border",
               "max-h-[85dvh] flex flex-col overflow-hidden",
               "transition-transform duration-300 ease-out",
@@ -875,8 +877,13 @@ function ManageAppointments() {
 
           {/* ── Main ── */}
           <main className="flex-1 overflow-y-auto">
-            {/* Stats */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+
+            {/*
+             * Stat cards:
+             *   phone  → 2 columns
+             *   tablet (md+) → 4 columns
+             */}
+            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatCard
                 label="Total appointments"
                 value={total}
@@ -903,7 +910,7 @@ function ManageAppointments() {
               />
             </div>
 
-            {/* Mobile search */}
+            {/* Phone-only search (below stat cards) */}
             <div className="sm:hidden px-3 pt-3">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -925,7 +932,7 @@ function ManageAppointments() {
               </div>
             </div>
 
-            {/* Meta bar */}
+            {/* Sticky meta bar */}
             <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <p className="text-[11px] text-muted-foreground shrink-0">
@@ -947,8 +954,12 @@ function ManageAppointments() {
                   )}
                 </p>
 
+                {/*
+                 * Pending badge — visible at md+ to avoid cramping the
+                 * phone meta bar, but no longer gated behind sm: only.
+                 */}
                 {pendingCount > 0 && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                  <span className="hidden md:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     {pendingCount} pending
                   </span>
@@ -956,7 +967,11 @@ function ManageAppointments() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {/* Desktop search */}
+                {/*
+                 * Search input in meta bar — visible at sm+ (tablets and
+                 * desktop). Phone uses the dedicated block above.
+                 * Slightly wider on tablet (md+) for comfort.
+                 */}
                 <div className="relative hidden sm:block">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                   <input
@@ -964,11 +979,11 @@ function ManageAppointments() {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search patient, doctor, hospital…"
-                    className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
-                {/* Sort */}
+                {/* Sort select */}
                 <div className="relative">
                   <select
                     value={filters.sort}
@@ -984,11 +999,14 @@ function ManageAppointments() {
                   <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
-                {/* Mobile filter button */}
+                {/*
+                 * Filter button — phone AND tablet (hidden at lg+ where
+                 * the sidebar takes over).
+                 */}
                 <button
                   onClick={() => setFilterOpen(true)}
                   className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
+                    "lg:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
                     hasActiveFilters
                       ? "bg-primary text-white border-primary"
                       : "border-border/60 text-muted-foreground bg-card",
@@ -1036,8 +1054,11 @@ function ManageAppointments() {
                 </div>
               ) : (
                 <>
-                  {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  {/*
+                   * Desktop table — only at lg+ (1024px+).
+                   * Tablets get the 2-column card grid below.
+                   */}
+                  <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                     <table className="w-full text-[11px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
@@ -1062,8 +1083,12 @@ function ManageAppointments() {
                     </table>
                   </div>
 
-                  {/* Mobile cards */}
-                  <div className="md:hidden flex flex-col gap-2">
+                  {/*
+                   * Card layout — phone AND tablet (hidden at lg+).
+                   * 2-column grid on tablet (sm:grid-cols-2) for better
+                   * use of the wider screen.
+                   */}
+                  <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     {isLoading
                       ? Array.from({ length: 4 }).map((_, i) => (
                           <div

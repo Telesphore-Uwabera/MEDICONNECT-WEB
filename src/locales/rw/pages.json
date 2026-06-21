@@ -1,8 +1,8 @@
 {
   "landing": {
     "available_now_pill": "Abaganga {{count}} bahari ubu",
-    "hero_title_1": "Inzira y'ubuzima bwawe,",
-    "hero_title_2": "ihuriyemo neza",
+    "hero_title_1": "   Inzira yawe y'ubuzima,",
+    "hero_title_2": " ijyanye neza",
     "hero_subtitle": "Saba abaganga b'inzobere mu mwanya w'iminota 30, cyangwa wivugane n'umuganga uri ku murongo nonaha. Kuboneka mu gihe nyacyo, imiti ya digitale, no kohereza mu farumasi — byose ku rubuga rumwe",
     "instant_cta": "Hura na muganga nonaha",
     "connect_under_minutes": "Birihuta munsi yiminota 5",
@@ -55,7 +55,7 @@
     "footer": "© 2026 MEDICONNECT. Tuzanye ubuvuzi ku ntoki zawe"
   },
   "patient": {
-    "overview_title": "Murakaza neza, John",
+    "overview_title": "Murakaza neza",
     "overview_sub": "Dore ibibera mu kuvuzwa kwawe uyu munsi",
     "stat_upcoming": "Bizaza",
     "stat_active_rx": "Imiti ikora",
@@ -129,12 +129,12 @@
     "added_to_cart": "{{name}} byongeweho mu gitebo",
     "delivery_mins": "iminota ~{{mins}} yo gutanga",
     "add": "Ongeraho",
-    "bookings_title":"Gahunda z'abarwayi",
-    "bookings_sub":"Cunga gahunda zinjira muri serivisi n'ibice"
+    "bookings_title": "Gahunda z'abarwayi",
+    "bookings_sub": "Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
-    "overview_title": "Mwaramutse, Dr. Vance",
-   "overview_sub": "{{date}} · abarwayi muri gahunda yawe uyu munsi",
+    "overview_title": "Mwaramutse",
+    "overview_sub": "{{date}} · abarwayi muri gahunda yawe uyu munsi",
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",
     "instant_hidden": "Urahishwe ku rutonde rw'ako kanya",
@@ -321,12 +321,10 @@
   "header": {
     "search": "Shakisha…"
   },
-
-    "common": {
+  "common": {
     "view_all": "Reba byose",
     "loading": "Biracyaza…",
     "error": "Habayemo ikibazo.",
     "no_data": "Nta makuru aboneka"
   }
-
 }

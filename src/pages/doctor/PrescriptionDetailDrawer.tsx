@@ -101,14 +101,14 @@ function Section({ title, icon, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-border/60 rounded-sm overflow-hidden">
-      <div className="flex items-center gap-2 px-3.5 py-2.5 bg-secondary/30 border-b border-border/50">
+    <div className="border border-border/60 rounded-md overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-secondary/30 border-b border-border/50">
         <span className="text-muted-foreground/70">{icon}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
           {title}
         </span>
       </div>
-      <div className="px-3.5 py-3">{children}</div>
+      <div className="px-4 py-3.5">{children}</div>
     </div>
   );
 }
@@ -118,11 +118,11 @@ function Row({ label, value, mono }: { label: string; value?: React.ReactNode; m
     return null;
   }
   return (
-    <div className="flex items-start justify-between gap-4 py-1.5 border-b border-border/30 last:border-b-0">
-      <span className="text-[10px] text-muted-foreground/70 font-medium shrink-0 pt-px">{label}</span>
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-border/30 last:border-b-0">
+      <span className="text-xs text-muted-foreground/70 font-medium shrink-0 pt-px">{label}</span>
       <span className={cn(
-        "text-[11px] text-foreground text-right",
-        mono && "font-mono text-[10px]",
+        "text-sm text-foreground text-right",
+        mono && "font-mono text-xs",
       )}>
         {value}
       </span>
@@ -144,24 +144,24 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
     <div className="flex flex-col gap-3">
 
       {/* ── Header card ── */}
-      <div className="flex items-start gap-3 p-3.5 border border-border/60 rounded-sm bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="h-11 w-11 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/15 flex-shrink-0">
+      <div className="flex items-start gap-4 p-4 border border-border/60 rounded-md bg-gradient-to-br from-primary/5 to-transparent">
+        <div className="h-12 w-12 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-base border border-primary/15 flex-shrink-0">
           {initials(p.patient?.name)}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div>
-              <p className="text-[14px] font-semibold text-foreground leading-tight">
+              <p className="text-base font-semibold text-foreground leading-tight">
                 {p.patient?.name ?? "Patient"}
               </p>
               {p.patient?.email && (
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Mail className="h-2.5 w-2.5" />{p.patient.email}
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                  <Mail className="h-3.5 w-3.5" />{p.patient.email}
                 </p>
               )}
               {p.patient?.phone && (
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Phone className="h-2.5 w-2.5" />
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                  <Phone className="h-3.5 w-3.5" />
                   {p.patient.country_code} {p.patient.phone}
                 </p>
               )}
@@ -169,7 +169,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
             <Badge
               variant="outline"
               className={cn(
-                "text-[9px] px-2 py-0.5 font-semibold border shrink-0",
+                "text-xs px-2.5 py-0.5 font-semibold border shrink-0",
                 STATUS_STYLES[p.status] ?? "bg-secondary/50 text-muted-foreground border-border/60",
               )}
             >
@@ -199,34 +199,34 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
       {/* ── Medications ── */}
       <Section title={`Medications (${p.items.length})`} icon={<Pill className="h-3 w-3" />}>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {p.items.map((m, i) => (
             <div
               key={m.id ?? i}
-              className="border border-border/50 rounded-sm p-2.5 bg-secondary/20"
+              className="border border-border/50 rounded-md p-3.5 bg-secondary/20"
             >
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="h-5 w-5 rounded-sm bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold border border-primary/10 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-2.5">
+                <div className="h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs font-bold border border-primary/10 flex-shrink-0">
                   {i + 1}
                 </div>
-                <span className="text-[12px] font-semibold text-foreground">{m.medicine_name}</span>
+                <span className="text-sm font-semibold text-foreground">{m.medicine_name}</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 pl-7">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pl-8">
                 {[
                   ["Dosage",     m.dosage],
                   ["Frequency",  m.frequency],
                   ["Duration",   m.duration],
                   ["Quantity",   String(m.quantity)],
                 ].map(([lbl, val]) => val ? (
-                  <div key={lbl} className="flex items-center gap-1">
-                    <span className="text-[9px] text-muted-foreground/60 w-14 shrink-0">{lbl}</span>
-                    <span className="text-[10px] font-medium text-foreground">{val}</span>
+                  <div key={lbl} className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground/60 w-16 shrink-0">{lbl}</span>
+                    <span className="text-sm font-medium text-foreground">{val}</span>
                   </div>
                 ) : null)}
                 {m.instructions && (
-                  <div className="col-span-2 flex items-start gap-1 mt-0.5">
-                    <span className="text-[9px] text-muted-foreground/60 w-14 shrink-0 pt-px">Instructions</span>
-                    <span className="text-[10px] text-muted-foreground italic">{m.instructions}</span>
+                  <div className="col-span-2 flex items-start gap-1.5 mt-1">
+                    <span className="text-xs text-muted-foreground/60 w-16 shrink-0 pt-px">Instructions</span>
+                    <span className="text-sm text-muted-foreground italic">{m.instructions}</span>
                   </div>
                 )}
               </div>
@@ -286,11 +286,11 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 href={`${BASE_URL}${p.pdf_url}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[11px] font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
               >
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-4 w-4" />
                 Download PDF
-                <ExternalLink className="h-3 w-3 ml-0.5 text-muted-foreground/50" />
+                <ExternalLink className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />
               </a>
             )}
             {p.qr_code && (
@@ -298,11 +298,11 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 href={`${BASE_URL}${p.qr_code}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[11px] font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
               >
-                <QrCode className="h-3.5 w-3.5" />
+                <QrCode className="h-4 w-4" />
                 View QR Code
-                <ExternalLink className="h-3 w-3 ml-0.5 text-muted-foreground/50" />
+                <ExternalLink className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />
               </a>
             )}
           </div>
@@ -373,15 +373,15 @@ export function PrescriptionDetailDrawer({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/60 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/15">
-                  <FileText className="h-3.5 w-3.5 text-primary" />
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center border border-primary/15">
+                  <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-foreground">Prescription Details</p>
+                  <p className="text-base font-semibold text-foreground">Prescription Details</p>
                   {prescription?.prescription_number && (
-                    <p className="text-[10px] text-muted-foreground font-mono">
+                    <p className="text-xs text-muted-foreground font-mono">
                       {prescription.prescription_number}
                     </p>
                   )}
@@ -389,25 +389,25 @@ export function PrescriptionDetailDrawer({
               </div>
               <button
                 onClick={onClose}
-                className="h-7 w-7 flex items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex-1 overflow-y-auto px-5 py-5">
               {detailQuery.isLoading && !prescription && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <p className="text-[11px] text-muted-foreground">Loading details…</p>
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading details…</p>
                 </div>
               )}
 
               {detailQuery.isError && !prescription && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                  <AlertCircle className="h-6 w-6 text-red-400" />
-                  <p className="text-[11px] text-muted-foreground">Failed to load prescription details</p>
+                  <AlertCircle className="h-8 w-8 text-red-400" />
+                  <p className="text-sm text-muted-foreground">Failed to load prescription details</p>
                 </div>
               )}
 
@@ -415,10 +415,10 @@ export function PrescriptionDetailDrawer({
             </div>
 
             {/* Footer */}
-            <div className="shrink-0 px-4 py-3 border-t border-border/60 flex items-center justify-end">
+            <div className="shrink-0 px-5 py-4 border-t border-border/60 flex items-center justify-end">
               <button
                 onClick={onClose}
-                className="px-4 py-1.5 rounded-sm text-[11px] font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="px-5 py-2 rounded-md text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 Close
               </button>

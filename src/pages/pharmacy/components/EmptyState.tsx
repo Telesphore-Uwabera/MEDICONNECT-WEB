@@ -1,0 +1,31 @@
+
+
+// export default PharmacyProfile;
+
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Building2,  Plus,  Image as ImageIcon, AlertCircle,
+} from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state & skeleton
+// ─────────────────────────────────────────────────────────────────────────────
+function EmptyState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center py-16 text-center px-4">
+      <div className="w-20 h-20 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
+        <Building2 className="h-9 w-9 text-muted-foreground" />
+      </div>
+      <h2 className="text-base font-bold text-foreground mb-2">No pharmacy profile found</h2>
+      <p className="text-xs text-muted-foreground mb-6 max-w-xs leading-relaxed">
+        Create your pharmacy profile to manage your information, hours, and delivery settings in one place.
+      </p>
+      <Button onClick={onCreate} className="text-primary-foreground bg-primary hover:bg-primary/90 gap-2 h-10 px-5">
+        <Plus className="h-4 w-4" /> Create Profile
+      </Button>
+    </div>
+  );
+}
+
+export default EmptyState;

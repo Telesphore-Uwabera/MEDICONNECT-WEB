@@ -296,12 +296,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           to: "/patient/appointments",
           label: t("sidebar.myAppointments"),
           icon: Calendar,
-        },
-        {
-          to: "/patient/service-bookings",
-          label: t("sidebar.serviceBookings"),
-          icon: ClipboardList,
-        },
+        }
       ],
     },
     {
@@ -310,6 +305,12 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
         {
           to: "/patient/prescriptions",
           label: t("sidebar.prescriptions"),
+          icon: FileText,
+        },
+        // PatientPharmacyOrders
+         {
+          to: "/patient/pharmacy/orders",
+          label: t("sidebar.orders"),
           icon: FileText,
         },
         {
@@ -452,11 +453,11 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* ── Role badge ── */}
       <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm bg-primary/10 border border-primary/15 w-fit">
-          <span className="flex items-center justify-center w-5 h-5 rounded bg-primary/20 text-primary text-[9px] font-black flex-shrink-0">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/10 border border-primary/15 w-fit">
+          <span className="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary text-[10px] font-black flex-shrink-0">
             {cfg.initials}
           </span>
-          <span className="text-[10px] font-bold tracking-widest uppercase text-primary truncate">
+          <span className="text-xs font-bold tracking-widest uppercase text-primary truncate">
             {t(cfg.labelKey)}
           </span>
         </div>
@@ -473,12 +474,12 @@ export const DashboardLayout = ({ role, children }: Props) => {
               {hasHeading && (
                 <button
                   onClick={() => toggleGroup(gi)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 mb-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors select-none"
+                  className="w-full flex items-center justify-between px-3 py-2 mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors select-none"
                 >
                   <span>{group.heading}</span>
                   <ChevronRight
                     className={cn(
-                      "h-2.5 w-2.5 transition-transform duration-200",
+                      "h-3.5 w-3.5 transition-transform duration-200",
                       !isCollapsed && "rotate-90",
                     )}
                   />
@@ -504,7 +505,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                             end={item.to === `/${role}`}
                             onClick={() => setMobileOpen(false)}
                             className={cn(
-                              "group relative flex items-center gap-2.5 px-2.5 py-2 rounded-sm text-[12px] font-medium transition-all duration-150",
+                              "group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
                               active
                                 ? "bg-primary/10 text-primary"
                                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70",
@@ -514,7 +515,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                             {active && (
                               <motion.div
                                 layoutId="activeBar"
-                                className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-5 rounded-r-full bg-primary"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary"
                                 transition={{
                                   type: "spring",
                                   stiffness: 500,
@@ -526,14 +527,14 @@ export const DashboardLayout = ({ role, children }: Props) => {
                             {/* Icon */}
                             <span
                               className={cn(
-                                "flex items-center justify-center w-6 h-6 rounded flex-shrink-0 transition-all duration-150",
+                                "flex items-center justify-center w-7 h-7 rounded flex-shrink-0 transition-all duration-150",
                                 active
                                   ? "bg-primary/15 text-primary"
                                   : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70",
                               )}
                             >
                               <Icon
-                                className="h-3.5 w-3.5"
+                                className="h-4 w-4"
                                 strokeWidth={active ? 2.5 : 2}
                               />
                             </span>
@@ -545,7 +546,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
                             {/* Badge */}
                             {item.badge && (
-                              <span className="ml-auto flex items-center justify-center min-w-[18px] h-4 px-1 rounded-full bg-primary/15 text-primary text-[9px] font-bold">
+                              <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/15 text-primary text-[10px] font-bold">
                                 {item.badge}
                               </span>
                             )}
@@ -607,13 +608,12 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* Main area */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Mobile Topbar */}
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-30">
           <button
-            className="p-1.5 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             onClick={() => setMobileOpen(true)}
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-5 w-5" />
           </button>
           <NavLink to="/" className="flex items-center gap-2">
             <img
@@ -621,7 +621,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
               alt="MEDICONNECT"
               className="h-6 w-auto rounded-sm"
             />
-            <span className="text-[12px] font-bold tracking-widest text-foreground">
+            <span className="text-sm font-bold tracking-widest text-foreground">
               MEDICONNECT
             </span>
           </NavLink>
@@ -660,15 +660,15 @@ const ActiveRoleBadge = ({
   const { label, icon: Icon } = roleMap[role];
 
   return (
-    <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-sm bg-primary/10 border border-primary/15">
-      <span className="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary flex-shrink-0">
-        <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 border border-primary/15">
+      <span className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/20 text-primary flex-shrink-0">
+        <Icon className="h-4 w-4" strokeWidth={2.5} />
       </span>
       <div className="flex flex-col min-w-0">
-        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 leading-none mb-0.5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 leading-none mb-1">
           {t("sidebar.activeRole")}
         </span>
-        <span className="text-[11px] font-semibold text-primary truncate leading-none">
+        <span className="text-sm font-semibold text-primary truncate leading-none">
           {label}
         </span>
       </div>

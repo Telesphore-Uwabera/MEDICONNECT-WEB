@@ -53,11 +53,10 @@
     "pharmacies_d": "Incoming scripts, stock, fulfillment",
     "open_dashboard": "Open dashboard",
     "footer": "© 2026 MEDICONNECT. Bringing care to your fingertips",
-    "health_facility":"Health Facilities"
-
+    "health_facility": "Health Facilities"
   },
   "patient": {
-    "overview_title": "Welcome back, John",
+    "overview_title": "Welcome back",
     "overview_sub": "Here's what's happening with your care today",
     "stat_upcoming": "Upcoming",
     "stat_active_rx": "Active Rx",
@@ -68,7 +67,7 @@
     "join": "Join",
     "available_now_title": "Available Now",
     "available_now_sub": "Connect instantly",
-    "go": "Meet",
+    "go": "Connect",
     "recommended": "Recommended doctors",
     "doctors_title": "Find a doctor",
     "doctors_sub": "{{count}} verified specialists across our network",
@@ -135,7 +134,7 @@
     "bookings_sub": "Cunga gahunda zinjira muri serivisi n'ibice"
   },
   "doctor": {
-    "overview_title": "Good morning, Dr. Vance",
+    "overview_title": "Good morning,",
     "overview_sub": "{{date}} · patients on your schedule today",
     "instant_title": "Instant Consultation",
     "instant_visible": "You're visible to patients seeking immediate help",
@@ -278,7 +277,7 @@
     "th_items": "Items",
     "profile_title": "My Pharmacy Profile",
     "th_total": "Total",
-    "overview_title": "Welcome back, Meds R Us Pharmacy",
+    "overview_title": "Welcome back",
     "overview_sub": "Manage your inventory, view incoming prescriptions, and fulfill orders for delivery",
     "th_status": "Status",
     "approve": "Approve",

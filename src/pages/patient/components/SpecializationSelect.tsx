@@ -92,13 +92,13 @@ export function SpecializationSelect({
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        className={cn(
-          "w-full px-2.5 py-1.5 text-[11px] bg-background border rounded-sm flex items-center justify-between gap-1.5 transition-all",
-          open
-            ? "border-primary/50 ring-2 ring-primary/20"
-            : "border-border/60 hover:border-primary/40",
-          triggerLabel ? "text-foreground" : "text-muted-foreground/40"
-        )}
+  className={cn(
+  "w-full px-2.5 py-1.5 text-[11px] bg-background border rounded-[6px] flex items-center justify-between gap-1.5 transition-all",
+  open
+    ? "border-primary dark:border-border ring-2 ring-primary/20"
+    : "border-primary dark:border-border hover:border-primary/80 dark:hover:border-border/80",
+  triggerLabel ? "text-foreground" : "text-muted-foreground/40"
+)}
       >
         <span className="truncate">{triggerLabel ?? "Any specialization…"}</span>
         <div className="flex items-center gap-1 flex-shrink-0">

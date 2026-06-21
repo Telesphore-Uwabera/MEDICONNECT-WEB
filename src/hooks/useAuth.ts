@@ -15,6 +15,7 @@ const AUTH_KEY = ["auth", "me"];
 const saveToken = (token: string) => localStorage.setItem("auth_token", token);
 const clearToken = () => localStorage.removeItem("auth_token");
 
+
 export const useMe = () =>
   useQuery({
     queryKey: AUTH_KEY,
@@ -78,13 +79,24 @@ export const useLogin = () => {
   });
 };
 
+// export const useLogout = () => {
+//   const qc = useQueryClient();
+//   return useMutation({
+//     mutationFn: () =>
+//       apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
+//     onSuccess: () => {
+//       clearToken();
+//       qc.removeQueries({ queryKey: AUTH_KEY });
+//     },
+//   });
+// };
 export const useLogout = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
       apiFetch<{ message: string }>("/auth/logout", { method: "POST" }),
-    onSuccess: () => {
-      clearToken();
+    onSettled: () => {
+      localStorage.clear();
       qc.removeQueries({ queryKey: AUTH_KEY });
     },
   });

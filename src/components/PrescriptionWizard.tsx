@@ -62,11 +62,11 @@ interface PrescriptionWizardProps {
 ───────────────────────────────────────────── */
 
 const inputCls =
-  "w-full h-9 rounded-sm border border-border bg-muted/40 text-[12px] px-3 text-foreground " +
+  "w-full h-10 rounded-md border border-border bg-muted/40 text-sm px-3 text-foreground " +
   "placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 " +
   "focus:border-primary/50 transition-all";
 
-const labelCls = "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 mb-1 block";
+const labelCls = "text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 mb-1.5 block";
 
 function Field({
   label, children, required,
@@ -140,20 +140,19 @@ function AppointmentStep({
   };
 
   return (
-    <div className="space-y-3">
-      <p className="text-[11px] text-muted-foreground">
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
         Select the appointment this prescription is linked to.
       </p>
 
-      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
         <input
           ref={inputRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by patient name or date…"
-          className={cn(inputCls, "pl-8")}
+          className={cn(inputCls, "pl-9")}
         />
       </div>
 
@@ -166,16 +165,16 @@ function AppointmentStep({
         )}
 
         {!loading && isError && (
-          <div className="flex flex-col items-center py-10 gap-2 text-center">
-            <AlertCircle className="h-6 w-6 text-red-400" />
-            <p className="text-[11px] text-muted-foreground">Failed to load appointments</p>
+          <div className="flex flex-col items-center py-10 gap-3 text-center">
+            <AlertCircle className="h-8 w-8 text-red-400" />
+            <p className="text-sm text-muted-foreground">Failed to load appointments</p>
           </div>
         )}
 
         {!loading && !isError && filtered.length === 0 && (
-          <div className="flex flex-col items-center py-10 gap-2 text-center">
-            <Calendar className="h-6 w-6 text-muted-foreground/30" />
-            <p className="text-[11px] text-muted-foreground">No eligible appointments found</p>
+          <div className="flex flex-col items-center py-10 gap-3 text-center">
+            <Calendar className="h-8 w-8 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">No eligible appointments found</p>
           </div>
         )}
 
@@ -186,7 +185,7 @@ function AppointmentStep({
               key={a.id}
               onClick={() => onSelect(a)}
               className={cn(
-                "w-full flex items-center gap-3 p-3 rounded-sm border text-left transition-all duration-150",
+                "w-full flex items-center gap-3 p-3.5 rounded-md border text-left transition-all duration-150",
                 isSelected
                   ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                   : "border-border/60 bg-card hover:border-primary/30 hover:bg-secondary/20",
@@ -194,7 +193,7 @@ function AppointmentStep({
             >
               {/* Avatar */}
               <div className={cn(
-                "h-9 w-9 rounded-sm flex items-center justify-center font-bold text-[10px] flex-shrink-0 border",
+                "h-10 w-10 rounded-md flex items-center justify-center font-bold text-sm flex-shrink-0 border",
                 isSelected
                   ? "bg-primary/15 text-primary border-primary/20"
                   : "bg-gradient-to-br from-primary/10 to-primary/5 text-primary border-primary/10",
@@ -205,30 +204,30 @@ function AppointmentStep({
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-semibold text-foreground">
+                  <span className="text-sm font-semibold text-foreground">
                     {a.patient?.name ?? "Patient"}
                   </span>
                   <span className={cn(
-                    "inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full",
+                    "inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full",
                     "bg-secondary/60 border border-border/40 text-muted-foreground",
                   )}>
-                    <span className={cn("h-1.5 w-1.5 rounded-full", statusColor[a.status] ?? "bg-muted-foreground")} />
+                    <span className={cn("h-1.5 h-1.5 rounded-full", statusColor[a.status] ?? "bg-muted-foreground")} />
                     {statusLabel[a.status] ?? a.status}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 mt-0.5">
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
                     {a.appointment_date}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <Clock className="h-3 w-3" />
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
                     {a.appointment_time}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     {a.type === "online"
-                      ? <Video className="h-3 w-3 text-sky-500" />
-                      : <MapPin className="h-3 w-3 text-amber-500" />}
+                      ? <Video className="h-3.5 w-3.5 text-sky-500" />
+                      : <MapPin className="h-3.5 w-3.5 text-amber-500" />}
                     {a.type === "online" ? "Online" : "In-person"}
                   </span>
                 </div>
@@ -236,12 +235,12 @@ function AppointmentStep({
 
               {/* Check */}
               <div className={cn(
-                "h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 border transition-all",
+                "h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 border transition-all",
                 isSelected
                   ? "bg-primary border-primary text-primary-foreground"
                   : "border-border/60 bg-background",
               )}>
-                {isSelected && <Check className="h-3 w-3" />}
+                {isSelected && <Check className="h-4 w-4" />}
               </div>
             </button>
           );
@@ -273,8 +272,8 @@ function DetailsStep({
   const defaultDateStr = defaultDate.toISOString().split("T")[0];
 
   return (
-    <div className="space-y-4">
-      <p className="text-[11px] text-muted-foreground">
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
         Enter the clinical details for this prescription.
       </p>
 
@@ -354,24 +353,24 @@ function MedicationRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="border border-border/60 rounded-sm bg-card p-3.5 space-y-3"
+      className="border border-border/60 rounded-md bg-card p-4 space-y-4"
     >
       {/* Row header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-5 w-5 rounded-sm bg-primary/10 flex items-center justify-center">
-            <Pill className="h-3 w-3 text-primary" />
+          <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+            <Pill className="h-3.5 w-3.5 text-primary" />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">
+          <span className="text-xs font-semibold text-foreground">
             Medication {index + 1}
           </span>
         </div>
         {canRemove && (
           <button
             onClick={() => onRemove(index)}
-            className="h-6 w-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -482,12 +481,12 @@ function MedicationsStep({
   onRemove: (i: number) => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Add one or more medications to this prescription.
         </p>
-        <span className="text-[10px] font-medium text-primary">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+        <span className="text-xs font-medium text-primary">{items.length} item{items.length !== 1 ? "s" : ""}</span>
       </div>
 
       <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
@@ -507,9 +506,9 @@ function MedicationsStep({
 
       <button
         onClick={onAdd}
-        className="w-full h-9 flex items-center justify-center gap-2 border border-dashed border-primary/40 text-primary text-[11px] font-medium rounded-sm hover:bg-primary/5 hover:border-primary/60 transition-all duration-200"
+        className="w-full h-10 flex items-center justify-center gap-2 border border-dashed border-primary/40 text-primary text-sm font-medium rounded-md hover:bg-primary/5 hover:border-primary/60 transition-all duration-200"
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-4 w-4" />
         Add another medication
       </button>
     </div>
@@ -530,23 +529,23 @@ function ReviewStep({
   items:       PrescriptionItem[];
 }) {
   return (
-    <div className="space-y-4">
-      <p className="text-[11px] text-muted-foreground">
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">
         Review everything before submitting.
       </p>
 
       {/* Appointment */}
-      <section className="border border-border/60 rounded-sm p-3.5 space-y-2 bg-secondary/20">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <User className="h-3 w-3" /> Patient & appointment
+      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
+          <User className="h-4 w-4" /> Patient & appointment
         </p>
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px] border border-primary/10">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/10">
             {(appointment.patient?.name ?? "PT").slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="text-[12px] font-semibold text-foreground">{appointment.patient?.name ?? "Patient"}</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">{appointment.patient?.name ?? "Patient"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
               {appointment.appointment_date} · {appointment.appointment_time} ·{" "}
               {appointment.type === "online" ? "Online" : "In-person"}
             </p>
@@ -555,38 +554,38 @@ function ReviewStep({
       </section>
 
       {/* Diagnosis */}
-      <section className="border border-border/60 rounded-sm p-3.5 space-y-2 bg-secondary/20">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <Stethoscope className="h-3 w-3" /> Diagnosis & notes
+      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
+          <Stethoscope className="h-4 w-4" /> Diagnosis & notes
         </p>
-        <p className="text-[12px] font-semibold text-foreground">{details.diagnosis}</p>
+        <p className="text-sm font-semibold text-foreground">{details.diagnosis}</p>
         {details.notes && (
-          <p className="text-[11px] text-muted-foreground leading-relaxed">{details.notes}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{details.notes}</p>
         )}
         {details.valid_until && (
-          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> Valid until {details.valid_until}
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" /> Valid until {details.valid_until}
           </p>
         )}
       </section>
 
       {/* Medications */}
-      <section className="border border-border/60 rounded-sm p-3.5 space-y-2.5 bg-secondary/20">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <Pill className="h-3 w-3" /> Medications ({items.length})
+      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
+          <Pill className="h-4 w-4" /> Medications ({items.length})
         </p>
         {items.map((m, i) => (
-          <div key={i} className="flex items-start gap-2.5 border-t border-border/40 pt-2 first:border-t-0 first:pt-0">
-            <div className="h-6 w-6 rounded-sm bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold flex-shrink-0 border border-primary/10 mt-0.5">
+          <div key={i} className="flex items-start gap-3 border-t border-border/40 pt-3 first:border-t-0 first:pt-0">
+            <div className="h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-primary/10 mt-0.5">
               {i + 1}
             </div>
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-foreground">{m.medicine_name}</p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-sm font-semibold text-foreground">{m.medicine_name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {m.dosage} · {m.frequency} · {m.duration} · Qty: {m.quantity}
               </p>
               {m.instructions && (
-                <p className="text-[10px] text-muted-foreground/70 italic mt-0.5">{m.instructions}</p>
+                <p className="text-xs text-muted-foreground/70 italic mt-1">{m.instructions}</p>
               )}
             </div>
           </div>
@@ -723,44 +722,44 @@ export function PrescriptionWizard({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/60 shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/15">
-                <FileText className="h-3.5 w-3.5 text-primary" />
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center border border-primary/15">
+                <FileText className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">New Prescription</p>
+                <p className="text-base font-semibold text-foreground">New Prescription</p>
                 {doctorName && (
-                  <p className="text-[10px] text-muted-foreground">{doctorName}</p>
+                  <p className="text-xs text-muted-foreground">{doctorName}</p>
                 )}
               </div>
             </div>
             <button
               onClick={() => onOpenChange(false)}
-              className="h-7 w-7 flex items-center justify-center rounded-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </button>
           </div>
 
           {/* Step progress */}
-          <div className="flex items-center gap-0 px-5 py-3 border-b border-border/60 shrink-0 bg-secondary/20">
+          <div className="flex items-center gap-0 px-6 py-4 border-b border-border/60 shrink-0 bg-secondary/20">
             {STEPS.map((s, i) => {
               const isDone    = i < stepIndex;
               const isCurrent = s === step;
               return (
                 <div key={s} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <div className={cn(
-                      "h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border transition-all duration-200",
+                      "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-200",
                       isDone    ? "bg-primary border-primary text-primary-foreground"
                       : isCurrent ? "bg-primary/10 border-primary text-primary"
                       : "bg-background border-border/50 text-muted-foreground/50",
                     )}>
-                      {isDone ? <Check className="h-2.5 w-2.5" /> : i + 1}
+                      {isDone ? <Check className="h-3 w-3" /> : i + 1}
                     </div>
                     <span className={cn(
-                      "text-[10px] font-medium hidden sm:inline",
+                      "text-xs font-medium hidden sm:inline",
                       isCurrent ? "text-foreground" : isDone ? "text-primary" : "text-muted-foreground/50",
                     )}>
                       {STEP_META[s].label}
@@ -768,7 +767,7 @@ export function PrescriptionWizard({
                   </div>
                   {i < STEPS.length - 1 && (
                     <div className={cn(
-                      "flex-1 h-px mx-2 transition-colors duration-200",
+                      "flex-1 h-px mx-3 transition-colors duration-200",
                       isDone ? "bg-primary/40" : "bg-border/50",
                     )} />
                   )}
@@ -778,7 +777,7 @@ export function PrescriptionWizard({
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -819,32 +818,32 @@ export function PrescriptionWizard({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-border/60 shrink-0 bg-card">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border/60 shrink-0 bg-card">
             <button
               onClick={goBack}
               disabled={stepIndex === 0}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[11px] font-medium border transition-all duration-200",
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-all duration-200",
                 stepIndex === 0
                   ? "opacity-0 pointer-events-none border-transparent"
                   : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
               )}
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="h-4 w-4" />
               Back
             </button>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {STEPS.map((s, i) => (
                 <div
                   key={s}
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-200",
                     s === step
-                      ? "w-4 bg-primary"
+                      ? "w-5 bg-primary"
                       : i < stepIndex
-                        ? "w-1.5 bg-primary/40"
-                        : "w-1.5 bg-border/60",
+                        ? "w-2 bg-primary/40"
+                        : "w-2 bg-border/60",
                   )}
                 />
               ))}
@@ -854,12 +853,12 @@ export function PrescriptionWizard({
               <button
                 onClick={handleSubmit}
                 disabled={createPrescription.isPending}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
               >
                 {createPrescription.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-4 w-4" />
                 )}
                 {createPrescription.isPending ? "Creating…" : "Create Prescription"}
               </button>
@@ -867,10 +866,10 @@ export function PrescriptionWizard({
               <button
                 onClick={goNext}
                 disabled={!canAdvance()}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 Continue
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-4 w-4" />
               </button>
             )}
           </div>

@@ -1467,21 +1467,40 @@ function ScheduleTab({ doctor }: { doctor: ApiDoctor }) {
 }
 
 // ─── Tab: Links ───────────────────────────────────────────────────────────────
+//
+// NOTE: the backend returns `social_links` as a single object keyed by
+// platform name, e.g.
+//   { id, doctor_id, facebook, twitter, linkedin, instagram, is_active, ... }
+// — not an array of `{ id, platform, url }` records. We normalize it into
+// a small array here so the render logic below stays simple.
+
+const SOCIAL_PLATFORMS = [
+  { key: "facebook", label: "Facebook" },
+  { key: "twitter", label: "Twitter" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "instagram", label: "Instagram" },
+] as const;
 
 function LinksTab({ doctor }: { doctor: ApiDoctor }) {
-  const list =
-    doctor.social_links ??
-    (doctor as unknown as { socialLinks?: typeof doctor.social_links })
-      .socialLinks ??
-    [];
-  if (!list || list.length === 0)
+  const raw = doctor.social_links as unknown as
+    | Record<string, unknown>
+    | null
+    | undefined;
+
+  const links = SOCIAL_PLATFORMS.map((p) => ({
+    key: p.key,
+    platform: p.label,
+    url: raw?.[p.key] as string | undefined,
+  })).filter((l) => !!l.url);
+
+  if (!raw || links.length === 0)
     return <SectionEmpty label="No social links have been added yet" />;
 
   return (
     <ContentWrap>
       <div className="flex flex-col gap-2">
-        {list.map((l) => (
-          <Card key={l.id} className="flex items-center gap-3">
+        {links.map((l) => (
+          <Card key={l.key} className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center shrink-0 border border-primary/20">
               <Globe className="w-3 h-3 text-primary/60" />
             </div>
@@ -1506,12 +1525,7 @@ function LinksTab({ doctor }: { doctor: ApiDoctor }) {
   );
 }
 
-// ─── Tab: Instant Consultation ────────────────────────────────────────────────
-
 // ─── Tab: Instant ─────────────────────────────────────────────────────────────
-// Replace the entire InstantTab function in DoctorPanel.tsx with this.
-// Imports needed (add to the hook import block):
-//   useGetInstantStatus, useToggleInstant, useGetPausedStatus, useTogglePaused
 
 function InstantTab({ doctor }: { doctor: ApiDoctor }) {
   const doctorId = doctor.id;
@@ -2672,6 +2686,12 @@ export function DoctorPanel({
 }: DoctorPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("overview");
+  // Tracks which footer action button was clicked, so only that one shows
+  // a loading spinner while `isActing` is true — the other buttons stay
+  // disabled but keep their normal icon instead of also spinning.
+  const [actingAction, setActingAction] = useState<
+    "approve" | "reject" | "suspend" | "reactivate" | null
+  >(null);
   const open = !!doctor;
 
   const { data: fullDoctor, isLoading: profileLoading } = useGetAdminDoctor(
@@ -2697,6 +2717,29 @@ export function DoctorPanel({
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  // Reset the tracked action once the in-flight mutation resolves, so the
+  // panel is ready for the next click.
+  useEffect(() => {
+    if (!isActing) setActingAction(null);
+  }, [isActing]);
+
+  const handleApprove = (doc: ApiDoctor) => {
+    setActingAction("approve");
+    onApprove(doc);
+  };
+  const handleReject = (doc: ApiDoctor) => {
+    setActingAction("reject");
+    onReject(doc);
+  };
+  const handleSuspend = (doc: ApiDoctor) => {
+    setActingAction("suspend");
+    onSuspend(doc);
+  };
+  const handleReactivate = (doc: ApiDoctor) => {
+    setActingAction("reactivate");
+    onApprove(doc);
+  };
 
   return (
     <>
@@ -2858,9 +2901,9 @@ export function DoctorPanel({
                     size="sm"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing}
-                    onClick={() => onApprove(d)}
+                    onClick={() => handleApprove(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "approve" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldCheck className="h-3.5 w-3.5" />
@@ -2874,9 +2917,9 @@ export function DoctorPanel({
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={isActing}
-                    onClick={() => onSuspend(d)}
+                    onClick={() => handleSuspend(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "suspend" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldOff className="h-3.5 w-3.5" />
@@ -2890,9 +2933,9 @@ export function DoctorPanel({
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
                     disabled={isActing}
-                    onClick={() => onReject(d)}
+                    onClick={() => handleReject(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "reject" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Ban className="h-3.5 w-3.5" />
@@ -2905,9 +2948,9 @@ export function DoctorPanel({
                     size="sm"
                     className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing}
-                    onClick={() => onApprove(d)}
+                    onClick={() => handleReactivate(d)}
                   >
-                    {isActing ? (
+                    {isActing && actingAction === "reactivate" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <ShieldCheck className="h-3.5 w-3.5" />
