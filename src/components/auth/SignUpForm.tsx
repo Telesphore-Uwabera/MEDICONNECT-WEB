@@ -65,6 +65,11 @@ const GENDER_CONFIG: Record<Gender, { icon: React.ReactNode; color: string; labe
   },
 };
 
+// Simple, permissive email shape check — good enough to catch obvious typos
+// without rejecting valid-but-unusual addresses. Only used for non-patient
+// roles, where email is mandatory.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 interface FormState {
   name: string;
   email: string;
@@ -96,6 +101,9 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const register = useRegister();
 
+  // Email is optional for patients, required (and validated) for every other role.
+  const emailRequired = form.role !== "patient";
+
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -110,6 +118,17 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Email rules: mandatory + format-checked for everyone except patients.
+    // Patients may submit with email left blank, but if they did type
+    // something in, it still has to look like a real address.
+    if (emailRequired && !form.email.trim()) {
+      return toast.error(t("auth.errors.email_required", "Email is required for this role"));
+    }
+    if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) {
+      return toast.error(t("auth.errors.email_invalid", "Please enter a valid email address"));
+    }
+
     if (form.password !== form.confirm)
       return toast.error(t("auth.errors.passwords_mismatch"));
     if (!acceptedTerms)
@@ -120,7 +139,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
     register.mutate(
       {
         name: form.name,
-        email: form.email,
+        email: form.email.trim() || undefined,
         phone: form.phone,
         country_code: form.countryCode,
         role: form.role,
@@ -209,10 +228,15 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </div>
         </div>
 
-        {/* Email */}
+        {/* Email — required for every role except patient */}
         <div className="space-y-1">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.email")}
+            {!emailRequired && (
+              <span className="ml-1 font-normal text-muted-foreground/70 normal-case tracking-normal">
+                ({t("auth.optional", "optional")})
+              </span>
+            )}
           </label>
           <div className="relative">
             <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -223,7 +247,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               onChange={set("email")}
               className={inputCls}
               placeholder="email@example.com"
-              required
+              required={emailRequired}
             />
           </div>
         </div>
