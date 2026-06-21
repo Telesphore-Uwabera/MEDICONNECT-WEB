@@ -34,9 +34,13 @@ import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
 import { useGetSearchHospitals, useInfiniteSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
+
+
 // NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
 // If your hook file doesn't currently export ApiDoctor, add `export` to its interface
 // declaration there — see the note at the bottom of this file.
+
+
 import {
   useGetSearchDoctors,
   useInfiniteSearchDoctors,
@@ -53,9 +57,7 @@ import OurTeam from "@/components/landing/Ourteam";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
-// ApiDoctor is imported from the hook above — do not redeclare it here.
-// Redeclaring it locally with a different `consultation_type` union is what
-// caused the previous type mismatch (instant/booking/both vs online/in_person/both).
+
 
 interface DoctorAvailabilityEvent {
   doctor_id: number;
@@ -364,7 +366,7 @@ const Index = () => {
   return (
     <div className="min-h-dvh bg-background text-md">
       <TopBar />
-      
+
  {/* <HeroHeader
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
@@ -372,7 +374,8 @@ const Index = () => {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-hero">
-        <HeroSection />
+        {/* <HeroSection /> */}
+        <HeroCta/>
       </section>
 
       {/* ── Available Doctors Grid ── */}

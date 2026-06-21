@@ -8,24 +8,51 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import docJohn from "@/assets/doctor-hero.png";
-import docSarah from "@/assets/doc-john.png";
-import docMike from "@/assets/doc-david.png";
-import docEmma from "@/assets/doc-sarah.png";
-import docDavid from "@/assets/doctor-hero.png";
+import doctorPlaceholder from "@/assets/doctor-hero.png";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import StartConsult from "@/components/landing/StartConsult";
 import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const mockDoctors = [
-  { name: "Dr. John Doe",    role: "MBBS, Cardiologist", exp: "12k+", img: docJohn,  hero: docJohn  },
-  { name: "Dr. Sarah Lee",   role: "Neurologist",        exp: "8k+",  img: docSarah, hero: docSarah },
-  { name: "Dr. Mike Ross",   role: "Dentist",            exp: "15k+", img: docMike,  hero: docMike  },
-  { name: "Dr. Emma Wilson", role: "Pediatrician",       exp: "10k+", img: docEmma,  hero: docEmma  },
-  { name: "Dr. David Kim",   role: "Orthopedic",         exp: "6k+",  img: docDavid, hero: docDavid },
-];
+interface ApiDoctor {
+  id: number;
+  specialization: string;
+  doctor_degree: string;
+  designations: string;
+  consultation_fee: string;
+  currency: string;
+  instant_consultation: boolean;
+  image: string | null;
+  rating_avg: string;
+  user: {
+    id: number;
+    name: string;
+    avatar: string | null;
+  };
+}
+
+interface DisplayDoctor {
+  id: number;
+  name: string;
+  role: string;
+  image: string;
+  fee: string;
+  currency: string;
+  instant: boolean;
+}
+
+function toDisplayDoctor(doc: ApiDoctor): DisplayDoctor {
+  return {
+    id: doc.id,
+    name: doc.user?.name || doc.designations || "Doctor",
+    role: doc.specialization || doc.doctor_degree || "General Practitioner",
+    image: doc.image || doc.user?.avatar || doctorPlaceholder,
+    fee: doc.consultation_fee,
+    currency: doc.currency,
+    instant: doc.instant_consultation,
+  };
+}
 
 // ─── Date Picker ──────────────────────────────────────────────────────────────
 
@@ -203,6 +230,8 @@ function DatePicker({
 // ─── MeetOurDoctorsSlider ─────────────────────────────────────────────────────
 
 interface SliderProps {
+  doctors: DisplayDoctor[];
+  totalDoctors: number;
   index: number;
   setIndex: (n: number) => void;
   setPaused: (p: boolean) => void;
@@ -210,20 +239,26 @@ interface SliderProps {
 }
 
 function MeetOurDoctorsSlider({
+  doctors,
+  totalDoctors,
   index,
   setIndex,
   setPaused,
   className = "",
 }: SliderProps) {
+  if (doctors.length === 0) return null;
+
+  const safeIndex = index % doctors.length;
+  const doc = doctors[safeIndex];
+
   const prev = () => {
     setPaused(true);
-    setIndex((index - 1 + mockDoctors.length) % mockDoctors.length);
+    setIndex((safeIndex - 1 + doctors.length) % doctors.length);
   };
   const next = () => {
     setPaused(true);
-    setIndex((index + 1) % mockDoctors.length);
+    setIndex((safeIndex + 1) % doctors.length);
   };
-  const doc = mockDoctors[index];
 
   return (
     <div className={`bg-card rounded-[8px] p-3 sm:p-4 border border-border ${className}`}>
@@ -247,28 +282,29 @@ function MeetOurDoctorsSlider({
 
       <div className="mt-2 sm:mt-3 flex items-center gap-2 sm:gap-3">
         <img
-          src={doc.img}
+          src={doc.image}
           alt={doc.name}
           className="w-9 h-9 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-card shrink-0"
           loading="lazy"
+          onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
         />
         <div className="min-w-0 flex-1">
           <div className="font-bold text-foreground text-xs sm:text-sm truncate">{doc.name}</div>
           <div className="text-[10px] sm:text-xs text-muted-foreground truncate">{doc.role}</div>
         </div>
         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full text-primary-foreground text-[9px] sm:text-[10px] font-bold grid place-items-center shrink-0 bg-gradient-primary">
-          {doc.exp}
+          {totalDoctors}+
         </div>
       </div>
 
       <div className="flex justify-center gap-1.5 mt-2 sm:mt-3">
-        {mockDoctors.map((_, i) => (
+        {doctors.map((_, i) => (
           <button
             key={i}
             onClick={() => { setPaused(true); setIndex(i); }}
             aria-label={`Show doctor ${i + 1}`}
             className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === index ? "bg-primary w-4" : "bg-muted-foreground/20 w-1.5"
+              i === safeIndex ? "bg-primary w-4" : "bg-muted-foreground/20 w-1.5"
             }`}
           />
         ))}
@@ -286,18 +322,29 @@ export default function HeroSection() {
   const [searchValue, setSearchValue] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
 
-  const { data, isLoading, isError, refetch, isFetching } = useGetSearchDoctors();
+  const { data: instantDoctorsData, isLoading: doctorsLoading } =
+    useGetSearchDoctors({ instant: true, page: 1, per_page: 6 });
 
-  const activeDoc = mockDoctors[activeIdx];
+  const doctors: DisplayDoctor[] = (instantDoctorsData?.data ?? []).map(toDisplayDoctor);
+  const hasDoctors = doctors.length > 0;
+  const activeDoc = hasDoctors ? doctors[activeIdx % doctors.length] : null;
+
+  // Adjust this to match whatever pagination field your API actually returns
+  // (e.g. response.total, response.meta.total, response.pagination.total).
+  const totalDoctors: number =
+    (instantDoctorsData as any)?.total ??
+    (instantDoctorsData as any)?.meta?.total ??
+    (instantDoctorsData as any)?.pagination?.total ??
+    doctors.length;
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || !hasDoctors) return;
     const timer = setInterval(
-      () => setActiveIdx((p) => (p + 1) % mockDoctors.length),
+      () => setActiveIdx((p) => (p + 1) % doctors.length),
       2000,
     );
     return () => clearInterval(timer);
-  }, [paused]);
+  }, [paused, hasDoctors, doctors.length]);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden relative">
@@ -482,12 +529,23 @@ export default function HeroSection() {
                            md:w-[320px] md:h-[320px]
                            lg:w-[464px] lg:h-[464px]"
               >
-                <img
-                  key={activeDoc.name}
-                  src={activeDoc.hero}
-                  alt={activeDoc.name}
-                  className="w-full h-full object-contain object-bottom transition-opacity duration-500 animate-in fade-in scale-110"
-                />
+                {doctorsLoading ? (
+                  <div className="w-full h-full bg-muted animate-pulse" />
+                ) : activeDoc ? (
+                  <img
+                    key={activeDoc.id}
+                    src={activeDoc.image}
+                    alt={activeDoc.name}
+                    onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
+                    className="w-full h-full object-contain object-bottom transition-opacity duration-500 animate-in fade-in scale-110"
+                  />
+                ) : (
+                  <img
+                    src={doctorPlaceholder}
+                    alt="No doctors available"
+                    className="w-full h-full object-contain object-bottom opacity-60"
+                  />
+                )}
               </div>
 
               {/* Regular Check-up badge */}
@@ -504,36 +562,41 @@ export default function HeroSection() {
               </div>
 
               {/* Active doctor card */}
-              <div
-                className="absolute bg-card rounded-[8px] border border-border shadow-md text-center
-                           right-[-4px] top-[115px] w-[100px] p-2
-                           xs:right-[-4px] xs:top-[120px] xs:w-[110px]
-                           sm:right-[-8px] sm:top-[160px] sm:w-[140px] sm:p-3
-                           md:right-[-12px] md:top-[185px] md:w-[155px]
-                           lg:right-[-24px] lg:top-[205px] lg:w-[175px] lg:p-4"
-              >
-                <img
-                  src={activeDoc.img}
-                  alt={activeDoc.name}
-                  className="w-9 h-9 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full mx-auto object-cover ring-2 ring-card"
-                  loading="lazy"
-                />
-                <div className="mt-1.5 font-bold text-foreground text-[10px] sm:text-xs lg:text-sm truncate">
-                  {activeDoc.name}
-                </div>
-                <div className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground truncate">
-                  {activeDoc.role}
-                </div>
-                <button
-                  onClick={() => setPaused(true)}
-                  className="mt-1.5 sm:mt-2 w-full bg-primary text-primary-foreground text-[9px] sm:text-[10px] lg:text-xs font-semibold rounded-[4px] py-1 sm:py-1.5 hover:opacity-90 transition-opacity"
+              {activeDoc && (
+                <div
+                  className="absolute bg-card rounded-[8px] border border-border shadow-md text-center
+                             right-[-4px] top-[115px] w-[100px] p-2
+                             xs:right-[-4px] xs:top-[120px] xs:w-[110px]
+                             sm:right-[-8px] sm:top-[160px] sm:w-[140px] sm:p-3
+                             md:right-[-12px] md:top-[185px] md:w-[155px]
+                             lg:right-[-24px] lg:top-[205px] lg:w-[175px] lg:p-4"
                 >
-                  Book Now
-                </button>
-              </div>
+                  <img
+                    src={activeDoc.image}
+                    alt={activeDoc.name}
+                    onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
+                    className="w-9 h-9 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full mx-auto object-cover ring-2 ring-card"
+                    loading="lazy"
+                  />
+                  <div className="mt-1.5 font-bold text-foreground text-[10px] sm:text-xs lg:text-sm truncate">
+                    {activeDoc.name}
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] lg:text-xs text-muted-foreground truncate">
+                    {activeDoc.role}
+                  </div>
+                  <button
+                    onClick={() => setPaused(true)}
+                    className="mt-1.5 sm:mt-2 w-full bg-primary text-primary-foreground text-[9px] sm:text-[10px] lg:text-xs font-semibold rounded-[4px] py-1 sm:py-1.5 hover:opacity-90 transition-opacity"
+                  >
+                    Book Now
+                  </button>
+                </div>
+              )}
 
               {/* Meet Our Doctors — desktop only, floats over the circle corner */}
               <MeetOurDoctorsSlider
+                doctors={doctors}
+                totalDoctors={totalDoctors}
                 index={activeIdx}
                 setIndex={setActiveIdx}
                 setPaused={setPaused}
@@ -543,6 +606,8 @@ export default function HeroSection() {
 
 {/* Meet Our Doctors — tablet only, hidden on mobile */}
             <MeetOurDoctorsSlider
+              doctors={doctors}
+              totalDoctors={totalDoctors}
               index={activeIdx}
               setIndex={setActiveIdx}
               setPaused={setPaused}
