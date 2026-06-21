@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -366,6 +367,38 @@ function RequestCard({
       </div>
 
       <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 mt-0.5" />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Skeleton Request Card
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SkeletonRequestCard({ compact }: { compact?: boolean }) {
+  return (
+    <div className="rounded-[12px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 shadow-sm">
+      <Skeleton
+        className={cn(
+          "w-12 h-12 rounded-[10px] shrink-0",
+          compact && "hidden sm:block"
+        )}
+      />
+      <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+        <div className="flex items-start gap-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+        <div className="flex gap-1.5 mt-1">
+          <Skeleton className="h-4 w-16 rounded-full" />
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-3 w-24 hidden sm:block" />
+        </div>
+        <Skeleton className="h-3 w-24 mt-0.5" />
+      </div>
+      <Skeleton className="h-4 w-4 shrink-0 mt-0.5 rounded-md" />
     </div>
   );
 }
@@ -1284,9 +1317,9 @@ function DoctorFitnessCertificates() {
               {/* List */}
               <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2">
                 {isLoading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <SkeletonRequestCard key={i} compact={selectedId !== null} />
+                  ))
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 gap-2">
                     <ClipboardList className="h-6 w-6 text-muted-foreground" />

@@ -7,6 +7,7 @@
 // in-call chat works.
 
 import { apiFetch } from "@/lib/Api";
+import { decodeCallToken } from "@/lib/scheduled-call";
 
 export interface RejoinTarget {
   roomName: string;
@@ -21,7 +22,9 @@ export interface LiveSessionResponse {
   status?: string;
   room_url?: string;
   room_name?: string;
+  daily_room_name?: string;
   doctor_token?: string;
+  daily_doctor_token?: string;
   daily_token?: string;
   daily_guest_token?: string;
   guest_token?: string;
@@ -33,8 +36,18 @@ export interface LiveSessionResponse {
 /**
  * Turn a live/active-session response into a { roomName, token-object } we can
  * hand to startCall(). Returns null if it doesn't contain a usable room+token.
+ *
+ * `prefer` selects which side's token to use. This MATTERS: the backend can
+ * return both a doctor token (is_owner:true) and a guest token (is_owner:false)
+ * in the same payload (e.g. /patient/quick). If the doctor accidentally rejoins
+ * with the guest token, BOTH peers are is_owner:false, nobody sends the WebRTC
+ * offer, and the call hangs on "Connecting". We pick the role's token (covering
+ * both the `daily_*` and bare field names) and enforce is_owner to be safe.
  */
-export function sessionToRejoinTarget(resp: LiveSessionResponse | null | undefined): RejoinTarget | null {
+export function sessionToRejoinTarget(
+  resp: LiveSessionResponse | null | undefined,
+  prefer: "doctor" | "patient" = "doctor",
+): RejoinTarget | null {
   if (!resp) return null;
   const d = (resp.data ?? resp) as LiveSessionResponse;
 
@@ -42,23 +55,30 @@ export function sessionToRejoinTarget(resp: LiveSessionResponse | null | undefin
   const roomName: string | undefined =
     d.room_name ??
     (d as any).roomName ??
+    d.daily_room_name ??
     (typeof roomUrl === "string" ? roomUrl.split("/consultation/").pop() : undefined);
 
+  const doctorTok = d.daily_doctor_token ?? d.doctor_token;
+  const guestTok = d.daily_guest_token ?? d.guest_token;
+  // Use the token for THIS role; fall back to a generic token only if the
+  // role-specific one is absent (is_owner is enforced below regardless).
   const rawToken: unknown =
-    d.doctor_token ?? d.daily_guest_token ?? d.guest_token ?? d.daily_token ?? d.token;
+    prefer === "doctor"
+      ? (doctorTok ?? d.daily_token ?? d.token ?? guestTok)
+      : (guestTok ?? d.daily_token ?? d.token ?? doctorTok);
 
   const consultationId =
     d.consultation_id ?? d.id ?? d.instant_consultation_request_id;
 
   if (!roomName || typeof rawToken !== "string") return null;
 
-  try {
-    const decoded = JSON.parse(atob(decodeURIComponent(rawToken)));
-    if (consultationId != null) decoded.consultation_id = consultationId;
-    return { roomName, token: decoded };
-  } catch {
-    return null;
-  }
+  const decoded = decodeCallToken(rawToken);
+  if (!decoded) return null;
+  if (consultationId != null) decoded.consultation_id = consultationId;
+  // Enforce the role so the doctor is always the owner (offerer) and the patient
+  // never is — even if the chosen token field carried the wrong flag.
+  decoded.is_owner = prefer === "doctor";
+  return { roomName, token: decoded };
 }
 
 /** Last-resort fallback: the call we persisted locally this browser session. */

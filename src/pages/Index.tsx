@@ -34,47 +34,28 @@ import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
 import { useGetSearchHospitals, useInfiniteSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
-import { useGetSearchDoctors, useInfiniteSearchDoctors } from "@/hooks/patient/use-patient-doctor";
-import { QuickConsultPanel } from "./doctor/QuickConsultPanel";
+// NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
+// If your hook file doesn't currently export ApiDoctor, add `export` to its interface
+// declaration there — see the note at the bottom of this file.
+import {
+  useGetSearchDoctors,
+  useInfiniteSearchDoctors,
+  ApiDoctor,
+} from "@/hooks/patient/use-patient-doctor";
 import {
   SpecializationSelect,
   SpecializationValue,
 } from "./patient/components/SpecializationSelect";
 import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
+import HeroSection from "./doctor/HeroSection";
+import Specialities from "@/components/landing/Specialities";
+import OurTeam from "@/components/landing/Ourteam";
+import { HeroHeader } from "@/components/landing/HeroHeader";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
-
-interface ApiDoctor {
-  id: number;
-  user_id: number;
-  slug: string;
-  specialization: string;
-  doctor_degree: string;
-  medical_license: string;
-  designations: string;
-  bio_en: string;
-  consultation_fee: string;
-  currency: string;
-  is_available: boolean;
-  instant_consultation: boolean;
-  bookings_paused: boolean;
-  consultation_type: "online" | "in_person" | "both";
-  image: string | null;
-  preferred_language: string;
-  city: string | null;
-  status: "active" | "inactive";
-  is_active: boolean;
-  is_featured: boolean;
-  rating_avg: string;
-  show_homepage: boolean;
-  user: {
-    id: number;
-    name: string;
-    avatar: string | null;
-  };
-  hospitals: { id: number; name: string; city?: string }[];
-  specializations: { id: number; name: string }[];
-}
+// ApiDoctor is imported from the hook above — do not redeclare it here.
+// Redeclaring it locally with a different `consultation_type` union is what
+// caused the previous type mismatch (instant/booking/both vs online/in_person/both).
 
 interface DoctorAvailabilityEvent {
   doctor_id: number;
@@ -104,6 +85,15 @@ const formatRating = (d: ApiDoctor): string | null => {
   const r = parseFloat(d.rating_avg);
   return r > 0 ? r.toFixed(1) : null;
 };
+
+// ─── Shared section heading classes ────────────────────────────────────────────
+// Reduced one step on every breakpoint (5xl→3xl, 4xl→3xl/2xl, 3xl→2xl)
+// so headings read as section markers rather than competing hero text.
+
+const SECTION_EYEBROW =
+  "text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90";
+const SECTION_TITLE =
+  "mt-3 font-display text-2xl md:text-3xl font-bold tracking-tight text-foreground";
 
 // ─── Slider Skeleton ──────────────────────────────────────────────────────────
 
@@ -209,7 +199,6 @@ const Index = () => {
     },
     [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage]
   );
-
 
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
   const { data: instantDoctorsData, isLoading: instantLoading } =
@@ -375,110 +364,29 @@ const Index = () => {
   return (
     <div className="min-h-dvh bg-background text-md">
       <TopBar />
-      <Navbar
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-      />
+      
+ {/* <HeroHeader
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+        /> */}
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-hero">
-        <div className="container py-12 md:py-20 lg:py-32 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="lg:col-span-7"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border shadow-soft text-xs font-medium">
-              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-              <span>
-                {t("pages.landing.available_now_pill", { count: 147 })}
-              </span>
-            </div>
-            <h1 className="mt-5 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.1]">
-              {t("pages.landing.hero_title_1")}{" "}
-              <span className="text-primary">
-                {t("pages.landing.hero_title_2")}
-              </span>
-            </h1>
-            <p className="mt-5 text-base md:text-lg lg:text-xl text-muted-foreground/80 max-w-xl leading-relaxed">
-              {t("pages.landing.hero_subtitle")}
-            </p>
-
-            <HeroCta />
-
-            {/* Trust bar */}
-            <div className="mt-7 flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground">
-                <Shield className="h-3 w-3 text-primary" />{" "}
-                {t("pages.landing.security")}
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary text-xs text-muted-foreground">
-                <Clock className="h-3 w-3 text-primary" />{" "}
-                {t("pages.landing.avg_response")}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* ── Quick consult panel ── */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-5"
-          >
-            <QuickConsultPanel
-              doctors={instantDoctors}
-              loading={instantLoading}
-            />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="py-20 lg:py-32 border-t border-border">
-        <div className="container">
-          <div className="max-w-2xl">
-            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90">
-              {t("pages.landing.what_we_do")}
-            </p>
-            <h2 className="mt-3 font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-              {t("pages.landing.features_title")}
-            </h2>
-          </div>
-          <div className="mt-10 md:mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="p-5 md:p-6 rounded-sm border border-border bg-card hover:shadow-medium transition-smooth"
-              >
-                <div className="h-10 w-10 rounded-sm bg-accent text-primary flex items-center justify-center mb-4">
-                  <f.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-sm font-semibold text-foreground">
-                  {f.title}
-                </h3>
-                <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                  {f.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <HeroSection />
       </section>
 
       {/* ── Available Doctors Grid ── */}
       <section
         id="doctors"
-        className="py-20 lg:py-32 bg-gradient-soft border-t border-border"
+        className="py-10 bg-gradient-soft border-t border-border"
       >
         <div className="container">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div className="flex-1 min-w-0">
-              <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90">
+              <p className={SECTION_EYEBROW}>
                 {t("pages.landing.available_now")}
               </p>
-              <h2 className="mt-3 font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+              <h2 className={SECTION_TITLE}>
                 {t("pages.landing.doctors_ready")}
               </h2>
 
@@ -671,15 +579,30 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ── Specialities ── */}
+      <section id="specialities" className="py-10">
+        <div className="container">
+          <div className="max-w-2xl">
+            <p className={SECTION_EYEBROW}>{t("pages.landing.what_we_do")}</p>
+            <h2 className={SECTION_TITLE}>
+              {t("pages.landing.features_title")}
+            </h2>
+          </div>
+        </div>
+        <div className="mt-10 px-10 border border-border bg-gradient-soft">
+          <Specialities />
+        </div>
+      </section>
+
       {/* ── Hospitals ── */}
-      <section id="hospitals" className="py-16 md:py-24 border-t border-border">
+      <section id="hospitals" className="py-16 md:py-24 border-border">
         <div className="container">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div>
-              <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90">
+              <p className={SECTION_EYEBROW}>
                 {t("pages.landing.partner_network")}
               </p>
-              <h2 className="mt-3 font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+              <h2 className={SECTION_TITLE}>
                 {t("pages.landing.health_facility")}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground max-w-xl">
@@ -806,10 +729,10 @@ const Index = () => {
       >
         <div className="container grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <div>
-            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90">
+            <p className={SECTION_EYEBROW}>
               {t("pages.landing.pharmacy_marketplace")}
             </p>
-            <h2 className="mt-3 font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
+            <h2 className={SECTION_TITLE}>
               {t("pages.landing.pharmacy_title")}
             </h2>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xl">
@@ -869,8 +792,28 @@ const Index = () => {
         </div>
       </section>
 
+      {/* ── Our Team ── */}
+      <section id="team" className="py-10">
+        <div className="container">
+          <div className="max-w-2xl">
+            <p className={SECTION_EYEBROW}>
+              Our Team
+              <span className="ml-1 text-lg leading-none text-[hsl(var(--primary-glow))]">
+                +
+              </span>
+            </p>
+            <h2 className={SECTION_TITLE}>
+              Board-certified specialists, vetted and ready to see you
+            </h2>
+          </div>
+        </div>
+        <div className="mt-10 px-10 border border-border bg-gradient-soft">
+          <OurTeam />
+        </div>
+      </section>
+
       {/* ── Footer ── */}
-      <footer className="border-t border-border bg-card">
+      <footer className="border-border bg-card">
         <div className="container py-10 md:py-14">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-10 pb-10 border-b border-border">
             <div className="col-span-2 md:col-span-2 flex flex-col gap-4">

@@ -1,26 +1,12 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Star,
   MapPin,
-  BedDouble,
   CalendarCheck,
   CalendarDays,
-  Activity,
   Users,
-  Building2,
-  Clock,
-  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
 import { HospitalInfo, useHospitalSchedule } from "@/lib/hospital-store";
 import { HospitalBookingDialog } from "@/components/HospitalBookingDialog";
 import { cn } from "@/lib/utils";
@@ -30,6 +16,9 @@ import { Card } from "@/components/ui/card";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hospital Card
+// Kept lean on purpose: identity, one status line, two stats, top departments.
+// Everything else (insurances, full department list, schedule table) lives in
+// HospitalViewDrawer behind "View details" so the grid stays scannable.
 // ─────────────────────────────────────────────────────────────────────────────
 export const HospitalCard = ({ hospital }) => {
   const { t, i18n } = useTranslation();
@@ -41,13 +30,15 @@ export const HospitalCard = ({ hospital }) => {
     const days = schedule?.days ?? [];
     const active = days.filter((d) => d.active);
     const openSpots = active.reduce(
-      (sum, d) => sum + Math.max(0, d.capacity - d.booked), 0
+      (sum, d) => sum + Math.max(0, d.capacity - d.booked),
+      0,
     );
     return { activeDays: active.length, openSpots };
   }, [schedule]);
 
-  // Derive a display initial for the avatar
   const initial = hospital.name_en?.charAt(0).toUpperCase() ?? "H";
+  const topDepartments = hospital.departments?.slice(0, 2) ?? [];
+  const extraDepartments = Math.max(0, (hospital.departments?.length ?? 0) - 2);
 
   return (
     <>
@@ -66,10 +57,8 @@ export const HospitalCard = ({ hospital }) => {
                 : "text-muted-foreground",
             )}
           >
-            {hospital.is_accepting_bookings
-              ? stats.openSpots > 0
-                ? t("pages.cards.spots", { count: stats.openSpots })
-                : t("pages.cards.fully_booked")
+            {hospital.is_accepting_bookings && stats.openSpots > 0
+              ? t("pages.cards.spots", { count: stats.openSpots })
               : t("pages.cards.fully_booked")}
           </span>
         </div>
@@ -97,49 +86,38 @@ export const HospitalCard = ({ hospital }) => {
             </div>
           </div>
 
-          {/* Stats grid */}
-          <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
-            {[
-              {
-                icon: <Users className="h-4 w-4 text-muted-foreground" />,
-                label: "Doctors",
-                value: hospital.doctors_count ?? 0,
-              },
-              {
-                icon: <Building2 className="h-4 w-4 text-muted-foreground" />,
-                label: "Depts",
-                value: hospital.departments_count ?? 0,
-              },
-              {
-                icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />,
-                label: "Open days",
-                value: t("pages.cards.open_days", { count: stats.activeDays }),
-              },
-            ].map(({ icon, label, value }) => (
-              <div key={label} className="flex flex-col items-center py-2 px-1 bg-muted/20">
-                <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
-                  {icon}
-                  <span className="text-[10px] uppercase tracking-wider font-semibold">{label}</span>
-                </div>
-                <span className="text-xs font-semibold text-foreground">{value}</span>
-              </div>
-            ))}
+          {/* Two compact stats instead of three — doctors + open days */}
+          <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-sm border border-border overflow-hidden">
+            <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
+              <Users className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">
+                {hospital.doctors_count ?? 0}
+              </span>
+              <span className="text-[10px] text-muted-foreground">doctors</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
+              <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-foreground">
+                {stats.activeDays}
+              </span>
+              <span className="text-[10px] text-muted-foreground">open days</span>
+            </div>
           </div>
 
-          {/* Departments as specialty tags */}
-          {hospital.departments?.length > 0 && (
+          {/* At most 2 department pills + an overflow count, no full list */}
+          {topDepartments.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1">
-              {hospital.departments.slice(0, 4).map((dept) => (
+              {topDepartments.map((dept) => (
                 <span
                   key={dept.id ?? dept.name_en}
-                  className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60"
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60"
                 >
                   {dept.name_en}
                 </span>
               ))}
-              {hospital.departments.length > 4 && (
-                <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
-                  +{hospital.departments.length - 4}
+              {extraDepartments > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+                  +{extraDepartments} more
                 </span>
               )}
             </div>
@@ -176,7 +154,8 @@ export const HospitalCard = ({ hospital }) => {
       </Card>
 
       {/* ── Drawers ── */}
-
+      {/* HospitalViewDrawer now owns: full department list, insurances,
+          schedule table, capacity bars — everything trimmed from the card. */}
       <HospitalViewDrawer
         hospital={hospital}
         open={scheduleOpen}
@@ -188,7 +167,6 @@ export const HospitalCard = ({ hospital }) => {
         open={bookOpen}
         onOpenChange={setBookOpen}
       />
-
     </>
   );
 };

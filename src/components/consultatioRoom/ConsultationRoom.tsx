@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2 } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
+import { usePictureInPicture } from "@/hooks/video/usePictureInPicture";
 import { cn } from "@/lib/utils";
 import echo from "@/lib/echo";
 import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
@@ -60,6 +61,11 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const createPeerConnectionRef = useRef<(() => RTCPeerConnection) | null>(null);
   const createAndSendOfferRef = useRef<((iceRestart?: boolean) => Promise<void>) | null>(null);
   const isOwner = token.is_owner;
+  // Signaling identity. Must be UNIQUE per peer. The display username can be the
+  // same on both sides (e.g. when the doctor rejoins with a shared/guest token),
+  // which would make each peer ignore the other's signals (the "ignore my own
+  // broadcast" filter). Suffixing with the role guarantees the two differ.
+  const selfId = `${token.username}#${isOwner ? "owner" : "guest"}`;
 
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
@@ -135,23 +141,35 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const sendSignal = useCallback(
     async (type: string, data: unknown = {}) => {
       const url = `${import.meta.env.VITE_APP_BASE_URL}${import.meta.env.VITE_SIGNAL_PATH ?? "/public/consultations/signal"}`;
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ room: roomName, type, data, from: token.username }),
-        });
-        if (!res.ok) {
-          console.error(`[WebRTC] Signal "${type}" rejected: HTTP ${res.status} → ${url}`);
+      const payload = JSON.stringify({ room: roomName, type, data, from: selfId });
+      // Signaling is critical (offer/answer/ICE), and the network can flake
+      // briefly during renegotiation, so retry a transient failure once before
+      // giving up. The `ready` heartbeat also keeps re-announcing, so a missed
+      // signal recovers on its own.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: payload,
+          });
+          if (!res.ok) {
+            console.warn(`[WebRTC] Signal "${type}" rejected: HTTP ${res.status}`);
+          }
+          return;
+        } catch {
+          if (attempt === 0) {
+            await new Promise((r) => setTimeout(r, 400)); // brief backoff, retry once
+            continue;
+          }
+          // Persistent network/CORS failure — caught so it never aborts the
+          // handler; the heartbeat keeps retrying so the call can still recover.
+          // If this is constant, verify the signal endpoint allows this origin.
+          console.warn(`[WebRTC] Signal "${type}" couldn't be sent (network/CORS).`);
         }
-      } catch (e) {
-        // A TypeError/NetworkError here usually means the endpoint is missing or
-        // blocked by CORS — no offer/answer/ICE can be exchanged, so the call
-        // stays on "Connecting…". Verify the endpoint exists and allows this origin.
-        console.error(`[WebRTC] Signal "${type}" send failed (network/CORS) → ${url}`, e);
       }
     },
-    [roomName, token.username]
+    [roomName, selfId]
   );
 
   // ── Connection recovery ───────────────────────────────────────────────────
@@ -302,7 +320,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const handleSignalRef = useRef<((payload: any) => Promise<void>) | null>(null);
 
   handleSignalRef.current = async (payload: { type: string; data: unknown; from: string }) => {
-    if (payload.from === token.username) return;
+    if (payload.from === selfId) return;
 
     let pc = pcRef.current;
 
@@ -535,6 +553,25 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
 
+  // ── Picture-in-Picture ──────────────────────────────────────────────────────
+  // Floats the remote video in an always-on-top window so the call keeps playing
+  // while the user is on another tab. Auto-pops when the tab is hidden.
+  const pip = usePictureInPicture(remoteVideoRef, {
+    autoOnHide: true,
+    active: connState === "connected" && !isMinimized,
+    fallbackRef: localVideoRef, // float the self-view until the remote connects
+  });
+
+  // ── Call duration ───────────────────────────────────────────────────────────
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (connState !== "connected") return;
+    const id = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(id);
+  }, [connState]);
+  const fmtElapsed = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
   const endCall = () => {
     sendSignal("bye");
     if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
@@ -617,8 +654,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 <div className="text-center space-y-4">
                   <div className="relative mx-auto w-24 h-24">
                     <div className={cn("absolute inset-0 rounded-full bg-emerald-500/15", remoteTalking ? "animate-ping" : "")} style={{ animationDuration: "2s" }} />
-                    <div className={cn("relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/80 flex items-center justify-center text-2xl font-bold select-none transition-all duration-300", remoteTalking ? "ring-4 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]" : "ring-2 ring-emerald-500/30")}>
-                      {nameInitial(token.username)}
+                    <div className={cn("relative w-24 h-24 rounded-full bg-[#1e2a26] text-white/60 flex items-center justify-center select-none transition-all duration-300", remoteTalking ? "ring-4 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]" : "ring-2 ring-emerald-500/30")}>
+                      <User className="w-10 h-10" />
                     </div>
                   </div>
                   <p className="text-white/40 text-sm">
@@ -643,15 +680,38 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               )}
             </div>
 
-            <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between py-3 bg-gradient-to-b from-black/60 to-transparent z-20 transition-all", isMinimized ? "px-3" : "px-4")}>
-              <div className="flex items-center gap-2">
-                <span className={cn("h-2 w-2 rounded-full", stateColor)} />
-                {!isMinimized && <span className="text-white/60 text-[11px] font-mono">{stateLabel}</span>}
+            <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between z-20 transition-all bg-gradient-to-b from-black/70 via-black/25 to-transparent", isMinimized ? "px-2.5 py-2" : "px-4 py-3 sm:px-5 sm:py-4")}>
+              {/* Status pill */}
+              <div className={cn("flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10", isMinimized ? "px-2 py-1" : "px-3 py-1.5")}>
+                <span className={cn("h-2 w-2 rounded-full shrink-0", stateColor, connState === "connected" && "animate-pulse")} />
+                {!isMinimized && (
+                  <>
+                    <span className="text-white/80 text-[11px] font-medium leading-none">{stateLabel}</span>
+                    {connState === "connected" && (
+                      <>
+                        <span className="text-white/25">·</span>
+                        <span className="text-white/55 text-[11px] font-mono tabular-nums leading-none">{fmtElapsed(elapsed)}</span>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-1.5 text-white/40 text-[10px]">
+
+              {/* Window controls */}
+              <div className="flex items-center gap-1.5">
+                {!isMinimized && pip.supported && (
+                  <button
+                    onClick={pip.toggle}
+                    title="Pop out · Picture-in-Picture"
+                    aria-label="Picture-in-Picture"
+                    className={cn("h-8 w-8 rounded-lg backdrop-blur-md border border-white/10 flex items-center justify-center transition-all active:scale-90", pip.isPipActive ? "bg-emerald-500/30 text-emerald-300 border-emerald-400/30" : "bg-black/40 hover:bg-black/60 text-white/80")}
+                  >
+                    <PictureInPicture2 className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={toggleMinimize}
-                  className="ml-2 h-6 w-6 rounded-md bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all cursor-pointer"
+                  className="h-8 w-8 rounded-lg bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white/80 flex items-center justify-center transition-all active:scale-90 cursor-pointer"
                   title={isMinimized ? t("consult.call.expand") : t("consult.call.minimize")}
                 >
                   {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
@@ -683,49 +743,52 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         </div>
 
         {/* ── Controls bar ─────────────────────────────────────────────────── */}
-        <div className={cn("bg-[#111] border-t border-white/5 flex items-center justify-center relative z-40 shrink-0 transition-all duration-300", isMinimized ? "h-14 gap-2 px-3" : "h-16 sm:h-20 gap-1.5 sm:gap-3 px-2 sm:px-6")}>
-          <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
-            {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
-          </button>
+        <div className={cn("relative z-40 shrink-0 flex items-center justify-center transition-all duration-300 bg-gradient-to-t from-black via-[#0a0a0a] to-[#0a0a0a]/80 border-t border-white/[0.06]", isMinimized ? "h-14 gap-2 px-3" : "h-[4.75rem] sm:h-[5.5rem] gap-3 px-3 sm:px-6")}>
+          {/* Grouped controls pill */}
+          <div className={cn("flex items-center rounded-full bg-white/[0.05] border border-white/10 backdrop-blur-md", isMinimized ? "gap-1 p-1" : "gap-1.5 sm:gap-2 p-1.5")}>
+            <button onClick={toggleAudio} title={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-label={audioEnabled ? t("consult.call.mute_mic") : t("consult.call.unmute_mic")} aria-pressed={!audioEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", audioEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white", localTalking && audioEnabled && "ring-2 ring-emerald-400 bg-emerald-500/20 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.3)]")}>
+              {audioEnabled ? <Mic className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+            </button>
 
-          <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500/20 hover:bg-red-500/30 text-red-400")}>
-            {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
-          </button>
+            <button onClick={toggleVideo} title={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-label={videoEnabled ? t("consult.call.turn_camera_off") : t("consult.call.turn_camera_on")} aria-pressed={!videoEnabled} className={cn("rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", isMinimized ? "h-9 w-9" : "h-10 w-10 sm:h-11 sm:w-11", videoEnabled ? "bg-white/10 hover:bg-white/20 text-white" : "bg-red-500 hover:bg-red-400 text-white")}>
+              {videoEnabled ? <Video className={isMinimized ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMinimized ? "w-4 h-4" : "w-5 h-5"} />}
+            </button>
 
-          {!isMinimized && (
-            <div className="relative flex gap-1.5 sm:gap-2">
-              <button onClick={() => setParticipantsOpen(!participantsOpen)} title={t("consult.call.participants")} aria-label={t("consult.call.participants")} aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-                <Users className="w-5 h-5" />
-              </button>
-              <div className="relative">
-                <button onClick={() => {
-                  const next = !chatOpen;
-                  setChatOpen(next);
-                  if (next) setNotesOpen(false);
-                }} title={t("consult.call.chat")} aria-label={t("consult.call.chat")} aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-                  <MessageSquare className="w-5 h-5" />
+            {!isMinimized && (
+              <>
+                <div className="w-px h-6 bg-white/10 mx-0.5 sm:mx-1" />
+                <button onClick={() => setParticipantsOpen(!participantsOpen)} title={t("consult.call.participants")} aria-label={t("consult.call.participants")} aria-pressed={participantsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", participantsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                  <Users className="w-5 h-5" />
                 </button>
-                {unreadCount > 0 && !chatOpen && (
-                  <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#111]">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                <div className="relative">
+                  <button onClick={() => {
+                    const next = !chatOpen;
+                    setChatOpen(next);
+                    if (next) setNotesOpen(false);
+                  }} title={t("consult.call.chat")} aria-label={t("consult.call.chat")} aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                    <MessageSquare className="w-5 h-5" />
+                  </button>
+                  {unreadCount > 0 && !chatOpen && (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#0a0a0a]">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </div>
+                {isOwner && (
+                  <button onClick={() => {
+                    const next = !notesOpen;
+                    setNotesOpen(next);
+                    if (next) setChatOpen(false);
+                  }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                    <FileText className="w-5 h-5" />
+                  </button>
                 )}
-              </div>
-              {isOwner && (
-                <button onClick={() => {
-                  const next = !notesOpen;
-                  setNotesOpen(next);
-                  if (next) setChatOpen(false);
-                }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
-                  <FileText className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
-          <div className="w-px h-6 bg-white/10 mx-1 sm:mx-2" />
-
-          <button onClick={() => setConfirmEndOpen(true)} title={t("consult.call.end_call")} aria-label={t("consult.call.end_call")} className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-11 w-11 sm:h-12 sm:w-12 ml-1")}>
+          {/* End call */}
+          <button onClick={() => setConfirmEndOpen(true)} title={t("consult.call.end_call")} aria-label={t("consult.call.end_call")} className={cn("rounded-full bg-red-500 hover:bg-red-400 text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-red-500/40 shrink-0", isMinimized ? "h-10 w-10" : "h-12 w-12 sm:h-14 sm:w-14")}>
             <PhoneOff className={isMinimized ? "w-5 h-5" : "w-5 h-5 sm:w-6 sm:h-6"} />
           </button>
 

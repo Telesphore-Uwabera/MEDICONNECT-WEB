@@ -24,17 +24,21 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const location = useLocation();
   const navigate = useNavigate();
-  const activeHash = location.hash || "#features";
+  const activeHash = location.hash || "#doctors";
   const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useMe();
   const logout = useLogout();
 
+  // NOTE: ids updated to match the actual section ids in Index.tsx
+  // (the old list pointed "#features" at two different sections — that
+  // collision is what made the active-state underline behave oddly).
   const navLinks = [
-    { href: "#features", label: t("pages.landing.what_we_do") },
     { href: "#doctors", label: t("nav.available_doctors") },
+    { href: "#specialities", label: t("pages.landing.what_we_do") },
     { href: "#hospitals", label: t("nav.hospitals") },
-    { href: "#pharmacy", label: t("nav.pharmacy") }
+    { href: "#pharmacy", label: t("nav.pharmacy") },
+    { href: "#team", label: t("nav.our_team", "Our Team") },
   ];
 
   // Close on outside click
@@ -108,9 +112,13 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
       className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50"
     >
       <div className="container flex items-center justify-between py-2">
-        {/* Logo */}
+        {/* Logo — simplified to a plain wordmark, no custom underline hack.
+            Swap back to the <img> logo below if you'd rather use the asset;
+            keeping text for now since that's what was active. */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <img src={logo} alt="MEDICONNECT logo" className="h-12 w-auto rounded-sm" />
+          <span className="font-display text-xl font-bold tracking-tight text-foreground">
+            MEDI<span className="text-primary">CONNECT</span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -152,7 +160,8 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 </Button>
               </Link>
 
-              {/* Avatar + name */}
+              {/* Avatar + name — rounded-sm to match the icon-badge language
+                  used everywhere else (HospitalCard, OurTeam, Specialities) */}
               <Link
                 to={dashboardPath(user.role)}
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm hover:bg-accent transition-colors"
@@ -161,10 +170,10 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-7 h-7 rounded-full object-cover border border-border"
+                    className="w-7 h-7 rounded-sm object-cover border border-border"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+                  <div className="w-7 h-7 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">
                     {getInitials(user.name)}
                   </div>
                 )}
@@ -193,7 +202,9 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 </Button>
               </Link>
               <Link to="/auth?mode=signup">
-                <Button size="sm" className="bg-gradient-primary hover:opacity-90">
+                {/* Removed bg-gradient-primary — your other primary CTAs
+                    (Book a spot, Open marketplace) use solid bg-primary now */}
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                   {t("common.SignUp")}
                 </Button>
               </Link>
@@ -267,10 +278,10 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-8 h-8 rounded-sm object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
+                      <div className="w-8 h-8 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                         {getInitials(user.name)}
                       </div>
                     )}
@@ -311,7 +322,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                     </Button>
                   </Link>
                   <Link to="/auth?mode=signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button size="sm" className="w-full bg-gradient-primary hover:opacity-90">
+                    <Button size="sm" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                       {t("common.Register")}
                     </Button>
                   </Link>

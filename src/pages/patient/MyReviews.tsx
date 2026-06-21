@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import ReactDOM from "react-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -117,7 +118,6 @@ function ReviewCardSkeleton({ compact = false }: { compact?: boolean }) {
 function ReviewDetailSkeleton() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Top bar skeleton */}
       <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 border-b border-border bg-muted/30">
         <Skeleton className="h-6 w-16 rounded-[6px]" />
         <div className="flex-1 min-w-0 space-y-1">
@@ -128,10 +128,7 @@ function ReviewDetailSkeleton() {
           <Skeleton className="h-6 w-16 rounded-[6px]" />
         </div>
       </div>
-
-      {/* Body skeleton */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-        {/* Doctor info skeleton */}
         <div className="rounded-[6px] border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
             <Skeleton className="w-5 h-5 rounded-[4px]" />
@@ -145,8 +142,6 @@ function ReviewDetailSkeleton() {
             </div>
           </div>
         </div>
-
-        {/* Review details skeleton */}
         <div className="rounded-[6px] border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
             <Skeleton className="w-5 h-5 rounded-[4px]" />
@@ -161,8 +156,6 @@ function ReviewDetailSkeleton() {
             ))}
           </div>
         </div>
-
-        {/* Review content skeleton */}
         <div className="rounded-[6px] border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
             <Skeleton className="w-5 h-5 rounded-[4px]" />
@@ -304,7 +297,7 @@ function StatusChip({ ok, label }: { ok: boolean; label: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Appointment Search & Select Component
+// Appointment Search & Select — Portal-based dropdown (no overflow clipping)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AppointmentSearchSelect({
@@ -320,18 +313,45 @@ function AppointmentSearchSelect({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
 
-  // Close dropdown on outside click
+  const triggerRef = React.useRef<HTMLDivElement>(null);
+
+  // Recalculate position whenever open state changes or on scroll/resize
+  const updatePosition = useCallback(() => {
+    if (triggerRef.current) {
+      setDropdownRect(triggerRef.current.getBoundingClientRect());
+    }
+  }, []);
+
   React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+    if (!isOpen) return;
+
+    updatePosition();
+
+    const handleClose = (e: MouseEvent) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
+        // Check if click is inside the portal dropdown
+        const portalEl = document.getElementById("appt-dropdown-portal");
+        if (portalEl && portalEl.contains(e.target as Node)) return;
         setIsOpen(false);
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    };
+
+    const handleScrollOrResize = () => {
+      updatePosition();
+    };
+
+    document.addEventListener("mousedown", handleClose);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [isOpen, updatePosition]);
 
   const filteredAppointments = useMemo(() => {
     if (!searchQuery.trim()) return appointments;
@@ -350,18 +370,23 @@ function AppointmentSearchSelect({
     });
   }, [appointments, searchQuery]);
 
-  const doctorName = (a: ApiAppointment) =>
-    a.doctor?.user?.name ?? "Unknown Doctor";
-  const doctorDesig = (a: ApiAppointment) =>
-    a.doctor?.designations ?? "";
-  const doctorSpec = (a: ApiAppointment) =>
-    a.doctor?.specialization ?? "";
-  const clinicName = (a: ApiAppointment) =>
-    a.clinic?.name ?? "";
+  const doctorName = (a: ApiAppointment) => a.doctor?.user?.name ?? "Unknown Doctor";
+  const doctorDesig = (a: ApiAppointment) => a.doctor?.designations ?? "";
+  const doctorSpec = (a: ApiAppointment) => a.doctor?.specialization ?? "";
+  const clinicName = (a: ApiAppointment) => a.clinic?.name ?? "";
 
-  if (isLoading) {
-    return <AppointmentSearchSkeleton />;
-  }
+  const handleToggle = () => {
+    updatePosition();
+    setIsOpen((prev) => !prev);
+  };
+
+  const handleSelect = (appt: ApiAppointment) => {
+    onSelect(appt);
+    setIsOpen(false);
+    setSearchQuery("");
+  };
+
+  if (isLoading) return <AppointmentSearchSkeleton />;
 
   if (appointments.length === 0) {
     return (
@@ -376,6 +401,100 @@ function AppointmentSearchSelect({
       </div>
     );
   }
+
+  // Portal dropdown content
+  const dropdownContent =
+    isOpen && dropdownRect
+      ? ReactDOM.createPortal(
+          <div
+            id="appt-dropdown-portal"
+            style={{
+              position: "fixed",
+              top: dropdownRect.bottom + 4,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              zIndex: 9999,
+            }}
+            className="rounded-[6px] border border-border bg-card shadow-xl"
+          >
+            {/* Search inside dropdown */}
+            <div className="p-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                <Input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by doctor, specialization, or clinic…"
+                  className="pl-7 h-7 text-[10px] rounded-[6px] border-border focus-visible:ring-primary"
+                />
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
+              {filteredAppointments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-4 gap-1.5 text-center">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground">
+                    No appointments match your search.
+                  </p>
+                </div>
+              ) : (
+                filteredAppointments.map((appt) => (
+                  <button
+                    key={appt.id}
+                    type="button"
+                    onClick={() => handleSelect(appt)}
+                    className={cn(
+                      "w-full text-left flex items-start gap-2.5 p-2 rounded-[6px] border transition-all",
+                      selectedAppt?.id === appt.id
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent hover:border-border hover:bg-muted/40",
+                    )}
+                  >
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
+                      {getInitials(doctorName(appt))}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-semibold text-foreground truncate">
+                        {doctorDesig(appt) || doctorName(appt)}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground">
+                        {doctorSpec(appt)}
+                      </p>
+                      {clinicName(appt) && (
+                        <div className="flex items-center gap-0.5 mt-0.5">
+                          <Building2 className="h-2 w-2 text-muted-foreground" />
+                          <span className="text-[9px] text-muted-foreground truncate">
+                            {clinicName(appt)}
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
+                        {fmtDate(appt.appointment_date)} ·{" "}
+                        <span className="capitalize">{appt.type.replace("_", " ")}</span>
+                      </p>
+                    </div>
+                    {selectedAppt?.id === appt.id && (
+                      <Check className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-2.5 py-1.5 border-t border-border bg-muted/30">
+              <p className="text-[9px] text-muted-foreground text-center">
+                {filteredAppointments.length} of {appointments.length} appointment
+                {appointments.length !== 1 ? "s" : ""} available
+              </p>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -503,7 +622,7 @@ function AppointmentSearchSelect({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Submit Review Panel (Revamped with Search & Select)
+// Submit Review Panel
 // ─────────────────────────────────────────────────────────────────────────────
 
 function SubmitReviewPanel({
@@ -584,9 +703,8 @@ function SubmitReviewPanel({
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-        <div className="w-full max-w-sm mx-auto space-y-3">
+        <div className="w-full  space-y-3">
 
-          {/* Success state */}
           {done && (
             <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-emerald-400/30 bg-emerald-500/10">
               <Check className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -596,7 +714,6 @@ function SubmitReviewPanel({
             </div>
           )}
 
-          {/* Error state */}
           {error && (
             <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
               <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
@@ -604,7 +721,6 @@ function SubmitReviewPanel({
             </div>
           )}
 
-          {/* Step 1: Search & Select Appointment */}
           <SectionCard icon={CalendarDays} title="Select Appointment">
             <div className="space-y-2">
               <AppointmentSearchSelect
@@ -626,11 +742,9 @@ function SubmitReviewPanel({
             </div>
           </SectionCard>
 
-          {/* Step 2: Rating & comment */}
           {selectedAppt && (
             <SectionCard icon={Star} title="Your Rating">
               <div className="space-y-3">
-                {/* Selected appointment summary */}
                 <div className="flex items-center gap-2 p-2 rounded-[6px] border border-primary/20 bg-primary/5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground bg-primary border border-primary/20 shrink-0">
                     {getInitials(selectedAppt.doctor?.user?.name)}
@@ -650,12 +764,7 @@ function SubmitReviewPanel({
                     Rating <span className="text-destructive">*</span>
                   </span>
                   <div className="flex items-center gap-2">
-                    <StarRating
-                      rating={rating}
-                      size="lg"
-                      interactive
-                      onChange={setRating}
-                    />
+                    <StarRating rating={rating} size="lg" interactive onChange={setRating} />
                     {rating > 0 && (
                       <span className="text-xs font-semibold text-foreground">
                         {rating}/5
@@ -664,8 +773,8 @@ function SubmitReviewPanel({
                   </div>
                   {rating === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Click a star to rate
-                    </p>
+                    Click a star to rate
+                  </p>
                   )}
                 </div>
 
@@ -968,7 +1077,6 @@ function ReviewDetail({
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
 
-        {/* Success banner */}
         {saved && savedMessage && (
           <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-emerald-400/30 bg-emerald-500/10">
             <Check className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -978,7 +1086,6 @@ function ReviewDetail({
           </div>
         )}
 
-        {/* Delete error */}
         {deleteError && (
           <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
@@ -986,7 +1093,6 @@ function ReviewDetail({
           </div>
         )}
 
-        {/* Rejection notice */}
         {review.status === "rejected" && review.rejection_reason && (
           <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
             <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
@@ -997,7 +1103,6 @@ function ReviewDetail({
           </div>
         )}
 
-        {/* Doctor info */}
         <SectionCard icon={Stethoscope} title="Doctor">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
@@ -1019,18 +1124,11 @@ function ReviewDetail({
           </div>
         </SectionCard>
 
-        {/* Review details */}
         <SectionCard icon={CalendarDays} title="Review Details">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-            <InfoRow
-              label="Appointment ID"
-              value={`#${review.appointment_id}`}
-            />
+            <InfoRow label="Appointment ID" value={`#${review.appointment_id}`} />
             <InfoRow label="Submitted" value={fmtDateTime(review.created_at)} />
-            <InfoRow
-              label="Last updated"
-              value={fmtDateTime(review.updated_at)}
-            />
+            <InfoRow label="Last updated" value={fmtDateTime(review.updated_at)} />
             <InfoRow
               label="Anonymous"
               value={
@@ -1043,7 +1141,6 @@ function ReviewDetail({
           </div>
         </SectionCard>
 
-        {/* Your review / Edit form */}
         <SectionCard
           icon={editing ? Pencil : MessageSquare}
           title={editing ? "Edit your review" : "Your review"}
@@ -1149,7 +1246,6 @@ function ReviewDetail({
           )}
         </SectionCard>
 
-        {/* Visibility */}
         <SectionCard icon={Eye} title="Visibility">
           <div className="space-y-1.5">
             <InfoRow
@@ -1244,9 +1340,9 @@ function PatientReviews() {
         />
 
         <div className="px-3 py-4 sm:px-5 sm:py-6">
-          <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex min-h-[560px]">
+          <div className="rounded-[6px] border border-border bg-card shadow-sm flex min-h-[560px]">
 
-            {/* ── Left panel ── 50% width on sm+, full width on mobile when no panel */}
+            {/* ── Left panel ── */}
             <div
               className={cn(
                 "flex flex-col border-border",
@@ -1354,7 +1450,7 @@ function PatientReviews() {
               </div>
             </div>
 
-            {/* ── Right panel ── always fills remaining space, never expands left panel */}
+            {/* ── Right panel ── */}
             {panel.mode === "detail" && selectedReview ? (
               <div className="flex-1 min-w-0 flex flex-col min-h-0 border-l border-border">
                 <ReviewDetail
