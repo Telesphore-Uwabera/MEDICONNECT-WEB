@@ -12,6 +12,7 @@ import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
+import { HeroHeader } from "@/components/landing/HeroHeader";
 
 const Auth = () => {
   const { t, i18n } = useTranslation();
@@ -45,7 +46,12 @@ const Auth = () => {
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <TopBar />
-      <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
+      {/* <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
+       */}
+       <HeroHeader
+                 mobileMenuOpen={mobileMenuOpen}
+                 setMobileMenuOpen={setMobileMenuOpen}
+               />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center p-4 md:p-6">

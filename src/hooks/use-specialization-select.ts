@@ -12,6 +12,7 @@ export interface Specialization {
   name_fr: string;
   name_kiny: string | null;
   slug: string;
+   doctorCount?: number;
 }
 
 export interface SpecializationFee {
