@@ -1,5 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -915,6 +916,7 @@ function HospitalInsurances() {
 
   // ── Local state ──
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [coverageFilter, setCoverageFilter] = useState<
     "all" | "full" | "partial"
   >("all");
@@ -996,82 +998,32 @@ function HospitalInsurances() {
     }
   };
 
-  // ── Sidebar ──
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Coverage type">
-          <div className="flex flex-col gap-1">
-            {(
-              [
-                { value: "all", label: "All types" },
-                { value: "full", label: "Full coverage" },
-                { value: "partial", label: "Partial coverage" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.value}
-                onClick={() => setCoverageFilter(o.value)}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
-                  coverageFilter === o.value
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-                    : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-                )}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Logo">
-          <div className="flex flex-col gap-1">
-            {(
-              [
-                { value: "all", label: "All providers" },
-                { value: "with", label: "With logo" },
-                { value: "without", label: "Without logo" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.value}
-                onClick={() => setHasLogo(o.value)}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
-                  hasLogo === o.value
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-                    : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-                )}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </FilterSection>
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "coverageFilter",
+      label: "Coverage Type",
+      value: coverageFilter,
+      options: [
+        { value: "all", label: "All types" },
+        { value: "full", label: "Full coverage" },
+        { value: "partial", label: "Partial coverage" },
+      ],
+      onChange: (v: string) => setCoverageFilter(v as any)
+    },
+    {
+      type: "select" as const,
+      key: "hasLogo",
+      label: "Logo",
+      value: hasLogo,
+      options: [
+        { value: "all", label: "All providers" },
+        { value: "with", label: "With logo" },
+        { value: "without", label: "Without logo" },
+      ],
+      onChange: (v: string) => setHasLogo(v as any)
+    }
+  ], [coverageFilter, hasLogo]);
 
   return (
     <DashboardLayout role="hospital">
@@ -1137,12 +1089,16 @@ function HospitalInsurances() {
         </div>
 
         {/* ── Body ── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <aside className="hidden md:flex md:flex-col w-52 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearFilters}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2 }}
+        />
 
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <p className="text-[11px] text-muted-foreground">
@@ -1188,6 +1144,12 @@ function HospitalInsurances() {
                     className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
                   />
                 </button>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 <Button
                   onClick={() => {
@@ -1281,7 +1243,6 @@ function HospitalInsurances() {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       {/* ── Link modal ── */}

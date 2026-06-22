@@ -27,6 +27,8 @@ import { useMe, useLogout } from "@/hooks/useAuth";
 import { dashboardPath } from "@/lib/auth-store";
 import { useGetNotifications } from "@/hooks/use-notifications";
 import MyNotifications from "@/pages/notifications/Mynotifications";
+import { ThemeToggle } from "./ThemeToggle";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
@@ -257,6 +259,9 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
               </div>
             )}
 
+            <ThemeToggle />
+            <LanguageSwitcher compact />
+
             <div className="h-5 w-px bg-border/50 mx-1" />
 
             {/* ══ AUTHENTICATED ══════════════════════════════ */}
@@ -436,6 +441,13 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                           label={t("header.help", "Help & Support")}
                           description="FAQs and contact"
                           to="./help"
+                          onClick={() => setProfileOpen(false)}
+                        />
+                        <PopItem
+                          icon={Settings}
+                          label={t("header.settings", "Settings")}
+                          description="Preferences & security"
+                          to={userRole ? `${dashboardPath(userRole)}/settings` : "#"}
                           onClick={() => setProfileOpen(false)}
                         />
                       </div>

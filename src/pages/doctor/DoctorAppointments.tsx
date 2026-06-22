@@ -49,10 +49,10 @@ const DoctorAppointmentsPage = () => {
             {id === "appointments" && (
               <>
                 <Calendar className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">
+                <span className="hidden sm:inline text-xs">
                   {t('consult.bookings.appointments')}
                 </span>
-                <span className="sm:hidden">
+                <span className="sm:hidden text-xs">
                   {t('consult.bookings.appointments_short')}
                 </span>
               </>
@@ -60,10 +60,10 @@ const DoctorAppointmentsPage = () => {
             {id === "instant" && (
               <>
                 <Sparkles className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">
+                <span className="hidden sm:inline text-xs">
                   {t('consult.bookings.instant')}
                 </span>
-                <span className="sm:hidden">
+                <span className="sm:hidden text-xs">
                   {t('consult.bookings.instant_short')}
                 </span>
                 {pendingCount > 0 && (
@@ -79,10 +79,10 @@ const DoctorAppointmentsPage = () => {
             {id === "bookings" && (
               <>
                 <Building2 className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">
+                <span className="hidden sm:inline text-xs">
                   {t('consult.bookings.service_bookings')}
                 </span>
-                <span className="sm:hidden">
+                <span className="sm:hidden text-xs">
                   {t('consult.bookings.service_bookings_short')}
                 </span>
               </>

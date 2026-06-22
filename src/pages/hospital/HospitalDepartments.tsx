@@ -2,19 +2,9 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { DepartmentFormModal } from "./components/Departmentformmodal";
-// import {
-//   useGetDepartments,
-//   useGetDepartment,
-//   useCreateDepartment,
-//   useUpdateDepartment,
-//   useDeleteDepartment,
-//   useGetServicesByDepartment,
-//   useCreateService,
-//   useUpdateService,
-//   useDeleteService,
-// } from "@/hooks/useHospitalDepartments";
-// import type { Department, DepartmentPayload, Service, ServicePayload } from "@/types/hospital";
+ 
 import {
   Search,
   SlidersHorizontal,
@@ -644,6 +634,7 @@ const HospitalDepartments = () => {
 
   // ── Filter state (client-side search + emergency + sort) ──────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -727,73 +718,51 @@ const HospitalDepartments = () => {
   const isSubmittingDept = createDept.isPending || updateDept.isPending;
 
   // ── Sidebar content ───────────────────────────────────────────────────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Type">
-          <PillGroup<EmergencyFilter>
-            value={filters.emergency}
-            onChange={(v) => set("emergency", v)}
-            options={EMERGENCY_OPTIONS}
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "emergency",
+      label: "Type",
+      value: filters.emergency,
+      options: EMERGENCY_OPTIONS,
+      onChange: (v: string) => set("emergency", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "sort",
+      label: "Sort",
+      value: filters.sort,
+      options: SORT_OPTIONS,
+      onChange: (v: string) => set("sort", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "sort_dir",
+      label: "Order",
+      value: filters.sort_dir,
+      options: [
+        { value: "asc", label: "Ascending" },
+        { value: "desc", label: "Descending" },
+      ],
+      onChange: (v: string) => set("sort_dir", v as any)
+    },
+    {
+      type: "custom" as const,
+      key: "active_only",
+      label: "Status",
+      render: () => (
+        <label className="flex items-center gap-2 h-[26px] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={filters.active_only}
+            onChange={(e) => set("active_only", e.target.checked)}
+            className="w-3.5 h-3.5 rounded-sm accent-primary"
           />
-        </FilterSection>
-
-        <FilterSection title="Status">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={filters.active_only}
-              onChange={(e) => set("active_only", e.target.checked)}
-              className="w-3.5 h-3.5 rounded-sm accent-primary"
-            />
-            <span className="text-[11px] text-foreground">Active only</span>
-          </label>
-        </FilterSection>
-
-        <FilterSection title="Sort">
-          <PillGroup<SortOption>
-            value={filters.sort}
-            onChange={(v) => set("sort", v)}
-            options={SORT_OPTIONS}
-          />
-          <div className="flex gap-1 mt-2">
-            {(["asc", "desc"] as const).map((dir) => (
-              <button
-                key={dir}
-                onClick={() => set("sort_dir", dir)}
-                className={cn(
-                  "flex-1 py-1 text-[10px] rounded-sm border transition-all",
-                  filters.sort_dir === dir
-                    ? "bg-primary/10 text-primary border-primary/30 font-medium"
-                    : "border-border/40 text-muted-foreground hover:bg-secondary/30",
-                )}
-              >
-                {dir === "asc" ? "↑ Asc" : "↓ Desc"}
-              </button>
-            ))}
-          </div>
-        </FilterSection>
-      </div>
-    </>
-  );
+          <span className="text-[11px] text-foreground">Active only</span>
+        </label>
+      )
+    }
+  ], [filters.emergency, filters.sort, filters.sort_dir, filters.active_only, set]);
 
   return (
     <DashboardLayout role="hospital">
@@ -803,14 +772,16 @@ const HospitalDepartments = () => {
           subtitle={t("pages.hospital.departments_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* ── Sidebar ── */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 4 }}
+        />
 
-          {/* ── Main ── */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <p className="text-[11px] text-muted-foreground">
@@ -855,6 +826,12 @@ const HospitalDepartments = () => {
                 >
                   <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
                 </button>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* Add */}
                 <button
@@ -933,7 +910,6 @@ const HospitalDepartments = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       {/* ── Department detail drawer ── */}

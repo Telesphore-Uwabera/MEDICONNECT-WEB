@@ -145,10 +145,20 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (requestLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-10">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <p className="text-xs">Loading your request…</p>
+      <div className="flex flex-col sm:flex-row flex-1 min-h-0">
+        <div className="w-full sm:w-64 border-r border-border/50 bg-card/20 p-4 space-y-3 shrink-0 hidden sm:block">
+          <div className="h-4 w-24 bg-muted rounded animate-pulse mb-6" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-9 w-full bg-muted rounded-[8px] animate-pulse" />
+          ))}
+        </div>
+        <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-5">
+          <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-14 w-full bg-muted rounded-[12px] animate-pulse" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -212,8 +222,10 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
   const stepContent = () => {
     if (stepLoading) {
       return (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-14 w-full bg-muted rounded-[12px] animate-pulse" />
+          ))}
         </div>
       );
     }
@@ -410,8 +422,22 @@ function SentCertificates() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-[16px] border border-border/60 bg-card p-5 animate-pulse">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-6 w-24 bg-muted rounded-md" />
+                <div className="h-5 w-16 bg-muted rounded-full" />
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="h-4 w-full bg-muted rounded-md" />
+                <div className="h-4 w-2/3 bg-muted rounded-md" />
+              </div>
+              <div className="h-9 w-full bg-muted rounded-[8px]" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

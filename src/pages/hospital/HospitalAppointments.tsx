@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -971,80 +972,59 @@ const HospitalAppointments = () => {
   const isActing =
     acceptMut.isPending || rejectMut.isPending || completeMut.isPending;
 
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-[5px] bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "pending", label: "Pending" },
+        { value: "accepted", label: "Accepted" },
+        { value: "completed", label: "Completed" },
+        { value: "rejected", label: "Rejected" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "custom" as const,
+      key: "dateFrom",
+      label: "Date Range",
+      render: () => (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => set("dateFrom", e.target.value)}
+              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+            />
+            <span className="text-[11px] text-muted-foreground">to</span>
+            <input
+              type="date"
+              value={filters.dateTo}
+              min={filters.dateFrom}
+              onChange={(e) => set("dateTo", e.target.value)}
+              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+            />
           </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
+          {(filters.dateFrom || filters.dateTo) && (
+            <button
+              onClick={() => {
+                set("dateFrom", "");
+                set("dateTo", "");
+              }}
+              className="text-[10px] text-muted-foreground hover:text-foreground underline transition-colors self-start"
+            >
+              Clear dates
+            </button>
+          )}
         </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            style={{ borderRadius: "5px" }}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<BookingStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all", label: "All statuses" },
-              { value: "pending", label: "Pending" },
-              { value: "accepted", label: "Accepted" },
-              { value: "completed", label: "Completed" },
-              { value: "rejected", label: "Rejected" },
-              { value: "cancelled", label: "Cancelled" },
-            ]}
-          />
-        </FilterSection>
-
-        <FilterSection title="Date Range">
-          <div className="space-y-2">
-            <div>
-              <p className="text-[10px] text-muted-foreground/60 mb-1">From</p>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => set("dateFrom", e.target.value)}
-                className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-              />
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground/60 mb-1">To</p>
-              <input
-                type="date"
-                value={filters.dateTo}
-                min={filters.dateFrom}
-                onChange={(e) => set("dateTo", e.target.value)}
-                className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-              />
-            </div>
-            {(filters.dateFrom || filters.dateTo) && (
-              <button
-                onClick={() => {
-                  set("dateFrom", "");
-                  set("dateTo", "");
-                }}
-                className="text-[10px] text-muted-foreground hover:text-foreground underline transition-colors"
-              >
-                Clear dates
-              </button>
-            )}
-          </div>
-        </FilterSection>
-      </div>
-    </>
-  );
+      )
+    }
+  ], [filters.status, filters.dateFrom, filters.dateTo, set]);
 
   return (
     <DashboardLayout role="hospital">
@@ -1054,50 +1034,16 @@ const HospitalAppointments = () => {
           subtitle={t("pages.hospital.appts_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-52 flex-shrink-0 border-r border-border/60 bg-card/40 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2 }}
+        />
 
-          {/* Mobile filter backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile filter drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-2xl border-t border-border",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-4 border-t border-border">
-              <button
-                onClick={() => setFilterOpen(false)}
-                style={{ borderRadius: "5px" }}
-                className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors"
-              >
-                Show results
-              </button>
-            </div>
-          </div>
-
-          {/* ── Main ── */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -1155,23 +1101,11 @@ const HospitalAppointments = () => {
                   />
                 </button>
 
-                {/* Filters button — mobile only */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  style={{ borderRadius: "5px" }}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-3 py-1.5 border text-[11px] transition-colors",
-                    hasActiveFilters
-                      ? "bg-primary text-white border-primary"
-                      : "border-border/60 text-muted-foreground bg-card",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                  )}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -1248,7 +1182,6 @@ const HospitalAppointments = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       {/* Detail drawer */}

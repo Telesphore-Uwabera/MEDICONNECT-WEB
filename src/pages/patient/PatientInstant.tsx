@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useCallContext } from "@/context/CallContext";
-import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { startInAppCallFromJoin, decodeCallToken } from "@/lib/scheduled-call";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   SlidersHorizontal, ChevronLeft, ChevronRight,
   Building2,
   Sparkles,
+  HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -26,6 +27,9 @@ import {
 } from "@/hooks/patient/use-patient-appointment";
 import AppointmentDetailModal from "./components/AppointmentDetail";
 import { Link } from "react-router-dom";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { Card } from "@/components/ui/card";
+import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -38,6 +42,16 @@ interface JoinResponse {
   room_name?: string;
   token?: string;
   join_url?: string;
+}
+
+// GET /patient/quick/{id} — instant detail carrying the patient's join token.
+interface InstantQuickDetail {
+  id: number;
+  status?: string;
+  daily_room_url?: string;
+  daily_room_name?: string;
+  daily_guest_token?: string; // patient WebRTC token (is_owner: false)
+  guest_token?: string;
 }
 
 interface FilterState {
@@ -189,17 +203,19 @@ function AppointmentRowSkeleton() {
 
 function AppointmentCardSkeleton() {
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-3.5 flex items-center gap-3 animate-pulse">
-      <div className="w-9 h-9 rounded-sm bg-muted shrink-0" />
-      <div className="flex-1 space-y-1.5">
-        <div className="h-4 w-42 rounded bg-muted" />
-        <div className="h-2.5 w-20 rounded bg-muted" />
+    <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-4 animate-pulse">
+      <div className="flex items-start gap-3.5">
+        <div className="w-16 h-16 rounded-[14px] bg-muted shrink-0" />
+        <div className="flex-1 space-y-2 mt-1">
+          <div className="h-4 w-40 rounded bg-muted" />
+          <div className="h-3 w-24 rounded bg-muted" />
+        </div>
       </div>
-      <div className="space-y-1.5 items-end hidden sm:flex flex-col">
-        <div className="h-2.5 w-24 rounded bg-muted" />
-        <div className="h-2 w-16 rounded bg-muted" />
+      <div className="h-14 w-full rounded-sm bg-muted" />
+      <div className="h-8 w-full flex gap-2">
+         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
+         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
       </div>
-      <div className="h-7 w-14 rounded-sm bg-muted shrink-0" />
     </div>
   );
 }
@@ -217,66 +233,94 @@ function AppointmentCardItem({
   const actionable = isActionable(appt.status);
 
   return (
-    <div
-      className="bg-card border border-border/70 rounded-sm p-3.5 flex items-center gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer"
+    <Card
+      className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col"
       onClick={onDetails}
     >
-      <div className={cn(
-        "w-9 h-9 rounded-sm flex items-center justify-center flex-shrink-0 border overflow-hidden",
-        appt.type === "online"
-          ? "bg-sky-50 text-sky-600 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900"
-          : "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-      )}>
-        {avatar ? (
-          <img src={avatar} alt={getDoctorName(appt)} className="h-full w-full object-cover" />
-        ) : appt.type === "online" ? (
-          <Video className="w-4 h-4" />
-        ) : (
-          <MapPin className="w-4 h-4" />
-        )}
+      {/* ── Top strip ── */}
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          Request
+        </span>
+        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-sm border", STATUS_STYLES[appt.status])}>
+          {STATUS_LABEL[appt.status]}
+        </span>
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-foreground">{getDoctorName(appt)}</span>
-          <Badge variant="outline" className={cn("text-xs px-1.5 py-0 font-medium border", STATUS_STYLES[appt.status])}>
-            <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[appt.status])} />
-            {STATUS_LABEL[appt.status]}
-          </Badge>
-        </div>
-        <p className="text-xs text-muted-foreground/70 mt-1 truncate">{getSpecialty(appt)}</p>
-      </div>
-
-      <div className="flex items-center gap-4 flex-shrink-0">
-        <div className="text-right hidden sm:block">
-          <p className="text-xs font-medium text-foreground flex items-center justify-end gap-1.5">
-            <Calendar className="h-4 w-4 text-muted-foreground/50" />
-            {formatDate(appt.appointment_date)}
-          </p>
-          <p className="text-xs text-muted-foreground/70 flex items-center justify-end gap-1.5 mt-1">
-            <Clock className="h-4 w-4" />
-            {formatTime(appt.appointment_time)}
-          </p>
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        {/* Identity row */}
+        <div className="flex items-start gap-3.5">
+          <div className="h-16 w-16 rounded-[14px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm font-bold text-xl">
+            {avatar ? (
+              <img src={avatar} alt={getDoctorName(appt)} className="h-full w-full object-cover" />
+            ) : appt.type === "online" ? (
+              <Video className="w-6 h-6" />
+            ) : (
+              <MapPin className="w-6 h-6" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground leading-tight truncate">
+              {getDoctorName(appt)}
+            </h3>
+            <p className="text-[13px] font-medium text-muted-foreground mt-1 truncate">
+              {getSpecialty(appt)}
+            </p>
+          </div>
         </div>
 
-        <Button
-          size="sm"
-          variant={actionable ? "default" : "ghost"}
-          className={cn(
-            "h-8 px-4 text-xs font-semibold rounded-md transition-all duration-200",
-            actionable
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            actionable ? onJoin() : onDetails();
-          }}
-        >
-          {actionable ? "Join" : "Details"}
-        </Button>
+        {/* Stats grid */}
+        <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Date</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {formatDate(appt.appointment_date)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {formatTime(appt.appointment_time)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              {appt.type === "online" ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Type</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {appt.type === "online" ? "Video" : "In-person"}
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-4 pt-4 border-t border-border/40 flex items-center gap-2 mt-auto">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+            onClick={(e) => { e.stopPropagation(); onDetails(); }}
+          >
+            Details
+          </Button>
+          <Button
+            size="sm"
+            disabled={!actionable}
+            onClick={(e) => { e.stopPropagation(); onJoin(); }}
+            className="h-8 px-3 text-xs font-bold rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
+          >
+            {actionable ? "Join Call" : "Unavailable"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -288,6 +332,7 @@ const PatientInstant = () => {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [medInfoOpen, setMedInfoOpen] = useState(false);
 
   // ── Modal state ────────────────────────────────────────────────────────────
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -296,36 +341,66 @@ const PatientInstant = () => {
   const closeDetail = useCallback(() => setSelectedId(null), []);
 
   // ── Join (video call) ────────────────────────────────────────────────────────
-  const { startCall } = useCallContext();
-  const joinMutation = useMutation<JoinResponse, unknown, string | number>({
-    mutationFn: (id) =>
-      apiFetch<JoinResponse>(`/patient/appointments/${id}/join`, { method: "POST" }),
+  const { startCall, activeCall, setMinimized } = useCallContext();
+
+  // Joining differs by booking type:
+  //  - instant      → GET /patient/quick/{id}; the detail carries the patient's
+  //                   WebRTC token (daily_guest_token) → open the in-app room in
+  //                   INSTANT chat mode (consultation_id = the instant id).
+  //  - appointment  → POST /patient/appointments/{id}/join (appointment mode).
+  const joinMutation = useMutation<void, unknown, ApiAppointment>({
+    mutationFn: async (appt) => {
+      if (appt.booking_type === "instant") {
+        const detail = await apiFetch<InstantQuickDetail>(`/patient/quick/${appt.id}`);
+        console.log("[Quick] instant detail:", detail);
+        const decoded = decodeCallToken(detail.daily_guest_token);
+        const roomName = detail.daily_room_name || decoded?.room;
+        if (decoded && roomName) {
+          decoded.consultation_id = Number(appt.id);
+          decoded.is_owner = false;
+          // Already in this exact call? Just bring the overlay back up.
+          if (activeCall && activeCall.roomName === roomName) {
+            setMinimized(false);
+            return;
+          }
+          startCall(roomName, decoded);
+          return;
+        }
+        // Not our WebRTC token — open the hosted room link if present.
+        if (detail.daily_room_url) {
+          window.open(detail.daily_room_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        throw new Error("Could not open the consultation room.");
+      }
+
+      // Scheduled appointment
+      const res = await apiFetch<JoinResponse>(
+        `/patient/appointments/${appt.id}/join`,
+        { method: "POST" },
+      );
+      console.log("[Quick] appointment join response:", res);
+      const started = startInAppCallFromJoin(startCall, res, {
+        consultationId: appt.id,
+        isOwner: false,
+      });
+      if (started) return;
+      const url = res.join_url || res.room_url;
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      else throw new Error("join_failed");
+    },
   });
 
   const handleJoin = useCallback(
     (appt: ApiAppointment) => {
-      joinMutation.mutate(appt.id, {
-        onSuccess: (res) => {
-          console.log("[Quick] patient join response:", res);
-          const started = startInAppCallFromJoin(startCall, res, {
-            consultationId: appt.id,
-            isOwner: false,
-          });
-          if (started) return;
-          const url = res.join_url || res.room_url;
-          if (url) {
-            window.open(url, "_blank", "noopener,noreferrer");
-          } else {
-            toast.error(t("consult.booking.join_failed"));
-          }
-        },
+      joinMutation.mutate(appt, {
         onError: (err: any) => {
           console.error("[Quick] join failed:", err?.status, err?.data);
           toast.error(err?.message || t("consult.booking.join_failed"));
         },
       });
     },
-    [joinMutation, startCall, t],
+    [joinMutation, t],
   );
 
   // ── API ────────────────────────────────────────────────────────────────────
@@ -360,6 +435,55 @@ const PatientInstant = () => {
       ...(key !== "page" && key !== "sort" ? { page: 1 } : {}),
     }));
   }, []);
+
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "pending", label: "Pending" },
+        { value: "confirmed", label: "Confirmed" },
+        { value: "in_progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "custom" as const,
+      key: "date_range",
+      label: "Date Range",
+      render: () => (
+        <div className="flex items-center gap-1.5 mt-1">
+          <input
+            type="date"
+            value={filters.date_from}
+            onChange={(e) => set("date_from", e.target.value)}
+            className="w-full px-2 h-[28px] text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
+          />
+          <span className="text-muted-foreground/50 text-[10px]">-</span>
+          <input
+            type="date"
+            value={filters.date_to}
+            min={filters.date_from}
+            onChange={(e) => set("date_to", e.target.value)}
+            className="w-full px-2 h-[28px] text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
+          />
+          {(filters.date_from || filters.date_to) && (
+            <button
+              onClick={() => { set("date_from", ""); set("date_to", ""); }}
+              className="ml-1 h-[28px] w-[28px] flex-shrink-0 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )
+    }
+  ], [filters, set]);
 
   const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
@@ -474,44 +598,29 @@ const PatientInstant = () => {
           subtitle={t("pages.patient.instant_sub") || "Manage your instant consultations"}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Quick access to the patient's own medical record */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMedInfoOpen(true)}
+            className="h-8 px-3 text-[11px] font-medium rounded-sm gap-1.5"
+          >
+            <HeartPulse className="h-3.5 w-3.5 text-primary" />
+            My medical info
+          </Button>
+        </div>
 
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile bottom drawer */}
-          <div className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card rounded-t-lg border-t border-border/60",
-            "max-h-[85dvh] flex flex-col overflow-hidden transition-transform duration-300 ease-out shadow-2xl",
-            filterOpen ? "translate-y-0" : "translate-y-full",
-          )}>
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold transition-all"
-              >
-                Show {data?.total ?? 0} requests
-              </button>
-            </div>
-          </div>
-
-          {/* Results */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">
@@ -537,20 +646,22 @@ const PatientInstant = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-xs transition-all font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
+                {/* Sort */}
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as SortOption)}
+                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
-                </button>
+                  <option value="date-asc">Soonest first</option>
+                  <option value="date-desc">Latest first</option>
+                  <option value="doctor">Doctor (A-Z)</option>
+                </select>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* View toggle */}
                 <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -730,7 +841,7 @@ const PatientInstant = () => {
 
               {/* ── Cards view ── */}
               {view === "cards" && (isLoading || sorted.length > 0) && (
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 sm:px-5">
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <AppointmentCardSkeleton key={i} />)
                     : sorted.map((a) => (
@@ -798,7 +909,9 @@ const PatientInstant = () => {
             </div>
           </main>
         </div>
-      </div>
+
+      <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
+
     </DashboardLayout>
   );
 };

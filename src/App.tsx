@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
+import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
 import { LogIn, X, ShieldAlert } from "lucide-react";
 
 import Index from "./pages/Index.tsx";
@@ -193,6 +194,7 @@ const App = () => (
           <Sonner />
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
+          <GlobalInstantPill />
           <Routes>
 
             {/* ── Public ──────────────────────────────────────── */}

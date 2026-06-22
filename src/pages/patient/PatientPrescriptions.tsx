@@ -20,7 +20,7 @@ import {
   Search,
   ChevronDown,
   LayoutGrid,
-  Rows3,
+  List,
   CalendarRange,
   Loader2,
   AlertCircle,
@@ -57,6 +57,9 @@ import {
   PrescriptionCard,
   PharmacySelectionModal,
 } from "./components/prescription-components";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
+import { HeartPulse } from "lucide-react";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -69,6 +72,7 @@ const PatientPrescriptions = () => {
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [pharmacyModalOpen, setPharmacyModalOpen] = useState(false);
   const [prescriptionToSend, setPrescriptionToSend] = useState<Prescription | null>(null);
+  const [medInfoOpen, setMedInfoOpen] = useState(false);
 
   const apiFilters = useMemo<PrescriptionFilters>(
     () => ({
@@ -152,67 +156,52 @@ const PatientPrescriptions = () => {
   const handleViewDetails = useCallback((p: Prescription) => setSelectedPrescription(p), []);
   const closeDrawer = useCallback(() => setSelectedPrescription(null), []);
 
-  // ─── Sidebar content ───────────────────────────────────────────────────────
-
-  const sidebarContent = (
-    <>
-      <div className="px-3 pt-3.5 pb-2.5 flex items-center justify-between border-b border-border/50">
-        <div className="flex items-center gap-1.5">
-          <SlidersHorizontal className="w-4 h-4 text-primary" />
-          <span className="text-xs font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-xs text-primary hover:text-primary/70 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-4 h-4" />Reset
-          </button>
-        )}
-      </div>
-      <div className="px-3">
-        <FilterSection title="Status">
-          <PillGroup<PrescriptionApiStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all", label: "All statuses" },
-              ...ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] ?? s })),
-            ]}
-          />
-        </FilterSection>
-        <FilterSection title="Signature">
-          <PillGroup<boolean | "all">
-            value={filters.is_signed}
-            onChange={(v) => set("is_signed", v)}
-            options={[
-              { value: "all", label: "All" },
-              { value: true, label: "Signed" },
-              { value: false, label: "Unsigned" },
-            ]}
-          />
-        </FilterSection>
-        <FilterSection title="Date range">
-          <DateRangeInput
-            from={filters.from}
-            to={filters.to}
-            onFrom={(v) => set("from", v)}
-            onTo={(v) => set("to", v)}
-          />
-        </FilterSection>
-        <FilterSection title="Sort">
-          <PillGroup<"date-asc" | "date-desc">
-            value={filters.sort}
-            onChange={(v) => set("sort", v)}
-            options={[
-              { value: "date-desc", label: "Latest first" },
-              { value: "date-asc", label: "Oldest first" },
-            ]}
-          />
-        </FilterSection>
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        ...ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] ?? s })),
+      ],
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "is_signed",
+      label: "Signature",
+      value: String(filters.is_signed),
+      options: [
+        { value: "all", label: "All" },
+        { value: "true", label: "Signed" },
+        { value: "false", label: "Unsigned" },
+      ],
+      onChange: (v: string) => set("is_signed", v === "all" ? "all" : v === "true")
+    },
+    {
+      type: "custom" as const,
+      key: "date_range",
+      label: "Date range",
+      render: () => (
+        <DateRangeInput
+          from={filters.from}
+          to={filters.to}
+          onFrom={(v) => set("from", v)}
+          onTo={(v) => set("to", v)}
+        />
+      )
+    },
+    {
+      type: "search" as const,
+      key: "search",
+      label: "Search",
+      value: filters.search,
+      placeholder: "Prescription...",
+      onChange: (v: string) => set("search", v)
+    }
+  ], [filters, set]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -224,47 +213,29 @@ const PatientPrescriptions = () => {
           subtitle={t("pages.patient.prescriptions_sub", { defaultValue: "View and manage your prescriptions" })}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-52 flex-shrink-0 border-r border-border/50 bg-card/40 overflow-y-auto">
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile filter drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-2xl border-t border-border",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
+        {/* Quick access to the patient's own medical record */}
+        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMedInfoOpen(true)}
+            className="h-8 px-3 text-[11px] font-medium rounded-sm gap-1.5"
           >
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-4 border-t border-border">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors"
-              >
-                Show results
-              </button>
-            </div>
-          </div>
+            <HeartPulse className="h-3.5 w-3.5 text-primary" />
+            My medical info
+          </Button>
+        </div>
 
-          {/* Main results */}
-          <main className="flex-1 overflow-y-auto">
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
+
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Stats */}
             <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard label="Issued" value={issuedCount} icon={FileText} accent="primary" />
@@ -308,58 +279,42 @@ const PatientPrescriptions = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search diagnosis, doctor…"
-                    className="w-48 pl-7 pr-2.5 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
-                  />
-                </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
+                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                >
+                  <option value="date-desc">Newest first</option>
+                  <option value="date-asc">Oldest first</option>
+                </select>
 
-                <div className="relative">
-                  <select
-                    value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as FilterState["sort"])}
-                    className="appearance-none pl-2 pr-6 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                  >
-                    <option value="date-desc">Latest first</option>
-                    <option value="date-asc">Oldest first</option>
-                  </select>
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none" />
-                </div>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
-                <div className="flex rounded-sm border border-border/50 overflow-hidden bg-card">
+                <div className="flex rounded-sm border border-border overflow-hidden bg-card shadow-sm">
                   <button
                     onClick={() => setView("table")}
-                    aria-label="Table view"
-                    className={cn("px-2 py-1 transition-colors", view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                    className={cn(
+                      "p-1.5 transition-colors",
+                      view === "table" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
+                    )}
                   >
-                    <Rows3 className="w-4 h-4" />
+                    <List className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setView("cards")}
-                    aria-label="Card view"
-                    className={cn("px-2 py-1 border-l border-border/50 transition-colors", view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                    className={cn(
+                      "p-1.5 transition-colors",
+                      view === "cards" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
+                    )}
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                 </div>
-
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1 px-2.5 py-1 rounded-sm border text-xs transition-colors",
-                    hasActiveFilters ? "bg-primary text-white border-primary" : "border-border/50 text-muted-foreground bg-card",
-                  )}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </button>
               </div>
             </div>
 
@@ -544,8 +499,9 @@ const PatientPrescriptions = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
+
+      <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
 
       <PrescriptionDrawer
         prescription={selectedPrescription}

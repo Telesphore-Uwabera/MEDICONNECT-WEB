@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useState, useRef, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -19,6 +20,9 @@ import {
   PlayCircle,
   RefreshCw,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -84,6 +88,32 @@ const DoctorOverview = () => {
     toggleInstantConsultation,
     togglePauseBookings,
   } = useDoctorDashboard({ period: "week", chart_group: "day" });
+
+  const [activeTab, setActiveTab] = useState<"overview" | "clinical" | "financial" | "reviews">("overview");
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [showLeftScroll, setShowLeftScroll] = useState(false);
+  const [showRightScroll, setShowRightScroll] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!tabsRef.current) return;
+      const { scrollLeft, scrollWidth, clientWidth } = tabsRef.current;
+      setShowLeftScroll(scrollLeft > 0);
+      setShowRightScroll(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
+    };
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    tabsRef.current?.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("resize", handleScroll);
+      tabsRef.current?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  const scrollBy = (offset: number) => {
+    tabsRef.current?.scrollBy({ left: offset, behavior: "smooth" });
+  };
+
 
   // ── Derived values ──────────────────────────────────────────────────────
 
@@ -212,6 +242,81 @@ const DoctorOverview = () => {
               </div>
             )}
 
+            {/* ── Scrollable Tabs ── */}
+            <div className="relative flex items-center border-b border-border/60 mb-4">
+              <div
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-background to-transparent z-10 flex items-center transition-opacity duration-300",
+                  showLeftScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <button
+                  onClick={() => scrollBy(-200)}
+                  className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div 
+                ref={tabsRef}
+                className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-px [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full relative z-0"
+              >
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Overview & Activity
+                </button>
+                <button
+                  onClick={() => setActiveTab("clinical")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "clinical" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Clinical Records
+                </button>
+                <button
+                  onClick={() => setActiveTab("financial")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "financial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Financials
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "reviews" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Reviews
+                </button>
+              </div>
+
+              <div
+                className={cn(
+                  "absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent z-10 flex items-center justify-end transition-opacity duration-300",
+                  showRightScroll ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                )}
+              >
+                <button
+                  onClick={() => scrollBy(200)}
+                  className="h-7 w-7 rounded-full bg-background/80 backdrop-blur border border-border/50 shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {activeTab === "overview" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* ── Toggles + today quick stats ── */}
             <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
               {/* Instant Consultation toggle */}
@@ -346,35 +451,6 @@ const DoctorOverview = () => {
                   </div>
                 );
               })}
-            </div>
-
-            {/* ── Stats strip (period) ── */}
-            {/* loading prop removed — StatCard doesn't accept it */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label={t("pages.doctor.stat_today")}
-                value={today?.total ?? 0}
-                icon={Calendar}
-                accent="primary"
-              />
-              <StatCard
-                label="Unique Patients"
-                value={period?.unique_patients ?? 0}
-                icon={Users}
-                accent="info"
-              />
-              <StatCard
-                label="Prescriptions"
-                value={prescriptions?.issued ?? 0}
-                icon={FileText}
-                accent="success"
-              />
-              <StatCard
-                label="Instant Queue"
-                value={instantStats?.current_queue ?? 0}
-                icon={Activity}
-                accent="warning"
-              />
             </div>
 
             {/* ── Main grid ── */}
@@ -532,8 +608,41 @@ const DoctorOverview = () => {
               </div>
             </div>
 
-            {/* ── Bottom row ── */}
-            <div className="grid lg:grid-cols-3 gap-4 mt-1">
+              </div>
+            )}
+
+            {activeTab === "clinical" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* ── Stats strip (period) ── */}
+            {/* loading prop removed — StatCard doesn't accept it */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <StatCard
+                label={t("pages.doctor.stat_today")}
+                value={today?.total ?? 0}
+                icon={Calendar}
+                accent="primary"
+              />
+              <StatCard
+                label="Unique Patients"
+                value={period?.unique_patients ?? 0}
+                icon={Users}
+                accent="info"
+              />
+              <StatCard
+                label="Prescriptions"
+                value={prescriptions?.issued ?? 0}
+                icon={FileText}
+                accent="success"
+              />
+              <StatCard
+                label="Instant Queue"
+                value={instantStats?.current_queue ?? 0}
+                icon={Activity}
+                accent="warning"
+              />
+            </div>
+
+                <div className="grid lg:grid-cols-3 gap-4">
               {/* Completion rate bar chart */}
               <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft">
                 <div className="flex items-center justify-between mb-2">
@@ -603,6 +712,13 @@ const DoctorOverview = () => {
                 )}
               </div>
 
+                </div>
+              </div>
+            )}
+
+            {activeTab === "reviews" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="grid lg:grid-cols-3 gap-4">
               {/* Rating & reviews */}
               <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft">
                 <div className="flex items-center justify-between mb-4">
@@ -711,6 +827,13 @@ const DoctorOverview = () => {
                 )}
               </div>
 
+                </div>
+              </div>
+            )}
+
+            {activeTab === "financial" && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="grid lg:grid-cols-3 gap-4">
               {/* Revenue summary */}
               <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
                 <div className="flex items-center justify-between">
@@ -802,7 +925,9 @@ const DoctorOverview = () => {
                   </span>
                 </div>
               </div>
-            </div>
+                </div>
+              </div>
+            )}
 
           </div>
         </main>

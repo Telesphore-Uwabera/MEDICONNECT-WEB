@@ -1,6 +1,7 @@
 // SpecializationSelect.tsx
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { X, Search, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ export function SpecializationSelect({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
   const {
     step,
@@ -39,6 +41,40 @@ export function SpecializationSelect({
     resetQuery,
     triggerLabel,
   } = useSpecializationSelect();
+
+  // Recalculate dropdown position whenever it opens or window resizes/scrolls
+  useLayoutEffect(() => {
+    if (!open || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: "fixed",
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    };
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   // Sync internal hook value → parent onChange
   // (hook owns local state; parent gets notified on each selection)
@@ -77,7 +113,12 @@ export function SpecializationSelect({
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const dropdown = document.getElementById("spec-select-portal");
+      if (
+        !containerRef.current?.contains(target) &&
+        !dropdown?.contains(target)
+      ) {
         setOpen(false);
         resetQuery();
       }
@@ -92,13 +133,13 @@ export function SpecializationSelect({
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-        className={cn(
-          "w-full px-2.5 py-1.5 text-[11px] bg-background border rounded-sm flex items-center justify-between gap-1.5 transition-all",
-          open
-            ? "border-primary/50 ring-2 ring-primary/20"
-            : "border-border/60 hover:border-primary/40",
-          triggerLabel ? "text-foreground" : "text-muted-foreground/40"
-        )}
+  className={cn(
+  "w-full px-2.5 py-1.5 text-[11px] bg-background border rounded-[6px] flex items-center justify-between gap-1.5 transition-all",
+  open
+    ? "border-primary dark:border-border ring-2 ring-primary/20"
+    : "border-primary dark:border-border hover:border-primary/80 dark:hover:border-border/80",
+  triggerLabel ? "text-foreground" : "text-muted-foreground/40"
+)}
       >
         <span className="truncate">{triggerLabel ?? "Any specialization…"}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -120,9 +161,13 @@ export function SpecializationSelect({
         </div>
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border/60 rounded-sm shadow-lg overflow-hidden">
+      {/* Dropdown — rendered via portal to escape any overflow:hidden ancestor */}
+      {open && createPortal(
+        <div
+          id="spec-select-portal"
+          style={dropdownStyle}
+          className="bg-card border border-border/60 rounded-sm shadow-xl overflow-hidden"
+        >
           {/* Back header on fee step */}
           {step === "fee" && (
             <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-border/60 bg-secondary/20">
@@ -258,7 +303,8 @@ export function SpecializationSelect({
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

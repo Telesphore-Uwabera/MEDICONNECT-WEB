@@ -36,6 +36,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import {
   BookingStatus,
@@ -615,16 +617,19 @@ function RowSkeleton() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border/50 rounded-sm p-3.5 flex items-center gap-3 animate-pulse">
-      <div className="flex-1 space-y-1.5">
-        <div className="h-3 bg-muted rounded-sm w-2/3" />
-        <div className="h-2.5 bg-muted/60 rounded-sm w-1/3" />
+    <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-4 animate-pulse">
+      <div className="flex items-start gap-3.5">
+        <div className="w-16 h-16 rounded-[14px] bg-muted shrink-0" />
+        <div className="flex-1 space-y-2 mt-1">
+          <div className="h-4 w-40 rounded bg-muted" />
+          <div className="h-3 w-24 rounded bg-muted" />
+        </div>
       </div>
-      <div className="hidden sm:block space-y-1.5">
-        <div className="h-2.5 bg-muted rounded-sm w-24" />
-        <div className="h-2 bg-muted/60 rounded-sm w-16" />
+      <div className="h-14 w-full rounded-sm bg-muted" />
+      <div className="h-8 w-full flex gap-2">
+         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
+         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
       </div>
-      <div className="h-7 w-16 sm:w-24 bg-muted rounded-sm flex-shrink-0" />
     </div>
   );
 }
@@ -724,77 +729,95 @@ function BookingCardItem({
   const canCancel = booking.status === "pending" || booking.status === "accepted";
 
   return (
-    <div className="bg-card border border-border/70 rounded-md p-4 sm:p-5 flex items-start sm:items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
-      <span className={cn("w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 sm:mt-0", STATUS_CONFIG[booking.status].dot)} />
+    <Card
+      className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col"
+      onClick={() => onView(booking)}
+    >
+      {/* ── Top strip ── */}
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          Service Booking
+        </span>
+        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-sm border", STATUS_CONFIG[booking.status].color)}>
+          {STATUS_CONFIG[booking.status].label}
+        </span>
+      </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-foreground leading-tight">
-            {booking.service.name_en}
-          </span>
-          <StatusBadge status={booking.status} />
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
+        {/* Identity row */}
+        <div className="flex items-start gap-3.5">
+          <div className="h-16 w-16 rounded-[14px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm font-bold text-xl">
+             <Building2 className="w-6 h-6" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground leading-tight truncate">
+              {booking.service.name_en}
+            </h3>
+            <p className="text-[13px] font-medium text-muted-foreground mt-1 truncate">
+              {booking.hospital.name_en} · {booking.department.name_en}
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground/60 mt-1 truncate">
-          {booking.hospital.name_en} · {booking.department.name_en}
-        </p>
-        {/* Date/time on mobile (no side column) */}
-        <p className="sm:hidden text-xs text-muted-foreground/60 mt-1.5 flex items-center gap-1.5">
-          <CalendarDays className="w-3.5 h-3.5" />
-          {formatDate(booking.preferred_date)}&nbsp;·&nbsp;{formatTime(booking.preferred_time)}
-        </p>
-        {booking.notes && (
-          <p className="text-xs text-muted-foreground/50 mt-1.5 flex items-center gap-1.5 truncate">
-            <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-            {booking.notes}
-          </p>
-        )}
-      </div>
 
-      {/* Date/time column — only on sm+ */}
-      <div className="hidden sm:flex flex-col items-end gap-1 flex-shrink-0 text-xs text-muted-foreground/70">
-        <span className="flex items-center gap-1.5">
-          <CalendarDays className="w-3.5 h-3.5" />
-          {formatDate(booking.preferred_date)}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
-          {formatTime(booking.preferred_time)}
-        </span>
-        {(booking.price ?? booking.service.price) && (
-          <span className="font-bold text-foreground mt-1">
-            {parseFloat((booking.price ?? booking.service.price)!).toLocaleString()}{" "}
-            {booking.currency ?? "RWF"}
-          </span>
-        )}
-      </div>
+        {/* Stats grid */}
+        <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Date</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {formatDate(booking.preferred_date)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {formatTime(booking.preferred_time)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+            <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+              <CreditCard className="h-3.5 w-3.5" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">Price</span>
+            </div>
+            <span className="text-xs font-semibold text-foreground">
+              {booking.price ?? booking.service.price ? (
+                `${parseFloat((booking.price ?? booking.service.price)!).toLocaleString()} ${booking.currency ?? "RWF"}`
+              ) : "—"}
+            </span>
+          </div>
+        </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onView(booking)}
-          className="h-8 w-8 sm:w-auto sm:px-4 text-xs font-semibold rounded-md transition-all duration-200 p-0"
-        >
-          <Eye className="w-4 h-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">View</span>
-        </Button>
-
-        {canCancel ? (
+        {/* Actions */}
+        <div className="mt-4 pt-4 border-t border-border/40 flex items-center gap-2 mt-auto">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onCancel(booking)}
-            className="h-8 w-8 sm:w-auto sm:px-4 text-xs font-semibold rounded-md flex-shrink-0 transition-all duration-200 p-0 text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40"
+            className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+            onClick={(e) => { e.stopPropagation(); onView(booking); }}
           >
-            <Trash2 className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Cancel</span>
+            Details
           </Button>
-        ) : (
-          <span className="hidden sm:inline text-xs text-muted-foreground/40 w-[64px] text-center">—</span>
-        )}
+          <Button
+            size="sm"
+            disabled={!canCancel}
+            onClick={(e) => { e.stopPropagation(); onCancel(booking); }}
+            className={cn(
+              "h-8 px-3 text-xs font-bold rounded-[8px] flex-1 shadow-sm transition-colors",
+              canCancel
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : "bg-muted text-muted-foreground"
+            )}
+          >
+            {canCancel ? "Cancel" : "Cannot Cancel"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -917,6 +940,25 @@ function ServiceBookings() {
     [],
   );
 
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label })),
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "search" as const,
+      key: "q",
+      label: "Search",
+      value: filters.q,
+      placeholder: "Service, hospital…",
+      onChange: (v: string) => set("q", v)
+    }
+  ], [filters, set]);
+
   const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
   const hasActiveFilters = useMemo(
@@ -967,74 +1009,6 @@ function ServiceBookings() {
     [data],
   );
 
-  // ── Sidebar content ───────────────────────────────────────────────────────
-
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" /> Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<BookingStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={STATUS_OPTIONS.map((o) => ({
-              ...o,
-              dot: o.value !== "all" ? STATUS_CONFIG[o.value as BookingStatus].dot : undefined,
-            }))}
-          />
-        </FilterSection>
-
-        <FilterSection title="Sort">
-          <PillGroup<SortOption>
-            value={filters.sort}
-            onChange={(v) => set("sort", v)}
-            options={[
-              { value: "date-desc", label: "Newest first" },
-              { value: "date-asc", label: "Oldest first" },
-            ]}
-          />
-        </FilterSection>
-
-        <FilterSection title="Search">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Service, hospital…"
-              value={filters.q}
-              onChange={(e) => set("q", e.target.value)}
-              className="w-full pl-6 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            />
-            {filters.q && (
-              <button
-                onClick={() => set("q", "")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        </FilterSection>
-      </div>
-    </>
-  );
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -1058,47 +1032,16 @@ function ServiceBookings() {
           </Button>
         </div>
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile bottom drawer (filters) */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all"
-              >
-                Show {data?.total ?? 0} bookings
-              </button>
-            </div>
-          </div>
-
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto min-w-0">
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
             {/* Inline feedback banner — shown directly below the meta bar */}
             {feedback && (
@@ -1143,22 +1086,20 @@ function ServiceBookings() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as SortOption)}
+                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />
-                  )}
-                </button>
+                  <option value="date-desc">Newest first</option>
+                  <option value="date-asc">Oldest first</option>
+                </select>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* View toggle */}
                 <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -1279,179 +1220,6 @@ function ServiceBookings() {
               )}
 
               {/* ── Table view ── */}
-              {view === "table" &&
-                (isLoading || bookings.length > 0) &&
-                !isError && (
-                  <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Service</th>
-                          <th className="text-left px-4 py-3 font-semibold">Hospital</th>
-                          <th className="text-left px-4 py-3 font-semibold">Date & Time</th>
-                          <th className="text-left px-4 py-3 font-semibold">Department</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="px-4 py-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading
-                          ? Array.from({ length: 5 }).map((_, i) => (
-                            <RowSkeleton key={i} />
-                          ))
-                          : bookings.map((b) => (
-                            <tr
-                              key={b.id}
-                              className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                            >
-                              <td className="px-4 py-3">
-                                <div>
-                                  <p className="font-semibold text-foreground">
-                                    {b.service.name_en}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    #{b.id} · {b.booked_by}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.hospital.name_en}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="flex items-center gap-1 font-medium text-foreground">
-                                    <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatDate(b.preferred_date)}
-                                  </span>
-                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                    <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatTime(b.preferred_time)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                  {b.department.name_en}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <StatusBadge status={b.status} />
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-7 px-2.5 text-[10px] font-semibold rounded-sm transition-all"
-                                    onClick={() => setDetailId(b.id)}
-                                  >
-                                    Details
-                                  </Button>
-                                  {b.status === "pending" ||
-                                    b.status === "accepted" ? (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-7 px-2.5 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                      onClick={() => setCancelTarget(b)}
-                                    >
-                                      <Trash2 className="w-3 h-3 mr-1" />
-                                      Cancel
-                                    </Button>
-                                  ) : (
-                                    <span className="text-[10px] text-muted-foreground/40 w-[58px] text-center">
-                                      —
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              {view === "table" && (isLoading || bookings.length > 0) && !isError && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Service</th>
-                        <th className="text-left px-4 py-3 font-semibold">Hospital</th>
-                        <th className="text-left px-4 py-3 font-semibold">Date & Time</th>
-                        <th className="text-left px-4 py-3 font-semibold">Department</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isLoading
-                        ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
-                        : bookings.map((b) => (
-                          <tr
-                            key={b.id}
-                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                          >
-                            <td className="px-4 py-3">
-                              <div>
-                                <p className="font-semibold text-foreground">{b.service.name_en}</p>
-                                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                  #{b.id} · {b.booked_by}
-                                </p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                {b.hospital.name_en}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="flex items-center gap-1 font-medium text-foreground">
-                                  <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                  {formatDate(b.preferred_date)}
-                                </span>
-                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                  <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                  {formatTime(b.preferred_time)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                <Stethoscope className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
-                                {b.department.name_en}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusBadge status={b.status} />
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {(b.status === "pending" || b.status === "accepted") ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                  onClick={() => setCancelTarget(b)}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  Cancel
-                                </Button>
-                              ) : (
-                                <span className="text-[10px] text-muted-foreground/40">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
               {view === "table" && (isLoading || bookings.length > 0) && !isError && (
                 <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
                   <div className="overflow-x-auto">
@@ -1547,26 +1315,8 @@ function ServiceBookings() {
               )}
 
               {/* ── Cards view ── */}
-              {view === "cards" &&
-                (isLoading || bookings.length > 0) &&
-                !isError && (
-                  <div className="flex flex-col gap-2">
-                    {isLoading
-                      ? Array.from({ length: 5 }).map((_, i) => (
-                        <CardSkeleton key={i} />
-                      ))
-                      : bookings.map((b) => (
-                        <BookingCardItem
-                          key={b.id}
-                          booking={b}
-                          onCancel={setCancelTarget}
-                          onView={(b) => setDetailId(b.id)}
-                        />
-                      ))}
-                  </div>
-                )}
               {view === "cards" && (isLoading || bookings.length > 0) && !isError && (
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 sm:px-5">
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
                     : bookings.map((b) => (
@@ -1591,8 +1341,7 @@ function ServiceBookings() {
                 />
               )}
             </div>
-          </main>
-        </div>
+        </main>
       </div>
 
       {/* ── Detail Drawer ── */}
@@ -1623,6 +1372,7 @@ function ServiceBookings() {
 
       {/* My medical info drawer */}
       <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
+        
     </DashboardLayout>
   );
 }

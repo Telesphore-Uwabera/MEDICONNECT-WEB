@@ -46,6 +46,8 @@ import {
 } from "@/hooks/patient/use-patient-search-pharmacy";
 import { PharmacyDrawer } from "./components/Pharmacydrawer";
 import { PharmacyCart } from "./components/PharmacyCart";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { Card } from "@/components/ui/card";
 
 // ─── Rwanda regions ───────────────────────────────────────────────────────────
 
@@ -183,8 +185,6 @@ function ToggleButton({
   );
 }
 
-// ─── Pharmacy Grid Card (Hospital-style) ─────────────────────────────────────
-
 function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
@@ -194,92 +194,123 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
 
   return (
     <>
-      <div className="bg-card border border-border/70 rounded-sm p-3 flex flex-col gap-2.5 hover:border-primary/30 hover:shadow-md transition-all duration-200">
-        {/* Header */}
-        <div className="flex items-start gap-2.5">
-          <div className="w-9 h-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10 overflow-hidden">
-            {ph.logo
-              ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
-              : <Pill className="w-4.5 h-4.5" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <h3 className="text-xs font-semibold text-foreground leading-tight line-clamp-2">
+      <Card
+        className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col"
+        onClick={() => setDrawerOpen(true)}
+      >
+        {/* ── Top strip ── */}
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Pharmacy
+          </span>
+          <span
+            className={cn(
+              "text-xs font-bold",
+              !isClosedToday ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+            )}
+          >
+            {!isClosedToday ? "Open Today" : "Closed Today"}
+          </span>
+        </div>
+
+        <div className="p-4 sm:p-5 flex flex-col flex-1">
+          {/* Identity row */}
+          <div className="flex items-start gap-3.5">
+            <div className="h-16 w-16 rounded-[14px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm">
+              {ph.logo
+                ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
+                : <Pill className="w-6 h-6" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-foreground leading-tight truncate flex items-center gap-1.5">
                 {ph.name}
+                {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
               </h3>
-              {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
-            </div>
-            <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground/70">
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span className="truncate">{ph.city}</span>
-              {ph.address && <span className="truncate">· {ph.address}</span>}
+              <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1 mt-1 truncate">
+                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                {ph.city}{ph.address ? `, ${ph.address}` : ""}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Badges */}
-        <div className="flex flex-wrap gap-1">
-          {ph.offers_delivery && (
-            <span className="flex items-center gap-0.5 px-1.5 py-px text-xs font-semibold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-              <Truck className="w-4 h-4" />
-              Delivery
-            </span>
-          )}
-          {ph.offers_pickup && (
-            <span className="px-1.5 py-px text-xs font-semibold rounded-sm bg-secondary/60 text-muted-foreground border border-border/40">
-              Pickup
-            </span>
-          )}
-          {ph.is_open_24h && (
-            <span className="flex items-center gap-0.5 px-1.5 py-px text-xs font-semibold rounded-sm bg-primary/10 text-primary border border-primary/20">
-              <Clock className="w-4 h-4" />
-              24h
-            </span>
-          )}
-        </div>
+          {/* Stats grid */}
+          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+            <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+              <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+                <Truck className="h-3.5 w-3.5" />
+                <span className="text-[10px] uppercase tracking-wider font-semibold">Delivery</span>
+              </div>
+              <span className="text-xs font-semibold text-foreground">
+                {ph.offers_delivery && ph.delivery_fee != null ? `${ph.delivery_fee} ${ph.delivery_currency}` : ph.offers_delivery ? "Yes" : "No"}
+              </span>
+            </div>
+            <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+              <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+                <Navigation className="h-3.5 w-3.5" />
+                <span className="text-[10px] uppercase tracking-wider font-semibold">Distance</span>
+              </div>
+              <span className="text-xs font-semibold text-foreground">
+                {ph.distance_km != null ? `${ph.distance_km.toFixed(1)} km` : "—"}
+              </span>
+            </div>
+            <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
+              <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+              </div>
+              <span className="text-xs font-semibold text-foreground">
+                {deliveryMins != null ? `~${deliveryMins}m` : "—"}
+              </span>
+            </div>
+          </div>
 
-        {/* Info rows */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-            <MapPin className="w-4 h-4 flex-shrink-0 text-primary/60" />
-            {ph.city}, {ph.province}
-            {ph.distance_km != null && (
-              <span className="ml-auto text-xs font-semibold text-primary">{ph.distance_km.toFixed(1)} km</span>
+          {/* Badges / Features */}
+          <div className="mt-3 flex flex-wrap gap-1">
+            {ph.offers_delivery && (
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                Delivery
+              </span>
+            )}
+            {ph.offers_pickup && (
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+                Pickup
+              </span>
+            )}
+            {ph.is_open_24h && (
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20">
+                24h Open
+              </span>
             )}
           </div>
-          {deliveryMins != null && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-              <Truck className="w-4 h-4 flex-shrink-0 text-primary/60" />
-              ~{deliveryMins} min delivery
-            </div>
-          )}
-          {todayHours && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-              <Clock className="w-4 h-4 flex-shrink-0 text-primary/60" />
-              {isClosedToday
-                ? <span className="text-destructive font-medium">Closed today</span>
-                : `${todayHours.open_time?.slice(0, 5)} – ${todayHours.close_time?.slice(0, 5)}`}
-            </div>
-          )}
-        </div>
 
-        {/* Stats + CTA */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
-          {ph.delivery_fee && ph.offers_delivery ? (
-            <div className="text-xs text-muted-foreground/70">
-              Fee: <span className="font-semibold text-foreground">{ph.delivery_fee} {ph.delivery_currency}</span>
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground/40">No delivery</div>
-          )}
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="px-2.5 py-1 rounded-sm text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm"
-          >
-            View medicines
-          </button>
+          {/* Hours info */}
+          <p className="mt-2 text-sm text-muted-foreground">
+            {todayHours && !isClosedToday
+              ? `Hours today: ${todayHours.open_time?.slice(0, 5)} – ${todayHours.close_time?.slice(0, 5)}`
+              : "Closed today"}
+          </p>
+
+          {/* Actions */}
+          <div className="mt-4 pt-4 border-t border-border/40 flex items-center gap-2 mt-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => { e.stopPropagation(); setDrawerOpen(true); }}
+              className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+            >
+              <Pill className="h-3.5 w-3.5 mr-1.5" />
+              Inventory
+            </Button>
+            <Button
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); setDrawerOpen(true); }}
+              className="h-8 px-3 text-xs font-bold rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
+            >
+              Order Now
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       <PharmacyDrawer pharmacy={ph} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </>
@@ -306,7 +337,7 @@ function PharmacyListItem({ pharmacy: ph }: { pharmacy: Pharmacy }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1">
-            <h3 className="text-xs font-semibold text-foreground truncate">{ph.name}</h3>
+            <h3 className="text-sm font-semibold text-foreground truncate">{ph.name}</h3>
             {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
           </div>
           <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground/70">
@@ -548,153 +579,73 @@ const PatientPharmacy = () => {
   const open24hCount = pharmacies.filter((p) => p.is_open_24h).length;
   const lastPage = pharmaciesResp?.last_page ?? (pharmaciesResp ? Math.ceil(pharmaciesResp.total / pharmaciesResp.per_page) : 1);
 
-  // ── Sidebar content ─────────────────────────────────────────────────────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-4 h-4 text-primary" />
-          </div>
-          <span className="text-xs font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-            <X className="w-4 h-4" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Search */}
-        <FilterSection title="Search">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Name, city, or address…"
-              value={filters.q}
-              onChange={(e) => set("q", e.target.value)}
-              className="w-full pl-7 pr-7 py-1.5 text-xs bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            />
-            {filters.q && (
-              <button
-                onClick={() => set("q", "")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </FilterSection>
-
-        {/* Province */}
-        <FilterSection title="Province">
-          <Select
-            value={filters.province || "all"}
-            onValueChange={(v) => {
-              const province = v === "all" ? "" : v;
-              set("province", province);
-              set("city", "");
-              if (province) setNearbyCoords(null);
-            }}
-          >
-            <SelectTrigger className="h-8 text-xs rounded-sm border-border/60">
-              <SelectValue placeholder="All provinces" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">All provinces</SelectItem>
-              {RWANDA_REGIONS.map((r) => (
-                <SelectItem key={r.province} value={r.province} className="text-xs">
-                  {r.province}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterSection>
-
-        {/* City */}
-        <FilterSection title="City">
-          <Select
-            value={filters.city || "all"}
-            onValueChange={(v) => {
-              const city = v === "all" ? "" : v;
-              set("city", city);
-              if (city) setNearbyCoords(null);
-            }}
-          >
-            <SelectTrigger className="h-8 text-xs rounded-sm border-border/60">
-              <SelectValue placeholder={filters.province ? "Select city" : "All cities"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">
-                {filters.province ? "All cities in province" : "All cities"}
-              </SelectItem>
-              {availableCities.map((city) => (
-                <SelectItem key={city} value={city} className="text-xs">{city}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterSection>
-
-        {/* Nearby */}
-        <FilterSection title="Nearby">
-          {nearbyCoords ? (
-            <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
-                <Navigation className="h-4 w-4 shrink-0" />
-                Using your location
-              </div>
-              <button
-                className="h-7 w-7 rounded-sm border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                onClick={handleClearLocation}
-              >
-                <X className="h-4 w-4" />
-              </button>
+  const filterFields = useMemo(() => [
+    { type: "search" as const, key: "q", label: "Search", value: filters.q, onChange: (v: string) => set("q", v) },
+    { type: "select" as const, key: "province", label: "Province", value: filters.province || "all", options: [{ value: "all", label: "All provinces" }, ...RWANDA_REGIONS.map(r => ({ value: r.province, label: r.province }))], onChange: (v: string) => { const province = v === "all" ? "" : v; set("province", province); set("city", ""); if (province) setNearbyCoords(null); } },
+    { type: "select" as const, key: "city", label: "City", value: filters.city || "all", options: [{ value: "all", label: filters.province ? "All cities in province" : "All cities" }, ...availableCities.map(c => ({ value: c, label: c }))], onChange: (v: string) => { const city = v === "all" ? "" : v; set("city", city); if (city) setNearbyCoords(null); } },
+    {
+      type: "custom" as const,
+      key: "location",
+      label: "Location",
+      render: () => (
+        nearbyCoords ? (
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 flex items-center justify-center gap-1.5 h-[28px] rounded-sm bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium">
+              <Navigation className="h-3 w-3 shrink-0" />
+              Using location
             </div>
-          ) : (
-            <ToggleButton
-              value={false}
-              onChange={() => handleUseMyLocation()}
-              label={locLoading ? "Detecting…" : "Use my location"}
-              icon={locLoading ? Loader2 : Navigation}
-            />
-          )}
-        </FilterSection>
-
-        {/* Availability */}
-        <FilterSection title="Availability">
-          <div className="flex flex-col gap-1">
-            <ToggleButton
-              value={filters.offers_delivery}
-              onChange={(v) => set("offers_delivery", v)}
-              label="Offers delivery"
-              icon={Truck}
-            />
-            <ToggleButton
-              value={filters.offers_pickup}
-              onChange={(v) => set("offers_pickup", v)}
-              label="Offers pickup"
-              icon={MapPin}
-            />
-            <ToggleButton
-              value={filters.is_open_24h}
-              onChange={(v) => set("is_open_24h", v)}
-              label="Open 24h"
-              icon={Clock}
-            />
-            <ToggleButton
-              value={filters.open_now}
-              onChange={(v) => set("open_now", v)}
-              label="Open now"
-              icon={Wifi}
-            />
+            <button
+              className="h-[28px] w-[28px] rounded-sm border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              onClick={handleClearLocation}
+            >
+              <X className="h-3 w-3" />
+            </button>
           </div>
-        </FilterSection>
-      </div>
-    </>
-  );
+        ) : (
+          <button
+            onClick={handleUseMyLocation}
+            className="w-full mt-1 h-[28px] rounded-sm text-[11px] border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30 transition-all duration-200 flex items-center justify-center gap-1.5"
+          >
+            {locLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
+            {locLoading ? "Detecting…" : "Use my location"}
+          </button>
+        )
+      )
+    },
+    {
+      type: "custom" as const,
+      key: "availability",
+      label: "Availability",
+      render: () => (
+        <div className="flex flex-wrap gap-1 mt-1">
+          <button
+            onClick={() => set("offers_delivery", !filters.offers_delivery)}
+            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.offers_delivery ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+          >
+            <Truck className="w-3 h-3" /> Delivery
+          </button>
+          <button
+            onClick={() => set("offers_pickup", !filters.offers_pickup)}
+            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.offers_pickup ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+          >
+            <MapPin className="w-3 h-3" /> Pickup
+          </button>
+          <button
+            onClick={() => set("is_open_24h", !filters.is_open_24h)}
+            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.is_open_24h ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+          >
+            <Clock className="w-3 h-3" /> 24h
+          </button>
+          <button
+            onClick={() => set("open_now", !filters.open_now)}
+            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.open_now ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+          >
+            <Wifi className="w-3 h-3" /> Open Now
+          </button>
+        </div>
+      )
+    }
+  ], [filters, availableCities, nearbyCoords, locLoading, handleClearLocation, handleUseMyLocation, set]);
 
   return (
     <DashboardLayout role="patient">
@@ -705,142 +656,102 @@ const PatientPharmacy = () => {
           actions={<PharmacyCart variant="trigger" />}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden lg:flex lg:flex-col w-52 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3, xl: 5 }}
+        />
 
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
+        {/* ── Results ── */}
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 lg:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <p className="text-[11px] text-muted-foreground">
+                {isLoading ? (
+                  <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
+                ) : (
+                  <>
+                    <span className="font-bold text-foreground">{pharmacies.length}</span>{" "}
+                    {pharmacies.length === 1 ? "pharmacy" : "pharmacies"} found
+                    {searchQ && ` for "${searchQ}"`}
+                    {hasActiveFilters && (
+                      <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors">
+                        Reset
+                      </button>
+                    )}
+                  </>
+                )}
+              </p>
+
+              {/* Live stats */}
+              {!isLoading && deliveryCount > 0 && (
+                <span className="hidden lg:flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+                  <Truck className="w-3.5 h-3.5" />
+                  {deliveryCount} with delivery
+                </span>
+              )}
+              {!isLoading && open24hCount > 0 && (
+                <span className="hidden lg:flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+                  <Clock className="w-3.5 h-3.5" />
+                  {open24hCount} open 24h
+                </span>
+              )}
             </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold transition-all duration-200 shadow-sm"
+
+            <div className="flex items-center gap-2">
+              <select
+                value={filters.sort}
+                onChange={(e) => set("sort", e.target.value as SortOption)}
+                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
-                Show {pharmacies.length} {pharmacies.length === 1 ? "pharmacy" : "pharmacies"}
-              </button>
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+
+              {/* View toggle */}
+              <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
+                {(["grid", "list"] as const).map((v, i) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    aria-label={`${v} view`}
+                    className={cn(
+                      "px-2.5 py-1.5 transition-all duration-200",
+                      i > 0 && "border-l border-border/60",
+                      view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                    )}
+                  >
+                    {v === "grid" ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                        <rect x="14" y="14" width="7" height="7" rx="1" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* ── Results ── */}
-          <main className="flex-1 overflow-y-auto flex flex-col">
-
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-muted-foreground">
-                  {isLoading ? (
-                    <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
-                  ) : (
-                    <>
-                      <span className="font-bold text-foreground">{pharmacies.length}</span>{" "}
-                      {pharmacies.length === 1 ? "pharmacy" : "pharmacies"} found
-                      {searchQ && ` for "${searchQ}"`}
-                      {hasActiveFilters && (
-                        <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-xs font-medium transition-colors">
-                          Reset
-                        </button>
-                      )}
-                    </>
-                  )}
-                </p>
-
-                {/* Live stats */}
-                {!isLoading && deliveryCount > 0 && (
-                  <span className="hidden lg:flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
-                    <Truck className="w-4 h-4" />
-                    {deliveryCount} with delivery
-                  </span>
-                )}
-                {!isLoading && open24hCount > 0 && (
-                  <span className="hidden lg:flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-sm">
-                    <Clock className="w-4 h-4" />
-                    {open24hCount} open 24h
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Sort */}
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-xs bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "lg:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-xs transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
-                </button>
-
-                {/* View toggle */}
-                <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
-                  {(["grid", "list"] as const).map((v, i) => (
-                    <button
-                      key={v}
-                      onClick={() => setView(v)}
-                      aria-label={`${v} view`}
-                      className={cn(
-                        "px-2.5 py-1.5 transition-all duration-200",
-                        i > 0 && "border-l border-border/60",
-                        view === v ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                      )}
-                    >
-                      {v === "grid" ? (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                          <rect x="3" y="3" width="7" height="7" rx="1" />
-                          <rect x="14" y="3" width="7" height="7" rx="1" />
-                          <rect x="3" y="14" width="7" height="7" rx="1" />
-                          <rect x="14" y="14" width="7" height="7" rx="1" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                          <line x1="3" y1="6" x2="21" y2="6" />
-                          <line x1="3" y1="12" x2="21" y2="12" />
-                          <line x1="3" y1="18" x2="21" y2="18" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
 
             {/* Content */}
             <div className="p-4 flex-1">
@@ -899,7 +810,6 @@ const PatientPharmacy = () => {
               />
             )}
           </main>
-        </div>
       </div>
     </DashboardLayout>
   );
