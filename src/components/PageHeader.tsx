@@ -430,13 +430,6 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                           onClick={() => setProfileOpen(false)}
                         />
                         <PopItem
-                          icon={Settings}
-                          label={t("header.settings", "Settings")}
-                          description="Preferences & security"
-                          to={userRole ? `${dashboardPath(userRole)}/settings` : "#"}
-                          onClick={() => setProfileOpen(false)}
-                        />
-                        <PopItem
                           icon={HelpCircle}
                           label={t("header.help", "Help & Support")}
                           description="FAQs and contact"

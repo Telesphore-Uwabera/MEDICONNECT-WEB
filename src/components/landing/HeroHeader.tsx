@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,6 +42,15 @@ export function HeroHeader({
     useState<SpecializationValue>({ specialization: null, fee: null });
   const { data: user } = useMe();
   const logout = useLogout();
+
+  // ── Sticky scroll state ──────────────────────────────────────────────────
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navLinks = [
     { href: "#features", label: t("pages.landing.what_we_do") },
@@ -113,8 +122,16 @@ export function HeroHeader({
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <header ref={menuRef} className="relative z-10">
-      {/* ── Navbar row — reduced vertical padding ── */}
+    <header
+      ref={menuRef}
+      className={cn(
+        "top-0 left-0 right-0 z-50 transition-all duration-300",
+        scrolled
+          ? "fixed bg-background/90 backdrop-blur-md border-b border-border shadow-sm"
+          : "relative bg-transparent",
+      )}
+    >
+      {/* ── Navbar row ── */}
       <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
 
         {/* Logo */}
@@ -152,15 +169,13 @@ export function HeroHeader({
           })}
         </nav>
 
-        {/* Specialization search — desktop, taller trigger, wider dropdown */}
+        {/* Specialization search — desktop */}
         <div
           className="hidden lg:block lg:flex-1 lg:max-w-[260px] xl:max-w-[320px]"
           style={{
-            /* Make Radix / custom dropdown wider than the trigger */
             ["--spec-dropdown-width" as string]: "420px",
           }}
         >
-          {/* Wrapper that forces the trigger height and widens the floating content */}
           <div className="[&_button]:!h-10 [&_input]:!h-10 [&_[role=combobox]]:!h-10 [&_[data-radix-popper-content-wrapper]]:!min-w-[420px] [&_[data-radix-select-content]]:!min-w-[420px] [&_.spec-dropdown]:!min-w-[420px]">
             <SpecializationSelect
               value={selectedSpecialization}
@@ -263,7 +278,7 @@ export function HeroHeader({
           >
             <div className="max-h-[calc(100vh-56px)] overflow-y-auto">
 
-              {/* Specialization search — taller + wider dropdown */}
+              {/* Specialization search */}
               <div className="px-4 sm:px-6 pt-3 pb-1 [&_button]:!h-10 [&_input]:!h-10 [&_[role=combobox]]:!h-10 [&_[data-radix-popper-content-wrapper]]:!min-w-[min(420px,90vw)] [&_[data-radix-select-content]]:!min-w-[min(420px,90vw)] [&_.spec-dropdown]:!min-w-[min(420px,90vw)]">
                 <SpecializationSelect
                   value={selectedSpecialization}

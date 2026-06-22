@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -88,6 +94,7 @@ import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
 import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
+import AdminOurTeam from "./pages/admin/AdminOurTeam.tsx";
 
 /* ─────────────────────────────────────────────────────────────────
    RequireAuth
@@ -126,7 +133,6 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
       {/* Sheet — bottom on mobile, centered on sm+ */}
       <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center px-4 pb-4 sm:pb-0">
         <div className="w-full sm:w-[420px] bg-card border border-border/60 rounded-t-[16px] sm:rounded-[12px] shadow-2xl shadow-black/30 overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
-
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
             <div className="flex items-center gap-2.5">
@@ -149,8 +155,8 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
           {/* Body */}
           <div className="px-5 py-4">
             <p className="text-[12px] text-muted-foreground leading-relaxed">
-              This page requires an account. Sign in or create a free account
-              to continue — or go back and keep browsing without signing in.
+              This page requires an account. Sign in or create a free account to
+              continue — or go back and keep browsing without signing in.
             </p>
           </div>
 
@@ -170,7 +176,6 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
               Go back
             </button>
           </div>
-
         </div>
       </div>
     </>
@@ -196,91 +201,523 @@ const App = () => (
           <AppointmentCompletionGate />
           <GlobalInstantPill />
           <Routes>
-
             {/* ── Public ──────────────────────────────────────── */}
-            <Route path="/"                      element={<Index />} />
-            <Route path="/auth"                  element={<Auth />} />
-            <Route path="/onboarding/:role"      element={<Onboarding />} />
-            <Route path="/consultation/:roomName" element={<ConsultationRoomPage />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding/:role" element={<Onboarding />} />
+            <Route
+              path="/consultation/:roomName"
+              element={<ConsultationRoomPage />}
+            />
 
             {/* ── Patient: PUBLIC (no login needed) ───────────── */}
-            <Route path="/patient/search-doctors"    element={<PatientDoctors />} />
-            <Route path="/patient/search-facilities" element={<PatientHospitals />} />
-            <Route path="/patient/search-pharmacy"   element={<PatientPharmacy />} />
+            <Route
+              path="/patient/search-doctors"
+              element={<PatientDoctors />}
+            />
+            <Route
+              path="/patient/search-facilities"
+              element={<PatientHospitals />}
+            />
+            <Route
+              path="/patient/search-pharmacy"
+              element={<PatientPharmacy />}
+            />
 
             {/* ── Patient: PROTECTED ──────────────────────────── */}
-            <Route path="/patient"                    element={<RequireAuth><PatientOverview /></RequireAuth>} />
-            <Route path="/patient/instant"            element={<RequireAuth><PatientInstant /></RequireAuth>} />
-            <Route path="/patient/appointments"       element={<RequireAuth><PatientAppointments /></RequireAuth>} />
-            <Route path="/patient/medical-records"    element={<RequireAuth><PatientMedicalRecords /></RequireAuth>} />
-            <Route path="/patient/prescriptions"      element={<RequireAuth><PatientPrescriptions /></RequireAuth>} />
-            <Route path="/patient/fitness-certificates" element={<RequireAuth><PatientFitnessCertificates /></RequireAuth>} />
-            <Route path="/patient/profile"            element={<RequireAuth><PatientProfile /></RequireAuth>} />
-            <Route path="/patient/medical-info"       element={<RequireAuth><MedicalInfo /></RequireAuth>} />
-            <Route path="/patient/insurance"          element={<RequireAuth><PatientInsurence /></RequireAuth>} />
-            <Route path="/patient/service-bookings"   element={<RequireAuth><ServiceBookings /></RequireAuth>} />
-            <Route path="/patient/my-reviews"         element={<RequireAuth><MyReviews /></RequireAuth>} />
-            <Route path="/patient/settings"           element={<RequireAuth><PatientSettings /></RequireAuth>} />
-            <Route path="/patient/pharmacy/orders"    element={<RequireAuth><Orders /></RequireAuth>} />
+            <Route
+              path="/patient"
+              element={
+                <RequireAuth>
+                  <PatientOverview />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/instant"
+              element={
+                <RequireAuth>
+                  <PatientInstant />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/appointments"
+              element={
+                <RequireAuth>
+                  <PatientAppointments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/prescriptions"
+              element={
+                <RequireAuth>
+                  <PatientPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/fitness-certificates"
+              element={
+                <RequireAuth>
+                  <PatientFitnessCertificates />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/profile"
+              element={
+                <RequireAuth>
+                  <PatientProfile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/medical-info"
+              element={
+                <RequireAuth>
+                  <MedicalInfo />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/insurance"
+              element={
+                <RequireAuth>
+                  <PatientInsurence />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/service-bookings"
+              element={
+                <RequireAuth>
+                  <ServiceBookings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/my-reviews"
+              element={
+                <RequireAuth>
+                  <MyReviews />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/settings"
+              element={
+                <RequireAuth>
+                  <PatientSettings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/patient/pharmacy/orders"
+              element={
+                <RequireAuth>
+                  <Orders />
+                </RequireAuth>
+              }
+            />
 
             {/* ── Doctor: PROTECTED ───────────────────────────── */}
-            <Route path="/doctor"                     element={<RequireAuth><DoctorOverview /></RequireAuth>} />
-            <Route path="/doctor/availability"        element={<RequireAuth><DoctorAvailability /></RequireAuth>} />
-            <Route path="/doctor/appointments"        element={<RequireAuth><DoctorAppointments /></RequireAuth>} />
-            <Route path="/doctor/patients"            element={<RequireAuth><DoctorPatients /></RequireAuth>} />
-            <Route path="/doctor/prescriptions"       element={<RequireAuth><DoctorPrescriptions /></RequireAuth>} />
-            <Route path="/doctor/fitness-certificates" element={<RequireAuth><DoctorFitnessCertificates /></RequireAuth>} />
-            <Route path="/doctor/profile"             element={<RequireAuth><DoctorProfile /></RequireAuth>} />
-            <Route path="/doctor/referrals"           element={<RequireAuth><MyReferrals /></RequireAuth>} />
-            <Route path="/doctor/settings"            element={<RequireAuth><DoctorSettings /></RequireAuth>} />
+            <Route
+              path="/doctor"
+              element={
+                <RequireAuth>
+                  <DoctorOverview />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/availability"
+              element={
+                <RequireAuth>
+                  <DoctorAvailability />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/appointments"
+              element={
+                <RequireAuth>
+                  <DoctorAppointments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/patients"
+              element={
+                <RequireAuth>
+                  <DoctorPatients />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/prescriptions"
+              element={
+                <RequireAuth>
+                  <DoctorPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/fitness-certificates"
+              element={
+                <RequireAuth>
+                  <DoctorFitnessCertificates />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/profile"
+              element={
+                <RequireAuth>
+                  <DoctorProfile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/referrals"
+              element={
+                <RequireAuth>
+                  <MyReferrals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/settings"
+              element={
+                <RequireAuth>
+                  <DoctorSettings />
+                </RequireAuth>
+              }
+            />
 
             {/* ── Hospital: PROTECTED ─────────────────────────── */}
-            <Route path="/hospital"                   element={<RequireAuth><HospitalAnalytics /></RequireAuth>} />
-            <Route path="/hospital/appointments"      element={<RequireAuth><HospitalAppointments /></RequireAuth>} />
-            <Route path="/hospital/doctors"           element={<RequireAuth><HospitalDoctors /></RequireAuth>} />
-            <Route path="/hospital/departments"       element={<RequireAuth><HospitalDepartments /></RequireAuth>} />
-            <Route path="/hospital/schedule"          element={<RequireAuth><HospitalSchedule /></RequireAuth>} />
-            <Route path="/hospital/prescriptions"     element={<RequireAuth><HospitalPrescriptions /></RequireAuth>} />
-            <Route path="/hospital/profile"           element={<RequireAuth><HospitalProfile /></RequireAuth>} />
-            <Route path="/hospital/insurances"        element={<RequireAuth><HospitalInsurances /></RequireAuth>} />
-            <Route path="/hospital/service-bookings"  element={<RequireAuth><HospitalServiceBookings /></RequireAuth>} />
-            <Route path="/hospital/settings"          element={<RequireAuth><HospitalSettings /></RequireAuth>} />
+            <Route
+              path="/hospital"
+              element={
+                <RequireAuth>
+                  <HospitalAnalytics />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/appointments"
+              element={
+                <RequireAuth>
+                  <HospitalAppointments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/doctors"
+              element={
+                <RequireAuth>
+                  <HospitalDoctors />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/departments"
+              element={
+                <RequireAuth>
+                  <HospitalDepartments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/schedule"
+              element={
+                <RequireAuth>
+                  <HospitalSchedule />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/prescriptions"
+              element={
+                <RequireAuth>
+                  <HospitalPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/profile"
+              element={
+                <RequireAuth>
+                  <HospitalProfile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/insurances"
+              element={
+                <RequireAuth>
+                  <HospitalInsurances />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/service-bookings"
+              element={
+                <RequireAuth>
+                  <HospitalServiceBookings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/hospital/settings"
+              element={
+                <RequireAuth>
+                  <HospitalSettings />
+                </RequireAuth>
+              }
+            />
 
             {/* ── Pharmacy: PROTECTED ─────────────────────────── */}
-            <Route path="/pharmacy/overview"          element={<RequireAuth><PharmacyOverview /></RequireAuth>} />
-            <Route path="/pharmacy/orders"            element={<RequireAuth><PharmacyOrders /></RequireAuth>} />
-            <Route path="/pharmacy/inventory"         element={<RequireAuth><PharmacyInventory /></RequireAuth>} />
-            <Route path="/pharmacy/prescriptions"     element={<RequireAuth><PharmacyPrescriptions /></RequireAuth>} />
-            <Route path="/pharmacy/profile"           element={<RequireAuth><PharmacyProfile /></RequireAuth>} />
-            <Route path="/pharmacy/categories"        element={<RequireAuth><PharmacyCategories /></RequireAuth>} />
-            <Route path="/pharmacy/deliveries"        element={<RequireAuth><PharmacyDeliveries /></RequireAuth>} />
-            <Route path="/pharmacy/settings"          element={<RequireAuth><PharmacySettings /></RequireAuth>} />
-            <Route path="/pharmacy/restock-requests"  element={<RequireAuth><RestockRequests /></RequireAuth>} />
+            <Route
+              path="/pharmacy/overview"
+              element={
+                <RequireAuth>
+                  <PharmacyOverview />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/orders"
+              element={
+                <RequireAuth>
+                  <PharmacyOrders />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/inventory"
+              element={
+                <RequireAuth>
+                  <PharmacyInventory />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/prescriptions"
+              element={
+                <RequireAuth>
+                  <PharmacyPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/profile"
+              element={
+                <RequireAuth>
+                  <PharmacyProfile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/categories"
+              element={
+                <RequireAuth>
+                  <PharmacyCategories />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/deliveries"
+              element={
+                <RequireAuth>
+                  <PharmacyDeliveries />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/settings"
+              element={
+                <RequireAuth>
+                  <PharmacySettings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/pharmacy/restock-requests"
+              element={
+                <RequireAuth>
+                  <RestockRequests />
+                </RequireAuth>
+              }
+            />
 
             {/* ── Admin: PROTECTED ────────────────────────────── */}
-            <Route path="/admin"                            element={<RequireAuth><AdminOverview /></RequireAuth>} />
-            <Route path="/admin/approvals"                  element={<RequireAuth><AdminApprovals /></RequireAuth>} />
-            <Route path="/admin/users"                      element={<RequireAuth><AdminUsers /></RequireAuth>} />
-            <Route path="/admin/analytics"                  element={<RequireAuth><AdminAnalytics /></RequireAuth>} />
-            <Route path="/admin/moderation"                 element={<RequireAuth><AdminModeration /></RequireAuth>} />
-            <Route path="/admin/profile"                    element={<RequireAuth><AdminProfile /></RequireAuth>} />
-            <Route path="/admin/settings"                   element={<RequireAuth><AdminSettings /></RequireAuth>} />
-            <Route path="/admin/reviews"                    element={<RequireAuth><AdminReviews /></RequireAuth>} />
-            <Route path="/admin/service-pricing"            element={<RequireAuth><ManageServicePricing /></RequireAuth>} />
-            <Route path="/admin/manage-doctors"             element={<RequireAuth><ManageDoctors /></RequireAuth>} />
-            <Route path="/admin/manage-patients"            element={<RequireAuth><ManagePatients /></RequireAuth>} />
-            <Route path="/admin/manage-facilities"          element={<RequireAuth><ManageHospitals /></RequireAuth>} />
-            <Route path="/admin/manage-pharmacies"          element={<RequireAuth><ManagePharmacies /></RequireAuth>} />
-            <Route path="/admin/manage-appointments"        element={<RequireAuth><ManageAppointments /></RequireAuth>} />
-            <Route path="/admin/manage-insurances"          element={<RequireAuth><ManageInsurances /></RequireAuth>} />
-            <Route path="/admin/manage-instant-doctors"     element={<RequireAuth><ManageInstantDoctors /></RequireAuth>} />
-            <Route path="/admin/manage-specializations"     element={<RequireAuth><ManageSpecializations /></RequireAuth>} />
-            <Route path="/admin/manage-checklist-questions" element={<RequireAuth><ChecklistQuestions /></RequireAuth>} />
-            <Route path="/admin/manage-wallet"              element={<RequireAuth><ManageAdminWallet /></RequireAuth>} />
+            <Route
+              path="/admin"
+              element={
+                <RequireAuth>
+                  <AdminOverview />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/approvals"
+              element={
+                <RequireAuth>
+                  <AdminApprovals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <RequireAuth>
+                  <AdminUsers />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/analytics"
+              element={
+                <RequireAuth>
+                  <AdminAnalytics />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/moderation"
+              element={
+                <RequireAuth>
+                  <AdminModeration />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/profile"
+              element={
+                <RequireAuth>
+                  <AdminProfile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <RequireAuth>
+                  <AdminSettings />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/reviews"
+              element={
+                <RequireAuth>
+                  <AdminReviews />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/service-pricing"
+              element={
+                <RequireAuth>
+                  <ManageServicePricing />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-doctors"
+              element={
+                <RequireAuth>
+                  <ManageDoctors />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-patients"
+              element={
+                <RequireAuth>
+                  <ManagePatients />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-facilities"
+              element={
+                <RequireAuth>
+                  <ManageHospitals />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-pharmacies"
+              element={
+                <RequireAuth>
+                  <ManagePharmacies />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-appointments"
+              element={
+                <RequireAuth>
+                  <ManageAppointments />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-insurances"
+              element={
+                <RequireAuth>
+                  <ManageInsurances />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-instant-doctors"
+              element={
+                <RequireAuth>
+                  <ManageInstantDoctors />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-specializations"
+              element={
+                <RequireAuth>
+                  <ManageSpecializations />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/manage-checklist-questions"
+              element={
+                <RequireAuth>
+                  <ChecklistQuestions />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/admin/manage-wallet"
+              element={
+                <RequireAuth>
+                  <ManageAdminWallet />
+                </RequireAuth>
+              }
+            />
+
+            <Route
+              path="/admin/our-team"
+              element={
+                <RequireAuth>
+                  <AdminOurTeam />
+                </RequireAuth>
+              }
+            />
 
             {/* ── 404 ─────────────────────────────────────────── */}
             <Route path="*" element={<NotFound />} />
-
           </Routes>
         </CallProvider>
       </BrowserRouter>
