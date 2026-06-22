@@ -33,13 +33,14 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
-import { useGetSearchHospitals, useInfiniteSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
-
+import {
+  useGetSearchHospitals,
+  useInfiniteSearchHospitals,
+} from "@/hooks/patient/use-patient-search-hospital";
 
 // NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
 // If your hook file doesn't currently export ApiDoctor, add `export` to its interface
 // declaration there — see the note at the bottom of this file.
-
 
 import {
   useGetSearchDoctors,
@@ -57,7 +58,6 @@ import OurTeam from "@/components/landing/Ourteam";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
-
 
 interface DoctorAvailabilityEvent {
   doctor_id: number;
@@ -199,7 +199,7 @@ const Index = () => {
 
       if (node) observer.current.observe(node);
     },
-    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage]
+    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage],
   );
 
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
@@ -233,7 +233,12 @@ const Index = () => {
 
       if (node) observerHospitals.current.observe(node);
     },
-    [hospitalsLoading, isFetchingNextHospitalsPage, hasNextHospitalsPage, fetchNextHospitalsPage]
+    [
+      hospitalsLoading,
+      isFetchingNextHospitalsPage,
+      hasNextHospitalsPage,
+      fetchNextHospitalsPage,
+    ],
   );
 
   // Filter to available instant doctors, max 4 slides
@@ -365,17 +370,17 @@ const Index = () => {
 
   return (
     <div className="min-h-dvh bg-background text-md">
+      <div className="sticky top-0 z-50">
       <TopBar />
-
- {/* <HeroHeader
-          mobileMenuOpen={mobileMenuOpen}
-          setMobileMenuOpen={setMobileMenuOpen}
-        /> */}
+      <HeroHeader
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
+    </div>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-hero">
-        {/* <HeroSection /> */}
-        <HeroCta/>
+      <section className="relative bg-gradient-hero">
+        <HeroSection />
       </section>
 
       {/* ── Available Doctors Grid ── */}
@@ -472,56 +477,56 @@ const Index = () => {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {doctorsLoading
               ? Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 w-2/3 rounded bg-muted" />
-                      <div className="h-2.5 w-1/2 rounded bg-muted" />
-                      <div className="h-2 w-1/3 rounded bg-muted" />
-                    </div>
-                    <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
-                  </div>
-                  <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
-                    {Array.from({ length: 3 }).map((_, j) => (
-                      <div
-                        key={j}
-                        className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-muted" />
-                        <div className="h-2.5 w-8 rounded bg-muted" />
-                        <div className="h-2 w-6 rounded bg-muted" />
+                  <div
+                    key={i}
+                    className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-2/3 rounded bg-muted" />
+                        <div className="h-2.5 w-1/2 rounded bg-muted" />
+                        <div className="h-2 w-1/3 rounded bg-muted" />
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 rounded-sm bg-muted" />
-                    <div className="h-3 w-16 rounded bg-muted" />
-                  </div>
-                  <div className="border-t border-border" />
-                  <div className="flex items-center justify-between">
-                    <div className="h-3 w-28 rounded bg-muted" />
-                    <div className="flex gap-1.5">
-                      <div className="h-6 w-12 rounded-sm bg-muted" />
-                      <div className="h-6 w-16 rounded-sm bg-muted" />
+                      <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
+                    </div>
+                    <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                      {Array.from({ length: 3 }).map((_, j) => (
+                        <div
+                          key={j}
+                          className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
+                        >
+                          <div className="h-2 w-2 rounded-full bg-muted" />
+                          <div className="h-2.5 w-8 rounded bg-muted" />
+                          <div className="h-2 w-6 rounded bg-muted" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-24 rounded-sm bg-muted" />
+                      <div className="h-3 w-16 rounded bg-muted" />
+                    </div>
+                    <div className="border-t border-border" />
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-28 rounded bg-muted" />
+                      <div className="flex gap-1.5">
+                        <div className="h-6 w-12 rounded-sm bg-muted" />
+                        <div className="h-6 w-16 rounded-sm bg-muted" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))
               : allDoctors.map((d, i) => {
-                if (allDoctors.length === i + 1) {
-                  return (
-                    <div ref={lastDoctorElementRef} key={d.id}>
-                      <DoctorCard doctor={d} />
-                    </div>
-                  );
-                } else {
-                  return <DoctorCard key={d.id} doctor={d} />;
-                }
-              })}
+                  if (allDoctors.length === i + 1) {
+                    return (
+                      <div ref={lastDoctorElementRef} key={d.id}>
+                        <DoctorCard doctor={d} />
+                      </div>
+                    );
+                  } else {
+                    return <DoctorCard key={d.id} doctor={d} />;
+                  }
+                })}
             {isFetchingNextPage &&
               Array.from({ length: 3 }).map((_, i) => (
                 <div
@@ -622,57 +627,59 @@ const Index = () => {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {hospitalsLoading
               ? Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-sm border border-border bg-card overflow-hidden animate-pulse"
-                >
-                  <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
-                    <div className="h-2.5 w-16 rounded bg-muted" />
-                    <div className="h-2.5 w-12 rounded bg-muted" />
-                  </div>
-                  <div className="px-3.5 pt-3 pb-3 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-2/3 rounded bg-muted" />
-                        <div className="h-2.5 w-1/2 rounded bg-muted" />
+                  <div
+                    key={i}
+                    className="rounded-sm border border-border bg-card overflow-hidden animate-pulse"
+                  >
+                    <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
+                      <div className="h-2.5 w-16 rounded bg-muted" />
+                      <div className="h-2.5 w-12 rounded bg-muted" />
+                    </div>
+                    <div className="px-3.5 pt-3 pb-3 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3 w-2/3 rounded bg-muted" />
+                          <div className="h-2.5 w-1/2 rounded bg-muted" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                        {Array.from({ length: 3 }).map((_, j) => (
+                          <div
+                            key={j}
+                            className="flex flex-col items-center py-2 px-1 bg-muted/30 gap-1"
+                          >
+                            <div className="h-2 w-2 rounded-full bg-muted" />
+                            <div className="h-2.5 w-10 rounded bg-muted" />
+                            <div className="h-2 w-6 rounded bg-muted" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-1">
+                        <div className="h-4 w-14 rounded-sm bg-muted" />
+                        <div className="h-4 w-18 rounded-sm bg-muted" />
+                      </div>
+                      <div className="h-2.5 w-28 rounded bg-muted" />
+                      <div className="flex gap-2">
+                        <div className="h-7 flex-1 rounded-sm bg-muted" />
+                        <div className="h-7 flex-1 rounded-sm bg-muted" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
-                      {Array.from({ length: 3 }).map((_, j) => (
-                        <div
-                          key={j}
-                          className="flex flex-col items-center py-2 px-1 bg-muted/30 gap-1"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-muted" />
-                          <div className="h-2.5 w-10 rounded bg-muted" />
-                          <div className="h-2 w-6 rounded bg-muted" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <div className="h-4 w-14 rounded-sm bg-muted" />
-                      <div className="h-4 w-18 rounded-sm bg-muted" />
-                    </div>
-                    <div className="h-2.5 w-28 rounded bg-muted" />
-                    <div className="flex gap-2">
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
-                    </div>
                   </div>
-                </div>
-              ))
+                ))
               : allHospitals.map((hospital, i) => {
-                if (allHospitals.length === i + 1) {
-                  return (
-                    <div ref={lastHospitalElementRef} key={hospital.id}>
-                      <HospitalCard hospital={hospital} />
-                    </div>
-                  );
-                } else {
-                  return <HospitalCard key={hospital.id} hospital={hospital} />;
-                }
-              })}
+                  if (allHospitals.length === i + 1) {
+                    return (
+                      <div ref={lastHospitalElementRef} key={hospital.id}>
+                        <HospitalCard hospital={hospital} />
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <HospitalCard key={hospital.id} hospital={hospital} />
+                    );
+                  }
+                })}
             {isFetchingNextHospitalsPage &&
               Array.from({ length: 3 }).map((_, i) => (
                 <div
