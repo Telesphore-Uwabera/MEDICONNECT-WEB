@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { X, Upload, Loader2, Trash2, ToggleLeft, ToggleRight, Save, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X, Upload, Loader2, Trash2, ToggleLeft, ToggleRight, Save, AlertTriangle, Bold, Italic, List, Link } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +71,78 @@ function TextInput({
   );
 }
 
+// ── Rich text bio editor ──────────────────────────────────────
+
+function RichBioEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef<number | null>(null);
+
+  // Seed inner HTML once when value first arrives (avoid cursor-reset on every keystroke)
+useEffect(() => {
+    if (editorRef.current && value !== undefined) {
+      editorRef.current.innerHTML = value;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // seed once on mount; parent remounts editor per memberId
+
+  const exec = useCallback((command: string, arg?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, arg);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }, [onChange]);
+
+  const handleInput = () => {
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  };
+
+  const toolbarBtn = (onClick: () => void, icon: React.ReactNode, title: string) => (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="w-6 h-6 flex items-center justify-center rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {icon}
+    </button>
+  );
+
+  return (
+    <div className="border border-border/60 rounded-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border/60 bg-secondary/30">
+        {toolbarBtn(() => exec("bold"),   <Bold className="w-3 h-3" />,   "Bold")}
+        {toolbarBtn(() => exec("italic"), <Italic className="w-3 h-3" />, "Italic")}
+        {toolbarBtn(() => exec("insertUnorderedList"), <List className="w-3 h-3" />, "Bullet list")}
+        <div className="w-px h-4 bg-border/60 mx-1" />
+        {toolbarBtn(() => {
+          const url = prompt("Enter URL");
+          if (url) exec("createLink", url);
+        }, <Link className="w-3 h-3" />, "Insert link")}
+      </div>
+      {/* Editable area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        data-placeholder="Write a short bio…"
+        className={cn(
+          "min-h-[120px] max-h-[200px] overflow-y-auto px-3 py-2 text-[12px] text-foreground outline-none",
+          "prose prose-sm max-w-none",
+          "[&_ul]:list-disc [&_ul]:pl-4 [&_a]:text-primary [&_a]:underline",
+          "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground/40",
+        )}
+      />
+    </div>
+  );
+}
+
 // ── Panel ────────────────────────────────────────────────────
 
 interface AdminTeamMemberPanelProps {
@@ -97,6 +169,7 @@ export function AdminTeamMemberPanel({
   const [name,     setName]     = useState("");
   const [title,    setTitle]    = useState("");
   const [joinedAt, setJoinedAt] = useState("");
+  const [bio,      setBio]      = useState("");           // ← NEW
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast]       = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
@@ -108,6 +181,7 @@ export function AdminTeamMemberPanel({
       setName(member.name);
       setTitle(member.title ?? "");
       setJoinedAt(member.joined_at?.slice(0, 10) ?? "");
+      setBio((member as any).bio ?? "");                  // ← NEW
     }
   }, [member]);
 
@@ -140,6 +214,7 @@ export function AdminTeamMemberPanel({
     fd.append("name",      name);
     fd.append("title",     title);
     fd.append("joined_at", joinedAt);
+    fd.append("bio",       bio);                          // ← NEW
     try {
       await updateMutation.mutateAsync(fd);
       showToast("Member updated successfully.");
@@ -182,10 +257,10 @@ export function AdminTeamMemberPanel({
     }
   }
 
-  const isSaving   = updateMutation.isPending;
+  const isSaving    = updateMutation.isPending;
   const isUploading = uploadPhoto.isPending;
-  const isToggling = toggleActive.isPending;
-  const isDeleting = deleteMember.isPending;
+  const isToggling  = toggleActive.isPending;
+  const isDeleting  = deleteMember.isPending;
 
   return (
     <>
@@ -313,6 +388,10 @@ export function AdminTeamMemberPanel({
                     </Field>
                     <Field label="Joined date">
                       <TextInput value={joinedAt} onChange={setJoinedAt} type="date" />
+                    </Field>
+                    {/* ── Bio ── NEW */}
+                  <Field label="Bio">
+                      <RichBioEditor key={memberId} value={bio} onChange={setBio} />
                     </Field>
                   </div>
 

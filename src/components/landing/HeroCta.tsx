@@ -79,7 +79,7 @@ const HeroCta = () => {
                     {t("pages.landing.open_marketplace")}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 truncate">
-                    500+ pharmacies
+                    500+ pharmaciesaa
                   </p>
                 </div>
               </button>

@@ -140,9 +140,9 @@ function MemberModal({
           </span>
 
           {/* Description */}
-          {member.description ? (
+          {member.bio ? (
             <p className="text-[13px] text-muted-foreground leading-relaxed">
-              {member.description}
+              {member.bio}
             </p>
           ) : (
             <p className="text-[13px] text-muted-foreground/40 italic">

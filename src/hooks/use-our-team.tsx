@@ -13,6 +13,7 @@ export interface  ApiTeamMember {
   title: string;
   joined_at: string;
   photo_url: string | null;
+  bio: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
