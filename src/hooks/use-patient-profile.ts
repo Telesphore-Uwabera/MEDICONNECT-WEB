@@ -74,6 +74,7 @@ export function useGetProfile() {
     queryKey: ["patient-profile"],
     queryFn: () =>
       apiFetch<ProfileResponse>(BASE).then((r) => r.patient),
+    retry: false, // 404 means no profile yet
   });
 }
 
@@ -125,6 +126,7 @@ export function useGetMedicalInfo() {
     queryKey: ["patient-medical-info"],
     queryFn: () =>
       apiFetch<MedicalInfoResponse>(`${BASE}/medical`),
+    retry: false, // 404 means no medical info yet
   });
 }
 
@@ -155,6 +157,7 @@ export function useGetInsurance() {
     queryKey: ["patient-insurance"],
     queryFn: () =>
       apiFetch<InsuranceResponse>(`${BASE}/insurance`).then((r) => r.insurance),
+    retry: false, // 404 means no insurance yet
   });
 }
 

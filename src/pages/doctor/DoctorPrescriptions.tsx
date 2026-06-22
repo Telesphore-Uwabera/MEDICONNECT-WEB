@@ -38,6 +38,7 @@ import {
   type PrescriptionListParams,
 } from "@/hooks/doctor/use-doctor-prescriptions";
 import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,54 +150,6 @@ function useDebounced<T>(value: T, delay: number): T {
     return () => clearTimeout(id);
   }, [value, delay]);
   return debounced;
-}
-
-// ─── Sidebar atoms ────────────────────────────────────────────────────────────
-
-function FilterSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="py-5 border-b border-border/60 last:border-b-0">
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/80 mb-3">
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function PillGroup<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { value: T; label: string }[];
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "px-3 py-2 rounded-md text-sm border transition-all duration-200 text-left",
-            value === o.value
-              ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-              : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -497,166 +450,95 @@ const DoctorPrescriptions = () => {
     [issueMutation],
   );
 
-  // ─── Sidebar content ─────────────────────────────────────────────────────
-
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-4 h-4 text-primary" />
-          </div>
-          <span className="text-sm font-semibold text-foreground">
-            Filters
-          </span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Patient / Rx / Diagnosis search */}
-        <FilterSection title="Search">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => set("search", e.target.value)}
-              placeholder="Patient, diagnosis, Rx#…"
-              className="w-full h-10 pl-9 pr-4 text-sm bg-background border border-border/60 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-            />
-            {filters.search && (
-              <button
-                onClick={() => set("search", "")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </FilterSection>
-
-        {/* Status */}
-        <FilterSection title="Status">
-          <PillGroup<PrescriptionStatus | "All">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "All", label: "All statuses" },
-              ...availableStatuses.map((s) => ({
-                value: s,
-                label: localStatusLabel[s] ?? s,
-              })),
-            ]}
-          />
-        </FilterSection>
-
-        {/* Signed */}
-        <FilterSection title="Signature">
-          <PillGroup<"all" | "signed" | "unsigned">
-            value={filters.is_signed}
-            onChange={(v) => set("is_signed", v)}
-            options={[
-              { value: "all", label: "All" },
-              { value: "signed", label: "Signed" },
-              { value: "unsigned", label: "Unsigned" },
-            ]}
-          />
-        </FilterSection>
-
-        {/* Validity */}
-        <FilterSection title="Validity">
-          <PillGroup<"all" | "valid_only" | "expired_only">
-            value={filters.validity}
-            onChange={(v) => set("validity", v)}
-            options={[
-              { value: "all", label: "All" },
-              { value: "valid_only", label: "Valid only" },
-              { value: "expired_only", label: "Expired only" },
-            ]}
-          />
-        </FilterSection>
-
-        {/* Date range */}
-        <FilterSection title="Date range">
-          <div className="space-y-3">
+  // ── FilterFields for FilterBar ───────────────────────────────────────────
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "All", label: "All statuses" },
+        ...availableStatuses.map((s) => ({
+          value: s,
+          label: localStatusLabel[s] ?? s,
+        })),
+      ],
+      onChange: (v: string) => set("status", v as any),
+    },
+    {
+      type: "select" as const,
+      key: "is_signed",
+      label: "Signature",
+      value: filters.is_signed,
+      options: [
+        { value: "all", label: "All" },
+        { value: "signed", label: "Signed" },
+        { value: "unsigned", label: "Unsigned" },
+      ],
+      onChange: (v: string) => set("is_signed", v as any),
+    },
+    {
+      type: "select" as const,
+      key: "validity",
+      label: "Validity",
+      value: filters.validity,
+      options: [
+        { value: "all", label: "All" },
+        { value: "valid_only", label: "Valid only" },
+        { value: "expired_only", label: "Expired only" },
+      ],
+      onChange: (v: string) => set("validity", v as any),
+    },
+    {
+      type: "custom" as const,
+      key: "date_range",
+      label: "Date range",
+      render: () => (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium mb-1.5 block">
-                From
-              </label>
+              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">From</p>
               <input
                 type="date"
                 value={filters.date_from}
                 onChange={(e) => set("date_from", e.target.value)}
-                className="w-full h-10 px-3 text-sm bg-background border border-border/60 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                className="w-full px-2 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium mb-1.5 block">
-                To
-              </label>
+              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">To</p>
               <input
                 type="date"
                 value={filters.date_to}
                 onChange={(e) => set("date_to", e.target.value)}
-                className="w-full h-10 px-3 text-sm bg-background border border-border/60 rounded-md outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                className="w-full px-2 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"
               />
             </div>
-            {(filters.date_from || filters.date_to) && (
-              <button
-                onClick={() => {
-                  set("date_from", "");
-                  set("date_to", "");
-                }}
-                className="text-xs text-primary hover:underline font-medium mt-1"
-              >
-                Clear dates
-              </button>
-            )}
           </div>
-        </FilterSection>
-
-        {/* Sort */}
-        <FilterSection title="Sort by">
-          <div className="space-y-1.5">
-            <PillGroup<SortBy>
-              value={filters.sort_by}
-              onChange={(v) => set("sort_by", v)}
-              options={[
-                { value: "created_at", label: "Date created" },
-                { value: "valid_until", label: "Valid until" },
-                { value: "status", label: "Status" },
-              ]}
-            />
-            <div className="flex gap-2 mt-2">
-              {(["desc", "asc"] as SortOrder[]).map((o) => (
-                <button
-                  key={o}
-                  onClick={() => set("sort_order", o)}
-                  className={cn(
-                    "flex-1 py-2 rounded-md text-xs border transition-all duration-200 font-medium",
-                    filters.sort_order === o
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  {o === "desc" ? "↓ Newest" : "↑ Oldest"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </FilterSection>
-      </div>
-    </>
-  );
+          {(filters.date_from || filters.date_to) && (
+            <button
+              onClick={() => {
+                set("date_from", "");
+                set("date_to", "");
+              }}
+              className="text-[10px] text-primary hover:text-primary/80 font-medium"
+            >
+              Clear dates
+            </button>
+          )}
+        </div>
+      )
+    },
+    {
+      type: "search" as const,
+      key: "search",
+      label: "Search",
+      value: filters.search,
+      placeholder: "Patient, diagnosis, Rx#…",
+      onChange: (v: string) => set("search", v),
+    }
+  ], [filters, availableStatuses, localStatusLabel, set]);
 
   return (
     <DashboardLayout role="doctor">
@@ -666,49 +548,15 @@ const DoctorPrescriptions = () => {
           subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
-            )}
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 5 }}
           />
-
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full h-10 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow"
-              >
-                Show {data?.total ?? allList.length}{" "}
-                {(data?.total ?? allList.length) === 1
-                  ? "prescription"
-                  : "prescriptions"}
-              </button>
-            </div>
-          </div>
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto">
@@ -764,22 +612,26 @@ const DoctorPrescriptions = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Filters button — mobile only */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
+                <select
+                  value={`${filters.sort_by}|${filters.sort_order}`}
+                  onChange={(e) => {
+                    const [by, order] = e.target.value.split("|");
+                    set("sort_by", by as any);
+                    set("sort_order", order as any);
+                  }}
+                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-2 h-2 rounded-full bg-primary-foreground ml-1" />
-                  )}
-                </button>
+                  <option value="created_at|desc">Latest first</option>
+                  <option value="created_at|asc">Oldest first</option>
+                  <option value="valid_until|asc">Expiring soon</option>
+                  <option value="status|asc">Status A-Z</option>
+                </select>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* View toggle */}
                 <div className="flex rounded-md border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -831,7 +683,7 @@ const DoctorPrescriptions = () => {
                 {/* New prescription CTA */}
                 <Button
                   size="sm"
-                  className="h-10 px-4 text-sm font-semibold rounded-md bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all duration-200"
+                  className="h-10 px-4 text-xs font-semibold rounded-md bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all duration-200"
                   onClick={() => setWizardOpen(true)}
                 >
                   <Plus className="h-4 w-4 sm:mr-2" />

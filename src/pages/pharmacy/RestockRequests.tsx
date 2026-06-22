@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -967,6 +968,7 @@ const RestockRequests = () => {
   const { t } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState<StockRequest | null>(null);
   const [rejectTarget, setRejectTarget] = useState<StockRequest | null>(null);
@@ -1023,79 +1025,22 @@ const RestockRequests = () => {
     setRejectTarget(r);
   };
 
-  // ─── Sidebar ──────────────────────────────────────────────────────────────
-
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<StockRequestStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all", label: "All statuses" },
-              { value: "pending", label: "Pending", dot: "bg-amber-500" },
-              { value: "approved", label: "Approved", dot: "bg-sky-500" },
-              { value: "received", label: "Received", dot: "bg-emerald-500" },
-              { value: "rejected", label: "Rejected", dot: "bg-red-500" },
-            ]}
-          />
-        </FilterSection>
-
-        {hasActiveFilters && (
-          <div className="py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2">
-              Active filters
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {filters.status !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {filters.status}
-                  <button
-                    onClick={() => set("status", "all")}
-                    className="hover:opacity-70"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  "{filters.search}"
-                  <button
-                    onClick={() => set("search", "")}
-                    className="hover:opacity-70"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "received", label: "Received" },
+        { value: "rejected", label: "Rejected" },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    }
+  ], [filters.status, set]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -1110,14 +1055,16 @@ const RestockRequests = () => {
           )}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Stat cards */}
             <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <StatCard
@@ -1238,11 +1185,17 @@ const RestockRequests = () => {
                 <Button
                   size="sm"
                   onClick={() => setShowCreate(true)}
-                  className="h-7 px-3 text-[11px] font-semibold rounded-sm shadow-sm flex items-center gap-1.5"
+                  className="hidden sm:flex h-7 px-3 text-[11px] font-semibold rounded-sm shadow-sm items-center gap-1.5"
                 >
                   <Plus className="w-3 h-3" />
                   New Request
                 </Button>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -1464,7 +1417,6 @@ const RestockRequests = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       {/* Drawers */}

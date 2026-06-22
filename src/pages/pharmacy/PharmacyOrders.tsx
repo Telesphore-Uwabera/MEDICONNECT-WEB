@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 
 // ── Import every hook + type from the dedicated hooks file ───────────────────
 import {
@@ -238,6 +239,7 @@ function OrderActions({ order }: { order: Order }) {
 const PharmacyOrders = () => {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -309,104 +311,34 @@ const PharmacyOrders = () => {
 
   // ─── Sidebar ─────────────────────────────────────────────────────────────
 
-  const sidebarContent = (
-    <>
-      {/* Header */}
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Status filter → maps to ?status= on the API */}
-        <FilterSection title="Status">
-          <PillGroup<OrderStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all", label: "All statuses" },
-              { value: "pending",   label: t("pages.pharmacy.stat_incoming",   "Pending"),   dot: "bg-amber-500" },
-              { value: "accepted",  label: t("pages.pharmacy.stat_processing", "Accepted"),  dot: "bg-sky-500" },
-              { value: "completed", label: t("pages.pharmacy.stat_delivered",  "Completed"), dot: "bg-emerald-500" },
-              { value: "rejected",  label: t("pages.pharmacy.rejected",        "Rejected"),  dot: "bg-red-500" },
-            ]}
-          />
-        </FilterSection>
-
-        {/* Source filter → maps to ?source= on the API */}
-        <FilterSection title="Source">
-          <PillGroup<OrderSource | "all">
-            value={filters.source}
-            onChange={(v) => set("source", v)}
-            options={[
-              { value: "all",      label: "All sources" },
-              { value: "internal", label: "Internal" },
-              { value: "external", label: "External" },
-            ]}
-          />
-        </FilterSection>
-
-        {/* Active filter chips — let user remove one at a time */}
-        {hasActiveFilters && (
-          <div className="py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2">
-              Active filters
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {filters.status !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {filters.status}
-                  <button
-                    onClick={() => set("status", "all")}
-                    className="hover:opacity-70"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.source !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {filters.source}
-                  <button
-                    onClick={() => set("source", "all")}
-                    className="hover:opacity-70"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  "{filters.search}"
-                  <button
-                    onClick={() => set("search", "")}
-                    className="hover:opacity-70"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "pending",   label: t("pages.pharmacy.stat_incoming",   "Pending") },
+        { value: "accepted",  label: t("pages.pharmacy.stat_processing", "Accepted") },
+        { value: "completed", label: t("pages.pharmacy.stat_delivered",  "Completed") },
+        { value: "rejected",  label: t("pages.pharmacy.rejected",        "Rejected") },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "source",
+      label: "Source",
+      value: filters.source,
+      options: [
+        { value: "all",      label: "All sources" },
+        { value: "internal", label: "Internal" },
+        { value: "external", label: "External" },
+      ],
+      onChange: (v: string) => set("source", v as any)
+    }
+  ], [filters.status, filters.source, set, t]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -418,14 +350,16 @@ const PharmacyOrders = () => {
           subtitle={t("pages.pharmacy.orders_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* ── Sidebar ── */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* ── Main content ── */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
             {/* Stat cards — counts from the current API page */}
             <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
@@ -563,6 +497,12 @@ const PharmacyOrders = () => {
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
+
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -768,7 +708,6 @@ const PharmacyOrders = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
     </DashboardLayout>
   );

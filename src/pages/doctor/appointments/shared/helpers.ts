@@ -32,7 +32,10 @@ export const fmtDateTime = (iso: string | null | undefined): string => {
 /** "11:00 AM" */
 export const fmtTime = (iso: string | null | undefined): string => {
   if (!iso) return "—";
-  return dayjs(iso).format("h:mm A");
+  // If it's a time-only string (e.g., "14:30:00"), prepend a dummy date so dayjs can parse it
+  const isTimeOnly = /^([01]?\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(iso);
+  const parseStr = isTimeOnly ? `1970-01-01T${iso}` : iso;
+  return dayjs(parseStr).format("h:mm A");
 };
 
 /** "3 hours ago" / "in 2 days" */

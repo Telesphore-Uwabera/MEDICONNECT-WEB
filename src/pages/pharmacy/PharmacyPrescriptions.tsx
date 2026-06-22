@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 
 import {
   useGetPrescriptionRequests,
@@ -837,70 +838,23 @@ const PharmacyPrescriptions = () => {
 
   // ─── Sidebar content ──────────────────────────────────────────────────────────
 
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<PrescriptionStatus | "all">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={[
-              { value: "all",       label: "All statuses", count: requests.length },
-              { value: "pending",   label: "Pending",   dot: "bg-amber-500",   count: counts.pending },
-              { value: "reviewing", label: "Reviewing", dot: "bg-sky-500",     count: counts.reviewing },
-              { value: "approved",  label: "Approved",  dot: "bg-violet-500",  count: counts.approved },
-              { value: "rejected",  label: "Rejected",  dot: "bg-red-500",     count: counts.rejected },
-              { value: "fulfilled", label: "Fulfilled", dot: "bg-emerald-500", count: counts.fulfilled },
-            ]}
-          />
-        </FilterSection>
-
-        {hasActiveFilters && (
-          <div className="py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2">
-              Active filters
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {filters.status !== "all" && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  {filters.status}
-                  <button onClick={() => set("status", "all")} className="hover:opacity-70">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20 font-medium">
-                  "{filters.search}"
-                  <button onClick={() => set("search", "")} className="hover:opacity-70">
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All statuses" },
+        { value: "pending", label: "Pending" },
+        { value: "reviewing", label: "Reviewing" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+        { value: "fulfilled", label: "Fulfilled" },
+      ],
+      onChange: (v: string) => set("status", v as any)
+    }
+  ], [filters.status, set]);
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -912,47 +866,16 @@ const PharmacyPrescriptions = () => {
           subtitle={t("pages.pharmacy.rx_sub", "Review and fulfill incoming prescriptions")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm"
-              >
-                Show {filtered.length} {filtered.length === 1 ? "prescription" : "prescriptions"}
-              </button>
-            </div>
-          </div>
-
-          {/* Main content */}
-          <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Meta / toolbar bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -1044,21 +967,11 @@ const PharmacyPrescriptions = () => {
                   <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
                 </div>
 
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />
-                  )}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -1223,7 +1136,6 @@ const PharmacyPrescriptions = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       <DetailDrawer

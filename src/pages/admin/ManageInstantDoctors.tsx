@@ -4,6 +4,7 @@ import {
   Stethoscope, CheckCircle2, XCircle, SlidersHorizontal, X, Search,
   ChevronLeft, ChevronRight, ChevronDown, RefreshCw, Plus, Zap,
 } from "lucide-react";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
@@ -17,7 +18,7 @@ import {
   type FilterState, type StatusFilter, type OverrideFilter, type InstantFilter, type SortOption,
   resolvedFee,
 } from "./components/instantDoctors/types";
-import { FilterSection, PillGroup, SkeletonRows, ConsultationRow, ConsultationCard } from "./components/instantDoctors/components";
+import { SkeletonRows, ConsultationRow, ConsultationCard } from "./components/instantDoctors/components";
 import { AssignPanel, ConsultationPanel } from "./components/instantDoctors/panels";
 import type { ApiDoctorConsultation } from "@/hooks/admin/use-doctor-insitant";
 
@@ -94,50 +95,44 @@ function ManageInstantDoctors() {
   const clearAll = useCallback(() => { setFilters(INITIAL_FILTERS); setSearchInput(""); }, []);
   const hasActiveFilters = useMemo(() => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS), [filters]);
 
-  // ── Sidebar content (shared between desktop aside + mobile drawer) ──────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-            <X className="w-3 h-3" />Reset all
-          </button>
-        )}
-      </div>
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<StatusFilter> value={filters.status} onChange={(v) => set("status", v)}
-            options={[
-              { value: "all",      label: "All" },
-              { value: "active",   label: "Active",   count: activeCount },
-              { value: "inactive", label: "Inactive", count: inactiveCount },
-            ]} />
-        </FilterSection>
-        <FilterSection title="Instant Consultation">
-          <PillGroup<InstantFilter> value={filters.instant} onChange={(v) => set("instant", v)}
-            options={[
-              { value: "all",         label: "All" },
-              { value: "instant",     label: "Instant enabled",  count: instantCount },
-              { value: "non_instant", label: "Instant disabled", count: total - instantCount },
-            ]} />
-        </FilterSection>
-        <FilterSection title="Fee">
-          <PillGroup<OverrideFilter> value={filters.override} onChange={(v) => set("override", v)}
-            options={[
-              { value: "all",        label: "All" },
-              { value: "overridden", label: "Override active", count: overrideCount },
-              { value: "base_rate",  label: "Base rate only" },
-            ]} />
-        </FilterSection>
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: [
+        { value: "all", label: "All" },
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ],
+      onChange: (v: string) => set("status", v as any),
+    },
+    {
+      type: "select" as const,
+      key: "instant",
+      label: "Instant Consultation",
+      value: filters.instant,
+      options: [
+        { value: "all", label: "All" },
+        { value: "instant", label: "Instant enabled" },
+        { value: "non_instant", label: "Instant disabled" },
+      ],
+      onChange: (v: string) => set("instant", v as any),
+    },
+    {
+      type: "select" as const,
+      key: "override",
+      label: "Fee",
+      value: filters.override,
+      options: [
+        { value: "all", label: "All" },
+        { value: "overridden", label: "Override active" },
+        { value: "base_rate", label: "Base rate only" },
+      ],
+      onChange: (v: string) => set("override", v as any),
+    }
+  ], [filters.status, filters.instant, filters.override, set]);
 
   return (
     <DashboardLayout role="admin">
@@ -147,28 +142,16 @@ function ManageInstantDoctors() {
           subtitle={t("pages.instant_doctors.overview_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop / tablet sidebar — narrower rail from md, full width from lg */}
-          <aside className="hidden md:flex md:flex-col w-44 lg:w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Mobile filter sheet (also used on tablet widths below md) */}
-          <div onClick={() => setFilterOpen(false)}
-            className={cn("fixed inset-0 z-40 bg-black/50 md:hidden transition-opacity duration-300",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")} />
-          <div className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-card rounded-t-2xl border-t border-border max-h-[85dvh] flex flex-col overflow-hidden transition-transform duration-300 ease-out",
-            filterOpen ? "translate-y-0" : "translate-y-full",
-          )}>
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0"><div className="w-10 h-1 rounded-full bg-border" /></div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-4 border-t border-border">
-              <button onClick={() => setFilterOpen(false)} className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">Show results</button>
-            </div>
-          </div>
-
-          <main className="flex-1 overflow-y-auto min-w-0">
+        <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
             {/* Stats — 2 cols on phone, 4 cols from md (tablet) up */}
             <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatCard label="Total consultations" value={total}         icon={Stethoscope}  accent="primary" />
@@ -234,12 +217,11 @@ function ManageInstantDoctors() {
                   <span className="hidden sm:inline">Assign doctor</span>
                   <span className="sm:hidden">Assign</span>
                 </Button> */}
-                <button onClick={() => setFilterOpen(true)}
-                  className={cn("md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-colors",
-                    hasActiveFilters ? "bg-primary text-white border-primary" : "border-border/60 text-muted-foreground bg-card")}>
-                  <SlidersHorizontal className="w-3.5 h-3.5" />
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -317,8 +299,7 @@ function ManageInstantDoctors() {
                 </>
               )}
             </div>
-          </main>
-        </div>
+        </main>
       </div>
 
       {/* <AssignPanel       open={assignOpen}  onClose={() => setAssignOpen(false)} /> */}

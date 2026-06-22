@@ -303,12 +303,17 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       heading: t("sidebar.group.records"),
       items: [
         {
+          to: "/patient/medical-records",
+          label: "Medical Records",
+          icon: FileText,
+        },
+        {
           to: "/patient/prescriptions",
           label: t("sidebar.prescriptions"),
           icon: FileText,
         },
         // PatientPharmacyOrders
-         {
+        {
           to: "/patient/pharmacy/orders",
           label: t("sidebar.orders"),
           icon: FileText,
@@ -442,13 +447,10 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-12 w-auto flex-shrink-0 rounded-sm"
+            className="h-16 w-auto flex-shrink-0 rounded-sm"
           />
         </NavLink>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          <ThemeToggle />
-          <LanguageSwitcher compact />
-        </div>
+
       </div>
 
       {/* ── Role badge ── */}

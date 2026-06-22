@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pill, Send, User, Mail, Smartphone, Info, SlidersHorizontal, X, Search, ChevronDown } from "lucide-react";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/PageHeader";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -376,48 +377,32 @@ const HospitalPrescriptions = () => {
   const filledCount = allPrescriptions.filter((p) => p.status === "filled").length;
   const draftCount = allPrescriptions.filter((p) => p.status === "draft").length;
 
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      {/* Info banner */}
-      <div className="mx-3.5 mt-3 rounded-sm border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] flex items-start gap-2 text-primary">
-        <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-        <span>{t("pages.hospital.rx_attached")}</span>
-      </div>
-
-      <div className="px-3.5">
-        <FilterSection title="Status">
-          <PillGroup<RxStatus | "All">
-            value={filters.status}
-            onChange={(v) => set("status", v)}
-            options={STATUS_FILTER_OPTIONS}
-          />
-        </FilterSection>
-
-        <FilterSection title="Delivery Channel">
-          <PillGroup<FilterState["channelFilter"]>
-            value={filters.channelFilter}
-            onChange={(v) => set("channelFilter", v)}
-            options={CHANNEL_OPTIONS}
-          />
-        </FilterSection>
-      </div>
-    </>
-  );
+  const filterFields = useMemo(() => [
+    {
+      type: "select" as const,
+      key: "status",
+      label: "Status",
+      value: filters.status,
+      options: STATUS_FILTER_OPTIONS,
+      onChange: (v: string) => set("status", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "channelFilter",
+      label: "Delivery Channel",
+      value: filters.channelFilter,
+      options: CHANNEL_OPTIONS,
+      onChange: (v: string) => set("channelFilter", v as any)
+    },
+    {
+      type: "select" as const,
+      key: "sort",
+      label: "Sort By",
+      value: filters.sort,
+      options: SORT_OPTIONS,
+      onChange: (v: string) => set("sort", v as any)
+    }
+  ], [filters.status, filters.channelFilter, filters.sort, set]);
 
   return (
     <DashboardLayout role="hospital">
@@ -427,50 +412,22 @@ const HospitalPrescriptions = () => {
           subtitle={t("pages.hospital.rx_sub", { name: HOSPITAL })}
         />
 
-        {/* ── Body: sidebar + results ── */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
+        {/* Info banner */}
+        <div className="mx-4 mt-3 rounded-sm border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] flex items-start gap-2 text-primary">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{t("pages.hospital.rx_attached")}</span>
+        </div>
 
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
-          />
-
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm hover:shadow"
-              >
-                Show {filtered.length}{" "}
-                {filtered.length === 1 ? "prescription" : "prescriptions"}
-              </button>
-            </div>
-          </div>
-
-          {/* ── Results ── */}
-          <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto flex flex-col">
 
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
@@ -523,23 +480,6 @@ const HospitalPrescriptions = () => {
                   />
                 </div>
 
-                {/* Sort */}
-                <div className="relative">
-                  <select
-                    value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-                </div>
-
-                {/* New Rx */}
                 <Button
                   className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow transition-all duration-200 shrink-0"
                   onClick={() => setOpen(true)}
@@ -548,22 +488,11 @@ const HospitalPrescriptions = () => {
                   {t("pages.doctor.new_rx")}
                 </Button>
 
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />
-                  )}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  hasActiveFilters={hasActiveFilters}
+                />
               </div>
             </div>
 
@@ -602,7 +531,6 @@ const HospitalPrescriptions = () => {
               )}
             </div>
           </main>
-        </div>
       </div>
 
       <PrescriptionWizard

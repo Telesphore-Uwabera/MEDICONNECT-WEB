@@ -104,3 +104,28 @@ export function useGetPatientAppointment(appointmentId: string) {
     enabled: !!appointmentId,
   });
 }
+
+export function useGetPatientQuickAppointments(
+  params: AppointmentFilterParams = {},
+) {
+  const searchParams = new URLSearchParams();
+
+  if (params.status && params.status !== "all")
+    searchParams.set("status", params.status);
+  if (params.type && params.type !== "all")
+    searchParams.set("type", params.type);
+  if (params.date_from) searchParams.set("date_from", params.date_from);
+  if (params.date_to) searchParams.set("date_to", params.date_to);
+  if (params.date) searchParams.set("date", params.date);
+  if (params.page && params.page > 1)
+    searchParams.set("page", String(params.page));
+
+  const qs = searchParams.toString();
+  const url = qs ? `/patient/quick?${qs}` : "/patient/quick";
+
+  return useQuery<ApiAppointmentListResponse>({
+    queryKey: ["patient-quick-appointments", params],
+    queryFn: () => apiFetch(url),
+    staleTime: 30_000,
+  });
+}

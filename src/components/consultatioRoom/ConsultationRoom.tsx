@@ -364,7 +364,8 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       }
       else if (payload.type === "answer") {
         if (pc.signalingState !== "have-local-offer") {
-          console.warn("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
+          // Benign: a duplicate/late answer arrived while already stable. Ignore.
+          console.debug("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
           return;
         }
 
@@ -389,7 +390,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(payload.data as RTCIceCandidateInit));
         } catch (err) {
-          console.warn("[WebRTC] Skipped an ICE candidate that couldn't be added", err);
+          // Benign: a stale candidate (e.g. "Unknown ufrag" after renegotiation).
+          // ICE still completes on the valid ones — keep it quiet at debug level.
+          console.debug("[WebRTC] Skipped an ICE candidate that couldn't be added", err);
         }
       }
       else if (payload.type === "media-status") {

@@ -3,13 +3,11 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { t } from "i18next";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
-  SlidersHorizontal,
-  X,
   Star,
-  Search,
+  X,
   Zap,
-  CalendarCheck,
   Globe,
   Video,
   MapPin,
@@ -376,7 +374,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
               )}
             >
               <Zap className="w-3.5 h-3.5" />
-              {a.isConnected ? "Resume" : a.isCallInProgress ? "Open" : "Connect"}
+              {a.isConnected || a.isCallInProgress ? "Join" : "Connect"}
             </button>
           )}
         </div>
@@ -555,133 +553,12 @@ const PatientDoctors = () => {
     [filters, spec],
   );
 
-  useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [filterOpen]);
+  // (no body overflow lock needed — filters are inline top panel)
 
   const instantCount = doctors.filter((d) => d.instant_consultation).length;
   const availableCount = doctors.filter((d) => d.is_available).length;
   const featuredCount = doctors.filter((d) => d.is_featured).length;
 
-  // ── Sidebar ──────────────────────────────────────────────────────────────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">
-            Filters
-          </span>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={clearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Search */}
-        <FilterSection title="Search">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Name or specialization…"
-              value={filters.q}
-              onChange={(e) => set("q", e.target.value)}
-              className="w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            />
-            {filters.q && (
-              <button
-                onClick={() => set("q", "")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        </FilterSection>
-
-        {/* Specialization — wired to spec state, sends both name + fee id */}
-        <FilterSection title="Specialization">
-          <SpecializationSelect value={spec} onChange={setSpec} />
-          {/* Active specialization badge */}
-          {spec.specialization && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
-                {spec.specialization.name}
-                {spec.fee && (
-                  <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
-                )}
-                <button
-                  onClick={() => setSpec(INITIAL_SPEC)}
-                  className="ml-0.5 hover:text-destructive transition-colors"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </span>
-            </div>
-          )}
-        </FilterSection>
-
-        {/* Consultation type */}
-        <FilterSection title="Consultation Type">
-          <PillGroup<ConsultationType>
-            value={filters.type}
-            onChange={(v) => set("type", v)}
-            options={CONSULTATION_OPTIONS}
-          />
-        </FilterSection>
-
-        {/* Availability toggles */}
-        <FilterSection title="Availability">
-          <div className="flex flex-col gap-1">
-            <ToggleButton
-              value={filters.available_today}
-              onChange={(v) => set("available_today", v)}
-              label="Available today"
-              icon={CalendarCheck}
-            />
-            <ToggleButton
-              value={filters.instant}
-              onChange={(v) => set("instant", v)}
-              label="Instant consult only"
-              icon={Zap}
-            />
-          </div>
-        </FilterSection>
-
-        {/* Language */}
-        <FilterSection title="Language">
-          <PillGroup<string>
-            value={filters.language}
-            onChange={(v) => set("language", v)}
-            options={LANGUAGE_OPTIONS}
-          />
-        </FilterSection>
-
-        {/* Gender */}
-        <FilterSection title="Doctor Gender">
-          <PillGroup<"all" | "male" | "female">
-            value={filters.gender}
-            onChange={(v) => set("gender", v)}
-            options={GENDER_OPTIONS}
-          />
-        </FilterSection>
-      </div>
-    </>
-  );
 
   return (
     <DashboardLayout role="patient">
@@ -691,52 +568,98 @@ const PatientDoctors = () => {
           subtitle={t("pages.patient.overview_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-56 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
-            )}
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* ── FilterBar ── */}
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen((p) => !p)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={[
+              {
+                type: "search",
+                key: "q",
+                label: "Search",
+                placeholder: "Name or specialization…",
+                value: filters.q,
+                onChange: (v) => set("q", v),
+              },
+              {
+                type: "select",
+                key: "type",
+                label: "Consultation Type",
+                value: filters.type,
+                options: CONSULTATION_OPTIONS,
+                onChange: (v) => set("type", v as ConsultationType),
+              },
+              {
+                type: "select",
+                key: "availability",
+                label: "Availability",
+                value:
+                  filters.available_today && filters.instant
+                    ? "both"
+                    : filters.available_today
+                    ? "available"
+                    : filters.instant
+                    ? "instant"
+                    : "all",
+                options: [
+                  { value: "all", label: "Any availability" },
+                  { value: "available", label: "Available today" },
+                  { value: "instant", label: "Instant consult only" },
+                  { value: "both", label: "Available today + Instant" },
+                ],
+                onChange: (v) => {
+                  set("available_today", v === "available" || v === "both");
+                  set("instant", v === "instant" || v === "both");
+                },
+              },
+              {
+                type: "select",
+                key: "gender",
+                label: "Gender",
+                value: filters.gender,
+                options: GENDER_OPTIONS,
+                onChange: (v) => set("gender", v as "all" | "male" | "female"),
+              },
+              {
+                type: "select",
+                key: "language",
+                label: "Language",
+                value: filters.language,
+                options: LANGUAGE_OPTIONS,
+                onChange: (v) => set("language", v),
+              },
+            ]}
+            extraSlot={
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">Specialization</p>
+                <SpecializationSelect value={spec} onChange={setSpec} />
+                {spec.specialization && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
+                      {spec.specialization.name}
+                      {spec.fee && (
+                        <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
+                      )}
+                      <button
+                        onClick={() => setSpec(INITIAL_SPEC)}
+                        className="ml-0.5 hover:text-destructive transition-colors"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  </div>
+                )}
+              </div>
+            }
           />
-
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm"
-              >
-                Show {data?.total ?? 0}{" "}
-                {(data?.total ?? 0) === 1 ? "doctor" : "doctors"}
-              </button>
-            </div>
-          </div>
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col">
             {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className=" bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <p className="text-[11px] text-muted-foreground">
                   {isLoading ? (
@@ -758,30 +681,6 @@ const PatientDoctors = () => {
                     </>
                   )}
                 </p>
-
-                {/* Live stats */}
-                {!isLoading && doctors.length > 0 && (
-                  <div className="hidden lg:flex items-center gap-2">
-                    {availableCount > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        {availableCount} available
-                      </span>
-                    )}
-                    {instantCount > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm">
-                        <Zap className="w-2.5 h-2.5" />
-                        {instantCount} instant
-                      </span>
-                    )}
-                    {featuredCount > 0 && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm">
-                        <Star className="w-2.5 h-2.5 fill-amber-400" />
-                        {featuredCount} featured
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -798,22 +697,11 @@ const PatientDoctors = () => {
                   ))}
                 </select>
 
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />
-                  )}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen((p) => !p)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* View toggle */}
                 <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -920,7 +808,7 @@ const PatientDoctors = () => {
                   )}
                 </div>
               ) : view === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-2">
                   {doctors.map((d) => (
                     <DoctorGridCard key={d.id} doctor={d} />
                   ))}

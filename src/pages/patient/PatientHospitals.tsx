@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
   SlidersHorizontal,
   X,
@@ -95,79 +96,6 @@ function sortHospitals(hospitals: ApiHospital[], sort: SortOption): ApiHospital[
       default: return a.name_en.localeCompare(b.name_en);
     }
   });
-}
-
-// ─── Sidebar atoms ──────────────────────────────────────────────────────────────
-
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="py-3 border-b border-border/60 last:border-b-0">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80 mb-2.5">
-        {title}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function PillGroup<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { value: T; label: string; icon?: React.ElementType }[];
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      {options.map((o) => {
-        const Icon = o.icon;
-        return (
-          <button
-            key={o.value}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
-              value === o.value
-                ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-                : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-            )}
-          >
-            {Icon && <Icon className="w-3 h-3 flex-shrink-0" />}
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ToggleButton({
-  value,
-  onChange,
-  label,
-  icon: Icon,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-  icon?: React.ElementType;
-}) {
-  return (
-    <button
-      onClick={() => onChange(!value)}
-      className={cn(
-        "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
-        value
-          ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
-          : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
-      )}
-    >
-      {Icon && <Icon className="w-3 h-3 flex-shrink-0" />}
-      {label}
-    </button>
-  );
 }
 
 // ─── Hospital Grid Card ──────────────────────────────────────────────────────────
@@ -411,83 +339,6 @@ const PatientHospitals = () => {
   const open24hCount = hospitals.filter((h) => h.is_open_24h).length;
   const lastPage = data?.last_page ?? (data ? Math.ceil(data.total / data.per_page) : 1);
 
-  // ── Sidebar ──────────────────────────────────────────────────────────────────
-  const sidebarContent = (
-    <>
-      <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
-            <SlidersHorizontal className="w-3 h-3 text-primary" />
-          </div>
-          <span className="text-[11px] font-semibold text-foreground">Filters</span>
-        </div>
-        {hasActiveFilters && (
-          <button onClick={clearAll} className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-            <X className="w-3 h-3" />
-            Reset all
-          </button>
-        )}
-      </div>
-
-      <div className="px-3.5">
-        {/* Search */}
-        <FilterSection title="Search">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Name, city, or address…"
-              value={filters.q}
-              onChange={(e) => set("q", e.target.value)}
-              className="w-full pl-7 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            />
-            {filters.q && (
-              <button
-                onClick={() => set("q", "")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        </FilterSection>
-
-        {/* City */}
-        <FilterSection title="City">
-          <div className="relative">
-            <MapPin className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="e.g. Kigali…"
-              value={filters.city}
-              onChange={(e) => set("city", e.target.value)}
-              className="w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-            />
-          </div>
-        </FilterSection>
-
-        {/* Type */}
-        <FilterSection title="Facility Type">
-          <PillGroup<HospitalType>
-            value={filters.type}
-            onChange={(v) => set("type", v)}
-            options={TYPE_OPTIONS}
-          />
-        </FilterSection>
-
-        {/* Availability */}
-        <FilterSection title="Availability">
-          <ToggleButton
-            value={filters.open_now}
-            onChange={(v) => set("open_now", v)}
-            label="Open now"
-            icon={Wifi}
-          />
-        </FilterSection>
-      </div>
-    </>
-  );
-
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
@@ -496,44 +347,51 @@ const PatientHospitals = () => {
           subtitle={t("pages.patient.overview_sub")}
         />
 
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex md:flex-col w-52 flex-shrink-0 border-r border-border/60 bg-card/50 overflow-y-auto">
-            {sidebarContent}
-          </aside>
-
-          {/* Mobile backdrop */}
-          <div
-            onClick={() => setFilterOpen(false)}
-            className={cn(
-              "fixed inset-0 z-40 bg-black/40 md:hidden transition-opacity duration-300 backdrop-blur-sm",
-              filterOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-            )}
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* ── FilterBar ── */}
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen((p) => !p)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={[
+              {
+                type: "search",
+                key: "q",
+                label: "Search",
+                placeholder: "Name, city, or address…",
+                value: filters.q,
+                onChange: (v) => set("q", v),
+              },
+              {
+                type: "search",
+                key: "city",
+                label: "City",
+                placeholder: "e.g. Kigali…",
+                value: filters.city,
+                onChange: (v) => set("city", v),
+              },
+              {
+                type: "select",
+                key: "type",
+                label: "Facility Type",
+                value: filters.type,
+                options: TYPE_OPTIONS,
+                onChange: (v) => set("type", v as HospitalType),
+              },
+              {
+                type: "select",
+                key: "availability",
+                label: "Availability",
+                value: filters.open_now ? "open" : "all",
+                options: [
+                  { value: "all", label: "Any availability" },
+                  { value: "open", label: "Open now" },
+                ],
+                onChange: (v) => set("open_now", v === "open"),
+              },
+            ]}
           />
-
-          {/* Mobile bottom drawer */}
-          <div
-            className={cn(
-              "fixed bottom-0 left-0 right-0 z-50 md:hidden",
-              "bg-card rounded-t-lg border-t border-border/60",
-              "max-h-[85dvh] flex flex-col overflow-hidden",
-              "transition-transform duration-300 ease-out shadow-2xl",
-              filterOpen ? "translate-y-0" : "translate-y-full",
-            )}
-          >
-            <div className="flex justify-center pt-3 pb-1.5 flex-shrink-0">
-              <div className="w-10 h-1 rounded-full bg-border" />
-            </div>
-            <div className="overflow-y-auto flex-1">{sidebarContent}</div>
-            <div className="flex-shrink-0 px-4 py-3 border-t border-border/60 bg-card">
-              <button
-                onClick={() => setFilterOpen(false)}
-                className="w-full py-2.5 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[11px] font-semibold transition-all duration-200 shadow-sm"
-              >
-                Show {data?.total ?? 0} {(data?.total ?? 0) === 1 ? "hospital" : "hospitals"}
-              </button>
-            </div>
-          </div>
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col">
@@ -580,20 +438,11 @@ const PatientHospitals = () => {
                   ))}
                 </select>
 
-                {/* Mobile filter button */}
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className={cn(
-                    "md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all duration-200 font-medium",
-                    hasActiveFilters
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <SlidersHorizontal className="w-3 h-3" />
-                  Filters
-                  {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground ml-0.5" />}
-                </button>
+                <FilterToggleButton
+                  open={filterOpen}
+                  onToggle={() => setFilterOpen((p) => !p)}
+                  hasActiveFilters={hasActiveFilters}
+                />
 
                 {/* View toggle */}
                 <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
@@ -673,7 +522,7 @@ const PatientHospitals = () => {
                   )}
                 </div>
               ) : view === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-3">
                   {hospitals.map((hospital) => (
                     // <div>card</div>
                     <HospitalCard key={hospital.id} hospital={hospital} />

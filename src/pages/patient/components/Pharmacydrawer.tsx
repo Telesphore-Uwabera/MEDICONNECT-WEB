@@ -353,10 +353,10 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               </div>
               <div className="flex-1 min-w-0 pr-10">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-[13px] font-semibold leading-tight text-foreground">{ph.name}</h2>
+                  <h2 className="text-sm font-semibold leading-tight text-foreground">{ph.name}</h2>
                   {ph.is_verified && <BadgeCheck className="h-3.5 w-3.5 text-primary shrink-0" />}
                   <div className={cn(
-                    "inline-flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full",
+                    "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full",
                     isOpenNow ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive",
                   )}>
                     <span className={cn("h-1.5 w-1.5 rounded-full", isOpenNow ? "bg-emerald-500" : "bg-destructive")} />
@@ -778,7 +778,7 @@ const MedicineCard = ({
 // ─── MetaItem ─────────────────────────────────────────────────────────────────
 
 const MetaItem = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
-  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
     <span className="text-primary/70">{icon}</span>
     <span>{children}</span>
   </div>
