@@ -35,8 +35,8 @@ const Auth = () => {
   }, [user, navigate]);
 
   const goAfterAuth = () => {
-  setTab("signin");
-};
+    setTab("signin");
+  };
 
   const tabs = [
     { id: "signin" as const, label: t("auth.tab_signin") },
@@ -48,10 +48,10 @@ const Auth = () => {
       <TopBar />
       {/* <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
        */}
-       <HeroHeader
-                 mobileMenuOpen={mobileMenuOpen}
-                 setMobileMenuOpen={setMobileMenuOpen}
-               />
+      <HeroHeader
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
 
       {/* ── Main ── */}
       <main className="flex-1 flex items-center justify-center p-4 md:p-6">

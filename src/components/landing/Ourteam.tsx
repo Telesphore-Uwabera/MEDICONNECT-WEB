@@ -1,69 +1,119 @@
 import { Link } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
-import docDowner from '@/assets/doctor-hero.png';
-import docJohn from '@/assets/doc-john.png';
-import docAviles from '@/assets/doc-david.png';
-import docPalmore from '@/assets/doc-sarah.png';
+import { Calendar } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ApiTeamMember, useGetOurTeam } from '@/hooks/use-our-team';
 
-export interface TeamMember {
-  id: string | number;
-  name: string;
-  specialty: string;
-  rating: number;
-  reviewCount: number;
-  location: string;
-  yearsExperience: number;
-  image: string;
+
+
+
+
+// ── Helpers ──────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  return name
+    .replace(/^Dr\.\s*/i, '')
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
 }
 
-const DEFAULT_TEAM: TeamMember[] = [
-  {
-    id: 1,
-    name: 'Dr. Downer',
-    specialty: 'Orthopedic',
-    rating: 4.5,
-    reviewCount: 35,
-    location: 'Los Angeles, CA',
-    yearsExperience: 12,
-    image: docDowner,
-  },
-  {
-    id: 2,
-    name: 'Dr. John Doe',
-    specialty: 'Dentist',
-    rating: 4.5,
-    reviewCount: 35,
-    location: 'Austin, TX',
-    yearsExperience: 8,
-    image: docJohn,
-  },
-  {
-    id: 3,
-    name: 'Dr. Aviles',
-    specialty: 'Neurologist',
-    rating: 4.5,
-    reviewCount: 35,
-    location: 'New York, NY',
-    yearsExperience: 15,
-    image: docAviles,
-  },
-  {
-    id: 4,
-    name: 'Dr. Palmore',
-    specialty: 'Immunologist',
-    rating: 4.5,
-    reviewCount: 35,
-    location: 'Waipahu, HI',
-    yearsExperience: 6,
-    image: docPalmore,
-  },
-];
-
-interface OurTeamProps {
-  members?: TeamMember[];
+function getYearsExperience(joinedAt: string): number {
+  const diff = Date.now() - new Date(joinedAt).getTime();
+  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 365)));
 }
 
-function OurTeam({ members = DEFAULT_TEAM }: OurTeamProps) {
+// ── Skeleton card ────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-card animate-pulse">
+      <div className="aspect-[4/5] w-full bg-muted flex items-center justify-center">
+        <div className="h-16 w-16 rounded-full bg-muted-foreground/20" />
+      </div>
+      <div className="px-3.5 pt-3 pb-3 space-y-2">
+        <div className="h-3 w-3/4 rounded bg-muted-foreground/20" />
+        <div className="h-2.5 w-1/2 rounded bg-muted-foreground/20" />
+        <div className="mt-3 h-8 rounded bg-muted-foreground/10" />
+      </div>
+    </div>
+  );
+}
+
+// ── Member card ──────────────────────────────────────────────
+
+function MemberCard({ member }: { member: ApiTeamMember }) {
+  const yrs = getYearsExperience(member.joined_at);
+  const joinYear = new Date(member.joined_at).getFullYear();
+
+  return (
+    <Link
+      to={`/doctors/${member.id}`}
+      className="group flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
+    >
+      {/* Photo / Avatar */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted flex items-center justify-center">
+        {member.photo_url ? (
+          <img
+            src={member.photo_url}
+            alt={member.name}
+            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-lg">
+            {getInitials(member.name)}
+          </div>
+        )}
+
+        {/* Title badge */}
+        {member.title && (
+          <span className="absolute right-2 top-2 rounded-sm bg-card/95 border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground backdrop-blur">
+            {member.title}
+          </span>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="px-3.5 pt-3 pb-3">
+        <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
+          {member.name}
+        </h3>
+
+        {/* Active status */}
+        <p className="text-xs mt-0.5 mb-3">
+          {member.is_active ? (
+            <span className="inline-flex items-center gap-1 text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+              Active
+            </span>
+          ) : (
+            <span className="text-muted-foreground">Inactive</span>
+          )}
+        </p>
+
+        {/* Stat row */}
+        <div className="grid grid-cols-2 divide-x divide-border rounded-sm border border-border overflow-hidden">
+          <div className="flex items-center justify-center gap-1.5 py-1.5">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-xs font-semibold text-foreground">{joinYear}</span>
+          </div>
+          <div className="flex items-center justify-center gap-1 py-1.5">
+            <span className="text-xs font-semibold text-foreground">{yrs}</span>
+            <span className="text-[10px] text-muted-foreground">yrs</span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ── Main component ───────────────────────────────────────────
+
+function OurTeam() {
+  const { data, isLoading, isError, refetch } = useGetOurTeam();
+
+  const members: ApiTeamMember[] = data?.data ?? [];
+
   return (
     <section className="w-full px-6 py-10 md:px-10">
       {/* Header */}
@@ -77,54 +127,35 @@ function OurTeam({ members = DEFAULT_TEAM }: OurTeamProps) {
         </h2>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {members.map((member) => (
-          <Link
-            key={member.id}
-            to={`/doctors/${member.id}`}
-            className="group flex flex-col overflow-hidden rounded-sm border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
+      {/* Error state */}
+      {isError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-center text-sm text-destructive">
+          Failed to load team members.{' '}
+          <button
+            onClick={() => refetch()}
+            className="underline underline-offset-2 hover:opacity-80"
           >
-            {/* Photo — reduced height */}
-            <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
-              <img
-                src={member.image}
-                alt={member.name}
-                className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-              />
-              <span className="absolute right-2 top-2 rounded-sm bg-card/95 border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground backdrop-blur">
-                {member.specialty}
-              </span>
-            </div>
+            Try again
+          </button>
+        </div>
+      )}
 
-            {/* Info — no background */}
-            <div className="px-3.5 pt-3 pb-3">
-              <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
-                {member.name}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {member.specialty}
-              </p>
-
-              {/* Stat row */}
-              <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-sm border border-border overflow-hidden">
-                <div className="flex items-center justify-center gap-1.5 py-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-xs font-semibold text-foreground truncate">
-                    {member.location}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-1 py-1.5">
-                  <span className="text-xs font-semibold text-foreground">
-                    {member.yearsExperience}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">yrs exp</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {/* Grid */}
+      {!isError && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {isLoading ? (
+            Array(4)
+              .fill(null)
+              .map((_, i) => <SkeletonCard key={i} />)
+          ) : members.length === 0 ? (
+            <p className="col-span-full text-sm text-muted-foreground text-center py-10">
+              No team members found.
+            </p>
+          ) : (
+            members.map((m) => <MemberCard key={m.id} member={m} />)
+          )}
+        </div>
+      )}
     </section>
   );
 }
