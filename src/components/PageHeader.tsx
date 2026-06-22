@@ -216,7 +216,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
   return (
     <>
-      <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-50 shadow-sm shadow-black/5">
+      <header className="border-b border-border/60 bg-card/95 backdrop-blur-2xl sticky top-0 z-40 shadow-sm shadow-black/5">
         <div className="px-6 py-3 flex items-center justify-between gap-6">
 
           {/* ── Left: Greeting ─────────────────────────────── */}

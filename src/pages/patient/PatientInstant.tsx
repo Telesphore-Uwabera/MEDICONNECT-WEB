@@ -747,8 +747,8 @@ const PatientInstant = () => {
 
               {/* ── Table view ── */}
               {view === "table" && (isLoading || sorted.length > 0) && (
-                <div className="rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-sm">
+                <div className="rounded-md border border-border/70 bg-card  shadow-sm overflow-auto ">
+                  <table className="w-full text-sm ">
                     <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-5 py-4 font-semibold">Doctor / Hospital</th>

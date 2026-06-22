@@ -136,13 +136,7 @@ export function HeroHeader({
 
         {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-primary">
-            MEDI
-            <span className="relative">
-              CONNECT
-              <span className="absolute -bottom-1 left-0 right-0 h-[3px] bg-primary rounded-full" />
-            </span>
-          </span>
+          <img src={logo} alt="Logo" className="h-20 w-auto" />
         </div>
 
         {/* Desktop nav */}
@@ -170,7 +164,7 @@ export function HeroHeader({
         </nav>
 
         {/* Specialization search — desktop */}
-        <div
+        {/* <div
           className="hidden lg:block lg:flex-1 lg:max-w-[260px] xl:max-w-[320px]"
           style={{
             ["--spec-dropdown-width" as string]: "420px",
@@ -182,7 +176,7 @@ export function HeroHeader({
               onChange={setSelectedSpecialization}
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Desktop right actions */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">

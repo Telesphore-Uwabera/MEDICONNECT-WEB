@@ -38,6 +38,7 @@ import { useNavigate } from "react-router-dom";
 import { ChatPanel } from "./consultatioRoom/ChatPanel";
 import { decodeCallToken } from "@/lib/scheduled-call";
 import { apiFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 // ─── IremboPay window type ────────────────────────────────────────────────────
 // Declared here so we never need `(window as any)` throughout the file.
@@ -273,10 +274,10 @@ const isActiveSessionError = (err: any): boolean => {
 // patient live-session endpoint, then the error payload, then the call we
 // persisted locally this session.
 const resolveRejoinTarget = async (err: any): Promise<RejoinTarget | null> => {
-  const fromApi = sessionToRejoinTarget(await fetchPatientLiveSession());
+  const fromApi = sessionToRejoinTarget(await fetchPatientLiveSession(), "patient");
   if (fromApi) return fromApi;
 
-  const fromError = sessionToRejoinTarget(err?.data);
+  const fromError = sessionToRejoinTarget(err?.data, "patient");
   if (fromError) return fromError;
 
   return rejoinFromPersistedCall();
@@ -976,7 +977,7 @@ export const ConnectDialogContent = ({
         )}>
           {chatOpen && (
             <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)}
-              doctorAvatar={doctorInitial} doctorName={doctorName} />
+              doctorAvatar={doctorInitial} consultationId={consultationId} isOwner={false} mode="instant" />
           )}
         </div>
       </div>

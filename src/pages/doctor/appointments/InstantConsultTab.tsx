@@ -119,7 +119,7 @@ export function InstantConsultTab() {
   // In-progress session the doctor can rejoin after navigating away. Suppressed
   // while a call overlay is already open.
   const { data: liveSession } = useDoctorLiveSession(!isInCall && !activeCall);
-  const liveTarget = useMemo(() => sessionToRejoinTarget(liveSession), [liveSession]);
+  const liveTarget = useMemo(() => sessionToRejoinTarget(liveSession, "doctor"), [liveSession]);
 
   const handleRejoinLive = () => {
     if (liveTarget) startCall(liveTarget.roomName, liveTarget.token);
@@ -270,7 +270,7 @@ export function InstantConsultTab() {
 
         {notesOpen && (
           <div className="w-72 flex-shrink-0 border-l border-border overflow-hidden flex flex-col bg-muted/20">
-            <InstantNotesSidebar onClose={() => setNotesOpen(false)} activeConsult={joined[0]} />
+            <InstantNotesSidebar onClose={() => setNotesOpen(false)} consultationId={joined[0]?.id} patientName={joined[0]?.guest_phone} />
           </div>
         )}
       </div>

@@ -42,7 +42,7 @@ export const HospitalCard = ({ hospital }) => {
 
   return (
     <>
-      <Card className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer">
+      <Card className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer">
 
         {/* ── Top strip ── */}
         <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">

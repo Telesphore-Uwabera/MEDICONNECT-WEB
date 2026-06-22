@@ -120,8 +120,8 @@ function DatePicker({
 
   const displayValue = value
     ? new Date(value + "T00:00:00").toLocaleDateString("en-US", {
-        year: "numeric", month: "short", day: "numeric",
-      })
+      year: "numeric", month: "short", day: "numeric",
+    })
     : "";
 
   const clear = (e: React.MouseEvent) => { e.stopPropagation(); onChange(""); };
@@ -287,9 +287,8 @@ function MeetOurDoctorsSlider({
             key={i}
             onClick={() => { setPaused(true); setIndex(i); }}
             aria-label={`Show doctor ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === safeIndex ? "bg-primary w-4" : "bg-muted-foreground/20 w-1.5"
-            }`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${i === safeIndex ? "bg-primary w-4" : "bg-muted-foreground/20 w-1.5"
+              }`}
           />
         ))}
       </div>
@@ -305,18 +304,40 @@ export default function HeroSection() {
   const [paused, setPaused] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
 
   const handleSearch = () => {
     const query = searchValue.trim();
     if (query) localStorage.setItem("doctorSearchQuery", query);
-    navigate("/patient/search-doctors");
+
+    let url = "/patient/search-doctors";
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (selectedDate) params.set("date", selectedDate);
+
+    if (params.toString()) {
+      url += "?" + params.toString();
+    }
+
+    navigate(url);
   };
 
   const call = useCallStore();
 
   const { data: instantDoctorsData, isLoading: doctorsLoading } =
-    useGetSearchDoctors({ instant: true, page: 1, per_page: 6 });
+    useGetSearchDoctors({
+      instant: true,
+      page: 1,
+      per_page: 6,
+      q: debouncedSearch,
+      date: selectedDate,
+    });
 
   const doctors: DisplayDoctor[] = (instantDoctorsData?.data ?? []).map(toDisplayDoctor);
   const hasDoctors = doctors.length > 0;
@@ -325,14 +346,14 @@ export default function HeroSection() {
 
   const callDoctor: Doctor | null = activeDoc
     ? {
-        id: activeDoc.raw.id,
-        user: {
-          id: activeDoc.raw.user.id,
-          name: activeDoc.raw.user.name,
-          avatar: activeDoc.raw.user.avatar,
-        },
-        specialization: activeDoc.raw.specialization,
-      }
+      id: activeDoc.raw.id,
+      user: {
+        id: activeDoc.raw.user.id,
+        name: activeDoc.raw.user.name,
+        avatar: activeDoc.raw.user.avatar,
+      },
+      specialization: activeDoc.raw.specialization,
+    }
     : null;
 
   const isThisDoctor = !!activeDoc && call.doctor?.id === activeDoc.id;
@@ -386,15 +407,14 @@ export default function HeroSection() {
 
           {/* ── Left column ── */}
           <div className="relative z-10 order-2 lg:order-1">
-            <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-[36px] lg:text-[42px] xl:text-[46px] leading-[1.2] font-extrabold text-foreground tracking-tight text-center lg:text-left">
-              Book a <span className="text-primary">Doctor Consultation</span>
-              <br className="hidden sm:block" />
-              <span className="mt-2 block">Anytime, Anywhere</span>
+            <h1 className="lg:mt-2 lg:text-left text-center font-display text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground leading-[1.1]">
+              Book a 
+              <span className="text-primary"> Doctor Consultation</span>
+              Anytime, Anywhere
             </h1>
-            <p className="mt-3 sm:mt-5 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
+            <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
               Embark on your healing journey with MEDICONNECT
             </p>
-
             {/* Decorative medical illustration — tablet+ only */}
             <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
               <svg
@@ -404,15 +424,15 @@ export default function HeroSection() {
               >
                 <style>{`.bob{animation:bob 2.4s ease-in-out infinite;}@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}`}</style>
                 <g className="bob">
-                  <line x1="50" y1="38" x2="35" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round"/>
-                  <line x1="80" y1="38" x2="95" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round"/>
-                  <circle cx="33" cy="60" r="5.5" fill="#18B19A"/>
-                  <circle cx="97" cy="60" r="5.5" fill="#18B19A"/>
-                  <path d="M35 40 Q65 28 95 40" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round"/>
-                  <path d="M65 40 C65 68, 45 82, 40 102 C34 122, 48 140, 68 140 C88 140, 102 122, 102 105" stroke="#18B19A" strokeWidth="5" strokeLinecap="round"/>
-                  <circle cx="102" cy="118" r="22" stroke="#18B19A" strokeWidth="5"/>
-                  <circle cx="102" cy="118" r="10" fill="#18B19A" opacity="0.18"/>
-                  <circle cx="102" cy="118" r="4" fill="#18B19A"/>
+                  <line x1="50" y1="38" x2="35" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
+                  <line x1="80" y1="38" x2="95" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
+                  <circle cx="33" cy="60" r="5.5" fill="#18B19A" />
+                  <circle cx="97" cy="60" r="5.5" fill="#18B19A" />
+                  <path d="M35 40 Q65 28 95 40" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
+                  <path d="M65 40 C65 68, 45 82, 40 102 C34 122, 48 140, 68 140 C88 140, 102 122, 102 105" stroke="#18B19A" strokeWidth="5" strokeLinecap="round" />
+                  <circle cx="102" cy="118" r="22" stroke="#18B19A" strokeWidth="5" />
+                  <circle cx="102" cy="118" r="10" fill="#18B19A" opacity="0.18" />
+                  <circle cx="102" cy="118" r="4" fill="#18B19A" />
                 </g>
               </svg>
               <svg
@@ -423,18 +443,18 @@ export default function HeroSection() {
                 <style>{`.pulse-line{animation:dash 2.4s linear infinite;}@keyframes dash{from{stroke-dashoffset:120;}to{stroke-dashoffset:0;}}`}</style>
                 <defs>
                   <marker id="ecg-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M2 1L8 5L2 9" fill="none" stroke="#18B19A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 1L8 5L2 9" fill="none" stroke="#18B19A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </marker>
                 </defs>
-                <line x1="0" y1="80" x2="400" y2="80" stroke="#ffff" strokeWidth="1.5" opacity="0.15"/>
+                <line x1="0" y1="80" x2="400" y2="80" stroke="#ffff" strokeWidth="1.5" opacity="0.15" />
                 <path stroke="#ffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80"/>
+                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80" />
                 <path className="pulse-line" stroke="#18B19A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="8 4" opacity="0.55"
-                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80"/>
-                <line x1="386" y1="80" x2="398" y2="80" stroke="#ffff" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ecg-arr)"/>
-                <circle cx="63" cy="44" r="3.5" fill="#ffff" opacity="0.7"/>
-                <circle cx="158" cy="44" r="3.5" fill="#ffff" opacity="0.7"/>
-                <circle cx="253" cy="44" r="3.5" fill="#ffff" opacity="0.7"/>
+                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80" />
+                <line x1="386" y1="80" x2="398" y2="80" stroke="#ffff" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ecg-arr)" />
+                <circle cx="63" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
+                <circle cx="158" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
+                <circle cx="253" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
               </svg>
             </div>
 
@@ -442,8 +462,8 @@ export default function HeroSection() {
 
             {/* ── Search bar ── */}
             <div className="mt-5 sm:mt-7 bg-card rounded-[6px] border border-border overflow-visible">
-              <div className="flex items-center gap-0">
-                <div className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-0">
+                <div className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-border">
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     value={searchValue}
@@ -453,11 +473,15 @@ export default function HeroSection() {
                     placeholder="Search doctors…"
                   />
                 </div>
-                <div className="w-px self-stretch bg-border my-2 shrink-0" />
+
+                <div className="flex items-center gap-2.5 px-3 py-2.5 sm:w-[150px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
+                  <DatePicker value={selectedDate} onChange={setSelectedDate} />
+                </div>
+
                 <div className="px-1.5 py-1.5 shrink-0">
                   <button
                     onClick={handleSearch}
-                    className="text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-5 py-2 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace-nowrap"
+                    className="w-full sm:w-auto text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-5 py-2 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace-nowrap"
                   >
                     Search
                   </button>
@@ -521,7 +545,7 @@ export default function HeroSection() {
               </div>
 
               {/* ── Regular Check-up badge ── */}
-              <div
+              {/* <div
                 className="absolute left-0 z-10
                            bg-card rounded-[6px] border border-border shadow-sm
                            px-2 py-1.5 sm:px-3 sm:py-2
@@ -534,7 +558,7 @@ export default function HeroSection() {
                 <span className="font-semibold text-foreground text-[10px] sm:text-xs whitespace-nowrap">
                   Regular Check-up
                 </span>
-              </div>
+              </div> */}
 
               {/* ── Active doctor card — always visible ── */}
               {activeDoc && (
@@ -590,25 +614,25 @@ export default function HeroSection() {
               )}
 
               {/* Meet Our Doctors — desktop only, floats over circle corner */}
-              <MeetOurDoctorsSlider
+              {/* <MeetOurDoctorsSlider
                 doctors={doctors}
                 totalDoctors={totalDoctors}
                 index={activeIdx}
                 setIndex={setActiveIdx}
                 setPaused={setPaused}
                 className="hidden lg:block absolute right-2 bottom-2 w-[260px]"
-              />
+              /> */}
             </div>
 
             {/* Meet Our Doctors — mobile + tablet (below the circle) */}
-            <MeetOurDoctorsSlider
+            {/* <MeetOurDoctorsSlider
               doctors={doctors}
               totalDoctors={totalDoctors}
               index={activeIdx}
               setIndex={setActiveIdx}
               setPaused={setPaused}
               className="block lg:hidden mt-2 w-full sm:w-[300px] mx-auto"
-            />
+            /> */}
           </div>
         </section>
       </div>

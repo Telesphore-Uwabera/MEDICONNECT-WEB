@@ -23,15 +23,12 @@ function getYearsExperience(joinedAt: string): number {
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card animate-pulse">
-      <div className="aspect-[4/5] w-full bg-muted" />
-      <div className="px-3 pt-2.5 pb-3 space-y-1.5">
-        <div className="h-3 w-3/4 rounded-sm bg-muted-foreground/20" />
-        <div className="h-2.5 w-1/2 rounded-sm bg-muted-foreground/15" />
-        <div className="mt-1.5 space-y-1">
-          <div className="h-2.5 w-full rounded-sm bg-muted-foreground/10" />
-          <div className="h-2.5 w-4/5 rounded-sm bg-muted-foreground/10" />
-        </div>
+    <div className="flex flex-col overflow-hidden rounded-[6px] border border-border bg-card animate-pulse min-h-[300px] relative">
+      <div className="absolute inset-0 bg-muted" />
+      <div className="relative mt-auto p-4 md:p-5 flex flex-col w-full space-y-2">
+        <div className="h-3 w-1/3 rounded-sm bg-muted-foreground/20" />
+        <div className="h-4 w-3/4 rounded-sm bg-muted-foreground/30" />
+        <div className="h-3 w-1/2 rounded-sm bg-muted-foreground/20" />
       </div>
     </div>
   );
@@ -67,7 +64,7 @@ function MemberModal({
       }}
     >
       <div
-        className="relative w-full sm:max-w-sm bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
+        className="relative w-full sm:max-w-lg bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -80,13 +77,13 @@ function MemberModal({
         </button>
 
         {/* Photo area — changed to portrait-friendly 4/5 ratio */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[5/3] w-full overflow-hidden bg-muted">
           {member.photo_url && !imgError ? (
             <>
               <img
                 src={member.photo_url}
                 alt={member.name}
-                className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-300 ${
+                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${
                   imgLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={() => setImgLoaded(true)}
@@ -123,22 +120,6 @@ function MemberModal({
 
         {/* Content */}
         <div className="px-4 pt-3.5 pb-5">
-          {/* Status pill */}
-          <span
-            className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full mb-3 ${
-              member.is_active
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                member.is_active ? "bg-emerald-500" : "bg-muted-foreground/40"
-              }`}
-            />
-            {member.is_active ? "Active member" : "Inactive"}
-          </span>
-
           {/* Description */}
           {member.bio ? (
             <p className="text-[13px] text-muted-foreground leading-relaxed">
@@ -195,52 +176,47 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
   return (
     <>
       <div
-        className="group flex flex-col overflow-hidden rounded-[6px] border border-border bg-card cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+        className="group relative flex flex-col overflow-hidden rounded-[6px] border border-border bg-card cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 min-h-[300px] sm:min-h-[350px]"
         onClick={() => setModalOpen(true)}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && setModalOpen(true)}
         aria-label={`View ${member.name}'s profile`}
       >
-        {/* Photo */}
-        <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
+        {/* Photo taking full card height */}
+        <div className="absolute inset-0 bg-muted z-0">
           {member.photo_url ? (
             <img
               src={member.photo_url}
               alt={member.name}
-              className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.05]"
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-primary/10">
-              <span className="text-xl font-medium text-primary">
+              <span className="text-4xl font-bold text-primary/40">
                 {getInitials(member.name)}
               </span>
             </div>
           )}
+          {/* Gradient overlay for text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E27]/90 via-[#0A0E27]/30 to-transparent transition-opacity duration-300" />
+        </div>
 
-          {/* Active status dot */}
-          <span
-            className={`absolute top-2 right-2 h-2 w-2 rounded-full border-[1.5px] border-white/80 ${
-              member.is_active ? "bg-emerald-500" : "bg-muted-foreground/50"
-            }`}
-            title={member.is_active ? "Active" : "Inactive"}
-          />
-
-          {/* Title badge — bottom left */}
+        {/* Content overlaid at the bottom */}
+        <div className="relative z-10 mt-auto p-4 md:p-5 flex flex-col w-full text-left">
+           
           {member.title && (
-            <span className="absolute bottom-2 left-2 rounded-[4px] bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+            <span className="mb-2 self-start rounded-[4px] bg-white/20 border border-white/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
               {member.title}
             </span>
           )}
-        </div>
-
-        {/* Info */}
-        <div className="px-3 pt-2.5 pb-3 flex flex-col flex-1">
-          <h3 className="text-[13px] capitalize font-medium text-foreground leading-tight truncate">
+          <h3 className="text-lg font-bold text-white leading-tight drop-shadow-sm truncate">
             {member.name}
           </h3>
-          <p className="text-[11px]  text-muted-foreground mt-0.5">
-            Since {joinYear} · {yrs} yr{yrs !== 1 ? "s" : ""}
+          <p className="text-[12px] text-white/70 mt-1.5 font-medium flex items-center gap-2">
+            <span>Since {joinYear}</span>
+            <span className="h-1 w-1 rounded-full bg-white/40" />
+            <span>{yrs} yr{yrs !== 1 ? "s" : ""} exp</span>
           </p>
         </div>
       </div>
@@ -261,14 +237,10 @@ function OurTeam() {
   return (
     <section className="w-full px-6 py-10 md:px-10">
       {/* Header */}
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+      <div className="mb-8 text-center sm:text-left">
+        <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary mb-2">
           Meet the specialists
-        </p>
-        <h2 className="mt-1 font-display text-xl md:text-2xl font-bold tracking-tight text-foreground">
-          Our Team
-          <span className="ml-1 text-lg font-normal text-muted-foreground">+</span>
-        </h2>
+        </p> 
       </div>
 
       {/* Error state */}
