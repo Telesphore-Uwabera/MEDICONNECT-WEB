@@ -33,10 +33,15 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
-import { useGetSearchHospitals, useInfiniteSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
+import {
+  useGetSearchHospitals,
+  useInfiniteSearchHospitals,
+} from "@/hooks/patient/use-patient-search-hospital";
+
 // NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
 // If your hook file doesn't currently export ApiDoctor, add `export` to its interface
 // declaration there — see the note at the bottom of this file.
+
 import {
   useGetSearchDoctors,
   useInfiniteSearchDoctors,
@@ -53,9 +58,6 @@ import OurTeam from "@/components/landing/Ourteam";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
-// ApiDoctor is imported from the hook above — do not redeclare it here.
-// Redeclaring it locally with a different `consultation_type` union is what
-// caused the previous type mismatch (instant/booking/both vs online/in_person/both).
 
 interface DoctorAvailabilityEvent {
   doctor_id: number;
@@ -91,9 +93,9 @@ const formatRating = (d: ApiDoctor): string | null => {
 // so headings read as section markers rather than competing hero text.
 
 const SECTION_EYEBROW =
-  "text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-primary/90";
+  "inline-flex items-center rounded-[6px] px-3 py-1 text-xs md:text-sm font-bold uppercase tracking-widest bg-primary/10 text-primary mb-4";
 const SECTION_TITLE =
-  "mt-3 font-display text-2xl md:text-3xl font-bold tracking-tight text-foreground";
+  "mt-2 font-display text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground leading-[1.1]";
 
 // ─── Slider Skeleton ──────────────────────────────────────────────────────────
 
@@ -197,7 +199,7 @@ const Index = () => {
 
       if (node) observer.current.observe(node);
     },
-    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage]
+    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage],
   );
 
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
@@ -231,7 +233,12 @@ const Index = () => {
 
       if (node) observerHospitals.current.observe(node);
     },
-    [hospitalsLoading, isFetchingNextHospitalsPage, hasNextHospitalsPage, fetchNextHospitalsPage]
+    [
+      hospitalsLoading,
+      isFetchingNextHospitalsPage,
+      hasNextHospitalsPage,
+      fetchNextHospitalsPage,
+    ],
   );
 
   // Filter to available instant doctors, max 4 slides
@@ -363,43 +370,42 @@ const Index = () => {
 
   return (
     <div className="min-h-dvh bg-background text-md">
-      <TopBar />
-      
- {/* <HeroHeader
+      <div className="sticky top-0 z-50">
+        <TopBar />
+        <HeroHeader
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
-        /> */}
+        />
+      </div>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-hero">
+      <section className="relative bg-gradient-hero">
         <HeroSection />
       </section>
 
       {/* ── Available Doctors Grid ── */}
       <section
         id="doctors"
-        className="py-10 bg-gradient-soft border-t border-border"
+        className="  flex flex-col justify-center py-20 bg-gradient-soft border-t border-border"
       >
         <div className="container">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div className="flex-1 min-w-0">
-              <p className={SECTION_EYEBROW}>
-                {t("pages.landing.available_now")}
-              </p>
-              <h2 className={SECTION_TITLE}>
+              <h2 className={cn(SECTION_TITLE, "text-left w-[500px]")}>
                 {t("pages.landing.doctors_ready")}
               </h2>
 
               {/* ── Filters ── */}
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="mt-6 flex  flex-wrap items-center gap-3">
                 {/* Type filter */}
-                <div className="inline-flex items-center bg-card border border-border rounded-sm p-0.5">
+                <div className="inline-flex items-center  
+                appearance-none px-4 py-1 text-xs font-medium bg-background border rounded-[6px] transition-all cursor-pointer outline-none shadow-sm">
                   <button
                     onClick={() => setDoctorFilter("all")}
                     className={cn(
-                      "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all",
+                      "px-4 py-1.5 text-xs font-semibold rounded-[6px] transition-all duration-300",
                       doctorFilter === "all"
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -408,20 +414,21 @@ const Index = () => {
                   <button
                     onClick={() => setDoctorFilter("instant")}
                     className={cn(
-                      "px-2.5 py-1 text-[11px] font-medium rounded-sm transition-all flex items-center gap-1",
+                      "px-2 py-1.5 text-xs flex gap-1 font-semibold rounded-[6px] transition-all duration-300",
                       doctorFilter === "instant"
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    <Zap className="w-3 h-3" />
+                    <Zap className="w-3.5 h-3.5" />
                     Instant only
                   </button>
                 </div>
 
                 {/* Specialization filter */}
-                <div className="w-56">
+                <div className="w-64">
                   <SpecializationSelect
+                    className="h-9 border-none"
                     value={selectedSpecialization}
                     onChange={setSelectedSpecialization}
                   />
@@ -433,9 +440,9 @@ const Index = () => {
                     value={selectedLanguage}
                     onChange={(e) => setSelectedLanguage(e.target.value)}
                     className={cn(
-                      "appearance-none px-2.5 py-1.5 pr-7 text-[11px] bg-background border rounded-sm transition-all cursor-pointer outline-none",
+                      "appearance-none px-4 py-2.5 pr-9 text-xs font-medium bg-background border rounded-[6px] transition-all cursor-pointer outline-none shadow-sm",
                       selectedLanguage !== "all"
-                        ? "border-primary/50 ring-1 ring-primary/20 text-foreground"
+                        ? "border-primary/50 ring-2 ring-primary/10 text-foreground"
                         : "border-border/60 text-muted-foreground hover:border-primary/40",
                     )}
                   >
@@ -451,7 +458,7 @@ const Index = () => {
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
-                    className="text-[11px] text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
                   >
                     <X className="w-3 h-3" />
                     Clear
@@ -460,7 +467,7 @@ const Index = () => {
               </div>
             </div>
             <Link to="/patient/search-doctors">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="rounded-[6px] px-5 py-2 font-medium text-sm border-border/60 hover:bg-muted/50 hover:text-foreground transition-all">
                 {t("pages.landing.see_all_doctors")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -580,28 +587,24 @@ const Index = () => {
       </section>
 
       {/* ── Specialities ── */}
-      <section id="specialities" className="py-10">
+      <section id="specialities" className=" flex flex-col justify-center py-20">
         <div className="container">
           <div className="max-w-2xl">
-            <p className={SECTION_EYEBROW}>{t("pages.landing.what_we_do")}</p>
             <h2 className={SECTION_TITLE}>
               {t("pages.landing.features_title")}
             </h2>
           </div>
         </div>
-        <div className="mt-10 px-10 border border-border bg-gradient-soft">
+        <div className="mt-4 px-14 ">
           <Specialities />
         </div>
       </section>
 
       {/* ── Hospitals ── */}
-      <section id="hospitals" className="py-16 md:py-24 border-border">
+      <section id="hospitals" className=" border-t flex flex-col justify-center py-20 border-border">
         <div className="container">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div>
-              <p className={SECTION_EYEBROW}>
-                {t("pages.landing.partner_network")}
-              </p>
               <h2 className={SECTION_TITLE}>
                 {t("pages.landing.health_facility")}
               </h2>
@@ -610,7 +613,7 @@ const Index = () => {
               </p>
             </div>
             <Link to="/patient/search-facilities">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="rounded-[6px] px-5 py-2 font-medium text-sm border-border/60 hover:bg-muted/50 hover:text-foreground transition-all">
                 {t("pages.landing.see_all_hospitals")}{" "}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -667,7 +670,9 @@ const Index = () => {
                     </div>
                   );
                 } else {
-                  return <HospitalCard key={hospital.id} hospital={hospital} />;
+                  return (
+                    <HospitalCard key={hospital.id} hospital={hospital} />
+                  );
                 }
               })}
             {isFetchingNextHospitalsPage &&
@@ -725,90 +730,44 @@ const Index = () => {
       {/* ── Pharmacy teaser ── */}
       <section
         id="pharmacy"
-        className="py-20 lg:py-32 bg-gradient-soft border-t border-border"
+        className="h-fit flex flex-col justify-center bg-primary  w-full "
       >
-        <div className="container grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-          <div>
-            <p className={SECTION_EYEBROW}>
-              {t("pages.landing.pharmacy_marketplace")}
-            </p>
-            <h2 className={SECTION_TITLE}>
+        <div className=" grid lg:grid-cols-2  items-center">
+          <div className="px-10 py-10 lg:px-20 lg:py-20">
+            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white")}>
               {t("pages.landing.pharmacy_title")}
             </h2>
-            <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xl">
+            <p className="mt-6 text-base md:text-lg dark:text-black  text-white/90 leading-relaxed max-w-xl">
               {t("pages.landing.pharmacy_sub")}
             </p>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-4">
               <Link to="/patient/search-pharmacy">
                 <Button
                   size="lg"
-                  className="bg-gradient-primary hover:opacity-90 shadow-medium"
+                  className="bg-white text-primary hover:bg-white/90 hover:scale-[1.02] shadow-xl rounded-[6px] px-8 py-6 text-base font-semibold transition-all duration-300 dark:text-black"
                 >
-                  <Pill className="mr-2 h-4 w-4" />
+                  <Pill className="mr-2 h-5 w-5" />
                   {t("pages.landing.open_marketplace")}
                 </Button>
               </Link>
             </div>
-            <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
-              {[
-                {
-                  v: pharmacyStats
-                    ? `${pharmacyStats.summary.active_medicines}+`
-                    : "—",
-                  l: t("pages.landing.stat_products"),
-                },
-                {
-                  v: pharmacyStats
-                    ? `${pharmacyStats.summary.total_pharmacies}`
-                    : "—",
-                  l: t("pages.landing.stat_pharmacies"),
-                },
-                { v: "<1h", l: t("pages.landing.stat_delivery") },
-              ].map((s) => (
-                <div
-                  key={s.l}
-                  className="rounded-sm border border-border bg-card p-4"
-                >
-                  <div className="font-display text-xl font-bold tabular-nums text-foreground">
-                    {s.v}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{s.l}</div>
-                </div>
-              ))}
-            </div>
           </div>
-          <div className="rounded-sm bg-card border border-border p-5">
-            <div className="grid grid-cols-3 gap-2.5">
-              {["💊", "🧴", "🌿", "💉", "👶", "🩹"].map((e, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-sm bg-accent flex items-center justify-center text-[2.5rem]"
-                >
-                  {e}
-                </div>
-              ))}
-            </div>
+          <div className="bg-[url('/images/arpad-czapp-tvP6pCnq9iI.jpg')] bg-cover bg-center h-full">
           </div>
         </div>
       </section>
 
       {/* ── Our Team ── */}
-      <section id="team" className="py-10">
+      <section id="team" className="min-h-dvh flex flex-col justify-center py-20 bg-gradient-soft">
         <div className="container">
           <div className="max-w-2xl">
-            <p className={SECTION_EYEBROW}>
-              Our Team
-              <span className="ml-1 text-lg leading-none text-[hsl(var(--primary-glow))]">
-                +
-              </span>
-            </p>
             <h2 className={SECTION_TITLE}>
               Board-certified specialists, vetted and ready to see you
             </h2>
           </div>
-        </div>
-        <div className="mt-10 px-10 border border-border bg-gradient-soft">
-          <OurTeam />
+          <div className="mt-12">
+            <OurTeam />
+          </div>
         </div>
       </section>
 

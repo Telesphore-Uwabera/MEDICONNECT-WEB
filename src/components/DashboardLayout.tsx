@@ -136,7 +136,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/admin/settings", label: t("sidebar.settings"), icon: Settings },
         { to: "/admin/reviews", label: t("sidebar.reviews"), icon: History },
-        // { to: "/admin/maintenance", label: t("sidebar.maintenance"), icon: Wrench },
+        { to: "/admin/our-team", label: t("sidebar.ourteam"), icon: Wrench },
       ],
     },
     {

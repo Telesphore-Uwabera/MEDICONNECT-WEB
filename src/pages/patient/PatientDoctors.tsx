@@ -483,7 +483,7 @@ function Pagination({
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 const PatientDoctors = () => {
-  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  // const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   // Specialization lives separately so SpecializationSelect owns its full shape
   const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
 
@@ -494,6 +494,14 @@ const PatientDoctors = () => {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { data: insurance } = useGetPublicInsurances();
 
+  const [filters, setFilters] = useState<FilterState>(() => {
+  const stored = localStorage.getItem("doctorSearchQuery");
+  if (stored) localStorage.removeItem("doctorSearchQuery");
+  return {
+    ...INITIAL_FILTERS,
+    q: stored ?? "",
+  };
+});
   // Debounce search query
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
