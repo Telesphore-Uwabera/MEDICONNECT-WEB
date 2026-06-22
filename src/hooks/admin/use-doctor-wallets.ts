@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api";
 const DOCTORS_BASE = "/admin/wallets/doctors";
 const MAIN_BASE = "/admin/wallets/main";
 const PAYOUTS_BASE = "/admin/payouts";
+const WITHDRAWAL_REQUESTS_BASE = "/admin/wallets/withdrawal-requests";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPES
@@ -120,6 +121,40 @@ export interface RefundPayload {
   reason: string;
 }
 
+export type WithdrawalRequestStatus =
+  | "pending"
+  | "approved"
+  | "processing"
+  | "completed"
+  | "rejected"
+  | "cancelled";
+
+export interface WithdrawalRequest {
+  id: number;
+  doctor_id?: number;
+  amount: string | number;
+  method?: string | null;
+  account_number?: string | null;
+  account_name?: string | null;
+  note?: string | null;
+  reason?: string | null;
+  rejection_reason?: string | null;
+  cancellation_reason?: string | null;
+  status: WithdrawalRequestStatus | string;
+  created_at?: string | null;
+  updated_at?: string | null;
+  approved_at?: string | null;
+  completed_at?: string | null;
+  rejected_at?: string | null;
+  cancelled_at?: string | null;
+  doctor?: DoctorNested | null;
+  doctor_name: string;
+  doctor_email: string;
+  [key: string]: unknown;
+}
+
+type RawWithdrawalRequest = Omit<WithdrawalRequest, "doctor_name" | "doctor_email">;
+
 /* ═══════════════════════════════════════════════════════════════════════════
    NORMALIZERS
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -146,6 +181,14 @@ function normalizePayout(raw: RawPayout): Payout {
 /* ═══════════════════════════════════════════════════════════════════════════
    DOCTOR WALLETS
    ═══════════════════════════════════════════════════════════════════════════ */
+
+function normalizeWithdrawalRequest(raw: RawWithdrawalRequest): WithdrawalRequest {
+  return {
+    ...raw,
+    doctor_name: raw.doctor?.user?.name ?? "—",
+    doctor_email: raw.doctor?.user?.email ?? "—",
+  };
+}
 
 export function useGetDoctorWallets(search?: string, page = 1) {
   const queryString = search
@@ -321,5 +364,70 @@ export function useGetTransactions(doctorId?: number, type?: "credit" | "debit",
       apiFetch<PaginatedResponse<Transaction>>(
         `${PAYOUTS_BASE}/transactions?${params.toString()}`
       ),
+  });
+}
+
+export function useGetWithdrawalRequests(status?: string, page = 1, enabled = true) {
+  const params = new URLSearchParams();
+  if (status && status !== "all") params.append("status", status);
+  params.append("page", String(page));
+
+  return useQuery<PaginatedResponse<WithdrawalRequest>>({
+    queryKey: ["admin-withdrawal-requests", status ?? "all", page],
+    enabled,
+    queryFn: async () => {
+      const res = await apiFetch<PaginatedResponse<RawWithdrawalRequest>>(
+        `${WITHDRAWAL_REQUESTS_BASE}?${params.toString()}`
+      );
+      return { ...res, data: res.data.map(normalizeWithdrawalRequest) };
+    },
+  });
+}
+
+export function useGetWithdrawalRequest(id: number | null) {
+  return useQuery<WithdrawalRequest>({
+    queryKey: ["admin-withdrawal-request", id],
+    queryFn: async () => {
+      const res = await apiFetch<{ withdrawal_request?: RawWithdrawalRequest; request?: RawWithdrawalRequest } | RawWithdrawalRequest>(
+        `${WITHDRAWAL_REQUESTS_BASE}/${id}`
+      );
+      const raw = "withdrawal_request" in res
+        ? res.withdrawal_request
+        : "request" in res
+          ? res.request
+          : res;
+      return normalizeWithdrawalRequest(raw as RawWithdrawalRequest);
+    },
+    enabled: !!id,
+  });
+}
+
+type WithdrawalAction = "approve" | "complete" | "reject" | "cancel";
+
+export function useWithdrawalRequestAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      action,
+      reason,
+    }: {
+      id: number;
+      action: WithdrawalAction;
+      reason?: string;
+    }) =>
+      apiFetch(`${WITHDRAWAL_REQUESTS_BASE}/${id}/${action}`, {
+        method: "PUT",
+        body:
+          action === "reject" || action === "cancel"
+            ? { reason: reason ?? "" }
+            : undefined,
+      }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["admin-withdrawal-requests"] });
+      qc.invalidateQueries({ queryKey: ["admin-withdrawal-request", variables.id] });
+      qc.invalidateQueries({ queryKey: ["admin-wallets-doctors"] });
+      qc.invalidateQueries({ queryKey: ["admin-wallet-main"] });
+    },
   });
 }

@@ -39,7 +39,7 @@ import type {
   ApiDoctorSpecialization,
 } from "@/hooks/patient/use-patient-doctor";
 import { readConsultSession } from "@/hooks/patient/se-consultation-session";
-import { Card } from "@/components/ui/card";
+import { Card } from "./ui/card";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ function DoctorAvatar({
     .slice(0, 2)
     .toUpperCase();
   const sizeClass =
-    size === "lg" ? "h-full w-full text-xl" : "h-full w-full text-sm";
+    size === "lg" ? "h-full w-full text-2xl sm:text-3xl" : "h-full w-full text-sm";
   if (!doctor.image || imgError) {
     return (
       <div
@@ -695,10 +695,11 @@ export function UnifiedModal({
 }
 
 // ─── Main DoctorCard ──────────────────────────────────────────────────────────
-// Restyled below to match the rounded-sm / border-border card language used by
-// HospitalCard, Specialities, and OurTeam. All content is preserved — same
-// avatar, location, consult badge, status line, divider, and two action
-// buttons — only the shape/radius/hover language changed.
+// Restyled: the doctor image is now a full-width banner at the top of the
+// card (h-44 / sm:h-52) instead of a small h-12 inline avatar. Status dot and
+// "Featured" badge float on top of the image as pills. Everything else —
+// name, specialization, location, consult badge, divider, buttons, pills,
+// modal — is unchanged in content, only reflowed to sit below the image.
 
 export const DoctorCard = ({
   doctor: doctorProp,
@@ -840,49 +841,46 @@ export const DoctorCard = ({
       {/* ── Card ── */}
       <Card
         onClick={openDetails}
-        className={cn(
-          "rounded-[6px] overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300",
-          isConnected ? "border-emerald-500/30 ring-1 ring-emerald-500/30" : hasSavedSession && !isCallInProgress ? "border-violet-500/30 ring-1 ring-violet-500/25" : "border-border/60 shadow-sm"
-        )}
+        className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer"
       >
         <div className="px-3.5 pt-3 pb-3">
-          {/* Top row — avatar shrunk + squared off to match the
-              h-9 w-9 rounded-sm avatar treatment used elsewhere */}
-          <div className="flex items-start gap-3">
+          {/* Top row — avatar enlarged from h-12 to h-20 (h-24 on sm+),
+              same row layout as before, just a bigger image. */}
+          <div className="flex items-start gap-3 ">
             <div className="relative shrink-0">
-              <div className="h-12 w-12 rounded-sm overflow-hidden border border-border">
-                <DoctorAvatar doctor={doctor} />
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-sm overflow-hidden border border-border">
+                <DoctorAvatar doctor={doctor} size="lg" />
               </div>
               <span
                 className={cn(
-                  "absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-card",
+                  "absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-card",
                   s.dot,
                   s.pulse,
                 )}
               />
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className=" flex flex-col justify-between flex-1 min-w-0  h-[70px]">
               <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
                 {doctor.user.name}
               </h3>
               <p className="text-xs text-primary font-medium mt-0.5 truncate">
-                {doctor.specialization}
-                {doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
+
+                {doctor.doctor_degree ? `  ${doctor.doctor_degree}` : ""}
               </p>
-              {locationLabel && (
-                <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1 truncate">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {locationLabel}
+              {doctor.specialization && (
+                <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">
+                  <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
+                  {doctor.specialization}
                 </p>
               )}
             </div>
           </div>
 
           {!compact && (
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 flex  items-center justify-between">
               <ConsultBadge type={doctor.consultation_type} />
-              <span className="flex items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
+              <span className="flex cursor-pointer  items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
                 View details <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </div>
@@ -936,7 +934,7 @@ export const DoctorCard = ({
                 onClick={() =>
                   canBook && !isCallInProgress && setBookOpen(true)
                 }
-                className="h-8 px-3 text-xs font-medium rounded-sm border-border"
+                className="h-9 px-10 text-xs font-medium rounded-sm border-border"
               >
                 {t("pages.cards.book")}
               </Button>

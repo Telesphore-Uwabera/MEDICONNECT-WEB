@@ -87,6 +87,7 @@ export interface DoctorSearchParams {
   insurance_id?: number;
   available_today?: boolean;
   instant?: boolean;
+  date?: string;
   page?: number;
   per_page?: number;
 }
@@ -110,6 +111,7 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     sp.set("insurance_id", String(params.insurance_id));
   if (params.available_today) sp.set("available_today", "true");
   if (params.instant) sp.set("instant", "true");
+  if (params.date) sp.set("date", params.date);
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   if (params.per_page) sp.set("per_page", String(params.per_page));
 
@@ -150,6 +152,7 @@ export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {
         sp.set("insurance_id", String(params.insurance_id));
       if (params.available_today) sp.set("available_today", "true");
       if (params.instant) sp.set("instant", "true");
+      if (params.date) sp.set("date", params.date);
       sp.set("page", String(pageParam));
       if (params.per_page) sp.set("per_page", String(params.per_page));
 

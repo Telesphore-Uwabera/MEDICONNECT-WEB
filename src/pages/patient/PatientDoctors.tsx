@@ -20,6 +20,7 @@ import {
 
 import { DoctorCard } from "@/components/DoctorCard";
 import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActions";
+import { useSearchParams } from "react-router-dom";
 import {
   useGetSearchDoctors,
   type ApiDoctor,
@@ -31,7 +32,7 @@ import { SpecializationSelect, type SpecializationValue } from "./components/Spe
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
 type SortOption = "rating" | "fee-asc" | "fee-desc";
-type ConsultationType = "all" | "instant" | "booking" | "both" | "booking" | "instant";
+type ConsultationType = "all" | "instant" | "booking" | "both";
 type ViewMode = "grid" | "list";
 
 interface FilterState {
@@ -42,6 +43,9 @@ interface FilterState {
   gender: "all" | "male" | "female";
   available_today: boolean;
   instant: boolean;
+  date: string;
+  hospital_id: string;
+  insurance_id: string;
   sort: SortOption;
 }
 
@@ -53,6 +57,9 @@ const INITIAL_FILTERS: FilterState = {
   gender: "all",
   available_today: false,
   instant: false,
+  date: "",
+  hospital_id: "",
+  insurance_id: "",
   sort: "rating",
 };
 
@@ -116,7 +123,84 @@ function buildApiParams(
     params.gender = filters.gender as "male" | "female";
   if (filters.available_today) params.available_today = true;
   if (filters.instant) params.instant = true;
+  if (filters.date) params.date = filters.date;
+  if (filters.hospital_id) params.hospital_id = Number(filters.hospital_id);
+  if (filters.insurance_id) params.insurance_id = Number(filters.insurance_id);
   return params;
+}
+
+function parseBoolParam(value: string | null): boolean {
+  return value === "true" || value === "1" || value === "yes";
+}
+
+function pickParam<T extends string>(
+  value: string | null,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return value && allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+function readInitialFilters(searchParams: URLSearchParams): FilterState {
+  const stored = localStorage.getItem("doctorSearchQuery");
+  if (stored) localStorage.removeItem("doctorSearchQuery");
+
+  const typeFromInstant = parseBoolParam(searchParams.get("instant")) ? "instant" : INITIAL_FILTERS.type;
+  const type = pickParam<ConsultationType>(
+    searchParams.get("type"),
+    ["all", "instant", "booking", "both"],
+    typeFromInstant,
+  );
+
+  return {
+    ...INITIAL_FILTERS,
+    q: searchParams.get("q") ?? stored ?? "",
+    type,
+    language: searchParams.get("language") ?? INITIAL_FILTERS.language,
+    city: searchParams.get("city") ?? INITIAL_FILTERS.city,
+    gender: pickParam(searchParams.get("gender"), ["all", "male", "female"], INITIAL_FILTERS.gender),
+    available_today: parseBoolParam(searchParams.get("available_today")),
+    instant: parseBoolParam(searchParams.get("instant")) || type === "instant",
+    date: searchParams.get("date") ?? INITIAL_FILTERS.date,
+    hospital_id: searchParams.get("hospital_id") ?? INITIAL_FILTERS.hospital_id,
+    insurance_id: searchParams.get("insurance_id") ?? INITIAL_FILTERS.insurance_id,
+    sort: pickParam(searchParams.get("sort"), ["rating", "fee-asc", "fee-desc"], INITIAL_FILTERS.sort),
+  };
+}
+
+function readInitialSpec(searchParams: URLSearchParams): SpecializationValue {
+  const specialization = searchParams.get("specialization");
+  const specializationId = Number(searchParams.get("specialization_id") ?? 0);
+  const feeId = Number(searchParams.get("specialization_fee_id") ?? 0);
+
+  if (!specialization && !specializationId && !feeId) return INITIAL_SPEC;
+
+  return {
+    specialization: specialization
+      ? {
+          id: Number.isFinite(specializationId) && specializationId > 0 ? specializationId : 0,
+          name: specialization,
+          name_fr: specialization,
+          name_kiny: null,
+          slug: specialization.toLowerCase().replace(/\s+/g, "-"),
+        }
+      : null,
+    fee:
+      Number.isFinite(feeId) && feeId > 0
+        ? {
+            id: feeId,
+            specialization_id: Number.isFinite(specializationId) ? specializationId : 0,
+            sub_specialization: searchParams.get("sub_specialization") ?? "Selected sub-specialization",
+            sub_specialization_fr: "",
+            sub_specialization_kiny: null,
+            tier_name: searchParams.get("tier_name") ?? "",
+            slug: "",
+            online_fee: "",
+            in_person_fee: "",
+            currency: "",
+          }
+        : null,
+  };
 }
 
 function sortDoctors(doctors: ApiDoctor[], sort: SortOption): ApiDoctor[] {
@@ -483,23 +567,38 @@ function Pagination({
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 const PatientDoctors = () => {
-  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  // const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [searchParams, setSearchParams] = useSearchParams();
   // Specialization lives separately so SpecializationSelect owns its full shape
-  const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
+  const [spec, setSpec] = useState<SpecializationValue>(() => readInitialSpec(searchParams));
 
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    const fromUrl = Number(searchParams.get("page"));
+    return Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1;
+  });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didMountSearchRef = useRef(false);
+  const didMountSpecRef = useRef(false);
   const { data: insurance } = useGetPublicInsurances();
 
+  const [filters, setFilters] = useState<FilterState>(() => readInitialFilters(searchParams));
+
+  useEffect(() => {
+    setDebouncedQ(filters.q);
+  }, []);
   // Debounce search query
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setDebouncedQ(filters.q);
-      setPage(1);
+      if (didMountSearchRef.current) {
+        setPage(1);
+      } else {
+        didMountSearchRef.current = true;
+      }
     }, 400);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -508,8 +607,35 @@ const PatientDoctors = () => {
 
   // Reset page when spec changes
   useEffect(() => {
-    setPage(1);
+    if (didMountSpecRef.current) {
+      setPage(1);
+    } else {
+      didMountSpecRef.current = true;
+    }
   }, [spec]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedQ.trim().length >= 2) params.set("q", debouncedQ.trim());
+    if (filters.type !== INITIAL_FILTERS.type) params.set("type", filters.type);
+    if (filters.language) params.set("language", filters.language);
+    if (filters.city.trim()) params.set("city", filters.city.trim());
+    if (filters.gender !== INITIAL_FILTERS.gender) params.set("gender", filters.gender);
+    if (filters.available_today) params.set("available_today", "true");
+    if (filters.instant) params.set("instant", "true");
+    if (filters.date) params.set("date", filters.date);
+    if (filters.hospital_id) params.set("hospital_id", filters.hospital_id);
+    if (filters.insurance_id) params.set("insurance_id", filters.insurance_id);
+    if (filters.sort !== INITIAL_FILTERS.sort) params.set("sort", filters.sort);
+    if (spec.specialization) {
+      params.set("specialization", spec.specialization.name);
+      if (spec.specialization.id) params.set("specialization_id", String(spec.specialization.id));
+    }
+    if (spec.fee?.id) params.set("specialization_fee_id", String(spec.fee.id));
+    if (page > 1) params.set("page", String(page));
+
+    setSearchParams(params, { replace: true });
+  }, [debouncedQ, filters, page, setSearchParams, spec]);
 
   const apiParams = useMemo<DoctorSearchParams>(
     () => buildApiParams({ ...filters, q: debouncedQ }, spec, page),
@@ -536,13 +662,15 @@ const PatientDoctors = () => {
     setSpec(INITIAL_SPEC);
     setDebouncedQ("");
     setPage(1);
-  }, []);
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
 
   const hasActiveFilters = useMemo(
     () =>
       JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) ||
-      spec.specialization !== null,
-    [filters, spec],
+      spec.specialization !== null ||
+      page > 1,
+    [filters, page, spec],
   );
 
   // (no body overflow lock needed — filters are inline top panel)
@@ -622,6 +750,41 @@ const PatientDoctors = () => {
                 value: filters.language,
                 options: LANGUAGE_OPTIONS,
                 onChange: (v) => set("language", v),
+              },
+              {
+                type: "search",
+                key: "city",
+                label: "City",
+                placeholder: "City...",
+                value: filters.city,
+                onChange: (v) => set("city", v),
+              },
+              {
+                type: "select",
+                key: "insurance",
+                label: "Insurance",
+                value: filters.insurance_id,
+                options: [
+                  { value: "", label: "Any insurance" },
+                  ...(insurance ?? []).map((item) => ({
+                    value: String(item.id),
+                    label: item.name,
+                  })),
+                ],
+                onChange: (v) => set("insurance_id", v),
+              },
+              {
+                type: "custom",
+                key: "date",
+                label: "Date",
+                render: () => (
+                  <input
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => set("date", e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                  />
+                ),
               },
             ]}
             extraSlot={

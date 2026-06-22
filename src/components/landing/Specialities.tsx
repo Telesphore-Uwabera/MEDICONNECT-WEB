@@ -9,7 +9,27 @@ import {
   ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
-import { useGetSpecializations } from '@/hooks/use-specialization-select';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/api';
+
+interface LandingSpecializationFee {
+  id: number;
+  slug?: string | null;
+  name?: string | null;
+  specialization?: string | null;
+  sub_specialization?: string | null;
+  sub_specialization_en?: string | null;
+  tier_name?: string | null;
+  doctorCount?: number;
+  doctors_count?: number;
+}
+
+type SpecializationFeesResponse =
+  | LandingSpecializationFee[]
+  | {
+      data?: LandingSpecializationFee[];
+      specialization_fees?: LandingSpecializationFee[];
+    };
 
 const SPECIALTY_ICONS: Record<string, LucideIcon> = {
   cardiology: Heart,
@@ -20,8 +40,26 @@ const SPECIALTY_ICONS: Record<string, LucideIcon> = {
   sugerylist: Scissors, // Keep backward compat
 };
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+function useLandingSpecializationFees() {
+  return useQuery({
+    queryKey: ['landing-specialization-fees', 'specialist'],
+    queryFn: async () => {
+      const res = await apiFetch<SpecializationFeesResponse>('/public/specialization-fees?type=specialist');
+      return Array.isArray(res) ? res : res.data ?? res.specialization_fees ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 function Specialities() {
-  const { data, isLoading, isError, refetch, isFetching } = useGetSpecializations();
+  const { data = [], isLoading, isError, refetch, isFetching } = useLandingSpecializationFees();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -125,14 +163,14 @@ function Specialities() {
       )}
 
       {/* Empty state */}
-      {!isLoading && !isError && data?.length === 0 && (
+      {!isLoading && !isError && data.length === 0 && (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No specialities available yet.
         </p>
       )}
 
       {/* Cards */}
-      {!isLoading && !isError && data && data.length > 0 && (
+      {!isLoading && !isError && data.length > 0 && (
         <div className="relative">
           {canScrollLeft && (
             <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10" />
@@ -153,24 +191,32 @@ function Specialities() {
             className="flex gap-3 overflow-x-auto pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
           >
             {data.map((item) => {
-              const Icon = SPECIALTY_ICONS[item.slug] ?? Stethoscope;
+              const label =
+                item.sub_specialization ??
+                item.sub_specialization_en ??
+                item.name ??
+                item.specialization ??
+                'Specialist';
+              const slug = item.slug || slugify(label);
+              const Icon = SPECIALTY_ICONS[slug] ?? Stethoscope;
+              const doctorCount = item.doctorCount ?? item.doctors_count;
               return (
                 <Link
                   key={item.id}
-                  to={`/specialities/${item.slug}`}
+                  to={`/patient/search-doctors?type=booking&specialization_fee_id=${item.id}`}
                   className="group flex w-[124px] flex-shrink-0 flex-col items-center gap-2 rounded-sm border border-border bg-card p-3.5 text-center shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10 text-primary border border-primary/15 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon size={18} strokeWidth={1.75} />
                   </span>
                   <span className="text-xs font-semibold leading-tight text-foreground">
-                    {item.name}
+                    {label}
                   </span>
                   {/* doctorCount is optional on Specialization — render only when the API provides it,
                       so this never throws even if some specializations omit the field */}
-                  {typeof item.doctorCount === 'number' && (
+                  {typeof doctorCount === 'number' && (
                     <span className="text-[10px] text-muted-foreground">
-                      {item.doctorCount} doctors
+                      {doctorCount} doctors
                     </span>
                   )}
                 </Link>

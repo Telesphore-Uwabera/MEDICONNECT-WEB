@@ -14,9 +14,11 @@ export type { SpecializationValue };
 export function SpecializationSelect({
   value,
   onChange,
+  className
 }: {
   value: SpecializationValue;
   onChange: (v: SpecializationValue) => void;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,13 +135,14 @@ export function SpecializationSelect({
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
-  className={cn(
-  "w-full px-2.5 py-1.5 text-[11px] bg-background border rounded-[6px] flex items-center justify-between gap-1.5 transition-all",
-  open
-    ? "border-primary dark:border-border ring-2 ring-primary/20"
-    : "border-primary dark:border-border hover:border-primary/80 dark:hover:border-border/80",
-  triggerLabel ? "text-foreground" : "text-muted-foreground/40"
-)}
+        className={cn(
+          "w-full px-2.5 py-1.5   outline-none shadow-sm  text-xs bg-background border rounded-[6px] flex items-center justify-between gap-1.5 transition-all",
+          open
+            ? "border-primary dark:border-border ring-2 ring-primary/20"
+            : "border-primary dark:border-border hover:border-primary/80 dark:hover:border-border/80",
+          triggerLabel ? "text-foreground" : "text-muted-foreground/40",
+          className
+        )}
       >
         <span className="truncate">{triggerLabel ?? "Any specialization…"}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -177,10 +180,10 @@ export function SpecializationSelect({
               >
                 <ChevronRight className="w-3 h-3 rotate-180" />
               </button>
-              <span className="text-[10px] font-semibold text-foreground truncate">
+              <span className="text-xs font-semibold text-foreground truncate">
                 {value.specialization?.name}
               </span>
-              <span className="text-[9px] text-muted-foreground/60 ml-auto">
+              <span className="text-xs text-muted-foreground/60 ml-auto">
                 Select sub-specialization
               </span>
             </div>
@@ -199,7 +202,7 @@ export function SpecializationSelect({
               }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40"
+              className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/40"
             />
             {query && (
               <button
@@ -219,7 +222,7 @@ export function SpecializationSelect({
                   <button
                     onClick={() => { onChange({ specialization: null, fee: null }); clear(); setOpen(false); }}
                     className={cn(
-                      "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
+                      "w-full px-2.5 py-1.5 text-left text-xs transition-colors",
                       !value.specialization
                         ? "text-primary font-medium bg-primary/5"
                         : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
@@ -230,15 +233,15 @@ export function SpecializationSelect({
                 )}
 
                 {loadingSpecializations ? (
-                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-muted-foreground/60">
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground/60">
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading…
                   </div>
                 ) : errorSpecializations ? (
-                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-destructive/70">
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-destructive/70">
                     <AlertCircle className="w-3 h-3" /> Failed to load
                   </div>
                 ) : specializations.length === 0 ? (
-                  <p className="px-2.5 py-4 text-[11px] text-muted-foreground/60 text-center">
+                  <p className="px-2.5 py-4 text-xs text-muted-foreground/60 text-center">
                     No results for "{query}"
                   </p>
                 ) : (
@@ -247,7 +250,7 @@ export function SpecializationSelect({
                       key={spec.id}
                       onClick={() => handleSelectSpecialization(spec)}
                       className={cn(
-                        "w-full px-2.5 py-1.5 text-left text-[11px] flex items-center justify-between transition-colors",
+                        "w-full px-2.5 py-1.5 text-left text-xs flex items-center justify-between transition-colors",
                         value.specialization?.id === spec.id
                           ? "text-primary font-medium bg-primary/5"
                           : "text-foreground hover:bg-secondary/40"
@@ -262,15 +265,15 @@ export function SpecializationSelect({
             ) : (
               <>
                 {loadingFees ? (
-                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-muted-foreground/60">
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground/60">
                     <Loader2 className="w-3 h-3 animate-spin" /> Loading…
                   </div>
                 ) : errorFees ? (
-                  <div className="flex items-center justify-center gap-1.5 py-6 text-[11px] text-destructive/70">
+                  <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-destructive/70">
                     <AlertCircle className="w-3 h-3" /> Failed to load
                   </div>
                 ) : fees.length === 0 ? (
-                  <p className="px-2.5 py-4 text-[11px] text-muted-foreground/60 text-center">
+                  <p className="px-2.5 py-4 text-xs text-muted-foreground/60 text-center">
                     {query ? `No results for "${query}"` : "No sub-specializations available"}
                   </p>
                 ) : (
@@ -279,7 +282,7 @@ export function SpecializationSelect({
                       key={fee.id}
                       onClick={() => handleSelectFee(fee)}
                       className={cn(
-                        "w-full px-2.5 py-1.5 text-left text-[11px] transition-colors",
+                        "w-full px-2.5 py-1.5 text-left text-xs transition-colors",
                         value.fee?.id === fee.id
                           ? "bg-primary/5"
                           : "hover:bg-secondary/40"
@@ -289,11 +292,11 @@ export function SpecializationSelect({
                         <span className={cn("font-medium", value.fee?.id === fee.id ? "text-primary" : "text-foreground")}>
                           {fee.sub_specialization}
                         </span>
-                        <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 bg-secondary/50 px-1.5 py-0.5 rounded-sm">
+                        <span className="text-xs text-muted-foreground/60 flex-shrink-0 bg-secondary/50 px-1.5 py-0.5 rounded-sm">
                           {fee.tier_name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-[10px] text-muted-foreground/60">
+                      <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground/60">
                         <span>Online: {Number(fee.online_fee).toLocaleString()} {fee.currency}</span>
                         <span>In-person: {Number(fee.in_person_fee).toLocaleString()} {fee.currency}</span>
                       </div>

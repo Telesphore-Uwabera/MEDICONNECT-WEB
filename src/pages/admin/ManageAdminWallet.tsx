@@ -42,12 +42,16 @@ import {
   useDeductMainWallet,
   useGetPayouts,
   useGetTransactions,
+  useGetWithdrawalRequest,
+  useGetWithdrawalRequests,
   useCreatePayout,
   useRefundPayout,
+  useWithdrawalRequestAction,
   type DoctorWallet,
   type MainWallet,
   type Payout,
   type Transaction,
+  type WithdrawalRequest,
 } from "@/hooks/admin/use-doctor-wallets";
 import { StatCard } from "@/components/StatCard";
 import { useToast } from "@/hooks/use-toast";
@@ -69,8 +73,16 @@ function formatCurrency(value: string | number, currency = "RWF"): string {
 const statusStyle: Record<string, string> = {
   pending:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+  approved:
+    "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
+  processing:
+    "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
   completed:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  rejected:
+    "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  cancelled:
+    "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-950/30 dark:text-slate-400 dark:border-slate-900",
   failed:
     "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
   refunded:
@@ -134,7 +146,11 @@ const selectCls =
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-type TabKey = "doctors" | "payouts" | "transactions" | "main";
+type TabKey = "doctors" | "withdrawals" | "payouts" | "transactions" | "main";
+
+// Disabled until the backend withdrawal-request endpoints are stable.
+// Re-enable when GET /admin/wallets/withdrawal-requests no longer returns 500.
+const ENABLE_WITHDRAWAL_REQUESTS = false;
 
 // ─── Doctor Wallet Row ─────────────────────────────────────────────────────────
 
@@ -393,6 +409,96 @@ function PayoutCard({
 }
 
 // ─── Transaction Row ────────────────────────────────────────────────────────────
+
+function WithdrawalRequestRow({
+  request,
+  onView,
+  onAction,
+  isMutating,
+}: {
+  request: WithdrawalRequest;
+  onView: (id: number) => void;
+  onAction: (request: WithdrawalRequest, action: "approve" | "complete" | "reject" | "cancel") => void;
+  isMutating: boolean;
+}) {
+  const status = String(request.status);
+  const canApprove = status === "pending";
+  const canComplete = status === "approved" || status === "processing";
+  const canReject = status === "pending" || status === "approved" || status === "processing";
+  const canCancel = status === "pending" || status === "approved" || status === "processing";
+
+  return (
+    <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
+      <td className="px-4 py-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-[11px] text-foreground truncate">{request.doctor_name}</p>
+          <p className="text-[10px] text-muted-foreground/50 truncate">{request.doctor_email}</p>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-[11px] font-medium text-foreground whitespace-nowrap">{formatCurrency(request.amount)}</td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/70 capitalize">{String(request.method ?? "—").replace(/_/g, " ")}</td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/70">
+        <span className="block text-foreground">{request.account_name ?? "—"}</span>
+        <span>{request.account_number ?? "—"}</span>
+      </td>
+      <td className="px-4 py-3">
+        <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize", statusStyle[status] ?? "bg-muted text-muted-foreground border-border")}>{status}</Badge>
+      </td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">{request.created_at ? new Date(request.created_at).toLocaleString() : "—"}</td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-1.5">
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm" onClick={() => onView(request.id)}><Eye className="w-3 h-3" /></Button>
+          {canApprove && <Button size="sm" className="h-7 px-2 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
+          {canComplete && <Button size="sm" className="h-7 px-2 text-[10px] rounded-sm bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
+          {canReject && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
+          {canCancel && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function WithdrawalRequestCard({
+  request,
+  onView,
+  onAction,
+  isMutating,
+}: {
+  request: WithdrawalRequest;
+  onView: (id: number) => void;
+  onAction: (request: WithdrawalRequest, action: "approve" | "complete" | "reject" | "cancel") => void;
+  isMutating: boolean;
+}) {
+  const status = String(request.status);
+  const canApprove = status === "pending";
+  const canComplete = status === "approved" || status === "processing";
+  const canReject = status === "pending" || status === "approved" || status === "processing";
+  const canCancel = status === "pending" || status === "approved" || status === "processing";
+
+  return (
+    <div className="p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-semibold text-[12px] text-foreground truncate">{request.doctor_name}</p>
+          <p className="text-[10px] text-muted-foreground/50 truncate">{request.doctor_email}</p>
+        </div>
+        <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize shrink-0", statusStyle[status] ?? "bg-muted text-muted-foreground border-border")}>{status}</Badge>
+      </div>
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-[13px] font-bold text-foreground">{formatCurrency(request.amount)}</span>
+        <span className="text-[10px] text-muted-foreground/50 capitalize">{String(request.method ?? "—").replace(/_/g, " ")}</span>
+      </div>
+      <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "—"} · {request.account_number ?? "—"}</p>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm" onClick={() => onView(request.id)}><Eye className="w-3 h-3 mr-1" /> View</Button>
+        {canApprove && <Button size="sm" className="h-7 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
+        {canComplete && <Button size="sm" className="h-7 text-[10px] rounded-sm bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
+        {canReject && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
+        {canCancel && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
+      </div>
+    </div>
+  );
+}
 
 function TransactionRow({ tx }: { tx: Transaction }) {
   return (
@@ -1065,6 +1171,13 @@ function ManageAdminWallet() {
   const [activeTab, setActiveTab] = useState<TabKey>("doctors");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [withdrawalStatus, setWithdrawalStatus] = useState("pending");
+  const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<number | null>(null);
+  const [withdrawalAction, setWithdrawalAction] = useState<{
+    request: WithdrawalRequest;
+    action: "approve" | "complete" | "reject" | "cancel";
+  } | null>(null);
+  const [withdrawalReason, setWithdrawalReason] = useState("");
 
   const [panelAction, setPanelAction] = useState<PanelAction>(null);
   const [selectedWallet, setSelectedWallet] = useState<DoctorWallet | null>(null);
@@ -1077,6 +1190,7 @@ function ManageAdminWallet() {
   const deductMutation = useDeductDoctorWallet();
   const refundMutation = useRefundPayout();
   const deleteMutation = useDeleteDoctorWallet();
+  const withdrawalActionMutation = useWithdrawalRequestAction();
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const { data: walletsData, isLoading: walletsLoading, isError: walletsError } =
@@ -1084,21 +1198,36 @@ function ManageAdminWallet() {
   const { data: mainWallet, isLoading: mainLoading } = useGetMainWallet();
   const { data: payoutsData, isLoading: payoutsLoading, isError: payoutsError } =
     useGetPayouts(undefined, undefined, activeTab === "payouts" ? page : 1);
+  const {
+    data: withdrawalRequestsData,
+    isLoading: withdrawalRequestsLoading,
+    isError: withdrawalRequestsError,
+    error: withdrawalRequestsErrorObj,
+  } = useGetWithdrawalRequests(
+    withdrawalStatus,
+    activeTab === "withdrawals" ? page : 1,
+    ENABLE_WITHDRAWAL_REQUESTS && activeTab === "withdrawals",
+  );
+  const { data: selectedWithdrawal, isLoading: selectedWithdrawalLoading } =
+    useGetWithdrawalRequest(selectedWithdrawalId);
   const { data: transactionsData, isLoading: txLoading, isError: txError } =
     useGetTransactions(undefined, undefined, activeTab === "transactions" ? page : 1);
 
   const wallets      = walletsData?.data      ?? [];
   const payouts      = payoutsData?.data      ?? [];
+  const withdrawalRequests = withdrawalRequestsData?.data ?? [];
   const transactions = transactionsData?.data ?? [];
 
   const total =
     activeTab === "doctors"      ? (walletsData?.total      ?? 0)
+    : activeTab === "withdrawals" ? (withdrawalRequestsData?.total ?? 0)
     : activeTab === "payouts"    ? (payoutsData?.total      ?? 0)
     : activeTab === "transactions" ? (transactionsData?.total ?? 0)
     : 0;
 
   const perPage =
     activeTab === "doctors"        ? (walletsData?.per_page      ?? 20)
+    : activeTab === "withdrawals"  ? (withdrawalRequestsData?.per_page ?? 20)
     : activeTab === "payouts"      ? (payoutsData?.per_page      ?? 20)
     : activeTab === "transactions" ? (transactionsData?.per_page ?? 20)
     : 20;
@@ -1129,6 +1258,36 @@ function ManageAdminWallet() {
     setPanelAction("refund");
   }, []);
 
+  const openWithdrawalAction = useCallback((
+    request: WithdrawalRequest,
+    action: "approve" | "complete" | "reject" | "cancel",
+  ) => {
+    setWithdrawalAction({ request, action });
+    setWithdrawalReason("");
+  }, []);
+
+  const confirmWithdrawalAction = useCallback(async () => {
+    if (!withdrawalAction) return;
+    const needsReason = withdrawalAction.action === "reject" || withdrawalAction.action === "cancel";
+    if (needsReason && !withdrawalReason.trim()) {
+      toast({ title: "Reason is required.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await withdrawalActionMutation.mutateAsync({
+        id: withdrawalAction.request.id,
+        action: withdrawalAction.action,
+        reason: withdrawalReason.trim() || undefined,
+      });
+      toast({ title: `Withdrawal ${withdrawalAction.action}ed.` });
+      setWithdrawalAction(null);
+      setWithdrawalReason("");
+    } catch (error) {
+      toast({ title: getErrorMessage(error), variant: "destructive" });
+    }
+  }, [toast, withdrawalAction, withdrawalActionMutation, withdrawalReason]);
+
   const closePanel = useCallback(() => {
     setPanelAction(null);
     setSelectedWallet(null);
@@ -1155,20 +1314,25 @@ function ManageAdminWallet() {
 
   const isLoading =
     (activeTab === "doctors"       && walletsLoading) ||
+    (activeTab === "withdrawals"   && withdrawalRequestsLoading) ||
     (activeTab === "payouts"       && payoutsLoading) ||
     (activeTab === "transactions"  && txLoading)      ||
     (activeTab === "main"          && mainLoading);
 
   const isError =
     (activeTab === "doctors"       && walletsError)  ||
+    (activeTab === "withdrawals"   && withdrawalRequestsError) ||
     (activeTab === "payouts"       && payoutsError)  ||
     (activeTab === "transactions"  && txError);
 
   const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
-    { key: "doctors",      label: "Doctor Wallets", icon: Wallet       },
-    { key: "payouts",      label: "Payouts",        icon: Send         },
-    { key: "transactions", label: "Transactions",   icon: ArrowRightLeft },
-    { key: "main",         label: "Main Wallet",    icon: Landmark     },
+    { key: "doctors", label: "Doctor Wallets", icon: Wallet },
+    ...(ENABLE_WITHDRAWAL_REQUESTS
+      ? [{ key: "withdrawals" as const, label: "Withdrawals", icon: Receipt }]
+      : []),
+    { key: "payouts", label: "Payouts", icon: Send },
+    { key: "transactions", label: "Transactions", icon: ArrowRightLeft },
+    { key: "main", label: "Main Wallet", icon: Landmark },
   ];
 
   return (
@@ -1222,8 +1386,8 @@ function ManageAdminWallet() {
                 <>
                   <span className="font-bold text-foreground">{total}</span>{" "}
                   {total === 1
-                    ? activeTab === "doctors" ? "wallet" : activeTab === "payouts" ? "payout" : "transaction"
-                    : activeTab === "doctors" ? "wallets" : activeTab === "payouts" ? "payouts" : "transactions"}
+                    ? activeTab === "doctors" ? "wallet" : activeTab === "withdrawals" ? "withdrawal" : activeTab === "payouts" ? "payout" : "transaction"
+                    : activeTab === "doctors" ? "wallets" : activeTab === "withdrawals" ? "withdrawals" : activeTab === "payouts" ? "payouts" : "transactions"}
                 </>
               )}
             </p>
@@ -1260,6 +1424,21 @@ function ManageAdminWallet() {
                   New payout
                 </Button>
               )}
+
+              {activeTab === "withdrawals" && (
+                <select
+                  value={withdrawalStatus}
+                  onChange={(e) => {
+                    setWithdrawalStatus(e.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 px-3 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                >
+                  {["pending", "approved", "processing", "completed", "rejected", "cancelled", "all"].map((status) => (
+                    <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -1283,8 +1462,14 @@ function ManageAdminWallet() {
           <div className="p-3 sm:p-4">
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <p className="text-[12px] font-semibold text-destructive">Failed to load data</p>
-                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+                <p className="text-[12px] font-semibold text-destructive">
+                  {activeTab === "withdrawals" ? "Failed to load withdrawal requests" : "Failed to load data"}
+                </p>
+                <p className="text-[11px] text-muted-foreground/70 max-w-md">
+                  {activeTab === "withdrawals"
+                    ? getErrorMessage(withdrawalRequestsErrorObj) || "The withdrawal requests API returned an error."
+                    : "Check your connection and try again"}
+                </p>
               </div>
             ) : !isLoading && total === 0 && activeTab !== "main" ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
@@ -1295,6 +1480,8 @@ function ManageAdminWallet() {
                   <p className="text-[12px] font-semibold text-foreground">
                     {activeTab === "doctors"
                       ? "No doctor wallets yet"
+                      : activeTab === "withdrawals"
+                      ? "No withdrawal requests"
                       : activeTab === "payouts"
                       ? "No payouts yet"
                       : "No transactions yet"}
@@ -1302,6 +1489,8 @@ function ManageAdminWallet() {
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {activeTab === "doctors"
                       ? "Doctor wallets will appear here"
+                      : activeTab === "withdrawals"
+                      ? "Doctor withdrawal requests will appear here"
                       : activeTab === "payouts"
                       ? "Create your first payout"
                       : "Transactions will appear here"}
@@ -1383,6 +1572,57 @@ function ManageAdminWallet() {
                                 deductMutation.isPending ||
                                 deleteMutation.isPending
                               }
+                            />
+                          ))}
+                    </div>
+                  </>
+                )}
+
+                {activeTab === "withdrawals" && (
+                  <>
+                    <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                      <table className="w-full text-[11px]">
+                        <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                          <tr>
+                            <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                            <th className="text-left px-4 py-3 font-semibold">Amount</th>
+                            <th className="text-left px-4 py-3 font-semibold">Method</th>
+                            <th className="text-left px-4 py-3 font-semibold">Account</th>
+                            <th className="text-left px-4 py-3 font-semibold">Status</th>
+                            <th className="text-left px-4 py-3 font-semibold">Requested</th>
+                            <th className="px-4 py-3" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {withdrawalRequestsLoading ? (
+                            <SkeletonRows cols={7} />
+                          ) : (
+                            withdrawalRequests.map((request) => (
+                              <WithdrawalRequestRow
+                                key={request.id}
+                                request={request}
+                                onView={setSelectedWithdrawalId}
+                                onAction={openWithdrawalAction}
+                                isMutating={withdrawalActionMutation.isPending}
+                              />
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="md:hidden flex flex-col gap-2">
+                      {withdrawalRequestsLoading
+                        ? Array.from({ length: 4 }).map((_, i) => (
+                            <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
+                          ))
+                        : withdrawalRequests.map((request) => (
+                            <WithdrawalRequestCard
+                              key={request.id}
+                              request={request}
+                              onView={setSelectedWithdrawalId}
+                              onAction={openWithdrawalAction}
+                              isMutating={withdrawalActionMutation.isPending}
                             />
                           ))}
                     </div>
@@ -1522,6 +1762,97 @@ function ManageAdminWallet() {
         onCancel={() => setDeletingWallet(null)}
         isDeleting={deleteMutation.isPending}
       />
+
+      {ENABLE_WITHDRAWAL_REQUESTS && selectedWithdrawalId && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-card border-l border-border h-full overflow-y-auto shadow-xl">
+            <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Withdrawal request</p>
+                <p className="text-[11px] text-muted-foreground">Review payout destination and request timeline</p>
+              </div>
+              <button
+                onClick={() => setSelectedWithdrawalId(null)}
+                className="h-8 w-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {selectedWithdrawalLoading ? (
+              <div className="p-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading request...
+              </div>
+            ) : selectedWithdrawal ? (
+              <div className="p-4 space-y-4">
+                <div className="rounded-sm border border-border/60 bg-secondary/20 p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Amount</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(selectedWithdrawal.amount)}</p>
+                  <Badge variant="outline" className={cn("mt-3 border text-[10px] capitalize", statusStyle[String(selectedWithdrawal.status)] ?? "bg-muted text-muted-foreground border-border")}>
+                    {String(selectedWithdrawal.status)}
+                  </Badge>
+                </div>
+
+                {[
+                  ["Doctor", selectedWithdrawal.doctor_name],
+                  ["Email", selectedWithdrawal.doctor_email],
+                  ["Method", String(selectedWithdrawal.method ?? "—").replace(/_/g, " ")],
+                  ["Account name", selectedWithdrawal.account_name ?? "—"],
+                  ["Account number", selectedWithdrawal.account_number ?? "—"],
+                  ["Note", selectedWithdrawal.note ?? "—"],
+                  ["Reason", selectedWithdrawal.reason ?? selectedWithdrawal.rejection_reason ?? selectedWithdrawal.cancellation_reason ?? "—"],
+                  ["Requested", selectedWithdrawal.created_at ? new Date(selectedWithdrawal.created_at).toLocaleString() : "—"],
+                  ["Updated", selectedWithdrawal.updated_at ? new Date(selectedWithdrawal.updated_at).toLocaleString() : "—"],
+                ].map(([label, value]) => (
+                  <div key={label} className="border-b border-border/40 pb-2 last:border-0">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+                    <p className="text-sm text-foreground mt-1 break-words">{value}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-sm text-muted-foreground">Request not found.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {ENABLE_WITHDRAWAL_REQUESTS && withdrawalAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-sm border border-border bg-card shadow-xl">
+            <div className="p-4 border-b border-border">
+              <p className="text-sm font-semibold text-foreground capitalize">
+                {withdrawalAction.action} withdrawal
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {formatCurrency(withdrawalAction.request.amount)} for {withdrawalAction.request.doctor_name}
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              {(withdrawalAction.action === "reject" || withdrawalAction.action === "cancel") && (
+                <Field label="Reason" required>
+                  <textarea
+                    value={withdrawalReason}
+                    onChange={(e) => setWithdrawalReason(e.target.value)}
+                    rows={3}
+                    placeholder={withdrawalAction.action === "reject" ? "Insufficient funds" : "Doctor requested cancellation"}
+                    className={inputCls}
+                  />
+                </Field>
+              )}
+              <div className="flex items-center justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => setWithdrawalAction(null)} disabled={withdrawalActionMutation.isPending}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={confirmWithdrawalAction} disabled={withdrawalActionMutation.isPending}>
+                  {withdrawalActionMutation.isPending && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                  Confirm
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
