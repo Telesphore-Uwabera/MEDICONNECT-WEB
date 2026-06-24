@@ -17,6 +17,7 @@ import { dashboardPath } from "@/lib/auth-store";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import type { PublicGeneralSettings } from "@/hooks/use-public-settings";
 import {
   SpecializationSelect,
   SpecializationValue,
@@ -26,16 +27,19 @@ interface HeroHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   activeSection?: string;
+  settings?: PublicGeneralSettings;
 }
 
 export function HeroHeader({
   mobileMenuOpen,
   setMobileMenuOpen,
   activeSection,
+  settings,
 }: HeroHeaderProps) {
   const { t } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
-  const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
+  const logo = settings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
+  const appName = settings?.app_name || "MEDICONNECT";
   const location = useLocation();
   const navigate = useNavigate();
   const activeHash = activeSection ? `#${activeSection}` : location.hash || "#doctors";
@@ -138,9 +142,9 @@ export function HeroHeader({
       <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
 
         {/* Logo */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 lg:shrink-0">
           <Link to="/">
-            <img src={logo} alt="Logo" className="h-16 w-auto" />
+            <img src={logo} alt={appName} className="lg:h-12 lg:w-auto w-[50%]" />
           </Link>
         </div>
 

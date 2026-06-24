@@ -46,6 +46,7 @@ import DoctorAvailability from "./pages/doctor/DoctorAvailability";
 import DoctorAppointments from "./pages/doctor/DoctorAppointments";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorPrescriptions from "./pages/doctor/DoctorPrescriptions";
+import DoctorConsultationSummaries from "./pages/doctor/DoctorConsultationSummaries";
 import DoctorProfile from "./pages/doctor/DoctorProfile.tsx";
 import DoctorFitnessCertificates from "./pages/doctor/FitnessCertificates.tsx";
 import MyReferrals from "./pages/doctor/MyReferrals.tsx";
@@ -282,6 +283,14 @@ const App = () => (
               }
             />
             <Route
+              path="/patient/medical-records"
+              element={
+                <RequireAuth>
+                  <PatientMedicalRecords />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/patient/insurance"
               element={
                 <RequireAuth>
@@ -360,6 +369,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <DoctorPrescriptions />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/doctor/consultation-summaries"
+              element={
+                <RequireAuth>
+                  <DoctorConsultationSummaries />
                 </RequireAuth>
               }
             />

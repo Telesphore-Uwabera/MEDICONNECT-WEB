@@ -6,6 +6,7 @@ import {
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { prepareRichTextForSave, RichTextarea } from "@/components/ui/rich-textarea";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGetSearchHospitals, type ApiHospital } from "@/hooks/patient/use-patient-search-hospital";
 import {
@@ -142,7 +143,7 @@ export function BookPhysicalModal({
           department_id: Number(chosenDepartment.id),
           preferred_date: selectedDate!,
           preferred_time: selectedTime,
-          notes: notes.trim() || undefined,
+          notes: prepareRichTextForSave(notes),
         },
         {
           onSuccess: () => {
@@ -410,13 +411,12 @@ export function BookPhysicalModal({
           {/* Notes (prefilled from the call) */}
           <div>
             <p className={sectionLabel}>{t("consult.booking.notes")} <span className="text-muted-foreground/50 normal-case tracking-normal">({t("consult.booking.optional")})</span></p>
-            <textarea
+            <RichTextarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              maxLength={1000}
+              onChange={setNotes}
               placeholder={t("consult.booking.notes_placeholder")}
-              className="w-full px-3 py-2 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors resize-none"
+              minHeight={130}
+              editorClassName="text-[12px]"
             />
           </div>
 

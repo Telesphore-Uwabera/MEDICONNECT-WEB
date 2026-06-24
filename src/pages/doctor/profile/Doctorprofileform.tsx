@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { hasRichTextContent, RichTextarea } from "@/components/ui/rich-textarea";
 import {
   Select,
   SelectContent,
@@ -123,8 +123,18 @@ export function DoctorProfileForm({
     handleSubmit,
     trigger,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<PersonalInfo>({ defaultValues: defaultData?.personal });
+
+  useEffect(() => {
+    const requiredRichText = (value?: string) =>
+      hasRichTextContent(value) || "Required";
+
+    register("bio_en", { validate: requiredRichText });
+    register("bio_fr", { validate: requiredRichText });
+    register("bio_kiny", { validate: requiredRichText });
+  }, [register]);
 
   const step = STEPS[currentStep];
   const currentSaveState = stepSaveStates[step.id] ?? "idle";
@@ -258,11 +268,14 @@ export function DoctorProfileForm({
               error={errors.bio_en?.message}
               className="col-span-1 sm:col-span-2"
             >
-              <Textarea
-                {...register("bio_en", { required: "Required" })}
+              <RichTextarea
+                value={watch("bio_en") ?? ""}
+                onChange={(value) =>
+                  setValue("bio_en", value, { shouldDirty: true, shouldValidate: true })
+                }
                 placeholder="Experienced doctor with 10 years in general medicine"
-                className="border-border focus-visible:ring-primary text-xs resize-none"
-                rows={3}
+                minHeight={120}
+                editorClassName="text-xs"
               />
             </FormField>
 
@@ -271,11 +284,14 @@ export function DoctorProfileForm({
               error={errors.bio_fr?.message} // add error
               className="col-span-1 sm:col-span-2"
             >
-              <Textarea
-                {...register("bio_fr", { required: "Required" })} // add required
+              <RichTextarea
+                value={watch("bio_fr") ?? ""}
+                onChange={(value) =>
+                  setValue("bio_fr", value, { shouldDirty: true, shouldValidate: true })
+                }
                 placeholder="Médecin expérimenté avec 10 ans en médecine générale"
-                className="border-border focus-visible:ring-primary text-xs resize-none"
-                rows={2}
+                minHeight={110}
+                editorClassName="text-xs"
               />
             </FormField>
 
@@ -284,11 +300,14 @@ export function DoctorProfileForm({
               error={errors.bio_kiny?.message} // add error
               className="col-span-1 sm:col-span-2"
             >
-              <Textarea
-                {...register("bio_kiny", { required: "Required" })} // add required
+              <RichTextarea
+                value={watch("bio_kiny") ?? ""}
+                onChange={(value) =>
+                  setValue("bio_kiny", value, { shouldDirty: true, shouldValidate: true })
+                }
                 placeholder="Umuganga w'inzobere ufite imyaka 10"
-                className="border-border focus-visible:ring-primary text-xs resize-none"
-                rows={2}
+                minHeight={110}
+                editorClassName="text-xs"
               />
             </FormField>
           </div>

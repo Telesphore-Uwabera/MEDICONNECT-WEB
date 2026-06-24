@@ -33,6 +33,22 @@ export interface SpecializationValue {
   fee: SpecializationFee | null;
 }
 
+/** A selectable sub-type under a Specialist sub-specialization (e.g. under
+ *  Cardiology: "Interventional Cardiology", "Electrophysiology", …). */
+export interface SpecializationSubType {
+  id: number;
+  name: string;
+  name_fr: string;
+  name_kiny: string | null;
+  slug: string;
+  requires_approval: boolean;
+}
+
+export interface SpecializationSubTypesResponse {
+  specialization: { id: number; name: string; slug: string };
+  sub_types: SpecializationSubType[];
+}
+
 /* ─────────────────────────────────────────────
    Raw API hooks
 ───────────────────────────────────────────── */
@@ -62,6 +78,16 @@ export function useGetSpecializationFees(
         }`
       ),
     enabled: specializationId !== null,
+  });
+}
+
+/** Sub-types under a given sub-specialization slug (Specialist only). */
+export function useGetSpecializationSubTypes(slug: string | null) {
+  return useQuery<SpecializationSubTypesResponse>({
+    queryKey: ["dropdowns-specialization-sub-types", slug],
+    queryFn: () =>
+      apiFetch(`/public/dropdowns/specialization-sub-types/${slug}`),
+    enabled: !!slug,
   });
 }
 

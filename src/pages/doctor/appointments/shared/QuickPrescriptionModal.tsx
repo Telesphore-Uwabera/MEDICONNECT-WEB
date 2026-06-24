@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { prepareRichTextForSave, RichTextarea } from "@/components/ui/rich-textarea";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   useCreatePrescription,
@@ -37,8 +38,6 @@ interface Props {
 
 const inputCls =
   "w-full h-9 px-3 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors";
-const taCls =
-  "w-full px-3 py-2 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors resize-none";
 const labelCls =
   "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
 
@@ -107,7 +106,7 @@ export function QuickPrescriptionModal({
       {
         appointment_id: appointmentId,
         diagnosis: diagnosis.trim(),
-        notes: notes.trim() || undefined,
+        notes: prepareRichTextForSave(notes),
         valid_until: validUntil || undefined,
         items: validItems.map((it) => ({
           ...it,
@@ -276,12 +275,12 @@ function PrescriptionForm({
 
       <div className="space-y-1">
         <label className={labelCls}>Notes</label>
-        <textarea
-          rows={2}
-          className={taCls}
+        <RichTextarea
           value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={setNotes}
           placeholder="e.g. Take with food"
+          minHeight={110}
+          editorClassName="text-[12px]"
         />
       </div>
 

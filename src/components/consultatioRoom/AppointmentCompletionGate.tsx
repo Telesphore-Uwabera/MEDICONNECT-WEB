@@ -17,7 +17,7 @@ import {
   useGetAppointment,
   useCompleteAppointment,
 } from "@/hooks/doctor/use-doctor-appointment";
-import { MedicalRecordModal } from "@/pages/doctor/appointments/shared/MedicalRecordModal";
+import { ConsultationSummaryModal } from "@/pages/doctor/appointments/shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "@/pages/doctor/appointments/shared/QuickPrescriptionModal";
 import { BookPhysicalModal } from "@/pages/doctor/appointments/shared/BookPhysicalModal";
 import { getErrMsg } from "@/pages/doctor/appointments/shared/helpers";
@@ -81,13 +81,15 @@ function CompletionFlow({
     );
   }
 
-  // Step 1 — required: patient medical record (closing cancels completion).
+  // Step 1 — required: consultation summary (closing cancels completion).
   if (step === "record") {
     return (
-      <MedicalRecordModal
+      <ConsultationSummaryModal
+        appointmentId={appointmentId}
         patientId={patientId}
         patientName={patientName}
-        sourceId={appointmentId}
+        defaultComplaint={defaultNotes}
+        defaultDiagnosis={defaultDiagnosis}
         onClose={onDone}
         onSaved={() => setStep("prescription")}
       />

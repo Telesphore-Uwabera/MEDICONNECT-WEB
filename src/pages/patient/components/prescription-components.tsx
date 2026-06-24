@@ -481,7 +481,7 @@ export function PrescriptionDrawer({
             <Download className="h-4 w-4 mr-1.5" />
             Download PDF
           </Button>
-          {p.qr_code && (
+          {/* {p.qr_code && (
             <Button
               size="sm"
               variant="outline"
@@ -491,7 +491,7 @@ export function PrescriptionDrawer({
               <QrCode className="h-4 w-4 mr-1.5" />
               QR code
             </Button>
-          )}
+          )} */}
           {p.status === "issued" && (
             <Button
               size="sm"

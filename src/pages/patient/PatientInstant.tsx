@@ -26,6 +26,7 @@ import {
   AppointmentFilterParams,
 } from "@/hooks/patient/use-patient-appointment";
 import AppointmentDetailModal from "./components/AppointmentDetail";
+import { InstantSummaryModal } from "./components/InstantSummaryModal";
 import { Link } from "react-router-dom";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
@@ -911,6 +912,9 @@ const PatientInstant = () => {
       </div>
 
       <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
+
+      {/* Details → read-only consultation summary for the instant consult */}
+      <InstantSummaryModal instantId={selectedId} onClose={() => setSelectedId(null)} />
 
     </DashboardLayout>
   );

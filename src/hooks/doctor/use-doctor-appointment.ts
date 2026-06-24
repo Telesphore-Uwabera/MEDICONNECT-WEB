@@ -88,7 +88,25 @@ export interface AppointmentsResponse {
     current_page: number;
     per_page: number;
     total: number;
+    stats?: {
+        total?: number;
+        pending?: number;
+        confirmed?: number;
+        completed?: number;
+        today?: number;
+        upcoming?: number;
+        total_earned?: string;
+    };
 }
+
+type RawAppointmentsResponse =
+    | AppointmentsResponse
+    | {
+        stats?: AppointmentsResponse["stats"];
+        appointments?: Partial<AppointmentsResponse> & {
+            data?: Appointment[];
+        };
+    };
 
 export interface SingleAppointmentResponse {
     appointment: Appointment;
@@ -185,15 +203,49 @@ function buildQuery(params: GetAppointmentsParams): string {
     return qs ? `?${qs}` : "";
 }
 
+function normalizeAppointmentsResponse(
+    response: RawAppointmentsResponse,
+): AppointmentsResponse {
+    if (Array.isArray((response as AppointmentsResponse).data)) {
+        return response as AppointmentsResponse;
+    }
+
+    const nested = (response as Extract<RawAppointmentsResponse, { appointments?: unknown }>).appointments;
+    if (nested && Array.isArray(nested.data)) {
+        return {
+            data: nested.data,
+            current_page: nested.current_page ?? 1,
+            per_page: nested.per_page ?? nested.data.length,
+            total: nested.total ?? nested.data.length,
+            stats: (response as { stats?: AppointmentsResponse["stats"] }).stats,
+        };
+    }
+
+    return {
+        data: [],
+        current_page: 1,
+        per_page: 0,
+        total: 0,
+        stats: (response as { stats?: AppointmentsResponse["stats"] }).stats,
+    };
+}
+
 /* ─────────────────────────────────────────────
    9.1  useGetAppointments  →  GET /appointments
 ───────────────────────────────────────────── */
 
-export function useGetAppointments(params: GetAppointmentsParams = {}) {
+export function useGetAppointments(
+    params: GetAppointmentsParams = {},
+    options: { enabled?: boolean; refetchInterval?: number | false } = {},
+) {
     return useQuery({
         queryKey: appointmentKeys.list(params),
-        queryFn: () =>
-            apiFetch<AppointmentsResponse>(`${BASE}${buildQuery(params)}`),
+        queryFn: async () => {
+            const response = await apiFetch<RawAppointmentsResponse>(`${BASE}${buildQuery(params)}`);
+            return normalizeAppointmentsResponse(response);
+        },
+        enabled: options.enabled ?? true,
+        refetchInterval: options.refetchInterval,
     });
 }
 
@@ -451,6 +503,9 @@ export function useCompleteInstant() {
             apiFetch<{ message: string }>(`${IC}/${id}/complete`, { method: "POST" }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["instant-consultations"] });
+            // The consult is finished — drop the "rejoin in-progress" live session
+            // so the banner disappears automatically.
+            qc.invalidateQueries({ queryKey: ["doctor-instant-live-session"] });
         },
     });
 }

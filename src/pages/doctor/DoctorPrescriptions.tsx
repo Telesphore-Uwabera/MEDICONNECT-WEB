@@ -23,6 +23,7 @@ import {
   XCircle,
   ShieldCheck,
   Clock,
+  type LucideIcon,
 } from "lucide-react";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
 import { type DeliveryChannel } from "@/lib/prescription-store";
@@ -363,6 +364,28 @@ const DoctorPrescriptions = () => {
   // ── FIX: correct unwrap — data is PrescriptionsListResponse after hook fix
   const allList: Prescription[] = Array.isArray(data?.data) ? data.data : [];
 
+  // Aggregate stats over ALL prescriptions (independent of the active filters),
+  // so the top cards always show real totals. One lightweight query.
+  const statsParams = useMemo<PrescriptionListParams>(() => ({ per_page: 500 }), []);
+  const { data: statsData } = useGetPrescriptions(statsParams);
+  const statsList: Prescription[] = Array.isArray(statsData?.data) ? statsData.data : [];
+  const countByStatus = (s: PrescriptionStatus) =>
+    statsList.filter((p) => p.status === s).length;
+
+  const stats: {
+    key: "All" | PrescriptionStatus;
+    label: string;
+    value: number;
+    icon: LucideIcon;
+    tone: string;
+  }[] = [
+    { key: "All", label: "Total", value: statsData?.total ?? statsList.length, icon: FileText, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "issued", label: "Issued", value: countByStatus("issued"), icon: ShieldCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-400/20" },
+    { key: "sent_to_pharmacy", label: "At pharmacy", value: countByStatus("sent_to_pharmacy"), icon: Building2, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "dispensed", label: "Dispensed", value: countByStatus("dispensed"), icon: Send, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "cancelled", label: "Cancelled", value: countByStatus("cancelled"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+  ];
+
   // ── Filter helpers ───────────────────────────────────────────────────────
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -548,6 +571,33 @@ const DoctorPrescriptions = () => {
           subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
+        {/* ── Stats cards (also quick filters) ── */}
+        <div className="px-3 sm:px-5 pt-4 pb-1 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+            {stats.map(({ key, label, value, icon: Icon, tone }) => {
+              const active = filters.status === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => set("status", key)}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-[6px] border bg-card px-3 py-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                    active ? "border-primary ring-1 ring-primary/30" : "border-border/70",
+                  )}
+                >
+                  <span className={cn("h-9 w-9 rounded-[6px] flex items-center justify-center border shrink-0", tone)}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-lg font-bold leading-none text-foreground tabular-nums">{value}</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">{label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <FilterBar
             open={filterOpen}
@@ -588,27 +638,6 @@ const DoctorPrescriptions = () => {
                     </>
                   )}
                 </p>
-
-                <div className="hidden lg:flex items-center gap-3">
-                  {pendingCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-3 py-1 rounded-full">
-                      <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                      {pendingCount} pending
-                    </span>
-                  )}
-                  {filledCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-3 py-1 rounded-full">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      {filledCount} filled
-                    </span>
-                  )}
-                  {cancelledCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-3 py-1 rounded-full">
-                      <span className="w-2 h-2 rounded-full bg-red-500" />
-                      {cancelledCount} cancelled
-                    </span>
-                  )}
-                </div>
               </div>
 
               <div className="flex items-center gap-3">

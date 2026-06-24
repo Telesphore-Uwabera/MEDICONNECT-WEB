@@ -499,6 +499,52 @@ function DoctorCardSkeleton() {
 
 // ─── Pagination ──────────────────────────────────────────────────────────────
 
+function SearchStats({
+  isLoading,
+  total,
+  shown,
+  instant,
+  available,
+}: {
+  isLoading: boolean;
+  total: number;
+  shown: number;
+  instant: number;
+  available: number;
+}) {
+  const cards = [
+    { label: "Matching doctors", value: total, icon: User, tone: "text-primary bg-primary/10 border-primary/20" },
+    { label: "Shown now", value: shown, icon: Globe, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+    { label: "Instant consult", value: instant, icon: Zap, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+    { label: "Available", value: available, icon: Video, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 p-4 pb-2">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div key={card.label} className="rounded-[6px] border border-border/70 bg-card p-3 flex items-center gap-3 min-w-0">
+            <div className={cn("h-9 w-9 rounded-[6px] border flex items-center justify-center shrink-0", card.tone)}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              {isLoading ? (
+                <div className="h-5 w-12 rounded-[6px] bg-muted animate-pulse" />
+              ) : (
+                <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
+              )}
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                {card.label}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Pagination({
   currentPage,
   lastPage,
@@ -559,6 +605,96 @@ function Pagination({
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function PaginationV2({
+  currentPage,
+  lastPage,
+  total,
+  perPage,
+  onPageChange,
+}: {
+  currentPage: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
+  onPageChange: (p: number) => void;
+}) {
+  if (total <= 0) return null;
+
+  const safeLastPage = Math.max(1, lastPage);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), safeLastPage);
+  const from = (safeCurrentPage - 1) * perPage + 1;
+  const to = Math.min(safeCurrentPage * perPage, total);
+  const goToPage = (nextPage: number) =>
+    onPageChange(Math.min(Math.max(1, nextPage), safeLastPage));
+
+  const pageNumbers = (() => {
+    const pages = new Set<number>([1, safeLastPage, safeCurrentPage]);
+    for (let p = safeCurrentPage - 1; p <= safeCurrentPage + 1; p += 1) {
+      if (p >= 1 && p <= safeLastPage) pages.add(p);
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  })();
+
+  return (
+    <div className="border-t border-border/70 bg-card px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-foreground">
+            Page {safeCurrentPage} of {safeLastPage}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
+            <span className="font-semibold text-foreground">{total}</span> doctors
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => goToPage(safeCurrentPage - 1)}
+            disabled={safeCurrentPage <= 1}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Prev
+          </button>
+
+          {pageNumbers.map((pageNumber, index) => {
+            const previous = pageNumbers[index - 1];
+            return (
+              <span key={pageNumber} className="inline-flex items-center gap-1.5">
+                {previous != null && pageNumber - previous > 1 && (
+                  <span className="px-1 text-xs text-muted-foreground">...</span>
+                )}
+                <button
+                  onClick={() => goToPage(pageNumber)}
+                  aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
+                  className={cn(
+                    "h-9 min-w-9 px-3 flex items-center justify-center rounded-[6px] border text-xs font-bold transition-all",
+                    safeCurrentPage === pageNumber
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50",
+                  )}
+                >
+                  {pageNumber}
+                </button>
+              </span>
+            );
+          })}
+
+          <button
+            onClick={() => goToPage(safeCurrentPage + 1)}
+            disabled={safeCurrentPage >= safeLastPage}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -649,6 +785,11 @@ const PatientDoctors = () => {
     return sortDoctors(data.data, filters.sort);
   }, [data, filters.sort]);
 
+  useEffect(() => {
+    if (!data || data.last_page < 1) return;
+    if (page > data.last_page) setPage(data.last_page);
+  }, [data, page]);
+
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
@@ -678,6 +819,16 @@ const PatientDoctors = () => {
   const instantCount = doctors.filter((d) => d.instant_consultation).length;
   const availableCount = doctors.filter((d) => d.is_available).length;
   const featuredCount = doctors.filter((d) => d.is_featured).length;
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPage(nextPage);
+    requestAnimationFrame(() => {
+      document.querySelector("[data-doctor-results]")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
 
 
   return (
@@ -812,7 +963,14 @@ const PatientDoctors = () => {
           />
 
           {/* ── Results ── */}
-          <main className="flex-1 overflow-y-auto flex flex-col">
+          <main className="flex-1 overflow-y-auto flex flex-col" data-doctor-results>
+            <SearchStats
+              isLoading={isLoading}
+              total={data?.total ?? 0}
+              shown={doctors.length}
+              instant={instantCount}
+              available={availableCount}
+            />
             {/* Meta bar */}
             <div className=" bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -978,13 +1136,13 @@ const PatientDoctors = () => {
             </div>
 
             {/* Pagination */}
-            {data && data.last_page > 1 && (
-              <Pagination
+            {data && (
+              <PaginationV2
                 currentPage={data.current_page}
                 lastPage={data.last_page}
                 total={data.total}
                 perPage={data.per_page}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
               />
             )}
           </main>

@@ -1,8 +1,8 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   FileText, Stethoscope,
-  UserCheck, Clock3, Users, CheckCircle2, Activity, Video,
+  UserCheck, Clock3, Users, CheckCircle2, Activity, Video, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -18,14 +18,17 @@ import {
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useCallStore } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
-import { sessionToRejoinTarget } from "@/lib/rejoin";
+import { sessionToRejoinTarget, type LiveSessionResponse } from "@/lib/rejoin";
+import { apiFetch } from "@/lib/api";
+import { openBlankSummaryWindow, writeSummaryToWindow } from "@/lib/summary-document";
+import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
 import { InstantNotesSidebar } from "./shared/InstantNotesSidebar";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
-import { MedicalRecordModal } from "./shared/MedicalRecordModal";
+import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
 import { t } from "i18next";
 
 type ItemAction = {
@@ -103,9 +106,15 @@ function StatTile({
 export function InstantConsultTab() {
   const call = useCallStore();
   const [notesOpen, setNotesOpen] = useState(true);
+  const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
+
+  // Queue items expose only the request id. The consultation-summary endpoint
+  // validates against the real `instant_consultations` id, so we remember the
+  // mapping (request id → consultation id) captured from the join token.
+  const consultIdByRequest = useRef<Record<number, number>>({});
 
   const isInCall = call.phase === "connected" && call.role === "doctor";
 
@@ -119,7 +128,19 @@ export function InstantConsultTab() {
   // In-progress session the doctor can rejoin after navigating away. Suppressed
   // while a call overlay is already open.
   const { data: liveSession } = useDoctorLiveSession(!isInCall && !activeCall);
-  const liveTarget = useMemo(() => sessionToRejoinTarget(liveSession, "doctor"), [liveSession]);
+  // Only offer "rejoin" for a genuinely in-progress session — never one that has
+  // already been completed/cancelled (which can briefly leak through a stale
+  // cache after the doctor finishes the consult).
+  const liveStatus = String(
+    (liveSession as LiveSessionResponse | null)?.status ?? "",
+  ).toLowerCase();
+  const liveIsTerminal = [
+    "completed", "resolved", "cancelled", "declined", "expired", "withdrawn",
+  ].includes(liveStatus);
+  const liveTarget = useMemo(
+    () => (liveSession && !liveIsTerminal ? sessionToRejoinTarget(liveSession, "doctor") : null),
+    [liveSession, liveIsTerminal],
+  );
 
   const handleRejoinLive = () => {
     if (liveTarget) startCall(liveTarget.roomName, liveTarget.token);
@@ -128,11 +149,14 @@ export function InstantConsultTab() {
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
 
-  const confirmed = queue.filter((i) => i.status === "confirmed");
-  const accepted = queue.filter((i) => i.status === "accepted");
-  const joined = queue.filter((i) => i.status === "in_progress");
-  const others = queue.filter((i) =>
-    ["pending", "declined", "withdrawn", "expired", "completed"].includes(i.status),
+  const visibleQueue = queue.filter((i) => i.status !== "expired");
+  const completed = visibleQueue.filter((i) => i.status === "completed");
+  const activeItems = visibleQueue.filter((i) => i.status !== "completed");
+  const confirmed = activeItems.filter((i) => i.status === "confirmed");
+  const accepted = activeItems.filter((i) => i.status === "accepted");
+  const joined = activeItems.filter((i) => i.status === "in_progress");
+  const others = activeItems.filter((i) =>
+    ["pending", "declined", "withdrawn"].includes(i.status),
   );
 
   const handleAccept = (item: InstantConsultQueueItem) => {
@@ -164,6 +188,13 @@ export function InstantConsultTab() {
         let decodedToken: any;
         try {
           decodedToken = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+          // The token natively carries the real instant_consultations id — capture
+          // it (keyed by request id) for the consultation-summary payload before we
+          // overwrite it below for the chat API.
+          const nativeCid = Number(decodedToken?.consultation_id);
+          if (Number.isFinite(nativeCid) && nativeCid > 0 && nativeCid !== item.id) {
+            consultIdByRequest.current[item.id] = nativeCid;
+          }
           // The chat API needs the consultation id; it isn't in the token natively.
           decodedToken.consultation_id = Number.isFinite(consultationId) ? consultationId : item.id;
           enrichedToken = encodeURIComponent(btoa(JSON.stringify(decodedToken)));
@@ -206,6 +237,43 @@ export function InstantConsultTab() {
     item == null
       ? null
       : ((item as any).user_id ?? (item as any).patient_id ?? (item as any).patient?.id ?? null);
+
+  // Resolve the real `instant_consultations` id for the summary payload, since
+  // the queue item only carries the request id.
+  const resolveInstantConsultId = (item: InstantConsultQueueItem | null): number | null => {
+    if (!item) return null;
+    // 1. captured from this session's join token
+    const captured = consultIdByRequest.current[item.id];
+    if (captured) return captured;
+    // 2. the doctor's in-progress live session (matched by request id)
+    const ls = (liveSession ?? null) as LiveSessionResponse | null;
+    const lsReqId = ls?.instant_consultation_request_id ?? ls?.id;
+    if (ls?.consultation_id && lsReqId === item.id) return ls.consultation_id;
+    // 3. fall back to the request id
+    return item.id;
+  };
+
+  // Open the consultation-summary document (formatted on the frontend) for a
+  // completed instant consult. Opens the tab first (user gesture) then fills it.
+  const handleViewSummary = async (item: InstantConsultQueueItem) => {
+    const win = openBlankSummaryWindow();
+    try {
+      const cid = resolveInstantConsultId(item);
+      const res = await apiFetch<{ data: ConsultationSummary[] }>(
+        `/doctor/consultation-summaries?instant_consultation_id=${cid}`,
+      );
+      const summary = res.data?.[0];
+      if (summary) {
+        writeSummaryToWindow(win, summary, false);
+      } else {
+        win?.close();
+        toast.error("No consultation summary was recorded for this consultation.");
+      }
+    } catch (err: unknown) {
+      win?.close();
+      toast.error(getErrMsg(err, "Could not load the consultation summary."));
+    }
+  };
 
   const recordPatientId = patientIdOf(recordItem);
   const bookingPatientId = patientIdOf(bookingItem);
@@ -278,7 +346,8 @@ export function InstantConsultTab() {
   }
 
   // ── Queue view ─────────────────────────────────────────────────────────────
-  const activeCount = confirmed.length + accepted.length + joined.length;
+  const actionableCount = confirmed.length + accepted.length + joined.length;
+  const activeCount = activeItems.length;
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
@@ -309,20 +378,66 @@ export function InstantConsultTab() {
         )}
 
         {/* Online header */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
-            <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
-            <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
-              {t("consult.bookings.online")}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
+              <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
+              <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
+                {t("consult.bookings.online")}
+              </span>
+            </div>
+            <span className="truncate text-sm text-muted-foreground">
+              {queueLoading
+                ? t("consult.bookings.loading_queue")
+                : actionableCount === 0
+                  ? t("consult.bookings.no_active_patients")
+                  : `${actionableCount} ${actionableCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`}
             </span>
           </div>
-          <span className="text-sm text-muted-foreground">
-            {queueLoading
-              ? t("consult.bookings.loading_queue")
-              : activeCount === 0
-                ? t("consult.bookings.no_active_patients")
-                : `${activeCount} ${activeCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`}
-          </span>
+
+          <div className="inline-flex shrink-0 items-center rounded-[6px] border border-border/60 bg-card p-0.5">
+            {[
+              {
+                id: "active" as const,
+                label: t("consult.bookings.active_queue", { defaultValue: "Active queue" }),
+                count: activeCount,
+                icon: Activity,
+              },
+              {
+                id: "completed" as const,
+                label: t("consult.bookings.completed", { defaultValue: "Completed" }),
+                count: completed.length,
+                icon: History,
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = queueTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setQueueTab(tab.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[5px] px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span
+                    className={cn(
+                      "rounded-[5px] px-1.5 py-0.5 text-[10px] leading-none tabular-nums",
+                      active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Loading skeletons */}
@@ -333,7 +448,7 @@ export function InstantConsultTab() {
         )}
 
         {/* Empty state */}
-        {!queueLoading && activeCount === 0 && (
+        {!queueLoading && queueTab === "active" && activeCount === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
             <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
               <Stethoscope className="h-8 w-8 text-muted-foreground/40" />
@@ -347,7 +462,7 @@ export function InstantConsultTab() {
           </div>
         )}
 
-        {!queueLoading && (
+        {!queueLoading && queueTab === "active" && (
           <div className="space-y-5">
 
             {/* Confirmed — success (green) */}
@@ -399,7 +514,6 @@ export function InstantConsultTab() {
                   count={joined.length}
                 />
                 {joined.map((item) => (
-                  console.log(item),
                   <IncomingCard
                     key={item.id}
                     item={item}
@@ -417,7 +531,7 @@ export function InstantConsultTab() {
               <section className="space-y-2">
                 <SectionLabel
                   dotCls="bg-muted-foreground/30"
-                  label="History"
+                  label={t("consult.bookings.other_requests", { defaultValue: "Other requests" })}
                   count={others.length}
                 />
                 {others.map((item) => (
@@ -426,6 +540,47 @@ export function InstantConsultTab() {
               </section>
             )}
 
+          </div>
+        )}
+
+        {!queueLoading && queueTab === "completed" && (
+          <div className="space-y-5">
+            {completed.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("consult.bookings.no_completed_instants", { defaultValue: "No completed instant consultations" })}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-1 max-w-[280px] leading-relaxed">
+                    {t("consult.bookings.completed_instants_info", { defaultValue: "Completed instant consultations will appear here after you finish a session." })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <section className="space-y-2">
+                <SectionLabel
+                  dotCls="bg-[hsl(var(--success))]"
+                  label={t("consult.bookings.completed", { defaultValue: "Completed" })}
+                  count={completed.length}
+                />
+                {completed.map((item) => (
+                  <div key={item.id} className="space-y-1.5">
+                    <IncomingCard item={item} />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleViewSummary(item)}
+                        className="h-7 px-2.5 rounded-[6px] border border-border text-[11px] font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors flex items-center gap-1.5"
+                      >
+                        <FileText className="h-3 w-3" /> View summary
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
           </div>
         )}
       </div>
@@ -471,12 +626,12 @@ export function InstantConsultTab() {
         </div>
       </aside>
 
-      {/* Step 1 — required: patient medical record */}
+      {/* Step 1 — required: consultation summary (SOAP note) */}
       {recordItem != null && (
-        <MedicalRecordModal
+        <ConsultationSummaryModal
+          instantConsultationId={resolveInstantConsultId(recordItem)}
           patientId={recordPatientId}
           patientName={recordItem.guest_phone}
-          sourceId={recordItem.id}
           onClose={() => setRecordItem(null)}
           onSaved={() => {
             const item = recordItem;

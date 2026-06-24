@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2 } from "lucide-react";
+import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2 } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { usePictureInPicture } from "@/hooks/video/usePictureInPicture";
@@ -10,6 +10,7 @@ import echo from "@/lib/echo";
 import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
 import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ interface ConsultationToken {
   is_owner: boolean;
   ice_servers: IceServer[];
   consultation_id?: number;
+  appointment_duration_minutes?: number;
 }
 
 interface ConsultationRoomProps {
@@ -34,6 +36,10 @@ interface ConsultationRoomProps {
 }
 
 type ConnectionState = "connecting" | "connected" | "disconnected" | "failed";
+
+const INSTANT_DURATION_WARNING_SECONDS = 25 * 60;
+const SESSION_WARNING_LEAD_SECONDS = 5 * 60;
+const ALERT_AUDIO_SRC = "/audio/new-notification-057-494255.mp3";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +59,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const candidateQueue = useRef<RTCIceCandidateInit[]>([]);
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disconnectedSinceRef = useRef<number | null>(null);
+  const durationWarningShownRef = useRef(false);
   const audioEnabledRef = useRef(true);
   const videoEnabledRef = useRef(true);
   // Refs holding the latest callbacks so the main effect can stay decoupled
@@ -78,6 +85,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // Remote media status
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(true);
   const [remoteVideoEnabled, setRemoteVideoEnabled] = useState(true);
+  const [durationWarningVisible, setDurationWarningVisible] = useState(false);
 
   // Audio wave status
   const { isTalking: localTalking } = useAudioVolume(localStreamRef.current);
@@ -125,6 +133,18 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   // Scheduled appointments tag the token so chat uses the appointment endpoints.
   const chatMode: "instant" | "appointment" =
     (token as any)?.chat_mode === "appointment" ? "appointment" : "instant";
+  const isInstantRoom = chatMode === "instant" && /instant/i.test(roomName ?? "");
+  const appointmentDurationSeconds = useMemo(() => {
+    const duration = Number((token as any)?.appointment_duration_minutes);
+    return Number.isFinite(duration) && duration > 0 ? duration * 60 : null;
+  }, [token]);
+  const durationWarningThresholdSeconds = useMemo(() => {
+    if (isInstantRoom) return INSTANT_DURATION_WARNING_SECONDS;
+    if (chatMode === "appointment" && appointmentDurationSeconds != null) {
+      return Math.max(0, appointmentDurationSeconds - SESSION_WARNING_LEAD_SECONDS);
+    }
+    return null;
+  }, [appointmentDurationSeconds, chatMode, isInstantRoom]);
 
   // Once connected, share our consultation id so a peer whose token lacked one
   // (e.g. the patient) can use it for the chat. Only the side that actually has
@@ -569,6 +589,86 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     const id = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(id);
   }, [connState]);
+
+  useEffect(() => {
+    durationWarningShownRef.current = false;
+    setDurationWarningVisible(false);
+  }, [roomName]);
+
+  const durationWarningTitle =
+    chatMode === "appointment"
+      ? t("consult.call.appointment_duration_warning_title", {
+        defaultValue: "Appointment time reminder",
+      })
+      : t("consult.call.duration_warning_title", {
+        defaultValue: "Instant session time reminder",
+      });
+  const durationWarningMessage =
+    chatMode === "appointment"
+      ? t("consult.call.appointment_duration_warning_body", {
+        defaultValue: "This appointment call is about 5 minutes away from the scheduled slot ending.",
+      })
+      : t("consult.call.duration_warning_body", {
+        defaultValue: "This instant consultation has reached 25 minutes. You have about 5 minutes remaining.",
+      });
+  const isDurationWarningActive =
+    isOwner &&
+    durationWarningThresholdSeconds != null &&
+    connState === "connected" &&
+    elapsed >= durationWarningThresholdSeconds;
+
+  useEffect(() => {
+    if (
+      !isOwner ||
+      durationWarningThresholdSeconds == null ||
+      connState !== "connected" ||
+      elapsed < durationWarningThresholdSeconds ||
+      durationWarningShownRef.current
+    ) {
+      return;
+    }
+
+    durationWarningShownRef.current = true;
+    setDurationWarningVisible(true);
+
+    toast.warning(durationWarningMessage, { description: durationWarningTitle, duration: 10_000 });
+
+    const audio = new Audio(ALERT_AUDIO_SRC);
+    audio.volume = 0.75;
+    void audio.play().catch(() => undefined);
+
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(durationWarningMessage);
+      utterance.rate = 0.95;
+      utterance.volume = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    if ("Notification" in window) {
+      const showNotification = () => {
+        if (Notification.permission === "granted") {
+          new Notification(durationWarningTitle, { body: durationWarningMessage });
+        }
+      };
+
+      if (Notification.permission === "default") {
+        void Notification.requestPermission().then((permission) => {
+          if (permission === "granted") showNotification();
+        });
+      } else {
+        showNotification();
+      }
+    }
+  }, [
+    connState,
+    durationWarningMessage,
+    durationWarningThresholdSeconds,
+    durationWarningTitle,
+    elapsed,
+    isOwner,
+  ]);
+
   const fmtElapsed = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
@@ -587,7 +687,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
     endCallContext();
   };
 
-  const stateColor = { connecting: "bg-amber-400", connected: "bg-emerald-400", disconnected: "bg-red-400", failed: "bg-red-600" }[connState];
+  const stateColor = isDurationWarningActive ? "bg-amber-400" : { connecting: "bg-amber-400", connected: "bg-emerald-400", disconnected: "bg-red-400", failed: "bg-red-600" }[connState];
   const stateLabel = { connecting: t("consult.call.connecting"), connected: t("consult.call.connected"), disconnected: t("consult.call.disconnected"), failed: t("consult.call.failed") }[connState];
 
   return (
@@ -682,15 +782,23 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
             <div className={cn("absolute top-0 inset-x-0 flex items-center justify-between z-20 transition-all bg-gradient-to-b from-black/70 via-black/25 to-transparent", isMinimized ? "px-2.5 py-2" : "px-4 py-3 sm:px-5 sm:py-4")}>
               {/* Status pill */}
-              <div className={cn("flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10", isMinimized ? "px-2 py-1" : "px-3 py-1.5")}>
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-full backdrop-blur-md border transition-colors",
+                  isDurationWarningActive
+                    ? "bg-amber-500/15 border-amber-400/35 shadow-[0_0_18px_rgba(251,191,36,0.14)]"
+                    : "bg-black/40 border-white/10",
+                  isMinimized ? "px-2 py-1" : "px-3 py-1.5",
+                )}
+              >
                 <span className={cn("h-2 w-2 rounded-full shrink-0", stateColor, connState === "connected" && "animate-pulse")} />
                 {!isMinimized && (
                   <>
-                    <span className="text-white/80 text-[11px] font-medium leading-none">{stateLabel}</span>
+                    <span className={cn("text-[11px] font-medium leading-none", isDurationWarningActive ? "text-amber-100" : "text-white/80")}>{stateLabel}</span>
                     {connState === "connected" && (
                       <>
                         <span className="text-white/25">·</span>
-                        <span className="text-white/55 text-[11px] font-mono tabular-nums leading-none">{fmtElapsed(elapsed)}</span>
+                        <span className={cn("text-[11px] font-mono tabular-nums leading-none", isDurationWarningActive ? "text-amber-200" : "text-white/55")}>{fmtElapsed(elapsed)}</span>
                       </>
                     )}
                   </>
@@ -718,6 +826,26 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                 </button>
               </div>
             </div>
+
+            {!isMinimized && durationWarningVisible && (
+              <div className="absolute left-1/2 top-16 z-20 w-[min(92vw,28rem)] -translate-x-1/2 rounded-[6px] border border-amber-400/35 bg-amber-500/15 px-3 py-2.5 text-amber-50 shadow-2xl shadow-black/40 backdrop-blur-md">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold">{durationWarningTitle}</p>
+                    <p className="mt-0.5 text-[11px] leading-relaxed ">{durationWarningMessage}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDurationWarningVisible(false)}
+                    className="rounded-[6px] p-1 text-amber-100/70 hover:bg-amber-400/15 hover:text-amber-50"
+                    aria-label="Dismiss time warning"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ── Chat panel ──────────────────────────────────────────────────── */}

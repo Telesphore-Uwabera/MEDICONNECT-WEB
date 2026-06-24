@@ -358,6 +358,7 @@ export default function HeroSection() {
 
   const isThisDoctor = !!activeDoc && call.doctor?.id === activeDoc.id;
   const isCallInProgress = isThisDoctor && call.phase !== "idle";
+  const isAnyCallInProgress = call.phase !== "idle";
   const isConnected = isThisDoctor && call.phase === "connected";
   const isMinimized = isConnected && call.minimized;
 
@@ -367,28 +368,47 @@ export default function HeroSection() {
     !activeDoc.raw.bookings_paused &&
     activeDoc.raw.instant_consultation;
 
-  const connectOpen = isThisDoctor && call.dialogOpen;
+  const dialogDoctor = call.doctor ?? callDoctor;
+  const connectOpen = call.dialogOpen && !!dialogDoctor;
 
   const handleOpenChange = (v: boolean) => {
-    if (!v && isCallInProgress) call.setMinimized(true);
+    if (!v && isAnyCallInProgress) call.setMinimized(true);
     else call.setDialogOpen(v);
   };
 
   const handleConnect = () => {
     if (!callDoctor || !canConnect) return;
+    setPaused(true);
     if (isMinimized) call.setMinimized(false);
     else if (isCallInProgress) call.setDialogOpen(true);
     else call.startCall(callDoctor);
   };
 
   useEffect(() => {
-    if (paused || !hasDoctors) return;
-    const timer = setInterval(
+    if (!call.doctor?.id || doctors.length === 0) return;
+
+    const callDoctorIndex = doctors.findIndex((doctor) => doctor.id === call.doctor?.id);
+    if (callDoctorIndex >= 0 && callDoctorIndex !== activeIdx) {
+      setActiveIdx(callDoctorIndex);
+    }
+  }, [activeIdx, call.doctor?.id, doctors]);
+
+  useEffect(() => {
+    if (paused || call.dialogOpen || isAnyCallInProgress || !hasDoctors || doctors.length < 2) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(
       () => setActiveIdx((p) => (p + 1) % doctors.length),
-      2000,
+      8000,
     );
-    return () => clearInterval(timer);
-  }, [paused, hasDoctors, doctors.length]);
+
+    return () => window.clearInterval(timer);
+  }, [paused, call.dialogOpen, isAnyCallInProgress, hasDoctors, doctors.length]);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden relative">
@@ -491,7 +511,13 @@ export default function HeroSection() {
           </div>
 
           {/* ── Right column ── */}
-          <div className="order-1 lg:order-2 w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none">
+          <div
+            className="order-1 lg:order-2 w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocus={() => setPaused(true)}
+            onBlur={() => setPaused(false)}
+          >
 
             {/* Visual block */}
             <div className="relative h-[320px] xs:h-[360px] sm:h-[400px] md:h-[470px] lg:h-[620px]">
@@ -638,8 +664,7 @@ export default function HeroSection() {
       </div>
 
       {/* ConnectDialog portal */}
-      {activeDoc &&
-        callDoctor &&
+      {dialogDoctor &&
         connectOpen &&
         typeof document !== "undefined" &&
         createPortal(
@@ -652,7 +677,7 @@ export default function HeroSection() {
               onClick={(e) => e.stopPropagation()}
             >
               <ConnectDialog
-                doctor={callDoctor}
+                doctor={dialogDoctor}
                 open={connectOpen}
                 onOpenChange={handleOpenChange}
               />

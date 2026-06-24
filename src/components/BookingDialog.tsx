@@ -25,6 +25,7 @@ import {
   type ApiSlot,
 } from "@/hooks/patient/use-patient-booking";
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
+import { useMe } from "@/hooks/useAuth";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -294,6 +295,7 @@ export const BookingDialog = ({
   const bookAppointment = useBookAppointment();
   const payAppointment = usePayAppointment();
   const invoicePoller = useInvoicePoller();
+  const { data: me } = useMe();
 
   // Fresh doctor query (only active after a successful booking) ─────────────────────────────
   const { data: freshDoctorData } = useGetDoctorBySlug(
@@ -337,6 +339,26 @@ export const BookingDialog = ({
   // ── Booking handler ────────────────────────────────────────────────────────
   const handleConfirm = async () => {
     if (!dateKey || !time) return;
+
+    // ── Gate: only a signed-in patient can book ──────────────────────────────
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      // Not signed in → send them to login rather than failing with "Unauthorized".
+      toast.message("Please sign in to book", {
+        description: "You need a patient account to book a consultation.",
+      });
+      onOpenChange(false);
+      navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+      return;
+    }
+    const role = (me as { role?: string } | undefined)?.role;
+    if (role && role !== "patient") {
+      // Signed in, but on a doctor/hospital/etc. account.
+      toast.error("Switch to a patient account", {
+        description: `You're signed in as a ${role}. To book a consultation and get treatment, switch to (or create) a patient account.`,
+      });
+      return;
+    }
 
     const consultationType =
       doctor.consultation_type === "in_person" ? "in_person" : "online";
@@ -416,8 +438,29 @@ export const BookingDialog = ({
       }
 
     } catch (err) {
+      const status = (err as { status?: number })?.status;
+      const msg = err instanceof Error ? err.message : "";
+
+      // Session expired / not authenticated → go to login.
+      if (status === 401 || /unauthor/i.test(msg)) {
+        toast.message("Please sign in to book", {
+          description: "Your session has expired or you're not signed in.",
+        });
+        onOpenChange(false);
+        navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+        return;
+      }
+
+      // Authenticated but the wrong kind of account (e.g. a doctor).
+      if (status === 403) {
+        toast.error("Switch to a patient account", {
+          description: "This account can't book consultations. Switch to a patient account to get treatment.",
+        });
+        return;
+      }
+
       toast.error("Booking failed", {
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: msg || "Please try again.",
       });
     }
   };

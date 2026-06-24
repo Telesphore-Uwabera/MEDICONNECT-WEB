@@ -22,6 +22,7 @@ interface LandingSpecializationFee {
   tier_name?: string | null;
   doctorCount?: number;
   doctors_count?: number;
+  icon_svg?: string | null;
 }
 
 type SpecializationFeesResponse =
@@ -46,6 +47,56 @@ const slugify = (value: string) =>
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+const sanitizeSvg = (svg?: string | null): string | null => {
+  const raw = svg?.trim();
+  if (!raw || !raw.toLowerCase().startsWith('<svg')) return null;
+  if (typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') {
+    return null;
+  }
+
+  const doc = new DOMParser().parseFromString(raw, 'image/svg+xml');
+  if (doc.querySelector('parsererror')) return null;
+
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== 'svg') return null;
+
+  root.querySelectorAll('script, foreignObject, iframe, object, embed').forEach((node) => node.remove());
+  root.querySelectorAll('*').forEach((node) => {
+    [...node.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith('on') || value.startsWith('javascript:')) {
+        node.removeAttribute(attr.name);
+      }
+    });
+  });
+
+  root.setAttribute('aria-hidden', 'true');
+  root.setAttribute('focusable', 'false');
+  return new XMLSerializer().serializeToString(root);
+};
+
+function SpecialtyIcon({
+  svg,
+  fallback: Fallback,
+}: {
+  svg?: string | null;
+  fallback: LucideIcon;
+}) {
+  const safeSvg = sanitizeSvg(svg);
+
+  if (safeSvg) {
+    return (
+      <span
+        className="flex h-5 w-5 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 [&_svg]:max-h-full [&_svg]:max-w-full"
+        dangerouslySetInnerHTML={{ __html: safeSvg }}
+      />
+    );
+  }
+
+  return <Fallback className="h-5 w-5" />;
+}
 
 function useLandingSpecializationFees() {
   return useQuery({
@@ -207,7 +258,7 @@ function Specialities() {
                   className="group flex w-[124px] flex-shrink-0 flex-col items-center gap-2 rounded-[6px] border border-border bg-card p-3.5 text-center shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-[6px] bg-primary/10 text-primary border border-primary/15 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                    <Icon size={18} strokeWidth={1.75} />
+                    <SpecialtyIcon svg={item.icon_svg} fallback={Icon} />
                   </span>
                   <span className="text-xs font-semibold leading-tight text-foreground">
                     {label}

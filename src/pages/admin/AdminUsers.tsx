@@ -37,6 +37,7 @@ import {
   Calendar,
   Hash,
   RefreshCw,
+  Globe,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {

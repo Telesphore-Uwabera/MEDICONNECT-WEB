@@ -3,6 +3,7 @@ import { Loader2, CalendarClock, Upload, ExternalLink } from "lucide-react";
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import {
   usePatientMedicalRecord,
   usePatientVisits,
@@ -63,7 +64,11 @@ export function RecordRows({ record }: { record?: MedicalRecord | null }) {
       {rows.map(([label, val]) => (
         <div key={label} className="space-y-0.5">
           <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60">{label}</p>
-          <p className="text-[12px] text-foreground whitespace-pre-wrap">{val || "—"}</p>
+          {val ? (
+            <RichTextRenderer value={val} className="text-[12px] text-foreground" />
+          ) : (
+            <p className="text-[12px] text-foreground">—</p>
+          )}
         </div>
       ))}
     </div>
@@ -85,10 +90,10 @@ export function VisitCards({ visits }: { visits: PatientVisit[] }) {
               {v.visited_at ? dayjs(v.visited_at).format("MMM D, YYYY") : "—"}
             </span>
           </div>
-          {v.chief_complaint && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.complaint")} :</span> {v.chief_complaint}</p>}
-          {v.diagnosis && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.diagnosis")} :</span> {v.diagnosis}</p>}
-          {v.treatment_plan && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.plan")} :</span> {v.treatment_plan}</p>}
-          {v.recommendations && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.advice")} :</span> {v.recommendations}</p>}
+          {v.chief_complaint && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.complaint")} :</span> <RichTextRenderer value={v.chief_complaint} className="inline text-[11px] text-foreground" /></div>}
+          {v.diagnosis && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.diagnosis")} :</span> <RichTextRenderer value={v.diagnosis} className="inline text-[11px] text-foreground" /></div>}
+          {v.treatment_plan && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.plan")} :</span> <RichTextRenderer value={v.treatment_plan} className="inline text-[11px] text-foreground" /></div>}
+          {v.recommendations && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.advice")} :</span> <RichTextRenderer value={v.recommendations} className="inline text-[11px] text-foreground" /></div>}
           {(v.blood_pressure || v.temperature || v.pulse_rate) && (
             <p className="text-[10px] text-muted-foreground">
               {[v.blood_pressure && `BP ${v.blood_pressure}`, v.temperature && `Temp ${v.temperature}`, v.pulse_rate && `Pulse ${v.pulse_rate}`]
@@ -118,7 +123,7 @@ export function FileRows({ files }: { files: PatientFile[] }) {
               {String(f.file_type).replace(/_/g, " ")}
               {f.created_at ? ` · ${dayjs(f.created_at).format("MMM D, YYYY")}` : ""}
             </p>
-            {f.notes && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{f.notes}</p>}
+            {f.notes && <RichTextRenderer value={f.notes} className="mt-0.5 text-[10px] text-muted-foreground/80" />}
           </div>
           {f.file_url && (
             <a

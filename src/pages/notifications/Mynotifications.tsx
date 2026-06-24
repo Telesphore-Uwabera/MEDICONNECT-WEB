@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import moment from "moment";
 import {
   Bell,
@@ -200,22 +200,89 @@ function NotificationCard({
   notification,
   onMarkRead,
   onDelete,
+  expanded,
+  onToggleExpanded,
 }: {
   notification: Notification;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  expanded: boolean;
+  onToggleExpanded: (id: string) => void;
 }) {
   const isUnread = !notification.is_read;
   const cfg = getTypeConfig(notification.type);
   const Icon = cfg.icon;
+  const body = getBody(notification);
+  const dragStartX = useRef<number | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragX = useRef(0);
+  const dragged = useRef(false);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const handleOpen = () => {
+    if (dragged.current) return;
+    if (isUnread) onMarkRead(notification.id);
+    onToggleExpanded(notification.id);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartX.current = e.clientX;
+    dragStartY.current = e.clientY;
+    dragX.current = 0;
+    dragged.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartX.current === null || dragStartY.current === null) return;
+    const dx = e.clientX - dragStartX.current;
+    const dy = e.clientY - dragStartY.current;
+
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) return;
+    if (dx >= 0) {
+      setOffsetX(0);
+      return;
+    }
+
+    dragged.current = Math.abs(dx) > 8;
+    dragX.current = dx;
+    setOffsetX(Math.max(dx, -120));
+  };
+
+  const handlePointerEnd = () => {
+    const shouldDelete = dragX.current <= -82;
+    dragStartX.current = null;
+    dragStartY.current = null;
+    dragX.current = 0;
+    setOffsetX(0);
+
+    if (shouldDelete) {
+      onDelete(notification.id);
+      return;
+    }
+
+    window.setTimeout(() => {
+      dragged.current = false;
+    }, 0);
+  };
 
   return (
-    <div
-      className={cn(
-        "group relative flex items-start gap-2.5 px-2.5 py-2 rounded-[6px] border transition-all duration-150 cursor-pointer",
-        "bg-card border-border/40 hover:bg-muted/30 hover:border-border/70"
-      )}
-    >
+    <div className="relative overflow-hidden rounded-[6px]">
+      <div className="absolute inset-y-0 right-0 flex w-28 items-center justify-end bg-red-500/10 pr-4 text-red-600">
+        <Trash2 className="h-4 w-4" />
+      </div>
+      <div
+        onClick={handleOpen}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        className={cn(
+          "group relative flex touch-pan-y items-start gap-2.5 px-2.5 py-2 rounded-[6px] border transition-colors duration-150 cursor-pointer",
+          "bg-card border-border/40 hover:bg-muted/30 hover:border-border/70",
+          offsetX !== 0 && "transition-none"
+        )}
+        style={{ transform: `translateX(${offsetX}px)` }}
+      >
       {/* Unread left accent bar */}
       {isUnread && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-[6px] bg-primary" />
@@ -250,9 +317,14 @@ function NotificationCard({
           )}
         </div>
 
-        {getBody(notification) && (
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed line-clamp-2">
-            {getBody(notification)}
+        {body && (
+          <p
+            className={cn(
+              "text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed",
+              expanded ? "whitespace-pre-wrap" : "line-clamp-2"
+            )}
+          >
+            {body}
           </p>
         )}
 
@@ -281,6 +353,7 @@ function NotificationCard({
             onClick={(e) => {
               e.stopPropagation();
               onMarkRead(notification.id);
+              onToggleExpanded(notification.id);
             }}
             title="Mark as read"
             className="p-1.5 rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
@@ -298,6 +371,7 @@ function NotificationCard({
         >
           <Trash2 className="h-3 w-3" />
         </button>
+      </div>
       </div>
     </div>
   );
@@ -359,11 +433,15 @@ function DateGroupSection({
   items,
   onMarkRead,
   onDelete,
+  expandedIds,
+  onToggleExpanded,
 }: {
   group: string;
   items: Notification[];
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  expandedIds: Set<string>;
+  onToggleExpanded: (id: string) => void;
 }) {
   return (
     <div className="mb-0.5">
@@ -380,6 +458,8 @@ function DateGroupSection({
             notification={n}
             onMarkRead={onMarkRead}
             onDelete={onDelete}
+            expanded={expandedIds.has(n.id)}
+            onToggleExpanded={onToggleExpanded}
           />
         ))}
       </div>
@@ -466,6 +546,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading, isError } = useGetNotifications({ per_page: 50 });
   const markOne = useMarkOneRead();
@@ -504,7 +585,22 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
   const groupedRead = useMemo(() => groupNotifications(readItems), [readItems]);
 
   const handleMarkRead = useCallback((id: string) => markOne.mutate(id), [markOne]);
-  const handleDelete = useCallback((id: string) => deleteOne.mutate(id), [deleteOne]);
+  const handleDelete = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    deleteOne.mutate(id);
+  }, [deleteOne]);
+  const handleToggleExpanded = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const isEmpty = unreadItems.length === 0 && readItems.length === 0;
 
@@ -700,12 +796,12 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                     option.value === "consultations"
                       ? "consultation"
                       : option.value === "payments"
-                      ? "payment"
-                      : option.value === "documents"
-                      ? "document"
-                      : option.value === "alerts"
-                      ? "alert"
-                      : option.value;
+                        ? "payment"
+                        : option.value === "documents"
+                          ? "document"
+                          : option.value === "alerts"
+                            ? "alert"
+                            : option.value;
                   const cfg = TYPE_CONFIG[configKey] ?? FALLBACK_CONFIG;
                   const Icon = cfg.icon;
 
@@ -768,8 +864,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                   {readFilter === "unread"
                     ? "No unread notifications"
                     : categoryFilter
-                    ? `No ${selectedCategory?.label.toLowerCase() ?? "matching"} notifications`
-                    : "All caught up"}
+                      ? `No ${selectedCategory?.label.toLowerCase() ?? "matching"} notifications`
+                      : "All caught up"}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
                   {readFilter === "unread"
@@ -795,6 +891,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                         items={items}
                         onMarkRead={handleMarkRead}
                         onDelete={handleDelete}
+                        expandedIds={expandedIds}
+                        onToggleExpanded={handleToggleExpanded}
                       />
                     ))}
                   </StatusSection>
@@ -819,6 +917,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                         items={items}
                         onMarkRead={handleMarkRead}
                         onDelete={handleDelete}
+                        expandedIds={expandedIds}
+                        onToggleExpanded={handleToggleExpanded}
                       />
                     ))}
                   </StatusSection>

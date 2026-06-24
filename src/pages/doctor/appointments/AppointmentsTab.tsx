@@ -46,6 +46,13 @@ const MOCK_DOCTOR = doctors?.[0] ?? {
   experience: 10, instantAvailable: true, fee: 0,
 };
 
+const STATUS_ORDER: Record<string, number> = {
+  in_progress: 0,
+  confirmed: 1,
+  pending: 2,
+  completed: 3,
+};
+
 // ─── Param builder ────────────────────────────────────────────────────────────
 
 function filtersToParams(filters: FilterState): GetAppointmentsParams {
@@ -60,6 +67,29 @@ function filtersToParams(filters: FilterState): GetAppointmentsParams {
     delete params.upcoming;
   }
   return params;
+}
+
+function minutesFromTimeRange(start?: string, end?: string): number | null {
+  if (!start || !end) return null;
+  const toMinutes = (value: string) => {
+    const [h, m] = value.slice(0, 5).split(":").map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+    return h * 60 + m;
+  };
+  const startMinutes = toMinutes(start);
+  const endMinutes = toMinutes(end);
+  if (startMinutes == null || endMinutes == null) return null;
+  const diff = endMinutes - startMinutes;
+  return diff > 0 ? diff : diff + 24 * 60;
+}
+
+function appointmentDurationMinutes(appt: Appointment): number | null {
+  const slotDuration = minutesFromTimeRange(appt.slot?.start_time, appt.slot?.end_time);
+  if (slotDuration) return slotDuration;
+
+  const raw = (appt as any).duration_minutes ?? (appt as any).duration;
+  const duration = Number(raw);
+  return Number.isFinite(duration) && duration > 0 ? duration : null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -101,7 +131,27 @@ export function AppointmentsTab() {
   const readyNext = useReadyNext();
 
   const appointments: Appointment[] = data?.data ?? [];
-  console.log("appointments:", appointments);
+
+  const appointmentStats = useMemo(() => {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const local = {
+      total: appointments.length,
+      pending: appointments.filter((a) => a.status === "pending").length,
+      confirmed: appointments.filter((a) => a.status === "confirmed").length,
+      in_progress: appointments.filter((a) => a.status === "in_progress").length,
+      completed: appointments.filter((a) => a.status === "completed").length,
+      today: appointments.filter((a) => a.appointment_date?.slice(0, 10) === todayKey).length,
+    };
+
+    return {
+      total: data?.stats?.total ?? data?.total ?? local.total,
+      pending: data?.stats?.pending ?? local.pending,
+      confirmed: data?.stats?.confirmed ?? local.confirmed,
+      in_progress: local.in_progress,
+      completed: data?.stats?.completed ?? local.completed,
+      today: data?.stats?.today ?? local.today,
+    };
+  }, [appointments, data?.stats, data?.total]);
 
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
@@ -114,6 +164,10 @@ export function AppointmentsTab() {
         );
       })
       .sort((a, b) => {
+        const statusOrder =
+          (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+        if (statusOrder !== 0) return statusOrder;
+
         if (filters.sort === "date-desc") {
           return `${b.appointment_date}${b.appointment_time}`.localeCompare(
             `${a.appointment_date}${a.appointment_time}`
@@ -155,6 +209,7 @@ export function AppointmentsTab() {
         const started = startInAppCallFromJoin(startCall, res as any, {
           consultationId: appt.id,
           isOwner: true,
+          appointmentDurationMinutes: appointmentDurationMinutes(appt),
         });
         if (!started) {
           call.startScheduledCall(apptCtx, MOCK_DOCTOR);
@@ -344,6 +399,37 @@ export function AppointmentsTab() {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
+        <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 p-5 pb-0">
+          {[
+            { label: "Total bookings", value: appointmentStats.total, sub: "All scheduled", icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60" },
+            { label: "Confirmed", value: appointmentStats.confirmed, sub: "Ready to join", icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
+            { label: "In progress", value: appointmentStats.in_progress, sub: "Live now", icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
+            { label: "Pending", value: appointmentStats.pending, sub: "Awaiting confirmation", icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
+            { label: "Today", value: appointmentStats.today, sub: "On schedule", icon: Clock, tone: "text-primary bg-primary/10 border-primary/20" },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="rounded-[6px] border border-border/70 bg-card p-3 min-w-0">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 truncate">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 text-2xl font-bold text-foreground">
+                      {isLoading ? "..." : item.value}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 truncate">
+                      {item.sub}
+                    </p>
+                  </div>
+                  <div className={cn("h-9 w-9 shrink-0 rounded-[6px] border flex items-center justify-center", item.tone)}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
         {/* ── Toolbar ── */}
         <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -478,7 +564,7 @@ export function AppointmentsTab() {
                     ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
                     : filtered.map((a) => {
                       const status = a.status as UIStatus;
-                      const canStart = status === "confirmed" || status === "pending";
+                      const canStart = status === "confirmed";
                       const isInProgress = status === "in_progress";
                       const hasNotes = !!a.notes;
                       return (
@@ -610,7 +696,13 @@ export function AppointmentsTab() {
                               )}
 
                               {/* Notes — completed */}
-                              {!canStart && !isInProgress && (
+                              {status === "pending" && (
+                                <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+                                  Awaiting confirmation
+                                </span>
+                              )}
+
+                              {!canStart && !isInProgress && status !== "pending" && (
                                 <Button
                                   size="sm"
                                   variant="ghost"

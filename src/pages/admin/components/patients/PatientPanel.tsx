@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { STATUS_STYLE, STATUS_DOT, formatDob, calcAge } from "./Types";
+import { PatientConsultationsTab } from "./PatientConsultationsTab";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,11 +23,12 @@ export interface PatientPanelProps {
   isActing: boolean;
 }
 
-type TabId = "overview" | "medical" | "verification";
+type TabId = "overview" | "medical" | "consultations" | "verification";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <User className="w-3 h-3" /> },
   { id: "medical", label: "Medical", icon: <HeartPulse className="w-3 h-3" /> },
+  { id: "consultations", label: "Consultations", icon: <FileText className="w-3 h-3" /> },
   { id: "verification", label: "Verification", icon: <BadgeCheck className="w-3 h-3" /> },
 ];
 
@@ -459,6 +461,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
               <div className="px-6 py-5">
                 {tab === "overview" && <OverviewTab p={patient} />}
                 {tab === "medical" && <MedicalTab p={patient} />}
+                {tab === "consultations" && <PatientConsultationsTab patientId={patient.id} />}
                 {tab === "verification" && <VerificationTab p={patient} />}
               </div>
             </div>

@@ -5,6 +5,11 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  prepareRichTextForSave,
+  RichTextRenderer,
+  sanitizeRichText,
+} from "@/components/ui/rich-textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +21,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Extracted step components & shared modules ───────────────────────────────
 import {
@@ -80,6 +86,35 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
 
 const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
 
+const getStepLabel = (stepId: string) =>
+  STEPS.find((step) => step.id === stepId)?.label ?? "section";
+
+const flattenValidationErrors = (errors: unknown): string => {
+  if (!errors || typeof errors !== "object") return "";
+  return Object.values(errors as Record<string, unknown>)
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" · ");
+};
+
+const getProfileSaveErrorMessage = (err: unknown): string => {
+  const apiData = (err as { data?: { message?: string; errors?: unknown } })?.data;
+  const directMessage =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : (err as { message?: string })?.message;
+  const validationMessage = flattenValidationErrors(apiData?.errors);
+  const baseMessage = apiData?.message || directMessage;
+
+  if (validationMessage && baseMessage && !baseMessage.includes(validationMessage)) {
+    return `${baseMessage} · ${validationMessage}`;
+  }
+
+  return baseMessage || validationMessage || "Please check the form and try again.";
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API → Form mapper
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,6 +143,13 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
         ? parseFloat(String(doc.specialization_fee.in_person_fee))
         : undefined,
       fee_currency: doc.specialization_fee?.currency ?? undefined,
+      // Saved specialist sub-types (read defensively across likely field names).
+      sub_specializations: (doc.sub_specializations ?? []).map((x) => ({
+        id: x.id,
+      })),
+      sub_specialization_names: (doc.sub_specializations ?? []).map(
+        (x) => x.name ?? x.sub_type ?? x.sub_specialization ?? `#${x.id}`,
+      ),
     },
 
     education: (doc.educations ?? []).map((e) => ({
@@ -124,6 +166,7 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
       apiId: e.id,
       job_title: e.job_title,
       workplace: e.workplace,
+      description: e.description ?? "",
       country: e.country,
       start_date: toDateInputValue(e.start_date),
       end_date: e.end_date ? toDateInputValue(e.end_date) : null,
@@ -473,9 +516,7 @@ const ViewPersonal = React.memo(function ViewPersonal({
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Bio ({lang})
             </p>
-            <p className="text-[13px] text-foreground leading-relaxed">
-              {value}
-            </p>
+            <RichTextRenderer value={value} className="text-[13px] text-foreground" />
           </div>
         ))}
     </div>
@@ -490,6 +531,8 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
   const s = data.specializations;
   if (!s.primary) return null;
 
+  const subNames = s.sub_specialization_names ?? [];
+
   return (
     <div className="space-y-5">
       <ViewField label="Primary specialization" value={s.primary} />
@@ -501,52 +544,36 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
         />
       )}
 
-      {s.specialization_fee_id && (s.fee_name || s.tier_name) && (
+      {s.specialization_fee_id && s.fee_name && (
         <div className="rounded-[6px] border border-primary/20 bg-primary/5 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-              Selected fee configuration
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
-              ID: {s.specialization_fee_id}
-            </span>
-          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Selected sub-specialization
+          </span>
+          <ViewField label="Sub-specialization" value={s.fee_name} />
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            <ViewField label="Sub-specialization" value={s.fee_name} />
-            {s.tier_name && <ViewField label="Tier" value={s.tier_name} />}
+      {subNames.length > 0 && (
+        <div className="rounded-[6px] border border-border bg-card p-4 space-y-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Sub-specialties
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {subNames.map((name, i) => (
+              <span
+                key={`${name}-${i}`}
+                className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary"
+              >
+                {name}
+              </span>
+            ))}
           </div>
-
-          {(s.online_fee !== undefined || s.in_person_fee !== undefined) && (
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-primary/10">
-              {s.in_person_fee !== undefined && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    In-person fee
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {s.fee_currency} {Number(s.in_person_fee).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {s.online_fee !== undefined && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Online fee
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {s.fee_currency} {Number(s.online_fee).toLocaleString()}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
       {s.specialization_fee_id && !s.fee_name && (
         <ViewField
-          label="Fee configuration ID"
+          label="Sub-specialization ID"
           value={s.specialization_fee_id}
         />
       )}
@@ -619,6 +646,12 @@ const ViewExperience = React.memo(function ViewExperience({
               }
             />
           </div>
+          {exp.description && (
+            <RichTextRenderer
+              value={exp.description}
+              className="text-xs text-muted-foreground"
+            />
+          )}
         </div>
       ))}
     </div>
@@ -1196,6 +1229,7 @@ const DoctorProfile = () => {
         const payload = {
           job_title: entry.job_title,
           workplace: entry.workplace,
+          description: prepareRichTextForSave(entry.description) ?? null,
           country: entry.country,
           start_date: entry.start_date,
           end_date: entry.is_current ? null : (entry.end_date ?? null),
@@ -1270,17 +1304,35 @@ const DoctorProfile = () => {
     async (stepId: string, data: Partial<DoctorProfileData>) => {
       setStepState(stepId, "saving");
       try {
+        const withRequiredProfileFields = (
+          payload: UpsertProfilePayload,
+        ): UpsertProfilePayload => {
+          const personal = data.personal ?? profileData?.personal;
+          if (!personal) return payload;
+
+          return {
+            doctor_degree: personal.doctor_degree,
+            medical_license: personal.medical_license,
+            bio_en: sanitizeRichText(personal.bio_en),
+            bio_fr: sanitizeRichText(personal.bio_fr),
+            bio_kiny: sanitizeRichText(personal.bio_kiny),
+            preferred_language: personal.preferred_language,
+            is_available: true,
+            ...payload,
+          };
+        };
+
         switch (stepId) {
           case "personal": {
-            await upsertProfile.mutateAsync({
+            await upsertProfile.mutateAsync(withRequiredProfileFields({
               doctor_degree: data.personal!.doctor_degree,
               medical_license: data.personal!.medical_license,
-              bio_en: data.personal!.bio_en,
+              bio_en: sanitizeRichText(data.personal!.bio_en),
               preferred_language: data.personal!.preferred_language,
               is_available: true,
-              bio_fr: data.personal!.bio_fr,
-              bio_kiny: data.personal!.bio_kiny,
-            });
+              bio_fr: sanitizeRichText(data.personal!.bio_fr),
+              bio_kiny: sanitizeRichText(data.personal!.bio_kiny),
+            }));
             setProfileData((prev) =>
               prev
                 ? { ...prev, personal: data.personal! }
@@ -1295,11 +1347,17 @@ const DoctorProfile = () => {
             if (data.specializations?.specialization_fee_id !== undefined)
               payload.specialization_fee_id =
                 data.specializations.specialization_fee_id;
+            if (data.specializations?.sub_specialization !== undefined)
+              payload.sub_specialization =
+                data.specializations.sub_specialization;
+            if (data.specializations?.sub_specializations !== undefined)
+              payload.sub_specializations =
+                data.specializations.sub_specializations;
             if (data.specializations?.years_of_experience !== undefined)
               payload.years_of_experience =
                 data.specializations.years_of_experience;
             if (Object.keys(payload).length > 0)
-              await upsertProfile.mutateAsync(payload);
+              await upsertProfile.mutateAsync(withRequiredProfileFields(payload));
             setProfileData((prev) =>
               prev
                 ? { ...prev, specializations: data.specializations! }
@@ -1380,6 +1438,9 @@ const DoctorProfile = () => {
         setStepState(stepId, "saved");
       } catch (err) {
         console.error(`Failed to save step "${stepId}":`, err);
+        toast.error(`Could not save ${getStepLabel(stepId)}`, {
+          description: getProfileSaveErrorMessage(err),
+        });
         setStepState(stepId, "error");
       }
     },

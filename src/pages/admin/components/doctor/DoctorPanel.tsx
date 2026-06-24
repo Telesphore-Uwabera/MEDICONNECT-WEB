@@ -54,6 +54,7 @@ import {
   UserX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import type {
   ApiDoctor,
@@ -119,6 +120,29 @@ const fmtFull = (iso?: string | null) =>
   iso ? moment(iso).format("D MMM YYYY [at] HH:mm") : null;
 const isExpired = (iso?: string | null) =>
   iso ? moment(iso).isBefore(moment()) : false;
+
+function displayText(value: unknown, fallback = "-"): string {
+  if (typeof value === "string" || typeof value === "number") {
+    const text = String(value).trim();
+    return text || fallback;
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const localized =
+      record.name ??
+      record.name_en ??
+      record.sub_specialization ??
+      record.label ??
+      record.title ??
+      record.name_fr ??
+      record.name_kiny;
+
+    return displayText(localized, fallback);
+  }
+
+  return fallback;
+}
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
@@ -851,7 +875,7 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
               <InfoTile
                 icon={<Stethoscope className="w-2.5 h-2.5" />}
                 label="Specialization"
-                value={doctor.specialization}
+                value={displayText(doctor.specialization)}
               />
             )}
             {doctor.doctor_degree && (
@@ -1302,6 +1326,12 @@ function ExperienceTab({ doctor }: { doctor: ApiDoctor }) {
                 </p>
                 {e.is_current && <Pill variant="emerald">Current</Pill>}
               </div>
+              {e.description && (
+                <RichTextRenderer
+                  value={e.description}
+                  className="text-[12px] text-muted-foreground/70"
+                />
+              )}
               <FieldRow label="Workplace" value={e.workplace} />
               <FieldRow label="Country" value={e.country} />
               {e.start_date && (
@@ -1968,6 +1998,11 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
 
   const records = data?.records ?? [];
   const multiRecord = records.length > 1;
+  const feeOptions =
+    allFees?.map((fee) => ({
+      ...fee,
+      specialization: displayText(fee.specialization),
+    })) ?? [];
 
   const openEdit = (rec: ApiDoctorConsultationRecord) => {
     setEditingId(rec.id);
@@ -2184,7 +2219,7 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
                             className={inputCls}
                           >
                             <option value="">Select…</option>
-                            {allFees
+                            {feeOptions
                               ?.filter((f) => f.is_active)
                               .map((f) => (
                                 <option key={f.id} value={f.id}>
@@ -2812,7 +2847,7 @@ export function DoctorPanel({
                     {d.user.name}
                   </p>
                   <p className="text-[10.5px] text-muted-foreground/45 truncate mt-0.5">
-                    {d.specialization ?? d.user.email ?? "—"}
+                    {displayText(d.specialization, d.user.email ?? "-")}
                   </p>
                 </div>
 

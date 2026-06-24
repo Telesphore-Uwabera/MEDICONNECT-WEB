@@ -299,6 +299,12 @@
     "marked_filled": "Yashyizweho ko yatanzwe",
     "filled_desc": "Umurwayi {{name}} yamenyeshejwe"
   },
+  "admin": {
+    "overview_sub": "Incamake y'urubuga rwose",
+    "overview_title": "Murakaza neza, {{name}}",
+    "doctors_sub": "Gucunga abaganga n'abakozi b'ubuvuzi",
+    "doctors_title": "Abaganga"
+  },
   "cards": {
     "from": "Kuva kuri",
     "book": "Fata gahunda",

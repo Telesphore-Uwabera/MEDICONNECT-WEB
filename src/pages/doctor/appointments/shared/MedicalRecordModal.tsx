@@ -6,6 +6,7 @@ import {
 import dayjs from "dayjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RichTextarea, RichTextRenderer } from "@/components/ui/rich-textarea";
 import {
   usePatientMedicalRecord,
   useUpdatePatientMedicalRecord,
@@ -46,8 +47,6 @@ const RECORD_FIELDS: Array<{ key: keyof MedicalRecordUpdate; label: string }> = 
 
 const inputCls =
   "w-full h-9 px-3 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors";
-const taCls =
-  "w-full px-3 py-2 rounded-[5px] border border-border bg-background text-[12px] text-foreground outline-none focus:border-primary/50 transition-colors resize-none";
 const label = "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
 
 export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, onSaved }: Props) {
@@ -225,12 +224,12 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
               {RECORD_FIELDS.map((f) => (
                 <div key={f.key} className="space-y-1.5">
                   <label className={label}>{t(f.label)}</label>
-                  <textarea
+                  <RichTextarea
                     value={(form[f.key] as string) ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    rows={2}
+                    onChange={(value) => set(f.key, value)}
                     placeholder="—"
-                    className={taCls}
+                    minHeight={100}
+                    editorClassName="text-[12px]"
                   />
                 </div>
               ))}
@@ -259,9 +258,9 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
                       {v.visited_at ? dayjs(v.visited_at).format("MMM D, YYYY") : "—"}
                     </span>
                   </div>
-                  {v.chief_complaint && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.complaint")} :</span> {v.chief_complaint}</p>}
-                  {v.diagnosis && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.diagnosis")} :</span> {v.diagnosis}</p>}
-                  {v.treatment_plan && <p className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.plan")} :</span> {v.treatment_plan}</p>}
+                  {v.chief_complaint && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.complaint")} :</span> <RichTextRenderer value={v.chief_complaint} className="inline text-[11px] text-foreground" /></div>}
+                  {v.diagnosis && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.diagnosis")} :</span> <RichTextRenderer value={v.diagnosis} className="inline text-[11px] text-foreground" /></div>}
+                  {v.treatment_plan && <div className="text-[11px] text-foreground"><span className="text-muted-foreground">{t("consult.visits.plan")} :</span> <RichTextRenderer value={v.treatment_plan} className="inline text-[11px] text-foreground" /></div>}
                   {(v.blood_pressure || v.temperature || v.pulse_rate) && (
                     <p className="text-[10px] text-muted-foreground">
                       {[v.blood_pressure && `BP ${v.blood_pressure}`, v.temperature && `Temp ${v.temperature}`, v.pulse_rate && `Pulse ${v.pulse_rate}`]
@@ -325,7 +324,7 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
                       {String(f.file_type).replace(/_/g, " ")}
                       {f.created_at ? ` · ${dayjs(f.created_at).format("MMM D, YYYY")}` : ""}
                     </p>
-                    {f.notes && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{f.notes}</p>}
+                    {f.notes && <RichTextRenderer value={f.notes} className="mt-0.5 text-[10px] text-muted-foreground/80" />}
                   </div>
                   {f.file_url && (
                     <a

@@ -51,6 +51,7 @@ import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
 import { useState, useCallback } from "react";
+import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 
@@ -179,6 +180,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           to: "/doctor/prescriptions",
           label: t("sidebar.prescriptions"),
           icon: FileText,
+        },
+        {
+          to: "/doctor/consultation-summaries",
+          label: "Consultation Summaries",
+          icon: Stethoscope,
         },
         {
           to: "/doctor/fitness-certificates",
@@ -450,7 +456,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-16 w-auto flex-shrink-0 rounded-[6px]"
+            className="h-12 w-[80%] flex-shrink-0 rounded-[6px]"
           />
         </NavLink>
 
@@ -626,7 +632,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           className={cn(
-            "hidden lg:flex fixed top-0 left-0 z-[9999] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
+            "hidden lg:flex fixed top-0 left-0 z-[99] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
             sidebarOpen ? "left-[202px]" : "left-0",
           )}
         >
@@ -659,6 +665,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
         >
           {children}
         </motion.main>
+        {role === "doctor" && <InstantPaidAlertListener />}
       </div>
     </div>
   );

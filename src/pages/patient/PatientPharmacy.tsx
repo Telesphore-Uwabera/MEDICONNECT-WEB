@@ -463,6 +463,144 @@ function Pagination({
   );
 }
 
+function SearchStats({
+  isLoading,
+  total,
+  shown,
+  delivery,
+  open24h,
+}: {
+  isLoading: boolean;
+  total: number;
+  shown: number;
+  delivery: number;
+  open24h: number;
+}) {
+  const cards = [
+    { label: "Matching pharmacies", value: total, icon: Pill, tone: "text-primary bg-primary/10 border-primary/20" },
+    { label: "Shown now", value: shown, icon: Building2, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+    { label: "With delivery", value: delivery, icon: Truck, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+    { label: "Open 24h", value: open24h, icon: Clock, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 p-4 pb-2">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div key={card.label} className="rounded-[6px] border border-border/70 bg-card p-3 flex items-center gap-3 min-w-0">
+            <div className={cn("h-9 w-9 rounded-[6px] border flex items-center justify-center shrink-0", card.tone)}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              {isLoading ? (
+                <div className="h-5 w-12 rounded-[6px] bg-muted animate-pulse" />
+              ) : (
+                <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
+              )}
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                {card.label}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaginationV2({
+  currentPage,
+  lastPage,
+  total,
+  perPage,
+  itemLabel,
+  onPageChange,
+}: {
+  currentPage: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
+  itemLabel: string;
+  onPageChange: (p: number) => void;
+}) {
+  if (total <= 0) return null;
+
+  const safeLastPage = Math.max(1, lastPage);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), safeLastPage);
+  const from = (safeCurrentPage - 1) * perPage + 1;
+  const to = Math.min(safeCurrentPage * perPage, total);
+  const goToPage = (nextPage: number) =>
+    onPageChange(Math.min(Math.max(1, nextPage), safeLastPage));
+
+  const pageNumbers = (() => {
+    const pages = new Set<number>([1, safeLastPage, safeCurrentPage]);
+    for (let p = safeCurrentPage - 1; p <= safeCurrentPage + 1; p += 1) {
+      if (p >= 1 && p <= safeLastPage) pages.add(p);
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  })();
+
+  return (
+    <div className="border-t border-border/70 bg-card px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-foreground">
+            Page {safeCurrentPage} of {safeLastPage}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
+            <span className="font-semibold text-foreground">{total}</span> {itemLabel}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => goToPage(safeCurrentPage - 1)}
+            disabled={safeCurrentPage <= 1}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Prev
+          </button>
+
+          {pageNumbers.map((pageNumber, index) => {
+            const previous = pageNumbers[index - 1];
+            return (
+              <span key={pageNumber} className="inline-flex items-center gap-1.5">
+                {previous != null && pageNumber - previous > 1 && (
+                  <span className="px-1 text-xs text-muted-foreground">...</span>
+                )}
+                <button
+                  onClick={() => goToPage(pageNumber)}
+                  aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
+                  className={cn(
+                    "h-9 min-w-9 px-3 flex items-center justify-center rounded-[6px] border text-xs font-bold transition-all",
+                    safeCurrentPage === pageNumber
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50",
+                  )}
+                >
+                  {pageNumber}
+                </button>
+              </span>
+            );
+          })}
+
+          <button
+            onClick={() => goToPage(safeCurrentPage + 1)}
+            disabled={safeCurrentPage >= safeLastPage}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PatientPharmacy = () => {
@@ -551,6 +689,15 @@ const PatientPharmacy = () => {
   const rawPharmacies: Pharmacy[] = nearbyCoords ? nearbyPharmacies : (pharmaciesResp?.data ?? []);
   const pharmacies = useMemo(() => sortPharmacies(rawPharmacies, filters.sort), [rawPharmacies, filters.sort]);
   const isLoading = nearbyCoords ? loadingNearby : loadingPharmacies;
+  const paginationMeta = nearbyCoords ? nearbyResp?.meta : pharmaciesResp?.meta;
+  const totalPharmacies = nearbyCoords ? nearbyPharmacies.length : paginationMeta?.total ?? pharmacies.length;
+  const currentPage = nearbyCoords ? 1 : paginationMeta?.current_page ?? page;
+  const perPage = paginationMeta?.per_page ?? Math.max(pharmacies.length, 1);
+  const lastPage = nearbyCoords ? 1 : paginationMeta?.last_page ?? 1;
+
+  useEffect(() => {
+    if (!nearbyCoords && lastPage >= 1 && page > lastPage) setPage(lastPage);
+  }, [lastPage, nearbyCoords, page]);
 
   const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -577,7 +724,16 @@ const PatientPharmacy = () => {
 
   const deliveryCount = pharmacies.filter((p) => p.offers_delivery).length;
   const open24hCount = pharmacies.filter((p) => p.is_open_24h).length;
-  const lastPage = pharmaciesResp?.last_page ?? (pharmaciesResp ? Math.ceil(pharmaciesResp.total / pharmaciesResp.per_page) : 1);
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPage(nextPage);
+    requestAnimationFrame(() => {
+      document.querySelector("[data-pharmacy-results]")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
 
   const filterFields = useMemo(() => [
     { type: "search" as const, key: "q", label: "Search", value: filters.q, onChange: (v: string) => set("q", v) },
@@ -666,7 +822,14 @@ const PatientPharmacy = () => {
         />
 
         {/* ── Results ── */}
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className="flex-1 overflow-y-auto flex flex-col" data-pharmacy-results>
+          <SearchStats
+            isLoading={isLoading}
+            total={totalPharmacies}
+            shown={pharmacies.length}
+            delivery={deliveryCount}
+            open24h={open24hCount}
+          />
 
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
@@ -676,8 +839,8 @@ const PatientPharmacy = () => {
                   <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                 ) : (
                   <>
-                    <span className="font-bold text-foreground">{pharmacies.length}</span>{" "}
-                    {pharmacies.length === 1 ? "pharmacy" : "pharmacies"} found
+                    <span className="font-bold text-foreground">{totalPharmacies}</span>{" "}
+                    {totalPharmacies === 1 ? "pharmacy" : "pharmacies"} found
                     {searchQ && ` for "${searchQ}"`}
                     {hasActiveFilters && (
                       <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors">
@@ -800,13 +963,14 @@ const PatientPharmacy = () => {
           </div>
 
           {/* Pagination */}
-          {pharmaciesResp && lastPage > 1 && (
-            <Pagination
-              currentPage={pharmaciesResp.current_page}
+          {paginationMeta && !nearbyCoords && (
+            <PaginationV2
+              currentPage={currentPage}
               lastPage={lastPage}
-              total={pharmaciesResp.total}
-              perPage={pharmaciesResp.per_page}
-              onPageChange={setPage}
+              total={totalPharmacies}
+              perPage={perPage}
+              itemLabel="pharmacies"
+              onPageChange={handlePageChange}
             />
           )}
         </main>

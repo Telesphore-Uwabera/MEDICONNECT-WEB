@@ -4,6 +4,7 @@
 import React, { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RichTextarea } from "@/components/ui/rich-textarea";
 import { Plus } from "lucide-react";
 import { FormField, EntryCard } from "./UiPrimitives";
 import type { ExperienceEntry } from "./Types";
@@ -27,6 +28,7 @@ export const ExperienceStep = React.memo(function ExperienceStep({
         apiId: undefined,
         job_title: "",
         workplace: "",
+        description: "",
         country: "",
         start_date: "",
         end_date: null,
@@ -84,6 +86,18 @@ export const ExperienceStep = React.memo(function ExperienceStep({
                 }
                 placeholder="King Faisal Hospital"
                 className="border-border focus-visible:ring-primary text-xs h-9"
+              />
+            </FormField>
+
+            <FormField label="Description" className="sm:col-span-2">
+              <RichTextarea
+                value={entry.description}
+                onChange={(value) =>
+                  updateEntry(entry.id, { description: value })
+                }
+                placeholder="Briefly describe your responsibilities, department, or clinical focus"
+                minHeight={96}
+                editorClassName="text-xs"
               />
             </FormField>
 

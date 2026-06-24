@@ -17,7 +17,7 @@ interface Props {
 
 export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: Props) {
   const status = appt.status as UIStatus;
-  const canStart = status === "confirmed" || status === "pending";
+  const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
 
   return (
@@ -91,7 +91,13 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
         )}
 
         {/* Notes — completed */}
-        {!canStart && !isInProgress && (
+        {status === "pending" && (
+          <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+            Awaiting confirmation
+          </span>
+        )}
+
+        {!canStart && !isInProgress && status !== "pending" && (
           <Button
             size="sm"
             variant="ghost"
