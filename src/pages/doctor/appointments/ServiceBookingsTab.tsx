@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import {
   useDoctorServiceBookings,
   useDoctorServiceBooking,
@@ -318,7 +319,7 @@ export function ServiceBookingsTab() {
 
                   {detail.notes && (
                     <Section title={t("consult.booking.notes")} icon={<FileText className="h-4 w-4" />}>
-                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed py-1">{detail.notes}</p>
+                      <RichTextRenderer value={detail.notes} className="py-1 text-sm text-foreground" />
                     </Section>
                   )}
 

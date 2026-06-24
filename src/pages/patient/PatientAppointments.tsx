@@ -715,7 +715,7 @@ const PatientAppointments = () => {
                                   handleJoin(a);
                                 }}
                               >
-                                Join call
+                                {a.status === "in_progress" ? "Rejoin call" : "Join call"}
                               </Button>
                             ) : (
                               <Button

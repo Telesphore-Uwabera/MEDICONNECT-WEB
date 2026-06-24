@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import {
   FileText, Stethoscope,
-  UserCheck, Clock3, Users, CheckCircle2, Activity, Video,
+  UserCheck, Clock3, Users, CheckCircle2, Activity, Video, History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -103,6 +103,7 @@ function StatTile({
 export function InstantConsultTab() {
   const call = useCallStore();
   const [notesOpen, setNotesOpen] = useState(true);
+  const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
@@ -128,11 +129,14 @@ export function InstantConsultTab() {
   const queue: InstantConsultQueueItem[] = queueData?.queue ?? [];
   const stats = queueData?.stats;
 
-  const confirmed = queue.filter((i) => i.status === "confirmed");
-  const accepted = queue.filter((i) => i.status === "accepted");
-  const joined = queue.filter((i) => i.status === "in_progress");
-  const others = queue.filter((i) =>
-    ["pending", "declined", "withdrawn", "expired", "completed"].includes(i.status),
+  const visibleQueue = queue.filter((i) => i.status !== "expired");
+  const completed = visibleQueue.filter((i) => i.status === "completed");
+  const activeItems = visibleQueue.filter((i) => i.status !== "completed");
+  const confirmed = activeItems.filter((i) => i.status === "confirmed");
+  const accepted = activeItems.filter((i) => i.status === "accepted");
+  const joined = activeItems.filter((i) => i.status === "in_progress");
+  const others = activeItems.filter((i) =>
+    ["pending", "declined", "withdrawn"].includes(i.status),
   );
 
   const handleAccept = (item: InstantConsultQueueItem) => {
@@ -278,7 +282,8 @@ export function InstantConsultTab() {
   }
 
   // ── Queue view ─────────────────────────────────────────────────────────────
-  const activeCount = confirmed.length + accepted.length + joined.length;
+  const actionableCount = confirmed.length + accepted.length + joined.length;
+  const activeCount = activeItems.length;
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
@@ -309,20 +314,66 @@ export function InstantConsultTab() {
         )}
 
         {/* Online header */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
-            <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
-            <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
-              {t("consult.bookings.online")}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
+              <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
+              <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
+                {t("consult.bookings.online")}
+              </span>
+            </div>
+            <span className="truncate text-sm text-muted-foreground">
+              {queueLoading
+                ? t("consult.bookings.loading_queue")
+                : actionableCount === 0
+                  ? t("consult.bookings.no_active_patients")
+                  : `${actionableCount} ${actionableCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`}
             </span>
           </div>
-          <span className="text-sm text-muted-foreground">
-            {queueLoading
-              ? t("consult.bookings.loading_queue")
-              : activeCount === 0
-                ? t("consult.bookings.no_active_patients")
-                : `${activeCount} ${activeCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`}
-          </span>
+
+          <div className="inline-flex shrink-0 items-center rounded-[6px] border border-border/60 bg-card p-0.5">
+            {[
+              {
+                id: "active" as const,
+                label: t("consult.bookings.active_queue", { defaultValue: "Active queue" }),
+                count: activeCount,
+                icon: Activity,
+              },
+              {
+                id: "completed" as const,
+                label: t("consult.bookings.completed", { defaultValue: "Completed" }),
+                count: completed.length,
+                icon: History,
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = queueTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setQueueTab(tab.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[5px] px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span
+                    className={cn(
+                      "rounded-[5px] px-1.5 py-0.5 text-[10px] leading-none tabular-nums",
+                      active ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Loading skeletons */}
@@ -333,7 +384,7 @@ export function InstantConsultTab() {
         )}
 
         {/* Empty state */}
-        {!queueLoading && activeCount === 0 && (
+        {!queueLoading && queueTab === "active" && activeCount === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
             <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
               <Stethoscope className="h-8 w-8 text-muted-foreground/40" />
@@ -347,7 +398,7 @@ export function InstantConsultTab() {
           </div>
         )}
 
-        {!queueLoading && (
+        {!queueLoading && queueTab === "active" && (
           <div className="space-y-5">
 
             {/* Confirmed — success (green) */}
@@ -399,7 +450,6 @@ export function InstantConsultTab() {
                   count={joined.length}
                 />
                 {joined.map((item) => (
-                  console.log(item),
                   <IncomingCard
                     key={item.id}
                     item={item}
@@ -417,7 +467,7 @@ export function InstantConsultTab() {
               <section className="space-y-2">
                 <SectionLabel
                   dotCls="bg-muted-foreground/30"
-                  label="History"
+                  label={t("consult.bookings.other_requests", { defaultValue: "Other requests" })}
                   count={others.length}
                 />
                 {others.map((item) => (
@@ -426,6 +476,37 @@ export function InstantConsultTab() {
               </section>
             )}
 
+          </div>
+        )}
+
+        {!queueLoading && queueTab === "completed" && (
+          <div className="space-y-5">
+            {completed.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {t("consult.bookings.no_completed_instants", { defaultValue: "No completed instant consultations" })}
+                  </p>
+                  <p className="text-sm text-muted-foreground/70 mt-1 max-w-[280px] leading-relaxed">
+                    {t("consult.bookings.completed_instants_info", { defaultValue: "Completed instant consultations will appear here after you finish a session." })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <section className="space-y-2">
+                <SectionLabel
+                  dotCls="bg-[hsl(var(--success))]"
+                  label={t("consult.bookings.completed", { defaultValue: "Completed" })}
+                  count={completed.length}
+                />
+                {completed.map((item) => (
+                  <IncomingCard key={item.id} item={item} />
+                ))}
+              </section>
+            )}
           </div>
         )}
       </div>

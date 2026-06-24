@@ -101,7 +101,7 @@ export const AdminLayout = ({ children }: Props) => {
           aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           className={cn(
-            "hidden lg:flex fixed top-0 left-0 z-[9999] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
+            "hidden lg:flex fixed top-0 left-0 z-[9997] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
             sidebarOpen ? "left-[202px]" : "left-0",
           )}
         >

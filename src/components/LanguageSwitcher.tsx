@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
 const LANGS = [
   {
@@ -44,6 +46,13 @@ const FlagCircle = ({ flag, label, className }: { flag: string; label: string; c
   </span>
 );
 
+const normalizeLanguageCode = (code?: string | null) => {
+  if (!code) return null;
+  const normalized = code.toLowerCase().split("-")[0];
+  if (normalized === "kiny" || normalized === "kinyarwanda") return "rw";
+  return normalized;
+};
+
 export const LanguageSwitcher = ({
   variant = "ghost",
   compact = false,
@@ -52,7 +61,44 @@ export const LanguageSwitcher = ({
   compact?: boolean;
 }) => {
   const { i18n, t } = useTranslation();
-  const current = LANGS.find((l) => i18n.language?.startsWith(l.code)) ?? LANGS[0];
+  const { data: publicSettings } = usePublicSettings();
+
+  const configuredCodes = useMemo(
+    () =>
+      publicSettings?.general?.supported_languages
+        ?.map(normalizeLanguageCode)
+        .filter((code): code is string => Boolean(code)) ?? [],
+    [publicSettings?.general?.supported_languages],
+  );
+
+  const enabledLanguages = useMemo(() => {
+    if (configuredCodes.length === 0) return [...LANGS];
+    const enabled = LANGS.filter((lang) => configuredCodes.includes(lang.code));
+    return enabled.length > 0 ? enabled : [...LANGS];
+  }, [configuredCodes]);
+
+  const defaultLanguage =
+    normalizeLanguageCode(publicSettings?.general?.default_language) ||
+    enabledLanguages[0]?.code ||
+    "en";
+  const current =
+    enabledLanguages.find((l) => i18n.language?.startsWith(l.code)) ??
+    enabledLanguages.find((l) => l.code === defaultLanguage) ??
+    enabledLanguages[0] ??
+    LANGS[0];
+
+  useEffect(() => {
+    const activeCode = normalizeLanguageCode(i18n.language);
+    if (enabledLanguages.some((lang) => lang.code === activeCode)) return;
+
+    const nextLanguage =
+      enabledLanguages.find((lang) => lang.code === defaultLanguage)?.code ??
+      enabledLanguages[0]?.code;
+
+    if (nextLanguage) {
+      i18n.changeLanguage(nextLanguage);
+    }
+  }, [defaultLanguage, enabledLanguages, i18n]);
 
   return (
     <DropdownMenu>
@@ -63,7 +109,7 @@ export const LanguageSwitcher = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[180px]">
-        {LANGS.map((l) => (
+        {enabledLanguages.map((l) => (
           <DropdownMenuItem
             key={l.code}
             onClick={() => i18n.changeLanguage(l.code)}

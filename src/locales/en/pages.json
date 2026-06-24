@@ -302,6 +302,12 @@
     "marked_filled": "Marked as filled",
     "filled_desc": "Patient {{name}} has been notified"
   },
+  "admin": {
+    "overview_sub": "Dashboard Overview",
+    "overview_title": "Welcome back, {{name}}",
+    "doctors_sub": "Manage doctors and medical staff",
+    "doctors_title": "Doctors"
+  },
   "cards": {
     "from": "From",
     "book": "Book",

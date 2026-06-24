@@ -7,6 +7,7 @@ import {
   AlertCircle, ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
 
@@ -184,7 +185,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
       <Section title="Prescription" icon={<FileText className="h-3 w-3" />}>
         <Row label="Number" value={p.prescription_number} mono />
         <Row label="Diagnosis" value={<span className="font-medium">{p.diagnosis}</span>} />
-        <Row label="Notes" value={p.notes} />
+        <Row label="Notes" value={p.notes ? <RichTextRenderer value={p.notes} className="text-sm text-foreground" /> : undefined} />
         <Row label="Valid until" value={fmtDate(p.valid_until)} />
         <Row label="Signed" value={
           p.is_signed
@@ -226,7 +227,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 {m.instructions && (
                   <div className="col-span-2 flex items-start gap-1.5 mt-1">
                     <span className="text-xs text-muted-foreground/60 w-16 shrink-0 pt-px">Instructions</span>
-                    <span className="text-sm text-muted-foreground italic">{m.instructions}</span>
+                    <RichTextRenderer value={m.instructions} className="text-sm text-muted-foreground italic" />
                   </div>
                 )}
               </div>

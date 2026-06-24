@@ -7,6 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  RichTextarea,
+  RichTextRenderer,
+  prepareRichTextForSave,
+} from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import {
   ClipboardList,
@@ -520,10 +525,12 @@ function RequestDetail({
 
   const handleSaveDecision = () => {
     if (!decision) return;
+    const cleanedDoctorNotes = prepareRichTextForSave(doctorNotes);
+
     updateMut.mutate(
       {
         decision: decision as CertDecision,
-        doctor_notes: doctorNotes || undefined,
+        doctor_notes: cleanedDoctorNotes,
         // A fit decision needs an expiry; send it for any decision that has one.
         valid_until: validUntil || undefined,
       },
@@ -532,7 +539,7 @@ function RequestDetail({
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
           setDecision(certificate.decision ?? "");
-          setDoctorNotes(certificate.doctor_notes ?? "");
+          setDoctorNotes(certificate.doctor_notes ?? cleanedDoctorNotes ?? "");
           // Surface what the backend flagged so the doctor knows why signing may
           // be blocked (these gate the sign step per the API rules).
           if (red_flags_found && red_flags_found.length > 0) {
@@ -978,9 +985,7 @@ function RequestDetail({
         {/* ── 9. Patient notes ── */}
         {cert.patient_notes && (
           <SectionCard icon={BookOpen} title="Patient Notes">
-            <p className="text-xs text-foreground leading-relaxed">
-              {cert.patient_notes}
-            </p>
+            <RichTextRenderer value={cert.patient_notes} className="text-xs text-foreground" />
           </SectionCard>
         )}
 
@@ -1022,12 +1027,12 @@ function RequestDetail({
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Doctor's notes (optional)
                 </Label>
-                <textarea
+                <RichTextarea
                   value={doctorNotes}
-                  onChange={(e) => setDoctorNotes(e.target.value)}
-                  rows={3}
+                  onChange={setDoctorNotes}
                   placeholder="Clinical observations, recommendations, or reason for referral…"
-                  className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  minHeight={130}
+                  editorClassName="text-xs"
                 />
               </div>
 
@@ -1120,9 +1125,7 @@ function RequestDetail({
                 </Badge>
               </div>
               {cert.doctor_notes && (
-                <p className="text-xs text-foreground leading-relaxed">
-                  {cert.doctor_notes}
-                </p>
+                <RichTextRenderer value={cert.doctor_notes} className="text-xs text-foreground" />
               )}
               {cert.reviewed_at && (
                 <p className="text-[10px] text-muted-foreground">

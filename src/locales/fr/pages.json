@@ -299,6 +299,12 @@
     "marked_filled": "Marquée comme délivrée",
     "filled_desc": "Le patient {{name}} a été notifié"
   },
+  "admin": {
+    "overview_sub": "Aperçu du tableau de bord",
+    "overview_title": "Content de te revoir, {{name}}",
+    "doctors_sub": "Gérer les médecins et le personnel médical",
+    "doctors_title": "Médecins"
+  },
   "cards": {
     "from": "À partir de",
     "book": "Réserver",

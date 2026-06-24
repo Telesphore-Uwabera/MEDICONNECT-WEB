@@ -52,8 +52,7 @@ export function useGetAdminUsers(params?: AdminUsersParams) {
     queryKey: ["admin-users", params],
     queryFn: () =>
       apiFetch<AdminUsersResponse>(`${BASE}${queryString ? `?${queryString}` : ""}`).then(
-        (res) => {
-          console.log("Admin users fetched:", res);
+        (res) => { 
           return res;
         }
       ),

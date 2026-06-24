@@ -40,6 +40,7 @@ export interface ApiExperience {
   doctor_id?: number;
   job_title: string;
   workplace: string;
+  description?: string | null;
   country?: string | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -86,12 +87,20 @@ export interface ApiWallet {
   updated_at?: string | null;
 }
 
+export interface ApiLocalizedName {
+  id?: number;
+  name?: string | null;
+  name_en?: string | null;
+  name_fr?: string | null;
+  name_kiny?: string | null;
+}
+
 export interface ApiDoctor {
   id: number;
   user_id?: number;
   slug?: string | null;
   status: "active" | "pending" | "suspended" | "rejected";
-  specialization?: string | null;
+  specialization?: string | ApiLocalizedName | null;
   doctor_degree?: string | null;
   degree_document?: string | null;
   medical_license?: string | null;
@@ -226,6 +235,8 @@ export interface ApiCertificationDoctor {
 export interface ApiSpecialization {
   id: number;
   name: string;
+  name_fr?: string | null;
+  name_kiny?: string | null;
   slug: string;
   description?: string | null;
   created_at?: string;
@@ -235,7 +246,7 @@ export interface ApiSpecialization {
 
 export interface ApiSpecializationFee {
   id: number;
-  specialization: string;
+  specialization: string | ApiLocalizedName;
   slug: string;
   online_fee: number;
   in_person_fee: number;

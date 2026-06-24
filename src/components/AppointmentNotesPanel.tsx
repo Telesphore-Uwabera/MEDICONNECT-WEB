@@ -1,6 +1,7 @@
 // components/AppointmentNotesPanel.tsx
 import { useRef, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { RichTextarea, richTextToPlainText } from "@/components/ui/rich-textarea";
 import {
   FileText, X, Video, MapPin, Calendar, Clock,
   ChevronDown, ChevronUp, Save, Clipboard,
@@ -26,34 +27,31 @@ const TEMPLATES = [
 export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelProps) {
   const call = useCallStore();
   const notes = call.appointmentNotes[appt.id] ?? "";
-  const textRef = useRef<HTMLTextAreaElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   const [infoOpen, setInfoOpen] = useState(true);
   const [copied, setCopied] = useState(false);
+  const plainNotes = richTextToPlainText(notes);
 
   useEffect(() => { textRef.current?.focus(); }, []);
 
   const update = (v: string) => call.updateAppointmentNotes(appt.id, v);
 
   const insertTemplate = (text: string) => {
-    const next = notes ? `${notes}\n\n${text}` : text;
+    const safeText = text.replace(/:?\s*$/, "");
+    const nextBlock = `<p><strong>${safeText}:</strong></p>`;
+    const next = notes ? `${notes}${nextBlock}` : nextBlock;
     update(next);
-    setTimeout(() => {
-      if (textRef.current) {
-        textRef.current.focus();
-        textRef.current.setSelectionRange(next.length, next.length);
-        textRef.current.scrollTop = textRef.current.scrollHeight;
-      }
-    }, 0);
+    setTimeout(() => textRef.current?.focus(), 0);
   };
 
   const handleCopy = async () => {
-    if (!notes) return;
-    await navigator.clipboard.writeText(notes);
+    if (!plainNotes) return;
+    await navigator.clipboard.writeText(plainNotes);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const wordCount = notes.trim() ? notes.trim().split(/\s+/).length : 0;
+  const wordCount = plainNotes.trim() ? plainNotes.trim().split(/\s+/).length : 0;
 
   return (
     <div className="flex flex-col h-full bg-card border-l border-border">
@@ -160,18 +158,20 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
       </div>
 
       {/* ── Textarea ── */}
-      <textarea
+      <RichTextarea
         ref={textRef}
         value={notes}
-        onChange={(e) => update(e.target.value)}
+        onChange={update}
         placeholder={`Consultation notes for ${appt.specialty}…\n\nUse Quick insert above to add structured sections, or type freely.\n\nNotes are saved automatically per appointment.`}
-        className="flex-1 w-full resize-none bg-transparent text-[12px] leading-relaxed text-foreground placeholder:text-muted-foreground/35 outline-none px-4 py-3 font-mono"
+        className="flex-1 min-h-0 border-0 rounded-none focus-within:ring-0 focus-within:ring-offset-0"
+        editorClassName="h-full text-[12px] leading-relaxed"
+        minHeight={280}
       />
 
       {/* ── Footer ── */}
       <div className="px-4 py-2.5 border-t border-border/60 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
-          <span>{notes.length} chars</span>
+          <span>{plainNotes.length} chars</span>
           <span>·</span>
           <span>{wordCount} words</span>
           <span>·</span>
@@ -179,7 +179,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
         </div>
         <button
           onClick={() => update("")}
-          disabled={!notes}
+          disabled={!plainNotes}
           className="text-[10px] text-muted-foreground hover:text-red-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Clear

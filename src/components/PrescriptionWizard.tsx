@@ -7,6 +7,11 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  prepareRichTextForSave,
+  RichTextarea,
+  RichTextRenderer,
+} from "@/components/ui/rich-textarea";
 import { toast } from "sonner";
 import { useCreatePrescription } from "@/hooks/doctor/use-doctor-prescriptions";
 import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
@@ -287,15 +292,12 @@ function DetailsStep({
       </Field>
 
       <Field label="Clinical notes">
-        <textarea
+        <RichTextarea
           value={values.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
+          onChange={(value) => onChange({ notes: value })}
           placeholder="e.g. Take plenty of fluids and rest"
-          rows={3}
-          className={cn(
-            inputCls,
-            "h-auto resize-none py-2 leading-relaxed",
-          )}
+          minHeight={120}
+          editorClassName="text-sm"
         />
       </Field>
 
@@ -560,7 +562,7 @@ function ReviewStep({
         </p>
         <p className="text-sm font-semibold text-foreground">{details.diagnosis}</p>
         {details.notes && (
-          <p className="text-sm text-muted-foreground leading-relaxed">{details.notes}</p>
+          <RichTextRenderer value={details.notes} className="text-sm text-muted-foreground" />
         )}
         {details.valid_until && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -585,7 +587,10 @@ function ReviewStep({
                 {m.dosage} · {m.frequency} · {m.duration} · Qty: {m.quantity}
               </p>
               {m.instructions && (
-                <p className="text-xs text-muted-foreground/70 italic mt-1">{m.instructions}</p>
+                <RichTextRenderer
+                  value={m.instructions}
+                  className="mt-1 text-xs italic text-muted-foreground/70"
+                />
               )}
             </div>
           </div>
@@ -676,7 +681,7 @@ export function PrescriptionWizard({
     const payload = {
       appointment_id: appointment.id,
       diagnosis: details.diagnosis,
-      notes: details.notes || undefined,
+      notes: prepareRichTextForSave(details.notes),
       valid_until: details.valid_until || undefined,
       items: items.map((m) => ({
         medicine_name: m.medicine_name,

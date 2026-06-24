@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { Calendar, Sparkles, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +16,35 @@ import { type TabId } from "@/pages/doctor/appointments/shared/types";
 const DoctorAppointmentsPage = () => {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
-  const [tab, setTab] = useState<TabId>("appointments");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [tab, setTab] = useState<TabId>(
+    initialTab === "instant" || initialTab === "bookings" ? initialTab : "appointments",
+  );
+
+  const selectTab = (nextTab: TabId) => {
+    setTab(nextTab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (nextTab === "appointments") next.delete("tab");
+      else next.set("tab", nextTab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (requestedTab === "instant" || requestedTab === "bookings") {
+      setTab(requestedTab);
+    } else {
+      setTab("appointments");
+    }
+  }, [searchParams]);
 
   // Auto-switch to instant tab when a call becomes active
   useEffect(() => {
     if (call.phase === "connected" && call.role === "doctor" && call.activeRequest) {
-      setTab("instant");
+      selectTab("instant");
     }
   }, [call.phase, call.role, call.activeRequest]);
 
@@ -38,7 +62,7 @@ const DoctorAppointmentsPage = () => {
         {(["appointments", "instant", "bookings"] as TabId[]).map((id) => (
           <button
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => selectTab(id)}
             className={cn(
               "relative flex items-center gap-2 px-3 sm:px-5 py-4 text-xs sm:text-base font-medium border-b-2 transition-all duration-200 shrink-0 whitespace-nowrap",
               tab === id

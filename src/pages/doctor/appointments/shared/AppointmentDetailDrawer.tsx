@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
@@ -44,7 +45,7 @@ export function AppointmentDetailDrawer({
   appt, onClose, onStart, onRejoin, onRunningLate, onReadyNext, isReadyNextPending, isJoining,
 }: Props) {
   const status = appt.status as UIStatus;
-  const canStart = status === "confirmed" || status === "pending";
+  const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
 
   type ExtendedAppointment = Appointment & {
@@ -117,6 +118,12 @@ export function AppointmentDetailDrawer({
           )}
 
           {/* ── REJOIN button: only for in_progress ── */}
+          {status === "pending" && (
+            <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+              Awaiting confirmation
+            </span>
+          )}
+
           {isInProgress && (
             <Button
               size="sm"
@@ -299,9 +306,9 @@ export function AppointmentDetailDrawer({
                 <FileText className="h-4 w-4" />Clinical notes
               </p>
               <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
-                {appt.notes.chief_complaint && <DetailRow label="Chief complaint" value={appt.notes.chief_complaint} />}
-                {appt.notes.diagnosis && <DetailRow label="Diagnosis" value={appt.notes.diagnosis} />}
-                {appt.notes.treatment_plan && <DetailRow label="Treatment plan" value={appt.notes.treatment_plan} />}
+                {appt.notes.chief_complaint && <DetailRow label="Chief complaint" value={<RichTextRenderer value={appt.notes.chief_complaint} className="text-sm text-foreground" />} />}
+                {appt.notes.diagnosis && <DetailRow label="Diagnosis" value={<RichTextRenderer value={appt.notes.diagnosis} className="text-sm text-foreground" />} />}
+                {appt.notes.treatment_plan && <DetailRow label="Treatment plan" value={<RichTextRenderer value={appt.notes.treatment_plan} className="text-sm text-foreground" />} />}
                 {appt.notes.blood_pressure && <DetailRow label="Blood pressure" value={appt.notes.blood_pressure} />}
                 {appt.notes.temperature && <DetailRow label="Temperature" value={appt.notes.temperature} />}
                 {appt.notes.pulse_rate && <DetailRow label="Pulse rate" value={appt.notes.pulse_rate} />}
