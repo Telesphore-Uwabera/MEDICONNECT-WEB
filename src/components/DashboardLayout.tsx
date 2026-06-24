@@ -41,6 +41,8 @@ import {
   Search,
   Zap,
   Shield,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -423,6 +425,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<number, boolean>
   >({});
@@ -574,9 +577,16 @@ export const DashboardLayout = ({ role, children }: Props) => {
   return (
     <div className="min-h-dvh bg-background flex">
       {/* Desktop Sidebar */}
-      <aside className="w-[240px] border-r border-sidebar-border bg-sidebar hidden lg:flex flex-col sticky top-0 h-dvh shrink-0">
-        <SidebarContent />
-      </aside>
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarOpen ? 240 : 0 }}
+        transition={{ duration: 0.22, ease: "easeInOut" }}
+        className="border-r border-sidebar-border bg-sidebar hidden lg:flex flex-col sticky top-0 h-dvh shrink-0 overflow-hidden"
+      >
+        <div className="w-[240px] h-full">
+          <SidebarContent />
+        </div>
+      </motion.aside>
 
       {/* Mobile Backdrop */}
       <AnimatePresence>
@@ -609,7 +619,20 @@ export const DashboardLayout = ({ role, children }: Props) => {
       </aside>
 
       {/* Main area */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col relative">
+        <button
+          type="button"
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          className={cn(
+            "hidden lg:flex fixed top-0 left-0 z-[9999] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
+            sidebarOpen ? "left-[202px]" : "left-0",
+          )}
+        >
+          {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+        </button>
+
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-30">
           <button
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
@@ -621,11 +644,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
             <img
               src={logo}
               alt="MEDICONNECT"
-              className="h-6 w-auto rounded-sm"
+              className="h-12 w-auto rounded-sm"
             />
-            <span className="text-sm font-bold tracking-widest text-foreground">
-              MEDICONNECT
-            </span>
+            
           </NavLink>
         </div>
 

@@ -83,9 +83,8 @@ function MemberModal({
               <img
                 src={member.photo_url}
                 alt={member.name}
-                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${
-                  imgLoaded ? "opacity-100" : "opacity-0"
-                }`}
+                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"
+                  }`}
                 onLoad={() => setImgLoaded(true)}
                 onError={() => setImgError(true)}
               />
@@ -204,7 +203,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
 
         {/* Content overlaid at the bottom */}
         <div className="relative z-10 mt-auto p-4 md:p-5 flex flex-col w-full text-left">
-           
+
           {member.title && (
             <span className="mb-2 self-start rounded-[4px] bg-white/20 border border-white/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white backdrop-blur-md">
               {member.title}
@@ -239,8 +238,8 @@ function OurTeam() {
       {/* Header */}
       <div className="mb-8 text-center sm:text-left">
         <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary mb-2">
-          Meet the specialists
-        </p> 
+          Meet our Team
+        </p>
       </div>
 
       {/* Error state */}
@@ -263,15 +262,15 @@ function OurTeam() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {isLoading
             ? Array(8)
-                .fill(null)
-                .map((_, i) => <SkeletonCard key={i} />)
+              .fill(null)
+              .map((_, i) => <SkeletonCard key={i} />)
             : members.length === 0
-            ? (
-              <p className="col-span-full text-sm text-muted-foreground text-center py-12">
-                No team members found.
-              </p>
-            )
-            : members.map((m) => <MemberCard key={m.id} member={m} />)}
+              ? (
+                <p className="col-span-full text-sm text-muted-foreground text-center py-12">
+                  No team members found.
+                </p>
+              )
+              : members.map((m) => <MemberCard key={m.id} member={m} />)}
         </div>
       )}
     </section>

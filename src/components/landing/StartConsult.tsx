@@ -28,7 +28,7 @@ const StartConsult = () => {
           <div className="grid grid-cols-2 gap-3">
 
             {/* /patient/search-doctors instant */}
-            <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            {/* <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
                   <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -46,8 +46,29 @@ const StartConsult = () => {
                 </div>
               </div>
               <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
-            </button>
+            </button> */}
 
+            <Link to="/patient/search-doctors?instant=true">
+              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                    <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </span>
+                  <div className="text-left min-w-0">
+                    <p className="text-xs sm:text-sm font-semibold leading-none">
+                      {t(
+                        "pages.landing.instant_consultation",
+                        "Instant Consultation",
+                      )}
+                    </p>
+                    <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
+                      {t("pages.landing.title", "connect in under 5 minutes")}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </button>
+            </Link>
             <Link to="/patient/search-doctors">
               <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -58,7 +79,7 @@ const StartConsult = () => {
                     <p className="text-xs sm:text-sm font-semibold leading-none">
                       {t("pages.landing.browse_doctors")}
                     </p>
-<p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
+                    <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                       500+ specialists
                     </p>
                   </div>
@@ -99,23 +120,28 @@ const StartConsult = () => {
     <>
       <div className="mt-7 flex flex-col gap-3  w-full">
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
-                <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              </span>
-              <div className="text-left min-w-0">
-                <p className="text-xs sm:text-sm font-semibold leading-none">
-                  {t("pages.landing.instant_consultation", "Instant Consultation")}
-                </p>
-                <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
-                  {t("pages.landing.title", "connect in under 5 minutes")}
-                </p>
+          <Link to="/patient/search-doctors?instant=true">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                  <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </span>
+                <div className="text-left min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold leading-none">
+                    {t(
+                      "pages.landing.instant_consultation",
+                      "Instant Consultation",
+                    )}
+                  </p>
+                  <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
+                    {t("pages.landing.title", "connect in under 5 minutes")}
+                  </p>
+                </div>
               </div>
-            </div>
-            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
-          </button>
- 
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            </button>
+          </Link>
+
           <Link to="/patient/search-doctors">
             <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -124,9 +150,9 @@ const StartConsult = () => {
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none">
-                   Book Appointment
+                    Book Appointment
                   </p>
-<p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
+                  <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                     500+ specialists
                   </p>
                 </div>
@@ -136,7 +162,7 @@ const StartConsult = () => {
           </Link>
         </div>
 
-       
+
       </div>
       {/* modal={false} is required so the IremboPay widget (rendered outside this
           dialog) stays interactive — a modal Radix dialog sets pointer-events:none

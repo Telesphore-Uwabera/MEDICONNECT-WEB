@@ -407,8 +407,8 @@ export default function HeroSection() {
 
           {/* ── Left column ── */}
           <div className="relative z-10 order-2 lg:order-1">
-            <h1 className="lg:mt-2 lg:text-left text-center font-display text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground leading-[1.1]">
-              Book a 
+            <h1 className="lg:mt-2 lg:text-left text-center font-display text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">
+              Book a
               <span className="text-primary"> Doctor Consultation</span>
               Anytime, Anywhere
             </h1>

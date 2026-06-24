@@ -91,7 +91,7 @@ import { useState, useRef, useEffect } from "react";
 const PatientOverview = () => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<
-    "overview" | "clinical" | "financial" | "upcoming" | "available" | "recommended"
+    "overview" | "clinical" | "financial" | "activity" | "upcoming" | "available" | "recommended"
   >("overview");
 
   // ── Scrollable Tabs State ──
@@ -164,6 +164,60 @@ const PatientOverview = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 space-y-6">
+            <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {[
+                {
+                  label: "Book a doctor",
+                  hint: "Find specialists and schedule care",
+                  to: "/patient/search-doctors",
+                  icon: Stethoscope,
+                  tone: "text-primary bg-primary/10",
+                },
+                {
+                  label: "My appointments",
+                  hint: `${upcomingAppointments.length} upcoming`,
+                  to: "/patient/appointments",
+                  icon: Calendar,
+                  tone: "text-sky-500 bg-sky-500/10",
+                },
+                {
+                  label: "Instant consult",
+                  hint: `${availableNow.length} doctors available`,
+                  to: "/patient/instant",
+                  icon: Activity,
+                  tone: "text-violet-500 bg-violet-500/10",
+                },
+                {
+                  label: "Medical info",
+                  hint: "Records, files and visits",
+                  to: "/patient/service-bookings",
+                  icon: Video,
+                  tone: "text-emerald-500 bg-emerald-500/10",
+                },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.to}
+                    className="rounded-md border border-border/70 bg-card p-3 shadow-sm flex items-center gap-3 hover:border-primary/40 hover:bg-secondary/20 transition-colors"
+                  >
+                    <span className={cn("h-10 w-10 rounded-md flex items-center justify-center shrink-0", item.tone)}>
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-foreground truncate">
+                        {item.label}
+                      </span>
+                      <span className="block text-xs text-muted-foreground truncate mt-0.5">
+                        {item.hint}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
             {/* Unified Tabs Navigation (Scrollable on mobile) */}
             <div className="relative flex items-center border-b border-border/60">
               {/* Left Indicator */}
@@ -195,7 +249,7 @@ const PatientOverview = () => {
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                 )}
               >
-                Dashboard Stats
+                Care Hub
               </button>
               <button
                 onClick={() => setActiveTab("clinical")}
@@ -206,7 +260,7 @@ const PatientOverview = () => {
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                 )}
               >
-                Clinical Records
+                Records
               </button>
               <button
                 onClick={() => setActiveTab("financial")}
@@ -217,7 +271,18 @@ const PatientOverview = () => {
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                 )}
               >
-                Financials
+                Payments
+              </button>
+              <button
+                onClick={() => setActiveTab("activity")}
+                className={cn(
+                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                  activeTab === "activity"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                )}
+              >
+                Activity
               </button>
               <button
                 onClick={() => setActiveTab("upcoming")}
@@ -228,7 +293,7 @@ const PatientOverview = () => {
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                 )}
               >
-                Upcoming Appointments
+                Appointments
               </button>
               <button
                 onClick={() => setActiveTab("available")}

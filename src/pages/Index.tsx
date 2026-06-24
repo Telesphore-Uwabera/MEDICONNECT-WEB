@@ -95,7 +95,7 @@ const formatRating = (d: ApiDoctor): string | null => {
 const SECTION_EYEBROW =
   "inline-flex items-center rounded-[6px] px-3 py-1 text-xs md:text-sm font-bold uppercase tracking-widest bg-primary/10 text-primary mb-4";
 const SECTION_TITLE =
-  "mt-2 font-display text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground leading-[1.1]";
+  "mt-2 font-display text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground leading-[1.1]";
 
 // ─── Slider Skeleton ──────────────────────────────────────────────────────────
 
@@ -117,6 +117,7 @@ const Index = () => {
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("doctors");
 
   // ── Doctor filter state ─────────────────────────────────────────────────────
   const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
@@ -144,6 +145,35 @@ const Index = () => {
       }
     }
   }, [location.hash]);
+
+  useEffect(() => {
+    const sectionIds = ["doctors", "specialities", "hospitals", "pharmacy", "team"];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => !!el);
+
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (visible?.target.id) {
+          setActiveSection(visible.target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-30% 0px -55% 0px",
+        threshold: [0.05, 0.15, 0.3, 0.5, 0.75],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
 
   // ── Build backend params ─────────────────────────────────────────────────────
   // FIX: useMemo now returns a stable object that changes identity only when
@@ -375,6 +405,7 @@ const Index = () => {
         <HeroHeader
           mobileMenuOpen={mobileMenuOpen}
           setMobileMenuOpen={setMobileMenuOpen}
+          activeSection={activeSection}
         />
       </div>
 
@@ -734,7 +765,7 @@ const Index = () => {
       >
         <div className=" grid lg:grid-cols-2  items-center">
           <div className="px-10 py-10 lg:px-20 lg:py-20">
-            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white")}>
+            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white ")}>
               {t("pages.landing.pharmacy_title")}
             </h2>
             <p className="mt-6 text-base md:text-lg dark:text-black  text-white/90 leading-relaxed max-w-xl">
@@ -762,7 +793,7 @@ const Index = () => {
         <div className="container">
           <div className="max-w-2xl">
             <h2 className={SECTION_TITLE}>
-              Board-certified specialists, vetted and ready to see you
+              Meet the minds behind MEDICONNECT
             </h2>
           </div>
           <div className="mt-12">

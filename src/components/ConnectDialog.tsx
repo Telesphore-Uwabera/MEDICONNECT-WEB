@@ -90,6 +90,17 @@ const fmt = (s: number) =>
 const nameInitial = (name: string): string =>
   name.split(" ").map((n) => n[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
 
+const splitName = (name?: string | null) => {
+  const parts = String(name ?? "").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+};
+
+const joinName = (firstName: string, lastName: string) =>
+  [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+
 function timeAgo(ts: number): string {
   const secs = Math.floor((Date.now() - ts) / 1000);
   if (secs < 60) return `${secs}s ago`;
@@ -302,7 +313,7 @@ export const ConnectDialogContent = ({
 }: ConnectDialogContentProps) => {
   const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | undefined>(undefined);
   const doctor = initialDoctor || (selectedDoctor as unknown as Doctor);
-  
+
   const { startCall } = useCallContext();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -343,8 +354,14 @@ export const ConnectDialogContent = ({
 
   // ── Guest form ────────────────────────────────────────────────────────────
   const [guestName, setGuestName] = useState("");
+  const [guestFirstName, setGuestFirstName] = useState("");
+  const [guestLastName, setGuestLastName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestPassword, setGuestPassword] = useState("");
+  const [authMode, setAuthMode] = useState<"register" | "login">("register");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [guestDescription, setGuestDescription] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
 
@@ -409,6 +426,9 @@ export const ConnectDialogContent = ({
       setGuestChatAuth(existing.token);
       setConsultationId(existing.consultationId ?? null);
       setGuestName(existing.guestName);
+      const existingName = splitName(existing.guestName);
+      setGuestFirstName(existingName.firstName);
+      setGuestLastName(existingName.lastName);
       setGuestPhone(existing.guestPhone);
 
       if (existing.pendingPayment) {
@@ -437,7 +457,12 @@ export const ConnectDialogContent = ({
       setErrorMsg(null);
       setPaymentInfo(null);
       setGuestName(me?.name ?? "");
+      const currentName = splitName(me?.name);
+      setGuestFirstName(currentName.firstName);
+      setGuestLastName(currentName.lastName);
+      setGuestEmail(me?.email ?? "");
       setGuestPhone(me?.phone ?? "");
+      setLoginIdentifier(me?.email ?? me?.phone ?? "");
       if (!initialDoctor) {
         setPhase("search");
       } else {
@@ -462,6 +487,10 @@ export const ConnectDialogContent = ({
   useEffect(() => {
     if (phase === "guest_form" && isProfileComplete) {
       setGuestName(me?.name ?? "");
+      const currentName = splitName(me?.name);
+      setGuestFirstName(currentName.firstName);
+      setGuestLastName(currentName.lastName);
+      setGuestEmail(me?.email ?? "");
       setGuestPhone(me?.phone ?? "");
       setPhase("idle");
     }
@@ -530,6 +559,10 @@ export const ConnectDialogContent = ({
     setErrorMsg(null);
     setPaymentInfo(null);
     setGuestName(me?.name ?? "");
+    const currentName = splitName(me?.name);
+    setGuestFirstName(currentName.firstName);
+    setGuestLastName(currentName.lastName);
+    setGuestEmail(me?.email ?? "");
     setGuestPhone(me?.phone ?? "");
     setPhase(isProfileComplete ? "idle" : "guest_form");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -602,9 +635,10 @@ export const ConnectDialogContent = ({
     }
   }, [activeInstant, onCloseCompletely, startCall]);
 
-  const handleRequest = useCallback(async (override?: { name: string; phone: string, password?: string }) => {
+  const handleRequest = useCallback(async (override?: { name: string; phone: string; email?: string; password?: string }) => {
     const name = override?.name ?? me?.name ?? guestName;
     const phone = override?.phone ?? me?.phone ?? guestPhone;
+    const email = override?.email ?? me?.email ?? guestEmail;
 
     // ── Fast-path: token already exists, skip re-requesting ────────────────
     if (consultationToken) {
@@ -636,6 +670,7 @@ export const ConnectDialogContent = ({
         res = await requestAnyMutation.mutateAsync({
           guest_name: name,
           guest_phone: phone,
+          guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
         });
@@ -644,6 +679,7 @@ export const ConnectDialogContent = ({
           doctor_id: doctor!.id,
           guest_name: name,
           guest_phone: phone,
+          guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
         };
@@ -705,7 +741,7 @@ export const ConnectDialogContent = ({
       setPhase("failed");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, me, guestDescription, guestPassword]);
+  }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, guestEmail, me, guestDescription, guestPassword]);
 
   // ── Pay ───────────────────────────────────────────────────────────────────
   const handlePay = useCallback(async () => {
@@ -757,13 +793,55 @@ export const ConnectDialogContent = ({
 
   // ── Guest form submit ─────────────────────────────────────────────────────
   const handleGuestSubmit = () => {
-    if (!guestName.trim()) { setGuestError("Please enter your name."); return; }
+    const name = joinName(guestFirstName, guestLastName);
+    if (!guestFirstName.trim()) { setGuestError("Please enter your first name."); return; }
+    if (!guestLastName.trim()) { setGuestError("Please enter your last name."); return; }
     if (!guestPhone.trim()) { setGuestError("Please enter your phone number."); return; }
-    if (!guestPassword.trim()) { setGuestError("Please enter your password."); return; }
-    if (guestPassword.length < 6) { setGuestError("Please enter a password of at least 6 characters."); return; }
+    if (!isLoggedIn && !guestPassword.trim()) { setGuestError("Please enter your password."); return; }
+    if (!isLoggedIn && guestPassword.length < 6) { setGuestError("Please enter a password of at least 6 characters."); return; }
 
     setGuestError(null);
-    handleRequest({ name: guestName.trim(), phone: guestPhone.trim(), password: guestPassword.trim() });
+    setGuestName(name);
+    handleRequest({
+      name,
+      phone: guestPhone.trim(),
+      email: guestEmail.trim(),
+      password: isLoggedIn ? undefined : guestPassword.trim(),
+    });
+  };
+
+  const handleLoginSubmit = async () => {
+    const identifier = loginIdentifier.trim();
+    if (!identifier) { setGuestError("Please enter your email or phone number."); return; }
+    if (!loginPassword.trim()) { setGuestError("Please enter your password."); return; }
+
+    setGuestError(null);
+    try {
+      const isEmail = identifier.includes("@");
+      const data = await loginMutation.mutateAsync(
+        isEmail
+          ? { email: identifier, auth_method: "password" as const, password: loginPassword }
+          : {
+            phone: identifier,
+            country_code: "+250",
+            auth_method: "password" as const,
+            password: loginPassword,
+          },
+      );
+      const currentName = splitName(data.user.name);
+      setGuestName(data.user.name);
+      setGuestFirstName(currentName.firstName);
+      setGuestLastName(currentName.lastName);
+      setGuestEmail(data.user.email ?? "");
+      setGuestPhone(data.user.phone ?? "");
+      await handleRequest({
+        name: data.user.name,
+        phone: data.user.phone,
+        email: data.user.email,
+      });
+    } catch (err: any) {
+      setGuestError(err?.message || "Login failed. Please check your details and try again.");
+    }
   };
 
   // ── Join call ─────────────────────────────────────────────────────────────
@@ -1017,11 +1095,11 @@ export const ConnectDialogContent = ({
       {/* Doctor card — hidden while resume banner or spinner is active */}
       {phase !== "guest_form" && !savedSession && !isResuming && (
         <div className={cn(
-          "flex items-center gap-3.5 p-3.5 rounded-xl border transition-all",
+          "flex items-center gap-3.5 p-3.5 rounded-[6px] border transition-all",
           showProgress ? "border-primary/20 bg-primary/5" : "border-border bg-muted/50",
         )}>
           <div className="relative shrink-0">
-            <div className="h-12 w-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none">
+            <div className="h-12 w-12 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none">
               {doctorInitial}
             </div>
             {showProgress && (
@@ -1064,15 +1142,15 @@ export const ConnectDialogContent = ({
           {/* ── Guest form ── */}
           {phase === "guest_form" && (
             <div className="space-y-4">
-              <div className=" flex items-center gap-2 p-3 rounded-xl bg-primary/20 border border-border">
+              <div className=" flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm text-muted-foreground">
                   {isLoggedIn ? "Please confirm your contact details to continue."
-                    : "You're not logged in. Please enter your details to continue."}
+                    : "Sign in or create an account to continue with your instant consultation."}
                 </p>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
-                <div className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
+              <div className="flex items-center gap-3 p-3 rounded-[6px] border border-border bg-muted/30">
+                <div className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
                   {doctorInitial}
                 </div>
                 <div className="min-w-0">
@@ -1082,34 +1160,115 @@ export const ConnectDialogContent = ({
                   )}
                 </div>
               </div>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Full name</Label>
-                  <Input placeholder="e.g. Alain Honore" value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)} className="h-9 text-sm"
-                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Phone number</Label>
-                  <Input
-                    placeholder="e.g. 0733334512"
-                    value={guestPhone}
-                    onChange={(e) => setGuestPhone(e.target.value)}
-                    className="h-9 text-sm"
-                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Password</Label>
-                  <Input
-                    placeholder="**********"
 
-                    type="password"
-                    onChange={(e) => setGuestPassword(e.target.value)}
-                    className="h-9 text-sm"
-                    onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                  />
+              {!isLoggedIn && (
+                <div className="grid grid-cols-2 gap-1 rounded-[6px] border border-border bg-muted/40 p-1">
+                  {(["register", "login"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        setAuthMode(mode);
+                        setGuestError(null);
+                      }}
+                      className={cn(
+                        "h-8 rounded-[6px] text-xs font-semibold transition-colors",
+                        authMode === mode
+                          ? "bg-card text-foreground shadow-sm border border-border"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {mode === "register" ? "Create account" : "Sign in"}
+                    </button>
+                  ))}
                 </div>
+              )}
+
+              <div className="space-y-3">
+                {isLoggedIn || authMode === "register" ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">First name</Label>
+                        <Input
+                          placeholder="e.g. Alain"
+                          value={guestFirstName}
+                          onChange={(e) => setGuestFirstName(e.target.value)}
+                          className="h-9 text-sm"
+                          onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">Last name</Label>
+                        <Input
+                          placeholder="e.g. Honore"
+                          value={guestLastName}
+                          onChange={(e) => setGuestLastName(e.target.value)}
+                          className="h-9 text-sm"
+                          onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Email address</Label>
+                      <Input
+                        type="email"
+                        placeholder="e.g. alain@example.com"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="h-9 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Phone number</Label>
+                      <Input
+                        placeholder="e.g. 0733334512"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="h-9 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                      />
+                    </div>
+                    {!isLoggedIn && (
+                      <div className="space-y-1.5">
+                        <Label className="text-sm font-medium">Password</Label>
+                        <Input
+                          placeholder="**********"
+                          type="password"
+                          value={guestPassword}
+                          onChange={(e) => setGuestPassword(e.target.value)}
+                          className="h-9 text-sm"
+                          onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Email or phone</Label>
+                      <Input
+                        placeholder="email@example.com or 0733334512"
+                        value={loginIdentifier}
+                        onChange={(e) => setLoginIdentifier(e.target.value)}
+                        className="h-9 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Password</Label>
+                      <Input
+                        placeholder="**********"
+                        type="password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="h-9 text-sm"
+                        onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                      />
+                    </div>
+                  </>
+                )}
                 {isGeneral && (
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
@@ -1117,7 +1276,7 @@ export const ConnectDialogContent = ({
                       placeholder="e.g. I have a headache"
                       value={guestDescription}
                       onChange={(e) => setGuestDescription(e.target.value)}
-                      className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex min-h-[60px] w-full rounded-[6px] border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     />
                   </div>
                 )}
@@ -1128,10 +1287,20 @@ export const ConnectDialogContent = ({
                 )}
               </div>
               <div className="space-y-2">
-                <Button onClick={handleGuestSubmit} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
-                  <Wifi className="h-4 w-4" />Request consultation<ArrowRight className="h-4 w-4" />
+                <Button
+                  onClick={authMode === "login" && !isLoggedIn ? handleLoginSubmit : handleGuestSubmit}
+                  disabled={loginMutation.isPending || requestMutation.isPending || requestAnyMutation.isPending}
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]"
+                >
+                  {loginMutation.isPending || requestMutation.isPending || requestAnyMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wifi className="h-4 w-4" />
+                  )}
+                  {authMode === "login" && !isLoggedIn ? "Sign in and request consultation" : "Request consultation"}
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                   Minimize
                 </Button>
               </div>
@@ -1166,10 +1335,10 @@ export const ConnectDialogContent = ({
                         setSelectedDoctor(doc as any);
                         setPhase(isProfileComplete ? "idle" : "guest_form");
                       }}
-                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
+                      className="w-full flex items-center justify-between p-3 rounded-[6px] border border-border bg-card hover:bg-muted/50 transition-colors text-left"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-lg bg-primary/15 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+                        <div className="h-10 w-10 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center text-sm font-bold shrink-0">
                           {nameInitial(doc.user.name)}
                         </div>
                         <div className="min-w-0">
@@ -1197,19 +1366,19 @@ export const ConnectDialogContent = ({
               {activeInstant ? (
                 // Already has a live instant → join it instead of starting a new one.
                 <>
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[12px] text-emerald-700 dark:text-emerald-400">
+                  <div className="flex items-center gap-2 p-3 rounded-[6px] bg-yellow-500/10 border border-yellow-500/20 text-[12px] text-yellow-700 dark:text-yellow-400">
                     <Activity className="h-4 w-4 shrink-0" />
                     You already have an active consultation{doctor ? " with this doctor" : ""}.
                   </div>
                   <Button
                     onClick={handleJoinActiveInstant}
                     disabled={joiningActive}
-                    className="w-full h-10 text-sm font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+                    className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px] bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     {joiningActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
                     Join your consultation<ArrowRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                     Minimize
                   </Button>
                 </>
@@ -1222,15 +1391,15 @@ export const ConnectDialogContent = ({
                         placeholder="e.g. I have a headache"
                         value={guestDescription}
                         onChange={(e) => setGuestDescription(e.target.value)}
-                        className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex min-h-[60px] w-full rounded-[6px] border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
                   )}
                   <DeviceToggles compact={false} />
-                  <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                  <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                     <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                  <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                     Minimize
                   </Button>
                 </>
@@ -1251,7 +1420,7 @@ export const ConnectDialogContent = ({
             <div className="space-y-3">
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                   Close — your place is saved
                 </Button>
               </div>
@@ -1261,7 +1430,7 @@ export const ConnectDialogContent = ({
           {/* ── Payment ── */}
           {phase === "payment" && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl border border-border bg-muted/40 space-y-3">
+              <div className="p-4 rounded-[6px] border border-border bg-muted/40 space-y-3">
                 <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Patient</span>
@@ -1283,16 +1452,16 @@ export const ConnectDialogContent = ({
                 </div>
               </div>
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+                <div className="p-3 rounded-[6px] bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
                 </div>
               )}
               <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
-                className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                 {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                 {paymentLoading ? "Initiating…" : "Pay now"}
               </Button>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">Minimize</Button>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">Minimize</Button>
             </div>
           )}
 
@@ -1306,7 +1475,7 @@ export const ConnectDialogContent = ({
                   This usually takes a few seconds. Please don't close this window.
                 </p>
               </div>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                 Minimize — verification continues in background
               </Button>
             </div>
@@ -1318,10 +1487,10 @@ export const ConnectDialogContent = ({
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
                 <Button onClick={handleJoin}
-                  className="w-full h-10 text-sm font-semibold gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px] bg-emerald-500 hover:bg-emerald-600 text-white">
                   <Phone className="h-4 w-4" />Join call<ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-xl">
+                <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                   Minimize — I'll join later
                 </Button>
               </div>
@@ -1332,25 +1501,25 @@ export const ConnectDialogContent = ({
           {(phase === "failed" || phase === "rejected") && (
             <div className="space-y-3">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+                <div className="p-3 rounded-[6px] bg-destructive/5 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
                 </div>
               )}
               {phase === "rejected" && (
-                <div className="p-3 rounded-xl bg-muted border border-border text-center text-sm text-muted-foreground">
+                <div className="p-3 rounded-[6px] bg-muted border border-border text-center text-sm text-muted-foreground">
                   The doctor is currently unavailable. Please try again later or book an appointment.
                 </div>
               )}
               <div className="space-y-2 pt-1">
                 {activeRejoin && (
-                  <Button onClick={handleRejoinActive} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                  <Button onClick={handleRejoinActive} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                     <Phone className="h-4 w-4" />Rejoin active consultation
                   </Button>
                 )}
-                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                   <Phone className="h-4 w-4" />Try again
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-xl">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">Close</Button>
               </div>
             </div>
           )}
@@ -1358,15 +1527,15 @@ export const ConnectDialogContent = ({
           {/* ── Ended ── */}
           {phase === "ended" && (
             <div className="space-y-3">
-              <div className="rounded-xl bg-muted border border-border px-4 py-3 text-center space-y-1">
+              <div className="rounded-[6px] bg-muted border border-border px-4 py-3 text-center space-y-1">
                 <p className="text-sm font-medium text-foreground/60">Your consultation has ended</p>
                 <p className="text-xs text-muted-foreground">Duration: session complete</p>
               </div>
               <div className="space-y-2">
-                <Button onClick={handleRetry} className="w-full h-10 text-sm font-semibold gap-2 rounded-xl">
+                <Button onClick={handleRetry} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                   <Phone className="h-4 w-4" />Reconnect with {doctorName}
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-xl">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">Close</Button>
               </div>
             </div>
           )}

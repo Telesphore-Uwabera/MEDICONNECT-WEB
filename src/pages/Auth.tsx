@@ -46,8 +46,7 @@ const Auth = () => {
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <TopBar />
-      {/* <Navbar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
-       */}
+     
       <HeroHeader
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}

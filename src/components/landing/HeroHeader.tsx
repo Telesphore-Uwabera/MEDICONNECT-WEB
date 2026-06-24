@@ -25,18 +25,20 @@ import {
 interface HeroHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
+  activeSection?: string;
 }
 
 export function HeroHeader({
   mobileMenuOpen,
   setMobileMenuOpen,
+  activeSection,
 }: HeroHeaderProps) {
   const { t } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
   const location = useLocation();
   const navigate = useNavigate();
-  const activeHash = location.hash || "#features";
+  const activeHash = activeSection ? `#${activeSection}` : location.hash || "#doctors";
   const menuRef = useRef<HTMLDivElement>(null);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<SpecializationValue>({ specialization: null, fee: null });
@@ -53,10 +55,11 @@ export function HeroHeader({
   }, []);
 
   const navLinks = [
-    { href: "#features", label: t("pages.landing.what_we_do") },
     { href: "#doctors", label: t("nav.available_doctors") },
+    { href: "#specialities", label: t("pages.landing.what_we_do") },
     { href: "#hospitals", label: t("nav.hospitals") },
     { href: "#pharmacy", label: t("nav.pharmacy") },
+    { href: "#team", label: t("nav.team") },
   ];
 
   // ── Side effects ────────────────────────────────────────────────────────
@@ -136,7 +139,9 @@ export function HeroHeader({
 
         {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <img src={logo} alt="Logo" className="h-20 w-auto" />
+          <Link to="/">
+            <img src={logo} alt="Logo" className="h-16 w-auto" />
+          </Link>
         </div>
 
         {/* Desktop nav */}
