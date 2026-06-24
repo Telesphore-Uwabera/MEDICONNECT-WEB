@@ -27,8 +27,8 @@ function getChartClass(): ChartConstructor | undefined {
 }
 
 export function InlineVitalsChart() {
-  const canvasRef   = useRef<HTMLCanvasElement>(null);
-  const chartRef    = useRef<ChartInstance | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<ChartInstance | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const initChart = () => {
@@ -36,9 +36,9 @@ export function InlineVitalsChart() {
     if (!Chart || !canvasRef.current) return;
     if (chartRef.current) chartRef.current.destroy();
 
-    const hrData   = Array.from({ length: 20 }, () => Math.round(68 + Math.random() * 20));
+    const hrData = Array.from({ length: 20 }, () => Math.round(68 + Math.random() * 20));
     const spo2Data = Array.from({ length: 20 }, () => Math.round(95 + Math.random() * 4));
-    const labels   = Array.from({ length: 20 }, (_, i) => i === 19 ? "now" : `${19 - i}s`);
+    const labels = Array.from({ length: 20 }, (_, i) => i === 19 ? "now" : `${19 - i}s`);
 
     chartRef.current = new Chart(canvasRef.current, {
       type: "line",
@@ -68,9 +68,9 @@ export function InlineVitalsChart() {
           },
         },
         scales: {
-          x:  { ticks: { color: "rgba(255,255,255,0.25)", font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: "rgba(255,255,255,0.05)" }, border: { display: false } },
-          y:  { position: "left",  min: 50, max: 110, ticks: { color: "#f87171",  font: { size: 9 }, stepSize: 30 }, grid: { color: "rgba(255,255,255,0.05)" }, border: { display: false } },
-          y2: { position: "right", min: 90, max: 100, ticks: { color: "#34d399",  font: { size: 9 }, stepSize: 5  }, grid: { display: false }, border: { display: false } },
+          x: { ticks: { color: "rgba(255,255,255,0.25)", font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: "rgba(255,255,255,0.05)" }, border: { display: false } },
+          y: { position: "left", min: 50, max: 110, ticks: { color: "#f87171", font: { size: 9 }, stepSize: 30 }, grid: { color: "rgba(255,255,255,0.05)" }, border: { display: false } },
+          y2: { position: "right", min: 90, max: 100, ticks: { color: "#34d399", font: { size: 9 }, stepSize: 5 }, grid: { display: false }, border: { display: false } },
         },
       },
     });
@@ -105,11 +105,11 @@ export function InlineVitalsChart() {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (chartRef.current) { chartRef.current.destroy(); chartRef.current = null; }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="bg-black/40 border border-white/10 rounded-lg p-2.5">
+    <div className="bg-black/40 border border-white/10 rounded-[6px] p-2.5">
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <Activity className="h-3 w-3 text-white/30" />

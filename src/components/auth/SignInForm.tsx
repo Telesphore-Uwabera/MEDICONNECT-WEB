@@ -47,7 +47,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
   const isLoading = forgotPassword.isPending || resetPassword.isPending;
 
   const inputCls =
-    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
   const onSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +160,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <button
               type="submit"
               disabled={isLoading || !email}
-              className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
             >
               {forgotPassword.isPending ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -203,7 +203,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="h-10 w-10 rounded-sm border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+                      className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
                     />
                   ))}
                 </InputOTPGroup>
@@ -288,7 +288,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                 !password ||
                 !passwordConfirmation
               }
-              className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
             >
               {resetPassword.isPending ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -394,7 +394,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   const inputCls =
-    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
   return (
     <AnimatePresence mode="wait">
@@ -417,9 +417,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
           transition={{ duration: 0.2 }}
         >
           {/* ── Method toggle ── */}
-          <div className="relative flex bg-muted/80 rounded-sm p-1.5 border border-border mb-4">
+          <div className="relative flex bg-muted/80 rounded-[6px] p-1.5 border border-border mb-4">
             <motion.div
-              className="absolute top-1.5 bottom-1.5 rounded-sm bg-card border border-border"
+              className="absolute top-1.5 bottom-1.5 rounded-[6px] bg-card border border-border"
               animate={{
                 left: method === "password" ? "6px" : "50%",
                 width: "calc(50% - 6px)",
@@ -431,9 +431,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 key={m}
                 type="button"
                 onClick={() => setMethod(m)}
-                className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-sm transition-colors duration-200 flex items-center justify-center gap-1 ${method === m
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                className={`relative z-10 flex-1 py-1.5 text-[11px] font-semibold rounded-[6px] transition-colors duration-200 flex items-center justify-center gap-1 ${method === m
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
                   }`}
               >
                 {m === "password" ? (
@@ -528,7 +528,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+                  className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
                 >
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -570,7 +570,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                         type="button"
                         onClick={onSendOtp}
                         disabled={isLoading || !phone}
-                        className="px-3 h-10 rounded-sm text-[11px] font-semibold text-primary-foreground whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-primary"
+                        className="px-3 h-10 rounded-[6px] text-[11px] font-semibold text-primary-foreground whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-primary"
                       >
                         {sendOtp.isPending ? (
                           <div className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -600,7 +600,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                               <InputOTPSlot
                                 key={i}
                                 index={i}
-                                className="h-10 w-10 rounded-sm border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+                                className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
                               />
                             ))}
                           </InputOTPGroup>
@@ -624,7 +624,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       <button
                         type="submit"
                         disabled={isLoading || otp.length !== 6}
-                        className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+                        className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
                       >
                         {verifyOtp.isPending ? (
                           <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />

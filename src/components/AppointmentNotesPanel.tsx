@@ -8,27 +8,27 @@ import {
 import { AppointmentContext, useCallStore } from "@/context/CallStore";
 
 interface AppointmentNotesPanelProps {
-  appt: AppointmentContext ; 
+  appt: AppointmentContext;
   onClose: () => void;
 }
 
 const TEMPLATES = [
   { label: "Chief complaint", text: "Chief complaint:\n" },
-  { label: "History",         text: "History of present illness:\n" },
-  { label: "Medications",     text: "Current medications:\n" },
-  { label: "Allergies",       text: "Allergies:\n" },
-  { label: "Examination",     text: "Physical examination:\n" },
-  { label: "Assessment",      text: "Assessment:\n" },
-  { label: "Plan",            text: "Plan:\n" },
-  { label: "Follow-up",       text: "Follow-up:\n" },
+  { label: "History", text: "History of present illness:\n" },
+  { label: "Medications", text: "Current medications:\n" },
+  { label: "Allergies", text: "Allergies:\n" },
+  { label: "Examination", text: "Physical examination:\n" },
+  { label: "Assessment", text: "Assessment:\n" },
+  { label: "Plan", text: "Plan:\n" },
+  { label: "Follow-up", text: "Follow-up:\n" },
 ];
 
 export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelProps) {
   const call = useCallStore();
-  const notes   = call.appointmentNotes[appt.id] ?? "";
+  const notes = call.appointmentNotes[appt.id] ?? "";
   const textRef = useRef<HTMLTextAreaElement>(null);
   const [infoOpen, setInfoOpen] = useState(true);
-  const [copied,   setCopied]   = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => { textRef.current?.focus(); }, []);
 
@@ -61,7 +61,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+          <div className="h-6 w-6 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
             <FileText className="h-3.5 w-3.5 text-primary" />
           </div>
           <div>
@@ -74,7 +74,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
             onClick={handleCopy}
             title="Copy notes"
             className={cn(
-              "h-7 w-7 rounded-md flex items-center justify-center transition-colors text-muted-foreground",
+              "h-7 w-7 rounded-[6px] flex items-center justify-center transition-colors text-muted-foreground",
               copied
                 ? "bg-emerald-500/10 text-emerald-600"
                 : "hover:bg-muted hover:text-foreground",
@@ -86,7 +86,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
           </button>
           <button
             onClick={onClose}
-            className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -108,10 +108,10 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
         </button>
         {infoOpen && (
           <div className="px-4 pb-3 space-y-2">
-            <div className="rounded-lg bg-muted/40 border border-border/60 p-3 space-y-2">
+            <div className="rounded-[6px] bg-muted/40 border border-border/60 p-3 space-y-2">
               {/* Patient */}
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                <div className="h-8 w-8 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
                   {appt.specialty.slice(0, 2).toUpperCase()}
                 </div>
                 <div>
@@ -151,7 +151,7 @@ export function AppointmentNotesPanel({ appt, onClose }: AppointmentNotesPanelPr
             <button
               key={label}
               onClick={() => insertTemplate(text)}
-              className="text-[10px] px-2 py-1 rounded-md border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+              className="text-[10px] px-2 py-1 rounded-[6px] border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
             >
               {label}
             </button>

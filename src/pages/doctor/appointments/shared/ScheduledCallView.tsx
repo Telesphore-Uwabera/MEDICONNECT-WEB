@@ -43,7 +43,7 @@ export function ScheduledCallView({ onExit }: Props) {
             <button
               onClick={() => setNotesOpen((v) => !v)}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium border transition-colors",
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[11px] font-medium border transition-colors",
                 notesOpen
                   ? "bg-primary/10 text-primary border-primary/20"
                   : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -54,7 +54,7 @@ export function ScheduledCallView({ onExit }: Props) {
             </button>
             <button
               onClick={onExit}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[11px] font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               Back

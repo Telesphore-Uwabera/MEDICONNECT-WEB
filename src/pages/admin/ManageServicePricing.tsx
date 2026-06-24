@@ -82,7 +82,7 @@ function PricingRow({
       {/* Key */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+          <div className="h-6 w-6 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
             <Hash className="w-3 h-3 text-primary/70" />
           </div>
           <div className="min-w-0">
@@ -116,7 +116,7 @@ function PricingRow({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onEdit(item)}
           disabled={isUpdating}
         >
@@ -146,8 +146,8 @@ function PricingCard({
   isUpdating: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-9 w-9 rounded-sm bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="h-9 w-9 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
         <Hash className="w-4 h-4 text-primary/70" />
       </div>
       <div className="flex-1 min-w-0">
@@ -174,7 +174,7 @@ function PricingCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(item)}
             disabled={isUpdating}
           >
@@ -296,7 +296,7 @@ function PricingPanel({
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
                   Key
                 </p>
-                <div className="w-full px-3 py-2 text-[12px] bg-muted/30 border border-border/40 rounded-sm text-muted-foreground font-mono">
+                <div className="w-full px-3 py-2 text-[12px] bg-muted/30 border border-border/40 rounded-[6px] text-muted-foreground font-mono">
                   {item.key}
                 </div>
               </div>
@@ -313,13 +313,13 @@ function PricingPanel({
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   placeholder="e.g. 750"
-                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all font-mono"
+                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all font-mono"
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 />
               </div>
 
               {/* Last updated */}
-              <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+              <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Last updated
@@ -333,7 +333,7 @@ function PricingPanel({
             {/* Footer */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={handleSubmit}
                 disabled={isSaving || !value.trim()}
               >
@@ -346,7 +346,7 @@ function PricingPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -415,7 +415,7 @@ function BulkEditDialog({
         onClick={onClose}
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
       />
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
+      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md bg-card border border-border rounded-[6px] shadow-xl p-5 flex flex-col gap-4">
         <div>
           <p className="text-[14px] font-semibold text-foreground">
             Bulk edit prices
@@ -438,7 +438,7 @@ function BulkEditDialog({
                 onChange={(e) =>
                   setValues((prev) => ({ ...prev, [item.key]: e.target.value }))
                 }
-                className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all font-mono"
+                className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all font-mono"
               />
             </div>
           ))}
@@ -447,14 +447,14 @@ function BulkEditDialog({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+            className="flex-1 h-9 text-[12px] rounded-[6px] border-border/60"
             onClick={onClose}
             disabled={isSaving}
           >
             Cancel
           </Button>
           <Button
-            className="flex-1 h-9 text-[12px] rounded-lg gap-1.5"
+            className="flex-1 h-9 text-[12px] rounded-[6px] gap-1.5"
             onClick={handleSubmit}
             disabled={isSaving}
           >
@@ -543,7 +543,7 @@ function ManageServicePricing() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 px-3 text-[11px] rounded-sm gap-1.5 border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+                className="h-8 px-3 text-[11px] rounded-[6px] gap-1.5 border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
@@ -554,7 +554,7 @@ function ManageServicePricing() {
               </Button>
               <Button
                 size="sm"
-                className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
+                className="h-8 px-3 text-[11px] rounded-[6px] gap-1.5"
                 onClick={() => setBulkOpen(true)}
                 disabled={pricing.length === 0}
               >
@@ -577,7 +577,7 @@ function ManageServicePricing() {
               </div>
             ) : !isLoading && pricing.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                   <Tag className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
@@ -592,7 +592,7 @@ function ManageServicePricing() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
@@ -632,19 +632,19 @@ function ManageServicePricing() {
                 <div className="md:hidden flex flex-col gap-2">
                   {isLoading
                     ? Array.from({ length: 3 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-20 rounded-sm border border-border/60 bg-card animate-pulse"
-                        />
-                      ))
+                      <div
+                        key={i}
+                        className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                      />
+                    ))
                     : pricing.map((item) => (
-                        <PricingCard
-                          key={item.key}
-                          item={item}
-                          onEdit={openEdit}
-                          isUpdating={updatingKey === item.key}
-                        />
-                      ))}
+                      <PricingCard
+                        key={item.key}
+                        item={item}
+                        onEdit={openEdit}
+                        isUpdating={updatingKey === item.key}
+                      />
+                    ))}
                 </div>
               </>
             )}

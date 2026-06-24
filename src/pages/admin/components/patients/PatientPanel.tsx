@@ -25,9 +25,9 @@ export interface PatientPanelProps {
 type TabId = "overview" | "medical" | "verification";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "overview",     label: "Overview",     icon: <User        className="w-3 h-3" /> },
-  { id: "medical",      label: "Medical",      icon: <HeartPulse  className="w-3 h-3" /> },
-  { id: "verification", label: "Verification", icon: <BadgeCheck  className="w-3 h-3" /> },
+  { id: "overview", label: "Overview", icon: <User className="w-3 h-3" /> },
+  { id: "medical", label: "Medical", icon: <HeartPulse className="w-3 h-3" /> },
+  { id: "verification", label: "Verification", icon: <BadgeCheck className="w-3 h-3" /> },
 ];
 
 // ─── Primitives (mirroring HospitalPanel style) ───────────────────────────────
@@ -40,7 +40,7 @@ function InfoTile({
 }) {
   return (
     <div className={cn(
-      "group p-3 rounded-[10px] border border-border/40 bg-card/60",
+      "group p-3 rounded-[6px] border border-border/40 bg-card/60",
       "hover:border-primary/30 hover:bg-accent/20 transition-all duration-150",
       full && "col-span-2",
     )}>
@@ -84,11 +84,11 @@ function Pill({
   const styles: Record<string, string> = {
     default: "bg-secondary/70 text-muted-foreground border-border/35",
     primary: "bg-accent text-accent-foreground border-primary/20",
-    teal:    "bg-primary/8 text-primary border-primary/20",
-    amber:   "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-    red:     "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
+    teal: "bg-primary/8 text-primary border-primary/20",
+    amber: "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
+    red: "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
     emerald: "bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-    violet:  "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
+    violet: "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   };
   return (
     <span className={cn(
@@ -115,8 +115,8 @@ function OverviewTab({ p }: { p: ApiPatient }) {
       <div>
         <SectionHeading>Account</SectionHeading>
         <div className="grid grid-cols-2 gap-2">
-          <InfoTile icon={<Hash     className="w-2.5 h-2.5" />} label="Patient ID" value={`#${p.id}`} mono />
-          <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined"     value={new Date(p.created_at).toLocaleDateString()} />
+          <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Patient ID" value={`#${p.id}`} mono />
+          <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(p.created_at).toLocaleDateString()} />
           <InfoTile
             icon={<Phone className="w-2.5 h-2.5" />}
             label="Phone"
@@ -146,10 +146,10 @@ function OverviewTab({ p }: { p: ApiPatient }) {
         <div>
           <SectionHeading>Location</SectionHeading>
           <div className="grid grid-cols-2 gap-2">
-            {profile.address  && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Address"  value={profile.address}  full />}
-            {profile.city     && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="City"     value={profile.city}     />}
+            {profile.address && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Address" value={profile.address} full />}
+            {profile.city && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="City" value={profile.city} />}
             {profile.province && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Province" value={profile.province} />}
-            {profile.country  && <InfoTile icon={<Globe  className="w-2.5 h-2.5" />} label="Country"  value={profile.country}  />}
+            {profile.country && <InfoTile icon={<Globe className="w-2.5 h-2.5" />} label="Country" value={profile.country} />}
           </div>
         </div>
       )}
@@ -222,7 +222,7 @@ function MedicalTab({ p }: { p: ApiPatient }) {
       {profile.emergency_contact_name && (
         <div>
           <SectionHeading>Emergency contact</SectionHeading>
-          <div className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 flex items-center gap-3 hover:border-primary/30 hover:bg-accent/20 transition-all">
+          <div className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 flex items-center gap-3 hover:border-primary/30 hover:bg-accent/20 transition-all">
             <div className="w-9 h-9 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 flex items-center justify-center font-bold text-[11px] border border-red-200 dark:border-red-800/50 shrink-0">
               {getInitials(profile.emergency_contact_name)}
             </div>
@@ -264,9 +264,9 @@ function MedicalTab({ p }: { p: ApiPatient }) {
 
 function VerificationTab({ p }: { p: ApiPatient }) {
   const checks = [
-    { label: "Account verified",  date: p.is_verified ? p.updated_at : null, always: true },
-    { label: "Phone verified",    date: p.phone_verified_at },
-    { label: "Email verified",    date: p.email_verified_at },
+    { label: "Account verified", date: p.is_verified ? p.updated_at : null, always: true },
+    { label: "Phone verified", date: p.phone_verified_at },
+    { label: "Email verified", date: p.email_verified_at },
   ];
 
   return (
@@ -278,7 +278,7 @@ function VerificationTab({ p }: { p: ApiPatient }) {
             <div
               key={label}
               className={cn(
-                "flex items-center justify-between px-4 py-3 rounded-[10px] border transition-all duration-150",
+                "flex items-center justify-between px-4 py-3 rounded-[6px] border transition-all duration-150",
                 date
                   ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/40 dark:bg-emerald-950/15"
                   : "border-border/40 bg-card/60 opacity-60",
@@ -384,7 +384,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-7 h-7 rounded-[8px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
+                  className="w-7 h-7 rounded-[6px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
                   aria-label="Close"
                 >
                   <X className="w-3 h-3 text-muted-foreground" />
@@ -457,8 +457,8 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
             {/* ── Body ── */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-5">
-                {tab === "overview"     && <OverviewTab     p={patient} />}
-                {tab === "medical"      && <MedicalTab      p={patient} />}
+                {tab === "overview" && <OverviewTab p={patient} />}
+                {tab === "medical" && <MedicalTab p={patient} />}
                 {tab === "verification" && <VerificationTab p={patient} />}
               </div>
             </div>
@@ -470,7 +470,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                   size="sm"
                   variant={patient.status === "active" ? "outline" : "default"}
                   className={cn(
-                    "h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium",
+                    "h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium",
                     patient.status === "active"
                       ? "hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                       : "bg-emerald-600 hover:bg-emerald-700 text-white",
@@ -493,7 +493,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-9 px-4 text-[11px] rounded-[10px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
+                  className="h-9 px-4 text-[11px] rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
                   onClick={onClose}
                 >
                   {t("admin.common.close")}

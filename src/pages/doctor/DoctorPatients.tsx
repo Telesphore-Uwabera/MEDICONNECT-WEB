@@ -128,7 +128,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-3 py-2 rounded-md text-sm border transition-all text-left",
+            "px-3 py-2 rounded-[6px] text-sm border transition-all text-left",
             value === o.value
               ? "bg-teal-600 text-white border-teal-600"
               : "border-border text-muted-foreground hover:border-teal-400 hover:text-foreground",
@@ -167,7 +167,7 @@ function PatientCard({
   onAction: (p: Patient) => void;
 }) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover:border-teal-300 dark:hover:border-teal-600 transition-colors">
+    <div className="bg-card border border-border rounded-[6px] p-4 flex items-center gap-4 hover:border-teal-300 dark:hover:border-teal-600 transition-colors">
       <Avatar name={p.name} />
 
       <div className="flex-1 min-w-0">
@@ -177,7 +177,7 @@ function PatientCard({
           </span>
           <span
             className={cn(
-              "text-xs font-medium px-2 py-0.5 rounded-sm",
+              "text-xs font-medium px-2 py-0.5 rounded-[6px]",
               RISK_STYLES[p.risk],
             )}
           >
@@ -291,14 +291,14 @@ const DoctorPatients = () => {
               value={filters.search}
               onChange={(e) => set("search", e.target.value)}
               placeholder="Search name or condition…"
-              className="w-full h-10 pl-10 pr-4 text-sm bg-background border border-border rounded-md outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
+              className="w-full h-10 pl-10 pr-4 text-sm bg-background border border-border rounded-[6px] outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
             />
           </div>
           <div className="relative flex-shrink-0">
             <select
               value={filters.sort}
               onChange={(e) => set("sort", e.target.value as SortOption)}
-              className="appearance-none h-10 pl-4 pr-10 text-sm bg-background border border-border rounded-md text-foreground outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
+              className="appearance-none h-10 pl-4 pr-10 text-sm bg-background border border-border rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -400,7 +400,7 @@ const DoctorPatients = () => {
               )}
 
               {/* View toggle */}
-              <div className="flex rounded-md border border-border overflow-hidden bg-card">
+              <div className="flex rounded-[6px] border border-border overflow-hidden bg-card">
                 <button
                   onClick={() => setView("table")}
                   aria-label="Table view"
@@ -483,7 +483,7 @@ const DoctorPatients = () => {
                 </button>
               </div>
             ) : view === "table" ? (
-              <div className="rounded-md border border-border bg-card overflow-hidden shadow-soft">
+              <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-soft">
                 <table className="w-full text-sm">
                   <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
@@ -529,7 +529,7 @@ const DoctorPatients = () => {
                         <td className="px-5 py-4">
                           <span
                             className={cn(
-                              "text-xs font-medium px-2.5 py-1 rounded-md",
+                              "text-xs font-medium px-2.5 py-1 rounded-[6px]",
                               RISK_STYLES[p.risk],
                             )}
                           >

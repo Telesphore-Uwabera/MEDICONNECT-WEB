@@ -55,6 +55,7 @@ import {
 } from "@/hooks/doctor/use-doctor-dashboard";
 import {
   useCancelDoctorWithdrawal,
+  useDoctorWithdrawals,
   useDoctorWallet,
   useDoctorWalletEarnings,
   useRequestDoctorWithdrawal,
@@ -84,6 +85,17 @@ function formatMoney(value: unknown, currency = "RWF") {
   })}`;
 }
 
+function formatPayoutDate(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatPct(value: number | null) {
   if (value === null) return "—";
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
@@ -106,9 +118,88 @@ function getErrMsg(err: unknown, fallback: string) {
 }
 
 function asRecords(value: unknown): Array<Record<string, unknown>> {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
-    : [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item));
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.data)) return asRecords(record.data);
+    if ("amount" in record || "requested_amount" in record || "withdrawal_amount" in record) return [record];
+  }
+  return [];
+}
+
+function getFirstField(record: Record<string, unknown>, fields: string[], fallback: unknown = undefined) {
+  for (const field of fields) {
+    const value = record[field];
+    if (value != null && String(value).trim() !== "") return value;
+  }
+  return fallback;
+}
+
+function getPayoutAmount(record: Record<string, unknown>) {
+  return getFirstField(record, ["amount", "requested_amount", "withdrawal_amount"], 0);
+}
+
+function getPayoutMethod(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["method", "payment_method", "withdrawal_method"], "withdrawal")).replace(/_/g, " ");
+}
+
+function getPayoutAccountName(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["account_name", "recipient_name", "beneficiary_name"], "-"));
+}
+
+function getPayoutAccountNumber(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["account_number", "phone_number", "recipient_account", "beneficiary_account"], ""));
+}
+
+function getPayoutStatus(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["status", "request_status"], "pending"));
+}
+
+function getPayoutDate(record: Record<string, unknown>) {
+  return getFirstField(record, ["created_at", "requested_at", "submitted_at", "updated_at"]);
+}
+
+function getPayoutId(record: Record<string, unknown>) {
+  return getFirstField(record, ["id", "withdrawal_id", "request_id"]);
+}
+
+function isPayoutRequest(record: Record<string, unknown>) {
+  const status = getPayoutStatus(record).toLowerCase();
+  const type = String(record.type ?? record.kind ?? record.request_type ?? "").toLowerCase();
+  return (
+    getPayoutAmount(record) != null &&
+    (type.includes("withdraw") ||
+      type.includes("payout") ||
+      "method" in record ||
+      "payment_method" in record ||
+      "account_number" in record ||
+      "account_name" in record ||
+      "phone_number" in record ||
+      status.includes("pending") ||
+      status.includes("requested") ||
+      status.includes("processing") ||
+      status.includes("approved") ||
+      status.includes("completed") ||
+      status.includes("cancelled") ||
+      status.includes("rejected"))
+  );
+}
+
+function uniquePayoutRequests(records: Array<Record<string, unknown>>) {
+  const seen = new Set<string>();
+  return records.filter((record, index) => {
+    if (!isPayoutRequest(record)) return false;
+    const id = getPayoutId(record);
+    const key =
+      id != null
+        ? `id:${String(id)}`
+        : `fallback:${String(getPayoutAmount(record))}:${getPayoutAccountNumber(record)}:${String(getPayoutDate(record) ?? index)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 const DoctorOverview = () => {
@@ -128,6 +219,7 @@ const DoctorOverview = () => {
   } = useDoctorDashboard({ period: "week", chart_group: "day" });
   const { data: wallet, isLoading: walletLoading, isError: walletError } = useDoctorWallet();
   const { data: earnings } = useDoctorWalletEarnings();
+  const { data: withdrawals, isLoading: withdrawalsLoading } = useDoctorWithdrawals(15);
   const requestWithdrawal = useRequestDoctorWithdrawal();
   const cancelWithdrawal = useCancelDoctorWithdrawal();
 
@@ -136,6 +228,7 @@ const DoctorOverview = () => {
   const [showLeftScroll, setShowLeftScroll] = useState(false);
   const [showRightScroll, setShowRightScroll] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [localPayoutRequests, setLocalPayoutRequests] = useState<Array<Record<string, unknown>>>([]);
   const [withdrawalForm, setWithdrawalForm] = useState({
     amount: "",
     method: "bank_transfer",
@@ -159,6 +252,30 @@ const DoctorOverview = () => {
       tabsRef.current?.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  useEffect(() => {
+    const serverWithdrawals = asRecords(withdrawals);
+    const serverIds = new Set(
+      serverWithdrawals
+        .map((withdrawal) => getPayoutId(withdrawal))
+        .filter((id): id is string | number => id != null)
+        .map(String),
+    );
+    const serverFingerprints = new Set(
+      serverWithdrawals.map(
+        (withdrawal) =>
+          `${String(getPayoutAmount(withdrawal))}:${getPayoutMethod(withdrawal)}:${getPayoutAccountNumber(withdrawal)}`,
+      ),
+    );
+    if (serverIds.size === 0 && serverFingerprints.size === 0) return;
+    setLocalPayoutRequests((prev) =>
+      prev.filter((withdrawal) => {
+        const id = getPayoutId(withdrawal);
+        const fingerprint = `${String(getPayoutAmount(withdrawal))}:${getPayoutMethod(withdrawal)}:${getPayoutAccountNumber(withdrawal)}`;
+        return (id == null || !serverIds.has(String(id))) && !serverFingerprints.has(fingerprint);
+      }),
+    );
+  }, [withdrawals]);
 
   const scrollBy = (offset: number) => {
     tabsRef.current?.scrollBy({ left: offset, behavior: "smooth" });
@@ -195,39 +312,27 @@ const DoctorOverview = () => {
     combinedRev > 0 ? Math.round((onlineRevTotal / combinedRev) * 100) : 61;
   const inPersonPct =
     combinedRev > 0 ? Math.round((inPersonRevTotal / combinedRev) * 100) : 39;
-  const walletCurrency = wallet?.currency ?? "RWF";
-  const walletBalance = wallet?.available_balance ?? wallet?.balance ?? 0;
+  const walletCurrency = "RWF";
+  const walletBalance = wallet?.balance ?? 0;
   const todayPending = (today?.pending ?? 0) + (today?.confirmed ?? 0);
   const todayCompleted = today?.completed ?? 0;
   const instantQueue = instantStats?.current_queue ?? 0;
 
   // ── Quick stats (Today) ─────────────────────────────────────────────────
 
-  const payoutRequests = [
-    ...asRecords(wallet?.pending_withdrawals),
-    ...asRecords(wallet?.withdrawals),
-    ...asRecords(earnings?.withdrawals),
-    ...asRecords(earnings?.data),
-  ].filter((item, index, arr) => {
-    const status = String(item.status ?? "").toLowerCase();
-    const id = item.id;
-    const isWithdrawal =
-      "amount" in item &&
-      (item.type === "withdrawal" ||
-        "method" in item ||
-        "account_number" in item ||
-        status.includes("pending") ||
-        status.includes("requested") ||
-        status.includes("processing") ||
-        status.includes("approved") ||
-        status.includes("completed") ||
-        status.includes("cancelled"));
-
-    if (!isWithdrawal) return false;
-    if (id == null) return true;
-    return arr.findIndex((other) => other.id === id) === index;
-  });
+  const payoutRequests = uniquePayoutRequests([
+    ...localPayoutRequests,
+    ...asRecords(withdrawals),
+  ]);
   const hasPayoutRows = payoutRequests.length > 0;
+  const pendingPayoutCount = payoutRequests.filter((withdrawal) => {
+    const status = getPayoutStatus(withdrawal).toLowerCase();
+    return status.includes("pending") || status.includes("requested") || status.includes("processing");
+  }).length;
+  const earningsSummary = earnings?.summary;
+  const earningsTotal = earningsSummary?.total_earned ?? totalRevenue;
+  const earningsAverage = earningsSummary?.average_per_appointment ?? revenue?.avg_per_appointment ?? 0;
+  const earningsAppointments = earningsSummary?.total_appointments ?? 0;
 
   const handleWithdrawalSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -247,7 +352,26 @@ const DoctorOverview = () => {
         note: withdrawalForm.note.trim() || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
+          const submittedAt = new Date().toISOString();
+          const returnedWithdrawal =
+            res && typeof res === "object" && "withdrawal" in res && res.withdrawal && typeof res.withdrawal === "object"
+              ? (res.withdrawal as Record<string, unknown>)
+              : null;
+          setLocalPayoutRequests((prev) => [
+            returnedWithdrawal ?? {
+              local_id: `local-${submittedAt}-${amount}`,
+              kind: "local_withdrawal",
+              amount,
+              method: withdrawalForm.method,
+              account_number: withdrawalForm.account_number.trim(),
+              account_name: withdrawalForm.account_name.trim(),
+              note: withdrawalForm.note.trim() || undefined,
+              status: "pending",
+              created_at: submittedAt,
+            },
+            ...prev,
+          ]);
           toast.success("Withdrawal request sent.");
           setWithdrawalForm((prev) => ({ ...prev, amount: "", note: "" }));
           setWithdrawalOpen(false);
@@ -262,7 +386,12 @@ const DoctorOverview = () => {
     if (!Number.isFinite(withdrawalId)) return;
 
     cancelWithdrawal.mutate(withdrawalId, {
-      onSuccess: () => toast.success("Withdrawal request cancelled."),
+      onSuccess: () => {
+        setLocalPayoutRequests((prev) =>
+          prev.filter((withdrawal) => String(getPayoutId(withdrawal)) !== String(withdrawalId)),
+        );
+        toast.success("Withdrawal request cancelled.");
+      },
       onError: (err) => toast.error(getErrMsg(err, "Could not cancel withdrawal.")),
     });
   };
@@ -314,7 +443,7 @@ const DoctorOverview = () => {
                   key={opt.value}
                   onClick={() => updateFilters({ period: opt.value })}
                   className={cn(
-                    "px-4 py-1.5 rounded-md text-xs font-semibold border transition-colors",
+                    "px-4 py-1.5 rounded-[6px] text-xs font-semibold border transition-colors",
                     filters.period === opt.value
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-card border-border/60 text-muted-foreground hover:border-primary/50",
@@ -331,7 +460,7 @@ const DoctorOverview = () => {
                     key={g}
                     onClick={() => updateFilters({ chart_group: g })}
                     className={cn(
-                      "px-3 py-1.5 rounded-md text-xs border transition-colors capitalize",
+                      "px-3 py-1.5 rounded-[6px] text-xs border transition-colors capitalize",
                       filters.chart_group === g
                         ? "bg-secondary text-foreground border-border"
                         : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
@@ -344,7 +473,7 @@ const DoctorOverview = () => {
                 <button
                   onClick={refresh}
                   disabled={loading}
-                  className="ml-2 p-1.5 rounded-md border border-border/60 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                  className="ml-2 p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                 >
                   <RefreshCw
                     className={cn("h-4 w-4", loading && "animate-spin")}
@@ -355,7 +484,7 @@ const DoctorOverview = () => {
 
             {/* ── Error banner ── */}
             {error && (
-              <div className="flex items-center gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <div className="flex items-center gap-3 rounded-[6px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
@@ -404,7 +533,7 @@ const DoctorOverview = () => {
                 const Icon = item.icon;
                 const content = (
                   <>
-                    <div className={cn("h-10 w-10 rounded-md border flex items-center justify-center", item.tone)}>
+                    <div className={cn("h-10 w-10 rounded-[6px] border flex items-center justify-center", item.tone)}>
                       <Icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -429,7 +558,7 @@ const DoctorOverview = () => {
                     <button
                       key={item.label}
                       onClick={() => setActiveTab(item.tab)}
-                      className="rounded-md border border-border/70 bg-card p-3 shadow-soft flex items-center gap-3 text-left hover:border-primary/40 hover:bg-secondary/20 transition-colors"
+                      className="rounded-[6px] border border-border/70 bg-card p-3 shadow-soft flex items-center gap-3 text-left hover:border-primary/40 hover:bg-secondary/20 transition-colors"
                     >
                       {content}
                     </button>
@@ -440,7 +569,7 @@ const DoctorOverview = () => {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className="rounded-md border border-border/70 bg-card p-3 shadow-soft flex items-center gap-3 hover:border-primary/40 hover:bg-secondary/20 transition-colors"
+                    className="rounded-[6px] border border-border/70 bg-card p-3 shadow-soft flex items-center gap-3 hover:border-primary/40 hover:bg-secondary/20 transition-colors"
                   >
                     {content}
                   </Link>
@@ -534,7 +663,7 @@ const DoctorOverview = () => {
                 {activeTab === "overview" && (
                   <>
                     <div className="grid lg:grid-cols-3 gap-4">
-                      <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-5 shadow-soft">
+                      <div className="lg:col-span-2 rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
@@ -549,7 +678,7 @@ const DoctorOverview = () => {
                           </div>
                           <Link
                             to="/doctor/appointments"
-                            className="hidden sm:inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                            className="hidden sm:inline-flex h-8 items-center rounded-[6px] bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                           >
                             Open appointments
                           </Link>
@@ -563,8 +692,8 @@ const DoctorOverview = () => {
                           ].map((item) => {
                             const Icon = item.icon;
                             return (
-                              <div key={item.label} className="rounded-md border border-border/60 bg-secondary/20 p-3">
-                                <div className={cn("h-8 w-8 rounded-md flex items-center justify-center", item.tone)}>
+                              <div key={item.label} className="rounded-[6px] border border-border/60 bg-secondary/20 p-3">
+                                <div className={cn("h-8 w-8 rounded-[6px] flex items-center justify-center", item.tone)}>
                                   <Icon className="h-4 w-4" />
                                 </div>
                                 <p className="text-2xl font-bold text-foreground mt-3 leading-none">
@@ -582,7 +711,7 @@ const DoctorOverview = () => {
                         </div>
                       </div>
 
-                      <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft shadow-soft flex flex-col gap-4">
+                      <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft shadow-soft flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
@@ -592,7 +721,7 @@ const DoctorOverview = () => {
                               Available balance
                             </h3>
                           </div>
-                          <span className="h-9 w-9 rounded-md bg-primary/15 text-primary flex items-center justify-center">
+                          <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center">
                             <Wallet className="h-4 w-4" />
                           </span>
                         </div>
@@ -600,7 +729,7 @@ const DoctorOverview = () => {
                           {walletLoading ? "Loading..." : formatMoney(walletBalance, walletCurrency)}
                         </p>
                         <div className="space-y-2">
-                          <div className="rounded-md border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
+                          <div className="rounded-[6px] border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-foreground">
                                 {t("pages.doctor.instant_title")}
@@ -624,7 +753,7 @@ const DoctorOverview = () => {
                             />
                           </div>
 
-                          <div className="rounded-md border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
+                          <div className="rounded-[6px] border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-foreground">
                                 Pause bookings
@@ -648,7 +777,7 @@ const DoctorOverview = () => {
                         </div>
                         <button
                           onClick={() => setActiveTab("financial")}
-                          className="mt-auto h-9 rounded-md border border-primary/30 bg-card/70 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                          className="mt-auto h-9 rounded-[6px] border border-primary/30 bg-card/70 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                         >
                           View financials
                         </button>
@@ -661,7 +790,7 @@ const DoctorOverview = () => {
                         {/* Instant Consultation toggle */}
                         <div
                           className={cn(
-                            "rounded-md border p-4 shadow-soft flex flex-col justify-between gap-4",
+                            "rounded-[6px] border p-4 shadow-soft flex flex-col justify-between gap-4",
                             toggleState.instant_consultation
                               ? "bg-success/5 border-success/20"
                               : "bg-card border-border/70",
@@ -670,7 +799,7 @@ const DoctorOverview = () => {
                           <div className="flex items-center justify-between">
                             <div
                               className={cn(
-                                "h-8 w-8 rounded-md flex items-center justify-center",
+                                "h-8 w-8 rounded-[6px] flex items-center justify-center",
                                 toggleState.instant_consultation
                                   ? "bg-success/15 text-success"
                                   : "bg-muted text-muted-foreground",
@@ -711,7 +840,7 @@ const DoctorOverview = () => {
                         {/* Pause Bookings toggle */}
                         <div
                           className={cn(
-                            "rounded-md border p-4 shadow-soft flex flex-col justify-between gap-4",
+                            "rounded-[6px] border p-4 shadow-soft flex flex-col justify-between gap-4",
                             toggleState.bookings_paused
                               ? "bg-warning/5 border-warning/20"
                               : "bg-card border-border/70",
@@ -720,7 +849,7 @@ const DoctorOverview = () => {
                           <div className="flex items-center justify-between">
                             <div
                               className={cn(
-                                "h-8 w-8 rounded-md flex items-center justify-center",
+                                "h-8 w-8 rounded-[6px] flex items-center justify-center",
                                 toggleState.bookings_paused
                                   ? "bg-warning/15 text-warning"
                                   : "bg-muted text-muted-foreground",
@@ -764,11 +893,11 @@ const DoctorOverview = () => {
                           return (
                             <div
                               key={s.label}
-                              className="rounded-md border border-border/70 bg-card p-4 shadow-soft flex items-center gap-4"
+                              className="rounded-[6px] border border-border/70 bg-card p-4 shadow-soft flex items-center gap-4"
                             >
                               <div
                                 className={cn(
-                                  "h-10 w-10 rounded-md flex items-center justify-center flex-shrink-0",
+                                  "h-10 w-10 rounded-[6px] flex items-center justify-center flex-shrink-0",
                                   s.color,
                                 )}
                               >
@@ -812,7 +941,7 @@ const DoctorOverview = () => {
                     {/* ── Main grid ── */}
                     <div className="grid lg:grid-cols-3 gap-4">
                       {/* Patient flow chart */}
-                      <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-5 shadow-soft">
+                      <div className="lg:col-span-2 rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-sm font-semibold text-foreground">
                             {t("pages.doctor.patient_flow")}
@@ -889,7 +1018,7 @@ const DoctorOverview = () => {
                       </div>
 
                       {/* Period summary card */}
-                      <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-3">
+                      <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-3">
                         <h3 className="text-sm font-semibold text-foreground mb-1">
                           Period Summary
                         </h3>
@@ -937,7 +1066,7 @@ const DoctorOverview = () => {
                               ].map((s) => (
                                 <div
                                   key={s.label}
-                                  className="rounded-md bg-secondary/40 px-3 py-2 text-center"
+                                  className="rounded-[6px] bg-secondary/40 px-3 py-2 text-center"
                                 >
                                   <p
                                     className={cn(
@@ -996,7 +1125,7 @@ const DoctorOverview = () => {
 
                 <div className="grid lg:grid-cols-3 gap-4">
                   {/* Completion rate bar chart */}
-                  <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-foreground">
                         Appointment Completion
@@ -1072,13 +1201,13 @@ const DoctorOverview = () => {
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="grid lg:grid-cols-3 gap-4">
                   {/* Rating & reviews */}
-                  <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-foreground">
                         Recent Reviews
                       </h3>
                       {reviews?.all_time_avg != null && (
-                        <div className="flex items-center gap-1.5 bg-warning/10 px-2.5 py-1 rounded-md">
+                        <div className="flex items-center gap-1.5 bg-warning/10 px-2.5 py-1 rounded-[6px]">
                           <Star className="h-4 w-4 fill-warning text-warning" />
                           <span className="text-sm font-bold text-foreground">
                             {reviews.all_time_avg.toFixed(1)}
@@ -1092,9 +1221,9 @@ const DoctorOverview = () => {
                         {reviews.recent.map((r, i) => (
                           <div
                             key={r.id ?? i}
-                            className="flex items-start gap-3 p-3 rounded-md bg-secondary/30 border border-border/20"
+                            className="flex items-start gap-3 p-3 rounded-[6px] bg-secondary/30 border border-border/20"
                           >
-                            <div className="h-8 w-8 rounded-md bg-primary-soft text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            <div className="h-8 w-8 rounded-[6px] bg-primary-soft text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
                               {r.patient_name
                                 .split(" ")
                                 .map((n) => n[0])
@@ -1187,12 +1316,12 @@ const DoctorOverview = () => {
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="grid lg:grid-cols-3 gap-4">
                   {/* Wallet balance */}
-                  <div className="rounded-md border border-border/70 bg-card  shadow-soft  p-5 shadow-soft flex flex-col gap-4">
+                  <div className="rounded-[6px] border border-border/70 bg-card  shadow-soft  p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">
                         Wallet Balance
                       </h3>
-                      <span className="h-9 w-9 rounded-md bg-primary/15 text-primary flex items-center justify-center">
+                      <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center">
                         <Wallet className="h-4 w-4" />
                       </span>
                     </div>
@@ -1212,20 +1341,20 @@ const DoctorOverview = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mt-auto">
-                      <div className="rounded-md bg-card/70 border border-border/60 px-3 py-2">
+                      <div className="rounded-[6px] bg-card/70 border border-border/60 px-3 py-2">
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                          Pending
+                          Pending requests
                         </p>
                         <p className="text-sm font-bold text-foreground mt-1">
-                          {formatMoney(wallet?.pending_balance, walletCurrency)}
+                          {withdrawalsLoading ? "..." : pendingPayoutCount}
                         </p>
                       </div>
-                      <div className="rounded-md bg-card/70 border border-border/60 px-3 py-2">
+                      <div className="rounded-[6px] bg-card/70 border border-border/60 px-3 py-2">
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                          Withdrawn
+                          Last withdrawn
                         </p>
                         <p className="text-sm font-bold text-foreground mt-1">
-                          {formatMoney(wallet?.total_withdrawn, walletCurrency)}
+                          {formatPayoutDate(wallet?.last_withdrawn)}
                         </p>
                       </div>
                     </div>
@@ -1238,10 +1367,10 @@ const DoctorOverview = () => {
                   </div>
 
                   {/* Revenue summary */}
-                  <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Revenue · {filters.period}
+                        Earnings
                       </h3>
                       {revenueChangePct !== null && (
                         <span
@@ -1267,28 +1396,32 @@ const DoctorOverview = () => {
                           loading && "opacity-40",
                         )}
                       >
-                        {formatCurrency(totalRevenue)}
+                        {formatMoney(earningsTotal, walletCurrency)}
                       </p>
-                      {revenue && revenue.previous_period_total > 0 && (
+                      {earningsSummary?.last_appointment_at ? (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Last appointment {formatPayoutDate(earningsSummary.last_appointment_at)}
+                        </p>
+                      ) : revenue && revenue.previous_period_total > 0 ? (
                         <p className="text-xs text-muted-foreground mt-2">
                           vs {formatCurrency(revenue.previous_period_total)} prev
                           period
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="space-y-3 mt-auto">
                       {[
                         {
-                          label: "Video / Online",
-                          value: formatCurrency(onlineRevTotal),
-                          count: String(revenue?.breakdown.online.count ?? 0),
+                          label: "Completed appointments",
+                          value: formatMoney(earningsTotal, walletCurrency),
+                          count: String(earningsAppointments),
                           pct: onlinePct,
                         },
                         {
-                          label: "In-person",
-                          value: formatCurrency(inPersonRevTotal),
-                          count: String(revenue?.breakdown.in_person.count ?? 0),
+                          label: "Wallet balance",
+                          value: formatMoney(walletBalance, walletCurrency),
+                          count: "available",
                           pct: inPersonPct,
                         },
                       ].map((row) => (
@@ -1324,158 +1457,162 @@ const DoctorOverview = () => {
                           loading && "opacity-40",
                         )}
                       >
-                        {formatCurrency(revenue?.avg_per_appointment ?? 0)}
+                        {formatMoney(earningsAverage, walletCurrency)}
                       </span>
                     </div>
                   </div>
 
                   {false && (
-                  <div className="rounded-md border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Request Payout
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Send available wallet funds to your bank or mobile money account.
-                      </p>
-                    </div>
+                    <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">
+                          Request Payout
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Send available wallet funds to your bank or mobile money account.
+                        </p>
+                      </div>
 
-                    <form onSubmit={handleWithdrawalSubmit} className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="space-y-1.5">
+                      <form onSubmit={handleWithdrawalSubmit} className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="space-y-1.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                              Amount
+                            </span>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={withdrawalForm.amount}
+                              onChange={(event) =>
+                                setWithdrawalForm((prev) => ({ ...prev, amount: event.target.value }))
+                              }
+                              placeholder="500"
+                              className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+                            />
+                          </label>
+
+                          <label className="space-y-1.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                              Method
+                            </span>
+                            <select
+                              value={withdrawalForm.method}
+                              onChange={(event) =>
+                                setWithdrawalForm((prev) => ({ ...prev, method: event.target.value }))
+                              }
+                              className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+                            >
+                              <option value="bank_transfer">Bank transfer</option>
+                              <option value="mobile_money">Mobile money</option>
+                            </select>
+                          </label>
+                        </div>
+
+                        <label className="space-y-1.5 block">
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            Amount
+                            Account name
                           </span>
                           <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={withdrawalForm.amount}
+                            value={withdrawalForm.account_name}
                             onChange={(event) =>
-                              setWithdrawalForm((prev) => ({ ...prev, amount: event.target.value }))
+                              setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
                             }
-                            placeholder="500"
-                            className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+                            placeholder="Dr. John Doe"
+                            className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
                           />
                         </label>
 
-                        <label className="space-y-1.5">
+                        <label className="space-y-1.5 block">
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            Method
+                            Account number
                           </span>
-                          <select
-                            value={withdrawalForm.method}
+                          <input
+                            value={withdrawalForm.account_number}
                             onChange={(event) =>
-                              setWithdrawalForm((prev) => ({ ...prev, method: event.target.value }))
+                              setWithdrawalForm((prev) => ({ ...prev, account_number: event.target.value }))
                             }
-                            className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                          >
-                            <option value="bank_transfer">Bank transfer</option>
-                            <option value="mobile_money">Mobile money</option>
-                          </select>
+                            placeholder="1234567890"
+                            className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+                          />
                         </label>
-                      </div>
 
-                      <label className="space-y-1.5 block">
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                          Account name
-                        </span>
-                        <input
-                          value={withdrawalForm.account_name}
-                          onChange={(event) =>
-                            setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
+                        <label className="space-y-1.5 block">
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                            Note
+                          </span>
+                          <textarea
+                            value={withdrawalForm.note}
+                            onChange={(event) =>
+                              setWithdrawalForm((prev) => ({ ...prev, note: event.target.value }))
+                            }
+                            placeholder="Monthly withdrawal"
+                            rows={3}
+                            className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+                          />
+                        </label>
+
+                        <button
+                          type="submit"
+                          disabled={
+                            requestWithdrawal.isPending ||
+                            !withdrawalForm.amount ||
+                            !withdrawalForm.account_name.trim() ||
+                            !withdrawalForm.account_number.trim()
                           }
-                          placeholder="Dr. John Doe"
-                          className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
+                          className="h-9 w-full rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {requestWithdrawal.isPending ? "Requesting..." : "Request payout"}
+                        </button>
+                      </form>
 
-                      <label className="space-y-1.5 block">
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                          Account number
-                        </span>
-                        <input
-                          value={withdrawalForm.account_number}
-                          onChange={(event) =>
-                            setWithdrawalForm((prev) => ({ ...prev, account_number: event.target.value }))
-                          }
-                          placeholder="1234567890"
-                          className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
-
-                      <label className="space-y-1.5 block">
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                          Note
-                        </span>
-                        <textarea
-                          value={withdrawalForm.note}
-                          onChange={(event) =>
-                            setWithdrawalForm((prev) => ({ ...prev, note: event.target.value }))
-                          }
-                          placeholder="Monthly withdrawal"
-                          rows={3}
-                          className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
-                        />
-                      </label>
-
-                      <button
-                        type="submit"
-                        disabled={
-                          requestWithdrawal.isPending ||
-                          !withdrawalForm.amount ||
-                          !withdrawalForm.account_name.trim() ||
-                          !withdrawalForm.account_number.trim()
-                        }
-                        className="h-9 w-full rounded-md bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {requestWithdrawal.isPending ? "Requesting..." : "Request payout"}
-                      </button>
-                    </form>
-
-                    <div className="border-t border-border/50 pt-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                        Pending requests
-                      </p>
-                      {payoutRequests.length === 0 ? (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          No pending payout requests.
+                      <div className="border-t border-border/50 pt-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          Pending requests
                         </p>
-                      ) : (
-                        <div className="space-y-2 mt-2">
-                          {payoutRequests.map((withdrawal, index) => (
-                            <div
-                              key={String(withdrawal.id ?? index)}
-                              className="rounded-md border border-border/60 bg-secondary/20 p-3 flex items-center justify-between gap-3"
-                            >
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold text-foreground">
-                                  {formatMoney(withdrawal.amount, walletCurrency)}
-                                </p>
-                                <p className="text-[11px] text-muted-foreground truncate">
-                                  {String(withdrawal.method ?? "Withdrawal").replace(/_/g, " ")}
-                                  {withdrawal.status ? ` · ${String(withdrawal.status)}` : ""}
-                                </p>
+                        {withdrawalsLoading ? (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Loading payout requests...
+                          </p>
+                        ) : payoutRequests.length === 0 ? (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            No pending payout requests.
+                          </p>
+                        ) : (
+                          <div className="space-y-2 mt-2">
+                            {payoutRequests.map((withdrawal, index) => (
+                              <div
+                                key={String(getPayoutId(withdrawal) ?? withdrawal.local_id ?? index)}
+                                className="rounded-[6px] border border-border/60 bg-secondary/20 p-3 flex items-center justify-between gap-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-foreground">
+                                    {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground truncate">
+                                    {getPayoutMethod(withdrawal)}
+                                    {withdrawal.status ? ` · ${String(withdrawal.status)}` : ""}
+                                  </p>
+                                </div>
+                                {Number.isFinite(Number(getPayoutId(withdrawal))) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCancelWithdrawal(getPayoutId(withdrawal))}
+                                    disabled={cancelWithdrawal.isPending}
+                                    className="h-7 rounded-[6px] border border-destructive/30 px-2 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
                               </div>
-                              {withdrawal.id != null && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleCancelWithdrawal(withdrawal.id)}
-                                  disabled={cancelWithdrawal.isPending}
-                                  className="h-7 rounded-md border border-destructive/30 px-2 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
-                                >
-                                  Cancel
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
                   )}
 
-                  <div className="rounded-md border border-primary/25 bg-primary/5 p-5 shadow-soft flex flex-col gap-4">
+                  <div className="rounded-[6px] border border-primary/25 bg-primary/5 p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-sm font-semibold text-foreground">
@@ -1485,12 +1622,12 @@ const DoctorOverview = () => {
                           Move available wallet funds to a bank or mobile money account.
                         </p>
                       </div>
-                      <span className="h-9 w-9 rounded-md bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                      <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center shrink-0">
                         <Wallet className="h-4 w-4" />
                       </span>
                     </div>
 
-                    <div className="rounded-md border border-border/60 bg-card/80 p-3">
+                    <div className="rounded-[6px] border border-border/60 bg-card/80 p-3">
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                         Available
                       </p>
@@ -1502,14 +1639,14 @@ const DoctorOverview = () => {
                     <button
                       type="button"
                       onClick={() => setWithdrawalOpen(true)}
-                      className="mt-auto h-10 rounded-md bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                      className="mt-auto h-10 rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                     >
                       Request payout
                     </button>
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border/70 bg-card shadow-soft overflow-hidden">
+                <div className="rounded-[6px] border border-border/70 bg-card shadow-soft overflow-hidden">
                   <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">
@@ -1522,13 +1659,19 @@ const DoctorOverview = () => {
                     <button
                       type="button"
                       onClick={() => setWithdrawalOpen(true)}
-                      className="hidden sm:inline-flex h-8 items-center rounded-md border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+                      className="hidden sm:inline-flex h-8 items-center rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
                     >
                       New payout
                     </button>
                   </div>
 
-                  {hasPayoutRows ? (
+                  {withdrawalsLoading && !hasPayoutRows ? (
+                    <div className="px-5 py-10 text-center">
+                      <p className="text-sm font-semibold text-foreground">
+                        Loading payout requests...
+                      </p>
+                    </div>
+                  ) : hasPayoutRows ? (
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[680px] text-left">
                         <thead className="bg-secondary/30">
@@ -1545,27 +1688,29 @@ const DoctorOverview = () => {
                         </thead>
                         <tbody>
                           {payoutRequests.map((withdrawal, index) => {
-                            const status = String(withdrawal.status ?? "pending");
+                            const status = getPayoutStatus(withdrawal);
                             const statusLower = status.toLowerCase();
+                            const payoutId = getPayoutId(withdrawal);
+                            const numericPayoutId = Number(payoutId);
                             const canCancel =
-                              withdrawal.id != null &&
+                              Number.isFinite(numericPayoutId) &&
                               (statusLower.includes("pending") ||
                                 statusLower.includes("requested") ||
                                 statusLower.includes("processing"));
 
                             return (
-                              <tr key={String(withdrawal.id ?? index)} className="border-t border-border/50">
+                              <tr key={String(payoutId ?? withdrawal.local_id ?? index)} className="border-t border-border/50">
                                 <td className="px-5 py-3 text-xs font-semibold text-foreground">
-                                  {formatMoney(withdrawal.amount, walletCurrency)}
+                                  {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground capitalize">
-                                  {String(withdrawal.method ?? "withdrawal").replace(/_/g, " ")}
+                                  {getPayoutMethod(withdrawal)}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
                                   <span className="block text-foreground">
-                                    {String(withdrawal.account_name ?? "-")}
+                                    {getPayoutAccountName(withdrawal)}
                                   </span>
-                                  <span>{String(withdrawal.account_number ?? "")}</span>
+                                  <span>{getPayoutAccountNumber(withdrawal)}</span>
                                 </td>
                                 <td className="px-5 py-3">
                                   <span
@@ -1582,15 +1727,15 @@ const DoctorOverview = () => {
                                   </span>
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
-                                  {String(withdrawal.created_at ?? withdrawal.requested_at ?? "-")}
+                                  {formatPayoutDate(getPayoutDate(withdrawal))}
                                 </td>
                                 <td className="px-5 py-3">
                                   {canCancel ? (
                                     <button
                                       type="button"
-                                      onClick={() => handleCancelWithdrawal(withdrawal.id)}
+                                      onClick={() => handleCancelWithdrawal(numericPayoutId)}
                                       disabled={cancelWithdrawal.isPending}
-                                      className="h-7 rounded-md border border-destructive/30 px-2.5 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
+                                      className="h-7 rounded-[6px] border border-destructive/30 px-2.5 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
                                     >
                                       Cancel
                                     </button>
@@ -1631,7 +1776,7 @@ const DoctorOverview = () => {
           </DialogHeader>
 
           <form onSubmit={handleWithdrawalSubmit} className="space-y-4">
-            <div className="rounded-md border border-border/60 bg-secondary/20 px-4 py-3 flex items-center justify-between">
+            <div className="rounded-[6px] border border-border/60 bg-secondary/20 px-4 py-3 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Available balance</span>
               <span className="text-sm font-bold text-foreground">
                 {formatMoney(walletBalance, walletCurrency)}
@@ -1652,7 +1797,7 @@ const DoctorOverview = () => {
                     setWithdrawalForm((prev) => ({ ...prev, amount: event.target.value }))
                   }
                   placeholder="500"
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                  className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
                 />
               </label>
 
@@ -1665,7 +1810,7 @@ const DoctorOverview = () => {
                   onChange={(event) =>
                     setWithdrawalForm((prev) => ({ ...prev, method: event.target.value }))
                   }
-                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                  className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
                 >
                   <option value="bank_transfer">Bank transfer</option>
                   <option value="mobile_money">Mobile money</option>
@@ -1683,7 +1828,7 @@ const DoctorOverview = () => {
                   setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
                 }
                 placeholder="Dr. John Doe"
-                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
               />
             </label>
 
@@ -1697,7 +1842,7 @@ const DoctorOverview = () => {
                   setWithdrawalForm((prev) => ({ ...prev, account_number: event.target.value }))
                 }
                 placeholder="1234567890"
-                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+                className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
               />
             </label>
 
@@ -1712,7 +1857,7 @@ const DoctorOverview = () => {
                 }
                 placeholder="Monthly withdrawal"
                 rows={3}
-                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               />
             </label>
 
@@ -1720,7 +1865,7 @@ const DoctorOverview = () => {
               <button
                 type="button"
                 onClick={() => setWithdrawalOpen(false)}
-                className="h-9 rounded-md border border-border px-4 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+                className="h-9 rounded-[6px] border border-border px-4 text-xs font-semibold text-muted-foreground hover:bg-secondary"
               >
                 Cancel
               </button>
@@ -1732,7 +1877,7 @@ const DoctorOverview = () => {
                   !withdrawalForm.account_name.trim() ||
                   !withdrawalForm.account_number.trim()
                 }
-                className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-9 rounded-[6px] bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {requestWithdrawal.isPending ? "Requesting..." : "Request payout"}
               </button>

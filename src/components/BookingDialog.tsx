@@ -80,7 +80,7 @@ function MiniCalendar({
 
   const weeks = useMemo(() => {
     const start = moment(cursor).startOf("month").startOf("isoWeek");
-    const end   = moment(cursor).endOf("month").endOf("isoWeek");
+    const end = moment(cursor).endOf("month").endOf("isoWeek");
     const days: Date[] = [];
     const cur = start.clone();
     while (cur.isSameOrBefore(end, "day")) {
@@ -99,7 +99,7 @@ function MiniCalendar({
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setCursor(moment(cursor).subtract(1, "month").toDate())}
-          className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -108,7 +108,7 @@ function MiniCalendar({
         </span>
         <button
           onClick={() => setCursor(moment(cursor).add(1, "month").toDate())}
-          className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -125,12 +125,12 @@ function MiniCalendar({
       {weeks.map((week, wi) => (
         <div key={wi} className="grid grid-cols-7">
           {week.map((day) => {
-            const k          = moment(day).format("YYYY-MM-DD");
-            const inMonth    = moment(day).isSame(cursor, "month");
-            const isAllowed  = allowedDates.has(k);
+            const k = moment(day).format("YYYY-MM-DD");
+            const inMonth = moment(day).isSame(cursor, "month");
+            const isAllowed = allowedDates.has(k);
             const isDisabled = !inMonth || !isAllowed;
-            const isSel      = selected ? moment(day).isSame(selected, "day") : false;
-            const isTod      = moment(day).isSame(moment(), "day");
+            const isSel = selected ? moment(day).isSame(selected, "day") : false;
+            const isTod = moment(day).isSame(moment(), "day");
 
             return (
               <button
@@ -138,7 +138,7 @@ function MiniCalendar({
                 disabled={isDisabled}
                 onClick={() => !isDisabled && onSelect(day)}
                 className={cn(
-                  "relative flex items-center justify-center h-8 w-full rounded-md text-sm transition-all duration-150",
+                  "relative flex items-center justify-center h-8 w-full rounded-[6px] text-sm transition-all duration-150",
                   !inMonth && "invisible",
                   isDisabled && inMonth && "text-muted-foreground/30 cursor-not-allowed",
                   !isDisabled && !isSel && "text-foreground hover:bg-primary/10 hover:text-primary cursor-pointer",
@@ -172,19 +172,19 @@ function TimeSlotGrid({
   onSelect: (t: string) => void;
 }) {
   const periods = useMemo(() => {
-    const morning:   MappedSlot[] = [];
+    const morning: MappedSlot[] = [];
     const afternoon: MappedSlot[] = [];
-    const evening:   MappedSlot[] = [];
+    const evening: MappedSlot[] = [];
     slots.forEach((s) => {
       const h = parseInt(s.time.split(":")[0], 10);
-      if (h < 12)      morning.push(s);
+      if (h < 12) morning.push(s);
       else if (h < 17) afternoon.push(s);
-      else             evening.push(s);
+      else evening.push(s);
     });
     return [
-      { label: "Morning",   icon: "🌤", items: morning   },
-      { label: "Afternoon", icon: "☀️",  items: afternoon },
-      { label: "Evening",   icon: "🌙", items: evening   },
+      { label: "Morning", icon: "🌤", items: morning },
+      { label: "Afternoon", icon: "☀️", items: afternoon },
+      { label: "Evening", icon: "🌙", items: evening },
     ].filter((p) => p.items.length > 0);
   }, [slots]);
 
@@ -216,16 +216,16 @@ function TimeSlotGrid({
           <div className="grid grid-cols-3 gap-1.5">
             {items.map((s) => {
               const avail = s.status === "available";
-              const sel   = selected === s.time;
+              const sel = selected === s.time;
               return (
                 <button
                   key={s.id}
                   disabled={!avail}
                   onClick={() => avail && onSelect(s.time)}
                   className={cn(
-                    "py-1.5 rounded-md text-sm font-mono tabular-nums border transition-all duration-150",
-                    sel   && "bg-primary text-primary-foreground border-primary shadow-sm font-semibold",
-                    !sel && avail  && "border-border text-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary",
+                    "py-1.5 rounded-[6px] text-sm font-mono tabular-nums border transition-all duration-150",
+                    sel && "bg-primary text-primary-foreground border-primary shadow-sm font-semibold",
+                    !sel && avail && "border-border text-foreground hover:border-primary/60 hover:bg-primary/5 hover:text-primary",
                     !avail && "bg-muted/40 text-muted-foreground/30 border-border/40 line-through cursor-not-allowed",
                   )}
                 >
@@ -257,8 +257,8 @@ export const BookingDialog = ({
   const navigate = useNavigate();
 
   // ── Local state ────────────────────────────────────────────────────────────
-  const [date,      setDate]      = useState<Date | undefined>(undefined);
-  const [time,      setTime]      = useState<string | null>(null);
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [time, setTime] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ date: string; time: string } | null>(null);
   const [shouldRefetchDoctor, setShouldRefetchDoctor] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
@@ -331,7 +331,7 @@ export const BookingDialog = ({
       };
       onConfirmed(updated);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [freshDoctorData]);
 
   // ── Booking handler ────────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ export const BookingDialog = ({
       if (doctor.consultation_fee && Number(doctor.consultation_fee) > 0) {
         // Handle different response structures
         const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).appointment?.id;
-        
+
         if (!appointmentId) {
           console.error("Booking succeeded but appointment ID is missing from response:", res);
           toast.error("Payment could not be initiated", { description: "We couldn't find the appointment ID. Please pay from your dashboard." });
@@ -431,13 +431,13 @@ export const BookingDialog = ({
   };
 
   // ── Derived display values ─────────────────────────────────────────────────
-  const doctorName    = doctor.user?.name ?? "Unknown Doctor";
-  const doctorAvatar  = doctor.user?.avatar ?? doctor.image ?? null;
+  const doctorName = doctor.user?.name ?? "Unknown Doctor";
+  const doctorAvatar = doctor.user?.avatar ?? doctor.image ?? null;
   const doctorInitial = doctorName.charAt(0);
 
   const showLoading = slotsLoading && !confirmed;
-  const showError   = slotsError && !confirmed;
-  const showBody    = !slotsLoading && !slotsError && !confirmed && !!slotsData;
+  const showError = slotsError && !confirmed;
+  const showBody = !slotsLoading && !slotsError && !confirmed && !!slotsData;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }} modal={false}>
@@ -456,9 +456,9 @@ export const BookingDialog = ({
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-border/60">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+            <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
               {doctorAvatar
-                ? <img src={doctorAvatar} alt={doctorName} className="h-9 w-9 rounded-md object-cover" />
+                ? <img src={doctorAvatar} alt={doctorName} className="h-9 w-9 rounded-[6px] object-cover" />
                 : doctorInitial}
             </div>
             <div className="min-w-0">
@@ -561,7 +561,7 @@ export const BookingDialog = ({
                   allowedDates={allowedDates}
                 />
                 {date && (
-                  <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground border border-border/60 rounded-md px-2.5 py-1.5 bg-muted/30">
+                  <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground border border-border/60 rounded-[6px] px-2.5 py-1.5 bg-muted/30">
                     <CalendarDays className="h-4 w-4 shrink-0" />
                     <span className="font-medium text-foreground">{moment(date).format("ddd, MMM D")}</span>
                     <span className="text-muted-foreground/50">·</span>
@@ -620,7 +620,7 @@ export const BookingDialog = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-4 text-sm rounded-md"
+                  className="h-8 px-4 text-sm rounded-[6px]"
                   onClick={() => onOpenChange(false)}
                 >
                   Cancel
@@ -629,7 +629,7 @@ export const BookingDialog = ({
                   size="sm"
                   disabled={!date || !time || bookAppointment.isPending}
                   onClick={handleConfirm}
-                  className="h-8 px-5 text-sm rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+                  className="h-8 px-5 text-sm rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 >
                   {bookAppointment.isPending
                     ? <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Booking…</>

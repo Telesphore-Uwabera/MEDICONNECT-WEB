@@ -103,10 +103,10 @@ function sortHospitals(hospitals: ApiHospital[], sort: SortOption): ApiHospital[
 function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
   console.log("Rendering card for hospital:", hospital);
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-3 flex flex-col gap-2.5 hover:border-primary/30 hover:shadow-md transition-all duration-200">
+    <div className="bg-card border border-border/70 rounded-[6px] p-3 flex flex-col gap-2.5 hover:border-primary/30 hover:shadow-md transition-all duration-200">
       {/* Header */}
       <div className="flex items-start gap-2.5">
-        <div className="w-9 h-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10">
+        <div className="w-9 h-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10">
           <Building2 className="w-4.5 h-4.5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -125,11 +125,11 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
 
       {/* Badges */}
       <div className="flex flex-wrap gap-1">
-        <span className={cn("px-1.5 py-px text-[9px] font-semibold rounded-sm border", TYPE_BADGE_STYLE[hospital.type])}>
+        <span className={cn("px-1.5 py-px text-[9px] font-semibold rounded-[6px] border", TYPE_BADGE_STYLE[hospital.type])}>
           {TYPE_LABEL[hospital.type]}
         </span>
         {hospital.is_open_24h && (
-          <span className="flex items-center gap-0.5 px-1.5 py-px text-[9px] font-semibold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+          <span className="flex items-center gap-0.5 px-1.5 py-px text-[9px] font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
             <Clock className="w-2.5 h-2.5" />
             24h Open
           </span>
@@ -142,13 +142,13 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
           {hospital.departments.slice(0, 3).map((dept) => (
             <span
               key={dept.id}
-              className="px-1.5 py-px text-[9px] rounded-sm bg-secondary/60 text-muted-foreground border border-border/40"
+              className="px-1.5 py-px text-[9px] rounded-[6px] bg-secondary/60 text-muted-foreground border border-border/40"
             >
               {dept.name_en}
             </span>
           ))}
           {hospital.departments.length > 3 && (
-            <span className="px-1.5 py-px text-[9px] rounded-sm bg-secondary/40 text-muted-foreground/70 border border-border/40">
+            <span className="px-1.5 py-px text-[9px] rounded-[6px] bg-secondary/40 text-muted-foreground/70 border border-border/40">
               +{hospital.departments.length - 3} more
             </span>
           )}
@@ -176,7 +176,7 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
             <span className="font-semibold text-foreground">{hospital.departments_count}</span> depts
           </span>
         </div>
-        <button className="px-2.5 py-1 rounded-sm text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm">
+        <button className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm">
           View
         </button>
       </div>
@@ -190,26 +190,26 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
 
 function HospitalCardSkeleton() {
   return (
-    <div className="bg-card border border-border/50 rounded-sm p-3 flex flex-col gap-2.5 animate-pulse">
+    <div className="bg-card border border-border/50 rounded-[6px] p-3 flex flex-col gap-2.5 animate-pulse">
       <div className="flex items-start gap-2.5">
-        <div className="w-9 h-9 rounded-sm bg-muted flex-shrink-0" />
+        <div className="w-9 h-9 rounded-[6px] bg-muted flex-shrink-0" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3 bg-muted rounded-sm w-3/4" />
-          <div className="h-2.5 bg-muted/70 rounded-sm w-1/2" />
+          <div className="h-3 bg-muted rounded-[6px] w-3/4" />
+          <div className="h-2.5 bg-muted/70 rounded-[6px] w-1/2" />
         </div>
       </div>
       <div className="flex gap-1">
-        <div className="h-4 bg-muted rounded-sm w-16" />
-        <div className="h-4 bg-muted/70 rounded-sm w-14" />
+        <div className="h-4 bg-muted rounded-[6px] w-16" />
+        <div className="h-4 bg-muted/70 rounded-[6px] w-14" />
       </div>
       <div className="flex gap-1">
-        <div className="h-4 bg-muted/60 rounded-sm w-20" />
-        <div className="h-4 bg-muted/50 rounded-sm w-18" />
-        <div className="h-4 bg-muted/40 rounded-sm w-12" />
+        <div className="h-4 bg-muted/60 rounded-[6px] w-20" />
+        <div className="h-4 bg-muted/50 rounded-[6px] w-18" />
+        <div className="h-4 bg-muted/40 rounded-[6px] w-12" />
       </div>
       <div className="flex justify-between pt-1.5 border-t border-border/40">
-        <div className="h-3 bg-muted rounded-sm w-28" />
-        <div className="h-6 bg-muted/80 rounded-sm w-12" />
+        <div className="h-3 bg-muted rounded-[6px] w-28" />
+        <div className="h-6 bg-muted/80 rounded-[6px] w-12" />
       </div>
     </div>
   );
@@ -244,7 +244,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
@@ -253,7 +253,7 @@ function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={cn(
-              "w-7 h-7 flex items-center justify-center rounded-sm border text-[11px] font-medium transition-all",
+              "w-7 h-7 flex items-center justify-center rounded-[6px] border text-[11px] font-medium transition-all",
               currentPage === p
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
@@ -265,7 +265,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= lastPage}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
@@ -401,7 +401,7 @@ const PatientHospitals = () => {
               <div className="flex items-center gap-3">
                 <p className="text-[11px] text-muted-foreground">
                   {isLoading ? (
-                    <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
+                    <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                   ) : (
                     <>
                       <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
@@ -419,7 +419,7 @@ const PatientHospitals = () => {
 
                 {/* Live stats */}
                 {!isLoading && open24hCount > 0 && (
-                  <span className="hidden lg:flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
+                  <span className="hidden lg:flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
                     <Clock className="w-2.5 h-2.5" />
                     {open24hCount} open 24h
                   </span>
@@ -431,7 +431,7 @@ const PatientHospitals = () => {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -445,7 +445,7 @@ const PatientHospitals = () => {
                 />
 
                 {/* View toggle */}
-                <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
+                <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   {(["grid", "list"] as const).map((v, i) => (
                     <button
                       key={v}
@@ -481,7 +481,7 @@ const PatientHospitals = () => {
             <div className="p-4 flex-1">
               {isError ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <div className="w-14 h-14 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
@@ -508,7 +508,7 @@ const PatientHospitals = () => {
                 </div>
               ) : hospitals.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                  <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                     <Building2 className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>

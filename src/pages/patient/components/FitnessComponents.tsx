@@ -162,7 +162,7 @@ export function FormSidebar({
               key={step.id}
               onClick={() => onSelect(i)}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer",
@@ -313,7 +313,7 @@ export function StepPurpose({
       </FormField>
 
       {highRiskJob && (
-        <div className="flex items-start gap-2.5 p-3 rounded-md border border-amber-400/40 bg-amber-500/10">
+        <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-amber-400/40 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 dark:text-amber-400">
             This job type typically requires an <strong>in-person physical examination</strong>. Your request will be reviewed and you may be referred.
@@ -373,7 +373,7 @@ export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, ex
         <YesNoField key={field} label={label} value={answers[field] ?? ""} onChange={(v) => setAnswer(field, v)} warning={warning} />
       ))}
       {redFlagSymptoms && apiStep === 2 && (
-        <div className="flex items-start gap-2.5 p-3 rounded-md border border-destructive/30 bg-destructive/10 mt-3">
+        <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-destructive/30 bg-destructive/10 mt-3">
           <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <p className="text-xs text-destructive">
             You have reported a <strong>red flag symptom</strong>. A physical examination may be required. You can still submit and a doctor will decide.
@@ -463,7 +463,7 @@ export function StepFunctional({
           {...register("notes")}
           rows={3}
           placeholder="Any other relevant information.."
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
         />
       </FormField>
 

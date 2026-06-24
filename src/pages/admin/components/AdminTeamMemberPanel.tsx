@@ -66,7 +66,7 @@ function TextInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+      className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
     />
   );
 }
@@ -84,11 +84,11 @@ function RichBioEditor({
   const initializedRef = useRef<number | null>(null);
 
   // Seed inner HTML once when value first arrives (avoid cursor-reset on every keystroke)
-useEffect(() => {
+  useEffect(() => {
     if (editorRef.current && value !== undefined) {
       editorRef.current.innerHTML = value;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // seed once on mount; parent remounts editor per memberId
 
   const exec = useCallback((command: string, arg?: string) => {
@@ -113,10 +113,10 @@ useEffect(() => {
   );
 
   return (
-    <div className="border border-border/60 rounded-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+    <div className="border border-border/60 rounded-[6px] overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border/60 bg-secondary/30">
-        {toolbarBtn(() => exec("bold"),   <Bold className="w-3 h-3" />,   "Bold")}
+        {toolbarBtn(() => exec("bold"), <Bold className="w-3 h-3" />, "Bold")}
         {toolbarBtn(() => exec("italic"), <Italic className="w-3 h-3" />, "Italic")}
         {toolbarBtn(() => exec("insertUnorderedList"), <List className="w-3 h-3" />, "Bullet list")}
         <div className="w-px h-4 bg-border/60 mx-1" />
@@ -162,16 +162,16 @@ export function AdminTeamMemberPanel({
   const member = data?.member;
 
   const updateMutation = useUpdateTeamMember(memberId ?? 0);
-  const uploadPhoto    = useUploadTeamPhoto(memberId ?? 0);
-  const toggleActive   = useToggleTeamMemberActive(memberId ?? 0);
-  const deleteMember   = useDeleteTeamMember();
+  const uploadPhoto = useUploadTeamPhoto(memberId ?? 0);
+  const toggleActive = useToggleTeamMemberActive(memberId ?? 0);
+  const deleteMember = useDeleteTeamMember();
 
-  const [name,     setName]     = useState("");
-  const [title,    setTitle]    = useState("");
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [joinedAt, setJoinedAt] = useState("");
-  const [bio,      setBio]      = useState("");           // ← NEW
+  const [bio, setBio] = useState("");           // ← NEW
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [toast, setToast]       = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -211,10 +211,10 @@ export function AdminTeamMemberPanel({
   async function handleSave() {
     if (!memberId) return;
     const fd = new FormData();
-    fd.append("name",      name);
-    fd.append("title",     title);
+    fd.append("name", name);
+    fd.append("title", title);
     fd.append("joined_at", joinedAt);
-    fd.append("bio",       bio);                          // ← NEW
+    fd.append("bio", bio);                          // ← NEW
     try {
       await updateMutation.mutateAsync(fd);
       showToast("Member updated successfully.");
@@ -257,10 +257,10 @@ export function AdminTeamMemberPanel({
     }
   }
 
-  const isSaving    = updateMutation.isPending;
+  const isSaving = updateMutation.isPending;
   const isUploading = uploadPhoto.isPending;
-  const isToggling  = toggleActive.isPending;
-  const isDeleting  = deleteMember.isPending;
+  const isToggling = toggleActive.isPending;
+  const isDeleting = deleteMember.isPending;
 
   return (
     <>
@@ -390,7 +390,7 @@ export function AdminTeamMemberPanel({
                       <TextInput value={joinedAt} onChange={setJoinedAt} type="date" />
                     </Field>
                     {/* ── Bio ── NEW */}
-                  <Field label="Bio">
+                    <Field label="Bio">
                       <RichBioEditor key={memberId} value={bio} onChange={setBio} />
                     </Field>
                   </div>
@@ -400,18 +400,18 @@ export function AdminTeamMemberPanel({
 
                   {/* Meta */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-sm border border-border/60 bg-secondary/20 px-3 py-2">
+                    <div className="rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2">
                       <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">Added</p>
                       <p className="text-[11px] font-medium text-foreground">{formatDate(member.created_at)}</p>
                     </div>
-                    <div className="rounded-sm border border-border/60 bg-secondary/20 px-3 py-2">
+                    <div className="rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2">
                       <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">Updated</p>
                       <p className="text-[11px] font-medium text-foreground">{formatDate(member.updated_at)}</p>
                     </div>
                   </div>
 
                   {/* Danger zone */}
-                  <div className="border border-red-200 dark:border-red-900/50 rounded-sm p-3.5 bg-red-50/50 dark:bg-red-950/10">
+                  <div className="border border-red-200 dark:border-red-900/50 rounded-[6px] p-3.5 bg-red-50/50 dark:bg-red-950/10">
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-red-500 mb-2">
                       Danger zone
                     </p>
@@ -432,7 +432,7 @@ export function AdminTeamMemberPanel({
                           <Button
                             size="sm"
                             variant="destructive"
-                            className="h-7 px-3 text-[10px] rounded-sm"
+                            className="h-7 px-3 text-[10px] rounded-[6px]"
                             onClick={handleDelete}
                             disabled={isDeleting}
                           >
@@ -441,7 +441,7 @@ export function AdminTeamMemberPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 px-3 text-[10px] rounded-sm border-border/60"
+                            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60"
                             onClick={() => setConfirmDelete(false)}
                             disabled={isDeleting}
                           >
@@ -461,14 +461,14 @@ export function AdminTeamMemberPanel({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-4 text-[11px] rounded-sm border-border/60 hover:bg-secondary/30"
+                  className="h-8 px-4 text-[11px] rounded-[6px] border-border/60 hover:bg-secondary/30"
                   onClick={onClose}
                 >
                   Discard
                 </Button>
                 <Button
                   size="sm"
-                  className="h-8 px-4 text-[11px] rounded-sm gap-1.5"
+                  className="h-8 px-4 text-[11px] rounded-[6px] gap-1.5"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -486,7 +486,7 @@ export function AdminTeamMemberPanel({
             {toast && (
               <div
                 className={cn(
-                  "absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-sm text-[11px] font-medium shadow-lg border transition-all",
+                  "absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-[6px] text-[11px] font-medium shadow-lg border transition-all",
                   toast.type === "success"
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800"
                     : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800",

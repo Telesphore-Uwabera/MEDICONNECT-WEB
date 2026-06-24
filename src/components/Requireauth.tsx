@@ -45,12 +45,12 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
 
       {/* Dialog — anchored to bottom on mobile, centered on desktop */}
       <div className="fixed z-50 inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center px-4 pb-4 sm:pb-0">
-        <div className="w-full sm:w-[420px] bg-card border border-border/60 rounded-t-[16px] sm:rounded-[12px] shadow-2xl shadow-black/30 overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+        <div className="w-full sm:w-[420px] bg-card border border-border/60 rounded-t-[16px] sm:rounded-[6px] shadow-2xl shadow-black/30 overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
 
           {/* Top bar */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border/50">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-[8px] bg-primary/10">
+              <div className="p-1.5 rounded-[6px] bg-primary/10">
                 <ShieldAlert className="h-4 w-4 text-primary" />
               </div>
               <p className="text-[13px] font-bold text-foreground">
@@ -78,14 +78,14 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }) => {
           <div className="px-5 pb-5 flex flex-col sm:flex-row gap-2">
             <button
               onClick={handleSignIn}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[8px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors"
             >
               <LogIn className="h-3.5 w-3.5" />
               Sign in
             </button>
             <button
               onClick={handleStay}
-              className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-[8px] border border-border/60 text-muted-foreground text-[12px] font-semibold hover:bg-secondary/70 hover:text-foreground transition-colors"
+              className="flex-1 flex items-center justify-center px-4 py-2.5 rounded-[6px] border border-border/60 text-muted-foreground text-[12px] font-semibold hover:bg-secondary/70 hover:text-foreground transition-colors"
             >
               Go back
             </button>

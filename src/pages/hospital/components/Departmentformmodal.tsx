@@ -49,19 +49,19 @@ export function DepartmentFormModal({
       setForm(
         initial
           ? {
-              name_en: initial.name_en,
-              name_fr: initial.name_fr ?? "",
-              name_kiny: initial.name_kiny ?? "",
-              floor: initial.floor ?? "",
-              room_number: initial.room_number ?? "",
-              phone: initial.phone ?? "",
-              email: initial.email ?? "",
-              icon: initial.icon ?? "stethoscope",
-              color_code: initial.color_code ?? "#6366f1",
-              is_emergency: initial.is_emergency,
-              capacity: initial.capacity ?? undefined,
-              sort_order: initial.sort_order ?? 0,
-            }
+            name_en: initial.name_en,
+            name_fr: initial.name_fr ?? "",
+            name_kiny: initial.name_kiny ?? "",
+            floor: initial.floor ?? "",
+            room_number: initial.room_number ?? "",
+            phone: initial.phone ?? "",
+            email: initial.email ?? "",
+            icon: initial.icon ?? "stethoscope",
+            color_code: initial.color_code ?? "#6366f1",
+            is_emergency: initial.is_emergency,
+            capacity: initial.capacity ?? undefined,
+            sort_order: initial.sort_order ?? 0,
+          }
           : EMPTY,
       );
     }
@@ -98,7 +98,7 @@ export function DepartmentFormModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-card border border-border/70 rounded-sm shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-card border border-border/70 rounded-[6px] shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border/60 px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-[13px] font-semibold text-foreground">
@@ -106,7 +106,7 @@ export function DepartmentFormModal({
           </h2>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -116,7 +116,7 @@ export function DepartmentFormModal({
         <div className="p-5 flex flex-col gap-4">
           {/* Error */}
           {error && (
-            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-sm px-3 py-2.5 text-[11px]">
+            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-[6px] px-3 py-2.5 text-[11px]">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               {error}
             </div>
@@ -226,7 +226,7 @@ export function DepartmentFormModal({
                   type="color"
                   value={form.color_code ?? "#6366f1"}
                   onChange={(e) => set("color_code", e.target.value)}
-                  className="h-[30px] w-10 rounded-sm border border-border/60 bg-background cursor-pointer p-0.5"
+                  className="h-[30px] w-10 rounded-[6px] border border-border/60 bg-background cursor-pointer p-0.5"
                 />
                 <Input
                   value={form.color_code ?? ""}
@@ -266,14 +266,14 @@ export function DepartmentFormModal({
         <div className="sticky bottom-0 bg-card border-t border-border/60 px-5 py-3 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 text-[11px] rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            className="px-3.5 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isLoading || !form.name_en.trim()}
-            className="px-3.5 py-1.5 text-[11px] rounded-sm bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 text-[11px] rounded-[6px] bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             {initial ? "Save Changes" : "Create Department"}
@@ -304,10 +304,10 @@ function Field({
 }
 
 const inputCls =
-  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
-  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 function Input({
   value,

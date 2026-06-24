@@ -44,7 +44,7 @@ export function AppointmentDetailDrawer({
   appt, onClose, onStart, onRejoin, onRunningLate, onReadyNext, isReadyNextPending, isJoining,
 }: Props) {
   const status = appt.status as UIStatus;
-  const canStart     = status === "confirmed" || status === "pending";
+  const canStart = status === "confirmed" || status === "pending";
   const isInProgress = status === "in_progress";
 
   type ExtendedAppointment = Appointment & {
@@ -84,7 +84,7 @@ export function AppointmentDetailDrawer({
       )}>
         {/* Header */}
         <div className="flex items-center gap-4 px-5 py-4 border-b border-border/60 bg-card shrink-0">
-          <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
+          <div className="h-10 w-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
             {appt.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
           </div>
           <div className="flex-1 min-w-0">
@@ -97,7 +97,7 @@ export function AppointmentDetailDrawer({
               <span className="text-xs text-muted-foreground">#{appt.id}</span>
             </div>
           </div>
-          <button onClick={onClose} className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
+          <button onClick={onClose} className="h-8 w-8 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -109,7 +109,7 @@ export function AppointmentDetailDrawer({
               size="sm"
               onClick={() => { onStart(appt); onClose(); }}
               disabled={isJoining}
-              className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shadow-sm flex items-center gap-2"
+              className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm flex items-center gap-2"
             >
               {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
               Start session
@@ -122,7 +122,7 @@ export function AppointmentDetailDrawer({
               size="sm"
               onClick={() => { onRejoin(appt); onClose(); }}
               disabled={isJoining}
-              className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-md shadow-sm flex items-center gap-2 border-0"
+              className="h-9 px-4 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-[6px] shadow-sm flex items-center gap-2 border-0"
             >
               {isJoining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
               Rejoin session
@@ -135,7 +135,7 @@ export function AppointmentDetailDrawer({
                 size="sm"
                 variant="outline"
                 onClick={() => onRunningLate(appt)}
-                className="h-9 px-4 text-sm font-medium rounded-md border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2"
+                className="h-9 px-4 text-sm font-medium rounded-[6px] border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2"
               >
                 <Timer className="h-4 w-4" />Running late
               </Button>
@@ -144,7 +144,7 @@ export function AppointmentDetailDrawer({
                 variant="outline"
                 onClick={() => onReadyNext(appt)}
                 disabled={isReadyNextPending}
-                className="h-9 px-4 text-sm font-medium rounded-md border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2"
+                className="h-9 px-4 text-sm font-medium rounded-[6px] border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-2"
               >
                 {isReadyNextPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
                 Ready for next
@@ -160,9 +160,9 @@ export function AppointmentDetailDrawer({
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
               <Calendar className="h-4 w-4" />Appointment
             </p>
-            <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
-              <DetailRow label="Date"  value={fmtDate(appt.appointment_date)}  icon={<Calendar className="h-4 w-4" />} />
-              <DetailRow label="Time"  value={fmtTime(appt.appointment_time)}  icon={<Clock className="h-4 w-4" />} />
+            <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
+              <DetailRow label="Date" value={fmtDate(appt.appointment_date)} icon={<Calendar className="h-4 w-4" />} />
+              <DetailRow label="Time" value={fmtTime(appt.appointment_time)} icon={<Clock className="h-4 w-4" />} />
               {raw.duration_minutes && (
                 <DetailRow label="Duration" value={`${raw.duration_minutes} min`} icon={<Timer className="h-4 w-4" />} />
               )}
@@ -189,8 +189,8 @@ export function AppointmentDetailDrawer({
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
               <UserCheck className="h-4 w-4" />Patient
             </p>
-            <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
-              <DetailRow label="Name"  value={appt.patient?.name  ?? "—"} />
+            <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
+              <DetailRow label="Name" value={appt.patient?.name ?? "—"} />
               <DetailRow label="Email" value={appt.patient?.email ?? "—"} />
               <DetailRow label="Phone" value={appt.patient?.phone ?? "—"} />
             </div>
@@ -202,7 +202,7 @@ export function AppointmentDetailDrawer({
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
                 <Building2 className="h-4 w-4" />Hospital
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
+              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
                 <DetailRow label="Name" value={appt.hospital.name} />
                 {appt.hospital.address && <DetailRow label="Address" value={appt.hospital.address} />}
               </div>
@@ -215,7 +215,7 @@ export function AppointmentDetailDrawer({
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
                 <Shield className="h-4 w-4" />Insurance
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
+              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
                 <DetailRow label="Provider" value={
                   <span className="flex items-center gap-2">
                     {(appt.insurance as Appointment["insurance"] & { logo?: string })?.logo && (
@@ -238,7 +238,7 @@ export function AppointmentDetailDrawer({
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />Payment
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
+              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
                 {raw.consultation_fee !== undefined && (
                   <DetailRow label="Consultation fee" value={`${raw.consultation_fee} ${raw.currency ?? ""}`} />
                 )}
@@ -275,7 +275,7 @@ export function AppointmentDetailDrawer({
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
                 <Video className="h-4 w-4" />Session
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
+              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
                 {raw.daily_room_name && (
                   <DetailRow label="Room" value={<span className="font-mono text-xs truncate max-w-[200px]">{raw.daily_room_name}</span>} />
                 )}
@@ -298,14 +298,14 @@ export function AppointmentDetailDrawer({
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3 flex items-center gap-2">
                 <FileText className="h-4 w-4" />Clinical notes
               </p>
-              <div className="bg-background rounded-lg border border-border/50 px-4 py-2">
-                {appt.notes.chief_complaint  && <DetailRow label="Chief complaint" value={appt.notes.chief_complaint} />}
-                {appt.notes.diagnosis        && <DetailRow label="Diagnosis"        value={appt.notes.diagnosis} />}
-                {appt.notes.treatment_plan   && <DetailRow label="Treatment plan"   value={appt.notes.treatment_plan} />}
-                {appt.notes.blood_pressure   && <DetailRow label="Blood pressure"   value={appt.notes.blood_pressure} />}
-                {appt.notes.temperature      && <DetailRow label="Temperature"      value={appt.notes.temperature} />}
-                {appt.notes.pulse_rate       && <DetailRow label="Pulse rate"       value={appt.notes.pulse_rate} />}
-                {appt.notes.follow_up_date   && <DetailRow label="Follow-up"        value={fmtDate(appt.notes.follow_up_date)} />}
+              <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">
+                {appt.notes.chief_complaint && <DetailRow label="Chief complaint" value={appt.notes.chief_complaint} />}
+                {appt.notes.diagnosis && <DetailRow label="Diagnosis" value={appt.notes.diagnosis} />}
+                {appt.notes.treatment_plan && <DetailRow label="Treatment plan" value={appt.notes.treatment_plan} />}
+                {appt.notes.blood_pressure && <DetailRow label="Blood pressure" value={appt.notes.blood_pressure} />}
+                {appt.notes.temperature && <DetailRow label="Temperature" value={appt.notes.temperature} />}
+                {appt.notes.pulse_rate && <DetailRow label="Pulse rate" value={appt.notes.pulse_rate} />}
+                {appt.notes.follow_up_date && <DetailRow label="Follow-up" value={fmtDate(appt.notes.follow_up_date)} />}
               </div>
             </div>
           )}

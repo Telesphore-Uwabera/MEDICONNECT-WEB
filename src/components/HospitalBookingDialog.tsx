@@ -77,12 +77,12 @@ export const HospitalBookingDialog = ({
 
   const createBooking = useCreateBooking();
 
-  const [selectedDate, setSelectedDate]             = useState<string | null>(null);
-  const [selectedTime, setSelectedTime]             = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
-  const [selectedService, setSelectedService]       = useState<string>("");
-  const [notes, setNotes]                           = useState("");
-  const [confirmed, setConfirmed]                   = useState<BookingConfirmed | null>(null);
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [notes, setNotes] = useState("");
+  const [confirmed, setConfirmed] = useState<BookingConfirmed | null>(null);
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -166,20 +166,20 @@ export const HospitalBookingDialog = ({
     if (!canConfirm || !chosenService || !chosenDepartment) return;
 
     const payload: BookingPayload = {
-      hospital_id:         hospital.id,
+      hospital_id: hospital.id,
       hospital_service_id: chosenService.id,
-      department_id:       chosenDepartment.id,
-      preferred_date:      selectedDate!,
-      preferred_time:      selectedTime,
-      notes:               notes || undefined,
+      department_id: chosenDepartment.id,
+      preferred_date: selectedDate!,
+      preferred_time: selectedTime,
+      notes: notes || undefined,
     };
 
     createBooking.mutate(payload, {
       onSuccess: () => {
         setConfirmed({
-          date:           selectedDate!,
-          time:           selectedTime,
-          serviceName:    chosenService.name_en,
+          date: selectedDate!,
+          time: selectedTime,
+          serviceName: chosenService.name_en,
           departmentName: chosenDepartment.name_en,
         });
         toast.success("Booking confirmed!", {
@@ -218,7 +218,7 @@ export const HospitalBookingDialog = ({
         {/* ── Header ── */}
         <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15 overflow-hidden">
+            <div className="h-8 w-8 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15 overflow-hidden">
               {hospital.logo ? (
                 <img
                   src={hospital.logo}
@@ -283,7 +283,7 @@ export const HospitalBookingDialog = ({
               <Button
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="h-8 px-5 text-[11px] font-semibold rounded-sm mt-2"
+                className="h-8 px-5 text-[11px] font-semibold rounded-[6px] mt-2"
               >
                 Done
               </Button>
@@ -307,7 +307,7 @@ export const HospitalBookingDialog = ({
                       <div
                         key={day.dayName}
                         className={cn(
-                          "flex flex-col items-center rounded-sm py-2 px-0.5 border text-center",
+                          "flex flex-col items-center rounded-[6px] py-2 px-0.5 border text-center",
                           isOpen
                             ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10"
                             : "border-border bg-muted/30 opacity-50"
@@ -358,7 +358,7 @@ export const HospitalBookingDialog = ({
                   </p>
 
                   {dateSlots.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-border rounded-sm">
+                    <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-border rounded-[6px]">
                       <CalendarDays className="h-5 w-5 text-muted-foreground/30" />
                       <p className="text-[10px] text-muted-foreground">
                         No open dates in the next 14 days.
@@ -374,7 +374,7 @@ export const HospitalBookingDialog = ({
                             setSelectedTime("");
                           }}
                           className={cn(
-                            "rounded-sm border p-2 text-left transition-all duration-150",
+                            "rounded-[6px] border p-2 text-left transition-all duration-150",
                             selectedDate === slot.date
                               ? "border-primary ring-1 ring-primary/30 bg-primary/5 dark:bg-primary/10"
                               : "border-border hover:border-primary/60 hover:bg-muted/40"
@@ -413,7 +413,7 @@ export const HospitalBookingDialog = ({
                         key={t}
                         onClick={() => setSelectedTime(t)}
                         className={cn(
-                          "rounded-sm border py-1.5 text-[10px] font-semibold transition-all",
+                          "rounded-[6px] border py-1.5 text-[10px] font-semibold transition-all",
                           selectedTime === t
                             ? "border-primary bg-primary/5 text-primary dark:bg-primary/10"
                             : "border-border hover:border-primary/60 text-muted-foreground hover:text-foreground"
@@ -446,7 +446,7 @@ export const HospitalBookingDialog = ({
                   >
                     <SelectTrigger
                       id="department"
-                      className="h-8 text-[11px] rounded-sm border-border bg-background focus:ring-1 focus:ring-primary/30"
+                      className="h-8 text-[11px] rounded-[6px] border-border bg-background focus:ring-1 focus:ring-primary/30"
                     >
                       <SelectValue placeholder="Select a department" />
                     </SelectTrigger>
@@ -495,7 +495,7 @@ export const HospitalBookingDialog = ({
                   >
                     <SelectTrigger
                       id="service"
-                      className="h-8 text-[11px] rounded-sm border-border bg-background focus:ring-1 focus:ring-primary/30"
+                      className="h-8 text-[11px] rounded-[6px] border-border bg-background focus:ring-1 focus:ring-primary/30"
                     >
                       <SelectValue placeholder="Select a service" />
                     </SelectTrigger>
@@ -536,13 +536,13 @@ export const HospitalBookingDialog = ({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="e.g. I prefer morning sessions"
-                  className="h-8 text-[11px] rounded-sm border-border bg-background placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="h-8 text-[11px] rounded-[6px] border-border bg-background placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
 
               {/* ── Summary chip ── */}
               {selectedDate && selectedTime && chosenDepartment && chosenService && (
-                <div className="rounded-sm border border-primary/20 bg-primary/5 dark:bg-primary/10 px-3 py-2.5 flex items-start gap-2">
+                <div className="rounded-[6px] border border-primary/20 bg-primary/5 dark:bg-primary/10 px-3 py-2.5 flex items-start gap-2">
                   <div className="h-4 w-4 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
                     <Check className="h-2.5 w-2.5 text-primary" />
                   </div>
@@ -573,7 +573,7 @@ export const HospitalBookingDialog = ({
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-8 px-4 text-[10px] font-medium rounded-sm"
+              className="h-8 px-4 text-[10px] font-medium rounded-[6px]"
             >
               Cancel
             </Button>
@@ -581,7 +581,7 @@ export const HospitalBookingDialog = ({
               size="sm"
               disabled={!canConfirm || createBooking.isPending}
               onClick={handleConfirm}
-              className="h-8 px-4 text-[10px] font-semibold rounded-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 flex items-center gap-1.5"
+              className="h-8 px-4 text-[10px] font-semibold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 flex items-center gap-1.5"
             >
               {createBooking.isPending && (
                 <Loader2 className="h-3 w-3 animate-spin" />

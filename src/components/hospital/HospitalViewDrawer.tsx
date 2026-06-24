@@ -169,7 +169,7 @@ function InfoRow({
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="block hover:bg-muted/30 rounded-sm transition-colors px-1 -mx-1"
+      className="block hover:bg-muted/30 rounded-[6px] transition-colors px-1 -mx-1"
     >
       {inner}
     </a>
@@ -194,7 +194,7 @@ function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
   if (!sorted.length) return null;
 
   return (
-    <div className="grid grid-cols-7 gap-px rounded-sm overflow-hidden border border-border bg-border">
+    <div className="grid grid-cols-7 gap-px rounded-[6px] overflow-hidden border border-border bg-border">
       {sorted.map((wh) => {
         const isOpen = !wh.is_closed && wh.is_active;
         return (
@@ -262,7 +262,7 @@ function ScheduleSection({
   if (!sorted.length) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center gap-2">
-        <div className="h-10 w-10 rounded-sm bg-muted/50 border border-border flex items-center justify-center">
+        <div className="h-10 w-10 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
           <CalendarDays className="h-4 w-4 text-muted-foreground/40" />
         </div>
         <p className="text-[11px] font-semibold text-foreground">No schedule yet</p>
@@ -328,7 +328,7 @@ function ScheduleSection({
             <li
               key={wh.id}
               className={cn(
-                "flex items-center gap-3 py-2.5 transition-colors -mx-1 px-1 rounded-sm",
+                "flex items-center gap-3 py-2.5 transition-colors -mx-1 px-1 rounded-[6px]",
                 isOpen ? "hover:bg-muted/20" : "opacity-50"
               )}
             >
@@ -395,7 +395,7 @@ function TabBtn({
     <button
       onClick={onClick}
       className={cn(
-        "flex-1 py-1.5 text-[10px] font-semibold rounded-sm transition-all",
+        "flex-1 py-1.5 text-[10px] font-semibold rounded-[6px] transition-all",
         active
           ? "bg-background text-foreground shadow-sm border border-border"
           : "text-muted-foreground hover:text-foreground"
@@ -424,8 +424,8 @@ function HospitalViewDrawer({
   const hoursLabel = hospital.is_open_24h
     ? "Open 24 hours"
     : hospital.opens_at && hospital.closes_at
-    ? `${hospital.opens_at.slice(0, 5)} – ${hospital.closes_at.slice(0, 5)}`
-    : null;
+      ? `${hospital.opens_at.slice(0, 5)} – ${hospital.closes_at.slice(0, 5)}`
+      : null;
 
   const isAccepting =
     hospital.is_accepting_bookings === true ||
@@ -434,10 +434,10 @@ function HospitalViewDrawer({
 
   const verifiedDate = hospital.verified_at
     ? new Date(hospital.verified_at).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
     : null;
 
   // ── Flatten services from departments[].services (API shape) ──
@@ -459,7 +459,7 @@ function HospitalViewDrawer({
         {/* ── Header ── */}
         <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-sm flex items-center justify-center bg-primary/10 text-primary font-bold text-[13px] shrink-0 border border-primary/15 overflow-hidden">
+            <div className="h-10 w-10 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-[13px] shrink-0 border border-primary/15 overflow-hidden">
               {hospital.logo ? (
                 <img
                   src={hospital.logo}
@@ -488,12 +488,12 @@ function HospitalViewDrawer({
                 </p>
               )}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+                <span className="text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
                   {hospital.type ?? "Hospital"}
                 </span>
                 <span
                   className={cn(
-                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-sm border",
+                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] border",
                     hospital.status === "active"
                       ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                       : "bg-muted text-muted-foreground border-border/60"
@@ -503,7 +503,7 @@ function HospitalViewDrawer({
                 </span>
                 <span
                   className={cn(
-                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-sm border",
+                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] border",
                     isAccepting
                       ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
                       : "bg-muted text-muted-foreground border-border/60"
@@ -534,7 +534,7 @@ function HospitalViewDrawer({
             <div className="px-5 py-4 space-y-5">
 
               {/* Stats row */}
-              <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+              <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                 {[
                   {
                     icon: <Users className="h-2.5 w-2.5 text-muted-foreground" />,
@@ -651,7 +651,7 @@ function HospitalViewDrawer({
                     {hospital.departments.map((dept) => (
                       <span
                         key={dept.id ?? dept.name_en}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-sm bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
+                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
                       >
                         <Stethoscope className="h-2.5 w-2.5" />
                         {dept.name_en}
@@ -671,7 +671,7 @@ function HospitalViewDrawer({
                     {allServices.map((svc) => (
                       <span
                         key={svc.id ?? svc.name_en}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-sm bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
+                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
                       >
                         <Activity className="h-2.5 w-2.5" />
                         {svc.name_en}
@@ -722,7 +722,7 @@ function HospitalViewDrawer({
                     {hospital.insurances.map((ins, i) => (
                       <span
                         key={ins.id ?? i}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-sm bg-secondary text-muted-foreground border border-border/60"
+                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60"
                       >
                         {ins.name ?? String(ins)}
                       </span>
@@ -757,7 +757,7 @@ function HospitalViewDrawer({
             size="sm"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="h-7 px-3 text-[10px] font-medium rounded-sm"
+            className="h-7 px-3 text-[10px] font-medium rounded-[6px]"
           >
             Close
           </Button>

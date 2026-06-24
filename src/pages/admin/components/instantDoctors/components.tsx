@@ -29,7 +29,7 @@ export function PillGroup<T extends string>({ value, onChange, options }: {
       {options.map((o) => (
         <button key={o.value} onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -53,7 +53,7 @@ export function InfoTile({ icon, label, value, highlight }: {
   icon: React.ReactNode; label: string; value: string | number; highlight?: boolean;
 }) {
   return (
-    <div className={cn("p-3 rounded-lg border bg-secondary/30",
+    <div className={cn("p-3 rounded-[6px] border bg-secondary/30",
       highlight
         ? "border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/60"
         : "border-border/60")}>
@@ -108,7 +108,7 @@ export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
       <button onClick={handleToggle} disabled={isPending}
         title={isInstant ? "Disable instant consultation" : "Enable instant consultation"}
         className={cn(
-          "inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-sm border font-medium transition-all duration-200",
+          "inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-[6px] border font-medium transition-all duration-200",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           isInstant
             ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900"
@@ -124,7 +124,7 @@ export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
   }
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-secondary/30">
+    <div className="flex items-center justify-between p-3 rounded-[6px] border border-border/60 bg-secondary/30">
       <div>
         <p className="text-[12px] font-medium text-foreground flex items-center gap-1.5">
           <Zap className={cn("w-3.5 h-3.5", isInstant ? "text-blue-500 fill-blue-500" : "text-muted-foreground/40")} />
@@ -193,7 +193,7 @@ export function ConsultationRow({ c, onManage }: { c: ApiDoctorConsultation; onM
       </td>
       <td className="px-4 py-3 text-right">
         <Button size="sm" variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(c)}>
           Manage
         </Button>
@@ -210,7 +210,7 @@ export function ConsultationCard({ c, onManage }: { c: ApiDoctorConsultation; on
   const key = String(c.is_active) as "true" | "false";
 
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
         {getInitials(c.doctor.user.name)}
       </div>
@@ -236,13 +236,13 @@ export function ConsultationCard({ c, onManage }: { c: ApiDoctorConsultation; on
             In-person: {fmt(fees.inPerson)}
           </span>
           {hasOverride && (
-            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 px-1.5 py-0.5 rounded-sm">
+            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 px-1.5 py-0.5 rounded-[6px]">
               Override
             </span>
           )}
         </div>
         <Button size="sm" variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(c)}>
           Manage
         </Button>

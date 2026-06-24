@@ -44,9 +44,9 @@ const ConsultationRoomPage = () => {
       <p className="text-muted-foreground mb-8 text-center max-w-md">
         Your consultation is active in the floating window. You can minimize it and navigate to other pages without dropping the call.
       </p>
-      <Link 
-        to="/" 
-        className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all shadow-sm active:scale-95"
+      <Link
+        to="/"
+        className="px-6 py-2.5 bg-primary text-primary-foreground rounded-[6px] font-medium hover:bg-primary/90 transition-all shadow-sm active:scale-95"
       >
         Go to Dashboard
       </Link>

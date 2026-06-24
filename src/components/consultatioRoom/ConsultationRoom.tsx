@@ -602,7 +602,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
+            className="w-full max-w-sm rounded-[6px] bg-[#1a1a1a] border border-white/10 shadow-2xl p-6 text-center"
           >
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/15 flex items-center justify-center">
               <PhoneOff className="h-6 w-6 text-red-400" />
@@ -614,13 +614,13 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmEndOpen(false)}
-                className="flex-1 h-10 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
+                className="flex-1 h-10 rounded-[6px] bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors"
               >
                 {t("consult.call.cancel")}
               </button>
               <button
                 onClick={() => { setConfirmEndOpen(false); endCall(); }}
-                className="flex-1 h-10 rounded-lg bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
+                className="flex-1 h-10 rounded-[6px] bg-red-500 hover:bg-red-400 text-white text-sm font-semibold transition-colors shadow-lg shadow-red-500/30"
               >
                 {t("consult.call.end_call")}
               </button>
@@ -639,7 +639,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
           // order, would decide the winner and could drop the call behind the nav.
           "bg-[#0c0c0c] z-[9990] flex flex-col overflow-hidden transition-all duration-300 shadow-2xl",
           isMinimized
-            ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
+            ? "fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[17rem] sm:w-80 h-48 sm:h-56 max-w-[calc(100vw-2rem)] rounded-[6px] border border-white/10 ring-1 ring-black/50 cursor-move touch-none"
             : "fixed inset-0 h-[100dvh] w-screen"
         )}
       >
@@ -671,7 +671,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
               </div>
             )}
 
-            <div className={cn("absolute rounded-xl overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
+            <div className={cn("absolute rounded-[6px] overflow-hidden border shadow-xl z-10 transition-all duration-300 bg-[#1a1a1a]", isMinimized ? "w-20 h-14 bottom-3 right-3" : "w-28 h-20 sm:w-36 sm:h-28 bottom-4 right-3 sm:bottom-6 sm:right-4", localTalking ? "border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400" : "border-white/10")}>
               <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
               {!videoEnabled && (
                 <div className="absolute inset-0 bg-[#1a1a1a] flex items-center justify-center">
@@ -704,14 +704,14 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                     onClick={pip.toggle}
                     title="Pop out · Picture-in-Picture"
                     aria-label="Picture-in-Picture"
-                    className={cn("h-8 w-8 rounded-lg backdrop-blur-md border border-white/10 flex items-center justify-center transition-all active:scale-90", pip.isPipActive ? "bg-emerald-500/30 text-emerald-300 border-emerald-400/30" : "bg-black/40 hover:bg-black/60 text-white/80")}
+                    className={cn("h-8 w-8 rounded-[6px] backdrop-blur-md border border-white/10 flex items-center justify-center transition-all active:scale-90", pip.isPipActive ? "bg-emerald-500/30 text-emerald-300 border-emerald-400/30" : "bg-black/40 hover:bg-black/60 text-white/80")}
                   >
                     <PictureInPicture2 className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={toggleMinimize}
-                  className="h-8 w-8 rounded-lg bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white/80 flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+                  className="h-8 w-8 rounded-[6px] bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 text-white/80 flex items-center justify-center transition-all active:scale-90 cursor-pointer"
                   title={isMinimized ? t("consult.call.expand") : t("consult.call.minimize")}
                 >
                   {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minimize2 className="w-3.5 h-3.5" />}
@@ -794,7 +794,7 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
           {/* Participants Overlay */}
           {participantsOpen && !isMinimized && (
-            <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
+            <div className="absolute bottom-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 backdrop-blur-md border border-white/10 rounded-[6px] p-4 shadow-2xl z-50 w-64 max-w-[calc(100vw-2rem)]">
               <h3 className="text-white/80 font-semibold text-[13px] mb-3">
                 {t("consult.call.participants")} ({2})
               </h3>

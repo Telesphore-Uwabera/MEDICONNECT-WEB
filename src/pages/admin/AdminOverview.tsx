@@ -33,24 +33,24 @@ import {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const roleIcon = {
-  doctors:    Stethoscope,
-  hospitals:  Hospital,
+  doctors: Stethoscope,
+  hospitals: Hospital,
   pharmacies: Pill,
-  patients:   User,
+  patients: User,
 } as const;
 
 const roleColor = {
-  doctors:    "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  hospitals:  "bg-primary/10 text-primary",
+  doctors: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  hospitals: "bg-primary/10 text-primary",
   pharmacies: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-  patients:   "bg-warning/10 text-warning",
+  patients: "bg-warning/10 text-warning",
 } as const;
 
 const roleBarColor = {
-  doctors:    "bg-blue-500",
-  hospitals:  "bg-primary",
+  doctors: "bg-blue-500",
+  hospitals: "bg-primary",
   pharmacies: "bg-violet-500",
-  patients:   "bg-warning",
+  patients: "bg-warning",
 } as const;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -71,8 +71,8 @@ function KpiCard({
   loading?: boolean;
 }) {
   return (
-    <div className="rounded-sm border border-border bg-card p-3.5 flex items-center gap-3 shadow-sm">
-      <div className={cn("w-9 h-9 rounded-sm flex items-center justify-center shrink-0", accent ? "bg-primary/10" : "bg-muted")}>
+    <div className="rounded-[6px] border border-border bg-card p-3.5 flex items-center gap-3 shadow-sm">
+      <div className={cn("w-9 h-9 rounded-[6px] flex items-center justify-center shrink-0", accent ? "bg-primary/10" : "bg-muted")}>
         <Icon className={cn("h-4 w-4", accent ? "text-primary" : "text-muted-foreground")} />
       </div>
       <div className="min-w-0">
@@ -120,7 +120,7 @@ function SkeletonBlock({ className }: { className?: string }) {
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="rounded-sm border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 flex items-center gap-2 text-[11px] text-destructive">
+    <div className="rounded-[6px] border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 flex items-center gap-2 text-[11px] text-destructive">
       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
       {message}
     </div>
@@ -139,7 +139,7 @@ function FilterBar({
   const hasFilters = Object.values(filters).some(Boolean);
 
   return (
-    <div className="flex items-end justify-between flex-wrap gap-3 rounded-sm border border-border bg-card px-3.5 py-3 shadow-sm w-full">
+    <div className="flex items-end justify-between flex-wrap gap-3 rounded-[6px] border border-border bg-card px-3.5 py-3 shadow-sm w-full">
       {/* Left: filter inputs */}
       <div className="flex items-end flex-wrap gap-3 flex-1 min-w-0">
 
@@ -155,7 +155,7 @@ function FilterBar({
               placeholder="Name, phone, invoice…"
               value={filters.q ?? ""}
               onChange={(e) => onChange({ ...filters, q: e.target.value || undefined })}
-              className="pl-6 pr-3 h-8 text-[11px] rounded-sm border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              className="pl-6 pr-3 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
             />
           </div>
         </div>
@@ -173,13 +173,13 @@ function FilterBar({
               onChange={(e) =>
                 onChange({ ...filters, date: e.target.value || undefined, date_from: undefined, date_to: undefined })
               }
-              className="pl-6 pr-3 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              className="pl-6 pr-3 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
             />
           </div>
         </div>
 
         {/* Date range */}
-       <div className="flex flex-col gap-1 flex-[2] min-w-0">
+        <div className="flex flex-col gap-1 flex-[2] min-w-0">
           <label className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
             Date range
           </label>
@@ -190,7 +190,7 @@ function FilterBar({
               onChange={(e) =>
                 onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })
               }
-              className="px-2 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
             />
             <span className="text-[10px] text-muted-foreground shrink-0">→</span>
             <input
@@ -199,7 +199,7 @@ function FilterBar({
               onChange={(e) =>
                 onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })
               }
-              className="px-2 h-8 text-[11px] rounded-sm border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
+              className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
             />
           </div>
         </div>
@@ -211,7 +211,7 @@ function FilterBar({
         onClick={() => onChange({})}
         disabled={!hasFilters}
         className={cn(
-          "flex items-center gap-1 h-8 px-2.5 rounded-sm border text-[10px] font-medium transition-all",
+          "flex items-center gap-1 h-8 px-2.5 rounded-[6px] border text-[10px] font-medium transition-all",
           hasFilters
             ? "border-border text-muted-foreground hover:text-foreground hover:bg-muted/60"
             : "border-transparent text-muted-foreground/30 cursor-not-allowed",
@@ -234,9 +234,9 @@ const AdminOverview = () => {
   const data = response?.data;
 
   // Derived values — safe-fallback to 0 while loading
-  const users        = data?.users;
+  const users = data?.users;
   const appointments = data?.appointments;
-  const payments     = data?.payments;
+  const payments = data?.payments;
   const certificates = data?.certificates;
   const consultations = data?.quick_consultations;
 
@@ -248,19 +248,19 @@ const AdminOverview = () => {
 
   const roleEntries = users
     ? ([
-        { key: "patients",   count: users.patients },
-        { key: "doctors",    count: users.doctors },
-        { key: "pharmacies", count: users.pharmacies },
-      ] as const).map(({ key, count }) => ({
-        key,
-        count,
-        pct: Math.round((count / totalUsers) * 100),
-      }))
+      { key: "patients", count: users.patients },
+      { key: "doctors", count: users.doctors },
+      { key: "pharmacies", count: users.pharmacies },
+    ] as const).map(({ key, count }) => ({
+      key,
+      count,
+      pct: Math.round((count / totalUsers) * 100),
+    }))
     : [];
 
-  const rxTotal      = payments ? parseInt(payments.total_revenue, 10) || 0 : 0;
-  const rxToday      = payments ? parseInt(payments.revenue_today, 10) || 0 : 0;
-  const currency     = payments?.currency ?? "RWF";
+  const rxTotal = payments ? parseInt(payments.total_revenue, 10) || 0 : 0;
+  const rxToday = payments ? parseInt(payments.revenue_today, 10) || 0 : 0;
+  const currency = payments?.currency ?? "RWF";
   const dispenseRate = rxTotal > 0 ? Math.round((rxToday / rxTotal) * 100) : 0;
 
   // Certificate totals
@@ -328,7 +328,7 @@ const AdminOverview = () => {
         <div className="grid lg:grid-cols-3 gap-3">
 
           {/* Role breakdown */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
+          <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
             <SectionHeader title="Users by role" href="/admin/users" linkLabel="Manage" />
             {isLoading ? (
               <div className="grid grid-cols-2 gap-2">
@@ -339,8 +339,8 @@ const AdminOverview = () => {
                 {roleEntries.map(({ key, count, pct }) => {
                   const Icon = roleIcon[key];
                   return (
-                    <div key={key} className="rounded-sm border border-border bg-muted/30 p-2.5">
-                      <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center mb-2", roleColor[key])}>
+                    <div key={key} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-7 h-7 rounded-[6px] flex items-center justify-center mb-2", roleColor[key])}>
                         <Icon className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-[18px] font-bold tabular-nums text-foreground leading-none">{count}</p>
@@ -359,7 +359,7 @@ const AdminOverview = () => {
 
             {/* Total users summary */}
             {!isLoading && users && (
-              <div className="rounded-sm border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
+              <div className="rounded-[6px] border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Total registered</p>
                   <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">{users.total}</p>
@@ -381,7 +381,7 @@ const AdminOverview = () => {
           </div>
 
           {/* Appointments */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
+          <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
             <SectionHeader title="Appointments" href="/admin/appointments" linkLabel="View all" />
             {isLoading ? (
               <div className="space-y-2">
@@ -390,12 +390,12 @@ const AdminOverview = () => {
             ) : (
               <div className="grid grid-cols-1 gap-2">
                 {[
-                  { label: "Total",   value: appointments?.total   ?? 0, icon: ClipboardList, color: "text-foreground bg-muted" },
-                  { label: "Today",   value: appointments?.today   ?? 0, icon: TrendingUp,    color: "text-primary bg-primary/10" },
-                  { label: "Pending", value: appointments?.pending ?? 0, icon: Clock,         color: "text-warning bg-warning/10" },
+                  { label: "Total", value: appointments?.total ?? 0, icon: ClipboardList, color: "text-foreground bg-muted" },
+                  { label: "Today", value: appointments?.today ?? 0, icon: TrendingUp, color: "text-primary bg-primary/10" },
+                  { label: "Pending", value: appointments?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
                 ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5 flex items-center gap-3">
-                    <div className={cn("w-7 h-7 rounded-sm flex items-center justify-center shrink-0", color)}>
+                  <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5 flex items-center gap-3">
+                    <div className={cn("w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0", color)}>
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
@@ -409,7 +409,7 @@ const AdminOverview = () => {
           </div>
 
           {/* Certificates */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
+          <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
             <SectionHeader title="Certificates" />
             {isLoading ? (
               <div className="space-y-2">
@@ -420,10 +420,10 @@ const AdminOverview = () => {
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {[
                     { label: "Approved", value: certificates?.approved ?? 0, icon: CheckCircle2, color: "text-success bg-success/10" },
-                    { label: "Pending",  value: certificates?.pending  ?? 0, icon: Clock,        color: "text-warning bg-warning/10" },
+                    { label: "Pending", value: certificates?.pending ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
                   ].map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5">
-                      <div className={cn("w-6 h-6 rounded-sm flex items-center justify-center mb-1.5", color)}>
+                    <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
                         <Icon className="h-3 w-3" />
                       </div>
                       <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
@@ -440,7 +440,7 @@ const AdminOverview = () => {
                 </div>
 
                 {/* Active consultations callout */}
-                <div className="mt-3 rounded-sm border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
+                <div className="mt-3 rounded-[6px] border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Active consultations</p>
                     <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">
@@ -456,7 +456,7 @@ const AdminOverview = () => {
 
         {/* ── Row 3: Revenue ── */}
         <div className="grid lg:grid-cols-3 gap-3">
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm">
+          <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm">
             <SectionHeader title="Revenue" />
             {isLoading ? (
               <div className="space-y-2">
@@ -466,13 +466,13 @@ const AdminOverview = () => {
               <>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Total revenue",   value: `${currency} ${Number(payments?.total_revenue ?? 0).toLocaleString()}`, icon: ClipboardList, color: "text-foreground bg-muted" },
-                    { label: "Today's revenue",  value: `${currency} ${Number(payments?.revenue_today ?? 0).toLocaleString()}`, icon: TrendingUp,    color: "text-primary bg-primary/10" },
-                    { label: "Pending payments", value: payments?.pending_count ?? 0, icon: Clock,         color: "text-warning bg-warning/10" },
-                    { label: "Currency",         value: currency, icon: XCircle,                                                  color: "text-muted-foreground bg-muted" },
+                    { label: "Total revenue", value: `${currency} ${Number(payments?.total_revenue ?? 0).toLocaleString()}`, icon: ClipboardList, color: "text-foreground bg-muted" },
+                    { label: "Today's revenue", value: `${currency} ${Number(payments?.revenue_today ?? 0).toLocaleString()}`, icon: TrendingUp, color: "text-primary bg-primary/10" },
+                    { label: "Pending payments", value: payments?.pending_count ?? 0, icon: Clock, color: "text-warning bg-warning/10" },
+                    { label: "Currency", value: currency, icon: XCircle, color: "text-muted-foreground bg-muted" },
                   ].map(({ label, value, icon: Icon, color }) => (
-                    <div key={label} className="rounded-sm border border-border bg-muted/30 p-2.5">
-                      <div className={cn("w-6 h-6 rounded-sm flex items-center justify-center mb-1.5", color)}>
+                    <div key={label} className="rounded-[6px] border border-border bg-muted/30 p-2.5">
+                      <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
                         <Icon className="h-3 w-3" />
                       </div>
                       <p className="text-[13px] font-bold tabular-nums text-foreground leading-none break-all">{String(value)}</p>
@@ -493,18 +493,18 @@ const AdminOverview = () => {
           </div>
 
           {/* Quick actions — span remaining 2 cols */}
-          <div className="rounded-sm border border-border bg-card p-3.5 shadow-sm lg:col-span-2">
+          <div className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm lg:col-span-2">
             <SectionHeader title="Quick actions" />
             <div className="flex flex-wrap gap-2">
               {[
-                { label: "Manage users",      href: "/admin/users",        icon: Users },
-                { label: "Pending approvals", href: "/admin/approvals",    icon: UserCheck },
-                { label: "Flagged accounts",  href: "/admin/flags",        icon: ShieldAlert },
-                { label: "System reports",    href: "/admin/reports",      icon: BarChart3 },
-                { label: "Appointments",      href: "/admin/appointments", icon: CalendarDays },
+                { label: "Manage users", href: "/admin/users", icon: Users },
+                { label: "Pending approvals", href: "/admin/approvals", icon: UserCheck },
+                { label: "Flagged accounts", href: "/admin/flags", icon: ShieldAlert },
+                { label: "System reports", href: "/admin/reports", icon: BarChart3 },
+                { label: "Appointments", href: "/admin/appointments", icon: CalendarDays },
               ].map(({ label, href, icon: Icon }) => (
                 <Link key={href} to={href}>
-                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-border bg-muted/40 hover:border-primary/40 hover:bg-primary/5 text-[11px] font-medium text-foreground transition-all">
                     <Icon className="h-3 w-3 text-muted-foreground" />
                     {label}
                   </button>
@@ -514,12 +514,12 @@ const AdminOverview = () => {
 
             {/* Applied filters summary */}
             {response?.filters_applied && Object.values(response.filters_applied).some(Boolean) && (
-              <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 px-2.5 py-2">
+              <div className="mt-3 rounded-[6px] border border-primary/20 bg-primary/5 px-2.5 py-2">
                 <p className="text-[10px] text-primary font-medium mb-1">Filters active</p>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(response.filters_applied).map(([k, v]) =>
                     v ? (
-                      <span key={k} className="text-[9px] px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20">
+                      <span key={k} className="text-[9px] px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary border border-primary/20">
                         {k}: {v}
                       </span>
                     ) : null,

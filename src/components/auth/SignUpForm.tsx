@@ -159,10 +159,10 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   const inputCls =
-    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
   const inputNoIconCls =
-    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 text-foreground placeholder:text-muted-foreground";
 
   return (
     <>
@@ -188,14 +188,13 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               return (
                 <label
                   key={r}
-                  className={`flex items-center gap-2 rounded-sm px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${
-                    isSelected
+                  className={`flex items-center gap-2 rounded-[6px] px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${isSelected
                       ? `${config.color}`
                       : "border-border bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted"
-                  }`}
+                    }`}
                 >
                   <RadioGroupItem value={r} className="sr-only" />
-                  <div className={`w-6 h-6 rounded-sm flex items-center justify-center ${isSelected ? "bg-card/60" : "bg-muted"}`}>
+                  <div className={`w-6 h-6 rounded-[6px] flex items-center justify-center ${isSelected ? "bg-card/60" : "bg-muted"}`}>
                     {config.icon}
                   </div>
                   <span className="text-[11px] font-semibold">
@@ -297,14 +296,13 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               return (
                 <label
                   key={g}
-                  className={`flex items-center gap-2 rounded-sm px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${
-                    isSelected
+                  className={`flex items-center gap-2 rounded-[6px] px-2.5 py-2 cursor-pointer border-2 transition-all duration-200 ${isSelected
                       ? config.color
                       : "border-border bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted"
-                  }`}
+                    }`}
                 >
                   <RadioGroupItem value={g} className="sr-only" />
-                  <div className={`w-6 h-6 rounded-sm flex items-center justify-center shrink-0 ${isSelected ? "bg-card/60" : "bg-muted"}`}>
+                  <div className={`w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 ${isSelected ? "bg-card/60" : "bg-muted"}`}>
                     {config.icon}
                   </div>
                   <span className="text-[11px] font-semibold truncate">
@@ -378,7 +376,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
         {/* Terms acceptance row */}
         {acceptedTerms ? (
-          <div className="flex items-center justify-between rounded-sm px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20">
+          <div className="flex items-center justify-between rounded-[6px] px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
               <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -397,9 +395,9 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            className="w-full flex items-center gap-2.5 rounded-sm px-3 py-2.5 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group text-left"
+            className="w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group text-left"
           >
-            <div className="w-6 h-6 rounded-sm bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+            <div className="w-6 h-6 rounded-[6px] bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
               <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
             <div className="flex-1 min-w-0">
@@ -417,7 +415,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
         <button
           type="submit"
           disabled={register.isPending || !acceptedTerms}
-          className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+          className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
         >
           {register.isPending ? (
             <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />

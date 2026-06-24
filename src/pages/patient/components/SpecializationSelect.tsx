@@ -169,7 +169,7 @@ export function SpecializationSelect({
         <div
           id="spec-select-portal"
           style={dropdownStyle}
-          className="bg-card border border-border/60 rounded-sm shadow-xl overflow-hidden"
+          className="bg-card border border-border/60 rounded-[6px] shadow-xl overflow-hidden"
         >
           {/* Back header on fee step */}
           {step === "fee" && (
@@ -292,7 +292,7 @@ export function SpecializationSelect({
                         <span className={cn("font-medium", value.fee?.id === fee.id ? "text-primary" : "text-foreground")}>
                           {fee.sub_specialization}
                         </span>
-                        <span className="text-xs text-muted-foreground/60 flex-shrink-0 bg-secondary/50 px-1.5 py-0.5 rounded-sm">
+                        <span className="text-xs text-muted-foreground/60 flex-shrink-0 bg-secondary/50 px-1.5 py-0.5 rounded-[6px]">
                           {fee.tier_name}
                         </span>
                       </div>

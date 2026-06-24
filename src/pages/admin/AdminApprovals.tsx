@@ -97,7 +97,7 @@ const AdminApprovals = () => {
                   <CardContent className="p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-sm bg-primary-soft text-primary flex items-center justify-center shrink-0">
+                        <div className="h-10 w-10 rounded-[6px] bg-primary-soft text-primary flex items-center justify-center shrink-0">
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
@@ -191,7 +191,7 @@ const AdminApprovals = () => {
                   />
                 </div>
                 {selected.meta && (
-                  <div className="rounded-md border border-border p-4 bg-secondary/30">
+                  <div className="rounded-[6px] border border-border p-4 bg-secondary/30">
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
                       Details
                     </div>
@@ -253,8 +253,8 @@ const AdminApprovals = () => {
             <AlertDialogDescription>
               {confirm?.action === "approve"
                 ? t("admin.approvals.confirm_approve_desc", {
-                    role: confirm ? t(`admin.roles.${confirm.user.role}`) : "",
-                  })
+                  role: confirm ? t(`admin.roles.${confirm.user.role}`) : "",
+                })
                 : t("admin.approvals.confirm_reject_desc")}
             </AlertDialogDescription>
           </AlertDialogHeader>

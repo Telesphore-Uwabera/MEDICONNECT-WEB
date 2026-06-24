@@ -45,40 +45,40 @@ import { getInitials } from "./Utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface HospitalPanelProps {
-  hospital:  ApiHospital | null;
-  onClose:   () => void;
+  hospital: ApiHospital | null;
+  onClose: () => void;
   onApprove: (h: ApiHospital) => void;
-  onReject:  (h: ApiHospital) => void;
+  onReject: (h: ApiHospital) => void;
   onSuspend: (h: ApiHospital) => void;
-  isActing:  boolean;
+  isActing: boolean;
 }
 
 type TabId = "overview" | "departments" | "schedule" | "bookings";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "overview",    label: "Overview",    icon: <Building2    className="w-3 h-3" /> },
-  { id: "departments", label: "Departments", icon: <LayoutGrid   className="w-3 h-3" /> },
-  { id: "schedule",    label: "Schedule",    icon: <Clock        className="w-3 h-3" /> },
-  { id: "bookings",    label: "Bookings",    icon: <CalendarDays className="w-3 h-3" /> },
+  { id: "overview", label: "Overview", icon: <Building2 className="w-3 h-3" /> },
+  { id: "departments", label: "Departments", icon: <LayoutGrid className="w-3 h-3" /> },
+  { id: "schedule", label: "Schedule", icon: <Clock className="w-3 h-3" /> },
+  { id: "bookings", label: "Bookings", icon: <CalendarDays className="w-3 h-3" /> },
 ];
 
-const DAY_ORDER = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+const DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const DAY_LABEL: Record<string, string> = {
   monday: "Mo", tuesday: "Tu", wednesday: "We", thursday: "Th",
-  friday: "Fr",  saturday: "Sa", sunday: "Su",
+  friday: "Fr", saturday: "Sa", sunday: "Su",
 };
 
 const bookingStatusStyle: Record<string, string> = {
-  pending:   "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
-  accepted:  "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-800/60",
+  pending: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
+  accepted: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-800/60",
   completed: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/25 dark:text-violet-400 dark:border-violet-800/60",
-  rejected:  "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/25 dark:text-red-400 dark:border-red-800/60",
+  rejected: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/25 dark:text-red-400 dark:border-red-800/60",
   cancelled: "bg-muted text-muted-foreground border-border",
 };
 
 const paymentStatusStyle: Record<string, string> = {
-  paid:     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-800/60",
-  unpaid:   "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
+  paid: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-800/60",
+  unpaid: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
   refunded: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/25 dark:text-violet-400 dark:border-violet-800/60",
 };
 
@@ -96,7 +96,7 @@ function InfoTile({
 }) {
   return (
     <div className={cn(
-      "group p-3 rounded-[10px] border border-border/40 bg-card/60",
+      "group p-3 rounded-[6px] border border-border/40 bg-card/60",
       "hover:border-primary/30 hover:bg-accent/20 transition-all duration-150",
       full && "col-span-2",
     )}>
@@ -140,11 +140,11 @@ function Pill({
   const styles: Record<string, string> = {
     default: "bg-secondary/70 text-muted-foreground border-border/35",
     primary: "bg-accent text-accent-foreground border-primary/20",
-    teal:    "bg-primary/8 text-primary border-primary/20",
-    amber:   "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-    red:     "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
+    teal: "bg-primary/8 text-primary border-primary/20",
+    amber: "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
+    red: "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
     emerald: "bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-    violet:  "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
+    violet: "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   };
   return (
     <span className={cn(
@@ -160,7 +160,7 @@ function LoadingRow() {
   return (
     <div className="flex flex-col gap-2 animate-pulse max-w-[640px]">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 rounded-[10px] bg-accent/20" />
+        <div key={i} className="h-14 rounded-[6px] bg-accent/20" />
       ))}
     </div>
   );
@@ -172,13 +172,13 @@ function PanelSkeleton() {
       <div className="h-4 w-20 bg-accent/40 rounded" />
       <div className="grid grid-cols-2 gap-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-[10px] bg-accent/25" />
+          <div key={i} className="h-16 rounded-[6px] bg-accent/25" />
         ))}
       </div>
       <div className="h-4 w-16 bg-accent/30 rounded mt-2" />
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-[10px] bg-accent/15" />
+          <div key={i} className="h-16 rounded-[6px] bg-accent/15" />
         ))}
       </div>
     </div>
@@ -193,7 +193,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
       <div className="space-y-5">
 
         {h.description_en && (
-          <div className="p-4 rounded-[10px] border border-primary/15 bg-accent/15">
+          <div className="p-4 rounded-[6px] border border-primary/15 bg-accent/15">
             <div className="flex items-center gap-1.5 mb-2">
               <FileText className="w-3 h-3 text-primary/50" />
               <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40">About</span>
@@ -205,11 +205,11 @@ function OverviewTab({ h }: { h: ApiHospital }) {
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { icon: <Stethoscope className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.doctors_count,     label: "Doctors"  },
-            { icon: <LayoutGrid  className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.departments_count, label: "Depts"    },
-            { icon: <Users       className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.services_count,    label: "Services" },
+            { icon: <Stethoscope className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.doctors_count, label: "Doctors" },
+            { icon: <LayoutGrid className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.departments_count, label: "Depts" },
+            { icon: <Users className="w-4 h-4 text-primary/50 mx-auto mb-1.5" />, count: h.services_count, label: "Services" },
           ].map(({ icon, count, label }) => (
-            <div key={label} className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 text-center hover:border-primary/30 hover:bg-accent/20 transition-all">
+            <div key={label} className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 text-center hover:border-primary/30 hover:bg-accent/20 transition-all">
               {icon}
               <p className="text-[22px] font-bold text-foreground tabular-nums leading-none">{count}</p>
               <p className="text-[9px] text-muted-foreground/40 mt-1 font-medium uppercase tracking-wide">{label}</p>
@@ -224,13 +224,13 @@ function OverviewTab({ h }: { h: ApiHospital }) {
             {h.registration_number && (
               <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Registration no." value={h.registration_number} mono full />
             )}
-            <InfoTile icon={<Hash     className="w-2.5 h-2.5" />} label="Hospital ID" value={`#${h.id}`} mono />
-            <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined"      value={new Date(h.created_at).toLocaleDateString()} />
+            <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Hospital ID" value={`#${h.id}`} mono />
+            <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(h.created_at).toLocaleDateString()} />
             {h.verified_at && (
               <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={new Date(h.verified_at).toLocaleDateString()} />
             )}
             {h.opens_at && h.closes_at && !h.is_open_24h && (
-              <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value={`${h.opens_at.slice(0,5)} – ${h.closes_at.slice(0,5)}`} />
+              <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value={`${h.opens_at.slice(0, 5)} – ${h.closes_at.slice(0, 5)}`} />
             )}
             {h.is_open_24h && (
               <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value="Open 24 hours" />
@@ -243,10 +243,10 @@ function OverviewTab({ h }: { h: ApiHospital }) {
           <div>
             <SectionHeading>Location</SectionHeading>
             <div className="grid grid-cols-2 gap-2">
-              {h.address  && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Address"  value={h.address}  full />}
-              {h.city     && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="City"     value={h.city}     />}
+              {h.address && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Address" value={h.address} full />}
+              {h.city && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="City" value={h.city} />}
               {h.province && <InfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Province" value={h.province} />}
-              {h.country  && <InfoTile icon={<Globe  className="w-2.5 h-2.5" />} label="Country"  value={h.country}  />}
+              {h.country && <InfoTile icon={<Globe className="w-2.5 h-2.5" />} label="Country" value={h.country} />}
             </div>
           </div>
         )}
@@ -257,17 +257,17 @@ function OverviewTab({ h }: { h: ApiHospital }) {
             <SectionHeading>Contact</SectionHeading>
             <div className="grid grid-cols-2 gap-2">
               {h.phone && <InfoTile icon={<Phone className="w-2.5 h-2.5" />} label="Phone" value={h.phone} mono />}
-              {h.email && <InfoTile icon={<Mail  className="w-2.5 h-2.5" />} label="Email" value={h.email} full />}
+              {h.email && <InfoTile icon={<Mail className="w-2.5 h-2.5" />} label="Email" value={h.email} full />}
             </div>
             {h.website && (
               <a
                 href={h.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 flex items-center justify-between p-3 rounded-[10px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group"
+                className="mt-2 flex items-center justify-between p-3 rounded-[6px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center border border-primary/20">
+                  <div className="w-7 h-7 rounded-[6px] bg-accent flex items-center justify-center border border-primary/20">
                     <Globe className="w-3 h-3 text-primary" />
                   </div>
                   <span className="text-[11.5px] font-medium text-foreground/80 truncate max-w-[240px]">{h.website}</span>
@@ -282,7 +282,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
         {h.user && (
           <div>
             <SectionHeading>Admin account</SectionHeading>
-            <div className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 flex items-center gap-3">
+            <div className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px] border border-primary/20 shrink-0">
                 {getInitials(h.user.name)}
               </div>
@@ -347,11 +347,11 @@ function DepartmentsTab({ h }: { h: ApiHospital }) {
         {list.map((dept) => (
           <div
             key={dept.id}
-            className="rounded-[10px] border border-border/40 bg-card/60 overflow-hidden hover:border-primary/25 transition-all duration-150"
+            className="rounded-[6px] border border-border/40 bg-card/60 overflow-hidden hover:border-primary/25 transition-all duration-150"
           >
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/30 bg-accent/10">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-[8px] bg-primary/10 flex items-center justify-center border border-primary/20">
+                <div className="w-7 h-7 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/20">
                   <LayoutGrid className="w-3 h-3 text-primary" />
                 </div>
                 <p className="text-[12px] font-semibold text-foreground">{dept.name_en}</p>
@@ -408,7 +408,7 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
                 key={d}
                 title={d.charAt(0).toUpperCase() + d.slice(1)}
                 className={cn(
-                  "flex flex-col items-center justify-center rounded-[8px] py-2.5 text-[9px] font-bold",
+                  "flex flex-col items-center justify-center rounded-[6px] py-2.5 text-[9px] font-bold",
                   isOpen
                     ? "bg-primary/12 text-primary border border-primary/25"
                     : "bg-muted/15 text-muted-foreground/25 border border-border/15",
@@ -427,7 +427,7 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
             <div
               key={d}
               className={cn(
-                "flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border transition-all duration-150",
+                "flex items-center justify-between px-3.5 py-2.5 rounded-[6px] border transition-all duration-150",
                 day.is_closed
                   ? "border-border/25 bg-muted/8 opacity-50"
                   : "border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10",
@@ -443,7 +443,7 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
               <div className="flex items-center gap-3">
                 {!day.is_closed && day.open_time && day.close_time ? (
                   <span className="text-[11px] font-mono text-foreground/80 tabular-nums">
-                    {day.open_time.slice(0,5)} – {day.close_time.slice(0,5)}
+                    {day.open_time.slice(0, 5)} – {day.close_time.slice(0, 5)}
                   </span>
                 ) : (
                   <span className="text-[10.5px] text-muted-foreground/35">Closed</span>
@@ -464,9 +464,9 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
 
 function BookingsTab({ hospitalId }: { hospitalId: number }) {
   const [statusFilter, setStatusFilter] = useState("");
-  const [searchInput,  setSearchInput]  = useState("");
-  const [search,       setSearch]       = useState("");
-  const [page,         setPage]         = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
@@ -475,8 +475,8 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
 
   const { data, isLoading } = useGetHospitalServiceBookings({
     hospital_id: hospitalId,
-    status:      statusFilter || undefined,
-    search:      search       || undefined,
+    status: statusFilter || undefined,
+    search: search || undefined,
     page,
   });
 
@@ -490,7 +490,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Search by patient name…"
-          className="w-full h-8 rounded-[8px] border border-border/45 bg-background px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
+          className="w-full h-8 rounded-[6px] border border-border/45 bg-background px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
         />
 
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -518,7 +518,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
               {data.data.map((booking) => (
                 <div
                   key={booking.id}
-                  className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all"
+                  className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0">
@@ -587,13 +587,13 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
                 </span>
                 <div className="flex gap-1.5">
                   <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}>
                     Prev
                   </Button>
                   <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page * data.per_page >= data.total}
                     onClick={() => setPage((p) => p + 1)}>
                     Next
@@ -668,7 +668,7 @@ export function HospitalPanel({
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-7 h-7 rounded-[8px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
+                  className="w-7 h-7 rounded-[6px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
                   aria-label="Close"
                 >
                   <X className="w-3 h-3 text-muted-foreground" />
@@ -735,10 +735,10 @@ export function HospitalPanel({
                 <PanelSkeleton />
               ) : (
                 <div className="px-6 py-5">
-                  {tab === "overview"    && <OverviewTab    h={h} />}
+                  {tab === "overview" && <OverviewTab h={h} />}
                   {tab === "departments" && <DepartmentsTab h={h} />}
-                  {tab === "schedule"    && <ScheduleTab    h={h} />}
-                  {tab === "bookings"    && <BookingsTab    hospitalId={h.id} />}
+                  {tab === "schedule" && <ScheduleTab h={h} />}
+                  {tab === "bookings" && <BookingsTab hospitalId={h.id} />}
                 </div>
               )}
             </div>
@@ -748,7 +748,7 @@ export function HospitalPanel({
               <div className="flex gap-2 items-center max-w-[640px]">
                 {(h.status === "pending" || h.status === "rejected") && (
                   <Button size="sm"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing} onClick={() => onApprove(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                     Approve hospital
@@ -756,7 +756,7 @@ export function HospitalPanel({
                 )}
                 {h.status === "active" && (
                   <Button size="sm" variant="outline"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={isActing} onClick={() => onSuspend(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldOff className="h-3.5 w-3.5" />}
                     Suspend
@@ -764,7 +764,7 @@ export function HospitalPanel({
                 )}
                 {h.status === "pending" && (
                   <Button size="sm" variant="outline"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
                     disabled={isActing} onClick={() => onReject(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
                     Reject
@@ -772,14 +772,14 @@ export function HospitalPanel({
                 )}
                 {h.status === "suspended" && (
                   <Button size="sm"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing} onClick={() => onApprove(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                     Reactivate
                   </Button>
                 )}
                 <Button size="sm" variant="ghost"
-                  className="h-9 px-4 text-[11px] rounded-[10px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
+                  className="h-9 px-4 text-[11px] rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
                   onClick={onClose}>
                   Close
                 </Button>

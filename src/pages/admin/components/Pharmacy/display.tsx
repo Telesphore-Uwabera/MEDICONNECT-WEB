@@ -8,12 +8,12 @@ import type { ApiPharmacy } from "@/hooks/admin/use-admin-pharmacies";
 // ─── InfoTile ─────────────────────────────────────────────────────────────────
 
 export function InfoTile({ icon, label, value }: {
-  icon:  React.ReactNode;
+  icon: React.ReactNode;
   label: string;
   value: string | number;
 }) {
   return (
-    <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+    <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
         {icon}
         {label}
@@ -51,7 +51,7 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 border border-primary/20">
+          <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 border border-primary/20">
             {getInitials(p.name_en)}
           </div>
           <div className="min-w-0">
@@ -75,7 +75,7 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
       </td>
       <td className="px-4 py-3 text-right">
         <Button size="sm" variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(p)}>
           Manage
         </Button>
@@ -88,8 +88,8 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
 
 export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: ApiPharmacy) => void }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-9 w-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
         {getInitials(p.name_en)}
       </div>
       <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: Ap
           </span>
         </div>
         <Button size="sm" variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(p)}>
           Manage
         </Button>

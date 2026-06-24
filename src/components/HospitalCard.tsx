@@ -68,7 +68,7 @@ export const HospitalCard = ({ hospital }) => {
 
           {/* Identity row */}
           <div className="flex items-center gap-3.5">
-            <div className="h-16 w-16 rounded-[14px] flex items-center justify-center bg-primary/10 text-primary font-bold text-xl shrink-0 select-none border border-primary/15 overflow-hidden shadow-sm">
+            <div className="h-16 w-16 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-xl shrink-0 select-none border border-primary/15 overflow-hidden shadow-sm">
               {hospital.logo ? (
                 <img src={hospital.logo} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -87,7 +87,7 @@ export const HospitalCard = ({ hospital }) => {
           </div>
 
           {/* Two compact stats instead of three — doctors + open days */}
-          <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-sm border border-border overflow-hidden">
+          <div className="mt-3 grid grid-cols-2 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
             <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
               <Users className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">
@@ -110,13 +110,13 @@ export const HospitalCard = ({ hospital }) => {
               {topDepartments.map((dept) => (
                 <span
                   key={dept.id ?? dept.name_en}
-                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60"
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60"
                 >
                   {dept.name_en}
                 </span>
               ))}
               {extraDepartments > 0 && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
                   +{extraDepartments} more
                 </span>
               )}
@@ -136,7 +136,7 @@ export const HospitalCard = ({ hospital }) => {
               size="sm"
               variant="outline"
               onClick={() => setScheduleOpen(true)}
-              className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+              className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
             >
               <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
               {t("pages.cards.view_schedule")}
@@ -145,7 +145,7 @@ export const HospitalCard = ({ hospital }) => {
               size="sm"
               onClick={() => setBookOpen(true)}
               disabled={!hospital.is_accepting_bookings}
-              className="h-8 px-3 text-xs font-bold rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
+              className="h-8 px-3 text-xs font-bold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
             >
               {t("pages.cards.book_spot")}
             </Button>

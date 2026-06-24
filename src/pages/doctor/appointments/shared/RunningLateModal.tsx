@@ -40,9 +40,9 @@ export function RunningLateModal({ appt, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-sm p-5 z-10">
+      <div className="relative bg-card border border-border rounded-[6px] shadow-2xl w-full max-w-sm p-5 z-10">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-9 w-9 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 flex items-center justify-center shrink-0">
+          <div className="h-9 w-9 rounded-[6px] bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 flex items-center justify-center shrink-0">
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
@@ -51,7 +51,7 @@ export function RunningLateModal({ appt, onClose }: Props) {
               Notify {appt.patient?.name ?? "the patient"} and upcoming patients of a delay.
             </p>
           </div>
-          <button onClick={onClose} className="ml-auto h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
+          <button onClick={onClose} className="ml-auto h-6 w-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -64,7 +64,7 @@ export function RunningLateModal({ appt, onClose }: Props) {
                 key={d}
                 onClick={() => setDelay(d)}
                 className={cn(
-                  "px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all duration-150",
+                  "px-2.5 py-1 rounded-[6px] text-[11px] font-medium border transition-all duration-150",
                   delay === d
                     ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                     : "border-border/60 text-muted-foreground hover:border-amber-400/50 hover:text-amber-600 hover:bg-amber-50/50 dark:hover:bg-amber-950/20",
@@ -76,7 +76,7 @@ export function RunningLateModal({ appt, onClose }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 mb-4">
+        <div className="flex items-center gap-2 p-3 rounded-[6px] bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 mb-4">
           <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
             All confirmed patients scheduled after this appointment will be notified of the{" "}

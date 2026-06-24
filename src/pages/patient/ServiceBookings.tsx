@@ -254,7 +254,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded-md border",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold rounded-[6px] border",
         cfg.badge,
       )}
     >
@@ -297,7 +297,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-3 py-2 rounded-md text-sm border transition-all duration-200 text-left flex items-center gap-2",
+            "px-3 py-2 rounded-[6px] text-sm border transition-all duration-200 text-left flex items-center gap-2",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -330,7 +330,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border/40 last:border-b-0">
-      <div className="w-8 h-8 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0">
+      <div className="w-8 h-8 rounded-[6px] bg-muted/60 flex items-center justify-center flex-shrink-0">
         <Icon className="w-4 h-4 text-muted-foreground/70" />
       </div>
       <div className="flex-1 min-w-0">
@@ -363,7 +363,7 @@ function DrawerSection({
       <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/50 mb-2 px-1">
         {title}
       </p>
-      <div className="bg-card border border-border/60 rounded-md divide-y divide-border/40 px-4">
+      <div className="bg-card border border-border/60 rounded-[6px] divide-y divide-border/40 px-4">
         {children}
       </div>
     </div>
@@ -408,7 +408,7 @@ function BookingDetailDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-card/80 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center border border-primary/20">
+            <div className="w-10 h-10 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/20">
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -420,7 +420,7 @@ function BookingDetailDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
+            className="w-8 h-8 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -431,9 +431,9 @@ function BookingDetailDrawer({
           {isLoading && (
             <div className="flex flex-col gap-3">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-card border border-border/50 rounded-sm p-3 animate-pulse">
+                <div key={i} className="bg-card border border-border/50 rounded-[6px] p-3 animate-pulse">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-sm bg-muted" />
+                    <div className="w-6 h-6 rounded-[6px] bg-muted" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-2 bg-muted rounded w-1/3" />
                       <div className="h-3 bg-muted/70 rounded w-2/3" />
@@ -446,7 +446,7 @@ function BookingDetailDrawer({
 
           {isError && (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-              <div className="w-12 h-12 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
+              <div className="w-12 h-12 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
                 <AlertCircle className="w-5 h-5 text-destructive/60" />
               </div>
               <div>
@@ -466,8 +466,8 @@ function BookingDetailDrawer({
           {!isLoading && !isError && booking && (
             <>
               {/* Status hero */}
-              <div className={cn("rounded-md border border-border/50 p-5 mb-5 flex items-center gap-4", STATUS_CONFIG[booking.status].bg)}>
-                <div className={cn("w-12 h-12 rounded-md flex items-center justify-center border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
+              <div className={cn("rounded-[6px] border border-border/50 p-5 mb-5 flex items-center gap-4", STATUS_CONFIG[booking.status].bg)}>
+                <div className={cn("w-12 h-12 rounded-[6px] flex items-center justify-center border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
                   {(() => { const Icon = STATUS_CONFIG[booking.status].icon; return <Icon className="w-6 h-6" />; })()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -484,7 +484,7 @@ function BookingDetailDrawer({
               </div>
 
               {booking.rejection_reason && (
-                <div className="mb-5 flex items-start gap-3 p-4 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+                <div className="mb-5 flex items-start gap-3 p-4 rounded-[6px] bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">Rejection reason</p>
@@ -568,13 +568,13 @@ function BookingDetailDrawer({
                 size="sm"
                 variant="outline"
                 onClick={() => { onCancelRequest(booking); onClose(); }}
-                className="h-7 px-3 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all flex-shrink-0"
+                className="h-7 px-3 text-[10px] font-semibold rounded-[6px] text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all flex-shrink-0"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
                 Cancel booking
               </Button>
             ) : (
-              <span className={cn("text-[10px] font-medium px-2 py-1 rounded-sm border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
+              <span className={cn("text-[10px] font-medium px-2 py-1 rounded-[6px] border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
                 {STATUS_CONFIG[booking.status].label}
               </span>
             )}
@@ -606,10 +606,10 @@ function RowSkeleton() {
         </div>
       </td>
       <td className="px-3 sm:px-4 py-3">
-        <div className="h-4 w-16 sm:w-20 rounded-sm bg-muted" />
+        <div className="h-4 w-16 sm:w-20 rounded-[6px] bg-muted" />
       </td>
       <td className="px-3 sm:px-4 py-3 text-right">
-        <div className="h-7 w-16 sm:w-24 rounded-sm bg-muted ml-auto" />
+        <div className="h-7 w-16 sm:w-24 rounded-[6px] bg-muted ml-auto" />
       </td>
     </tr>
   );
@@ -617,18 +617,18 @@ function RowSkeleton() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-4 animate-pulse">
+    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-4 animate-pulse">
       <div className="flex items-start gap-3.5">
-        <div className="w-16 h-16 rounded-[14px] bg-muted shrink-0" />
+        <div className="w-16 h-16 rounded-[6px] bg-muted shrink-0" />
         <div className="flex-1 space-y-2 mt-1">
           <div className="h-4 w-40 rounded bg-muted" />
           <div className="h-3 w-24 rounded bg-muted" />
         </div>
       </div>
-      <div className="h-14 w-full rounded-sm bg-muted" />
+      <div className="h-14 w-full rounded-[6px] bg-muted" />
       <div className="h-8 w-full flex gap-2">
-         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
-         <div className="h-8 flex-1 rounded-[8px] bg-muted" />
+        <div className="h-8 flex-1 rounded-[6px] bg-muted" />
+        <div className="h-8 flex-1 rounded-[6px] bg-muted" />
       </div>
     </div>
   );
@@ -660,9 +660,9 @@ function CancelDialog({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-card border border-border/70 rounded-t-lg sm:rounded-sm shadow-2xl w-full sm:max-w-sm p-5 flex flex-col gap-4 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
+      <div className="bg-card border border-border/70 rounded-t-lg sm:rounded-[6px] shadow-2xl w-full sm:max-w-sm p-5 flex flex-col gap-4 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-md bg-destructive/10 flex items-center justify-center flex-shrink-0 border border-destructive/20">
+          <div className="w-10 h-10 rounded-[6px] bg-destructive/10 flex items-center justify-center flex-shrink-0 border border-destructive/20">
             <Trash2 className="w-5 h-5 text-destructive" />
           </div>
           <div className="flex-1 min-w-0">
@@ -678,7 +678,7 @@ function CancelDialog({
         </div>
 
         {error && (
-          <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-md bg-destructive/10 border border-destructive/20">
+          <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-[6px] bg-destructive/10 border border-destructive/20">
             <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <p className="text-xs text-destructive leading-snug">{error}</p>
           </div>
@@ -688,14 +688,14 @@ function CancelDialog({
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="flex-1 px-4 py-2.5 rounded-md text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 rounded-[6px] text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-all disabled:opacity-50"
           >
             Keep booking
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all disabled:opacity-70 shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[6px] text-sm font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground transition-all disabled:opacity-70 shadow-sm"
           >
             {isLoading ? (
               <>
@@ -738,7 +738,7 @@ function BookingCardItem({
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
           Service Booking
         </span>
-        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-sm border", STATUS_CONFIG[booking.status].color)}>
+        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_CONFIG[booking.status].color)}>
           {STATUS_CONFIG[booking.status].label}
         </span>
       </div>
@@ -746,8 +746,8 @@ function BookingCardItem({
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         {/* Identity row */}
         <div className="flex items-start gap-3.5">
-          <div className="h-16 w-16 rounded-[14px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm font-bold text-xl">
-             <Building2 className="w-6 h-6" />
+          <div className="h-16 w-16 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm font-bold text-xl">
+            <Building2 className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-foreground leading-tight truncate">
@@ -760,7 +760,7 @@ function BookingCardItem({
         </div>
 
         {/* Stats grid */}
-        <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+        <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <CalendarDays className="h-3.5 w-3.5" />
@@ -797,7 +797,7 @@ function BookingCardItem({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+            className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
             onClick={(e) => { e.stopPropagation(); onView(booking); }}
           >
             Details
@@ -807,7 +807,7 @@ function BookingCardItem({
             disabled={!canCancel}
             onClick={(e) => { e.stopPropagation(); onCancel(booking); }}
             className={cn(
-              "h-8 px-3 text-xs font-bold rounded-[8px] flex-1 shadow-sm transition-colors",
+              "h-8 px-3 text-xs font-bold rounded-[6px] flex-1 shadow-sm transition-colors",
               canCancel
                 ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 : "bg-muted text-muted-foreground"
@@ -859,7 +859,7 @@ function Pagination({
           variant="outline"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="h-7 px-2.5 text-[10px] rounded-sm"
+          className="h-7 px-2.5 text-[10px] rounded-[6px]"
         >
           <ChevronLeft className="h-3 w-3" />
         </Button>
@@ -872,7 +872,7 @@ function Pagination({
               size="sm"
               variant={currentPage === p ? "default" : "outline"}
               onClick={() => onPageChange(p as number)}
-              className="h-7 w-7 p-0 text-[10px] rounded-sm"
+              className="h-7 w-7 p-0 text-[10px] rounded-[6px]"
             >
               {p}
             </Button>
@@ -883,7 +883,7 @@ function Pagination({
           variant="outline"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="h-7 px-2.5 text-[10px] rounded-sm"
+          className="h-7 px-2.5 text-[10px] rounded-[6px]"
         >
           <ChevronRight className="h-3 w-3" />
         </Button>
@@ -1025,7 +1025,7 @@ function ServiceBookings() {
             size="sm"
             variant="outline"
             onClick={() => setMedInfoOpen(true)}
-            className="h-8 px-3 text-[11px] font-medium rounded-sm gap-1.5"
+            className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
           >
             <HeartPulse className="h-3.5 w-3.5 text-primary" />
             My medical info
@@ -1043,304 +1043,304 @@ function ServiceBookings() {
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
-            {/* Inline feedback banner — shown directly below the meta bar */}
-            {feedback && (
-              <FeedbackBanner
-                feedback={feedback}
-                onDismiss={() => setFeedback(null)}
-              />
-            )}
+          {/* Inline feedback banner — shown directly below the meta bar */}
+          {feedback && (
+            <FeedbackBanner
+              feedback={feedback}
+              onDismiss={() => setFeedback(null)}
+            />
+          )}
 
-            {/* Sticky meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
-              <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-                  <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
-                  booking{(data?.total ?? 0) !== 1 ? "s" : ""}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium"
+          {/* Sticky meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <p className="text-[11px] text-muted-foreground whitespace-nowrap">
+                <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
+                booking{(data?.total ?? 0) !== 1 ? "s" : ""}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium"
+                  >
+                    Reset
+                  </button>
+                )}
+              </p>
+              {/* Status pill counts — hidden on small screens */}
+              <div className="hidden lg:flex items-center gap-2">
+                {(["pending", "accepted"] as BookingStatus[]).map((s) =>
+                  statusCounts[s] ? (
+                    <span
+                      key={s}
+                      className={cn(
+                        "flex items-center gap-1 text-[10px] font-medium border px-2 py-0.5 rounded-[6px]",
+                        STATUS_CONFIG[s].badge,
+                      )}
                     >
-                      Reset
-                    </button>
-                  )}
-                </p>
-                {/* Status pill counts — hidden on small screens */}
-                <div className="hidden lg:flex items-center gap-2">
-                  {(["pending", "accepted"] as BookingStatus[]).map((s) =>
-                    statusCounts[s] ? (
-                      <span
-                        key={s}
-                        className={cn(
-                          "flex items-center gap-1 text-[10px] font-medium border px-2 py-0.5 rounded-sm",
-                          STATUS_CONFIG[s].badge,
-                        )}
-                      >
-                        <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_CONFIG[s].dot)} />
-                        {statusCounts[s]} {STATUS_CONFIG[s].label.toLowerCase()}
-                      </span>
-                    ) : null,
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  <option value="date-desc">Newest first</option>
-                  <option value="date-asc">Oldest first</option>
-                </select>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
-                {/* View toggle */}
-                <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
-                  <button
-                    onClick={() => setView("table")}
-                    aria-label="Table view"
-                    className={cn(
-                      "px-2.5 py-1.5 transition-all",
-                      view === "table"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                    )}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <path d="M3 9h18M3 15h18M9 3v18" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setView("cards")}
-                    aria-label="Card view"
-                    className={cn(
-                      "px-2.5 py-1.5 border-l border-border/60 transition-all",
-                      view === "cards"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                    )}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                      <line x1="3" y1="12" x2="21" y2="12" />
-                      <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
-                  </button>
-                </div>
+                      <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_CONFIG[s].dot)} />
+                      {statusCounts[s]} {STATUS_CONFIG[s].label.toLowerCase()}
+                    </span>
+                  ) : null,
+                )}
               </div>
             </div>
 
-            <div className="p-3 sm:p-4 space-y-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <select
+                value={filters.sort}
+                onChange={(e) => set("sort", e.target.value as SortOption)}
+                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+              >
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
+              </select>
 
-              <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto">
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
 
-                <Link to='/patient/appointments' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground">
-                  <Calendar className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline">
-                    {t('consult.bookings.appointments')}
-                  </span>
-                  <span className="sm:hidden">
-                    {t('consult.bookings.appointments_short')}
-                  </span>
-                </Link>
-
-                <Link to='/patient/instant' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground">
-                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline">
-                    {t('consult.bookings.instant')}
-                  </span>
-                  <span className="sm:hidden">
-
-                    {t('consult.bookings.instant_short')}
-                  </span>
-                </Link>
-
-                <Link to='/patient/service-bookings' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground border-b-2 border-primary text-primary">
-                  <Building2 className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden sm:inline">
-                    {t('consult.bookings.service_bookings')}
-                  </span>
-                  <span className="sm:hidden">
-                    {t('consult.bookings.service_bookings_short')}
-                  </span>
-                </Link>
-
-              </div>
-              {/* Error state */}
-              {isError && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
-                    <AlertCircle className="w-6 h-6 text-destructive/60" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load bookings</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
-                  </div>
-                  <button
-                    onClick={() => refetch()}
-                    className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {/* Empty state */}
-              {!isLoading && !isError && bookings.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <CalendarDays className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {filters.status === "all" ? "No bookings yet" : `No ${filters.status} bookings`}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {filters.q ? "Try a different search term" : "Your service bookings will appear here"}
-                    </p>
-                  </div>
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline"
-                    >
-                      Clear all filters
-                    </button>
+              {/* View toggle */}
+              <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
+                <button
+                  onClick={() => setView("table")}
+                  aria-label="Table view"
+                  className={cn(
+                    "px-2.5 py-1.5 transition-all",
+                    view === "table"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                   )}
-                </div>
-              )}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18M3 15h18M9 3v18" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setView("cards")}
+                  aria-label="Card view"
+                  className={cn(
+                    "px-2.5 py-1.5 border-l border-border/60 transition-all",
+                    view === "cards"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                  )}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
 
-              {/* ── Table view ── */}
-              {view === "table" && (isLoading || bookings.length > 0) && !isError && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-[11px] min-w-[480px]">
-                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                        <tr>
-                          <th className="text-left px-3 sm:px-4 py-3 font-semibold">Service</th>
-                          <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Hospital</th>
-                          <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">Date & Time</th>
-                          <th className="text-left px-3 sm:px-4 py-3 font-semibold">Status</th>
-                          <th className="px-3 sm:px-4 py-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading
-                          ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
-                          : bookings.map((b) => (
-                            <tr
-                              key={b.id}
-                              className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
-                            >
-                              <td className="px-3 sm:px-4 py-3">
-                                <div>
-                                  <p className="font-semibold text-foreground leading-tight">{b.service.name_en}</p>
-                                  <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                                    #{b.id} · {b.booked_by}
-                                  </p>
-                                  {/* Hospital shown inline on mobile */}
-                                  <p className="sm:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
-                                    <Building2 className="w-2.5 h-2.5 flex-shrink-0" />
-                                    {b.hospital.name_en}
-                                  </p>
-                                  {/* Date shown inline on small screens */}
-                                  <p className="md:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
-                                    <CalendarDays className="w-2.5 h-2.5 flex-shrink-0" />
-                                    {formatDate(b.preferred_date)} · {formatTime(b.preferred_time)}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3 hidden sm:table-cell">
-                                <span className="flex items-center gap-1.5 text-muted-foreground/80">
-                                  <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+          <div className="p-3 sm:p-4 space-y-4">
+
+            <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto">
+
+              <Link to='/patient/appointments' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground">
+                <Calendar className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">
+                  {t('consult.bookings.appointments')}
+                </span>
+                <span className="sm:hidden">
+                  {t('consult.bookings.appointments_short')}
+                </span>
+              </Link>
+
+              <Link to='/patient/instant' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground">
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">
+                  {t('consult.bookings.instant')}
+                </span>
+                <span className="sm:hidden">
+
+                  {t('consult.bookings.instant_short')}
+                </span>
+              </Link>
+
+              <Link to='/patient/service-bookings' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium hover:text-primary transition-all duration-200 shrink-0 whitespace-nowrap  text-foreground border-b-2 border-primary text-primary">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">
+                  {t('consult.bookings.service_bookings')}
+                </span>
+                <span className="sm:hidden">
+                  {t('consult.bookings.service_bookings_short')}
+                </span>
+              </Link>
+
+            </div>
+            {/* Error state */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <AlertCircle className="w-6 h-6 text-destructive/60" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">Failed to load bookings</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                </div>
+                <button
+                  onClick={() => refetch()}
+                  className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!isLoading && !isError && bookings.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <CalendarDays className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {filters.status === "all" ? "No bookings yet" : `No ${filters.status} bookings`}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {filters.q ? "Try a different search term" : "Your service bookings will appear here"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ── Table view ── */}
+            {view === "table" && (isLoading || bookings.length > 0) && !isError && (
+              <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[11px] min-w-[480px]">
+                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                      <tr>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">Service</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Hospital</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">Date & Time</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">Status</th>
+                        <th className="px-3 sm:px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isLoading
+                        ? Array.from({ length: 5 }).map((_, i) => <RowSkeleton key={i} />)
+                        : bookings.map((b) => (
+                          <tr
+                            key={b.id}
+                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors"
+                          >
+                            <td className="px-3 sm:px-4 py-3">
+                              <div>
+                                <p className="font-semibold text-foreground leading-tight">{b.service.name_en}</p>
+                                <p className="text-[10px] text-muted-foreground/60 mt-0.5">
+                                  #{b.id} · {b.booked_by}
+                                </p>
+                                {/* Hospital shown inline on mobile */}
+                                <p className="sm:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                                  <Building2 className="w-2.5 h-2.5 flex-shrink-0" />
                                   {b.hospital.name_en}
+                                </p>
+                                {/* Date shown inline on small screens */}
+                                <p className="md:hidden text-[10px] text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+                                  <CalendarDays className="w-2.5 h-2.5 flex-shrink-0" />
+                                  {formatDate(b.preferred_date)} · {formatTime(b.preferred_time)}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-3 sm:px-4 py-3 hidden sm:table-cell">
+                              <span className="flex items-center gap-1.5 text-muted-foreground/80">
+                                <Building2 className="w-3 h-3 text-muted-foreground/50 flex-shrink-0" />
+                                {b.hospital.name_en}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-4 py-3 hidden md:table-cell whitespace-nowrap">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="flex items-center gap-1 font-medium text-foreground">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
+                                  {formatDate(b.preferred_date)}
                                 </span>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3 hidden md:table-cell whitespace-nowrap">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="flex items-center gap-1 font-medium text-foreground">
-                                    <CalendarDays className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatDate(b.preferred_date)}
-                                  </span>
-                                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-                                    <Clock className="h-3 w-3 text-muted-foreground/40" />
-                                    {formatTime(b.preferred_time)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-3 sm:px-4 py-3">
-                                <StatusBadge status={b.status} />
-                              </td>
-                              <td className="px-3 sm:px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
+                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                                  <Clock className="h-3 w-3 text-muted-foreground/40" />
+                                  {formatTime(b.preferred_time)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 sm:px-4 py-3">
+                              <StatusBadge status={b.status} />
+                            </td>
+                            <td className="px-3 sm:px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-[6px] transition-all"
+                                  onClick={() => setDetailId(b.id)}
+                                >
+                                  <Eye className="w-3 h-3 sm:mr-1" />
+                                  <span className="hidden sm:inline">Details</span>
+                                </Button>
+                                {b.status === "pending" || b.status === "accepted" ? (
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-sm transition-all"
-                                    onClick={() => setDetailId(b.id)}
+                                    className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-[6px] text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
+                                    onClick={() => setCancelTarget(b)}
                                   >
-                                    <Eye className="w-3 h-3 sm:mr-1" />
-                                    <span className="hidden sm:inline">Details</span>
+                                    <Trash2 className="w-3 h-3 sm:mr-1" />
+                                    <span className="hidden sm:inline">Cancel</span>
                                   </Button>
-                                  {b.status === "pending" || b.status === "accepted" ? (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-7 px-2 sm:px-2.5 text-[10px] font-semibold rounded-sm text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all"
-                                      onClick={() => setCancelTarget(b)}
-                                    >
-                                      <Trash2 className="w-3 h-3 sm:mr-1" />
-                                      <span className="hidden sm:inline">Cancel</span>
-                                    </Button>
-                                  ) : (
-                                    <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">—</span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                ) : (
+                                  <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">—</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* ── Cards view ── */}
-              {view === "cards" && (isLoading || bookings.length > 0) && !isError && (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 sm:px-5">
-                  {isLoading
-                    ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
-                    : bookings.map((b) => (
-                      <BookingCardItem
-                        key={b.id}
-                        booking={b}
-                        onCancel={setCancelTarget}
-                        onView={(b) => setDetailId(b.id)}
-                      />
-                    ))}
-                </div>
-              )}
+            {/* ── Cards view ── */}
+            {view === "cards" && (isLoading || bookings.length > 0) && !isError && (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 sm:px-5">
+                {isLoading
+                  ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
+                  : bookings.map((b) => (
+                    <BookingCardItem
+                      key={b.id}
+                      booking={b}
+                      onCancel={setCancelTarget}
+                      onView={(b) => setDetailId(b.id)}
+                    />
+                  ))}
+              </div>
+            )}
 
-              {/* Pagination */}
-              {!isLoading && !isError && totalPages > 1 && (
-                <Pagination
-                  currentPage={data?.current_page ?? filters.page}
-                  totalPages={totalPages}
-                  total={data?.total ?? 0}
-                  perPage={data?.per_page ?? 15}
-                  onPageChange={(p) => set("page", p)}
-                />
-              )}
-            </div>
+            {/* Pagination */}
+            {!isLoading && !isError && totalPages > 1 && (
+              <Pagination
+                currentPage={data?.current_page ?? filters.page}
+                totalPages={totalPages}
+                total={data?.total ?? 0}
+                perPage={data?.per_page ?? 15}
+                onPageChange={(p) => set("page", p)}
+              />
+            )}
+          </div>
         </main>
       </div>
 
@@ -1372,7 +1372,7 @@ function ServiceBookings() {
 
       {/* My medical info drawer */}
       <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />
-        
+
     </DashboardLayout>
   );
 }

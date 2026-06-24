@@ -209,43 +209,43 @@ const SECTIONS: {
   icon: React.ElementType;
   description: string;
 }[] = [
-  {
-    id: "general",
-    label: "General",
-    icon: Building2,
-    description: "Name, registration & description",
-  },
-  {
-    id: "location",
-    label: "Location",
-    icon: MapPin,
-    description: "Address, city, province & coordinates",
-  },
-  {
-    id: "contact",
-    label: "Contact",
-    icon: Phone,
-    description: "Phone number & email",
-  },
-  {
-    id: "hours",
-    label: "Hours & Delivery",
-    icon: Truck,
-    description: "Opening hours & delivery settings",
-  },
-  {
-    id: "working_hours",
-    label: "Working Hours",
-    icon: Calendar,
-    description: "Per-day open/close schedule",
-  },
-  {
-    id: "social_links",
-    label: "Social Links",
-    icon: Share2,
-    description: "Website, Facebook, Instagram…",
-  },
-];
+    {
+      id: "general",
+      label: "General",
+      icon: Building2,
+      description: "Name, registration & description",
+    },
+    {
+      id: "location",
+      label: "Location",
+      icon: MapPin,
+      description: "Address, city, province & coordinates",
+    },
+    {
+      id: "contact",
+      label: "Contact",
+      icon: Phone,
+      description: "Phone number & email",
+    },
+    {
+      id: "hours",
+      label: "Hours & Delivery",
+      icon: Truck,
+      description: "Opening hours & delivery settings",
+    },
+    {
+      id: "working_hours",
+      label: "Working Hours",
+      icon: Calendar,
+      description: "Per-day open/close schedule",
+    },
+    {
+      id: "social_links",
+      label: "Social Links",
+      icon: Share2,
+      description: "Website, Facebook, Instagram…",
+    },
+  ];
 
 const normalizeTime = (t: string): string => {
   if (!t) return t;
@@ -499,7 +499,7 @@ function SectionCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card transition-all duration-200",
+        "rounded-[6px] border bg-card transition-all duration-200",
         isEditing
           ? "border-primary/50 shadow-md shadow-primary/5 ring-1 ring-primary/20"
           : "border-border hover:border-border/80",
@@ -509,7 +509,7 @@ function SectionCard({
         <div className="flex items-center gap-2.5">
           <div
             className={cn(
-              "w-7 h-7 rounded-lg flex items-center justify-center transition-all",
+              "w-7 h-7 rounded-[6px] flex items-center justify-center transition-all",
               isEditing
                 ? "bg-primary/15 text-primary"
                 : "bg-muted text-muted-foreground",
@@ -590,7 +590,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5 hover:border-border/80 transition-colors">
+    <div className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5 hover:border-border/80 transition-colors">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
         {label}
       </span>
@@ -630,7 +630,7 @@ function DateInput({
         min={min}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "w-full h-9 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground",
+          "w-full h-9 rounded-[6px] border border-border bg-background px-3 py-1 text-xs font-medium text-foreground",
           "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all",
           "[color-scheme:dark]",
           // Make the native calendar icon always visible
@@ -727,16 +727,16 @@ function Sidebar({
                 </span>
               </div>
             </div>
-            <div className="rounded-lg bg-muted/40 divide-y divide-border/60">
+            <div className="rounded-[6px] bg-muted/40 divide-y divide-border/60">
               {[
                 { label: "City", value: profile.city },
                 {
                   label: "Delivery",
                   value: profile.offers_delivery
                     ? formatDeliveryFee(
-                        profile.delivery_fee,
-                        profile.delivery_currency,
-                      )
+                      profile.delivery_fee,
+                      profile.delivery_currency,
+                    )
                     : "No delivery",
                 },
               ].map(({ label, value }) => (
@@ -768,7 +768,7 @@ function Sidebar({
               key={section.id}
               onClick={() => onSelect(section.id)}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-left transition-all duration-150 group",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2.5 px-2.5 py-2.5 rounded-[6px] text-left transition-all duration-150 group",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -885,7 +885,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
   };
 
   return (
-    <div className="relative rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+    <div className="relative rounded-[6px] overflow-hidden border border-border bg-card shadow-sm">
       {/* Cover photo */}
       <div className="relative h-32 sm:h-48 bg-muted">
         {coverUrl ? (
@@ -924,7 +924,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
       {/* Logo + identity row */}
       <div className="relative px-4 sm:px-6 pb-4 pt-12">
         <div className="absolute -top-9 sm:-top-10 left-4 sm:left-6 group">
-          <div className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-2xl border-4 border-card bg-muted overflow-hidden shadow-md">
+          <div className="relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-[6px] border-4 border-card bg-muted overflow-hidden shadow-md">
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -1060,7 +1060,7 @@ function WorkingHoursGrid({
             <div
               key={day}
               className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2.5 border text-xs transition-colors",
+                "flex items-center justify-between rounded-[6px] px-3 py-2.5 border text-xs transition-colors",
                 d.enabled
                   ? isWeekend
                     ? "border-primary/20 bg-primary/5"
@@ -1104,7 +1104,7 @@ function WorkingHoursGrid({
           <div
             key={day}
             className={cn(
-              "rounded-lg border transition-all duration-150",
+              "rounded-[6px] border transition-all duration-150",
               d.enabled
                 ? isWeekend
                   ? "border-primary/25 bg-primary/5"
@@ -1131,7 +1131,7 @@ function WorkingHoursGrid({
                   updateDay(day, { opens_at: normalizeTime(e.target.value) })
                 }
                 className={cn(
-                  "w-full h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground",
+                  "w-full h-8 rounded-[6px] border border-border bg-background px-2 text-xs font-medium text-foreground",
                   "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all [color-scheme:dark]",
                   "disabled:opacity-30 disabled:cursor-not-allowed",
                   "[&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert",
@@ -1146,7 +1146,7 @@ function WorkingHoursGrid({
                   updateDay(day, { closes_at: normalizeTime(e.target.value) })
                 }
                 className={cn(
-                  "w-full h-8 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground",
+                  "w-full h-8 rounded-[6px] border border-border bg-background px-2 text-xs font-medium text-foreground",
                   "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all [color-scheme:dark]",
                   "disabled:opacity-30 disabled:cursor-not-allowed",
                   "[&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert",
@@ -1207,7 +1207,7 @@ function WorkingHoursGrid({
                           opens_at: normalizeTime(e.target.value),
                         })
                       }
-                      className="w-full h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full h-8 rounded-[6px] border border-border bg-background px-2 text-xs text-foreground [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1222,7 +1222,7 @@ function WorkingHoursGrid({
                           closes_at: normalizeTime(e.target.value),
                         })
                       }
-                      className="w-full h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="w-full h-8 rounded-[6px] border border-border bg-background px-2 text-xs text-foreground [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-primary/40"
                     />
                   </div>
                 </div>
@@ -1303,7 +1303,7 @@ function ClosuresManager() {
   return (
     <div className="space-y-3">
       {/* Check a date */}
-      <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+      <div className="rounded-[6px] border border-border bg-muted/20 p-4 space-y-3">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           Check a date
         </p>
@@ -1335,7 +1335,7 @@ function ClosuresManager() {
         {checkResult && (
           <div
             className={cn(
-              "flex items-center gap-2 rounded-lg px-3 py-2.5 text-[11px] font-semibold border",
+              "flex items-center gap-2 rounded-[6px] px-3 py-2.5 text-[11px] font-semibold border",
               checkResult.is_closed
                 ? "bg-destructive/10 text-destructive border-destructive/25"
                 : "bg-emerald-500/10 text-emerald-500 border-emerald-500/25",
@@ -1359,11 +1359,11 @@ function ClosuresManager() {
       {isLoading ? (
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <Skeleton key={i} className="h-14 rounded-xl" />
+            <Skeleton key={i} className="h-14 rounded-[6px]" />
           ))}
         </div>
       ) : closures.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border py-6 text-center">
+        <div className="rounded-[6px] border border-dashed border-border py-6 text-center">
           <CalendarOff
             size={20}
             className="text-muted-foreground mx-auto mb-2"
@@ -1377,9 +1377,9 @@ function ClosuresManager() {
           {closures.map((c) => (
             <div
               key={c.id}
-              className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 hover:border-border/80 transition-colors"
+              className="flex items-center gap-3 rounded-[6px] border border-border bg-card px-4 py-3 hover:border-border/80 transition-colors"
             >
-              <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-[6px] bg-destructive/10 flex items-center justify-center shrink-0">
                 <CalendarOff size={13} className="text-destructive" />
               </div>
               <div className="flex-1 min-w-0">
@@ -1406,7 +1406,7 @@ function ClosuresManager() {
                     setEditingId(c.id);
                     setShowForm(true);
                   }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Pencil size={12} />
                 </button>
@@ -1420,7 +1420,7 @@ function ClosuresManager() {
                     }
                   }}
                   disabled={deleteClosure.isPending}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                  className="w-7 h-7 rounded-[6px] flex items-center justify-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
                 >
                   <Trash2 size={12} />
                 </button>
@@ -1432,14 +1432,14 @@ function ClosuresManager() {
 
       {/* Add / Edit form */}
       {showForm ? (
-        <div className="rounded-xl border border-primary/40 bg-primary/5 p-4 space-y-4">
+        <div className="rounded-[6px] border border-primary/40 bg-primary/5 p-4 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-primary">
               {editingId !== null ? "Edit closure" : "New closure period"}
             </p>
             <button
               onClick={resetForm}
-              className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              className="w-6 h-6 rounded-[6px] flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             >
               <X size={13} />
             </button>
@@ -1883,8 +1883,8 @@ function ContactSection({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center text-primary shrink-0">
+          <div className="flex items-center gap-3 rounded-[6px] border border-primary/20 bg-primary/5 px-4 py-3">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/15 flex items-center justify-center text-primary shrink-0">
               <Phone size={13} />
             </div>
             <div>
@@ -1894,8 +1894,8 @@ function ContactSection({
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3">
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground text-[11px] font-bold shrink-0">
+          <div className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3">
+            <div className="w-8 h-8 rounded-[6px] bg-muted flex items-center justify-center text-muted-foreground text-[11px] font-bold shrink-0">
               @
             </div>
             <div className="min-w-0">
@@ -1994,7 +1994,7 @@ function HoursSection({
     >
       {editing ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3">
+          <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3">
             <div>
               <p className="text-xs font-semibold">Open 24 hours</p>
               <p className="text-[10px] text-muted-foreground">
@@ -2011,7 +2011,7 @@ function HoursSection({
               type="time"
               disabled={is24h}
               {...register("opens_at")}
-              className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="w-full h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </FormField>
           <FormField label="Closes At">
@@ -2019,14 +2019,14 @@ function HoursSection({
               type="time"
               disabled={is24h}
               {...register("closes_at")}
-              className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="w-full h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </FormField>
           <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-3">
             {(["offers_delivery", "offers_pickup"] as const).map((key) => (
               <div
                 key={key}
-                className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3"
+                className="flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3"
               >
                 <p className="text-xs font-semibold capitalize">
                   {key.replace("offers_", "Offers ")}
@@ -2311,7 +2311,7 @@ function SocialLinksSection({
           </p>
           {SOCIAL_PLATFORMS.map(({ key, label, icon: Icon, placeholder }) => (
             <FormField key={key} label={label}>
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+              <div className="flex items-center gap-2 rounded-[6px] border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <input
                   {...register(key as any)}
@@ -2324,7 +2324,7 @@ function SocialLinksSection({
           ))}
         </div>
       ) : activeLinks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border py-6 text-center">
+        <div className="rounded-[6px] border border-dashed border-border py-6 text-center">
           <Share2 size={20} className="text-muted-foreground mx-auto mb-2" />
           <p className="text-[11px] text-muted-foreground">
             No social links added yet
@@ -2338,9 +2338,9 @@ function SocialLinksSection({
               href={links[key as keyof typeof links] as string}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 hover:border-primary/40 hover:bg-primary/5 px-4 py-3 transition-all group"
+              className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/20 hover:border-primary/40 hover:bg-primary/5 px-4 py-3 transition-all group"
             >
-              <div className="w-8 h-8 rounded-lg bg-muted group-hover:bg-primary/15 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-all">
+              <div className="w-8 h-8 rounded-[6px] bg-muted group-hover:bg-primary/15 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-all">
                 <Icon size={14} />
               </div>
               <div className="min-w-0">
@@ -2383,7 +2383,7 @@ function SectionRouter({
       {profile.status !== "approved" && (
         <div
           className={cn(
-            "flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-semibold border",
+            "flex items-center gap-3 rounded-[6px] px-4 py-3 text-xs font-semibold border",
             profile.status === "rejected"
               ? "bg-destructive/10 border-destructive/25 text-destructive"
               : "bg-amber-500/10 border-amber-500/25 text-amber-500",
@@ -2539,7 +2539,7 @@ function SetupWizard({
   const section = SECTIONS[currentIdx];
 
   const timeInputClass =
-    "w-full h-9 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer";
+    "w-full h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer";
 
   return (
     <div className="flex flex-col sm:flex-row flex-1 min-h-0">
@@ -2702,7 +2702,7 @@ function SetupWizard({
 
           {activeSection === "hours" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3">
+              <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3">
                 <div>
                   <p className="text-xs font-semibold">Open 24 hours</p>
                   <p className="text-[10px] text-muted-foreground">
@@ -2734,7 +2734,7 @@ function SetupWizard({
                 {(["offers_delivery", "offers_pickup"] as const).map((key) => (
                   <div
                     key={key}
-                    className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3"
+                    className="flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3"
                   >
                     <p className="text-xs font-semibold capitalize">
                       {key.replace("offers_", "Offers ")}
@@ -2800,7 +2800,7 @@ function SetupWizard({
               {SOCIAL_PLATFORMS.map(
                 ({ key, label, icon: Icon, placeholder }) => (
                   <FormField key={key} label={label}>
-                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <div className="flex items-center gap-2 rounded-[6px] border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <input
                         {...register(`social_links.${key}` as any)}
@@ -2892,22 +2892,22 @@ const PharmacyProfile = () => {
 
   const stats = profile
     ? {
-        city: profile.city,
-        status:
-          profile.status.charAt(0).toUpperCase() + profile.status.slice(1),
-        hours: profile.is_open_24h
-          ? "24h"
-          : `${formatTime(profile.opens_at)} – ${formatTime(profile.closes_at)}`,
-        delivery: profile.offers_delivery
-          ? formatDeliveryFee(profile.delivery_fee, profile.delivery_currency)
-          : "None",
-        radius: profile.offers_delivery
-          ? `${profile.delivery_radius_km} km`
-          : "—",
-        eta: profile.offers_delivery
-          ? `${profile.estimated_delivery_minutes} min`
-          : "—",
-      }
+      city: profile.city,
+      status:
+        profile.status.charAt(0).toUpperCase() + profile.status.slice(1),
+      hours: profile.is_open_24h
+        ? "24h"
+        : `${formatTime(profile.opens_at)} – ${formatTime(profile.closes_at)}`,
+      delivery: profile.offers_delivery
+        ? formatDeliveryFee(profile.delivery_fee, profile.delivery_currency)
+        : "None",
+      radius: profile.offers_delivery
+        ? `${profile.delivery_radius_km} km`
+        : "—",
+      eta: profile.offers_delivery
+        ? `${profile.estimated_delivery_minutes} min`
+        : "—",
+    }
     : null;
 
   return (
@@ -2944,7 +2944,7 @@ const PharmacyProfile = () => {
         {/* Main card */}
         <div
           className={cn(
-            "rounded-xl border border-border bg-card overflow-hidden shadow-sm",
+            "rounded-[6px] border border-border bg-card overflow-hidden shadow-sm",
             "flex flex-col sm:flex-row min-h-[600px]",
           )}
         >
@@ -2954,7 +2954,7 @@ const PharmacyProfile = () => {
                 {Array(6)
                   .fill(0)
                   .map((_, i) => (
-                    <Skeleton key={i} className="h-11 rounded-lg" />
+                    <Skeleton key={i} className="h-11 rounded-[6px]" />
                   ))}
               </div>
               <ProfileSkeleton />

@@ -6,7 +6,7 @@ export const SignalBars = ({ strength }: { strength: number }) => (
       <div
         key={b}
         style={{ height: `${b * 3}px` }}
-        className={cn("w-1 rounded-sm transition-colors", b <= strength ? "bg-emerald-400" : "bg-white/20")}
+        className={cn("w-1 rounded-[6px] transition-colors", b <= strength ? "bg-emerald-400" : "bg-white/20")}
       />
     ))}
   </div>

@@ -257,9 +257,9 @@ export function AppointmentsTab() {
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-1">
               {[
-                { label: "All dates", val: "all",     today: false, upcoming: false },
-                { label: "Today",     val: "today",   today: true,  upcoming: false },
-                { label: "Upcoming",  val: "upcoming",today: false, upcoming: true  },
+                { label: "All dates", val: "all", today: false, upcoming: false },
+                { label: "Today", val: "today", today: true, upcoming: false },
+                { label: "Upcoming", val: "upcoming", today: false, upcoming: true },
               ].map((opt) => (
                 <button
                   key={opt.val}
@@ -389,7 +389,7 @@ export function AppointmentsTab() {
             <select
               value={filters.sort}
               onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as any }))}
-              className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+              className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
             >
               <option value="date-asc">Oldest first</option>
               <option value="date-desc">Latest first</option>
@@ -402,7 +402,7 @@ export function AppointmentsTab() {
               hasActiveFilters={hasActiveFilters}
             />
 
-            <div className="flex rounded-sm border border-border overflow-hidden bg-card shadow-sm">
+            <div className="flex rounded-[6px] border border-border overflow-hidden bg-card shadow-sm">
               <button
                 onClick={() => setView("table")}
                 className={cn(
@@ -429,7 +429,7 @@ export function AppointmentsTab() {
         <div className="p-5">
           {isError ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-              <div className="w-16 h-16 rounded-md bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
+              <div className="w-16 h-16 rounded-[6px] bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
                 <AlertCircle className="w-8 h-8 text-red-500" />
               </div>
               <div>
@@ -444,7 +444,7 @@ export function AppointmentsTab() {
 
           ) : !isLoading && filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-              <div className="w-16 h-16 rounded-md bg-muted/60 flex items-center justify-center border border-border/40">
+              <div className="w-16 h-16 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                 <Calendar className="w-8 h-8 text-muted-foreground/50" />
               </div>
               <div>
@@ -462,7 +462,7 @@ export function AppointmentsTab() {
 
           ) : view === "table" ? (
             /* ── Table view ── */
-            <div className="rounded-md border border-border/70 bg-card overflow-auto  shadow-sm">
+            <div className="rounded-[6px] border border-border/70 bg-card overflow-auto  shadow-sm">
               <table className="w-full text-xs  ">
                 <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                   <tr>
@@ -489,7 +489,7 @@ export function AppointmentsTab() {
                           {/* Patient */}
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
+                              <div className="h-10 w-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
                                 {a.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
                               </div>
                               <div>
@@ -543,7 +543,7 @@ export function AppointmentsTab() {
                               {/* Details */}
                               <button
                                 onClick={() => setDetailAppt(a)}
-                                className="h-9 px-3 rounded-md border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1.5"
+                                className="h-9 px-3 rounded-[6px] border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1.5"
                                 title="View details"
                               >
                                 <Eye className="h-4 w-4" />
@@ -554,7 +554,7 @@ export function AppointmentsTab() {
                               {isInProgress && (
                                 <button
                                   onClick={() => setRunningLateAppt(a)}
-                                  className="h-9 px-3 rounded-md border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors flex items-center gap-1.5"
+                                  className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors flex items-center gap-1.5"
                                   title="Running late"
                                 >
                                   <Timer className="h-4 w-4" />
@@ -567,7 +567,7 @@ export function AppointmentsTab() {
                                 <button
                                   onClick={() => handleReadyNext(a)}
                                   disabled={readyNext.isPending}
-                                  className="h-9 px-3 rounded-md border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                  className="h-9 px-3 rounded-[6px] border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
                                   title="Ready for next patient"
                                 >
                                   {readyNext.isPending
@@ -585,7 +585,7 @@ export function AppointmentsTab() {
                                   size="sm"
                                   onClick={() => handleRejoin(a)}
                                   disabled={isJoining}
-                                  className="h-9 px-4 text-xs font-semibold rounded-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1.5"
+                                  className="h-9 px-4 text-xs font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1.5"
                                   title="Rejoin session"
                                 >
                                   {isJoining
@@ -601,7 +601,7 @@ export function AppointmentsTab() {
                                   size="sm"
                                   onClick={() => handleStart(a)}
                                   disabled={isJoining}
-                                  className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-md shadow-sm"
+                                  className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
                                 >
                                   {isJoining
                                     ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -614,7 +614,7 @@ export function AppointmentsTab() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="h-9 px-4 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-md"
+                                  className="h-9 px-4 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px]"
                                 >
                                   {t("pages.doctor.notes")}
                                 </Button>
@@ -633,7 +633,7 @@ export function AppointmentsTab() {
             <div className="flex flex-col gap-2">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-16 rounded-sm bg-muted/40 animate-pulse border border-border/40" />
+                  <div key={i} className="h-16 rounded-[6px] bg-muted/40 animate-pulse border border-border/40" />
                 ))
                 : filtered.map((a) => (
                   <AppointmentCard

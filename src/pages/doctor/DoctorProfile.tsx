@@ -65,9 +65,9 @@ const formatFee = (fee: number | string, currency: string) =>
 const formatDateDisplay = (d: string) =>
   d
     ? new Date(d).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-      })
+      year: "numeric",
+      month: "short",
+    })
     : "—";
 
 const toDateInputValue = (isoOrDate: string | null | undefined): string => {
@@ -243,7 +243,7 @@ const StatsSkeleton = React.memo(function StatsSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-1.5"
+          className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-1.5"
         >
           <Skeleton className="h-2.5 w-16 rounded" />
           <Skeleton className="h-3.5 w-20 rounded" />
@@ -274,7 +274,7 @@ const SidebarSkeleton = React.memo(function SidebarSkeleton() {
         {STEPS.map((step) => (
           <div
             key={step.id}
-            className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-md"
+            className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[6px]"
           >
             <Skeleton className="w-6 h-6 rounded-full shrink-0" />
             <div className="hidden sm:flex flex-col gap-1 flex-1 min-w-0">
@@ -296,7 +296,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
           <Skeleton className="w-1.5 h-1.5 rounded-full" />
           <Skeleton className="h-2.5 w-36 rounded" />
         </div>
-        <Skeleton className="h-7 w-14 rounded-md" />
+        <Skeleton className="h-7 w-14 rounded-[6px]" />
       </div>
       <div className="flex-1 p-4 sm:p-5 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -317,7 +317,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-md border border-border bg-muted/40 p-4 space-y-3"
+              className="rounded-[6px] border border-border bg-muted/40 p-4 space-y-3"
             >
               <Skeleton className="h-3.5 w-40 rounded" />
               <div className="grid grid-cols-3 gap-3">
@@ -357,7 +357,7 @@ const StatCard = React.memo(function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
+    <div className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
       <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
         {label}
       </span>
@@ -415,7 +415,7 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
   onFill: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-lg bg-muted/30">
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-[6px] bg-muted/30">
       <div className="rounded-full bg-muted p-3">
         <Plus className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -502,7 +502,7 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
       )}
 
       {s.specialization_fee_id && (s.fee_name || s.tier_name) && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <div className="rounded-[6px] border border-primary/20 bg-primary/5 p-4 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
               Selected fee configuration
@@ -565,7 +565,7 @@ const ViewEducation = React.memo(function ViewEducation({
       {data.education.map((edu) => (
         <div
           key={edu.id}
-          className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+          className="rounded-[6px] border border-border bg-muted/30 p-4 space-y-3"
         >
           <p className="text-[13px] font-semibold text-foreground capitalize">
             {edu.degree}
@@ -595,7 +595,7 @@ const ViewExperience = React.memo(function ViewExperience({
       {data.experience.map((exp) => (
         <div
           key={exp.id}
-          className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+          className="rounded-[6px] border border-border bg-muted/30 p-4 space-y-3"
         >
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] font-semibold text-foreground">
@@ -640,7 +640,7 @@ const ViewQualifications = React.memo(function ViewQualifications({
           <div
             key={q.id}
             className={cn(
-              "rounded-lg border p-4 space-y-3",
+              "rounded-[6px] border p-4 space-y-3",
               isExpired
                 ? "border-destructive/30 bg-destructive/5"
                 : "border-primary/20 bg-primary/5",
@@ -723,7 +723,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
       {newFiles.map(([label, file]) => (
         <div
           key={label}
-          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+          className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
         >
           <FileText className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
@@ -743,7 +743,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
           // ── Profile image: show as avatar thumbnail ──────────────────────
           <div
             key="existing-profile-photo"
-            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+            className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
           >
             <img
               src={url}
@@ -766,7 +766,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+            className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
           >
             <FileText className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
@@ -802,7 +802,7 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({
           href={data.linksSection[key]}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+          className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
         >
           <Link2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide w-28 shrink-0">
@@ -976,7 +976,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
               key={step.id}
               onClick={() => onSelect(i)}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150 cursor-pointer",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150 cursor-pointer",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isEmpty
@@ -1427,7 +1427,7 @@ const DoctorProfile = () => {
         />
         <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
           <StatsSkeleton />
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+          <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
             <SidebarSkeleton />
             <ContentSkeleton />
           </div>
@@ -1449,9 +1449,9 @@ const DoctorProfile = () => {
               ? "Update your professional information"
               : "Fill in the details below to get started"
             : t(
-                "pages.doctor.profile_sub",
-                "Manage your professional information",
-              )
+              "pages.doctor.profile_sub",
+              "Manage your professional information",
+            )
         }
       />
 
@@ -1496,7 +1496,7 @@ const DoctorProfile = () => {
           ) : null)}
 
         {/* Main card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           {/* Sidebar */}
           {isFetchingProfile && !profileData ? (
             <SidebarSkeleton />

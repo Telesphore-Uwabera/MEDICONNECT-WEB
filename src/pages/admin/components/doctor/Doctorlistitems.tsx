@@ -81,7 +81,7 @@ export function DoctorRow({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(d)}
         >
           Manage
@@ -101,7 +101,7 @@ export function DoctorCard({
   onManage: (d: ApiDoctor) => void;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
         {getInitials(d.user.name)}
       </div>
@@ -152,7 +152,7 @@ export function DoctorCard({
         <Button
           size="sm"
           variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(d)}
         >
           Manage

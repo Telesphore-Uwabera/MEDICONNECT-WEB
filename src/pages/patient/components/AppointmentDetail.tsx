@@ -224,7 +224,7 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
+    <div className="border border-border/50 rounded-[6px] overflow-hidden bg-card">
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors"
@@ -267,7 +267,7 @@ function CancelDialog({
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-[6px] shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-border/50">
           <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center mb-4">
@@ -289,12 +289,12 @@ function CancelDialog({
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. I can't make it at this time"
               rows={3}
-              className="w-full rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
+              className="w-full rounded-[6px] border border-border/60 bg-muted/30 px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
             />
           </div>
 
           {isError && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
               <p className="text-sm text-red-600 dark:text-red-400">
                 {(error as any)?.message ?? "Could not cancel. Please try again."}
@@ -303,7 +303,7 @@ function CancelDialog({
           )}
 
           {isSuccess && (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
               <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                 Appointment cancelled.
@@ -317,7 +317,7 @@ function CancelDialog({
               size="sm"
               onClick={onClose}
               disabled={isPending}
-              className="flex-1 h-10 rounded-lg text-sm"
+              className="flex-1 h-10 rounded-[6px] text-sm"
             >
               Keep it
             </Button>
@@ -325,7 +325,7 @@ function CancelDialog({
               size="sm"
               onClick={handleCancel}
               disabled={isPending || isSuccess}
-              className="flex-1 h-10 rounded-lg text-sm font-semibold bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white gap-2"
+              className="flex-1 h-10 rounded-[6px] text-sm font-semibold bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600 text-white gap-2"
             >
               {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -346,7 +346,7 @@ function CancelDialog({
 function DetailSkeleton() {
   return (
     <div className="p-5 space-y-5 animate-pulse">
-      <div className="rounded-xl border border-border/50 bg-card p-5 space-y-4">
+      <div className="rounded-[6px] border border-border/50 bg-card p-5 space-y-4">
         <div className="flex items-start gap-4">
           <div className="w-16 h-16 rounded-full bg-muted shrink-0" />
           <div className="flex-1 space-y-2.5">
@@ -357,13 +357,13 @@ function DetailSkeleton() {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-muted" />
+            <div key={i} className="h-16 rounded-[6px] bg-muted" />
           ))}
         </div>
-        <div className="h-10 rounded-xl bg-muted" />
+        <div className="h-10 rounded-[6px] bg-muted" />
       </div>
       {[0, 1].map((i) => (
-        <div key={i} className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+        <div key={i} className="rounded-[6px] border border-border/50 bg-card p-4 space-y-3">
           <div className="h-3 w-24 rounded-full bg-muted" />
           {[0, 1, 2].map((j) => (
             <div key={j} className="flex justify-between">
@@ -408,7 +408,7 @@ function ActionBar({
         <Button
           onClick={onJoin}
           disabled={joinPending}
-          className="flex-1 h-10 rounded-sm text-sm font-semibold gap-2 bg-violet-600 hover:bg-violet-700 border-violet-600 hover:border-violet-700 text-white shadow-sm shadow-violet-500/20"
+          className="flex-1 h-10 rounded-[6px] text-sm font-semibold gap-2 bg-violet-600 hover:bg-violet-700 border-violet-600 hover:border-violet-700 text-white shadow-sm shadow-violet-500/20"
         >
           {joinPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -422,7 +422,7 @@ function ActionBar({
         <Button
           onClick={onPay}
           disabled={payPending}
-          className="flex-1 h-10 rounded-sm text-sm font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
+          className="flex-1 h-10 rounded-[6px] text-sm font-semibold gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white shadow-sm shadow-emerald-500/20"
         >
           {payPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -436,7 +436,7 @@ function ActionBar({
         <Button
           variant="outline"
           onClick={onCancel}
-          className="h-10 rounded-sm text-sm gap-2 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
+          className="h-10 rounded-[6px] text-sm gap-2 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
         >
           <XCircle className="w-4 h-4" />
           Cancel
@@ -605,7 +605,7 @@ export function AppointmentDetailContent({
               size="sm"
               variant="outline"
               onClick={onClose}
-              className="rounded-lg text-sm h-10 px-5"
+              className="rounded-[6px] text-sm h-10 px-5"
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Go back
             </Button>
@@ -616,7 +616,7 @@ export function AppointmentDetailContent({
           <div className="p-4 lg:p-5 space-y-4 max-w-2xl mx-auto">
 
             {/* ── Hero card ── */}
-            <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
+            <div className="rounded-[6px] border border-border/50 bg-card shadow-sm overflow-hidden">
 
 
               <div className="p-5 space-y-5">
@@ -658,7 +658,7 @@ export function AppointmentDetailContent({
                 </div>
 
                 {/* Stats strip */}
-                <div className="grid grid-cols-3 divide-x divide-border/50 rounded-xl border border-border/50 overflow-hidden bg-muted/20">
+                <div className="grid grid-cols-3 divide-x divide-border/50 rounded-[6px] border border-border/50 overflow-hidden bg-muted/20">
                   {[
                     {
                       icon: appt.type === "online" ? Wifi : MapPin,
@@ -691,7 +691,7 @@ export function AppointmentDetailContent({
 
                 {/* Unpaid warning */}
                 {unpaid && appt.status !== "cancelled" && (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
                     <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <p className="text-sm text-amber-700 dark:text-amber-400">
                       Payment of{" "}
@@ -715,7 +715,7 @@ export function AppointmentDetailContent({
 
                 {/* Join error */}
                 {joinMutation.isError && (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
                     <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                     <p className="text-sm text-red-600 dark:text-red-400">
                       {(joinMutation.error as any)?.message ?? "Could not start session."}
@@ -898,7 +898,7 @@ export function AppointmentDetailContent({
                     <img
                       src={insurance.logo}
                       alt={insurance.name}
-                      className="h-10 w-10 object-contain rounded-lg"
+                      className="h-10 w-10 object-contain rounded-[6px]"
                     />
                   )}
                   <div>
@@ -972,7 +972,7 @@ export function AppointmentDetailContent({
 
             {/* ── Review CTA ── */}
             {canReview && (
-              <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-5 py-5 flex items-center justify-between gap-4">
+              <div className="rounded-[6px] border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-5 py-5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
                     <Star className="w-5 h-5 text-amber-500" />
@@ -988,7 +988,7 @@ export function AppointmentDetailContent({
                 </div>
                 <Button
                   size="sm"
-                  className="h-9 px-4 text-sm font-semibold rounded-lg shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm gap-2"
+                  className="h-9 px-4 text-sm font-semibold rounded-[6px] shrink-0 bg-amber-500 hover:bg-amber-600 text-white border-0 shadow-sm gap-2"
                 >
                   <Star className="w-4 h-4" />
                   Review
@@ -998,7 +998,7 @@ export function AppointmentDetailContent({
 
             {/* ── Cancellation info ── */}
             {appt.status === "cancelled" && appt.cancellation_reason && (
-              <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-5 py-4 flex items-start gap-3">
+              <div className="rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 px-5 py-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-red-700 dark:text-red-400">
@@ -1084,7 +1084,7 @@ export function AppointmentDetailModal({
         {/* Close ✕ */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-lg bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-[6px] bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
           aria-label="Close"
         >
           <X className="w-4 h-4" />

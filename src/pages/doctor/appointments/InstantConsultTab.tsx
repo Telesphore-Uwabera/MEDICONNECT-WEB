@@ -61,13 +61,13 @@ function SectionLabel({
 
 function SkeletonCard() {
   return (
-    <div className="rounded-md border border-border bg-card p-4 flex items-center gap-4 animate-pulse">
-      <div className="h-12 w-12 rounded-md bg-muted shrink-0" />
+    <div className="rounded-[6px] border border-border bg-card p-4 flex items-center gap-4 animate-pulse">
+      <div className="h-12 w-12 rounded-[6px] bg-muted shrink-0" />
       <div className="flex-1 space-y-3">
         <div className="h-3 w-32 bg-muted rounded-full" />
         <div className="h-2 w-48 bg-muted rounded-full" />
       </div>
-      <div className="h-9 w-20 rounded-md bg-muted" />
+      <div className="h-9 w-20 rounded-[6px] bg-muted" />
     </div>
   );
 }
@@ -86,8 +86,8 @@ function StatTile({
   iconWrapCls: string;
 }) {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-md border border-border/60 bg-background">
-      <div className={cn("h-10 w-10 rounded-md flex items-center justify-center shrink-0", iconWrapCls)}>
+    <div className="flex items-center gap-4 p-4 rounded-[6px] border border-border/60 bg-background">
+      <div className={cn("h-10 w-10 rounded-[6px] flex items-center justify-center shrink-0", iconWrapCls)}>
         {icon}
       </div>
       <div>
@@ -228,7 +228,7 @@ export function InstantConsultTab() {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-4 px-5 py-3 border-b border-border bg-card shrink-0">
             {/* Live chip */}
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-destructive/10 border border-destructive/20">
               <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
               <span className="text-xs font-bold text-destructive uppercase tracking-widest">
                 {t("consult.bookings.online")}
@@ -251,7 +251,7 @@ export function InstantConsultTab() {
               <button
                 onClick={() => setNotesOpen((v) => !v)}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-smooth",
+                  "flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border transition-smooth",
                   notesOpen
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -288,7 +288,7 @@ export function InstantConsultTab() {
 
         {/* Rejoin in-progress consultation */}
         {liveTarget && (
-          <div className="flex items-center gap-4 p-4 rounded-md border border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-4 p-4 rounded-[6px] border border-primary/30 bg-primary/5">
             <span className="relative flex h-3 w-3 shrink-0">
               <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-primary" />
@@ -301,7 +301,7 @@ export function InstantConsultTab() {
             </div>
             <button
               onClick={handleRejoinLive}
-              className="flex items-center gap-2 px-4 h-9 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
+              className="flex items-center gap-2 px-4 h-9 rounded-[6px] bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
             >
               <Video className="h-4 w-4" /> {t("consult.bookings.rejoin")}
             </button>
@@ -310,7 +310,7 @@ export function InstantConsultTab() {
 
         {/* Online header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-[hsl(var(--success)/0.1)] border border-[hsl(var(--success)/0.25)]">
             <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] animate-pulse" />
             <span className="text-xs font-bold text-[hsl(var(--success))] uppercase tracking-widest">
               {t("consult.bookings.online")}
@@ -335,7 +335,7 @@ export function InstantConsultTab() {
         {/* Empty state */}
         {!queueLoading && activeCount === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-            <div className="h-16 w-16 rounded-md bg-muted/50 border border-border flex items-center justify-center">
+            <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
               <Stethoscope className="h-8 w-8 text-muted-foreground/40" />
             </div>
             <div>

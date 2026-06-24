@@ -136,11 +136,11 @@ export function QuickPrescriptionModal({
 
   return (
     <div className="fixed inset-0 z-[9996] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-lg border border-border bg-card shadow-2xl overflow-hidden">
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[6px] border border-border bg-card shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-[6px] bg-primary/10 flex items-center justify-center">
               <Pill className="h-3.5 w-3.5 text-primary" />
             </div>
             <div>
@@ -154,7 +154,7 @@ export function QuickPrescriptionModal({
           </div>
           <button
             onClick={onSkip}
-            className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -203,7 +203,7 @@ export function QuickPrescriptionModal({
         <div className="flex items-center justify-between gap-2 px-4 py-3 border-t border-border shrink-0">
           <button
             onClick={onSkip}
-            className="px-3 h-9 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="px-3 h-9 rounded-[6px] text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             {phase === "form" ? "Skip prescription" : "Skip pharmacy"}
           </button>
@@ -213,7 +213,7 @@ export function QuickPrescriptionModal({
               onClick={handleIssue}
               disabled={!canIssue}
               className={cn(
-                "px-4 h-9 rounded-md text-[12px] font-semibold flex items-center gap-2 transition-all",
+                "px-4 h-9 rounded-[6px] text-[12px] font-semibold flex items-center gap-2 transition-all",
                 canIssue
                   ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
                   : "bg-muted text-muted-foreground cursor-not-allowed",
@@ -225,7 +225,7 @@ export function QuickPrescriptionModal({
           ) : (
             <button
               onClick={onDone}
-              className="px-4 h-9 rounded-md text-[12px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2"
+              className="px-4 h-9 rounded-[6px] text-[12px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2"
             >
               <Check className="h-3.5 w-3.5" />
               Done
@@ -298,7 +298,7 @@ function PrescriptionForm({
         </div>
 
         {items.map((it, i) => (
-          <div key={i} className="rounded-md border border-border bg-background/50 p-2.5 space-y-2">
+          <div key={i} className="rounded-[6px] border border-border bg-background/50 p-2.5 space-y-2">
             <div className="flex items-center gap-2">
               <input
                 className={cn(inputCls, "flex-1")}
@@ -309,7 +309,7 @@ function PrescriptionForm({
               {items.length > 1 && (
                 <button
                   onClick={() => removeItem(i)}
-                  className="h-9 w-9 shrink-0 rounded-md flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  className="h-9 w-9 shrink-0 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -382,7 +382,7 @@ function PharmacyStep({
           href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-500/15 transition-colors"
+          className="flex items-center gap-2 rounded-[6px] border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-500/15 transition-colors"
         >
           <FileText className="h-3.5 w-3.5" />
           View signed prescription PDF
@@ -419,7 +419,7 @@ function PharmacyStep({
               <button
                 key={p.id}
                 onClick={() => setPharmacy(p)}
-                className="w-full flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-left hover:border-primary/50 transition-colors"
+                className="w-full flex items-center gap-2 rounded-[6px] border border-border bg-background px-2.5 py-2 text-left hover:border-primary/50 transition-colors"
               >
                 <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="flex-1 min-w-0">
@@ -434,7 +434,7 @@ function PharmacyStep({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2">
+          <div className="flex items-center gap-2 rounded-[6px] border border-primary/30 bg-primary/5 px-2.5 py-2">
             <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
             <span className="flex-1 min-w-0">
               <span className="block text-[12px] font-medium text-foreground truncate">{pharmacy.name}</span>
@@ -460,7 +460,7 @@ function PharmacyStep({
                 key={key}
                 onClick={() => setDeliveryType(key)}
                 className={cn(
-                  "flex items-center gap-2 rounded-md border px-3 py-2 text-[12px] font-medium transition-all",
+                  "flex items-center gap-2 rounded-[6px] border px-3 py-2 text-[12px] font-medium transition-all",
                   deliveryType === key
                     ? "border-primary bg-primary/10 text-foreground"
                     : "border-border text-muted-foreground hover:border-primary/40",
@@ -497,7 +497,7 @@ function PharmacyStep({
             onClick={send}
             disabled={!canSend}
             className={cn(
-              "w-full px-4 h-9 rounded-md text-[12px] font-semibold flex items-center justify-center gap-2 transition-all",
+              "w-full px-4 h-9 rounded-[6px] text-[12px] font-semibold flex items-center justify-center gap-2 transition-all",
               canSend
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
                 : "bg-muted text-muted-foreground cursor-not-allowed",

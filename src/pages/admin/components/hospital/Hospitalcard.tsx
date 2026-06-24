@@ -1,4 +1,4 @@
-import { Badge }  from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Stethoscope } from "lucide-react";
 import type { ApiHospital } from "@/hooks/admin/use-admin-hospitals";
@@ -7,14 +7,14 @@ import { getInitials } from "./Utils";
 import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
 
 interface HospitalCardProps {
-  h:        ApiHospital;
+  h: ApiHospital;
   onManage: (h: ApiHospital) => void;
 }
 
 export function HospitalCard({ h, onManage }: HospitalCardProps) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-9 w-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5 border border-primary/20">
         {getInitials(h.name_en)}
       </div>
 
@@ -60,7 +60,7 @@ export function HospitalCard({ h, onManage }: HospitalCardProps) {
         <Button
           size="sm"
           variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(h)}
         >
           Manage

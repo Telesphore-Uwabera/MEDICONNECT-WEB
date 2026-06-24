@@ -79,7 +79,7 @@ const InfoTile = ({
   value: React.ReactNode;
   valueClassName?: string;
 }) => (
-  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+  <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
       {icon}
       {label}
@@ -101,10 +101,10 @@ const Badge = ({
 }) => {
   const styles = {
     default: "bg-secondary/60 text-foreground border-border/60",
-    red:     "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
-    green:   "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
-    yellow:  "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
-    blue:    "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
+    red: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
+    green: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
+    yellow: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
+    blue: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
   };
   return (
     <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border", styles[variant])}>
@@ -160,7 +160,7 @@ function QuestionRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onView(q)}
           >
             <Eye className="w-3 h-3" />
@@ -168,7 +168,7 @@ function QuestionRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(q)}
           >
             <Pencil className="w-3 h-3 mr-1" />
@@ -177,7 +177,7 @@ function QuestionRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-3 text-[10px] rounded-sm border-border/60 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
             onClick={() => onDelete(q)}
             disabled={isDeleting}
           >
@@ -211,8 +211,8 @@ function QuestionCard({
   isDeleting: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-7 w-7 rounded-sm bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px] shrink-0 mt-0.5 border border-primary/20 tabular-nums">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="h-7 w-7 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-semibold text-[10px] shrink-0 mt-0.5 border border-primary/20 tabular-nums">
         {index + 1}
       </div>
       <div className="flex-1 min-w-0">
@@ -230,7 +230,7 @@ function QuestionCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onView(q)}
           >
             <Eye className="w-3 h-3 mr-1" />
@@ -239,7 +239,7 @@ function QuestionCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="flex-1 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(q)}
           >
             <Pencil className="w-3 h-3 mr-1" />
@@ -248,7 +248,7 @@ function QuestionCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-7 px-3 text-[10px] rounded-sm border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+            className="flex-1 h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
             onClick={() => onDelete(q)}
             disabled={isDeleting}
           >
@@ -396,13 +396,13 @@ function ViewDetailsPanel({
                   {(
                     [
                       { lang: "English", code: "EN", value: question.question_en },
-                      { lang: "French",  code: "FR", value: question.question_fr },
+                      { lang: "French", code: "FR", value: question.question_fr },
                       { lang: "Kinyarwanda", code: "RW", value: question.question_kiny },
                     ] as const
                   ).map(({ lang, code, value }) => (
                     <div
                       key={code}
-                      className="p-3 rounded-lg border border-border/60 bg-secondary/20 space-y-0.5"
+                      className="p-3 rounded-[6px] border border-border/60 bg-secondary/20 space-y-0.5"
                     >
                       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                         {lang}
@@ -420,7 +420,7 @@ function ViewDetailsPanel({
                     <List className="w-3.5 h-3.5" />
                     Options
                   </p>
-                  <div className="p-3 rounded-lg border border-border/60 bg-secondary/20 flex flex-wrap gap-1.5">
+                  <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/20 flex flex-wrap gap-1.5">
                     {question.options.map((opt) => (
                       <Badge key={opt} variant="default">{opt}</Badge>
                     ))}
@@ -430,7 +430,7 @@ function ViewDetailsPanel({
 
               {/* Warning */}
               {question.warning_if_yes && (
-                <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-3 flex items-start gap-2">
+                <div className="rounded-[6px] border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 p-3 flex items-start gap-2">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-0.5">
@@ -447,7 +447,7 @@ function ViewDetailsPanel({
             {/* Footer */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={() => { onClose(); onEdit(question); }}
               >
                 <Pencil className="h-4 w-4" />
@@ -455,7 +455,7 @@ function ViewDetailsPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
               >
                 Close
@@ -581,7 +581,7 @@ function QuestionPanel({
                   onChange={(e) => setText(e.target.value)}
                   rows={5}
                   placeholder="e.g. Do you have a valid medical license?"
-                  className="w-full px-3 py-2.5 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none leading-relaxed"
+                  className="w-full px-3 py-2.5 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none leading-relaxed"
                 />
                 <p className="text-[10px] text-muted-foreground/60">
                   {text.trim().length} characters
@@ -591,7 +591,7 @@ function QuestionPanel({
 
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 disabled={isSaving || !text.trim()}
                 onClick={handleSubmit}
               >
@@ -604,7 +604,7 @@ function QuestionPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
               >
                 Cancel
@@ -682,7 +682,7 @@ function DeleteConfirmPanel({
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-              <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 p-4">
+              <div className="rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 p-4">
                 <p className="text-[12px] text-red-700 dark:text-red-400 font-medium mb-1">
                   Are you sure you want to delete this question?
                 </p>
@@ -707,7 +707,7 @@ function DeleteConfirmPanel({
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
                 variant="outline"
-                className="w-full h-10 text-[12px] rounded-lg gap-2 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
                 disabled={isDeleting}
                 onClick={onConfirm}
               >
@@ -720,7 +720,7 @@ function DeleteConfirmPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
               >
                 Cancel
@@ -739,11 +739,11 @@ function ChecklistQuestions() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
-  const [searchInput, setSearchInput]           = useState("");
-  const [panelMode, setPanelMode]               = useState<"create" | "edit" | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [panelMode, setPanelMode] = useState<"create" | "edit" | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<ApiChecklistQuestion | null>(null);
   const [deletingQuestion, setDeletingQuestion] = useState<ApiChecklistQuestion | null>(null);
-  const [viewingQuestion, setViewingQuestion]   = useState<ApiChecklistQuestion | null>(null);
+  const [viewingQuestion, setViewingQuestion] = useState<ApiChecklistQuestion | null>(null);
 
   // ── API ──
   const { data: questionsBySection = {} as QuestionsBySection, isLoading, isError } =
@@ -759,7 +759,7 @@ function ChecklistQuestions() {
     q.question_en.toLowerCase().includes(searchInput.toLowerCase()),
   );
 
-  const isSaving   = createMutation.isPending || updateMutation.isPending;
+  const isSaving = createMutation.isPending || updateMutation.isPending;
   const isDeleting = deleteMutation.isPending;
 
   // ── Handlers ──
@@ -782,18 +782,18 @@ function ChecklistQuestions() {
     try {
       if (panelMode === "create") {
         const payload: CreateChecklistQuestionPayload = {
-          section:       "symptoms_screening",
-          question_key:  `q_${Date.now()}`,
-          question_en:   text,
-          question_fr:   text,
+          section: "symptoms_screening",
+          question_key: `q_${Date.now()}`,
+          question_en: text,
+          question_fr: text,
           question_kiny: text,
-          answer_type:   "boolean",
+          answer_type: "boolean",
         };
         await createMutation.mutateAsync(payload);
         toast({ title: "Question created." });
       } else if (panelMode === "edit" && selectedQuestion) {
         const payload: UpdateChecklistQuestionPayload = {
-          id:          selectedQuestion.id,
+          id: selectedQuestion.id,
           question_en: text,
         };
         await updateMutation.mutateAsync(payload);
@@ -869,7 +869,7 @@ function ChecklistQuestions() {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search questions…"
-                    className="w-40 sm:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-40 sm:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                   {searchInput && (
                     <button
@@ -883,7 +883,7 @@ function ChecklistQuestions() {
 
                 <Button
                   size="sm"
-                  className="h-[30px] px-3 text-[10px] rounded-sm gap-1.5"
+                  className="h-[30px] px-3 text-[10px] rounded-[6px] gap-1.5"
                   onClick={openCreate}
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -906,7 +906,7 @@ function ChecklistQuestions() {
                 </div>
               ) : !isLoading && filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                  <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                     <ClipboardList className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
@@ -929,7 +929,7 @@ function ChecklistQuestions() {
                   ) : (
                     <Button
                       size="sm"
-                      className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5"
+                      className="mt-1 h-8 px-4 text-[11px] rounded-[6px] gap-1.5"
                       onClick={openCreate}
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -940,7 +940,7 @@ function ChecklistQuestions() {
               ) : (
                 <>
                   {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                     <table className="w-full text-[11px]">
                       <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                         <tr>
@@ -976,22 +976,22 @@ function ChecklistQuestions() {
                   <div className="md:hidden flex flex-col gap-2">
                     {isLoading
                       ? Array.from({ length: 4 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-28 rounded-sm border border-border/60 bg-card animate-pulse"
-                          />
-                        ))
+                        <div
+                          key={i}
+                          className="h-28 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                        />
+                      ))
                       : filtered.map((q, i) => (
-                          <QuestionCard
-                            key={q.id}
-                            q={q}
-                            index={i}
-                            onView={setViewingQuestion}
-                            onEdit={openEdit}
-                            onDelete={setDeletingQuestion}
-                            isDeleting={isDeleting && deletingQuestion?.id === q.id}
-                          />
-                        ))}
+                        <QuestionCard
+                          key={q.id}
+                          q={q}
+                          index={i}
+                          onView={setViewingQuestion}
+                          onEdit={openEdit}
+                          onDelete={setDeletingQuestion}
+                          isDeleting={isDeleting && deletingQuestion?.id === q.id}
+                        />
+                      ))}
                   </div>
                 </>
               )}

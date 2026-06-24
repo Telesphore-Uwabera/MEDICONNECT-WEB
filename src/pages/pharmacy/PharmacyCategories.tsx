@@ -124,7 +124,7 @@ function PillGroup<T extends string | number>({
           key={String(o.value)}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-2",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center gap-2",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -162,7 +162,7 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border/70 rounded-sm shadow-2xl w-full max-w-md mx-4 overflow-hidden max-h-[90dvh] flex flex-col">
+      <div className="relative bg-card border border-border/70 rounded-[6px] shadow-2xl w-full max-w-md mx-4 overflow-hidden max-h-[90dvh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/60 flex-shrink-0">
           <h2 className="text-[12px] font-semibold text-foreground">{title}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -176,7 +176,7 @@ function Modal({
 }
 
 const inputCls =
-  "w-full bg-background border border-border/60 rounded-sm px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full bg-background border border-border/60 rounded-[6px] px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
 // ─── Add / Edit Category Modal ────────────────────────────────────────────────
@@ -290,7 +290,7 @@ function CategoryFormModal({
 
         {/* Active toggle — edit mode only */}
         {isEdit && (
-          <div className="flex items-center justify-between rounded-sm border border-border/60 bg-secondary/20 px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2.5">
             <div>
               <p className="text-[11px] font-medium text-foreground">Active</p>
               <p className="text-[10px] text-muted-foreground/70 mt-0.5">
@@ -305,18 +305,18 @@ function CategoryFormModal({
         )}
 
         {error && (
-          <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
+          <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2">
             {error.message}
           </p>
         )}
 
         <div className="flex gap-2 pt-1">
           <Button type="button" size="sm" variant="outline" onClick={onClose}
-            className="flex-1 h-7 text-[11px] rounded-sm">
+            className="flex-1 h-7 text-[11px] rounded-[6px]">
             Cancel
           </Button>
           <Button type="submit" size="sm" disabled={isPending}
-            className="flex-1 h-7 text-[11px] font-semibold rounded-sm shadow-sm">
+            className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm">
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
             {isEdit ? "Save Changes" : "Add Category"}
           </Button>
@@ -349,21 +349,21 @@ function DeleteConfirmModal({
       </p>
 
       {blocked && (
-        <p className="text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-sm px-3 py-2 mb-3">
+        <p className="text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-[6px] px-3 py-2 mb-3">
           This category has {category.medicines_count} medicine
           {category.medicines_count !== 1 ? "s" : ""} — remove or reassign them first.
         </p>
       )}
 
       {error && (
-        <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 mb-3">
+        <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2 mb-3">
           {error.message}
         </p>
       )}
 
       <div className="flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={onClose}
-          className="flex-1 h-7 text-[11px] rounded-sm">
+          className="flex-1 h-7 text-[11px] rounded-[6px]">
           Cancel
         </Button>
         <Button
@@ -374,7 +374,7 @@ function DeleteConfirmModal({
               onSuccess: () => { toast.success("Category deleted"); onClose(); },
             })
           }
-          className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-sm shadow-sm"
+          className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[6px] shadow-sm"
         >
           {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
           Delete
@@ -418,7 +418,7 @@ function CategoryDetailsDrawer({
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
               <Tag className="w-3.5 h-3.5 text-primary" />
             </div>
             <div className="min-w-0">
@@ -434,7 +434,7 @@ function CategoryDetailsDrawer({
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Status + active toggle */}
-          <div className="flex items-center justify-between rounded-sm border border-border/60 bg-secondary/20 px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2.5">
             <div className="flex items-center gap-2">
               <span
                 className={cn(
@@ -466,7 +466,7 @@ function CategoryDetailsDrawer({
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
               Medicines
             </p>
-            <div className="flex items-center gap-1.5 rounded-sm border border-border/60 bg-card px-3 py-2 w-fit">
+            <div className="flex items-center gap-1.5 rounded-[6px] border border-border/60 bg-card px-3 py-2 w-fit">
               <Package className="w-3 h-3 text-primary" />
               <span className="text-[11px] font-semibold text-foreground">
                 {category.medicines_count} medicine{category.medicines_count !== 1 ? "s" : ""}
@@ -493,7 +493,7 @@ function CategoryDetailsDrawer({
           </div>
 
           {/* Meta */}
-          <div className="rounded-sm border border-border/40 bg-secondary/10 px-3 py-2">
+          <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-3 py-2">
             <p className="text-[10px] text-muted-foreground/60">
               Category ID <span className="text-foreground/70 font-mono">#{category.id}</span>
             </p>
@@ -505,7 +505,7 @@ function CategoryDetailsDrawer({
             size="sm"
             variant="outline"
             onClick={() => onEdit(category)}
-            className="flex-1 h-7 text-[11px] rounded-sm"
+            className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
             <Pencil className="w-3 h-3 mr-1.5" /> Edit
           </Button>
@@ -514,7 +514,7 @@ function CategoryDetailsDrawer({
             variant="outline"
             onClick={() => onDelete(category)}
             disabled={category.medicines_count > 0}
-            className="flex-1 h-7 text-[11px] rounded-sm text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
+            className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
           >
             <Trash2 className="w-3 h-3 mr-1.5" /> Delete
           </Button>
@@ -648,314 +648,314 @@ function PharmacyCategories() {
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
-            {/* Stat cards */}
-            <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label="Total Categories"
-                value={isLoading ? "—" : counts.total}
-                icon={Tag}
-                accent="primary"
-              />
-              <StatCard
-                label="Active"
-                value={isLoading ? "—" : counts.active}
-                icon={CheckCircle2}
-                accent="success"
-              />
-              <StatCard
-                label="Inactive"
-                value={isLoading ? "—" : counts.inactive}
-                icon={AlertCircle}
-                accent="warning"
-              />
-              <StatCard
-                label="Total Medicines"
-                value={isLoading ? "—" : counts.medicines}
-                icon={Package}
-                accent="primary"
-              />
+          {/* Stat cards */}
+          <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <StatCard
+              label="Total Categories"
+              value={isLoading ? "—" : counts.total}
+              icon={Tag}
+              accent="primary"
+            />
+            <StatCard
+              label="Active"
+              value={isLoading ? "—" : counts.active}
+              icon={CheckCircle2}
+              accent="success"
+            />
+            <StatCard
+              label="Inactive"
+              value={isLoading ? "—" : counts.inactive}
+              icon={AlertCircle}
+              accent="warning"
+            />
+            <StatCard
+              label="Total Medicines"
+              value={isLoading ? "—" : counts.medicines}
+              icon={Package}
+              accent="primary"
+            />
+          </div>
+
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            {/* Left */}
+            <div className="flex items-center gap-3">
+              {isLoading ? (
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading categories…
+                </span>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-bold text-foreground">{filtered.length}</span>{" "}
+                  {filtered.length === 1 ? "category" : "categories"}
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearAll}
+                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </p>
+              )}
             </div>
 
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              {/* Left */}
-              <div className="flex items-center gap-3">
-                {isLoading ? (
-                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Loading categories…
-                  </span>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    <span className="font-bold text-foreground">{filtered.length}</span>{" "}
-                    {filtered.length === 1 ? "category" : "categories"}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearAll}
-                        className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </p>
-                )}
-              </div>
+            {/* Right */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refetch()}
+                title="Refresh"
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
+              </button>
 
-              {/* Right */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => refetch()}
-                  title="Refresh"
-                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
-                >
-                  <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
-                </button>
-
-                {/* Search */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search categories…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                {/* Sort */}
-                <div className="relative">
-                  <select
-                    value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-                </div>
-
-                {/* Add category button */}
-                <Button
-                  size="sm"
-                  onClick={openCreate}
-                  className="hidden sm:flex h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all duration-200"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  {t("pages.pharmacy.add_category", "New Category")}
-                </Button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
+              {/* Search */}
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search categories…"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
+
+              {/* Sort */}
+              <div className="relative">
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as SortOption)}
+                  className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+              </div>
+
+              {/* Add category button */}
+              <Button
+                size="sm"
+                onClick={openCreate}
+                className="hidden sm:flex h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm hover:shadow transition-all duration-200"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                {t("pages.pharmacy.add_category", "New Category")}
+              </Button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
             </div>
+          </div>
 
-            {/* Table area */}
-            <div className="p-4">
+          {/* Table area */}
+          <div className="p-4">
 
-              {/* Error */}
-              {isError && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
-                    <AlertCircle className="w-6 h-6 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load categories</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => refetch()}
-                    className="text-[11px] h-7 px-3 rounded-sm mt-1">
-                    <RefreshCw className="w-3 h-3 mr-1.5" />
-                    Retry
-                  </Button>
+            {/* Error */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
-              )}
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">Failed to load categories</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => refetch()}
+                  className="text-[11px] h-7 px-3 rounded-[6px] mt-1">
+                  <RefreshCw className="w-3 h-3 mr-1.5" />
+                  Retry
+                </Button>
+              </div>
+            )}
 
-              {/* Loading skeleton */}
-              {isLoading && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        {["Category", "Medicines", "Status", "Created", ""].map((h) => (
-                          <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+            {/* Loading skeleton */}
+            {isLoading && (
+              <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                <table className="w-full text-[11px]">
+                  <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                    <tr>
+                      {["Category", "Medicines", "Status", "Created", ""].map((h) => (
+                        <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={i} className="border-t border-border/40">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3.5">
+                            <div
+                              className="h-2.5 rounded bg-muted/60 animate-pulse"
+                              style={{ width: `${50 + ((i * 3 + j * 7) % 40)}%` }}
+                            />
+                          </td>
                         ))}
                       </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <tr key={i} className="border-t border-border/40">
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <td key={j} className="px-4 py-3.5">
-                              <div
-                                className="h-2.5 rounded bg-muted/60 animate-pulse"
-                                style={{ width: `${50 + ((i * 3 + j * 7) % 40)}%` }}
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-              {/* Empty state */}
-              {!isLoading && !isError && filtered.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <FolderOpen className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {hasActiveFilters ? "No categories match your filters" : "No categories yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters
-                        ? "Try widening your search criteria"
-                        : "Create your first category to start organising your inventory"}
-                    </p>
-                  </div>
-                  {hasActiveFilters ? (
-                    <button onClick={clearAll}
-                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
-                      Clear all filters
-                    </button>
-                  ) : (
-                    <Button size="sm" onClick={openCreate}
-                      className="h-7 px-3 text-[11px] rounded-sm mt-1">
-                      <Plus className="w-3 h-3 mr-1.5" />
-                      Add Category
-                    </Button>
-                  )}
+            {/* Empty state */}
+            {!isLoading && !isError && filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <FolderOpen className="w-6 h-6 text-muted-foreground/50" />
                 </div>
-              )}
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {hasActiveFilters ? "No categories match your filters" : "No categories yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters
+                      ? "Try widening your search criteria"
+                      : "Create your first category to start organising your inventory"}
+                  </p>
+                </div>
+                {hasActiveFilters ? (
+                  <button onClick={clearAll}
+                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                    Clear all filters
+                  </button>
+                ) : (
+                  <Button size="sm" onClick={openCreate}
+                    className="h-7 px-3 text-[11px] rounded-[6px] mt-1">
+                    <Plus className="w-3 h-3 mr-1.5" />
+                    Add Category
+                  </Button>
+                )}
+              </div>
+            )}
 
-              {/* Data table */}
-              {!isLoading && !isError && filtered.length > 0 && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Category</th>
-                        <th className="text-left px-4 py-3 font-semibold">Medicines</th>
-                        <th className="text-left px-4 py-3 font-semibold">Status</th>
-                        <th className="text-left px-4 py-3 font-semibold">Created</th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((c) => (
-                        <tr
-                          key={c.id}
-                          onClick={() => setViewTarget(c)}
-                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
-                        >
-                          {/* Name + description */}
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
-                                <Tag className="w-3 h-3 text-primary" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-semibold text-[11px] text-foreground truncate">{c.name}</p>
-                                {c.description && (
-                                  <p className="text-[10px] font-normal text-muted-foreground/60 mt-0.5 truncate max-w-[260px]">
-                                    {c.description}
-                                  </p>
-                                )}
-                              </div>
+            {/* Data table */}
+            {!isLoading && !isError && filtered.length > 0 && (
+              <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                <table className="w-full text-[11px]">
+                  <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold">Category</th>
+                      <th className="text-left px-4 py-3 font-semibold">Medicines</th>
+                      <th className="text-left px-4 py-3 font-semibold">Status</th>
+                      <th className="text-left px-4 py-3 font-semibold">Created</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((c) => (
+                      <tr
+                        key={c.id}
+                        onClick={() => setViewTarget(c)}
+                        className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
+                      >
+                        {/* Name + description */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
+                              <Tag className="w-3 h-3 text-primary" />
                             </div>
-                          </td>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-[11px] text-foreground truncate">{c.name}</p>
+                              {c.description && (
+                                <p className="text-[10px] font-normal text-muted-foreground/60 mt-0.5 truncate max-w-[260px]">
+                                  {c.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
-                          {/* Medicines */}
-                          <td className="px-4 py-3">
-                            <span
+                        {/* Medicines */}
+                        <td className="px-4 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 font-mono tabular-nums font-medium px-2 py-0.5 rounded-[6px] border text-[10px]",
+                              c.medicines_count > 0
+                                ? "bg-primary/10 border-primary/20 text-primary"
+                                : "bg-secondary/30 border-border/50 text-muted-foreground",
+                            )}
+                          >
+                            <Package className="w-2.5 h-2.5" />
+                            {c.medicines_count}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            {togglingId === c.id ? (
+                              <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
+                            ) : (
+                              <Switch
+                                checked={c.is_active}
+                                onCheckedChange={() => handleToggleActive(c)}
+                                className="scale-75"
+                              />
+                            )}
+                            <Badge
+                              variant="outline"
                               className={cn(
-                                "inline-flex items-center gap-1 font-mono tabular-nums font-medium px-2 py-0.5 rounded-sm border text-[10px]",
-                                c.medicines_count > 0
-                                  ? "bg-primary/10 border-primary/20 text-primary"
-                                  : "bg-secondary/30 border-border/50 text-muted-foreground",
+                                "border text-[9px] px-1.5 py-0 font-medium",
+                                c.is_active
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900"
+                                  : "bg-secondary/40 text-muted-foreground border-border/50",
                               )}
                             >
-                              <Package className="w-2.5 h-2.5" />
-                              {c.medicines_count}
-                            </span>
-                          </td>
+                              {c.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        </td>
 
-                          {/* Status */}
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-2">
-                              {togglingId === c.id ? (
-                                <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
-                              ) : (
-                                <Switch
-                                  checked={c.is_active}
-                                  onCheckedChange={() => handleToggleActive(c)}
-                                  className="scale-75"
-                                />
-                              )}
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "border text-[9px] px-1.5 py-0 font-medium",
-                                  c.is_active
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900"
-                                    : "bg-secondary/40 text-muted-foreground border-border/50",
-                                )}
-                              >
-                                {c.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                            </div>
-                          </td>
+                        {/* Created */}
+                        <td className="px-4 py-3 text-muted-foreground/70 text-[10px]">
+                          {formatDate(c.created_at)}
+                        </td>
 
-                          {/* Created */}
-                          <td className="px-4 py-3 text-muted-foreground/70 text-[10px]">
-                            {formatDate(c.created_at)}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setViewTarget(c)}
-                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
-                              >
-                                <Eye className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => openEdit(c)}
-                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => openDelete(c)}
-                                className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </main>
+                        {/* Actions */}
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setViewTarget(c)}
+                              className="h-7 w-7 p-0 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+                            >
+                              <Eye className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openEdit(c)}
+                              className="h-7 w-7 p-0 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openDelete(c)}
+                              className="h-7 w-7 p-0 rounded-[6px] text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* Modals & Drawer */}

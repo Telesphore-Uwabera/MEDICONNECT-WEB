@@ -50,7 +50,7 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 
   return (
     <>
-      <div className="flex items-center justify-between p-3 rounded-md bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150">
+      <div className="flex items-center justify-between p-3 rounded-[6px] bg-secondary/20 border border-border/30 hover:bg-secondary/40 transition-colors duration-150">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
             {(d.image ?? d.user?.avatar) ? (
@@ -76,7 +76,7 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
           size="sm"
           onClick={a.openConnect}
           disabled={!a.canConnect}
-          className="h-8 px-3 text-xs rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+          className="h-8 px-3 text-xs rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
         >
           {a.isConnected || a.isCallInProgress ? "Join" : t("pages.patient.go")}
         </Button>
@@ -110,11 +110,11 @@ const PatientOverview = () => {
 
     // Initial check
     handleScroll();
-    
+
     // Check on resize
     window.addEventListener("resize", handleScroll);
     tabsRef.current?.addEventListener("scroll", handleScroll);
-    
+
     return () => {
       window.removeEventListener("resize", handleScroll);
       tabsRef.current?.removeEventListener("scroll", handleScroll);
@@ -200,9 +200,9 @@ const PatientOverview = () => {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className="rounded-md border border-border/70 bg-card p-3 shadow-sm flex items-center gap-3 hover:border-primary/40 hover:bg-secondary/20 transition-colors"
+                    className="rounded-[6px] border border-border/70 bg-card p-3 shadow-sm flex items-center gap-3 hover:border-primary/40 hover:bg-secondary/20 transition-colors"
                   >
-                    <span className={cn("h-10 w-10 rounded-md flex items-center justify-center shrink-0", item.tone)}>
+                    <span className={cn("h-10 w-10 rounded-[6px] flex items-center justify-center shrink-0", item.tone)}>
                       <Icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">
@@ -236,7 +236,7 @@ const PatientOverview = () => {
               </div>
 
               {/* Scrollable Tabs */}
-              <div 
+              <div
                 ref={tabsRef}
                 className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-px [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full relative z-0"
               >
@@ -244,79 +244,79 @@ const PatientOverview = () => {
                   onClick={() => setActiveTab("overview")}
                   className={cn(
                     "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "overview"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Care Hub
-              </button>
-              <button
-                onClick={() => setActiveTab("clinical")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "clinical"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Records
-              </button>
-              <button
-                onClick={() => setActiveTab("financial")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "financial"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Payments
-              </button>
-              <button
-                onClick={() => setActiveTab("activity")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "activity"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Activity
-              </button>
-              <button
-                onClick={() => setActiveTab("upcoming")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "upcoming"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Appointments
-              </button>
-              <button
-                onClick={() => setActiveTab("available")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "available"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Available Now
-              </button>
-              <button
-                onClick={() => setActiveTab("recommended")}
-                className={cn(
-                  "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
-                  activeTab === "recommended"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
-                )}
-              >
-                Recommended
-              </button>
+                    activeTab === "overview"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Care Hub
+                </button>
+                <button
+                  onClick={() => setActiveTab("clinical")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "clinical"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Records
+                </button>
+                <button
+                  onClick={() => setActiveTab("financial")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "financial"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Payments
+                </button>
+                <button
+                  onClick={() => setActiveTab("activity")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "activity"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Activity
+                </button>
+                <button
+                  onClick={() => setActiveTab("upcoming")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "upcoming"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Appointments
+                </button>
+                <button
+                  onClick={() => setActiveTab("available")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "available"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Available Now
+                </button>
+                <button
+                  onClick={() => setActiveTab("recommended")}
+                  className={cn(
+                    "px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap shrink-0",
+                    activeTab === "recommended"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
+                  )}
+                >
+                  Recommended
+                </button>
               </div>
 
               {/* Right Indicator */}
@@ -340,7 +340,7 @@ const PatientOverview = () => {
             {/* Tab Contents */}
             {activeTab === "upcoming" && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-sm">
+                <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-sm">
                   <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
                     <div>
                       <h2 className="text-base font-bold text-foreground">
@@ -354,7 +354,7 @@ const PatientOverview = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 px-3 rounded-[8px] text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
+                        className="h-8 px-3 rounded-[6px] text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
                       >
                         {t("pages.patient.view_all")}
                         <ChevronRight className="h-4 w-4 ml-1" />
@@ -368,21 +368,21 @@ const PatientOverview = () => {
                       Array.from({ length: 3 }).map((_, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-4 rounded-[12px] bg-secondary/20 border border-border/30 animate-pulse"
+                          className="flex items-center justify-between p-4 rounded-[6px] bg-secondary/20 border border-border/30 animate-pulse"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-[10px] bg-muted shrink-0" />
+                            <div className="h-12 w-12 rounded-[6px] bg-muted shrink-0" />
                             <div className="space-y-2">
                               <div className="h-3 w-32 rounded bg-muted" />
                               <div className="h-2 w-24 rounded bg-muted" />
                             </div>
                           </div>
-                          <div className="h-8 w-20 rounded-[8px] bg-muted" />
+                          <div className="h-8 w-20 rounded-[6px] bg-muted" />
                         </div>
                       ))
                     ) : upcomingAppointments.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                        <div className="w-12 h-12 rounded-[12px] bg-muted/60 flex items-center justify-center border border-border/40">
+                        <div className="w-12 h-12 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                           <Calendar className="w-5 h-5 text-muted-foreground/50" />
                         </div>
                         <p className="text-sm font-medium text-muted-foreground">
@@ -404,11 +404,11 @@ const PatientOverview = () => {
                         return (
                           <div
                             key={a.id}
-                            className="flex items-center justify-between p-4 rounded-[12px] bg-secondary/30 border border-border/40 hover:bg-secondary/50 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 group"
+                            className="flex items-center justify-between p-4 rounded-[6px] bg-secondary/30 border border-border/40 hover:bg-secondary/50 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 group"
                           >
                             <div className="flex items-center gap-4">
                               {/* Date badge */}
-                              <div className="h-12 w-12 rounded-[10px] bg-primary/10 text-primary flex flex-col items-center justify-center font-bold shrink-0 border border-primary/20">
+                              <div className="h-12 w-12 rounded-[6px] bg-primary/10 text-primary flex flex-col items-center justify-center font-bold shrink-0 border border-primary/20">
                                 <span className="text-[10px] font-bold uppercase leading-none mb-1">
                                   {month}
                                 </span>
@@ -451,7 +451,7 @@ const PatientOverview = () => {
                               >
                                 <Button
                                   size="sm"
-                                  className="h-8 px-3 text-xs font-bold rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all duration-200"
+                                  className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all duration-200"
                                 >
                                   <Video className="h-4 w-4 mr-1.5" />
                                   {t("pages.patient.join")}
@@ -462,7 +462,7 @@ const PatientOverview = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
+                                  className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-200"
                                 >
                                   <Video className="h-4 w-4 mr-1.5 opacity-60" />
                                   {t("pages.patient.join")}
@@ -480,7 +480,7 @@ const PatientOverview = () => {
 
             {activeTab === "available" && (
               <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-sm">
+                <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-sm">
                   <div className="px-5 py-4 border-b border-border/60 bg-muted/20">
                     <h2 className="text-base font-bold text-foreground">
                       {t("pages.patient.available_now_title")}
@@ -495,21 +495,21 @@ const PatientOverview = () => {
                       Array.from({ length: 4 }).map((_, i) => (
                         <div
                           key={i}
-                          className="flex items-center justify-between p-4 rounded-[12px] bg-secondary/20 border border-border/30 animate-pulse"
+                          className="flex items-center justify-between p-4 rounded-[6px] bg-secondary/20 border border-border/30 animate-pulse"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-[10px] bg-muted shrink-0" />
+                            <div className="h-12 w-12 rounded-[6px] bg-muted shrink-0" />
                             <div className="space-y-2">
                               <div className="h-3 w-24 rounded bg-muted" />
                               <div className="h-2 w-16 rounded bg-muted" />
                             </div>
                           </div>
-                          <div className="h-8 w-16 rounded-[8px] bg-muted" />
+                          <div className="h-8 w-16 rounded-[6px] bg-muted" />
                         </div>
                       ))
                     ) : availableNow.length === 0 ? (
                       <div className="col-span-1 md:col-span-2 flex flex-col items-center justify-center py-12 gap-3 text-center">
-                        <div className="w-12 h-12 rounded-[12px] bg-muted/60 flex items-center justify-center border border-border/40">
+                        <div className="w-12 h-12 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                           <Activity className="w-5 h-5 text-muted-foreground/50" />
                         </div>
                         <p className="text-sm font-medium text-muted-foreground">
@@ -518,7 +518,7 @@ const PatientOverview = () => {
                       </div>
                     ) : (
                       availableNow.map((d) => (
-                        <div key={d.id} className="rounded-[12px] border border-border/60 bg-card p-2 shadow-sm hover:shadow-md transition-shadow">
+                        <div key={d.id} className="rounded-[6px] border border-border/60 bg-card p-2 shadow-sm hover:shadow-md transition-shadow">
                           <AvailableNowRow doctor={d} />
                         </div>
                       ))
@@ -543,7 +543,7 @@ const PatientOverview = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-3 rounded-[8px] text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
+                      className="h-8 px-3 rounded-[6px] text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
                     >
                       View all
                       <ChevronRight className="h-4 w-4 ml-1" />
@@ -556,16 +556,16 @@ const PatientOverview = () => {
                     ? Array.from({ length: 3 }).map((_, i) => (
                       <div
                         key={i}
-                        className="rounded-[16px] border border-border/80 bg-card p-4 shadow-sm space-y-3 animate-pulse"
+                        className="rounded-[6px] border border-border/80 bg-card p-4 shadow-sm space-y-3 animate-pulse"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="h-16 w-16 rounded-[14px] bg-muted shrink-0" />
+                          <div className="h-16 w-16 rounded-[6px] bg-muted shrink-0" />
                           <div className="flex-1 space-y-2 pt-1">
                             <div className="h-4 w-2/3 rounded bg-muted" />
                             <div className="h-3 w-1/2 rounded bg-muted" />
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 divide-x divide-border rounded-[8px] border border-border overflow-hidden">
+                        <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                           {Array.from({ length: 3 }).map((_, j) => (
                             <div
                               key={j}
@@ -576,7 +576,7 @@ const PatientOverview = () => {
                             </div>
                           ))}
                         </div>
-                        <div className="h-8 w-full rounded-[8px] bg-muted mt-2" />
+                        <div className="h-8 w-full rounded-[6px] bg-muted mt-2" />
                       </div>
                     ))
                     : recommended.map((d) => (

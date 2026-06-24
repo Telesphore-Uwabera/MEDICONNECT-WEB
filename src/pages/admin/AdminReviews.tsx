@@ -29,14 +29,14 @@ import AdminReviewDetail from "./components/Adminreviewdetail";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type StatusFilter = "all" | "pending" | "approved" | "rejected";
-type SortOption   = "date-desc" | "date-asc" | "rating-high" | "rating-low" | "patient";
+type SortOption = "date-desc" | "date-asc" | "rating-high" | "rating-low" | "patient";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "date-desc",   label: "Date: Newest first" },
-  { value: "date-asc",    label: "Date: Oldest first" },
+  { value: "date-desc", label: "Date: Newest first" },
+  { value: "date-asc", label: "Date: Oldest first" },
   { value: "rating-high", label: "Rating: High to low" },
-  { value: "rating-low",  label: "Rating: Low to high" },
-  { value: "patient",     label: "Patient (A–Z)" },
+  { value: "rating-low", label: "Rating: Low to high" },
+  { value: "patient", label: "Patient (A–Z)" },
 ];
 
 interface FilterState {
@@ -65,7 +65,7 @@ const statusStyle: Record<string, string> = {
 };
 
 const STATUS_DOT: Record<string, string> = {
-  pending:  "bg-amber-500",
+  pending: "bg-amber-500",
   approved: "bg-emerald-500",
   rejected: "bg-red-500",
 };
@@ -177,7 +177,7 @@ function ReviewRow({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) => 
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(r)}
         >
           Review
@@ -191,7 +191,7 @@ function ReviewRow({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) => 
 
 function ReviewCard({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) => void }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       {r.patient.avatar ? (
         <img
           src={r.patient.avatar}
@@ -227,7 +227,7 @@ function ReviewCard({ r, onManage }: { r: ApiReview; onManage: (r: ApiReview) =>
         <Button
           size="sm"
           variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(r)}
         >
           View details
@@ -328,9 +328,9 @@ function ReviewPanel({ reviewId, onClose }: { reviewId: number | null; onClose: 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function AdminReviews() {
-  const [filters, setFilters]         = useState<FilterState>(INITIAL_FILTERS);
-  const [selectedId, setSelectedId]   = useState<number | null>(null);
-  const [filterOpen, setFilterOpen]   = useState(false);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -341,12 +341,12 @@ function AdminReviews() {
 
   const { data, isLoading, isError } = useGetAdminReviews({
     status: filters.status !== "all" ? filters.status : undefined,
-    page:   filters.page,
+    page: filters.page,
   });
 
-  const reviews    = data?.data     ?? [];
-  const total      = data?.total    ?? 0;
-  const perPage    = data?.per_page ?? 20;
+  const reviews = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
   const statusCounts = useMemo(() => {
@@ -363,11 +363,11 @@ function AdminReviews() {
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       switch (filters.sort) {
-        case "date-asc":    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "date-asc": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         case "rating-high": return b.rating - a.rating;
-        case "rating-low":  return a.rating - b.rating;
-        case "patient":     return a.patient.name.localeCompare(b.patient.name);
-        default:            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "rating-low": return a.rating - b.rating;
+        case "patient": return a.patient.name.localeCompare(b.patient.name);
+        default: return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
     });
   }, [filtered, filters.sort]);
@@ -393,7 +393,7 @@ function AdminReviews() {
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  const openPanel  = useCallback((r: ApiReview) => setSelectedId(r.id), []);
+  const openPanel = useCallback((r: ApiReview) => setSelectedId(r.id), []);
   const closePanel = useCallback(() => setSelectedId(null), []);
 
   const pendingCount = statusCounts["pending"] ?? 0;
@@ -430,215 +430,215 @@ function AdminReviews() {
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
 
-            {/*
+          {/*
              * Stat cards:
              *   phone  → 2 columns
              *   tablet (md+) → 4 columns
              */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-              <StatCard label="Total reviews" value={total}                          icon={MessageSquare} accent="primary" />
-              <StatCard label="Pending"       value={statusCounts["pending"]  ?? 0}  icon={Clock}         accent="warning" />
-              <StatCard label="Approved"      value={statusCounts["approved"] ?? 0}  icon={CheckCircle2}  accent="success" />
-              <StatCard label="Rejected"      value={statusCounts["rejected"] ?? 0}  icon={XCircle}       accent="warning" />
+          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard label="Total reviews" value={total} icon={MessageSquare} accent="primary" />
+            <StatCard label="Pending" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
+            <StatCard label="Approved" value={statusCounts["approved"] ?? 0} icon={CheckCircle2} accent="success" />
+            <StatCard label="Rejected" value={statusCounts["rejected"] ?? 0} icon={XCircle} accent="warning" />
+          </div>
+
+          {/* Phone-only search (below stat cards) */}
+          <div className="sm:hidden px-3 pt-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search patient, doctor…"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+              />
+              {searchInput && (
+                <button
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sticky meta bar */}
+          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <p className="text-[11px] text-muted-foreground shrink-0">
+                {isLoading ? (
+                  <span className="text-muted-foreground/50">Loading…</span>
+                ) : (
+                  <>
+                    <span className="font-bold text-foreground">{sorted.length}</span>{" "}
+                    {sorted.length === 1 ? "review" : "reviews"}
+                  </>
+                )}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </p>
+
+              {/*
+                 * Pending badge — visible at md+ to avoid cramping phone meta bar.
+                 */}
+              {pendingCount > 0 && (
+                <span className="hidden md:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {pendingCount} pending
+                </span>
+              )}
             </div>
 
-            {/* Phone-only search (below stat cards) */}
-            <div className="sm:hidden px-3 pt-3">
-              <div className="relative">
+            <div className="flex items-center gap-2 shrink-0">
+              {/*
+                 * Search input in meta bar — visible at sm+ (tablet + desktop).
+                 * Phone uses the dedicated block above instead.
+                 * Wider at md+ now that the sidebar isn't competing for space.
+                 */}
+              <div className="relative hidden sm:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search patient, doctor…"
-                  className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
-                {searchInput && (
-                  <button
-                    onClick={() => setSearchInput("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
+
             </div>
 
-            {/* Sticky meta bar */}
-            <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <p className="text-[11px] text-muted-foreground shrink-0">
-                  {isLoading ? (
-                    <span className="text-muted-foreground/50">Loading…</span>
-                  ) : (
-                    <>
-                      <span className="font-bold text-foreground">{sorted.length}</span>{" "}
-                      {sorted.length === 1 ? "review" : "reviews"}
-                    </>
-                  )}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </p>
+            {/* Refresh Button */}
+            <button
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+            </button>
 
-                {/*
-                 * Pending badge — visible at md+ to avoid cramping phone meta bar.
-                 */}
-                {pendingCount > 0 && (
-                  <span className="hidden md:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    {pendingCount} pending
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                {/*
-                 * Search input in meta bar — visible at sm+ (tablet + desktop).
-                 * Phone uses the dedicated block above instead.
-                 * Wider at md+ now that the sidebar isn't competing for space.
-                 */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search patient, doctor…"
-                    className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                title="Refresh"
+            {/* Sort select */}
+            <div className="relative">
+              <select
+                value={filters.sort}
+                onChange={(e) => set("sort", e.target.value as SortOption)}
+                className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
               >
-                <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
-              </button>
-
-              {/* Sort select */}
-              <div className="relative">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-              </div>
-
-              <FilterToggleButton
-                open={filterOpen}
-                onToggle={() => setFilterOpen(!filterOpen)}
-                hasActiveFilters={hasActiveFilters}
-              />
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
             </div>
 
-            {/* Content */}
-            <div className="p-3 sm:p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <p className="text-[12px] font-semibold text-destructive">Failed to load reviews</p>
-                  <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+            <FilterToggleButton
+              open={filterOpen}
+              onToggle={() => setFilterOpen(!filterOpen)}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </div>
+
+          {/* Content */}
+          <div className="p-3 sm:p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                <p className="text-[12px] font-semibold text-destructive">Failed to load reviews</p>
+                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+              </div>
+            ) : !isLoading && sorted.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Star className="w-6 h-6 text-muted-foreground/50" />
                 </div>
-              ) : !isLoading && sorted.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Star className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">No reviews match your filters</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
-                  </div>
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
-                  >
-                    Clear all filters
-                  </button>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">No reviews match your filters</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
                 </div>
-              ) : (
-                <>
-                  {/*
+                <button
+                  onClick={clearAll}
+                  className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <>
+                {/*
                    * Desktop table — only at lg+ (1024px+).
                    * Tablets get the 2-column card grid below.
                    * This table has 7 columns including a long Comment column,
                    * so lg+ is the right threshold — it genuinely needs the space.
                    */}
-                  <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Patient</th>
-                          <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                          <th className="text-left px-4 py-3 font-semibold">Rating</th>
-                          <th className="text-left px-4 py-3 font-semibold">Comment</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="text-left px-4 py-3 font-semibold">Date</th>
-                          <th className="px-4 py-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading
-                          ? <SkeletonRows />
-                          : sorted.map((r) => <ReviewRow key={r.id} r={r} onManage={openPanel} />)}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="hidden lg:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">Patient</th>
+                        <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                        <th className="text-left px-4 py-3 font-semibold">Rating</th>
+                        <th className="text-left px-4 py-3 font-semibold">Comment</th>
+                        <th className="text-left px-4 py-3 font-semibold">Status</th>
+                        <th className="text-left px-4 py-3 font-semibold">Date</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isLoading
+                        ? <SkeletonRows />
+                        : sorted.map((r) => <ReviewRow key={r.id} r={r} onManage={openPanel} />)}
+                    </tbody>
+                  </table>
+                </div>
 
-                  {/*
+                {/*
                    * Card layout — phone AND tablet (hidden at lg+).
                    * Single column on phone, 2-column grid on tablet for
                    * better use of the wider screen.
                    */}
-                  <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                    {isLoading
-                      ? Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
-                        ))
-                      : sorted.map((r) => <ReviewCard key={r.id} r={r} onManage={openPanel} />)}
-                  </div>
+                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+                  {isLoading
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse" />
+                    ))
+                    : sorted.map((r) => <ReviewCard key={r.id} r={r} onManage={openPanel} />)}
+                </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                      <p className="text-[11px] text-muted-foreground">
-                        Page{" "}
-                        <span className="font-semibold text-foreground">{filters.page}</span> of{" "}
-                        <span className="font-semibold text-foreground">{totalPages}</span>
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          disabled={filters.page <= 1}
-                          onClick={() => set("page", filters.page - 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={filters.page >= totalPages}
-                          onClick={() => set("page", filters.page + 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                    <p className="text-[11px] text-muted-foreground">
+                      Page{" "}
+                      <span className="font-semibold text-foreground">{filters.page}</span> of{" "}
+                      <span className="font-semibold text-foreground">{totalPages}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={filters.page <= 1}
+                        onClick={() => set("page", filters.page - 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        disabled={filters.page >= totalPages}
+                        onClick={() => set("page", filters.page + 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </main>
       </div>
 

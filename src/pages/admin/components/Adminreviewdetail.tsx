@@ -95,7 +95,7 @@ function StatusBadge({ status }: { status: ApiReview["status"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        "inline-flex items-center rounded-[6px] border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
         map[status],
       )}
     >
@@ -109,10 +109,10 @@ function StatusBadge({ status }: { status: ApiReview["status"] }) {
 function DetailSkeleton() {
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="rounded-xl bg-muted p-3">
+      <div className="rounded-[6px] bg-muted p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-[6px]" />
             <div className="space-y-1">
               <Skeleton className="h-2 w-12 rounded" />
               <Skeleton className="h-4 w-16 rounded" />
@@ -128,7 +128,7 @@ function DetailSkeleton() {
             <Skeleton className="h-3 w-3 rounded" />
             <Skeleton className="h-2.5 w-20 rounded" />
           </div>
-          <div className="rounded-lg border border-border bg-card overflow-hidden space-y-0">
+          <div className="rounded-[6px] border border-border bg-card overflow-hidden space-y-0">
             {[1, 2, 3, 4, 5].map((row) => (
               <div
                 key={row}
@@ -145,12 +145,12 @@ function DetailSkeleton() {
         </div>
       ))}
 
-      <div className="rounded-xl border border-border bg-card p-3">
+      <div className="rounded-[6px] border border-border bg-card p-3">
         <Skeleton className="h-2.5 w-12 rounded mb-2" />
         <div className="flex gap-2">
-          <Skeleton className="h-7 w-[100px] rounded-md" />
-          <Skeleton className="h-7 w-[100px] rounded-md" />
-          <Skeleton className="h-7 w-[100px] rounded-md" />
+          <Skeleton className="h-7 w-[100px] rounded-[6px]" />
+          <Skeleton className="h-7 w-[100px] rounded-[6px]" />
+          <Skeleton className="h-7 w-[100px] rounded-[6px]" />
         </div>
       </div>
     </div>
@@ -176,7 +176,7 @@ function Section({
           {title}
         </p>
       </div>
-      <div className="rounded-lg border border-border bg-card shadow-soft space-y-0 overflow-hidden">
+      <div className="rounded-[6px] border border-border bg-card shadow-soft space-y-0 overflow-hidden">
         {children}
       </div>
     </div>
@@ -231,7 +231,7 @@ function BoolRow({
     <Row label={label} icon={Icon}>
       <span
         className={cn(
-          "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border",
+          "inline-flex items-center gap-1 rounded-[6px] px-1.5 py-0.5 text-[10px] font-semibold border",
           value
             ? "bg-[hsl(142_71%_45%/0.1)] text-[hsl(142_71%_35%)] border-[hsl(142_71%_45%/0.25)]"
             : "bg-[hsl(0_72%_51%/0.1)] text-[hsl(0_72%_45%)] border-[hsl(0_72%_51%/0.25)]",
@@ -409,10 +409,10 @@ export default function AdminReviewDetail({
   return (
     <div className="flex flex-col gap-4 p-4 text-[11px]">
       {/* ── Header card ──────────────────────────────────────────────────── */}
-      <div className="rounded-xl bg-gradient-primary p-3 text-primary-foreground shadow-medium">
+      <div className="rounded-[6px] bg-gradient-primary p-3 text-primary-foreground shadow-medium">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-white/15 p-1.5">
+            <div className="rounded-[6px] bg-white/15 p-1.5">
               <MessageSquare size={14} />
             </div>
             <div>
@@ -441,7 +441,7 @@ export default function AdminReviewDetail({
         <Row label="Anonymous" icon={EyeOff}>
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border",
+              "inline-flex items-center gap-1 rounded-[6px] px-1.5 py-0.5 text-[10px] font-semibold border",
               review.is_anonymous
                 ? "bg-muted text-muted-foreground border-border"
                 : "bg-[hsl(142_71%_45%/0.1)] text-[hsl(142_71%_35%)] border-[hsl(142_71%_45%/0.25)]",
@@ -743,27 +743,27 @@ export default function AdminReviewDetail({
       {(doctor.degree_document ||
         doctor.medical_license_document ||
         doctor.national_id_document) && (
-        <Section title="Documents" icon={FileText}>
-          {doctor.degree_document && (
-            <Row label="Degree Doc" icon={FileText} mono>
-              {doctor.degree_document}
-            </Row>
-          )}
-          {doctor.medical_license_document && (
-            <Row label="License Doc" icon={FileText} mono>
-              {doctor.medical_license_document}
-            </Row>
-          )}
-          {doctor.national_id_document && (
-            <Row label="National ID" icon={FileText} mono>
-              {doctor.national_id_document}
-            </Row>
-          )}
-        </Section>
-      )}
+          <Section title="Documents" icon={FileText}>
+            {doctor.degree_document && (
+              <Row label="Degree Doc" icon={FileText} mono>
+                {doctor.degree_document}
+              </Row>
+            )}
+            {doctor.medical_license_document && (
+              <Row label="License Doc" icon={FileText} mono>
+                {doctor.medical_license_document}
+              </Row>
+            )}
+            {doctor.national_id_document && (
+              <Row label="National ID" icon={FileText} mono>
+                {doctor.national_id_document}
+              </Row>
+            )}
+          </Section>
+        )}
 
       {/* ── Actions ───────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-border bg-card p-3 shadow-soft">
+      <div className="rounded-[6px] border border-border bg-card p-3 shadow-soft">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
           Actions
         </p>

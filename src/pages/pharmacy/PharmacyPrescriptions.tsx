@@ -71,9 +71,9 @@ const INITIAL_FILTERS: FilterState = {
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Date: Newest first" },
-  { value: "date-asc",  label: "Date: Oldest first" },
-  { value: "patient",   label: "Patient (A–Z)" },
-  { value: "status",    label: "Status" },
+  { value: "date-asc", label: "Date: Oldest first" },
+  { value: "patient", label: "Patient (A–Z)" },
+  { value: "status", label: "Status" },
 ];
 
 // ─── Visual config ─────────────────────────────────────────────────────────────
@@ -92,18 +92,18 @@ const STATUS_STYLES: Record<PrescriptionStatus, string> = {
 };
 
 const STATUS_DOT: Record<PrescriptionStatus, string> = {
-  pending:   "bg-amber-500",
+  pending: "bg-amber-500",
   reviewing: "bg-sky-500",
-  approved:  "bg-violet-500",
-  rejected:  "bg-red-500",
+  approved: "bg-violet-500",
+  rejected: "bg-red-500",
   fulfilled: "bg-emerald-500",
 };
 
 const STATUS_LABEL: Record<PrescriptionStatus, string> = {
-  pending:   "Pending",
+  pending: "Pending",
   reviewing: "Reviewing",
-  approved:  "Approved",
-  rejected:  "Rejected",
+  approved: "Approved",
+  rejected: "Rejected",
   fulfilled: "Fulfilled",
 };
 
@@ -172,7 +172,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center justify-between gap-2",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center justify-between gap-2",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -226,14 +226,14 @@ function DrawerSection({ icon: Icon, title, children }: {
   return (
     <div className="mb-5">
       <div className="flex items-center gap-2 mb-2">
-        <div className="w-5 h-5 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+        <div className="w-5 h-5 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
           <Icon className="w-3 h-3 text-primary" />
         </div>
         <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">
           {title}
         </span>
       </div>
-      <div className="rounded-sm border border-border/50 bg-card/60 px-3">
+      <div className="rounded-[6px] border border-border/50 bg-card/60 px-3">
         {children}
       </div>
     </div>
@@ -255,7 +255,7 @@ function MedicineRow({ item, index }: { item: PrescriptionItem; index: number })
             </p>
           </div>
         </div>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-secondary/60 border border-border/40 text-muted-foreground shrink-0">
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-[6px] bg-secondary/60 border border-border/40 text-muted-foreground shrink-0">
           qty {item.quantity}
         </span>
       </div>
@@ -283,11 +283,11 @@ function DetailDrawer({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  const pdfUrl  = resolveUrl(rx?.prescription?.pdf_url);
-  const qrUrl   = resolveUrl(rx?.prescription?.qr_code);
+  const pdfUrl = resolveUrl(rx?.prescription?.pdf_url);
+  const qrUrl = resolveUrl(rx?.prescription?.qr_code);
   const patient = rx?.prescription?.patient;
-  const doctor  = rx?.prescription?.doctor;
-  const items   = rx?.prescription?.items ?? [];
+  const doctor = rx?.prescription?.doctor;
+  const items = rx?.prescription?.items ?? [];
 
   return (
     <>
@@ -307,7 +307,7 @@ function DetailDrawer({
         {/* Drawer header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4 text-primary" />
             </div>
             <div className="min-w-0">
@@ -334,7 +334,7 @@ function DetailDrawer({
             )}
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-sm flex items-center justify-center border border-border/60 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-all"
+              className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-all"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -347,8 +347,8 @@ function DetailDrawer({
             <>
               {/* Patient */}
               <DrawerSection icon={User} title="Patient">
-                <DetailRow label="Name"    value={patient?.name} />
-                <DetailRow label="Email"   value={patient?.email} />
+                <DetailRow label="Name" value={patient?.name} />
+                <DetailRow label="Email" value={patient?.email} />
                 <DetailRow
                   label="Phone"
                   value={patient?.phone
@@ -359,17 +359,17 @@ function DetailDrawer({
 
               {/* Doctor */}
               <DrawerSection icon={Stethoscope} title="Prescribing Doctor">
-                <DetailRow label="Name"           value={doctor?.user?.name} />
+                <DetailRow label="Name" value={doctor?.user?.name} />
                 <DetailRow label="Specialization" value={doctor?.specialization} />
-                <DetailRow label="Degree"         value={doctor?.doctor_degree} />
-                <DetailRow label="License"        value={doctor?.medical_license} />
+                <DetailRow label="Degree" value={doctor?.doctor_degree} />
+                <DetailRow label="License" value={doctor?.medical_license} />
               </DrawerSection>
 
               {/* Prescription details */}
               <DrawerSection icon={FileText} title="Prescription Details">
-                <DetailRow label="Rx #"       value={rx.prescription?.prescription_number} />
-                <DetailRow label="Diagnosis"  value={rx.prescription?.diagnosis} />
-                <DetailRow label="Notes"      value={rx.prescription?.notes} />
+                <DetailRow label="Rx #" value={rx.prescription?.prescription_number} />
+                <DetailRow label="Diagnosis" value={rx.prescription?.diagnosis} />
+                <DetailRow label="Notes" value={rx.prescription?.notes} />
                 <DetailRow label="Valid until" value={fmtDate(rx.prescription?.valid_until)} />
                 <DetailRow
                   label="Signed"
@@ -489,9 +489,9 @@ function DetailDrawer({
 
 function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
   const { t, i18n } = useTranslation();
-  const review  = useReviewPrescription();
+  const review = useReviewPrescription();
   const approve = useApprovePrescription();
-  const reject  = useRejectPrescription();
+  const reject = useRejectPrescription();
   const fulfill = useFulfillPrescription();
 
   const busy = review.isPending || approve.isPending || reject.isPending || fulfill.isPending;
@@ -508,7 +508,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
           })
         }
         variant="outline"
-        className="h-7 px-3 text-[10px] rounded-sm border-sky-200 text-sky-700 hover:bg-sky-50 hover:border-sky-300 dark:border-sky-900 dark:text-sky-400 dark:hover:bg-sky-950/30 transition-all duration-200"
+        className="h-7 px-3 text-[10px] rounded-[6px] border-sky-200 text-sky-700 hover:bg-sky-50 hover:border-sky-300 dark:border-sky-900 dark:text-sky-400 dark:hover:bg-sky-950/30 transition-all duration-200"
       >
         {review.isPending
           ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -530,7 +530,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
               { onSuccess: () => toast({ title: "Prescription rejected", variant: "destructive" }) },
             )
           }
-          className="h-7 px-3 text-[10px] rounded-sm border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
         >
           {reject.isPending
             ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -544,7 +544,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
               onSuccess: () => toast({ title: "Prescription approved" }),
             })
           }
-          className="h-7 px-3 text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-sm shadow-sm transition-all duration-200"
+          className="h-7 px-3 text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
         >
           {approve.isPending
             ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -564,7 +564,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
             onSuccess: () => toast({ title: "Prescription fulfilled", description: patientName }),
           })
         }
-        className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-sm transition-all duration-200"
+        className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
       >
         {fulfill.isPending
           ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -628,7 +628,7 @@ function PrescriptionTableRow({
   index: number;
 }) {
   const patient = rx.prescription?.patient;
-  const items   = rx.prescription?.items ?? [];
+  const items = rx.prescription?.items ?? [];
 
   return (
     <tr
@@ -641,7 +641,7 @@ function PrescriptionTableRow({
       {/* Rx # */}
       <td className="px-3 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-sm bg-primary/8 flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-[6px] bg-primary/8 flex items-center justify-center shrink-0">
             <FileText className="w-3.5 h-3.5 text-primary/70" />
           </div>
           <div>
@@ -678,11 +678,11 @@ function PrescriptionTableRow({
       <td className="px-3 py-3 whitespace-nowrap">
         {items.length > 0 ? (
           <div className="flex items-center gap-1">
-            <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-primary/8 border border-primary/15 text-primary/80 font-medium truncate max-w-[100px]">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-[6px] bg-primary/8 border border-primary/15 text-primary/80 font-medium truncate max-w-[100px]">
               {items[0].medicine_name}
             </span>
             {items.length > 1 && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-secondary/50 border border-border/40 text-muted-foreground">
+              <span className="text-[9px] px-1.5 py-0.5 rounded-[6px] bg-secondary/50 border border-border/40 text-muted-foreground">
                 +{items.length - 1}
               </span>
             )}
@@ -695,7 +695,7 @@ function PrescriptionTableRow({
       {/* Delivery type */}
       <td className="px-3 py-3 whitespace-nowrap">
         <span className={cn(
-          "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-sm border font-medium",
+          "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-[6px] border font-medium",
           rx.delivery_type === "pickup"
             ? "bg-secondary/40 border-border/30 text-muted-foreground"
             : "bg-primary/5 border-primary/15 text-primary",
@@ -737,7 +737,7 @@ function PrescriptionTableRow({
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={(e) => { e.stopPropagation(); onViewDetails(rx); }}
-            className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-sm border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all"
+            className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all"
           >
             <Eye className="w-3 h-3" />
             Details
@@ -755,11 +755,11 @@ function PrescriptionTableRow({
 
 const PharmacyPrescriptions = () => {
   const { t, i18n } = useTranslation();
-  const [filters,    setFilters]    = useState<FilterState>(INITIAL_FILTERS);
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [drawerRx,   setDrawerRx]   = useState<PrescriptionRequest | null>(null);
-  const [page,       setPage]       = useState(1);
-  const [pageSize,   setPageSize]   = useState(10);
+  const [drawerRx, setDrawerRx] = useState<PrescriptionRequest | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -794,7 +794,7 @@ const PharmacyPrescriptions = () => {
       .filter((rx) => {
         if (!q) return true;
         const patient = rx.prescription?.patient;
-        const doctor  = rx.prescription?.doctor;
+        const doctor = rx.prescription?.doctor;
         return (
           (patient?.name ?? "").toLowerCase().includes(q) ||
           (rx.prescription?.diagnosis ?? "").toLowerCase().includes(q) ||
@@ -820,21 +820,21 @@ const PharmacyPrescriptions = () => {
   }, [requests, filters.search, filters.sort]);
 
   const counts = useMemo(() => ({
-    pending:   requests.filter((r) => r.status === "pending").length,
+    pending: requests.filter((r) => r.status === "pending").length,
     reviewing: requests.filter((r) => r.status === "reviewing").length,
-    approved:  requests.filter((r) => r.status === "approved").length,
-    rejected:  requests.filter((r) => r.status === "rejected").length,
+    approved: requests.filter((r) => r.status === "approved").length,
+    rejected: requests.filter((r) => r.status === "rejected").length,
     fulfilled: requests.filter((r) => r.status === "fulfilled").length,
   }), [requests]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated  = useMemo(() => {
+  const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
   const startItem = (page - 1) * pageSize + 1;
-  const endItem   = Math.min(page * pageSize, filtered.length);
+  const endItem = Math.min(page * pageSize, filtered.length);
 
   // ─── Sidebar content ──────────────────────────────────────────────────────────
 
@@ -876,266 +876,266 @@ const PharmacyPrescriptions = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Meta / toolbar bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {isLoading ? (
-                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Loading…
-                  </span>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    <span className="font-bold text-foreground">{filtered.length}</span>{" "}
-                    {filtered.length === 1 ? "prescription" : "prescriptions"}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearAll}
-                        className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </p>
-                )}
-
-                {/* Status quick-filter chips */}
-                {!isLoading && (
-                  <div className="hidden lg:flex items-center gap-2">
-                    {counts.pending > 0 && (
-                      <button onClick={() => set("status", "pending")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        {counts.pending} pending
-                      </button>
-                    )}
-                    {counts.reviewing > 0 && (
-                      <button onClick={() => set("status", "reviewing")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                        {counts.reviewing} reviewing
-                      </button>
-                    )}
-                    {counts.approved > 0 && (
-                      <button onClick={() => set("status", "approved")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-violet-700 bg-violet-50 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-200 dark:border-violet-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity">
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-                        {counts.approved} approved
-                      </button>
-                    )}
-                    {counts.fulfilled > 0 && (
-                      <button onClick={() => set("status", "fulfilled")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {counts.fulfilled} fulfilled
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => refetch()}
-                  title="Refresh"
-                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
-                >
-                  <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
-                </button>
-
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search patient, diagnosis, Rx#…"
-                    className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                <div className="relative">
-                  <select
-                    value={filters.sort}
-                    onChange={(e) => set("sort", e.target.value as SortOption)}
-                    className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-                </div>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="flex-1 p-4">
-              {isError && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
-                    <AlertCircle className="w-6 h-6 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load prescriptions</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => refetch()} className="text-[11px] h-7 px-3 rounded-sm mt-1">
-                    <RefreshCw className="w-3 h-3 mr-1.5" />Retry
-                  </Button>
-                </div>
-              )}
-
-              {isLoading && (
-                <div className="border border-border/60 rounded-sm overflow-hidden">
-                  <div className="animate-pulse">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 px-3 py-3 border-b border-border/40 last:border-b-0">
-                        <div className="h-8 w-8 rounded-sm bg-muted/60" />
-                        <div className="flex-1 space-y-1.5">
-                          <div className="h-2.5 rounded bg-muted/60 w-1/3" />
-                          <div className="h-2 rounded bg-muted/40 w-1/4" />
-                        </div>
-                        <div className="h-6 w-16 rounded-sm bg-muted/60" />
-                        <div className="h-6 w-20 rounded-sm bg-muted/60" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!isLoading && !isError && filtered.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Pill className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {hasActiveFilters ? "No prescriptions match your filters" : "No prescription requests yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters ? "Try widening your search criteria" : "Requests will appear here once submitted"}
-                    </p>
-                  </div>
+          {/* Meta / toolbar bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {isLoading ? (
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading…
+                </span>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-bold text-foreground">{filtered.length}</span>{" "}
+                  {filtered.length === 1 ? "prescription" : "prescriptions"}
                   {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
-                      Clear all filters
+                    <button
+                      onClick={clearAll}
+                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </p>
+              )}
+
+              {/* Status quick-filter chips */}
+              {!isLoading && (
+                <div className="hidden lg:flex items-center gap-2">
+                  {counts.pending > 0 && (
+                    <button onClick={() => set("status", "pending")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      {counts.pending} pending
+                    </button>
+                  )}
+                  {counts.reviewing > 0 && (
+                    <button onClick={() => set("status", "reviewing")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                      {counts.reviewing} reviewing
+                    </button>
+                  )}
+                  {counts.approved > 0 && (
+                    <button onClick={() => set("status", "approved")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-violet-700 bg-violet-50 dark:bg-violet-950/30 dark:text-violet-400 border border-violet-200 dark:border-violet-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity">
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                      {counts.approved} approved
+                    </button>
+                  )}
+                  {counts.fulfilled > 0 && (
+                    <button onClick={() => set("status", "fulfilled")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {counts.fulfilled} fulfilled
                     </button>
                   )}
                 </div>
               )}
+            </div>
 
-              {!isLoading && !isError && filtered.length > 0 && (
-                <div className="border border-border/60 rounded-sm overflow-hidden bg-card">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr>
-                          <TableHeader label="Rx #"      sortKey="date-desc" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
-                          <TableHeader label="Patient"   sortKey="patient"   currentSort={filters.sort} onSort={(s) => set("sort", s)} />
-                          <TableHeader label="Medicines" currentSort={filters.sort} onSort={() => {}} />
-                          <TableHeader label="Delivery"  currentSort={filters.sort} onSort={() => {}} />
-                          <TableHeader label="Status"    sortKey="status"    currentSort={filters.sort} onSort={(s) => set("sort", s)} />
-                          <TableHeader
-                            label="Date"
-                            sortKey="date-desc"
-                            currentSort={filters.sort}
-                            onSort={(s) => set("sort", filters.sort === "date-desc" ? "date-asc" : "date-desc")}
-                          />
-                          <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-b border-border/60 bg-muted/30 whitespace-nowrap text-right">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginated.map((rx, i) => (
-                          <PrescriptionTableRow
-                            key={rx.id}
-                            rx={rx}
-                            onViewDetails={setDrawerRx}
-                            index={(page - 1) * pageSize + i}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refetch()}
+                title="Refresh"
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
+              </button>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-border/40 bg-muted/20">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground">
-                          Showing{" "}
-                          <span className="font-semibold text-foreground">{startItem}</span>–
-                          <span className="font-semibold text-foreground">{endItem}</span> of{" "}
-                          <span className="font-semibold text-foreground">{filtered.length}</span>
-                        </span>
-                        <div className="flex items-center gap-1 ml-2">
-                          <span className="text-[10px] text-muted-foreground">Rows:</span>
-                          <select
-                            value={pageSize}
-                            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                            className="text-[10px] bg-background border border-border/60 rounded-sm px-1.5 py-0.5 outline-none focus:border-primary/50"
-                          >
-                            {[10, 25, 50, 100].map((n) => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                        </div>
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search patient, diagnosis, Rx#…"
+                  className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              <div className="relative">
+                <select
+                  value={filters.sort}
+                  onChange={(e) => set("sort", e.target.value as SortOption)}
+                  className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+              </div>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="flex-1 p-4">
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">Failed to load prescriptions</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => refetch()} className="text-[11px] h-7 px-3 rounded-[6px] mt-1">
+                  <RefreshCw className="w-3 h-3 mr-1.5" />Retry
+                </Button>
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="border border-border/60 rounded-[6px] overflow-hidden">
+                <div className="animate-pulse">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-3 border-b border-border/40 last:border-b-0">
+                      <div className="h-8 w-8 rounded-[6px] bg-muted/60" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-2.5 rounded bg-muted/60 w-1/3" />
+                        <div className="h-2 rounded bg-muted/40 w-1/4" />
                       </div>
+                      <div className="h-6 w-16 rounded-[6px] bg-muted/60" />
+                      <div className="h-6 w-20 rounded-[6px] bg-muted/60" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setPage(1)} disabled={page === 1}
-                          className="w-7 h-7 rounded-sm flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                          <ChevronsLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                          className="w-7 h-7 rounded-sm flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
+            {!isLoading && !isError && filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Pill className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {hasActiveFilters ? "No prescriptions match your filters" : "No prescription requests yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters ? "Try widening your search criteria" : "Requests will appear here once submitted"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <button onClick={clearAll} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
 
-                        <div className="flex items-center gap-0.5 mx-1">
-                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                            let pageNum: number;
-                            if (totalPages <= 5)       pageNum = i + 1;
-                            else if (page <= 3)        pageNum = i + 1;
-                            else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
-                            else                       pageNum = page - 2 + i;
-                            return (
-                              <button key={pageNum} onClick={() => setPage(pageNum)}
-                                className={cn(
-                                  "w-7 h-7 rounded-sm flex items-center justify-center text-[10px] font-medium transition-all",
-                                  page === pageNum
-                                    ? "bg-primary text-primary-foreground border border-primary"
-                                    : "border border-border/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
-                                )}>
-                                {pageNum}
-                              </button>
-                            );
-                          })}
-                        </div>
+            {!isLoading && !isError && filtered.length > 0 && (
+              <div className="border border-border/60 rounded-[6px] overflow-hidden bg-card">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr>
+                        <TableHeader label="Rx #" sortKey="date-desc" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader label="Patient" sortKey="patient" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader label="Medicines" currentSort={filters.sort} onSort={() => { }} />
+                        <TableHeader label="Delivery" currentSort={filters.sort} onSort={() => { }} />
+                        <TableHeader label="Status" sortKey="status" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader
+                          label="Date"
+                          sortKey="date-desc"
+                          currentSort={filters.sort}
+                          onSort={(s) => set("sort", filters.sort === "date-desc" ? "date-asc" : "date-desc")}
+                        />
+                        <th className="px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 border-b border-border/60 bg-muted/30 whitespace-nowrap text-right">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginated.map((rx, i) => (
+                        <PrescriptionTableRow
+                          key={rx.id}
+                          rx={rx}
+                          onViewDetails={setDrawerRx}
+                          index={(page - 1) * pageSize + i}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-                        <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                          className="w-7 h-7 rounded-sm flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
-                          className="w-7 h-7 rounded-sm flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                          <ChevronsRight className="w-3.5 h-3.5" />
-                        </button>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 border-t border-border/40 bg-muted/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">
+                        Showing{" "}
+                        <span className="font-semibold text-foreground">{startItem}</span>–
+                        <span className="font-semibold text-foreground">{endItem}</span> of{" "}
+                        <span className="font-semibold text-foreground">{filtered.length}</span>
+                      </span>
+                      <div className="flex items-center gap-1 ml-2">
+                        <span className="text-[10px] text-muted-foreground">Rows:</span>
+                        <select
+                          value={pageSize}
+                          onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                          className="text-[10px] bg-background border border-border/60 rounded-[6px] px-1.5 py-0.5 outline-none focus:border-primary/50"
+                        >
+                          {[10, 25, 50, 100].map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </main>
+
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setPage(1)} disabled={page === 1}
+                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronsLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+
+                      <div className="flex items-center gap-0.5 mx-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (totalPages <= 5) pageNum = i + 1;
+                          else if (page <= 3) pageNum = i + 1;
+                          else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                          else pageNum = page - 2 + i;
+                          return (
+                            <button key={pageNum} onClick={() => setPage(pageNum)}
+                              className={cn(
+                                "w-7 h-7 rounded-[6px] flex items-center justify-center text-[10px] font-medium transition-all",
+                                page === pageNum
+                                  ? "bg-primary text-primary-foreground border border-primary"
+                                  : "border border-border/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
+                              )}>
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
+                        className="w-7 h-7 rounded-[6px] flex items-center justify-center border border-border/60 hover:border-primary/40 hover:bg-primary/5 text-muted-foreground hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+                        <ChevronsRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       <DetailDrawer

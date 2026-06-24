@@ -43,7 +43,7 @@ export function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -125,7 +125,7 @@ export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPa
       <td className="px-4 py-3 text-right">
         <Button
           size="sm" variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(p)}
         >
           {t("admin.users.manage")}
@@ -140,7 +140,7 @@ export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPa
 export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPatient) => void }) {
   const { t, i18n } = useTranslation();
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="mt-0.5"><Avatar name={p.name} avatar={p.avatar} /></div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
@@ -159,7 +159,7 @@ export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiP
         </div>
         <Button
           size="sm" variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(p)}
         >
           {t("admin.users.manage")}
@@ -194,7 +194,7 @@ export function SkeletonRows() {
 
 export function InfoTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+    <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
         {icon}
         {label}

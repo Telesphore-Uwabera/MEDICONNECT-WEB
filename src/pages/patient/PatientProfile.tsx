@@ -143,7 +143,7 @@ const formatDate = (d: string) => {
 const calcAge = (d: string) =>
   Math.floor(
     (Date.now() - new Date(toDateInput(d)).getTime()) /
-      (1000 * 60 * 60 * 24 * 365.25)
+    (1000 * 60 * 60 * 24 * 365.25)
   );
 
 const getInitials = (name: string) =>
@@ -186,9 +186,9 @@ function SectionCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
+    <div className="rounded-[6px] border border-border bg-card overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <div className="w-8 h-8 rounded-md flex items-center justify-center bg-primary/10">
+        <div className="w-8 h-8 rounded-[6px] flex items-center justify-center bg-primary/10">
           <Icon size={14} className="text-primary" />
         </div>
         <h3 className="text-xs font-semibold tracking-tight text-foreground flex-1">
@@ -481,7 +481,7 @@ function ProfileSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -818,7 +818,7 @@ function ProfileView({ profile }: { profile: TPatientProfile }) {
 
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
-      <div className="rounded-xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden bg-card border border-border">
+      <div className="rounded-[6px] p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden bg-card border border-border">
         <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full pointer-events-none bg-primary/10" />
         {profile.user?.avatar ? (
           <img
@@ -902,7 +902,7 @@ function ProfileView({ profile }: { profile: TPatientProfile }) {
 
         <SectionCard icon={Phone} title={t("profile.section.emergency", "Emergency Contact")}>
           {profile.emergency_contact_name ? (
-            <div className="flex items-center gap-3 rounded-md p-2.5 border border-destructive/20 bg-destructive/5 flex-wrap">
+            <div className="flex items-center gap-3 rounded-[6px] p-2.5 border border-destructive/20 bg-destructive/5 flex-wrap">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-medium text-destructive bg-destructive/15 shrink-0">
                 {getInitials(profile.emergency_contact_name)}
               </div>
@@ -915,7 +915,7 @@ function ProfileView({ profile }: { profile: TPatientProfile }) {
                 </p>
               </div>
               {profile.emergency_contact_phone && (
-                <div className="text-[11px] font-medium rounded-sm px-3 py-1.5 bg-primary/10 text-primary shrink-0">
+                <div className="text-[11px] font-medium rounded-[6px] px-3 py-1.5 bg-primary/10 text-primary shrink-0">
                   {profile.emergency_contact_phone}
                 </div>
               )}
@@ -947,25 +947,25 @@ function MedicalInfoTab() {
     setForm(
       medical
         ? {
-            allergies: medical.allergies ?? [],
-            chronic_conditions: medical.chronic_conditions ?? [],
-            current_medications: medical.current_medications ?? [],
-            previous_surgeries: medical.previous_surgeries ?? [],
-            family_history: medical.family_history ?? [],
-            smoking_status: medical.smoking_status ?? "",
-            alcohol_use: medical.alcohol_use ?? "",
-            notes: medical.notes ?? "",
-          }
+          allergies: medical.allergies ?? [],
+          chronic_conditions: medical.chronic_conditions ?? [],
+          current_medications: medical.current_medications ?? [],
+          previous_surgeries: medical.previous_surgeries ?? [],
+          family_history: medical.family_history ?? [],
+          smoking_status: medical.smoking_status ?? "",
+          alcohol_use: medical.alcohol_use ?? "",
+          notes: medical.notes ?? "",
+        }
         : {
-            allergies: [],
-            chronic_conditions: [],
-            current_medications: [],
-            previous_surgeries: [],
-            family_history: [],
-            smoking_status: "",
-            alcohol_use: "",
-            notes: "",
-          }
+          allergies: [],
+          chronic_conditions: [],
+          current_medications: [],
+          previous_surgeries: [],
+          family_history: [],
+          smoking_status: "",
+          alcohol_use: "",
+          notes: "",
+        }
     );
     setIsEditing(true);
   };
@@ -986,9 +986,9 @@ function MedicalInfoTab() {
   if (isLoading) {
     return (
       <div className="flex-1 p-5 space-y-4 animate-pulse">
-        <div className="h-24 rounded-xl bg-muted" />
+        <div className="h-24 rounded-[6px] bg-muted" />
         <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-md bg-muted" />)}
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-[6px] bg-muted" />)}
         </div>
       </div>
     );
@@ -1104,7 +1104,7 @@ function MedicalInfoTab() {
       </div>
 
       {!medical ? (
-        <div className="rounded-xl border border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-center">
+        <div className="rounded-[6px] border border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
             <Stethoscope size={20} className="text-muted-foreground" />
           </div>
@@ -1233,8 +1233,8 @@ function InsuranceTab({
   if (isLoading) {
     return (
       <div className="flex-1 p-5 space-y-4 animate-pulse">
-        <div className="h-32 rounded-xl bg-muted" />
-        <div className="h-24 rounded-md bg-muted" />
+        <div className="h-32 rounded-[6px] bg-muted" />
+        <div className="h-24 rounded-[6px] bg-muted" />
       </div>
     );
   }
@@ -1255,7 +1255,7 @@ function InsuranceTab({
       </div>
 
       {!active && !isEditing ? (
-        <div className="rounded-xl border border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-center">
+        <div className="rounded-[6px] border border-dashed border-border p-8 flex flex-col items-center justify-center gap-3 text-center">
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
             <Shield size={20} className="text-muted-foreground" />
           </div>
@@ -1269,9 +1269,9 @@ function InsuranceTab({
           </Button>
         </div>
       ) : isEditing ? (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-            <div className="w-8 h-8 rounded-md flex items-center justify-center bg-primary/10">
+            <div className="w-8 h-8 rounded-[6px] flex items-center justify-center bg-primary/10">
               <Shield size={14} className="text-primary" />
             </div>
             <h3 className="text-xs font-semibold text-foreground">
@@ -1322,7 +1322,7 @@ function InsuranceTab({
 
             {/* Preview card for the selected provider */}
             {selectedPublicInsurance && (
-              <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50 border border-border">
+              <div className="flex items-center gap-3 p-3 rounded-[6px] bg-muted/50 border border-border">
                 {selectedPublicInsurance.logo ? (
                   <img
                     src={selectedPublicInsurance.logo}
@@ -1330,7 +1330,7 @@ function InsuranceTab({
                     className="h-8 w-auto object-contain shrink-0"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
                     <Shield size={14} className="text-primary" />
                   </div>
                 )}
@@ -1380,13 +1380,13 @@ function InsuranceTab({
         </div>
       ) : active ? (
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5 relative overflow-hidden">
+          <div className="rounded-[6px] border border-border bg-card p-4 sm:p-5 relative overflow-hidden">
             <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-primary/5 pointer-events-none" />
             <div className="flex items-start gap-4">
               {active.logo ? (
                 <img src={active.logo} alt={active.name} className="h-12 w-auto object-contain" />
               ) : (
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
                   <Shield size={22} className="text-primary" />
                 </div>
               )}
@@ -1438,9 +1438,9 @@ function InsuranceTab({
 function ProfileSkeleton() {
   return (
     <div className="flex-1 p-5 space-y-4 animate-pulse">
-      <div className="h-24 rounded-xl bg-muted" />
+      <div className="h-24 rounded-[6px] bg-muted" />
       <div className="grid grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((i) => <div key={i} className="h-32 rounded-md bg-muted" />)}
+        {[1, 2, 3, 4].map((i) => <div key={i} className="h-32 rounded-[6px] bg-muted" />)}
       </div>
     </div>
   );
@@ -1502,7 +1502,7 @@ const PatientProfile = () => {
     <DashboardLayout role="patient">
       <PageHeader title={t("pages.patient.profile_title")} subtitle={pageSubtitle} />
       <div className="px-3 py-4 sm:px-6 sm:py-8">
-        <div className="rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-[540px]">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden flex flex-col min-h-[540px]">
           <TabBar active={mainTab} onChange={setMainTab} hasProfile={!!profile} />
           <div className="flex flex-1 flex-col sm:flex-row min-h-0">
             {mainTab === "profile" && (

@@ -159,7 +159,7 @@ export function PillGroup<T extends string | boolean>({
           key={String(o.value)}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2 py-1 rounded-sm text-xs border transition-all text-left",
+            "px-2 py-1 rounded-[6px] text-xs border transition-all text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary font-medium"
               : "border-border/50 text-muted-foreground hover:border-primary/30 hover:text-foreground hover:bg-secondary/30",
@@ -191,7 +191,7 @@ export function DateRangeInput({
           type="date"
           value={from}
           onChange={(e) => onFrom(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
         />
       </div>
       <div>
@@ -201,7 +201,7 @@ export function DateRangeInput({
           value={to}
           min={from || undefined}
           onChange={(e) => onTo(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+          className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
         />
       </div>
     </div>
@@ -224,7 +224,7 @@ export function SkeletonRow() {
 
 export function SkeletonCard() {
   return (
-    <div className="bg-card border border-border/50 rounded-sm overflow-hidden">
+    <div className="bg-card border border-border/50 rounded-[6px] overflow-hidden">
       <div className="h-0.5 bg-muted animate-pulse" />
       <div className="p-3.5 space-y-2.5">
         <div className="flex gap-2">
@@ -289,7 +289,7 @@ export function PrescriptionDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/60 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-[6px] bg-primary/10 flex items-center justify-center">
               <FileText className="w-4 h-4 text-primary" />
             </div>
             <div>
@@ -299,7 +299,7 @@ export function PrescriptionDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             aria-label="Close drawer"
           >
             <X className="w-4 h-4" />
@@ -364,7 +364,7 @@ export function PrescriptionDrawer({
             <DrawerSection icon={<Pill className="w-4 h-4" />} title="Medications">
               <div className="space-y-2">
                 {p.items.map((item, idx) => (
-                  <div key={item.id} className="rounded-sm border border-border/40 bg-secondary/20 overflow-hidden">
+                  <div key={item.id} className="rounded-[6px] border border-border/40 bg-secondary/20 overflow-hidden">
                     <div className="px-3 py-2 flex items-center justify-between bg-secondary/30 border-b border-border/30">
                       <div className="flex items-center gap-2">
                         <span className="w-4 h-4 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
@@ -372,7 +372,7 @@ export function PrescriptionDrawer({
                         </span>
                         <p className="text-xs font-semibold text-foreground">{item.medicine_name}</p>
                       </div>
-                      <span className="text-xs font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                      <span className="text-xs font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded-[6px]">
                         {item.dosage}
                       </span>
                     </div>
@@ -393,7 +393,7 @@ export function PrescriptionDrawer({
             </DrawerSection>
 
             <DrawerSection icon={<User className="w-4 h-4" />} title="Prescribing doctor">
-              <div className="flex items-start gap-3 p-3 rounded-sm bg-secondary/20 border border-border/40">
+              <div className="flex items-start gap-3 p-3 rounded-[6px] bg-secondary/20 border border-border/40">
                 <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
                   {p.doctor.image ? (
                     <img
@@ -431,7 +431,7 @@ export function PrescriptionDrawer({
             </DrawerSection>
 
             <DrawerSection icon={<ClipboardList className="w-4 h-4" />} title="Appointment">
-              <div className="rounded-sm border border-border/40 bg-secondary/20 overflow-hidden">
+              <div className="rounded-[6px] border border-border/40 bg-secondary/20 overflow-hidden">
                 <div className="grid grid-cols-2 divide-x divide-border/30">
                   <AppointmentDetail
                     label="Type"
@@ -460,7 +460,7 @@ export function PrescriptionDrawer({
             </DrawerSection>
 
             {p.is_signed && p.signed_at && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-sm bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/60">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/60">
                 <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
                   Digitally signed by doctor on {formatDateTime(p.signed_at)}
@@ -475,7 +475,7 @@ export function PrescriptionDrawer({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 px-3 text-xs rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+            className="h-8 px-3 text-xs rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
             onClick={() => onAction(p, "pdf")}
           >
             <Download className="h-4 w-4 mr-1.5" />
@@ -485,7 +485,7 @@ export function PrescriptionDrawer({
             <Button
               size="sm"
               variant="outline"
-              className="h-8 px-3 text-xs rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+              className="h-8 px-3 text-xs rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all"
               onClick={() => window.open(getPdfUrl(p.qr_code), "_blank")}
             >
               <QrCode className="h-4 w-4 mr-1.5" />
@@ -495,7 +495,7 @@ export function PrescriptionDrawer({
           {p.status === "issued" && (
             <Button
               size="sm"
-              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm hover:shadow transition-all"
+              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm hover:shadow transition-all"
               onClick={() => onAction(p, "send")}
             >
               <Send className="h-4 w-4 mr-1.5" />
@@ -525,7 +525,7 @@ export function PrescriptionCard({
   return (
     <div
       className={cn(
-        "bg-card border rounded-sm overflow-hidden transition-all duration-150 hover:shadow-sm",
+        "bg-card border rounded-[6px] overflow-hidden transition-all duration-150 hover:shadow-sm",
         expiring ? "border-amber-300 dark:border-amber-800" : "border-border/60 hover:border-primary/20",
       )}
     >
@@ -534,10 +534,10 @@ export function PrescriptionCard({
           "h-0.5 w-full",
           p.status === "issued" ? "bg-primary"
             : p.status === "dispensed" ? "bg-emerald-500"
-            : p.status === "sent_to_pharmacy" ? "bg-violet-500"
-            : p.status === "cancelled" ? "bg-red-400"
-            : expiring ? "bg-amber-400"
-            : "bg-border",
+              : p.status === "sent_to_pharmacy" ? "bg-violet-500"
+                : p.status === "cancelled" ? "bg-red-400"
+                  : expiring ? "bg-amber-400"
+                    : "bg-border",
         )}
       />
       <div className="p-3.5">
@@ -571,7 +571,7 @@ export function PrescriptionCard({
         </div>
 
         {p.diagnosis && (
-          <div className="mb-2 px-2 py-1 rounded-sm bg-secondary/30 border border-border/25">
+          <div className="mb-2 px-2 py-1 rounded-[6px] bg-secondary/30 border border-border/25">
             <p className="text-xs text-muted-foreground/50 uppercase tracking-wide">Diagnosis</p>
             <p className="text-xs font-medium text-foreground mt-0.5">{p.diagnosis}</p>
           </div>
@@ -600,7 +600,7 @@ export function PrescriptionCard({
               "text-xs flex items-center gap-1",
               expiring ? "text-amber-600 dark:text-amber-400 font-medium"
                 : expired ? "text-muted-foreground/40 line-through"
-                : "text-muted-foreground/60",
+                  : "text-muted-foreground/60",
             )}
           >
             <CalendarRange className="h-4 w-4" />
@@ -614,7 +614,7 @@ export function PrescriptionCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
+            className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
             onClick={() => onViewDetails(p)}
           >
             <Eye className="h-4 w-4" />Details
@@ -622,7 +622,7 @@ export function PrescriptionCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
+            className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
             onClick={() => onAction(p, "pdf")}
           >
             <Download className="h-4 w-4" />PDF
@@ -630,7 +630,7 @@ export function PrescriptionCard({
           {p.status === "issued" && (
             <Button
               size="sm"
-              className="h-6 px-2 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm gap-1"
+              className="h-6 px-2 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm gap-1"
               onClick={() => onAction(p, "send")}
             >
               <Send className="h-4 w-4" />Send to pharmacy
@@ -734,13 +734,13 @@ export function PharmacySelectionModal({
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
         <div
           ref={modalRef}
-          className="fixed inset-x-4 top-[8%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[440px] md:max-w-[90vw] z-50 bg-background border border-border rounded-lg shadow-2xl flex flex-col max-h-[85dvh] overflow-hidden"
+          className="fixed inset-x-4 top-[8%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[440px] md:max-w-[90vw] z-50 bg-background border border-border rounded-[6px] shadow-2xl flex flex-col max-h-[85dvh] overflow-hidden"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/60 flex-shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={resetDelivery}
-                className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                 aria-label="Back to pharmacy list"
               >
                 <ChevronDown className="w-4 h-4 rotate-90" />
@@ -750,7 +750,7 @@ export function PharmacySelectionModal({
                 <p className="text-xs text-muted-foreground/60 mt-0.5 truncate max-w-[220px]">{selectedPharmacy.name}</p>
               </div>
             </div>
-            <button onClick={onClose} className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+            <button onClick={onClose} className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -782,13 +782,13 @@ export function PharmacySelectionModal({
                   <button
                     onClick={() => { setDeliveryType("pickup"); setDeliveryAddress(""); }}
                     className={cn(
-                      "w-full text-left p-3 rounded-sm border transition-all",
+                      "w-full text-left p-3 rounded-[6px] border transition-all",
                       deliveryType === "pickup" ? "border-primary bg-primary/5" : "border-border/40 hover:border-primary/30 hover:bg-secondary/20",
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={cn("w-8 h-8 rounded-sm flex items-center justify-center transition-colors", deliveryType === "pickup" ? "bg-primary/15 text-primary" : "bg-secondary/40 text-muted-foreground")}>
+                        <div className={cn("w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors", deliveryType === "pickup" ? "bg-primary/15 text-primary" : "bg-secondary/40 text-muted-foreground")}>
                           <Package className="w-4 h-4" />
                         </div>
                         <div>
@@ -807,13 +807,13 @@ export function PharmacySelectionModal({
                   <button
                     onClick={() => setDeliveryType("home_delivery")}
                     className={cn(
-                      "w-full text-left p-3 rounded-sm border transition-all",
+                      "w-full text-left p-3 rounded-[6px] border transition-all",
                       deliveryType === "home_delivery" ? "border-primary bg-primary/5" : "border-border/40 hover:border-primary/30 hover:bg-secondary/20",
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={cn("w-8 h-8 rounded-sm flex items-center justify-center transition-colors", deliveryType === "home_delivery" ? "bg-primary/15 text-primary" : "bg-secondary/40 text-muted-foreground")}>
+                        <div className={cn("w-8 h-8 rounded-[6px] flex items-center justify-center transition-colors", deliveryType === "home_delivery" ? "bg-primary/15 text-primary" : "bg-secondary/40 text-muted-foreground")}>
                           <Truck className="w-4 h-4" />
                         </div>
                         <div>
@@ -851,7 +851,7 @@ export function PharmacySelectionModal({
                   onChange={(e) => setDeliveryAddress(e.target.value)}
                   placeholder="Enter your full delivery address…"
                   rows={3}
-                  className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
+                  className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
                 />
                 {deliveryAddress.trim().length === 0 && (
                   <p className="text-xs text-red-500/70 flex items-center gap-1">
@@ -873,19 +873,19 @@ export function PharmacySelectionModal({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Any special instructions for the pharmacy…"
                 rows={2}
-                className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
+                className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
               />
             </div>
           </div>
 
           <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex gap-2">
-            <Button size="sm" variant="outline" className="h-8 px-3 text-xs rounded-sm border-border/60" onClick={resetDelivery}>
+            <Button size="sm" variant="outline" className="h-8 px-3 text-xs rounded-[6px] border-border/60" onClick={resetDelivery}>
               Back
             </Button>
             <Button
               size="sm"
               disabled={!canSubmit}
-              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-8 px-3 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
                 if (canSubmit && deliveryType) {
                   onSelect(
@@ -915,11 +915,11 @@ export function PharmacySelectionModal({
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div
         ref={modalRef}
-        className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[560px] md:max-w-[90vw] z-50 bg-background border border-border rounded-lg shadow-2xl flex flex-col max-h-[80dvh] overflow-hidden"
+        className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-[560px] md:max-w-[90vw] z-50 bg-background border border-border rounded-[6px] shadow-2xl flex flex-col max-h-[80dvh] overflow-hidden"
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60 bg-card/60 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-sm bg-primary/10 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-[6px] bg-primary/10 flex items-center justify-center">
               <Store className="w-4 h-4 text-primary" />
             </div>
             <div>
@@ -927,7 +927,7 @@ export function PharmacySelectionModal({
               <p className="text-xs text-muted-foreground/60 mt-0.5">Choose where to send your prescription</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
+          <button onClick={onClose} className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -940,7 +940,7 @@ export function PharmacySelectionModal({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name, city, or address…"
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-border/50 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
             />
           </div>
         </div>
@@ -949,8 +949,8 @@ export function PharmacySelectionModal({
           {isLoading ? (
             <div className="space-y-2 py-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-sm border border-border/30 bg-card/40">
-                  <div className="w-10 h-10 rounded-sm bg-muted animate-pulse shrink-0" />
+                <div key={i} className="flex items-center gap-3 p-3 rounded-[6px] border border-border/30 bg-card/40">
+                  <div className="w-10 h-10 rounded-[6px] bg-muted animate-pulse shrink-0" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-2.5 w-32 bg-muted rounded animate-pulse" />
                     <div className="h-2 w-24 bg-muted/60 rounded animate-pulse" />
@@ -971,10 +971,10 @@ export function PharmacySelectionModal({
                 <button
                   key={pharmacy.id}
                   onClick={() => setSelectedPharmacy(pharmacy)}
-                  className="w-full text-left p-3 rounded-sm border border-border/30 hover:border-primary/30 hover:bg-secondary/20 transition-all group"
+                  className="w-full text-left p-3 rounded-[6px] border border-border/30 hover:border-primary/30 hover:bg-secondary/20 transition-all group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-sm bg-primary/5 border border-border/30 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-[6px] bg-primary/5 border border-border/30 flex items-center justify-center shrink-0 overflow-hidden">
                       {pharmacy.logo ? (
                         <img
                           src={pharmacy.logo}
@@ -994,17 +994,17 @@ export function PharmacySelectionModal({
                       <p className="text-xs text-muted-foreground/60 mt-0.5 truncate">{pharmacy.address}, {pharmacy.city}</p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {pharmacy.offers_delivery && (
-                          <span className="inline-flex items-center gap-0.5 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-sm">
+                          <span className="inline-flex items-center gap-0.5 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-[6px]">
                             <Truck className="w-4 h-4" />Delivery
                           </span>
                         )}
                         {pharmacy.offers_pickup && (
-                          <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground bg-secondary/40 px-1.5 py-0.5 rounded-sm">
+                          <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground bg-secondary/40 px-1.5 py-0.5 rounded-[6px]">
                             <Package className="w-4 h-4" />Pickup
                           </span>
                         )}
                         {pharmacy.is_open_24h && (
-                          <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-sm">
+                          <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-[6px]">
                             <Clock className="w-4 h-4" />24h
                           </span>
                         )}
@@ -1025,7 +1025,7 @@ export function PharmacySelectionModal({
 
         <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex items-center justify-between">
           <p className="text-xs text-muted-foreground/50">{filteredPharmacies.length} pharmacies available</p>
-          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground font-medium px-3 py-1.5 rounded-sm hover:bg-secondary/40 transition-colors">
+          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground font-medium px-3 py-1.5 rounded-[6px] hover:bg-secondary/40 transition-colors">
             Cancel
           </button>
         </div>

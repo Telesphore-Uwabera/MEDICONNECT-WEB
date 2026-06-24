@@ -66,7 +66,7 @@ const Onboarding = () => {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-md border border-border bg-card shadow-large p-8"
+          className="rounded-[6px] border border-border bg-card shadow-large p-8"
         >
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
             {t(`auth.role_${user.role}`)}

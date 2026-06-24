@@ -27,9 +27,9 @@ interface LandingSpecializationFee {
 type SpecializationFeesResponse =
   | LandingSpecializationFee[]
   | {
-      data?: LandingSpecializationFee[];
-      specialization_fees?: LandingSpecializationFee[];
-    };
+    data?: LandingSpecializationFee[];
+    specialization_fees?: LandingSpecializationFee[];
+  };
 
 const SPECIALTY_ICONS: Record<string, LucideIcon> = {
   cardiology: Heart,
@@ -115,7 +115,7 @@ function Specialities() {
             onClick={() => scroll('left')}
             disabled={!canScrollLeft}
             aria-label="Scroll specialities left"
-            className="flex h-8 w-8 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground transition-all enabled:hover:border-primary/40 enabled:hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground transition-all enabled:hover:border-primary/40 enabled:hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronLeft size={15} />
           </button>
@@ -124,20 +124,20 @@ function Specialities() {
             onClick={() => scroll('right')}
             disabled={!canScrollRight}
             aria-label="Scroll specialities right"
-            className="flex h-8 w-8 items-center justify-center rounded-sm border border-border bg-card text-muted-foreground transition-all enabled:hover:border-primary/40 enabled:hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-border bg-card text-muted-foreground transition-all enabled:hover:border-primary/40 enabled:hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronRight size={15} />
           </button>
         </div>
       </div>
 
-      {/* Loading skeleton — rounded-sm to match card radius elsewhere */}
+      {/* Loading skeleton — rounded-[6px] to match card radius elsewhere */}
       {isLoading && (
         <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-[112px] w-[124px] flex-shrink-0 rounded-sm border border-border bg-muted relative overflow-hidden"
+              className="h-[112px] w-[124px] flex-shrink-0 rounded-[6px] border border-border bg-muted relative overflow-hidden"
             >
               <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </div>
@@ -147,7 +147,7 @@ function Specialities() {
 
       {/* Error state */}
       {isError && !isLoading && (
-        <div className="flex flex-col items-center gap-3 rounded-sm border border-border bg-card py-8 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-[6px] border border-border bg-card py-8 text-center">
           <p className="text-sm text-muted-foreground">
             Couldn&apos;t load specialities right now.
           </p>
@@ -155,7 +155,7 @@ function Specialities() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="rounded-sm bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-60"
+            className="rounded-[6px] bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-60"
           >
             {isFetching ? 'Retrying…' : 'Try again'}
           </button>
@@ -188,7 +188,7 @@ function Specialities() {
             tabIndex={0}
             role="region"
             aria-label="Specialities carousel"
-            className="flex gap-3 overflow-x-auto pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+            className="flex gap-3 overflow-x-auto pb-2 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-[6px]"
           >
             {data.map((item) => {
               const label =
@@ -204,9 +204,9 @@ function Specialities() {
                 <Link
                   key={item.id}
                   to={`/patient/search-doctors?type=booking&specialization_fee_id=${item.id}`}
-                  className="group flex w-[124px] flex-shrink-0 flex-col items-center gap-2 rounded-sm border border-border bg-card p-3.5 text-center shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
+                  className="group flex w-[124px] flex-shrink-0 flex-col items-center gap-2 rounded-[6px] border border-border bg-card p-3.5 text-center shadow-sm transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-primary/10 text-primary border border-primary/15 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[6px] bg-primary/10 text-primary border border-primary/15 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <Icon size={18} strokeWidth={1.75} />
                   </span>
                   <span className="text-xs font-semibold leading-tight text-foreground">

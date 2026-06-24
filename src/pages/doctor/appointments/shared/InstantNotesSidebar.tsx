@@ -41,7 +41,7 @@ export function InstantNotesSidebar({ onClose }: Props) {
         </div>
         <button
           onClick={onClose}
-          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="h-6 w-6 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -57,7 +57,7 @@ export function InstantNotesSidebar({ onClose }: Props) {
             <button
               key={tpl}
               onClick={() => insertTemplate(tpl)}
-              className="text-[10px] px-2 py-1 rounded-md border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+              className="text-[10px] px-2 py-1 rounded-[6px] border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
             >
               {tpl}
             </button>

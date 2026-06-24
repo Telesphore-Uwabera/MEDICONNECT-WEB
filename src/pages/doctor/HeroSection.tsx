@@ -247,7 +247,7 @@ function MeetOurDoctorsSlider({
   const next = () => { setPaused(true); setIndex((safeIndex + 1) % doctors.length); };
 
   return (
-    <div className={`bg-card rounded-[8px] p-3 sm:p-4 border border-border ${className}`}>
+    <div className={`bg-card rounded-[6px] p-3 sm:p-4 border border-border ${className}`}>
       <div className="flex items-center justify-between">
         <div className="font-bold text-foreground text-xs sm:text-sm">Meet Our Doctors</div>
         <div className="flex gap-1">
@@ -408,7 +408,7 @@ export default function HeroSection() {
           {/* ── Left column ── */}
           <div className="relative z-10 order-2 lg:order-1">
             <h1 className="lg:mt-2 lg:text-left text-center font-display text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">
-              Book a 
+              Book a
               <span className="text-primary"> Doctor Consultation</span>
               Anytime, Anywhere
             </h1>
@@ -648,7 +648,7 @@ export default function HeroSection() {
             onClick={(e) => { if (e.target === e.currentTarget) handleOpenChange(false); }}
           >
             <div
-              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border shadow-2xl my-auto"
+              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[6px] bg-card border border-border shadow-2xl my-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <ConnectDialog

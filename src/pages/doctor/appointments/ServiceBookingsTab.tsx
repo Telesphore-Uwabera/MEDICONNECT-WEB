@@ -83,7 +83,7 @@ function Section({ title, icon, children }: { title: string; icon: ReactNode; ch
         {icon}
         {title}
       </p>
-      <div className="bg-background rounded-lg border border-border/50 px-4 py-2">{children}</div>
+      <div className="bg-background rounded-[6px] border border-border/50 px-4 py-2">{children}</div>
     </div>
   );
 }
@@ -188,7 +188,7 @@ export function ServiceBookingsTab() {
       {/* Empty */}
       {!isLoading && bookings.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <div className="h-16 w-16 rounded-lg bg-muted/50 border border-border flex items-center justify-center">
+          <div className="h-16 w-16 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
             <CalendarX2 className="h-8 w-8 text-muted-foreground/40" />
           </div>
           <div>
@@ -237,7 +237,7 @@ export function ServiceBookingsTab() {
           <div className="relative flex flex-col bg-card border-l border-border shadow-2xl w-full max-w-md h-full overflow-hidden animate-in slide-in-from-right duration-300">
             {/* Header */}
             <div className="flex items-center gap-4 px-5 py-4 border-b border-border/60 bg-card shrink-0">
-              <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
+              <div className="h-10 w-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
                 {initials(patientName(detail))}
               </div>
               <div className="flex-1 min-w-0">
@@ -249,7 +249,7 @@ export function ServiceBookingsTab() {
               </div>
               <button
                 onClick={closeDrawer}
-                className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+                className="h-8 w-8 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -339,14 +339,14 @@ export function ServiceBookingsTab() {
                     <span className="text-xs text-muted-foreground mr-auto">{t("consult.bookings.cancel_confirm")}</span>
                     <button
                       onClick={() => setConfirming(false)}
-                      className="h-9 px-4 rounded-md text-sm font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
+                      className="h-9 px-4 rounded-[6px] text-sm font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
                     >
                       {t("consult.bookings.keep")}
                     </button>
                     <button
                       onClick={() => handleCancel(detail.id)}
                       disabled={cancelBooking.isPending}
-                      className="h-9 px-4 rounded-md text-sm font-semibold bg-rose-500 text-white hover:bg-rose-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      className="h-9 px-4 rounded-[6px] text-sm font-semibold bg-rose-500 text-white hover:bg-rose-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
                     >
                       {cancelBooking.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("consult.bookings.yes_cancel")}
@@ -355,7 +355,7 @@ export function ServiceBookingsTab() {
                 ) : (
                   <button
                     onClick={() => setConfirming(true)}
-                    className="h-9 px-4 rounded-md text-sm font-medium border border-border text-muted-foreground hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center gap-1.5"
+                    className="h-9 px-4 rounded-[6px] text-sm font-medium border border-border text-muted-foreground hover:text-rose-600 hover:border-rose-300 transition-colors flex items-center gap-1.5"
                   >
                     <X className="h-4 w-4" />
                     {t("consult.booking.cancel")}

@@ -182,7 +182,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -207,7 +207,7 @@ function PrescriptionCard({
   const { t, i18n } = useTranslation();
 
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -256,7 +256,7 @@ function PrescriptionCard({
             return (
               <span
                 key={c}
-                className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-sm bg-secondary/60 border border-border/40 text-muted-foreground/80"
+                className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-[6px] bg-secondary/60 border border-border/40 text-muted-foreground/80"
               >
                 <I className="h-2.5 w-2.5" />
                 {c}
@@ -422,115 +422,115 @@ const HospitalPrescriptions = () => {
         />
 
         {/* Info banner */}
-        <div className="mx-4 mt-3 rounded-sm border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] flex items-start gap-2 text-primary">
+        <div className="mx-4 mt-3 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] flex items-start gap-2 text-primary">
           <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>{t("pages.hospital.rx_attached")}</span>
         </div>
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  <span className="font-bold text-foreground">{filtered.length}</span>{" "}
-                  {filtered.length === 1 ? "prescription" : "prescriptions"}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </p>
-
-                <div className="hidden lg:flex items-center gap-2">
-                  {sentCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm">
-                      <Send className="h-2.5 w-2.5" />
-                      {sentCount} sent
-                    </span>
-                  )}
-                  {filledCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {filledCount} filled
-                    </span>
-                  )}
-                  {draftCount > 0 && (
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-900/40 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                      {draftCount} draft
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Search */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search patient, doctor, medication…"
-                    className="w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                <Button
-                  className="h-7 px-3 text-[10px] font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow transition-all duration-200 shrink-0"
-                  onClick={() => setOpen(true)}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  {t("pages.doctor.new_rx")}
-                </Button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-              </div>
-            </div>
-
-            {/* Grid */}
-            <div className="p-4">
-              {filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Pill className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      No prescriptions match your filters
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
-                    </p>
-                  </div>
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-bold text-foreground">{filtered.length}</span>{" "}
+                {filtered.length === 1 ? "prescription" : "prescriptions"}
+                {hasActiveFilters && (
                   <button
                     onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                    className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                   >
-                    Clear all filters
+                    Reset
                   </button>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 gap-2">
-                  {filtered.map((p) => (
-                    <PrescriptionCard
-                      key={p.id}
-                      p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
-                      statusLabel={statusLabel}
-                    />
-                  ))}
-                </div>
-              )}
+                )}
+              </p>
+
+              <div className="hidden lg:flex items-center gap-2">
+                {sentCount > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-[6px]">
+                    <Send className="h-2.5 w-2.5" />
+                    {sentCount} sent
+                  </span>
+                )}
+                {filledCount > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {filledCount} filled
+                  </span>
+                )}
+                {draftCount > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-900/40 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-[6px]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    {draftCount} draft
+                  </span>
+                )}
+              </div>
             </div>
-          </main>
+
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search patient, doctor, medication…"
+                  className="w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              <Button
+                className="h-7 px-3 text-[10px] font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow transition-all duration-200 shrink-0"
+                onClick={() => setOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                {t("pages.doctor.new_rx")}
+              </Button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
+          </div>
+
+          {/* Grid */}
+          <div className="p-4">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Pill className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    No prescriptions match your filters
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    Try widening your search criteria
+                  </p>
+                </div>
+                <button
+                  onClick={clearAll}
+                  className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-2">
+                {filtered.map((p) => (
+                  <PrescriptionCard
+                    key={p.id}
+                    p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                    statusLabel={statusLabel}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       <PrescriptionWizard

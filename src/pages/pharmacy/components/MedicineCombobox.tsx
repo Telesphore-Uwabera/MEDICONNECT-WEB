@@ -91,10 +91,10 @@ export function MedicineCombobox({
   };
 
   // Scroll focused item into view
-useEffect(() => {
-  if (focusedIdx < 0) return;
-  listRef.current?.querySelectorAll("[data-item]")[focusedIdx]?.scrollIntoView({ block: "nearest" });
-}, [focusedIdx]);
+  useEffect(() => {
+    if (focusedIdx < 0) return;
+    listRef.current?.querySelectorAll("[data-item]")[focusedIdx]?.scrollIntoView({ block: "nearest" });
+  }, [focusedIdx]);
 
   return (
     <div ref={wrapRef} className="relative">
@@ -107,7 +107,7 @@ useEffect(() => {
         aria-expanded={open}
         aria-controls={`${id}-list`}
         className={cn(
-          "w-full flex items-center gap-2 h-8 px-2.5 rounded-sm border transition-all duration-200 text-left",
+          "w-full flex items-center gap-2 h-8 px-2.5 rounded-[6px] border transition-all duration-200 text-left",
           "bg-background text-[11px] text-foreground",
           open
             ? "border-primary/50 ring-2 ring-primary/20"
@@ -139,7 +139,7 @@ useEffect(() => {
             type="button"
             tabIndex={-1}
             onClick={clearSelection}
-            className="p-0.5 rounded-sm text-muted-foreground/50 hover:text-foreground hover:bg-secondary/50 transition-colors"
+            className="p-0.5 rounded-[6px] text-muted-foreground/50 hover:text-foreground hover:bg-secondary/50 transition-colors"
             aria-label="Clear selection"
           >
             <X className="w-3 h-3" />
@@ -159,7 +159,7 @@ useEffect(() => {
         <div
           id={`${id}-list`}
           className={cn(
-            "absolute z-50 mt-1 w-full rounded-sm border border-border/60",
+            "absolute z-50 mt-1 w-full rounded-[6px] border border-border/60",
             "bg-card shadow-lg overflow-hidden",
           )}
         >

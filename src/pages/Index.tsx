@@ -100,7 +100,7 @@ const SECTION_TITLE =
 // ─── Slider Skeleton ──────────────────────────────────────────────────────────
 
 const SliderSkeleton = () => (
-  <div className="absolute inset-0 bg-muted animate-pulse rounded-sm flex flex-col justify-end p-4 gap-2">
+  <div className="absolute inset-0 bg-muted animate-pulse rounded-[6px] flex flex-col justify-end p-4 gap-2">
     <div className="h-4 w-2/3 rounded bg-muted-foreground/20" />
     <div className="h-3 w-1/2 rounded bg-muted-foreground/20" />
     <div className="h-3 w-1/3 rounded bg-muted-foreground/20" />
@@ -417,12 +417,12 @@ const Index = () => {
       {/* ── Available Doctors Grid ── */}
       <section
         id="doctors"
-        className="  flex flex-col justify-center py-20 bg-gradient-soft border-t border-border"
+        className=" w-full  flex flex-col justify-center py-20 bg-gradient-soft border-t border-border"
       >
-        <div className="container">
+        <div className="lg:container px-6">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
             <div className="flex-1 min-w-0">
-              <h2 className={cn(SECTION_TITLE, "text-left w-[500px]")}>
+              <h2 className={cn(SECTION_TITLE, "text-left lg:w-[500px]")}>
                 {t("pages.landing.doctors_ready")}
               </h2>
 
@@ -509,18 +509,18 @@ const Index = () => {
               ? Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
+                  className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
                 >
                   <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                    <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 w-2/3 rounded bg-muted" />
                       <div className="h-2.5 w-1/2 rounded bg-muted" />
                       <div className="h-2 w-1/3 rounded bg-muted" />
                     </div>
-                    <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
+                    <div className="h-4 w-14 rounded-[6px] bg-muted shrink-0" />
                   </div>
-                  <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                  <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                     {Array.from({ length: 3 }).map((_, j) => (
                       <div
                         key={j}
@@ -533,15 +533,15 @@ const Index = () => {
                     ))}
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 rounded-sm bg-muted" />
+                    <div className="h-4 w-24 rounded-[6px] bg-muted" />
                     <div className="h-3 w-16 rounded bg-muted" />
                   </div>
                   <div className="border-t border-border" />
                   <div className="flex items-center justify-between">
                     <div className="h-3 w-28 rounded bg-muted" />
                     <div className="flex gap-1.5">
-                      <div className="h-6 w-12 rounded-sm bg-muted" />
-                      <div className="h-6 w-16 rounded-sm bg-muted" />
+                      <div className="h-6 w-12 rounded-[6px] bg-muted" />
+                      <div className="h-6 w-16 rounded-[6px] bg-muted" />
                     </div>
                   </div>
                 </div>
@@ -561,18 +561,18 @@ const Index = () => {
               Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={`skeleton-${i}`}
-                  className="rounded-sm border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
+                  className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
                 >
                   <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                    <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 w-2/3 rounded bg-muted" />
                       <div className="h-2.5 w-1/2 rounded bg-muted" />
                       <div className="h-2 w-1/3 rounded bg-muted" />
                     </div>
-                    <div className="h-4 w-14 rounded-sm bg-muted shrink-0" />
+                    <div className="h-4 w-14 rounded-[6px] bg-muted shrink-0" />
                   </div>
-                  <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                  <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                     {Array.from({ length: 3 }).map((_, j) => (
                       <div
                         key={j}
@@ -585,15 +585,15 @@ const Index = () => {
                     ))}
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 rounded-sm bg-muted" />
+                    <div className="h-4 w-24 rounded-[6px] bg-muted" />
                     <div className="h-3 w-16 rounded bg-muted" />
                   </div>
                   <div className="border-t border-border" />
                   <div className="flex items-center justify-between">
                     <div className="h-3 w-28 rounded bg-muted" />
                     <div className="flex gap-1.5">
-                      <div className="h-6 w-12 rounded-sm bg-muted" />
-                      <div className="h-6 w-16 rounded-sm bg-muted" />
+                      <div className="h-6 w-12 rounded-[6px] bg-muted" />
+                      <div className="h-6 w-16 rounded-[6px] bg-muted" />
                     </div>
                   </div>
                 </div>
@@ -626,7 +626,7 @@ const Index = () => {
             </h2>
           </div>
         </div>
-        <div className="mt-4 px-14 ">
+        <div className="mt-4 lg:px-14 ">
           <Specialities />
         </div>
       </section>
@@ -655,7 +655,7 @@ const Index = () => {
               ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-sm border border-border bg-card overflow-hidden animate-pulse"
+                  className="rounded-[6px] border border-border bg-card overflow-hidden animate-pulse"
                 >
                   <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
                     <div className="h-2.5 w-16 rounded bg-muted" />
@@ -663,13 +663,13 @@ const Index = () => {
                   </div>
                   <div className="px-3.5 pt-3 pb-3 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                      <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="h-3 w-2/3 rounded bg-muted" />
                         <div className="h-2.5 w-1/2 rounded bg-muted" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                    <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                       {Array.from({ length: 3 }).map((_, j) => (
                         <div
                           key={j}
@@ -682,13 +682,13 @@ const Index = () => {
                       ))}
                     </div>
                     <div className="flex gap-1">
-                      <div className="h-4 w-14 rounded-sm bg-muted" />
-                      <div className="h-4 w-18 rounded-sm bg-muted" />
+                      <div className="h-4 w-14 rounded-[6px] bg-muted" />
+                      <div className="h-4 w-18 rounded-[6px] bg-muted" />
                     </div>
                     <div className="h-2.5 w-28 rounded bg-muted" />
                     <div className="flex gap-2">
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
+                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
+                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
                     </div>
                   </div>
                 </div>
@@ -710,7 +710,7 @@ const Index = () => {
               Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={`skeleton-hosp-${i}`}
-                  className="rounded-sm border border-border bg-card overflow-hidden animate-pulse"
+                  className="rounded-[6px] border border-border bg-card overflow-hidden animate-pulse"
                 >
                   <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
                     <div className="h-2.5 w-16 rounded bg-muted" />
@@ -718,13 +718,13 @@ const Index = () => {
                   </div>
                   <div className="px-3.5 pt-3 pb-3 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-sm bg-muted shrink-0" />
+                      <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="h-3 w-2/3 rounded bg-muted" />
                         <div className="h-2.5 w-1/2 rounded bg-muted" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+                    <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
                       {Array.from({ length: 3 }).map((_, j) => (
                         <div
                           key={j}
@@ -737,13 +737,13 @@ const Index = () => {
                       ))}
                     </div>
                     <div className="flex gap-1">
-                      <div className="h-4 w-14 rounded-sm bg-muted" />
-                      <div className="h-4 w-18 rounded-sm bg-muted" />
+                      <div className="h-4 w-14 rounded-[6px] bg-muted" />
+                      <div className="h-4 w-18 rounded-[6px] bg-muted" />
                     </div>
                     <div className="h-2.5 w-28 rounded bg-muted" />
                     <div className="flex gap-2">
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
-                      <div className="h-7 flex-1 rounded-sm bg-muted" />
+                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
+                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
                     </div>
                   </div>
                 </div>
@@ -765,7 +765,7 @@ const Index = () => {
       >
         <div className=" grid lg:grid-cols-2  items-center">
           <div className="px-10 py-10 lg:px-20 lg:py-20">
-            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white")}>
+            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white ")}>
               {t("pages.landing.pharmacy_title")}
             </h2>
             <p className="mt-6 text-base md:text-lg dark:text-black  text-white/90 leading-relaxed max-w-xl">
@@ -793,10 +793,10 @@ const Index = () => {
         <div className="container">
           <div className="max-w-2xl">
             <h2 className={SECTION_TITLE}>
-              Board-certified specialists, vetted and ready to see you
+              Meet the minds behind MEDICONNECT
             </h2>
           </div>
-          <div className="mt-12">
+          <div className="">
             <OurTeam />
           </div>
         </div>
@@ -810,7 +810,7 @@ const Index = () => {
               <img
                 src={logo}
                 alt="MEDICONNECT"
-                className="h-14 w-32 rounded-sm"
+                className="h-14 w-32 rounded-[6px]"
               />
               <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
                 {t("pages.landing.footer_desc")}
@@ -821,7 +821,7 @@ const Index = () => {
                     key={s.label}
                     href="#"
                     aria-label={s.label}
-                    className="w-8 h-8 rounded-sm bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                    className="w-8 h-8 rounded-[6px] bg-secondary flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
                   >
                     <svg
                       className="h-3.5 w-3.5"

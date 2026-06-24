@@ -110,12 +110,12 @@ export function ActiveCallPanel() {
           </div>
           {/* Self-view */}
           <div
-            className="w-28 rounded-lg bg-[#1a1a1a] border border-white/10 overflow-hidden flex items-center justify-center shadow-lg"
+            className="w-28 rounded-[6px] bg-[#1a1a1a] border border-white/10 overflow-hidden flex items-center justify-center shadow-lg"
             style={{ aspectRatio: "16/9" }}
           >
             <span className="text-[9px] text-white/30 select-none">You</span>
             {!call.videoEnabled && (
-              <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-lg">
+              <div className="absolute inset-0 bg-black/70 flex items-center justify-center rounded-[6px]">
                 <VideoOff className="h-3.5 w-3.5 text-white/25" />
               </div>
             )}
@@ -181,7 +181,7 @@ export function ActiveCallPanel() {
   }
 
   return (
-    <div className="flex w-full h-full rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
+    <div className="flex w-full h-full rounded-[6px] overflow-hidden border border-white/10 shadow-2xl shadow-black/40">
       {videoArea}
       {chatColumn}
     </div>

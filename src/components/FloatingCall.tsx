@@ -42,7 +42,7 @@ export const FloatingCall = () => {
 
   return createPortal(
     <div
-      className="fixed z-[9999] w-52 rounded-xl overflow-hidden shadow-2xl border border-white/10 bg-[#111] select-none"
+      className="fixed z-[9999] w-52 rounded-[6px] overflow-hidden shadow-2xl border border-white/10 bg-[#111] select-none"
       style={{ left: pos.x, top: pos.y }}
       onMouseDown={onMouseDown}
     >

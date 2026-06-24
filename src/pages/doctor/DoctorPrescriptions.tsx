@@ -159,7 +159,7 @@ function SkeletonRow() {
     <tr className="border-t border-border/40 animate-pulse">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-sm bg-muted" />
+          <div className="h-8 w-8 rounded-[6px] bg-muted" />
           <div className="space-y-1.5">
             <div className="h-3 w-24 rounded bg-muted" />
             <div className="h-2.5 w-16 rounded bg-muted/60" />
@@ -187,10 +187,10 @@ function SkeletonRow() {
 
 function SkeletonCard() {
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-3.5 animate-pulse space-y-3">
+    <div className="bg-card border border-border/70 rounded-[6px] p-3.5 animate-pulse space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-sm bg-muted" />
+          <div className="w-8 h-8 rounded-[6px] bg-muted" />
           <div className="space-y-1.5">
             <div className="h-3 w-24 rounded bg-muted" />
             <div className="h-2.5 w-16 rounded bg-muted/60" />
@@ -199,10 +199,10 @@ function SkeletonCard() {
         <div className="h-5 w-16 rounded bg-muted" />
       </div>
       <div className="space-y-1.5">
-        <div className="h-7 rounded-sm bg-muted/40" />
-        <div className="h-7 rounded-sm bg-muted/40" />
+        <div className="h-7 rounded-[6px] bg-muted/40" />
+        <div className="h-7 rounded-[6px] bg-muted/40" />
       </div>
-      <div className="h-7 rounded-sm bg-muted/30" />
+      <div className="h-7 rounded-[6px] bg-muted/30" />
     </div>
   );
 }
@@ -223,10 +223,10 @@ function PrescriptionCard({
   isIssuing: boolean;
 }) {
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-3.5 hover:border-primary/30 hover:shadow-sm transition-all duration-200 group">
+    <div className="bg-card border border-border/70 rounded-[6px] p-3.5 hover:border-primary/30 hover:shadow-sm transition-all duration-200 group">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-10 h-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10">
+          <div className="w-10 h-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10">
             <FileText className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -244,7 +244,7 @@ function PrescriptionCard({
           className={cn(
             "shrink-0 text-xs px-2 py-0.5 font-medium border",
             STATUS_STYLES[p.status] ??
-              "bg-secondary/50 text-muted-foreground border-border/60",
+            "bg-secondary/50 text-muted-foreground border-border/60",
           )}
         >
           <span
@@ -261,7 +261,7 @@ function PrescriptionCard({
         {p.items.map((m, i) => (
           <div
             key={m.id ?? i}
-            className="flex items-center gap-2 px-3 py-2 rounded-md bg-secondary/40 border border-border/30"
+            className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-secondary/40 border border-border/30"
           >
             <Pill className="h-4 w-4 text-primary shrink-0" />
             <span className="text-sm font-medium text-foreground">
@@ -291,7 +291,7 @@ function PrescriptionCard({
             size="sm"
             disabled={isIssuing}
             onClick={() => onIssue(p)}
-            className="h-9 px-4 text-sm flex-1 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            className="h-9 px-4 text-sm flex-1 rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           >
             {isIssuing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Issue"}
           </Button>
@@ -299,7 +299,7 @@ function PrescriptionCard({
         <Button
           size="sm"
           variant="ghost"
-          className="h-9 px-4 text-sm flex-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+          className="h-9 px-4 text-sm flex-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
           onClick={() => onViewDetails(p)}
         >
           View Details
@@ -619,7 +619,7 @@ const DoctorPrescriptions = () => {
                     set("sort_by", by as any);
                     set("sort_order", order as any);
                   }}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
                   <option value="created_at|desc">Latest first</option>
                   <option value="created_at|asc">Oldest first</option>
@@ -634,7 +634,7 @@ const DoctorPrescriptions = () => {
                 />
 
                 {/* View toggle */}
-                <div className="flex rounded-md border border-border/60 overflow-hidden bg-card shadow-sm">
+                <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   <button
                     onClick={() => setView("table")}
                     aria-label="Table view"
@@ -683,7 +683,7 @@ const DoctorPrescriptions = () => {
                 {/* New prescription CTA */}
                 <Button
                   size="sm"
-                  className="h-10 px-4 text-xs font-semibold rounded-md bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all duration-200"
+                  className="h-10 px-4 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 shadow-sm hover:shadow transition-all duration-200"
                   onClick={() => setWizardOpen(true)}
                 >
                   <Plus className="h-4 w-4 sm:mr-2" />
@@ -735,7 +735,7 @@ const DoctorPrescriptions = () => {
                   )}
                 </div>
               ) : view === "table" ? (
-                <div className="rounded-md border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
@@ -760,134 +760,134 @@ const DoctorPrescriptions = () => {
                     <tbody>
                       {isLoading
                         ? Array.from({ length: 5 }).map((_, i) => (
-                            <SkeletonRow key={i} />
-                          ))
+                          <SkeletonRow key={i} />
+                        ))
                         : allList.map((p) => (
-                            <tr
-                              key={p.id}
-                              className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
-                            >
-                              {/* Patient */}
-                              <td className="px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0 border border-primary/10">
-                                    {initials(p.patient?.name)}
-                                  </div>
-                                  <div>
-                                    <p className="font-semibold text-sm text-foreground">
-                                      {p.patient?.name ?? "Patient"}
-                                    </p>
-                                    {p.diagnosis && (
-                                      <p className="text-xs text-muted-foreground/70 truncate max-w-[150px]">
-                                        {p.diagnosis}
-                                      </p>
-                                    )}
-                                  </div>
+                          <tr
+                            key={p.id}
+                            className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150"
+                          >
+                            {/* Patient */}
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-sm flex-shrink-0 border border-primary/10">
+                                  {initials(p.patient?.name)}
                                 </div>
-                              </td>
-
-                              {/* Medications */}
-                              <td className="px-5 py-4">
-                                <div className="flex flex-col gap-1">
-                                  {p.items.slice(0, 2).map((m, i) => (
-                                    <span
-                                      key={m.id ?? i}
-                                      className="inline-flex items-center gap-2 text-xs text-muted-foreground/80"
-                                    >
-                                      <Pill className="h-4 w-4 text-primary shrink-0" />
-                                      <span className="font-medium text-foreground">
-                                        {m.medicine_name}
-                                      </span>
-                                      <span className="text-muted-foreground/50">
-                                        · {m.dosage}
-                                      </span>
-                                    </span>
-                                  ))}
-                                  {p.items.length > 2 && (
-                                    <span className="text-xs text-muted-foreground/50 pl-6">
-                                      +{p.items.length - 2} more
-                                    </span>
+                                <div>
+                                  <p className="font-semibold text-sm text-foreground">
+                                    {p.patient?.name ?? "Patient"}
+                                  </p>
+                                  {p.diagnosis && (
+                                    <p className="text-xs text-muted-foreground/70 truncate max-w-[150px]">
+                                      {p.diagnosis}
+                                    </p>
                                   )}
                                 </div>
-                              </td>
+                              </div>
+                            </td>
 
-                              {/* Date */}
-                              <td className="px-5 py-4 whitespace-nowrap text-muted-foreground/80">
-                                <span className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4 text-muted-foreground/40" />
-                                  {fmtDate(p.created_at)}
-                                </span>
-                              </td>
-
-                              {/* Pharmacy */}
-                              <td className="px-5 py-4">
-                                {p.pharmacy?.name ? (
-                                  <span className="text-xs flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                                    <Send className="h-4 w-4" />
-                                    {p.pharmacy.name}
+                            {/* Medications */}
+                            <td className="px-5 py-4">
+                              <div className="flex flex-col gap-1">
+                                {p.items.slice(0, 2).map((m, i) => (
+                                  <span
+                                    key={m.id ?? i}
+                                    className="inline-flex items-center gap-2 text-xs text-muted-foreground/80"
+                                  >
+                                    <Pill className="h-4 w-4 text-primary shrink-0" />
+                                    <span className="font-medium text-foreground">
+                                      {m.medicine_name}
+                                    </span>
+                                    <span className="text-muted-foreground/50">
+                                      · {m.dosage}
+                                    </span>
                                   </span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground/40">
-                                    —
+                                ))}
+                                {p.items.length > 2 && (
+                                  <span className="text-xs text-muted-foreground/50 pl-6">
+                                    +{p.items.length - 2} more
                                   </span>
                                 )}
-                              </td>
+                              </div>
+                            </td>
 
-                              {/* Status */}
-                              <td className="px-5 py-4">
-                                <Badge
-                                  variant="outline"
+                            {/* Date */}
+                            <td className="px-5 py-4 whitespace-nowrap text-muted-foreground/80">
+                              <span className="flex items-center gap-1.5">
+                                <Calendar className="h-4 w-4 text-muted-foreground/40" />
+                                {fmtDate(p.created_at)}
+                              </span>
+                            </td>
+
+                            {/* Pharmacy */}
+                            <td className="px-5 py-4">
+                              {p.pharmacy?.name ? (
+                                <span className="text-xs flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                  <Send className="h-4 w-4" />
+                                  {p.pharmacy.name}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground/40">
+                                  —
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Status */}
+                            <td className="px-5 py-4">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "border text-xs px-2.5 py-0.5 font-medium",
+                                  STATUS_STYLES[p.status] ??
+                                  "bg-secondary/50 text-muted-foreground border-border/60",
+                                )}
+                              >
+                                <span
                                   className={cn(
-                                    "border text-xs px-2.5 py-0.5 font-medium",
-                                    STATUS_STYLES[p.status] ??
-                                      "bg-secondary/50 text-muted-foreground border-border/60",
+                                    "w-1.5 h-1.5 rounded-full mr-1.5",
+                                    STATUS_DOT[p.status] ??
+                                    "bg-muted-foreground/40",
                                   )}
-                                >
-                                  <span
-                                    className={cn(
-                                      "w-1.5 h-1.5 rounded-full mr-1.5",
-                                      STATUS_DOT[p.status] ??
-                                        "bg-muted-foreground/40",
-                                    )}
-                                  />
-                                  {localStatusLabel[p.status] ?? p.status}
-                                </Badge>
-                              </td>
+                                />
+                                {localStatusLabel[p.status] ?? p.status}
+                              </Badge>
+                            </td>
 
-                              {/* Actions */}
-                              <td className="px-5 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  {p.status === "draft" && (
-                                    <Button
-                                      size="sm"
-                                      disabled={
-                                        issueMutation.isPending &&
-                                        issueMutation.variables === p.id
-                                      }
-                                      onClick={() => handleIssue(p)}
-                                      className="h-7 px-2.5 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm"
-                                    >
-                                      {issueMutation.isPending &&
-                                      issueMutation.variables === p.id ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        "Issue"
-                                      )}
-                                    </Button>
-                                  )}
+                            {/* Actions */}
+                            <td className="px-5 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {p.status === "draft" && (
                                   <Button
                                     size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleViewDetails(p)}
-                                    className="h-7 px-2.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-sm transition-all duration-200"
+                                    disabled={
+                                      issueMutation.isPending &&
+                                      issueMutation.variables === p.id
+                                    }
+                                    onClick={() => handleIssue(p)}
+                                    className="h-7 px-2.5 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
                                   >
-                                    Details
-                                    <ChevronRight className="h-3 w-3 ml-0.5" />
+                                    {issueMutation.isPending &&
+                                      issueMutation.variables === p.id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      "Issue"
+                                    )}
                                   </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewDetails(p)}
+                                  className="h-7 px-2.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px] transition-all duration-200"
+                                >
+                                  Details
+                                  <ChevronRight className="h-3 w-3 ml-0.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -895,21 +895,21 @@ const DoctorPrescriptions = () => {
                 <div className="grid md:grid-cols-2 gap-2">
                   {isLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <SkeletonCard key={i} />
-                      ))
+                      <SkeletonCard key={i} />
+                    ))
                     : allList.map((p) => (
-                        <PrescriptionCard
-                          key={p.id}
-                          p={p}
-                          statusLabel={localStatusLabel}
-                          onViewDetails={handleViewDetails}
-                          onIssue={handleIssue}
-                          isIssuing={
-                            issueMutation.isPending &&
-                            issueMutation.variables === p.id
-                          }
-                        />
-                      ))}
+                      <PrescriptionCard
+                        key={p.id}
+                        p={p}
+                        statusLabel={localStatusLabel}
+                        onViewDetails={handleViewDetails}
+                        onIssue={handleIssue}
+                        isIssuing={
+                          issueMutation.isPending &&
+                          issueMutation.variables === p.id
+                        }
+                      />
+                    ))}
                 </div>
               )}
             </div>

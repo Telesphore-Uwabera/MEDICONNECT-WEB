@@ -184,7 +184,7 @@ function SlotChip({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "w-full rounded-md border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
+          "w-full rounded-[6px] border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
           cfg.card,
           isPending && "opacity-50 cursor-wait",
         )}
@@ -200,7 +200,7 @@ function SlotChip({
         <div
           role="listbox"
           aria-label="Set slot status"
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-md border border-border bg-popover overflow-hidden py-1"
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-[6px] border border-border bg-popover overflow-hidden py-1"
         >
           <p className="px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
             Set status
@@ -255,7 +255,7 @@ function DayCard({
     <button
       onClick={() => onSelect(index)}
       className={cn(
-        "shrink-0 w-20 flex flex-col items-center rounded-xl border p-3 transition-all duration-200 relative",
+        "shrink-0 w-20 flex flex-col items-center rounded-[6px] border p-3 transition-all duration-200 relative",
         isSelected
           ? "bg-primary border-primary scale-[1.03] z-10"
           : "bg-card border-border/70 hover:border-primary/30 hover:scale-[1.02]",
@@ -487,7 +487,7 @@ function DayPickerByMonth({
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className="shrink-0 w-20 h-28 rounded-xl bg-muted animate-pulse"
+                  className="shrink-0 w-20 h-28 rounded-[6px] bg-muted animate-pulse"
                 />
               ))}
             </div>
@@ -500,7 +500,7 @@ function DayPickerByMonth({
   if (days.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+        <div className="w-14 h-14 rounded-[6px] bg-muted flex items-center justify-center">
           <CalendarDays size={24} className="text-muted-foreground/40" />
         </div>
         <div className="space-y-1">
@@ -837,7 +837,7 @@ const DoctorAvailability = () => {
           <div className="p-4 space-y-4">
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
-              <div className="flex items-center gap-3 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
+              <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
                 <AlertTriangle
                   size={16}
                   className="flex-shrink-0 text-red-500"
@@ -849,13 +849,13 @@ const DoctorAvailability = () => {
             )}
 
             {/* ── Top control bar ── */}
-            <div className="rounded-sm bg-card border border-border/70 p-4">
+            <div className="rounded-[6px] bg-card border border-border/70 p-4">
               <div className="flex flex-wrap justify-between items-center gap-4">
                 {/* Instant consultation */}
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       instant
                         ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground",
@@ -885,7 +885,7 @@ const DoctorAvailability = () => {
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       scheduleDisabled
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
@@ -915,7 +915,7 @@ const DoctorAvailability = () => {
                 <div className="flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       resetConfirming
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
@@ -935,7 +935,7 @@ const DoctorAvailability = () => {
                     onClick={handleResetSchedule}
                     disabled={isResetting}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+                      "flex items-center gap-2 px-3 py-2 rounded-[6px] border text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
                       resetConfirming
                         ? "border-red-500 bg-red-500 text-white hover:bg-red-600 animate-pulse"
                         : "border-border/60 bg-muted text-muted-foreground hover:border-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30",
@@ -993,7 +993,7 @@ const DoctorAvailability = () => {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="rounded-sm bg-card border border-border/70 p-4"
+                    className="rounded-[6px] bg-card border border-border/70 p-4"
                   >
                     <p className="text-xs uppercase tracking-widest text-muted-foreground/80 font-medium">
                       {s.label}
@@ -1022,7 +1022,7 @@ const DoctorAvailability = () => {
               {/* ── Left column ── */}
               <div className="lg:col-span-4 space-y-3">
                 {/* Schedule config card */}
-                <div className="rounded-sm border border-border/70 bg-card p-5 space-y-4">
+                <div className="rounded-[6px] border border-border/70 bg-card p-5 space-y-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <LayoutGrid size={16} className="text-primary" />
                     Custom date range
@@ -1053,7 +1053,7 @@ const DoctorAvailability = () => {
                             )}
                           </div>
                           {dayCount !== null && (
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-sm bg-primary/10 text-primary shrink-0">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-[6px] bg-primary/10 text-primary shrink-0">
                               {dayCount}d
                             </span>
                           )}
@@ -1130,7 +1130,7 @@ const DoctorAvailability = () => {
                           key={m}
                           onClick={() => setInterval(m)}
                           className={cn(
-                            "py-2 rounded-md text-sm font-semibold border transition-all duration-150",
+                            "py-2 rounded-[6px] text-sm font-semibold border transition-all duration-150",
                             interval === m
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-muted/50 border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5",
@@ -1159,7 +1159,7 @@ const DoctorAvailability = () => {
                 </div>
 
                 {/* Legend */}
-                <div className="rounded-sm border border-border/70 bg-card p-4">
+                <div className="rounded-[6px] border border-border/70 bg-card p-4">
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
                     {t("pages.doctor.legend")}
                   </h4>
@@ -1192,10 +1192,10 @@ const DoctorAvailability = () => {
               {/* ── Right column ── */}
               <div className="lg:col-span-8 space-y-3">
                 {/* Day Picker — grouped by month */}
-                <div className="rounded-sm border border-border/70 bg-card p-5">
+                <div className="rounded-[6px] border border-border/70 bg-card p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center">
                         <CalendarDays size={16} className="text-primary" />
                       </div>
                       <div>
@@ -1217,7 +1217,7 @@ const DoctorAvailability = () => {
                             setSelectedDay(Math.max(0, selectedDay - 1))
                           }
                           disabled={selectedDay === 0}
-                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
                           <ChevronLeft size={16} />
                         </button>
@@ -1228,7 +1228,7 @@ const DoctorAvailability = () => {
                             )
                           }
                           disabled={selectedDay >= days.length - 1}
-                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
                           <ChevronRight size={16} />
                         </button>
@@ -1246,7 +1246,7 @@ const DoctorAvailability = () => {
 
                 {/* Slots panel */}
                 {currentDay && dayStats && (
-                  <div className="rounded-sm border border-border/70 bg-card p-5">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-5">
                     {/* Header */}
                     <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                       <div>
@@ -1309,7 +1309,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("available")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-md border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-[6px] border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
                         <CheckCircle2 size={14} />
                         Open
@@ -1317,7 +1317,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("blocked")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-md border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <Ban size={14} />
                         Block
@@ -1325,7 +1325,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("reserved")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
                         <BookMarked size={14} />
                         Reserve

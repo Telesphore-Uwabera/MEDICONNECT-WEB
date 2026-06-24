@@ -11,27 +11,27 @@ export interface FilterOption<T extends string = string> {
 
 export type FilterFieldDef =
   | {
-      type: "search";
-      key: string;
-      label: string;
-      placeholder?: string;
-      value: string;
-      onChange: (v: string) => void;
-    }
+    type: "search";
+    key: string;
+    label: string;
+    placeholder?: string;
+    value: string;
+    onChange: (v: string) => void;
+  }
   | {
-      type: "select";
-      key: string;
-      label: string;
-      value: string;
-      options: FilterOption[];
-      onChange: (v: string) => void;
-    }
+    type: "select";
+    key: string;
+    label: string;
+    value: string;
+    options: FilterOption[];
+    onChange: (v: string) => void;
+  }
   | {
-      type: "custom";
-      key: string;
-      label: string;
-      render: () => ReactNode;
-    };
+    type: "custom";
+    key: string;
+    label: string;
+    render: () => ReactNode;
+  };
 
 export interface FilterBarProps {
   /** Array of filter field definitions rendered in a responsive grid */
@@ -58,10 +58,10 @@ export interface FilterBarProps {
 /* ─── Select className ───────────────────────────────────────────────── */
 
 const selectCls =
-  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all";
+  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all";
 
 const inputCls =
-  "w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 const labelCls =
   "text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80";
@@ -187,7 +187,7 @@ export function FilterToggleButton({
     <button
       onClick={onToggle}
       className={cn(
-        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-[11px] transition-all duration-200 font-medium",
+        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] border text-[11px] transition-all duration-200 font-medium",
         open || hasActiveFilters
           ? "bg-primary text-primary-foreground border-primary shadow-sm"
           : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",

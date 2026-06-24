@@ -19,20 +19,20 @@ import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-
 
 export interface PrescriptionItem {
   medicine_name: string;
-  dosage:        string;
-  frequency:     string;
-  duration:      string;
-  quantity:      number;
-  instructions:  string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  quantity: number;
+  instructions: string;
 }
 
 const EMPTY_ITEM: PrescriptionItem = {
   medicine_name: "",
-  dosage:        "",
-  frequency:     "",
-  duration:      "",
-  quantity:      1,
-  instructions:  "",
+  dosage: "",
+  frequency: "",
+  duration: "",
+  quantity: 1,
+  instructions: "",
 };
 
 type Step = "appointment" | "details" | "medications" | "review";
@@ -40,10 +40,10 @@ type Step = "appointment" | "details" | "medications" | "review";
 const STEPS: Step[] = ["appointment", "details", "medications", "review"];
 
 const STEP_META: Record<Step, { label: string; icon: React.ReactNode }> = {
-  appointment: { label: "Appointment",  icon: <Calendar    className="h-3.5 w-3.5" /> },
-  details:     { label: "Rx Details",   icon: <FileText    className="h-3.5 w-3.5" /> },
-  medications: { label: "Medications",  icon: <Pill        className="h-3.5 w-3.5" /> },
-  review:      { label: "Review",       icon: <ClipboardList className="h-3.5 w-3.5" /> },
+  appointment: { label: "Appointment", icon: <Calendar className="h-3.5 w-3.5" /> },
+  details: { label: "Rx Details", icon: <FileText className="h-3.5 w-3.5" /> },
+  medications: { label: "Medications", icon: <Pill className="h-3.5 w-3.5" /> },
+  review: { label: "Review", icon: <ClipboardList className="h-3.5 w-3.5" /> },
 };
 
 /* ─────────────────────────────────────────────
@@ -51,10 +51,10 @@ const STEP_META: Record<Step, { label: string; icon: React.ReactNode }> = {
 ───────────────────────────────────────────── */
 
 interface PrescriptionWizardProps {
-  open:          boolean;
-  onOpenChange:  (open: boolean) => void;
-  doctorName?:   string;
-  issuer?:       string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  doctorName?: string;
+  issuer?: string;
 }
 
 /* ─────────────────────────────────────────────
@@ -62,7 +62,7 @@ interface PrescriptionWizardProps {
 ───────────────────────────────────────────── */
 
 const inputCls =
-  "w-full h-10 rounded-md border border-border bg-muted/40 text-sm px-3 text-foreground " +
+  "w-full h-10 rounded-[6px] border border-border bg-muted/40 text-sm px-3 text-foreground " +
   "placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 " +
   "focus:border-primary/50 transition-all";
 
@@ -126,17 +126,17 @@ function AppointmentStep({
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   const statusColor: Record<string, string> = {
-    pending:     "bg-amber-500",
-    confirmed:   "bg-sky-500",
+    pending: "bg-amber-500",
+    confirmed: "bg-sky-500",
     in_progress: "bg-violet-500",
-    completed:   "bg-emerald-500",
+    completed: "bg-emerald-500",
   };
 
   const statusLabel: Record<string, string> = {
-    pending:     "Pending",
-    confirmed:   "Confirmed",
+    pending: "Pending",
+    confirmed: "Confirmed",
     in_progress: "In progress",
-    completed:   "Completed",
+    completed: "Completed",
   };
 
   return (
@@ -160,7 +160,7 @@ function AppointmentStep({
       <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
         {loading && (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-sm bg-muted/40 animate-pulse border border-border/40" />
+            <div key={i} className="h-16 rounded-[6px] bg-muted/40 animate-pulse border border-border/40" />
           ))
         )}
 
@@ -185,7 +185,7 @@ function AppointmentStep({
               key={a.id}
               onClick={() => onSelect(a)}
               className={cn(
-                "w-full flex items-center gap-3 p-3.5 rounded-md border text-left transition-all duration-150",
+                "w-full flex items-center gap-3 p-3.5 rounded-[6px] border text-left transition-all duration-150",
                 isSelected
                   ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                   : "border-border/60 bg-card hover:border-primary/30 hover:bg-secondary/20",
@@ -193,7 +193,7 @@ function AppointmentStep({
             >
               {/* Avatar */}
               <div className={cn(
-                "h-10 w-10 rounded-md flex items-center justify-center font-bold text-sm flex-shrink-0 border",
+                "h-10 w-10 rounded-[6px] flex items-center justify-center font-bold text-sm flex-shrink-0 border",
                 isSelected
                   ? "bg-primary/15 text-primary border-primary/20"
                   : "bg-gradient-to-br from-primary/10 to-primary/5 text-primary border-primary/10",
@@ -255,15 +255,15 @@ function AppointmentStep({
 ───────────────────────────────────────────── */
 
 interface RxDetails {
-  diagnosis:   string;
-  notes:       string;
+  diagnosis: string;
+  notes: string;
   valid_until: string;
 }
 
 function DetailsStep({
   values, onChange,
 }: {
-  values:   RxDetails;
+  values: RxDetails;
   onChange: (v: Partial<RxDetails>) => void;
 }) {
   // Default valid_until to 30 days from today
@@ -337,8 +337,8 @@ function MedicationRow({
   onRemove,
   canRemove,
 }: {
-  item:     PrescriptionItem;
-  index:    number;
+  item: PrescriptionItem;
+  index: number;
   onChange: (i: number, field: keyof PrescriptionItem, value: string | number) => void;
   onRemove: (i: number) => void;
   canRemove: boolean;
@@ -353,12 +353,12 @@ function MedicationRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="border border-border/60 rounded-md bg-card p-4 space-y-4"
+      className="border border-border/60 rounded-[6px] bg-card p-4 space-y-4"
     >
       {/* Row header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+          <div className="h-6 w-6 rounded-[6px] bg-primary/10 flex items-center justify-center">
             <Pill className="h-3.5 w-3.5 text-primary" />
           </div>
           <span className="text-xs font-semibold text-foreground">
@@ -368,7 +368,7 @@ function MedicationRow({
         {canRemove && (
           <button
             onClick={() => onRemove(index)}
-            className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -475,8 +475,8 @@ function MedicationsStep({
   onChange,
   onRemove,
 }: {
-  items:    PrescriptionItem[];
-  onAdd:    () => void;
+  items: PrescriptionItem[];
+  onAdd: () => void;
   onChange: (i: number, field: keyof PrescriptionItem, value: string | number) => void;
   onRemove: (i: number) => void;
 }) {
@@ -506,7 +506,7 @@ function MedicationsStep({
 
       <button
         onClick={onAdd}
-        className="w-full h-10 flex items-center justify-center gap-2 border border-dashed border-primary/40 text-primary text-sm font-medium rounded-md hover:bg-primary/5 hover:border-primary/60 transition-all duration-200"
+        className="w-full h-10 flex items-center justify-center gap-2 border border-dashed border-primary/40 text-primary text-sm font-medium rounded-[6px] hover:bg-primary/5 hover:border-primary/60 transition-all duration-200"
       >
         <Plus className="h-4 w-4" />
         Add another medication
@@ -525,8 +525,8 @@ function ReviewStep({
   items,
 }: {
   appointment: Appointment;
-  details:     RxDetails;
-  items:       PrescriptionItem[];
+  details: RxDetails;
+  items: PrescriptionItem[];
 }) {
   return (
     <div className="space-y-5">
@@ -535,12 +535,12 @@ function ReviewStep({
       </p>
 
       {/* Appointment */}
-      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+      <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
           <User className="h-4 w-4" /> Patient & appointment
         </p>
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/10">
+          <div className="h-10 w-10 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/10">
             {(appointment.patient?.name ?? "PT").slice(0, 2).toUpperCase()}
           </div>
           <div>
@@ -554,7 +554,7 @@ function ReviewStep({
       </section>
 
       {/* Diagnosis */}
-      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+      <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
           <Stethoscope className="h-4 w-4" /> Diagnosis & notes
         </p>
@@ -570,13 +570,13 @@ function ReviewStep({
       </section>
 
       {/* Medications */}
-      <section className="border border-border/60 rounded-md p-4 space-y-3 bg-secondary/20">
+      <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
           <Pill className="h-4 w-4" /> Medications ({items.length})
         </p>
         {items.map((m, i) => (
           <div key={i} className="flex items-start gap-3 border-t border-border/40 pt-3 first:border-t-0 first:pt-0">
-            <div className="h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-primary/10 mt-0.5">
+            <div className="h-6 w-6 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-primary/10 mt-0.5">
               {i + 1}
             </div>
             <div className="min-w-0">
@@ -602,11 +602,11 @@ function ReviewStep({
 export function PrescriptionWizard({
   open, onOpenChange, doctorName,
 }: PrescriptionWizardProps) {
-  const [step,        setStep]        = useState<Step>("appointment");
+  const [step, setStep] = useState<Step>("appointment");
   const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [details,     setDetails]     = useState<RxDetails>({
-    diagnosis:   "",
-    notes:       "",
+  const [details, setDetails] = useState<RxDetails>({
+    diagnosis: "",
+    notes: "",
     valid_until: "",
   });
   const [items, setItems] = useState<PrescriptionItem[]>([{ ...EMPTY_ITEM }]);
@@ -630,7 +630,7 @@ export function PrescriptionWizard({
   // ── Validation per step ───────────────────────────────────────────────────
   const canAdvance = useCallback((): boolean => {
     if (step === "appointment") return !!appointment;
-    if (step === "details")     return !!details.diagnosis.trim();
+    if (step === "details") return !!details.diagnosis.trim();
     if (step === "medications") {
       return items.every(
         (m) =>
@@ -660,8 +660,8 @@ export function PrescriptionWizard({
   };
 
   // ── Items helpers ─────────────────────────────────────────────────────────
-  const addItem    = ()                    => setItems((p) => [...p, { ...EMPTY_ITEM }]);
-  const removeItem = (i: number)           => setItems((p) => p.filter((_, idx) => idx !== i));
+  const addItem = () => setItems((p) => [...p, { ...EMPTY_ITEM }]);
+  const removeItem = (i: number) => setItems((p) => p.filter((_, idx) => idx !== i));
   const changeItem = (
     i: number, field: keyof PrescriptionItem, value: string | number,
   ) =>
@@ -675,16 +675,16 @@ export function PrescriptionWizard({
 
     const payload = {
       appointment_id: appointment.id,
-      diagnosis:      details.diagnosis,
-      notes:          details.notes || undefined,
-      valid_until:    details.valid_until || undefined,
-      items:          items.map((m) => ({
+      diagnosis: details.diagnosis,
+      notes: details.notes || undefined,
+      valid_until: details.valid_until || undefined,
+      items: items.map((m) => ({
         medicine_name: m.medicine_name,
-        dosage:        m.dosage,
-        frequency:     m.frequency,
-        duration:      m.duration,
-        quantity:      m.quantity,
-        instructions:  m.instructions || undefined,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        duration: m.duration,
+        quantity: m.quantity,
+        instructions: m.instructions || undefined,
       })),
     };
 
@@ -715,16 +715,16 @@ export function PrescriptionWizard({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.97, y: 8 }}
-          animate={{ opacity: 1, scale: 1,    y: 0 }}
-          exit={{   opacity: 0, scale: 0.97, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: 8 }}
           transition={{ duration: 0.18 }}
-          className="relative w-full max-w-lg bg-card border border-border rounded-sm shadow-2xl flex flex-col max-h-[90dvh]"
+          className="relative w-full max-w-lg bg-card border border-border rounded-[6px] shadow-2xl flex flex-col max-h-[90dvh]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center border border-primary/15">
+              <div className="h-9 w-9 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/15">
                 <FileText className="h-4 w-4 text-primary" />
               </div>
               <div>
@@ -736,7 +736,7 @@ export function PrescriptionWizard({
             </div>
             <button
               onClick={() => onOpenChange(false)}
-              className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="h-9 w-9 flex items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -745,16 +745,16 @@ export function PrescriptionWizard({
           {/* Step progress */}
           <div className="flex items-center gap-0 px-6 py-4 border-b border-border/60 shrink-0 bg-secondary/20">
             {STEPS.map((s, i) => {
-              const isDone    = i < stepIndex;
+              const isDone = i < stepIndex;
               const isCurrent = s === step;
               return (
                 <div key={s} className="flex items-center flex-1 last:flex-none">
                   <div className="flex items-center gap-2">
                     <div className={cn(
                       "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold border transition-all duration-200",
-                      isDone    ? "bg-primary border-primary text-primary-foreground"
-                      : isCurrent ? "bg-primary/10 border-primary text-primary"
-                      : "bg-background border-border/50 text-muted-foreground/50",
+                      isDone ? "bg-primary border-primary text-primary-foreground"
+                        : isCurrent ? "bg-primary/10 border-primary text-primary"
+                          : "bg-background border-border/50 text-muted-foreground/50",
                     )}>
                       {isDone ? <Check className="h-3 w-3" /> : i + 1}
                     </div>
@@ -782,8 +782,8 @@ export function PrescriptionWizard({
               <motion.div
                 key={step}
                 initial={{ opacity: 0, x: 12 }}
-                animate={{ opacity: 1, x: 0  }}
-                exit={{   opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -12 }}
                 transition={{ duration: 0.16 }}
               >
                 {step === "appointment" && (
@@ -823,7 +823,7 @@ export function PrescriptionWizard({
               onClick={goBack}
               disabled={stepIndex === 0}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border transition-all duration-200",
+                "flex items-center gap-2 px-4 py-2 rounded-[6px] text-sm font-medium border transition-all duration-200",
                 stepIndex === 0
                   ? "opacity-0 pointer-events-none border-transparent"
                   : "border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted",
@@ -853,7 +853,7 @@ export function PrescriptionWizard({
               <button
                 onClick={handleSubmit}
                 disabled={createPrescription.isPending}
-                className="flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-2 px-5 py-2 rounded-[6px] text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
               >
                 {createPrescription.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -866,7 +866,7 @@ export function PrescriptionWizard({
               <button
                 onClick={goNext}
                 disabled={!canAdvance()}
-                className="flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                className="flex items-center gap-2 px-5 py-2 rounded-[6px] text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
                 Continue
                 <ChevronRight className="h-4 w-4" />

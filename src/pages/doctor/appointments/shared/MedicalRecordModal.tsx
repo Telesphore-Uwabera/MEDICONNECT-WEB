@@ -150,7 +150,7 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-[8px] bg-card border border-border shadow-2xl overflow-hidden"
+        className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-[6px] bg-card border border-border shadow-2xl overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-muted/30 shrink-0">

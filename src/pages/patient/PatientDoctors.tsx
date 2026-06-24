@@ -66,9 +66,9 @@ const INITIAL_FILTERS: FilterState = {
 const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 
 const CONSULTATION_OPTIONS = [
-  { value: "all" as const,     label: "All types", icon: Globe  },
-  { value: "booking" as const, label: "Booking",   icon: Video  },
-  { value: "instant" as const, label: "Instant",   icon: Zap    },
+  { value: "all" as const, label: "All types", icon: Globe },
+  { value: "booking" as const, label: "Booking", icon: Video },
+  { value: "instant" as const, label: "Instant", icon: Zap },
 ];
 
 const GENDER_OPTIONS = [
@@ -108,14 +108,14 @@ function buildApiParams(
     }
   }
 
- if (filters.type !== "all") {
-  const typeMap: Partial<Record<ConsultationType, "booking" | "instant" | "both">> = {
-    booking: "booking",
-    instant: "instant",
-  };
-  const apiType = typeMap[filters.type] ?? (filters.type as "booking" | "instant" | "both");
-  params.type = apiType;
-}
+  if (filters.type !== "all") {
+    const typeMap: Partial<Record<ConsultationType, "booking" | "instant" | "both">> = {
+      booking: "booking",
+      instant: "instant",
+    };
+    const apiType = typeMap[filters.type] ?? (filters.type as "booking" | "instant" | "both");
+    params.type = apiType;
+  }
 
   if (filters.language) params.language = filters.language;
   if (filters.city.trim()) params.city = filters.city.trim();
@@ -178,27 +178,27 @@ function readInitialSpec(searchParams: URLSearchParams): SpecializationValue {
   return {
     specialization: specialization
       ? {
-          id: Number.isFinite(specializationId) && specializationId > 0 ? specializationId : 0,
-          name: specialization,
-          name_fr: specialization,
-          name_kiny: null,
-          slug: specialization.toLowerCase().replace(/\s+/g, "-"),
-        }
+        id: Number.isFinite(specializationId) && specializationId > 0 ? specializationId : 0,
+        name: specialization,
+        name_fr: specialization,
+        name_kiny: null,
+        slug: specialization.toLowerCase().replace(/\s+/g, "-"),
+      }
       : null,
     fee:
       Number.isFinite(feeId) && feeId > 0
         ? {
-            id: feeId,
-            specialization_id: Number.isFinite(specializationId) ? specializationId : 0,
-            sub_specialization: searchParams.get("sub_specialization") ?? "Selected sub-specialization",
-            sub_specialization_fr: "",
-            sub_specialization_kiny: null,
-            tier_name: searchParams.get("tier_name") ?? "",
-            slug: "",
-            online_fee: "",
-            in_person_fee: "",
-            currency: "",
-          }
+          id: feeId,
+          specialization_id: Number.isFinite(specializationId) ? specializationId : 0,
+          sub_specialization: searchParams.get("sub_specialization") ?? "Selected sub-specialization",
+          sub_specialization_fr: "",
+          sub_specialization_kiny: null,
+          tier_name: searchParams.get("tier_name") ?? "",
+          slug: "",
+          online_fee: "",
+          in_person_fee: "",
+          currency: "",
+        }
         : null,
   };
 }
@@ -253,7 +253,7 @@ function PillGroup<T extends string>({
             key={o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
+              "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
               value === o.value
                 ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
                 : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -283,7 +283,7 @@ function ToggleButton({
     <button
       onClick={() => onChange(!value)}
       className={cn(
-        "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
+        "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center gap-1.5",
         value
           ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
           : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -372,99 +372,99 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 
   return (
     <>
-    <div
-      className="bg-card border border-border/70 rounded-[12px] p-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
-      onClick={a.openDetails}
-    >
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-12 h-12 rounded-[10px] overflow-hidden flex-shrink-0 border border-border/40 shadow-sm">
-          <DoctorAvatar doctor={doctor} />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
-              {doctor.user.name}
-            </span>
-            {doctor.instant_consultation && (
-              <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-                <Zap className="w-3 h-3" />
-                INSTANT
-              </span>
-            )}
-            {doctor.is_featured && (
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-                Featured
-              </span>
-            )}
+      <div
+        className="bg-card border border-border/70 rounded-[6px] p-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+        onClick={a.openDetails}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-12 h-12 rounded-[6px] overflow-hidden flex-shrink-0 border border-border/40 shadow-sm">
+            <DoctorAvatar doctor={doctor} />
           </div>
-          <p className="text-xs text-muted-foreground/80 font-medium mt-1 truncate">
-            {doctor.specialization} {doctor.doctor_degree ? `· ${doctor.doctor_degree}` : ""}
-          </p>
-        </div>
-      </div>
 
-      <div className="hidden md:flex flex-col sm:flex-row sm:items-center gap-4 text-xs text-muted-foreground/80 flex-shrink-0">
-        <span className="flex items-center gap-1">
-          <Star
-            className={cn(
-              "w-3.5 h-3.5",
-              rating > 0
-                ? "fill-amber-400 text-amber-400"
-                : "text-muted-foreground/40",
-            )}
-          />
-          <span className="font-bold text-foreground">
-            {rating > 0 ? rating.toFixed(1) : "New"}
-          </span>
-        </span>
-        <ConsultationTypeBadge type={doctor.consultation_type} />
-      </div>
-
-      <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40" onClick={(e) => e.stopPropagation()}>
-        <div className="text-left sm:text-right">
-          <p className="text-sm font-bold text-foreground">
-            {fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`}
-          </p>
-          <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">per visit</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-bold text-foreground leading-tight tracking-tight">
+                {doctor.user.name}
+              </span>
+              {doctor.instant_consultation && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                  <Zap className="w-3 h-3" />
+                  INSTANT
+                </span>
+              )}
+              {doctor.is_featured && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
+                  Featured
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground/80 font-medium mt-1 truncate">
+              {doctor.specialization} {doctor.doctor_degree ? `· ${doctor.doctor_degree}` : ""}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Book — always shown (opens BookingDialog), same as the grid card */}
-          <button
-            disabled={!canBook || a.isCallInProgress}
-            onClick={a.openBook}
-            className={cn(
-              "h-8 px-3 rounded-[8px] text-xs font-bold transition-all duration-200 active:scale-95",
-              canBook && !a.isCallInProgress
-                ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow"
-                : "bg-muted text-muted-foreground cursor-not-allowed border border-border/40",
-            )}
-          >
-            {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
-          </button>
-
-          {/* Connect — only for instant-consult doctors (opens the connect modal) */}
-          {a.canConnect && (
-            <button
-              onClick={a.openConnect}
+        <div className="hidden md:flex flex-col sm:flex-row sm:items-center gap-4 text-xs text-muted-foreground/80 flex-shrink-0">
+          <span className="flex items-center gap-1">
+            <Star
               className={cn(
-                "h-8 px-3 rounded-[8px] text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 shadow-sm hover:shadow",
-                a.isConnected
-                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                  : a.isCallInProgress
-                    ? "bg-sky-500 hover:bg-sky-600 text-white"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white",
+                "w-3.5 h-3.5",
+                rating > 0
+                  ? "fill-amber-400 text-amber-400"
+                  : "text-muted-foreground/40",
+              )}
+            />
+            <span className="font-bold text-foreground">
+              {rating > 0 ? rating.toFixed(1) : "New"}
+            </span>
+          </span>
+          <ConsultationTypeBadge type={doctor.consultation_type} />
+        </div>
+
+        <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40" onClick={(e) => e.stopPropagation()}>
+          <div className="text-left sm:text-right">
+            <p className="text-sm font-bold text-foreground">
+              {fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`}
+            </p>
+            <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">per visit</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Book — always shown (opens BookingDialog), same as the grid card */}
+            <button
+              disabled={!canBook || a.isCallInProgress}
+              onClick={a.openBook}
+              className={cn(
+                "h-8 px-3 rounded-[6px] text-xs font-bold transition-all duration-200 active:scale-95",
+                canBook && !a.isCallInProgress
+                  ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow"
+                  : "bg-muted text-muted-foreground cursor-not-allowed border border-border/40",
               )}
             >
-              <Zap className="w-3.5 h-3.5" />
-              {a.isConnected || a.isCallInProgress ? "Join" : "Connect"}
+              {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
             </button>
-          )}
+
+            {/* Connect — only for instant-consult doctors (opens the connect modal) */}
+            {a.canConnect && (
+              <button
+                onClick={a.openConnect}
+                className={cn(
+                  "h-8 px-3 rounded-[6px] text-xs font-bold transition-all duration-200 active:scale-95 flex items-center gap-1.5 shadow-sm hover:shadow",
+                  a.isConnected
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                    : a.isCallInProgress
+                      ? "bg-sky-500 hover:bg-sky-600 text-white"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white",
+                )}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                {a.isConnected || a.isCallInProgress ? "Join" : "Connect"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-    <DoctorActionModals a={a} />
+      <DoctorActionModals a={a} />
     </>
   );
 }
@@ -473,26 +473,26 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
 
 function DoctorCardSkeleton() {
   return (
-    <div className="bg-card border border-border/50 rounded-sm p-3 flex flex-col gap-2.5 animate-pulse">
+    <div className="bg-card border border-border/50 rounded-[6px] p-3 flex flex-col gap-2.5 animate-pulse">
       <div className="flex items-start gap-2.5">
-        <div className="w-10 h-10 rounded-sm bg-muted flex-shrink-0" />
+        <div className="w-10 h-10 rounded-[6px] bg-muted flex-shrink-0" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3 bg-muted rounded-sm w-3/4" />
-          <div className="h-2.5 bg-muted/70 rounded-sm w-1/2" />
-          <div className="h-2 bg-muted/50 rounded-sm w-1/3" />
+          <div className="h-3 bg-muted rounded-[6px] w-3/4" />
+          <div className="h-2.5 bg-muted/70 rounded-[6px] w-1/2" />
+          <div className="h-2 bg-muted/50 rounded-[6px] w-1/3" />
         </div>
       </div>
-      <div className="h-2.5 bg-muted/60 rounded-sm w-full" />
-      <div className="h-2.5 bg-muted/40 rounded-sm w-2/3" />
+      <div className="h-2.5 bg-muted/60 rounded-[6px] w-full" />
+      <div className="h-2.5 bg-muted/40 rounded-[6px] w-2/3" />
       <div className="flex gap-1 mt-1">
-        <div className="h-4 bg-muted rounded-sm w-20" />
-        <div className="h-4 bg-muted/70 rounded-sm w-16" />
+        <div className="h-4 bg-muted rounded-[6px] w-20" />
+        <div className="h-4 bg-muted/70 rounded-[6px] w-16" />
       </div>
       <div className="flex justify-between pt-1.5 border-t border-border/40">
-        <div className="h-3 bg-muted rounded-sm w-12" />
-        <div className="h-3 bg-muted rounded-sm w-20" />
+        <div className="h-3 bg-muted rounded-[6px] w-12" />
+        <div className="h-3 bg-muted rounded-[6px] w-20" />
       </div>
-      <div className="h-7 bg-muted/80 rounded-sm w-full mt-0.5" />
+      <div className="h-7 bg-muted/80 rounded-[6px] w-full mt-0.5" />
     </div>
   );
 }
@@ -531,7 +531,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
@@ -542,7 +542,7 @@ function Pagination({
               key={page}
               onClick={() => onPageChange(page)}
               className={cn(
-                "w-7 h-7 flex items-center justify-center rounded-sm border text-[11px] font-medium transition-all",
+                "w-7 h-7 flex items-center justify-center rounded-[6px] border text-[11px] font-medium transition-all",
                 currentPage === page
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
@@ -555,7 +555,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= lastPage}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
@@ -720,10 +720,10 @@ const PatientDoctors = () => {
                   filters.available_today && filters.instant
                     ? "both"
                     : filters.available_today
-                    ? "available"
-                    : filters.instant
-                    ? "instant"
-                    : "all",
+                      ? "available"
+                      : filters.instant
+                        ? "instant"
+                        : "all",
                 options: [
                   { value: "all", label: "Any availability" },
                   { value: "available", label: "Available today" },
@@ -782,7 +782,7 @@ const PatientDoctors = () => {
                     type="date"
                     value={filters.date}
                     onChange={(e) => set("date", e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                   />
                 ),
               },
@@ -793,7 +793,7 @@ const PatientDoctors = () => {
                 <SpecializationSelect value={spec} onChange={setSpec} />
                 {spec.specialization && (
                   <div className="mt-1 flex flex-wrap gap-1">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
                       {spec.specialization.name}
                       {spec.fee && (
                         <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
@@ -818,7 +818,7 @@ const PatientDoctors = () => {
               <div className="flex items-center gap-3">
                 <p className="text-[11px] text-muted-foreground">
                   {isLoading ? (
-                    <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
+                    <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                   ) : (
                     <>
                       <span className="font-bold text-foreground">
@@ -843,7 +843,7 @@ const PatientDoctors = () => {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -859,7 +859,7 @@ const PatientDoctors = () => {
                 />
 
                 {/* View toggle */}
-                <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
+                <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   {(["grid", "list"] as const).map((v, i) => (
                     <button
                       key={v}
@@ -909,7 +909,7 @@ const PatientDoctors = () => {
             <div className="p-4 flex-1">
               {isError ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <div className="w-14 h-14 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
@@ -942,7 +942,7 @@ const PatientDoctors = () => {
                 </div>
               ) : doctors.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                  <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                     <User className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>

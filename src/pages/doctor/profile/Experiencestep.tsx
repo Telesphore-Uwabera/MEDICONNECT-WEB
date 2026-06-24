@@ -52,7 +52,7 @@ export const ExperienceStep = React.memo(function ExperienceStep({
   return (
     <div className="space-y-4">
       {entries.length === 0 && (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-4 py-3 border border-dashed border-border">
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-[6px] px-4 py-3 border border-dashed border-border">
           No experience entries yet. Click "Add experience" below.
         </p>
       )}

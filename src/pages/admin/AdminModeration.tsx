@@ -59,7 +59,7 @@ const AdminModeration = () => {
         subtitle={t("admin.moderation.subtitle", { count: open.length })}
       />
       <div className="p-8">
-        <div className="rounded-md border border-border bg-card overflow-hidden">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

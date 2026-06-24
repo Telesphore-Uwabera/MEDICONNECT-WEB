@@ -71,7 +71,7 @@ function CompletionFlow({
   if (isLoading || !appt) {
     return (
       <div className="fixed inset-0 z-[9995] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="flex items-center gap-2 rounded-lg bg-card px-4 py-3 shadow-lg">
+        <div className="flex items-center gap-2 rounded-[6px] bg-card px-4 py-3 shadow-lg">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <span className="text-[12px] text-foreground">
             {t("consult.booking.loading")}

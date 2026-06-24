@@ -29,27 +29,27 @@ import { useTranslation } from "react-i18next";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type StatusFilter = "all" | "active" | "inactive";
-type SortOption   = "date-desc" | "date-asc" | "name-asc" | "name-desc";
+type SortOption = "date-desc" | "date-asc" | "name-asc" | "name-desc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Joined: Newest first" },
-  { value: "date-asc",  label: "Joined: Oldest first" },
-  { value: "name-asc",  label: "Name: A – Z" },
+  { value: "date-asc", label: "Joined: Oldest first" },
+  { value: "name-asc", label: "Name: A – Z" },
   { value: "name-desc", label: "Name: Z – A" },
 ];
 
 interface FilterState {
   search: string;
   status: StatusFilter;
-  sort:   SortOption;
-  page:   number;
+  sort: SortOption;
+  page: number;
 }
 
 const INITIAL_FILTERS: FilterState = {
   search: "",
   status: "all",
-  sort:   "date-desc",
-  page:   1,
+  sort: "date-desc",
+  page: 1,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ const statusStyle: Record<string, string> = {
 };
 
 const STATUS_DOT: Record<string, string> = {
-  active:   "bg-emerald-500",
+  active: "bg-emerald-500",
   inactive: "bg-slate-400",
 };
 
@@ -171,7 +171,7 @@ function TeamRow({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(m)}
         >
           Manage
@@ -191,7 +191,7 @@ function TeamCard({
   onManage: (m: ApiTeamMember) => void;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       {m.photo_url ? (
         <img
           src={m.photo_url}
@@ -221,7 +221,7 @@ function TeamCard({
         <Button
           size="sm"
           variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(m)}
         >
           Manage
@@ -257,11 +257,11 @@ function SkeletonRows() {
 function AdminOurTeam() {
   const { t } = useTranslation();
 
-  const [filters, setFilters]               = useState<FilterState>(INITIAL_FILTERS);
-  const [selectedId, setSelectedId]         = useState<number | null>(null);
-  const [filterOpen, setFilterOpen]         = useState(false);
-  const [addOpen, setAddOpen]               = useState(false);
-  const [searchInput, setSearchInput]       = useState("");
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
@@ -270,25 +270,25 @@ function AdminOurTeam() {
   }, [searchInput]);
 
   const { data, isLoading, isError } = useGetAdminTeam({
-    page:     filters.page,
+    page: filters.page,
     per_page: 20,
   });
 
-  const members    = data?.data  ?? [];
-  const total      = data?.total ?? 0;
-  const perPage    = 20;
+  const members = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const perPage = 20;
   const totalPages = Math.ceil(total / perPage);
 
-  const activeCount   = useMemo(() => members.filter((m) => m.is_active).length,  [members]);
+  const activeCount = useMemo(() => members.filter((m) => m.is_active).length, [members]);
   const inactiveCount = useMemo(() => members.filter((m) => !m.is_active).length, [members]);
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
       const searchOk = matchesSearch(m, debouncedSearch);
       const statusOk =
-        filters.status === "all"      ? true :
-        filters.status === "active"   ? m.is_active :
-        !m.is_active;
+        filters.status === "all" ? true :
+          filters.status === "active" ? m.is_active :
+            !m.is_active;
       return searchOk && statusOk;
     });
   }, [members, debouncedSearch, filters.status]);
@@ -296,10 +296,10 @@ function AdminOurTeam() {
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       switch (filters.sort) {
-        case "date-asc":  return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
-        case "name-asc":  return a.name.localeCompare(b.name);
+        case "date-asc": return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+        case "name-asc": return a.name.localeCompare(b.name);
         case "name-desc": return b.name.localeCompare(a.name);
-        default:          return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime();
+        default: return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime();
       }
     });
   }, [filtered, filters.sort]);
@@ -319,7 +319,7 @@ function AdminOurTeam() {
     [filters],
   );
 
-  const openPanel  = useCallback((m: ApiTeamMember) => setSelectedId(m.id), []);
+  const openPanel = useCallback((m: ApiTeamMember) => setSelectedId(m.id), []);
   const closePanel = useCallback(() => setSelectedId(null), []);
 
   // ── Filter fields (same pattern as ManageAppointments) ────────────────────
@@ -330,8 +330,8 @@ function AdminOurTeam() {
       label: "Status",
       value: filters.status,
       options: [
-        { value: "all",      label: "All" },
-        { value: "active",   label: "Active" },
+        { value: "all", label: "All" },
+        { value: "active", label: "Active" },
         { value: "inactive", label: "Inactive" },
       ],
       onChange: (v: string) => set("status", v as StatusFilter),
@@ -360,9 +360,9 @@ function AdminOurTeam() {
 
           {/* Stat cards */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-3 gap-2">
-            <StatCard label="Total members" value={total}         icon={Users}     accent="primary" />
-            <StatCard label="Active"        value={activeCount}   icon={UserCheck} accent="success" />
-            <StatCard label="Inactive"      value={inactiveCount} icon={UserX}     accent="warning" />
+            <StatCard label="Total members" value={total} icon={Users} accent="primary" />
+            <StatCard label="Active" value={activeCount} icon={UserCheck} accent="success" />
+            <StatCard label="Inactive" value={inactiveCount} icon={UserX} accent="warning" />
           </div>
 
           {/* Phone-only search */}
@@ -374,7 +374,7 @@ function AdminOurTeam() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search name, title…"
-                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
                 <button
@@ -414,7 +414,7 @@ function AdminOurTeam() {
               {/* Add member button */}
               <Button
                 size="sm"
-                className="h-7 px-2.5 sm:px-3 text-[10px] rounded-sm gap-1 sm:gap-1.5"
+                className="h-7 px-2.5 sm:px-3 text-[10px] rounded-[6px] gap-1 sm:gap-1.5"
                 onClick={() => setAddOpen(true)}
               >
                 <UserPlus className="w-3.5 h-3.5" />
@@ -429,7 +429,7 @@ function AdminOurTeam() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name, title…"
-                  className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {searchInput && (
                   <button
@@ -446,7 +446,7 @@ function AdminOurTeam() {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
+                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -473,7 +473,7 @@ function AdminOurTeam() {
               </div>
             ) : !isLoading && sorted.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                   <Users className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
@@ -492,7 +492,7 @@ function AdminOurTeam() {
             ) : (
               <>
                 {/* Desktop table — lg+ */}
-                <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="hidden lg:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
@@ -516,8 +516,8 @@ function AdminOurTeam() {
                 <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                   {isLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
-                      ))
+                      <div key={i} className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse" />
+                    ))
                     : sorted.map((m) => <TeamCard key={m.id} m={m} onManage={openPanel} />)}
                 </div>
 
@@ -533,14 +533,14 @@ function AdminOurTeam() {
                       <button
                         disabled={filters.page <= 1}
                         onClick={() => set("page", filters.page - 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
                       <button
                         disabled={filters.page >= totalPages}
                         onClick={() => set("page", filters.page + 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
