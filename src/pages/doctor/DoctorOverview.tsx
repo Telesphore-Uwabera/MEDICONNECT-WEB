@@ -84,6 +84,17 @@ function formatMoney(value: unknown, currency = "RWF") {
   })}`;
 }
 
+function formatPayoutDate(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatPct(value: number | null) {
   if (value === null) return "—";
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
@@ -106,9 +117,88 @@ function getErrMsg(err: unknown, fallback: string) {
 }
 
 function asRecords(value: unknown): Array<Record<string, unknown>> {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
-    : [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item));
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.data)) return asRecords(record.data);
+    if ("amount" in record || "requested_amount" in record || "withdrawal_amount" in record) return [record];
+  }
+  return [];
+}
+
+function getFirstField(record: Record<string, unknown>, fields: string[], fallback: unknown = undefined) {
+  for (const field of fields) {
+    const value = record[field];
+    if (value != null && String(value).trim() !== "") return value;
+  }
+  return fallback;
+}
+
+function getPayoutAmount(record: Record<string, unknown>) {
+  return getFirstField(record, ["amount", "requested_amount", "withdrawal_amount"], 0);
+}
+
+function getPayoutMethod(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["method", "payment_method", "withdrawal_method"], "withdrawal")).replace(/_/g, " ");
+}
+
+function getPayoutAccountName(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["account_name", "recipient_name", "beneficiary_name"], "-"));
+}
+
+function getPayoutAccountNumber(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["account_number", "phone_number", "recipient_account", "beneficiary_account"], ""));
+}
+
+function getPayoutStatus(record: Record<string, unknown>) {
+  return String(getFirstField(record, ["status", "request_status"], "pending"));
+}
+
+function getPayoutDate(record: Record<string, unknown>) {
+  return getFirstField(record, ["created_at", "requested_at", "submitted_at", "updated_at"]);
+}
+
+function getPayoutId(record: Record<string, unknown>) {
+  return getFirstField(record, ["id", "withdrawal_id", "request_id"]);
+}
+
+function isPayoutRequest(record: Record<string, unknown>) {
+  const status = getPayoutStatus(record).toLowerCase();
+  const type = String(record.type ?? record.kind ?? record.request_type ?? "").toLowerCase();
+  return (
+    getPayoutAmount(record) != null &&
+    (type.includes("withdraw") ||
+      type.includes("payout") ||
+      "method" in record ||
+      "payment_method" in record ||
+      "account_number" in record ||
+      "account_name" in record ||
+      "phone_number" in record ||
+      status.includes("pending") ||
+      status.includes("requested") ||
+      status.includes("processing") ||
+      status.includes("approved") ||
+      status.includes("completed") ||
+      status.includes("cancelled") ||
+      status.includes("rejected"))
+  );
+}
+
+function uniquePayoutRequests(records: Array<Record<string, unknown>>) {
+  const seen = new Set<string>();
+  return records.filter((record, index) => {
+    if (!isPayoutRequest(record)) return false;
+    const id = getPayoutId(record);
+    const key =
+      id != null
+        ? `id:${String(id)}`
+        : `fallback:${String(getPayoutAmount(record))}:${getPayoutAccountNumber(record)}:${String(getPayoutDate(record) ?? index)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 const DoctorOverview = () => {
@@ -136,6 +226,7 @@ const DoctorOverview = () => {
   const [showLeftScroll, setShowLeftScroll] = useState(false);
   const [showRightScroll, setShowRightScroll] = useState(false);
   const [withdrawalOpen, setWithdrawalOpen] = useState(false);
+  const [localPayoutRequests, setLocalPayoutRequests] = useState<Array<Record<string, unknown>>>([]);
   const [withdrawalForm, setWithdrawalForm] = useState({
     amount: "",
     method: "bank_transfer",
@@ -203,30 +294,27 @@ const DoctorOverview = () => {
 
   // ── Quick stats (Today) ─────────────────────────────────────────────────
 
-  const payoutRequests = [
+  const payoutRequests = uniquePayoutRequests([
+    ...localPayoutRequests,
     ...asRecords(wallet?.pending_withdrawals),
+    ...asRecords(wallet?.pending_withdrawal_requests),
     ...asRecords(wallet?.withdrawals),
+    ...asRecords(wallet?.withdrawal),
+    ...asRecords(wallet?.withdrawal_requests),
+    ...asRecords(wallet?.withdrawalRequests),
+    ...asRecords(wallet?.payout_requests),
+    ...asRecords(wallet?.payouts),
+    ...asRecords(wallet?.recent_withdrawals),
+    ...asRecords(wallet?.requests),
     ...asRecords(earnings?.withdrawals),
+    ...asRecords(earnings?.withdrawal),
+    ...asRecords(earnings?.withdrawal_requests),
+    ...asRecords(earnings?.withdrawalRequests),
+    ...asRecords(earnings?.payout_requests),
+    ...asRecords(earnings?.payouts),
+    ...asRecords(earnings?.recent_withdrawals),
     ...asRecords(earnings?.data),
-  ].filter((item, index, arr) => {
-    const status = String(item.status ?? "").toLowerCase();
-    const id = item.id;
-    const isWithdrawal =
-      "amount" in item &&
-      (item.type === "withdrawal" ||
-        "method" in item ||
-        "account_number" in item ||
-        status.includes("pending") ||
-        status.includes("requested") ||
-        status.includes("processing") ||
-        status.includes("approved") ||
-        status.includes("completed") ||
-        status.includes("cancelled"));
-
-    if (!isWithdrawal) return false;
-    if (id == null) return true;
-    return arr.findIndex((other) => other.id === id) === index;
-  });
+  ]);
   const hasPayoutRows = payoutRequests.length > 0;
 
   const handleWithdrawalSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -248,6 +336,21 @@ const DoctorOverview = () => {
       },
       {
         onSuccess: () => {
+          const submittedAt = new Date().toISOString();
+          setLocalPayoutRequests((prev) => [
+            {
+              local_id: `local-${submittedAt}-${amount}`,
+              kind: "local_withdrawal",
+              amount,
+              method: withdrawalForm.method,
+              account_number: withdrawalForm.account_number.trim(),
+              account_name: withdrawalForm.account_name.trim(),
+              note: withdrawalForm.note.trim() || undefined,
+              status: "pending",
+              created_at: submittedAt,
+            },
+            ...prev,
+          ]);
           toast.success("Withdrawal request sent.");
           setWithdrawalForm((prev) => ({ ...prev, amount: "", note: "" }));
           setWithdrawalOpen(false);
@@ -1445,22 +1548,22 @@ const DoctorOverview = () => {
                         <div className="space-y-2 mt-2">
                           {payoutRequests.map((withdrawal, index) => (
                             <div
-                              key={String(withdrawal.id ?? index)}
+                              key={String(getPayoutId(withdrawal) ?? withdrawal.local_id ?? index)}
                               className="rounded-md border border-border/60 bg-secondary/20 p-3 flex items-center justify-between gap-3"
                             >
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold text-foreground">
-                                  {formatMoney(withdrawal.amount, walletCurrency)}
+                                  {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
                                 </p>
                                 <p className="text-[11px] text-muted-foreground truncate">
-                                  {String(withdrawal.method ?? "Withdrawal").replace(/_/g, " ")}
+                                  {getPayoutMethod(withdrawal)}
                                   {withdrawal.status ? ` · ${String(withdrawal.status)}` : ""}
                                 </p>
                               </div>
-                              {withdrawal.id != null && (
+                              {Number.isFinite(Number(getPayoutId(withdrawal))) && (
                                 <button
                                   type="button"
-                                  onClick={() => handleCancelWithdrawal(withdrawal.id)}
+                                  onClick={() => handleCancelWithdrawal(getPayoutId(withdrawal))}
                                   disabled={cancelWithdrawal.isPending}
                                   className="h-7 rounded-md border border-destructive/30 px-2 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
                                 >
@@ -1545,27 +1648,29 @@ const DoctorOverview = () => {
                         </thead>
                         <tbody>
                           {payoutRequests.map((withdrawal, index) => {
-                            const status = String(withdrawal.status ?? "pending");
+                            const status = getPayoutStatus(withdrawal);
                             const statusLower = status.toLowerCase();
+                            const payoutId = getPayoutId(withdrawal);
+                            const numericPayoutId = Number(payoutId);
                             const canCancel =
-                              withdrawal.id != null &&
+                              Number.isFinite(numericPayoutId) &&
                               (statusLower.includes("pending") ||
                                 statusLower.includes("requested") ||
                                 statusLower.includes("processing"));
 
                             return (
-                              <tr key={String(withdrawal.id ?? index)} className="border-t border-border/50">
+                              <tr key={String(payoutId ?? withdrawal.local_id ?? index)} className="border-t border-border/50">
                                 <td className="px-5 py-3 text-xs font-semibold text-foreground">
-                                  {formatMoney(withdrawal.amount, walletCurrency)}
+                                  {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground capitalize">
-                                  {String(withdrawal.method ?? "withdrawal").replace(/_/g, " ")}
+                                  {getPayoutMethod(withdrawal)}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
                                   <span className="block text-foreground">
-                                    {String(withdrawal.account_name ?? "-")}
+                                    {getPayoutAccountName(withdrawal)}
                                   </span>
-                                  <span>{String(withdrawal.account_number ?? "")}</span>
+                                  <span>{getPayoutAccountNumber(withdrawal)}</span>
                                 </td>
                                 <td className="px-5 py-3">
                                   <span
@@ -1582,13 +1687,13 @@ const DoctorOverview = () => {
                                   </span>
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
-                                  {String(withdrawal.created_at ?? withdrawal.requested_at ?? "-")}
+                                  {formatPayoutDate(getPayoutDate(withdrawal))}
                                 </td>
                                 <td className="px-5 py-3">
                                   {canCancel ? (
                                     <button
                                       type="button"
-                                      onClick={() => handleCancelWithdrawal(withdrawal.id)}
+                                      onClick={() => handleCancelWithdrawal(numericPayoutId)}
                                       disabled={cancelWithdrawal.isPending}
                                       className="h-7 rounded-md border border-destructive/30 px-2.5 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
                                     >

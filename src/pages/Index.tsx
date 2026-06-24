@@ -765,7 +765,7 @@ const Index = () => {
       >
         <div className=" grid lg:grid-cols-2  items-center">
           <div className="px-10 py-10 lg:px-20 lg:py-20">
-            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white")}>
+            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white ")}>
               {t("pages.landing.pharmacy_title")}
             </h2>
             <p className="mt-6 text-base md:text-lg dark:text-black  text-white/90 leading-relaxed max-w-xl">
@@ -793,7 +793,7 @@ const Index = () => {
         <div className="container">
           <div className="max-w-2xl">
             <h2 className={SECTION_TITLE}>
-              Board-certified specialists, vetted and ready to see you
+              Meet the minds behind MEDICONNECT
             </h2>
           </div>
           <div className="mt-12">

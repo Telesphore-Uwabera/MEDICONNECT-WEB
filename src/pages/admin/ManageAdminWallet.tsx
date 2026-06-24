@@ -148,9 +148,6 @@ const selectCls =
 
 type TabKey = "doctors" | "withdrawals" | "payouts" | "transactions" | "main";
 
-// Disabled until the backend withdrawal-request endpoints are stable.
-// Re-enable when GET /admin/wallets/withdrawal-requests no longer returns 500.
-const ENABLE_WITHDRAWAL_REQUESTS = false;
 
 // ─── Doctor Wallet Row ─────────────────────────────────────────────────────────
 
@@ -739,37 +736,37 @@ function ActionPanel({
 
   const getTitle = () => {
     switch (action) {
-      case "topup":  return "Top up wallet";
+      case "topup": return "Top up wallet";
       case "deduct": return "Deduct from wallet";
       case "payout": return "Create payout";
       case "refund": return "Refund payout";
-      default:       return "";
+      default: return "";
     }
   };
 
   const getSubtitle = () => {
     switch (action) {
-      case "topup":  return wallet ? `Adding funds to ${wallet.doctor_name}` : "";
+      case "topup": return wallet ? `Adding funds to ${wallet.doctor_name}` : "";
       case "deduct": return wallet ? `Deducting from ${wallet.doctor_name}` : "";
       case "payout": return "Send payout to a doctor";
       case "refund": return payout ? `Refunding payout #${payout.id}` : "";
-      default:       return "";
+      default: return "";
     }
   };
 
   const getSubmitLabel = () => {
     switch (action) {
-      case "topup":  return "Top up";
+      case "topup": return "Top up";
       case "deduct": return "Deduct";
       case "payout": return "Create payout";
       case "refund": return "Refund";
-      default:       return "Save";
+      default: return "Save";
     }
   };
 
   const handleSubmit = () => {
     switch (action) {
-      case "topup":  return handleTopUp();
+      case "topup": return handleTopUp();
       case "deduct": return handleDeduct();
       case "payout": return handleCreatePayout();
       case "refund": return handleRefund();
@@ -1206,36 +1203,36 @@ function ManageAdminWallet() {
   } = useGetWithdrawalRequests(
     withdrawalStatus,
     activeTab === "withdrawals" ? page : 1,
-    ENABLE_WITHDRAWAL_REQUESTS && activeTab === "withdrawals",
+    activeTab === "withdrawals",
   );
   const { data: selectedWithdrawal, isLoading: selectedWithdrawalLoading } =
     useGetWithdrawalRequest(selectedWithdrawalId);
   const { data: transactionsData, isLoading: txLoading, isError: txError } =
     useGetTransactions(undefined, undefined, activeTab === "transactions" ? page : 1);
 
-  const wallets      = walletsData?.data      ?? [];
-  const payouts      = payoutsData?.data      ?? [];
+  const wallets = walletsData?.data ?? [];
+  const payouts = payoutsData?.data ?? [];
   const withdrawalRequests = withdrawalRequestsData?.data ?? [];
   const transactions = transactionsData?.data ?? [];
 
   const total =
-    activeTab === "doctors"      ? (walletsData?.total      ?? 0)
-    : activeTab === "withdrawals" ? (withdrawalRequestsData?.total ?? 0)
-    : activeTab === "payouts"    ? (payoutsData?.total      ?? 0)
-    : activeTab === "transactions" ? (transactionsData?.total ?? 0)
-    : 0;
+    activeTab === "doctors" ? (walletsData?.total ?? 0)
+      : activeTab === "withdrawals" ? (withdrawalRequestsData?.total ?? 0)
+        : activeTab === "payouts" ? (payoutsData?.total ?? 0)
+          : activeTab === "transactions" ? (transactionsData?.total ?? 0)
+            : 0;
 
   const perPage =
-    activeTab === "doctors"        ? (walletsData?.per_page      ?? 20)
-    : activeTab === "withdrawals"  ? (withdrawalRequestsData?.per_page ?? 20)
-    : activeTab === "payouts"      ? (payoutsData?.per_page      ?? 20)
-    : activeTab === "transactions" ? (transactionsData?.per_page ?? 20)
-    : 20;
+    activeTab === "doctors" ? (walletsData?.per_page ?? 20)
+      : activeTab === "withdrawals" ? (withdrawalRequestsData?.per_page ?? 20)
+        : activeTab === "payouts" ? (payoutsData?.per_page ?? 20)
+          : activeTab === "transactions" ? (transactionsData?.per_page ?? 20)
+            : 20;
 
   const totalPages = Math.ceil(total / perPage);
 
-  const totalBalance    = wallets.reduce((sum, w) => sum + parseFloat(w.balance || "0"), 0);
-  const pendingPayouts  = payouts.filter((p) => p.status === "pending").length;
+  const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(w.balance || "0"), 0);
+  const pendingPayouts = payouts.filter((p) => p.status === "pending").length;
   const completedPayouts = payouts.filter((p) => p.status === "completed").length;
 
   const openTopUp = useCallback((wallet: DoctorWallet) => {
@@ -1313,23 +1310,21 @@ function ManageAdminWallet() {
   }, [deletingWallet, deleteMutation, toast]);
 
   const isLoading =
-    (activeTab === "doctors"       && walletsLoading) ||
-    (activeTab === "withdrawals"   && withdrawalRequestsLoading) ||
-    (activeTab === "payouts"       && payoutsLoading) ||
-    (activeTab === "transactions"  && txLoading)      ||
-    (activeTab === "main"          && mainLoading);
+    (activeTab === "doctors" && walletsLoading) ||
+    (activeTab === "withdrawals" && withdrawalRequestsLoading) ||
+    (activeTab === "payouts" && payoutsLoading) ||
+    (activeTab === "transactions" && txLoading) ||
+    (activeTab === "main" && mainLoading);
 
   const isError =
-    (activeTab === "doctors"       && walletsError)  ||
-    (activeTab === "withdrawals"   && withdrawalRequestsError) ||
-    (activeTab === "payouts"       && payoutsError)  ||
-    (activeTab === "transactions"  && txError);
+    (activeTab === "doctors" && walletsError) ||
+    (activeTab === "withdrawals" && withdrawalRequestsError) ||
+    (activeTab === "payouts" && payoutsError) ||
+    (activeTab === "transactions" && txError);
 
   const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
     { key: "doctors", label: "Doctor Wallets", icon: Wallet },
-    ...(ENABLE_WITHDRAWAL_REQUESTS
-      ? [{ key: "withdrawals" as const, label: "Withdrawals", icon: Receipt }]
-      : []),
+    { key: "withdrawals" as const, label: "Withdrawals", icon: Receipt },
     { key: "payouts", label: "Payouts", icon: Send },
     { key: "transactions", label: "Transactions", icon: ArrowRightLeft },
     { key: "main", label: "Main Wallet", icon: Landmark },
@@ -1346,17 +1341,17 @@ function ManageAdminWallet() {
         <main className="flex-1 overflow-y-auto">
           {/* Stats */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total doctors"    value={walletsData?.total ?? 0}       icon={User}        accent="primary" />
-            <StatCard label="Total balance"    value={formatCurrency(totalBalance)}  icon={CreditCard}  accent="success" />
-            <StatCard label="Pending payouts"  value={pendingPayouts}                icon={Clock}       accent="warning" />
-            <StatCard label="Completed payouts" value={completedPayouts}             icon={CheckCircle2} accent="info"  />
+            <StatCard label="Total doctors" value={walletsData?.total ?? 0} icon={User} accent="primary" />
+            <StatCard label="Total balance" value={formatCurrency(totalBalance)} icon={CreditCard} accent="success" />
+            <StatCard label="Pending payouts" value={pendingPayouts} icon={Clock} accent="warning" />
+            <StatCard label="Completed payouts" value={completedPayouts} icon={CheckCircle2} accent="info" />
           </div>
 
           {/* Tabs */}
           <div className="px-3 sm:px-4 mt-3 sm:mt-4">
             <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/40 border border-border/40">
               {tabs.map((tab) => {
-                const Icon   = tab.icon;
+                const Icon = tab.icon;
                 const active = activeTab === tab.key;
                 return (
                   <button
@@ -1481,19 +1476,19 @@ function ManageAdminWallet() {
                     {activeTab === "doctors"
                       ? "No doctor wallets yet"
                       : activeTab === "withdrawals"
-                      ? "No withdrawal requests"
-                      : activeTab === "payouts"
-                      ? "No payouts yet"
-                      : "No transactions yet"}
+                        ? "No withdrawal requests"
+                        : activeTab === "payouts"
+                          ? "No payouts yet"
+                          : "No transactions yet"}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {activeTab === "doctors"
                       ? "Doctor wallets will appear here"
                       : activeTab === "withdrawals"
-                      ? "Doctor withdrawal requests will appear here"
-                      : activeTab === "payouts"
-                      ? "Create your first payout"
-                      : "Transactions will appear here"}
+                        ? "Doctor withdrawal requests will appear here"
+                        : activeTab === "payouts"
+                          ? "Create your first payout"
+                          : "Transactions will appear here"}
                   </p>
                 </div>
                 {activeTab === "payouts" && (
@@ -1513,8 +1508,8 @@ function ManageAdminWallet() {
                 {activeTab === "main" && (
                   <MainWalletCard
                     mainWallet={mainWallet}
-                    onTopUp={() => {}}
-                    onDeduct={() => {}}
+                    onTopUp={() => { }}
+                    onDeduct={() => { }}
                   />
                 )}
 
@@ -1558,22 +1553,22 @@ function ManageAdminWallet() {
                     <div className="md:hidden flex flex-col gap-2">
                       {walletsLoading
                         ? Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                          ))
+                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        ))
                         : wallets.map((wallet) => (
-                            <DoctorWalletCard
-                              key={wallet.id}
-                              wallet={wallet}
-                              onTopUp={openTopUp}
-                              onDeduct={openDeduct}
-                              onDelete={requestDelete}
-                              isMutating={
-                                topUpMutation.isPending ||
-                                deductMutation.isPending ||
-                                deleteMutation.isPending
-                              }
-                            />
-                          ))}
+                          <DoctorWalletCard
+                            key={wallet.id}
+                            wallet={wallet}
+                            onTopUp={openTopUp}
+                            onDeduct={openDeduct}
+                            onDelete={requestDelete}
+                            isMutating={
+                              topUpMutation.isPending ||
+                              deductMutation.isPending ||
+                              deleteMutation.isPending
+                            }
+                          />
+                        ))}
                     </div>
                   </>
                 )}
@@ -1614,17 +1609,17 @@ function ManageAdminWallet() {
                     <div className="md:hidden flex flex-col gap-2">
                       {withdrawalRequestsLoading
                         ? Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
-                          ))
+                          <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        ))
                         : withdrawalRequests.map((request) => (
-                            <WithdrawalRequestCard
-                              key={request.id}
-                              request={request}
-                              onView={setSelectedWithdrawalId}
-                              onAction={openWithdrawalAction}
-                              isMutating={withdrawalActionMutation.isPending}
-                            />
-                          ))}
+                          <WithdrawalRequestCard
+                            key={request.id}
+                            request={request}
+                            onView={setSelectedWithdrawalId}
+                            onAction={openWithdrawalAction}
+                            isMutating={withdrawalActionMutation.isPending}
+                          />
+                        ))}
                     </div>
                   </>
                 )}
@@ -1665,16 +1660,16 @@ function ManageAdminWallet() {
                     <div className="md:hidden flex flex-col gap-2">
                       {payoutsLoading
                         ? Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                          ))
+                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        ))
                         : payouts.map((payout) => (
-                            <PayoutCard
-                              key={payout.id}
-                              payout={payout}
-                              onRefund={openRefund}
-                              isMutating={refundMutation.isPending}
-                            />
-                          ))}
+                          <PayoutCard
+                            key={payout.id}
+                            payout={payout}
+                            onRefund={openRefund}
+                            isMutating={refundMutation.isPending}
+                          />
+                        ))}
                     </div>
                   </>
                 )}
@@ -1709,11 +1704,11 @@ function ManageAdminWallet() {
                     <div className="md:hidden flex flex-col gap-2">
                       {txLoading
                         ? Array.from({ length: 4 }).map((_, i) => (
-                            <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                          ))
+                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
+                        ))
                         : transactions.map((tx) => (
-                            <TransactionCard key={tx.id} tx={tx} />
-                          ))}
+                          <TransactionCard key={tx.id} tx={tx} />
+                        ))}
                     </div>
                   </>
                 )}
@@ -1763,7 +1758,7 @@ function ManageAdminWallet() {
         isDeleting={deleteMutation.isPending}
       />
 
-      {ENABLE_WITHDRAWAL_REQUESTS && selectedWithdrawalId && (
+      {selectedWithdrawalId && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
           <div className="w-full max-w-md bg-card border-l border-border h-full overflow-y-auto shadow-xl">
             <div className="sticky top-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
@@ -1817,7 +1812,7 @@ function ManageAdminWallet() {
         </div>
       )}
 
-      {ENABLE_WITHDRAWAL_REQUESTS && withdrawalAction && (
+      {withdrawalAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-sm border border-border bg-card shadow-xl">
             <div className="p-4 border-b border-border">
