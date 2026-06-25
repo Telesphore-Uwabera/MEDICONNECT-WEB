@@ -502,20 +502,42 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         // (10–30s of "Connecting…"). Re-announcing every 3s prompts the peer to
         // tear the stale connection down and re-initiate promptly. It stops once
         // we're connected/connecting, so it never disrupts a live call.
-        const announceLoop = () => {
-          if (cancelled) return;
-          const pc = pcRef.current;
-          const st = pc?.connectionState;
-          const needsAnnounce =
-            !pc ||
-            ["new", "failed", "closed"].includes(st as string) ||
-            (st === "disconnected" &&
-              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+        // const announceLoop = () => {
+        //   if (cancelled) return;
+        //   const pc = pcRef.current;
+        //   const st = pc?.connectionState;
+        //   const needsAnnounce =
+        //     !pc ||
+        //     ["new", "failed", "closed"].includes(st as string) ||
+        //     (st === "disconnected" &&
+        //       Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
 
-          if (needsAnnounce) sendSignalRef.current?.("ready");
-          setTimeout(announceLoop, 3000);
-        };
-        setTimeout(announceLoop, 1000);
+        //   if (needsAnnounce) sendSignalRef.current?.("ready");
+        //   setTimeout(announceLoop, 3000);
+        // };
+        // setTimeout(announceLoop, 1000);
+
+        const announceLoop = () => {
+        if (cancelled) return;
+        const pc = pcRef.current;
+        const st = pc?.connectionState;
+        const needsAnnounce =
+          !pc ||
+          ["new", "failed", "closed"].includes(st as string) ||
+          (st === "disconnected" &&
+            Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+
+        if (needsAnnounce) {
+          // Owner tries to send offer directly instead of waiting for guest's ready
+          if (pcRef.current) {
+            createAndSendOfferRef.current?.();
+          } else {
+            sendSignalRef.current?.("ready");
+          }
+        }
+        setTimeout(announceLoop, 3000);
+      };
+      setTimeout(announceLoop, 1000);
       }
     };
 
