@@ -37,7 +37,7 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
       <div className="relative flex flex-col bg-card border-l border-border shadow-2xl w-full max-w-md h-full overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/60 bg-card shrink-0">
-          <div className="h-9 w-9 rounded-sm bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/10">
+          <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/10">
             <HeartPulse className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
@@ -47,7 +47,7 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
           <button
             onClick={onClose}
             aria-label="Close"
-            className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+            className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
           >
             <X className="h-4 w-4" />
           </button>

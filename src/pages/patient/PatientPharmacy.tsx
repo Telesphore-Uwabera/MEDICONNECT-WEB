@@ -52,11 +52,11 @@ import { Card } from "@/components/ui/card";
 // ─── Rwanda regions ───────────────────────────────────────────────────────────
 
 const RWANDA_REGIONS = [
-  { province: "Kigali City",      city: "Kigali"    },
+  { province: "Kigali City", city: "Kigali" },
   { province: "Eastern Province", city: "Rwamagana" },
-  { province: "Northern Province",city: "Musanze"   },
-  { province: "Southern Province",city: "Nyanza"    },
-  { province: "Western Province", city: "Karongi"   },
+  { province: "Northern Province", city: "Musanze" },
+  { province: "Southern Province", city: "Nyanza" },
+  { province: "Western Province", city: "Karongi" },
 ] as const;
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ function PillGroup<T extends string>({
             key={o.value}
             onClick={() => onChange(o.value)}
             className={cn(
-              "px-2.5 py-1.5 rounded-sm text-xs border transition-all duration-200 text-left flex items-center gap-1.5",
+              "px-2.5 py-1.5 rounded-[6px] text-xs border transition-all duration-200 text-left flex items-center gap-1.5",
               value === o.value
                 ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
                 : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -173,7 +173,7 @@ function ToggleButton({
     <button
       onClick={() => onChange(!value)}
       className={cn(
-        "px-2.5 py-1.5 rounded-sm text-xs border transition-all duration-200 text-left flex items-center gap-1.5 w-full",
+        "px-2.5 py-1.5 rounded-[6px] text-xs border transition-all duration-200 text-left flex items-center gap-1.5 w-full",
         value
           ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
           : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -188,7 +188,7 @@ function ToggleButton({
 function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
-  const todayName = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
+  const todayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const todayHours = ph.working_hours?.find((h) => h.day_of_week === todayName);
   const isClosedToday = todayHours?.is_closed ?? true;
 
@@ -216,7 +216,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
         <div className="p-4 sm:p-5 flex flex-col flex-1">
           {/* Identity row */}
           <div className="flex items-start gap-3.5">
-            <div className="h-16 w-16 rounded-[14px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm">
+            <div className="h-16 w-16 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/15 overflow-hidden shadow-sm">
               {ph.logo
                 ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
                 : <Pill className="w-6 h-6" />}
@@ -234,7 +234,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
           </div>
 
           {/* Stats grid */}
-          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-sm border border-border overflow-hidden">
+          <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
             <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
               <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                 <Truck className="h-3.5 w-3.5" />
@@ -267,17 +267,17 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
           {/* Badges / Features */}
           <div className="mt-3 flex flex-wrap gap-1">
             {ph.offers_delivery && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                 Delivery
               </span>
             )}
             {ph.offers_pickup && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-secondary text-muted-foreground border border-border/60">
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
                 Pickup
               </span>
             )}
             {ph.is_open_24h && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary border border-primary/20">
+              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary border border-primary/20">
                 24h Open
               </span>
             )}
@@ -296,7 +296,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
               size="sm"
               variant="outline"
               onClick={(e) => { e.stopPropagation(); setDrawerOpen(true); }}
-              className="h-8 px-3 text-xs font-bold rounded-[8px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
+              className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
             >
               <Pill className="h-3.5 w-3.5 mr-1.5" />
               Inventory
@@ -304,7 +304,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
             <Button
               size="sm"
               onClick={(e) => { e.stopPropagation(); setDrawerOpen(true); }}
-              className="h-8 px-3 text-xs font-bold rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
+              className="h-8 px-3 text-xs font-bold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
             >
               Order Now
             </Button>
@@ -322,15 +322,15 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
 function PharmacyListItem({ pharmacy: ph }: { pharmacy: Pharmacy }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const deliveryMins = parseDeliveryMins(ph.estimated_delivery_minutes);
-  const todayName = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
+  const todayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
   const todayHours = ph.working_hours?.find((h) => h.day_of_week === todayName);
   const isClosedToday = todayHours?.is_closed ?? true;
 
   return (
     <>
-      <div className="bg-card border border-border/70 rounded-sm p-3 flex items-center gap-3 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
+      <div className="bg-card border border-border/70 rounded-[6px] p-3 flex items-center gap-3 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer"
         onClick={() => setDrawerOpen(true)}>
-        <div className="w-10 h-10 rounded-sm bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10 overflow-hidden">
+        <div className="w-10 h-10 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 border border-primary/10 overflow-hidden">
           {ph.logo
             ? <img src={ph.logo} alt={ph.name} className="h-full w-full object-cover" />
             : <Pill className="w-5 h-5" />}
@@ -357,7 +357,7 @@ function PharmacyListItem({ pharmacy: ph }: { pharmacy: Pharmacy }) {
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex flex-col items-end gap-0.5">
             {ph.offers_delivery && (
-              <span className="px-1.5 py-px text-xs font-semibold rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="px-1.5 py-px text-xs font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Delivery
               </span>
             )}
@@ -380,25 +380,25 @@ function PharmacyListItem({ pharmacy: ph }: { pharmacy: Pharmacy }) {
 
 function PharmacyCardSkeleton() {
   return (
-    <div className="bg-card border border-border/50 rounded-sm p-3 flex flex-col gap-2.5 animate-pulse">
+    <div className="bg-card border border-border/50 rounded-[6px] p-3 flex flex-col gap-2.5 animate-pulse">
       <div className="flex items-start gap-2.5">
-        <div className="w-9 h-9 rounded-sm bg-muted flex-shrink-0" />
+        <div className="w-9 h-9 rounded-[6px] bg-muted flex-shrink-0" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3 bg-muted rounded-sm w-3/4" />
-          <div className="h-2.5 bg-muted/70 rounded-sm w-1/2" />
+          <div className="h-3 bg-muted rounded-[6px] w-3/4" />
+          <div className="h-2.5 bg-muted/70 rounded-[6px] w-1/2" />
         </div>
       </div>
       <div className="flex gap-1">
-        <div className="h-4 bg-muted rounded-sm w-16" />
-        <div className="h-4 bg-muted/70 rounded-sm w-14" />
+        <div className="h-4 bg-muted rounded-[6px] w-16" />
+        <div className="h-4 bg-muted/70 rounded-[6px] w-14" />
       </div>
       <div className="space-y-1">
-        <div className="h-2.5 bg-muted/60 rounded-sm w-full" />
-        <div className="h-2.5 bg-muted/50 rounded-sm w-3/4" />
+        <div className="h-2.5 bg-muted/60 rounded-[6px] w-full" />
+        <div className="h-2.5 bg-muted/50 rounded-[6px] w-3/4" />
       </div>
       <div className="flex justify-between pt-1.5 border-t border-border/40">
-        <div className="h-3 bg-muted rounded-sm w-20" />
-        <div className="h-6 bg-muted/80 rounded-sm w-24" />
+        <div className="h-3 bg-muted rounded-[6px] w-20" />
+        <div className="h-6 bg-muted/80 rounded-[6px] w-24" />
       </div>
     </div>
   );
@@ -433,7 +433,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -442,7 +442,7 @@ function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={cn(
-              "w-7 h-7 flex items-center justify-center rounded-sm border text-xs font-medium transition-all",
+              "w-7 h-7 flex items-center justify-center rounded-[6px] border text-xs font-medium transition-all",
               currentPage === p
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
@@ -454,7 +454,7 @@ function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= lastPage}
-          className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -518,22 +518,22 @@ const PatientPharmacy = () => {
   const searchQ = debouncedQ.trim().length >= 2 ? debouncedQ.trim() : undefined;
 
   const { data: pharmaciesResp, isLoading: loadingPharmacies } = useSearchPharmacies({
-    q:               searchQ,
-    per_page:        50,
-    page:            page,
-    province:        filters.province || undefined,
-    city:            filters.city     || undefined,
+    q: searchQ,
+    per_page: 50,
+    page: page,
+    province: filters.province || undefined,
+    city: filters.city || undefined,
     offers_delivery: filters.offers_delivery || undefined,
-    offers_pickup:   filters.offers_pickup   || undefined,
-    is_open_24h:     filters.is_open_24h        || undefined,
-    open_now:        filters.open_now          || undefined,
+    offers_pickup: filters.offers_pickup || undefined,
+    is_open_24h: filters.is_open_24h || undefined,
+    open_now: filters.open_now || undefined,
   });
 
   const { data: nearbyResp, isLoading: loadingNearby } = useNearbyPharmacies({
-    lat:      nearbyCoords?.lat ?? 0,
-    lng:      nearbyCoords?.lng ?? 0,
+    lat: nearbyCoords?.lat ?? 0,
+    lng: nearbyCoords?.lng ?? 0,
     per_page: 50,
-    enabled:  !!nearbyCoords,
+    enabled: !!nearbyCoords,
   });
 
   const nearbyPharmacies: Pharmacy[] = useMemo(() => {
@@ -590,12 +590,12 @@ const PatientPharmacy = () => {
       render: () => (
         nearbyCoords ? (
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex-1 flex items-center justify-center gap-1.5 h-[28px] rounded-sm bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium">
+            <div className="flex-1 flex items-center justify-center gap-1.5 h-[28px] rounded-[6px] bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium">
               <Navigation className="h-3 w-3 shrink-0" />
               Using location
             </div>
             <button
-              className="h-[28px] w-[28px] rounded-sm border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="h-[28px] w-[28px] rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               onClick={handleClearLocation}
             >
               <X className="h-3 w-3" />
@@ -604,7 +604,7 @@ const PatientPharmacy = () => {
         ) : (
           <button
             onClick={handleUseMyLocation}
-            className="w-full mt-1 h-[28px] rounded-sm text-[11px] border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30 transition-all duration-200 flex items-center justify-center gap-1.5"
+            className="w-full mt-1 h-[28px] rounded-[6px] text-[11px] border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30 transition-all duration-200 flex items-center justify-center gap-1.5"
           >
             {locLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
             {locLoading ? "Detecting…" : "Use my location"}
@@ -620,25 +620,25 @@ const PatientPharmacy = () => {
         <div className="flex flex-wrap gap-1 mt-1">
           <button
             onClick={() => set("offers_delivery", !filters.offers_delivery)}
-            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.offers_delivery ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.offers_delivery ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Truck className="w-3 h-3" /> Delivery
           </button>
           <button
             onClick={() => set("offers_pickup", !filters.offers_pickup)}
-            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.offers_pickup ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.offers_pickup ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <MapPin className="w-3 h-3" /> Pickup
           </button>
           <button
             onClick={() => set("is_open_24h", !filters.is_open_24h)}
-            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.is_open_24h ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.is_open_24h ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Clock className="w-3 h-3" /> 24h
           </button>
           <button
             onClick={() => set("open_now", !filters.open_now)}
-            className={cn("px-2 h-[28px] rounded-sm text-[10px] border flex items-center gap-1 transition-all", filters.open_now ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.open_now ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Wifi className="w-3 h-3" /> Open Now
           </button>
@@ -673,7 +673,7 @@ const PatientPharmacy = () => {
             <div className="flex items-center gap-3">
               <p className="text-[11px] text-muted-foreground">
                 {isLoading ? (
-                  <span className="inline-block w-24 h-3 bg-muted rounded-sm animate-pulse" />
+                  <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{pharmacies.length}</span>{" "}
@@ -707,7 +707,7 @@ const PatientPharmacy = () => {
               <select
                 value={filters.sort}
                 onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -721,7 +721,7 @@ const PatientPharmacy = () => {
               />
 
               {/* View toggle */}
-              <div className="flex rounded-sm border border-border/60 overflow-hidden bg-card shadow-sm">
+              <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                 {(["grid", "list"] as const).map((v, i) => (
                   <button
                     key={v}
@@ -753,63 +753,63 @@ const PatientPharmacy = () => {
             </div>
           </div>
 
-            {/* Content */}
-            <div className="p-4 flex-1">
-              {isLoading ? (
-                <div className={cn(
-                  view === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
-                    : "flex flex-col gap-1.5",
-                )}>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <PharmacyCardSkeleton key={i} />
-                  ))}
+          {/* Content */}
+          <div className="p-4 flex-1">
+            {isLoading ? (
+              <div className={cn(
+                view === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
+                  : "flex flex-col gap-1.5",
+              )}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <PharmacyCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : pharmacies.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Pill className="w-6 h-6 text-muted-foreground/50" />
                 </div>
-              ) : pharmacies.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Pill className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">
-                      {searchQ ? `No pharmacies found for "${searchQ}"` : "No pharmacies match your filters"}
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      {searchQ ? "Try a different name or city." : "Try widening your search criteria"}
-                    </p>
-                  </div>
-                  {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
-                      Clear all filters
-                    </button>
-                  )}
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {searchQ ? `No pharmacies found for "${searchQ}"` : "No pharmacies match your filters"}
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    {searchQ ? "Try a different name or city." : "Try widening your search criteria"}
+                  </p>
                 </div>
-              ) : view === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {pharmacies.map((ph) => (
-                    <PharmacyGridCard key={ph.id} pharmacy={ph} />
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1.5">
-                  {pharmacies.map((ph) => (
-                    <PharmacyListItem key={ph.id} pharmacy={ph} />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Pagination */}
-            {pharmaciesResp && lastPage > 1 && (
-              <Pagination
-                currentPage={pharmaciesResp.current_page}
-                lastPage={lastPage}
-                total={pharmaciesResp.total}
-                perPage={pharmaciesResp.per_page}
-                onPageChange={setPage}
-              />
+                {hasActiveFilters && (
+                  <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            ) : view === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {pharmacies.map((ph) => (
+                  <PharmacyGridCard key={ph.id} pharmacy={ph} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {pharmacies.map((ph) => (
+                  <PharmacyListItem key={ph.id} pharmacy={ph} />
+                ))}
+              </div>
             )}
-          </main>
+          </div>
+
+          {/* Pagination */}
+          {pharmaciesResp && lastPage > 1 && (
+            <Pagination
+              currentPage={pharmaciesResp.current_page}
+              lastPage={lastPage}
+              total={pharmaciesResp.total}
+              perPage={pharmaciesResp.per_page}
+              onPageChange={setPage}
+            />
+          )}
+        </main>
       </div>
     </DashboardLayout>
   );

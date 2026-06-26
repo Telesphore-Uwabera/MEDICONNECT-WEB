@@ -7,6 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  RichTextarea,
+  RichTextRenderer,
+  prepareRichTextForSave,
+} from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import {
   ClipboardList,
@@ -165,9 +170,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[12px] border border-border/60 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-[6px] border border-border/60 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-2.5 px-3 sm:px-4 py-3 sm:py-3.5 border-b border-border/60 bg-muted/20">
-        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center bg-primary/10 shrink-0 border border-primary/10">
+        <div className="w-8 h-8 rounded-[6px] flex items-center justify-center bg-primary/10 shrink-0 border border-primary/10">
           <Icon size={14} className="text-primary" />
         </div>
         <h3 className="text-sm font-bold tracking-tight text-foreground">
@@ -268,7 +273,7 @@ function BoolRow({
 
 function VitalChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-md border border-border bg-muted/40 px-3 py-2">
+    <div className="flex flex-col gap-0.5 rounded-[6px] border border-border bg-muted/40 px-3 py-2">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
@@ -308,11 +313,11 @@ function RequestCard({
   return (
     <div
       onClick={onOpen}
-      className="rounded-[12px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
+      className="rounded-[6px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 cursor-pointer hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
     >
       <div
         className={cn(
-          "w-12 h-12 rounded-[10px] flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border shadow-sm shrink-0",
+          "w-12 h-12 rounded-[6px] flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border shadow-sm shrink-0",
           compact && "hidden sm:flex",
         )}
       >
@@ -377,10 +382,10 @@ function RequestCard({
 
 function SkeletonRequestCard({ compact }: { compact?: boolean }) {
   return (
-    <div className="rounded-[12px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 shadow-sm">
+    <div className="rounded-[6px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 shadow-sm">
       <Skeleton
         className={cn(
-          "w-12 h-12 rounded-[10px] shrink-0",
+          "w-12 h-12 rounded-[6px] shrink-0",
           compact && "hidden sm:block"
         )}
       />
@@ -398,7 +403,7 @@ function SkeletonRequestCard({ compact }: { compact?: boolean }) {
         </div>
         <Skeleton className="h-3 w-24 mt-0.5" />
       </div>
-      <Skeleton className="h-4 w-4 shrink-0 mt-0.5 rounded-md" />
+      <Skeleton className="h-4 w-4 shrink-0 mt-0.5 rounded-[6px]" />
     </div>
   );
 }
@@ -520,10 +525,12 @@ function RequestDetail({
 
   const handleSaveDecision = () => {
     if (!decision) return;
+    const cleanedDoctorNotes = prepareRichTextForSave(doctorNotes);
+
     updateMut.mutate(
       {
         decision: decision as CertDecision,
-        doctor_notes: doctorNotes || undefined,
+        doctor_notes: cleanedDoctorNotes,
         // A fit decision needs an expiry; send it for any decision that has one.
         valid_until: validUntil || undefined,
       },
@@ -532,7 +539,7 @@ function RequestDetail({
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
           setDecision(certificate.decision ?? "");
-          setDoctorNotes(certificate.doctor_notes ?? "");
+          setDoctorNotes(certificate.doctor_notes ?? cleanedDoctorNotes ?? "");
           // Surface what the backend flagged so the doctor knows why signing may
           // be blocked (these gate the sign step per the API rules).
           if (red_flags_found && red_flags_found.length > 0) {
@@ -635,7 +642,7 @@ function RequestDetail({
               </Button>
             </>
           )}
-         
+
         </div>
       </div>
 
@@ -643,7 +650,7 @@ function RequestDetail({
       <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
         {/* ── Cannot-sign warning ── */}
         {decidable && decision === "fit" && !signable && (
-          <div className="flex items-start gap-2.5 p-3 rounded-md border border-blue-400/30 bg-blue-500/10">
+          <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-blue-400/30 bg-blue-500/10">
             <AlertTriangle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700 dark:text-blue-400">
               <strong>Cannot sign yet. </strong>
@@ -659,7 +666,7 @@ function RequestDetail({
         {(redFlags.length > 0 || highRisk) && (
           <div className="flex flex-col gap-2">
             {redFlags.length > 0 && (
-              <div className="flex items-start gap-2.5 p-3 rounded-md border border-destructive/30 bg-destructive/10">
+              <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive">
                   <strong>Red flag symptoms:</strong> {redFlags.join(", ")}.
@@ -668,7 +675,7 @@ function RequestDetail({
               </div>
             )}
             {highRisk && (
-              <div className="flex items-start gap-2.5 p-3 rounded-md border border-amber-400/40 bg-amber-500/10">
+              <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-amber-400/40 bg-amber-500/10">
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
                   <strong>High-risk job type:</strong> {getJobTypeLabel(cert)}.
@@ -978,9 +985,7 @@ function RequestDetail({
         {/* ── 9. Patient notes ── */}
         {cert.patient_notes && (
           <SectionCard icon={BookOpen} title="Patient Notes">
-            <p className="text-xs text-foreground leading-relaxed">
-              {cert.patient_notes}
-            </p>
+            <RichTextRenderer value={cert.patient_notes} className="text-xs text-foreground" />
           </SectionCard>
         )}
 
@@ -1002,7 +1007,7 @@ function RequestDetail({
                       type="button"
                       onClick={() => setDecision(value)}
                       className={cn(
-                        "px-3 py-1.5 rounded-md text-xs font-medium border transition-all",
+                        "px-3 py-1.5 rounded-[6px] text-xs font-medium border transition-all",
                         decision === value
                           ? value === "fit"
                             ? "bg-emerald-500 text-white border-emerald-500"
@@ -1022,12 +1027,12 @@ function RequestDetail({
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Doctor's notes (optional)
                 </Label>
-                <textarea
+                <RichTextarea
                   value={doctorNotes}
-                  onChange={(e) => setDoctorNotes(e.target.value)}
-                  rows={3}
+                  onChange={setDoctorNotes}
                   placeholder="Clinical observations, recommendations, or reason for referral…"
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                  minHeight={130}
+                  editorClassName="text-xs"
                 />
               </div>
 
@@ -1081,7 +1086,7 @@ function RequestDetail({
                         onError: (err) =>
                           toast.error(
                             (err as Error)?.message ||
-                              "Could not sign the certificate.",
+                            "Could not sign the certificate.",
                           ),
                       })
                     }
@@ -1120,9 +1125,7 @@ function RequestDetail({
                 </Badge>
               </div>
               {cert.doctor_notes && (
-                <p className="text-xs text-foreground leading-relaxed">
-                  {cert.doctor_notes}
-                </p>
+                <RichTextRenderer value={cert.doctor_notes} className="text-xs text-foreground" />
               )}
               {cert.reviewed_at && (
                 <p className="text-[10px] text-muted-foreground">
@@ -1142,7 +1145,7 @@ function RequestDetail({
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
                 placeholder="Reason for rejection (min 10 characters)…"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
+                className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
                 <Button
@@ -1181,7 +1184,7 @@ function RequestDetail({
                 onChange={(e) => setRevokeReason(e.target.value)}
                 rows={3}
                 placeholder="Reason for revocation (min 10 characters)…"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
+                className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
                 <Button
@@ -1263,7 +1266,7 @@ function DoctorFitnessCertificates() {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
-          <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-lg flex min-h-[580px]">
+          <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-lg flex min-h-[580px]">
             {/* ── Left panel ── */}
             <div
               className={cn(

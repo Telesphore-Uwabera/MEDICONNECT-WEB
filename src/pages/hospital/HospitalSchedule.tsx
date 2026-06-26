@@ -127,7 +127,7 @@ function CapacityInput({
           onChange={(e) => setLocal(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && isDirty && handleSave()}
           className={cn(
-            "w-14 h-7 text-[12px] text-center rounded-sm border bg-background px-1",
+            "w-14 h-7 text-[12px] text-center rounded-[6px] border bg-background px-1",
             "disabled:opacity-40 outline-none",
             "focus:ring-1 focus:ring-primary/30 focus:border-primary/50",
             isDirty
@@ -141,7 +141,7 @@ function CapacityInput({
             disabled={disabled}
             title="Save"
             className={cn(
-              "h-7 w-7 flex items-center justify-center rounded-sm",
+              "h-7 w-7 flex items-center justify-center rounded-[6px]",
               "bg-primary text-primary-foreground",
               "hover:bg-primary/90 transition-colors",
               "disabled:opacity-40 shadow-sm"
@@ -208,7 +208,7 @@ function ToggleRow({
     <div className="flex items-center gap-2.5">
       <div
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm transition-colors",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] transition-colors",
           checked ? colors.icon : colors.muted
         )}
       >
@@ -331,13 +331,13 @@ const HospitalSchedule = () => {
         isWeekend
           ? { day_of_week: dow, is_closed: true }
           : {
-              day_of_week: dow,
-              // Use H:i format — no seconds
-              open_time: "08:00",
-              close_time: "17:00",
-              is_closed: false,
-              max_patients: defaultCapacity,
-            }
+            day_of_week: dow,
+            // Use H:i format — no seconds
+            open_time: "08:00",
+            close_time: "17:00",
+            is_closed: false,
+            max_patients: defaultCapacity,
+          }
       );
     }
 
@@ -360,9 +360,9 @@ const HospitalSchedule = () => {
           // Strip seconds before sending back to API
           ...(!isClosed && hour.open_time
             ? {
-                open_time: toHHmm(hour.open_time),
-                close_time: toHHmm(hour.close_time),
-              }
+              open_time: toHHmm(hour.open_time),
+              close_time: toHHmm(hour.close_time),
+            }
             : {}),
         },
       },
@@ -480,11 +480,11 @@ const HospitalSchedule = () => {
           <div className="p-4 space-y-4">
 
             {/* ── Control bar ── */}
-            <div className="rounded-sm bg-card border border-border/70 p-4 shadow-sm">
+            <div className="rounded-[6px] bg-card border border-border/70 p-4 shadow-sm">
               <div className="flex flex-wrap justify-between items-center gap-4">
                 {/* Hospital identity */}
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
                     <Building2 size={13} />
                   </div>
                   <div>
@@ -495,8 +495,8 @@ const HospitalSchedule = () => {
                       {hoursLoading
                         ? "Loading…"
                         : totals.totalDays > 0
-                        ? `${totals.totalDays} days configured`
-                        : "No schedule yet"}
+                          ? `${totals.totalDays} days configured`
+                          : "No schedule yet"}
                     </p>
                   </div>
                 </div>
@@ -533,7 +533,7 @@ const HospitalSchedule = () => {
 
             {/* ── Status banners ── */}
             {!isActive && (
-              <div className="flex items-center gap-3 rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
+              <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
                 <AlertTriangle size={14} className="flex-shrink-0 text-red-500" />
                 <span className="font-medium">
                   Hospital is hidden from patient search. No new bookings possible.
@@ -541,7 +541,7 @@ const HospitalSchedule = () => {
               </div>
             )}
             {isActive && !isAccepting && (
-              <div className="flex items-center gap-3 rounded-sm border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[11px] text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-3 rounded-[6px] border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[11px] text-amber-700 dark:text-amber-400">
                 <AlertTriangle size={14} className="flex-shrink-0 text-amber-500" />
                 <span className="font-medium">
                   Hospital is visible but not accepting bookings.
@@ -563,7 +563,7 @@ const HospitalSchedule = () => {
               {/* ── Left column ── */}
               <div className="lg:col-span-4 space-y-3">
                 {/* Config card */}
-                <div className="rounded-sm border border-border/70 bg-card p-4 shadow-sm space-y-3">
+                <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm space-y-3">
                   <h3 className="text-[12px] font-semibold text-foreground flex items-center gap-1.5">
                     <LayoutGrid size={13} className="text-primary" />
                     {t("pages.hospital.service_period")}
@@ -594,7 +594,7 @@ const HospitalSchedule = () => {
                             )}
                           </div>
                           {dayCount !== null && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary shrink-0">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary shrink-0">
                               {dayCount}d
                             </span>
                           )}
@@ -653,7 +653,7 @@ const HospitalSchedule = () => {
 
                 {/* Bulk actions */}
                 {sortedHours.length > 0 && (
-                  <div className="rounded-sm border border-border/70 bg-card p-4 shadow-sm space-y-2">
+                  <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm space-y-2">
                     <h3 className="text-[12px] font-semibold text-foreground flex items-center gap-1.5">
                       <ChevronsDownUp size={13} className="text-primary" />
                       Bulk actions
@@ -662,7 +662,7 @@ const HospitalSchedule = () => {
                       <button
                         onClick={() => bulkActivate(true)}
                         disabled={isMutating}
-                        className="w-full flex items-center gap-1.5 text-[10px] text-primary font-medium px-2.5 py-1.5 rounded-sm border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-1.5 text-[10px] text-primary font-medium px-2.5 py-1.5 rounded-[6px] border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
                         <CalendarCheck2 size={11} />
                         Activate all days
@@ -670,7 +670,7 @@ const HospitalSchedule = () => {
                       <button
                         onClick={() => bulkActivate(false)}
                         disabled={isMutating}
-                        className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-sm border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <CalendarX2 size={11} />
                         Close all days
@@ -678,7 +678,7 @@ const HospitalSchedule = () => {
                       <button
                         onClick={bulkCloseWeekends}
                         disabled={isMutating}
-                        className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-sm border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <XCircle size={11} />
                         Close weekends only
@@ -686,7 +686,7 @@ const HospitalSchedule = () => {
                       <button
                         onClick={bulkSetCapacity}
                         disabled={isMutating}
-                        className="w-full flex items-center gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium px-2.5 py-1.5 rounded-sm border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium px-2.5 py-1.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
                         <Users2 size={11} />
                         Apply capacity ({defaultCapacity}) to all
@@ -694,7 +694,7 @@ const HospitalSchedule = () => {
                       <button
                         onClick={handleReset}
                         disabled={isMutating}
-                        className="w-full flex items-center gap-1.5 text-[10px] text-red-600 dark:text-red-400 font-medium px-2.5 py-1.5 rounded-sm border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+                        className="w-full flex items-center gap-1.5 text-[10px] text-red-600 dark:text-red-400 font-medium px-2.5 py-1.5 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
                       >
                         <XCircle size={11} />
                         Reset all hours
@@ -704,7 +704,7 @@ const HospitalSchedule = () => {
                 )}
 
                 {/* Tips */}
-                <div className="rounded-sm border border-border/70 bg-card p-3 shadow-sm">
+                <div className="rounded-[6px] border border-border/70 bg-card p-3 shadow-sm">
                   <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
                     {t("pages.hospital.tips")}
                   </h4>
@@ -718,7 +718,7 @@ const HospitalSchedule = () => {
 
               {/* ── Right column ── */}
               <div className="lg:col-span-8">
-                <div className="rounded-sm border border-border/70 bg-card p-4 shadow-sm">
+                <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm">
                   {/* Header + filter tabs */}
                   <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                     <div>
@@ -729,21 +729,21 @@ const HospitalSchedule = () => {
                         {hoursLoading
                           ? "Loading schedule…"
                           : sortedHours.length === 0
-                          ? t("pages.hospital.no_schedule_yet")
-                          : t("pages.hospital.days_configured", {
+                            ? t("pages.hospital.no_schedule_yet")
+                            : t("pages.hospital.days_configured", {
                               count: sortedHours.length,
                             })}
                       </p>
                     </div>
 
                     {sortedHours.length > 0 && (
-                      <div className="flex items-center gap-1 p-0.5 rounded-sm bg-secondary/50 border border-border/40">
+                      <div className="flex items-center gap-1 p-0.5 rounded-[6px] bg-secondary/50 border border-border/40">
                         {(["all", "active", "closed"] as DayFilter[]).map((f) => (
                           <button
                             key={f}
                             onClick={() => setFilter(f)}
                             className={cn(
-                              "px-2.5 py-1 text-[10px] font-medium rounded-sm transition-all",
+                              "px-2.5 py-1 text-[10px] font-medium rounded-[6px] transition-all",
                               filter === f
                                 ? "bg-card text-foreground shadow-sm border border-border/60"
                                 : "text-muted-foreground hover:text-foreground"
@@ -787,13 +787,12 @@ const HospitalSchedule = () => {
                         <div
                           className="h-full rounded-full bg-primary transition-all duration-500"
                           style={{
-                            width: `${
-                              totals.totalDays > 0
+                            width: `${totals.totalDays > 0
                                 ? Math.round(
-                                    (totals.activeDays / totals.totalDays) * 100
-                                  )
+                                  (totals.activeDays / totals.totalDays) * 100
+                                )
                                 : 0
-                            }%`,
+                              }%`,
                           }}
                         />
                       </div>
@@ -824,7 +823,7 @@ const HospitalSchedule = () => {
                         <div
                           key={hour.id}
                           className={cn(
-                            "rounded-sm border px-3 py-2.5 flex items-center gap-3 transition-all duration-150",
+                            "rounded-[6px] border px-3 py-2.5 flex items-center gap-3 transition-all duration-150",
                             !hour.is_closed
                               ? "border-border/60 bg-card hover:border-primary/30 hover:bg-primary/5"
                               : "border-dashed border-border/40 bg-muted/30"

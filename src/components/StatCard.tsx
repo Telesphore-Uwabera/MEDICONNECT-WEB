@@ -22,7 +22,7 @@ export const StatCard = ({
   };
 
   return (
-    <div className="rounded-sm border border-border/70 bg-card p-3 shadow-sm hover:shadow transition-all duration-150">
+    <div className="rounded-[6px] border border-border/70 bg-card p-3 shadow-sm hover:shadow transition-all duration-150">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/80">
@@ -35,7 +35,7 @@ export const StatCard = ({
         {Icon && (
           <div
             className={cn(
-              "h-7 w-7 rounded-sm flex items-center justify-center shrink-0 border",
+              "h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 border",
               accentMap[accent],
             )}
           >

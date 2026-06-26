@@ -137,10 +137,10 @@ function DetailRow({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-2.5 p-2.5 rounded-md border border-border/40 bg-card/60">
+    <div className="flex items-start gap-2.5 p-2.5 rounded-[6px] border border-border/40 bg-card/60">
       <div
         className={cn(
-          "mt-0.5 flex-shrink-0 w-7 h-7 rounded-sm flex items-center justify-center",
+          "mt-0.5 flex-shrink-0 w-7 h-7 rounded-[6px] flex items-center justify-center",
           accent ? "bg-primary/10" : "bg-muted/60",
         )}
       >
@@ -176,8 +176,8 @@ function QuickStat({
   bot: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 py-2 px-2.5 bg-background/60 rounded-md border border-border/40">
-      <div className="flex items-center justify-center w-7 h-7 rounded-sm bg-muted/60 shrink-0">
+    <div className="flex items-center gap-2.5 py-2 px-2.5 bg-background/60 rounded-[6px] border border-border/40">
+      <div className="flex items-center justify-center w-7 h-7 rounded-[6px] bg-muted/60 shrink-0">
         {icon}
       </div>
       <div className="min-w-0">
@@ -372,7 +372,7 @@ export function UnifiedModal({
           className={cn(
             "pointer-events-auto w-full",
             mode === "connect" ? "max-w-[420px]" : "max-w-3xl",
-            "bg-card/80 backdrop-blur-2xl border border-border/60 rounded-xl shadow-2xl",
+            "bg-card/80 backdrop-blur-2xl border border-border/60 rounded-[6px] shadow-2xl",
             "flex flex-col max-h-[90dvh] overflow-hidden",
             "animate-in fade-in-0 zoom-in-95 duration-200",
           )}
@@ -383,7 +383,7 @@ export function UnifiedModal({
               {mode === "connect" && (
                 <button
                   onClick={() => setMode("details")}
-                  className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shrink-0"
+                  className="h-6 w-6 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shrink-0"
                   title="Back to details"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -399,7 +399,7 @@ export function UnifiedModal({
                 <button
                   onClick={cancelFn}
                   title="Cancel request completely"
-                  className="h-7 px-2 rounded-md flex items-center gap-1 text-xs font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
+                  className="h-7 px-2 rounded-[6px] flex items-center gap-1 text-xs font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
                 >
                   <Ban className="h-4 w-4" />
                   <span className="hidden sm:inline">Cancel</span>
@@ -408,7 +408,7 @@ export function UnifiedModal({
               <button
                 onClick={onMinimize}
                 title="Minimize (keep session alive)"
-                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -418,7 +418,7 @@ export function UnifiedModal({
                   mode === "connect" ? "Minimize (keep session alive)" : "Close"
                 }
                 className={cn(
-                  "h-7 w-7 rounded-md flex items-center justify-center transition-all",
+                  "h-7 w-7 rounded-[6px] flex items-center justify-center transition-all",
                   mode === "connect"
                     ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     : "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
@@ -434,7 +434,7 @@ export function UnifiedModal({
               <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
                 <div className="md:w-[260px] flex-shrink-0 border-b md:border-b-0 md:border-r border-border/50 bg-gradient-to-b from-primary/8 via-primary/4 to-transparent overflow-y-auto">
                   <div className="p-4 flex flex-col items-center text-center">
-                    <div className="w-28 h-28 rounded-lg overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
+                    <div className="w-28 h-28 rounded-[6px] overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
                       <DoctorAvatar doctor={doctor} size="lg" />
                     </div>
 
@@ -447,7 +447,7 @@ export function UnifiedModal({
                       )}
                     </div>
                     {doctor.is_featured && (
-                      <span className="mt-1 px-1.5 py-px text-[10px] font-semibold rounded-sm bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
+                      <span className="mt-1 px-1.5 py-px text-[10px] font-semibold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
                         Featured
                       </span>
                     )}
@@ -464,7 +464,7 @@ export function UnifiedModal({
                     <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-sm border",
+                          "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[6px] border",
                           s.text,
                           s.bg,
                         )}
@@ -479,7 +479,7 @@ export function UnifiedModal({
                         {s.label}
                       </span>
                       {doctor.instant_consultation && (
-                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-sm bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                           <Zap className="h-3 w-3" />
                           Instant
                         </span>
@@ -526,7 +526,7 @@ export function UnifiedModal({
 
                 <div className="flex-1 overflow-y-auto px-4 py-4 min-w-0">
                   {bio && (
-                    <div className="mb-4 p-3 rounded-md bg-muted/30 border border-border/40">
+                    <div className="mb-4 p-3 rounded-[6px] bg-muted/30 border border-border/40">
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">
                         About
                       </p>
@@ -568,7 +568,7 @@ export function UnifiedModal({
                       value={
                         <span
                           className={cn(
-                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
+                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-[6px] border",
                             doctor.agreement_status === "approved"
                               ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
                               : "text-amber-600 bg-amber-500/10 border-amber-500/20",
@@ -584,7 +584,7 @@ export function UnifiedModal({
                       value={
                         <span
                           className={cn(
-                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-sm border",
+                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-[6px] border",
                             doctor.is_active
                               ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
                               : "text-zinc-500 bg-muted border-border",
@@ -617,7 +617,7 @@ export function UnifiedModal({
                           (h: ApiDoctorHospital, i: number) => (
                             <div
                               key={i}
-                              className="flex items-center gap-2 p-2 rounded-md border border-border/40 bg-muted/20"
+                              className="flex items-center gap-2 p-2 rounded-[6px] border border-border/40 bg-muted/20"
                             >
                               <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                               <span className="text-xs text-foreground font-medium truncate">
@@ -641,7 +641,7 @@ export function UnifiedModal({
                             (sp: ApiDoctorSpecialization, i: number) => (
                               <span
                                 key={i}
-                                className="px-2 py-0.5 text-xs font-medium rounded-sm bg-primary/8 text-primary border border-primary/20"
+                                className="px-2 py-0.5 text-xs font-medium rounded-[6px] bg-primary/8 text-primary border border-primary/20"
                               >
                                 {sp.name}
                               </span>
@@ -662,7 +662,7 @@ export function UnifiedModal({
                     onMinimize();
                     onBook();
                   }}
-                  className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-sm"
+                  className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]"
                 >
                   <CalendarCheck className="h-4 w-4 mr-1.5" />
                   Book Appointment
@@ -671,7 +671,7 @@ export function UnifiedModal({
                   <Button
                     size="sm"
                     onClick={() => setMode("connect")}
-                    className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Wifi className="h-4 w-4 mr-1.5" />
                     Connect Now
@@ -848,7 +848,7 @@ export const DoctorCard = ({
               same row layout as before, just a bigger image. */}
           <div className="flex items-start gap-3 ">
             <div className="relative shrink-0">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-sm overflow-hidden border border-border">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[6px] overflow-hidden border border-border">
                 <DoctorAvatar doctor={doctor} size="lg" />
               </div>
               <span
@@ -924,7 +924,7 @@ export const DoctorCard = ({
               )}
             </div>
 
-            {/* Right buttons — rounded-sm + h-8 to match the
+            {/* Right buttons — rounded-[6px] + h-8 to match the
                 Book / Connect button sizing used on HospitalCard */}
             <div className="flex items-center gap-2">
               <Button
@@ -934,14 +934,14 @@ export const DoctorCard = ({
                 onClick={() =>
                   canBook && !isCallInProgress && setBookOpen(true)
                 }
-                className="h-9 px-10 text-xs font-medium rounded-sm border-border"
+                className="h-9 px-10 text-xs font-medium rounded-[6px] border-border"
               >
                 {t("pages.cards.book")}
               </Button>
 
               {hasSavedSession && !isCallInProgress ? (
                 <Button size="sm" onClick={openResume}
-                  className="h-8 px-3 text-xs font-bold rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
+                  className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
                   <Wifi className="h-3.5 w-3.5 mr-1.5" />Join
                 </Button>
               ) : canConnect ? (
@@ -956,7 +956,7 @@ export const DoctorCard = ({
                     }
                   }}
                   className={cn(
-                    "h-8 px-3 text-xs font-bold rounded-[8px] shadow-sm hover:shadow transition-all",
+                    "h-8 px-3 text-xs font-bold rounded-[6px] shadow-sm hover:shadow transition-all",
                     isConnected || isCallInProgress
                       ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                       : "bg-primary hover:bg-primary/90 text-primary-foreground",
@@ -970,7 +970,7 @@ export const DoctorCard = ({
                   size="sm"
                   variant="secondary"
                   disabled
-                  className="h-8 px-3 text-xs font-semibold rounded-sm opacity-50 cursor-not-allowed border border-border bg-muted"
+                  className="h-8 px-3 text-xs font-semibold rounded-[6px] opacity-50 cursor-not-allowed border border-border bg-muted"
                 >
                   {s.label}
                 </Button>

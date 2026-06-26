@@ -115,7 +115,7 @@ const SignalBars = ({ strength }: { strength: number }) => (
   <div className="flex items-end gap-0.5 h-4">
     {[1, 2, 3, 4].map((b) => (
       <div key={b} style={{ height: `${b * 4}px` }}
-        className={cn("w-1 rounded-sm transition-colors",
+        className={cn("w-1 rounded-[6px] transition-colors",
           b <= strength ? "bg-emerald-500 dark:bg-emerald-400" : "bg-foreground/10")} />
     ))}
   </div>
@@ -152,12 +152,12 @@ const ResumeSessionBanner = ({
   savedAt: number; onResume: () => void; onDiscard: () => void; isResuming: boolean;
 }) => (
   <div className={cn(
-    "rounded-xl border p-3.5 space-y-2.5",
+    "rounded-[6px] border p-3.5 space-y-2.5",
     "bg-violet-500/5 border-violet-500/20",
     "animate-in fade-in slide-in-from-top-2 duration-300",
   )}>
     <div className="flex items-start gap-2.5">
-      <div className="h-8 w-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
+      <div className="h-8 w-8 rounded-[6px] bg-violet-500/15 flex items-center justify-center shrink-0">
         <RotateCcw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
       </div>
       <div className="flex-1 min-w-0">
@@ -173,13 +173,13 @@ const ResumeSessionBanner = ({
     </p>
     <div className="flex gap-2 pt-0.5">
       <Button size="sm" onClick={onResume} disabled={isResuming}
-        className="flex-1 h-8 text-sm font-semibold gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white">
+        className="flex-1 h-8 text-sm font-semibold gap-1.5 rounded-[6px] bg-violet-600 hover:bg-violet-700 text-white">
         {isResuming
           ? <><Loader2 className="h-4 w-4 animate-spin" />Resuming…</>
           : <><RotateCcw className="h-4 w-4" />Resume session</>}
       </Button>
       <Button size="sm" variant="outline" onClick={onDiscard} disabled={isResuming}
-        className="flex-1 h-8 text-sm rounded-lg">
+        className="flex-1 h-8 text-sm rounded-[6px]">
         Start fresh
       </Button>
     </div>
@@ -200,7 +200,7 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
         ] as const).map(({ on, toggle, OnIcon, OffIcon, onLabel, offLabel }) => (
           <button key={onLabel} onClick={toggle}
             className={cn(
-              "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-sm font-medium border transition-all duration-150",
+              "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[6px] text-sm font-medium border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25"
                 : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
             )}>
@@ -221,7 +221,7 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
         ] as const).map(({ on, toggle, OnIcon, OffIcon, label, onSub, offSub }) => (
           <button key={label} onClick={toggle}
             className={cn(
-              "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-xl border transition-all duration-150",
+              "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-[6px] border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
                 : "bg-muted text-muted-foreground border-border hover:border-border/80 hover:text-foreground/60",
             )}>

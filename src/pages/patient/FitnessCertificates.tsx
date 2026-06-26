@@ -149,14 +149,14 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
         <div className="w-full sm:w-64 border-r border-border/50 bg-card/20 p-4 space-y-3 shrink-0 hidden sm:block">
           <div className="h-4 w-24 bg-muted rounded animate-pulse mb-6" />
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-9 w-full bg-muted rounded-[8px] animate-pulse" />
+            <div key={i} className="h-9 w-full bg-muted rounded-[6px] animate-pulse" />
           ))}
         </div>
         <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-5">
           <div className="h-5 w-48 bg-muted rounded animate-pulse" />
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-14 w-full bg-muted rounded-[12px] animate-pulse" />
+              <div key={i} className="h-14 w-full bg-muted rounded-[6px] animate-pulse" />
             ))}
           </div>
         </div>
@@ -168,7 +168,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
   if (requestPhase === "payment" && pendingPayment) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="w-full max-w-sm rounded-[6px] border border-border bg-card shadow-sm overflow-hidden">
           <PaymentPanel
             title="Complete payment to submit"
             description="Your request is ready. Pay the submission fee to send it to a doctor for review."
@@ -224,7 +224,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
       return (
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-14 w-full bg-muted rounded-[12px] animate-pulse" />
+            <div key={i} className="h-14 w-full bg-muted rounded-[6px] animate-pulse" />
           ))}
         </div>
       );
@@ -354,7 +354,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
           {requestData?.certificate &&
             requestData.certificate.status !== "approved" &&
             requestData.certificate.status !== "rejected" && (
-              <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] text-muted-foreground">
+              <div className="flex items-start gap-2 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] text-muted-foreground">
                 <FilePlus2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                 <p>
                   You're continuing your{" "}
@@ -378,7 +378,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             variant="outline"
             onClick={() => currentStep > 0 ? goTo(currentStep - 1) : undefined}
             disabled={currentStep === 0}
-            className="border-border/60 text-xs font-bold h-8 px-3 rounded-[8px] hover:bg-muted/50"
+            className="border-border/60 text-xs font-bold h-8 px-3 rounded-[6px] hover:bg-muted/50"
           >
             ← Back
           </Button>
@@ -388,7 +388,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
           <Button
             onClick={handleNext}
             disabled={isSaving || submitMutation.isPending}
-            className="text-primary-foreground text-xs font-bold bg-primary hover:bg-primary/90 min-w-[110px] h-8 px-3 rounded-[8px] shadow-sm hover:shadow"
+            className="text-primary-foreground text-xs font-bold bg-primary hover:bg-primary/90 min-w-[110px] h-8 px-3 rounded-[6px] shadow-sm hover:shadow"
           >
             {(isSaving || submitMutation.isPending) && (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
@@ -425,16 +425,16 @@ function SentCertificates() {
       <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-4">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-[16px] border border-border/60 bg-card p-5 animate-pulse">
+            <div key={i} className="rounded-[6px] border border-border/60 bg-card p-5 animate-pulse">
               <div className="flex items-center justify-between mb-4">
-                <div className="h-6 w-24 bg-muted rounded-md" />
+                <div className="h-6 w-24 bg-muted rounded-[6px]" />
                 <div className="h-5 w-16 bg-muted rounded-full" />
               </div>
               <div className="space-y-2 mb-4">
-                <div className="h-4 w-full bg-muted rounded-md" />
-                <div className="h-4 w-2/3 bg-muted rounded-md" />
+                <div className="h-4 w-full bg-muted rounded-[6px]" />
+                <div className="h-4 w-2/3 bg-muted rounded-[6px]" />
               </div>
-              <div className="h-9 w-full bg-muted rounded-[8px]" />
+              <div className="h-9 w-full bg-muted rounded-[6px]" />
             </div>
           ))}
         </div>
@@ -457,14 +457,14 @@ function SentCertificates() {
   return (
     <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-3">
       {hasDraftOrPending && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[12px] border border-amber-500/30 bg-amber-500/10 text-xs font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[6px] border border-amber-500/30 bg-amber-500/10 text-xs font-medium">
           <p className="text-amber-700 dark:text-amber-400">You have an active request in progress.</p>
           <Button
             size="sm"
             variant="outline"
             onClick={handleWithdraw}
             disabled={withdrawMutation.isPending}
-            className="h-8 text-xs font-bold gap-1.5 px-3 rounded-[8px] border-destructive/30 text-destructive hover:bg-destructive/10"
+            className="h-8 text-xs font-bold gap-1.5 px-3 rounded-[6px] border-destructive/30 text-destructive hover:bg-destructive/10"
           >
             {withdrawMutation.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -515,7 +515,7 @@ const PatientFitnessCertificates = () => {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
-          <div className="rounded-[16px] border border-border/80 bg-card overflow-hidden shadow-lg flex flex-col min-h-[560px]">
+          <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-lg flex flex-col min-h-[560px]">
             <div className="flex items-center border-b border-border/60 bg-muted/20 px-3 sm:px-4">
               {tabs.map((tab) => {
                 const Icon = tab.icon;

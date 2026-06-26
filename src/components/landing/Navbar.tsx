@@ -130,7 +130,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 key={l.href}
                 onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-sm transition-smooth cursor-pointer",
+                  "relative px-3 py-2 rounded-[6px] transition-smooth cursor-pointer",
                   active
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -160,20 +160,20 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 </Button>
               </Link>
 
-              {/* Avatar + name — rounded-sm to match the icon-badge language
+              {/* Avatar + name — rounded-[6px] to match the icon-badge language
                   used everywhere else (HospitalCard, OurTeam, Specialities) */}
               <Link
                 to={dashboardPath(user.role)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm hover:bg-accent transition-colors"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-accent transition-colors"
               >
                 {user.avatar ? (
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-7 h-7 rounded-sm object-cover border border-border"
+                    className="w-7 h-7 rounded-[6px] object-cover border border-border"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">
+                  <div className="w-7 h-7 rounded-[6px] bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">
                     {getInitials(user.name)}
                   </div>
                 )}
@@ -220,7 +220,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
-            className="ml-1 w-9 h-9 rounded-sm flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+            className="ml-1 w-9 h-9 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -249,7 +249,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                       handleNavClick(l.href);
                     }}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth text-left",
+                      "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
                       active
                         ? "bg-accent text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -273,15 +273,15 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
               {user ? (
                 <>
                   {/* User info row */}
-                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm bg-muted/50 mb-1">
+                  <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-[6px] bg-muted/50 mb-1">
                     {user.avatar ? (
                       <img
                         src={user.avatar}
                         alt={user.name}
-                        className="w-8 h-8 rounded-sm object-cover"
+                        className="w-8 h-8 rounded-[6px] object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-sm bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                      <div className="w-8 h-8 rounded-[6px] bg-primary/10 border border-primary/15 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
                         {getInitials(user.name)}
                       </div>
                     )}

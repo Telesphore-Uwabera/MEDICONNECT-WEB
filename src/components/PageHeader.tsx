@@ -339,7 +339,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
 
                   {/* ── Profile Popover ───────────────────────── */}
                   {profileOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[8px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 top-full mt-2 w-80 z-50 bg-card border border-border/60 rounded-[6px] shadow-2xl shadow-black/20 overflow-hidden animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200">
                       {/* User info header */}
                       <div
                         className={cn(

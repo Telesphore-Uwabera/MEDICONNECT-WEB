@@ -79,6 +79,33 @@ const DAY_NAMES = [
    Slot visual config
 ───────────────────────────────────────────── */
 
+const isWeekend = (date: moment.Moment) => {
+  const day = date.day();
+  return day === 0 || day === 6;
+};
+
+const getRangeDayStats = (
+  range: DateRange | undefined,
+  includeWeekends: boolean,
+) => {
+  if (!range?.from || !range?.to) {
+    return { total: 0, schedulable: 0 };
+  }
+
+  let total = 0;
+  let schedulable = 0;
+  const cursor = moment(range.from).startOf("day");
+  const end = moment(range.to).startOf("day");
+
+  while (cursor.isSameOrBefore(end)) {
+    total += 1;
+    if (includeWeekends || !isWeekend(cursor)) schedulable += 1;
+    cursor.add(1, "day");
+  }
+
+  return { total, schedulable };
+};
+
 const slotConfig: Record<
   SlotStatus,
   { card: string; label: string; dot: string; canChange: boolean }
@@ -184,7 +211,7 @@ function SlotChip({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "w-full rounded-md border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
+          "w-full rounded-[6px] border px-3 py-2.5 text-sm font-mono font-semibold tabular-nums text-center transition-all duration-150 select-none",
           cfg.card,
           isPending && "opacity-50 cursor-wait",
         )}
@@ -200,7 +227,7 @@ function SlotChip({
         <div
           role="listbox"
           aria-label="Set slot status"
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-md border border-border bg-popover overflow-hidden py-1"
+          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-[6px] border border-border bg-popover overflow-hidden py-1"
         >
           <p className="px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
             Set status
@@ -255,7 +282,7 @@ function DayCard({
     <button
       onClick={() => onSelect(index)}
       className={cn(
-        "shrink-0 w-20 flex flex-col items-center rounded-xl border p-3 transition-all duration-200 relative",
+        "shrink-0 w-20 flex flex-col items-center rounded-[6px] border p-3 transition-all duration-200 relative",
         isSelected
           ? "bg-primary border-primary scale-[1.03] z-10"
           : "bg-card border-border/70 hover:border-primary/30 hover:scale-[1.02]",
@@ -398,7 +425,7 @@ function MonthSection({
   }, [selectedDay]);
 
   return (
-    <div className="space-y-1.5">
+    <div className="min-w-0 space-y-1.5">
       {/* Month header */}
       <div className="flex items-center gap-2.5 px-1">
         <div className="w-2 h-2 rounded-full bg-primary/60" />
@@ -412,10 +439,10 @@ function MonthSection({
       </div>
 
       {/* Days row */}
-      <div className="relative">
+      <div className="relative min-w-0 max-w-full overflow-hidden">
         <div
           ref={scrollRef}
-          className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent m-2 px-1"
+          className="flex max-w-full gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent m-2 px-1"
         >
           {days.map(({ day, index }) => (
             <DayCard
@@ -487,7 +514,7 @@ function DayPickerByMonth({
               {Array.from({ length: 10 }).map((_, i) => (
                 <div
                   key={i}
-                  className="shrink-0 w-20 h-28 rounded-xl bg-muted animate-pulse"
+                  className="shrink-0 w-20 h-28 rounded-[6px] bg-muted animate-pulse"
                 />
               ))}
             </div>
@@ -500,7 +527,7 @@ function DayPickerByMonth({
   if (days.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+        <div className="w-14 h-14 rounded-[6px] bg-muted flex items-center justify-center">
           <CalendarDays size={24} className="text-muted-foreground/40" />
         </div>
         <div className="space-y-1">
@@ -517,7 +544,7 @@ function DayPickerByMonth({
   }
 
   return (
-    <div className="space-y-4 max-h-[235px] overflow-y-auto scrollbar-thin scrollbar-thumb-border pr-1">
+    <div className="min-w-0 max-w-full space-y-4 max-h-[235px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-border pr-1">
       {monthGroups.map((group) => (
         <MonthSection
           key={group.monthKey}
@@ -549,6 +576,7 @@ const DoctorAvailability = () => {
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("17:00");
   const [interval, setInterval] = useState(30);
+  const [includeWeekends, setIncludeWeekends] = useState(true);
 
   /* ── Derive from/to for slot query ── */
   const fromStr = range?.from ? moment(range.from).format("YYYY-MM-DD") : "";
@@ -576,8 +604,6 @@ const DoctorAvailability = () => {
       ? { from: generatedRange.from, to: generatedRange.to }
       : undefined,
   );
-
-  console.log("Slots data fetched:", slotsData);
 
   const updateSlotMutation = useUpdateSlot();
   const bulkUpdateMutation = useBulkUpdateSlots();
@@ -651,6 +677,10 @@ const DoctorAvailability = () => {
     range?.from && range?.to
       ? moment(range.to).diff(moment(range.from), "days") + 1
       : null;
+  const rangeDayStats = useMemo(
+    () => getRangeDayStats(range, includeWeekends),
+    [range, includeWeekends],
+  );
 
   /* ── Pending slot ids (optimistic UX) ── */
   const [pendingSlotIds, setPendingSlotIds] = useState<Set<number>>(new Set());
@@ -670,12 +700,23 @@ const DoctorAvailability = () => {
     }
 
     const daysOfWeek: string[] = [];
-    const cursor = moment(range.from);
-    const end = moment(range.to);
+    let generatedDays = 0;
+    const cursor = moment(range.from).startOf("day");
+    const end = moment(range.to).startOf("day");
     while (cursor.isSameOrBefore(end)) {
-      const dow = DAY_NAMES[cursor.day()];
-      if (!daysOfWeek.includes(dow)) daysOfWeek.push(dow);
+      if (includeWeekends || !isWeekend(cursor)) {
+        const dow = DAY_NAMES[cursor.day()];
+        if (!daysOfWeek.includes(dow)) daysOfWeek.push(dow);
+        generatedDays += 1;
+      }
       cursor.add(1, "day");
+    }
+
+    if (generatedDays === 0) {
+      toast.error("No schedulable days in this range", {
+        description: "Include weekends or choose a range containing weekdays.",
+      });
+      return;
     }
 
     createPeriodMutation.mutate(
@@ -698,7 +739,9 @@ const DoctorAvailability = () => {
           );
           const daysCount = res.saved.length;
           toast.success(res.message, {
-            description: `${daysCount} days · ${totalSlots} slots · ${interval}-min intervals`,
+            description: `${daysCount} days - ${totalSlots} slots - ${interval}-min intervals - ${
+              includeWeekends ? "weekends included" : "weekends excluded"
+            }`,
           });
         },
         onError: (err) => {
@@ -833,11 +876,11 @@ const DoctorAvailability = () => {
           subtitle={t("pages.doctor.availability_sub")}
         />
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-4">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="min-w-0 max-w-full overflow-x-hidden p-3 sm:p-4 space-y-4">
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
-              <div className="flex items-center gap-3 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
+              <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
                 <AlertTriangle
                   size={16}
                   className="flex-shrink-0 text-red-500"
@@ -849,13 +892,13 @@ const DoctorAvailability = () => {
             )}
 
             {/* ── Top control bar ── */}
-            <div className="rounded-sm bg-card border border-border/70 p-4">
-              <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] bg-card border border-border/70 p-3">
+              <div className="grid min-w-0 gap-3 md:grid-cols-3">
                 {/* Instant consultation */}
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-border/50 bg-background/40 p-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       instant
                         ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground",
@@ -879,13 +922,11 @@ const DoctorAvailability = () => {
                   />
                 </div>
 
-                <div className="hidden sm:block h-6 w-px bg-border/60" />
-
                 {/* Disable schedule */}
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-border/50 bg-background/40 p-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       scheduleDisabled
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
@@ -909,13 +950,11 @@ const DoctorAvailability = () => {
                   />
                 </div>
 
-                <div className="hidden sm:block h-6 w-px bg-border/60" />
-
                 {/* ── Reset Schedule ── */}
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-border/50 bg-background/40 p-3">
                   <div
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] transition-colors",
                       resetConfirming
                         ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
                         : "bg-muted text-muted-foreground",
@@ -935,7 +974,7 @@ const DoctorAvailability = () => {
                     onClick={handleResetSchedule}
                     disabled={isResetting}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-md border text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
+                      "flex shrink-0 items-center gap-2 px-3 py-2 rounded-[6px] border text-sm font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed",
                       resetConfirming
                         ? "border-red-500 bg-red-500 text-white hover:bg-red-600 animate-pulse"
                         : "border-border/60 bg-muted text-muted-foreground hover:border-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30",
@@ -958,7 +997,7 @@ const DoctorAvailability = () => {
 
             {/* ── Stats bar ── */}
             {(days.length > 0 || slotsLoading) && (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div className="grid min-w-0 grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-5 gap-2">
                 {[
                   {
                     label: "Total slots",
@@ -993,7 +1032,7 @@ const DoctorAvailability = () => {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="rounded-sm bg-card border border-border/70 p-4"
+                    className="min-w-0 rounded-[6px] bg-card border border-border/70 p-4"
                   >
                     <p className="text-xs uppercase tracking-widest text-muted-foreground/80 font-medium">
                       {s.label}
@@ -1018,18 +1057,18 @@ const DoctorAvailability = () => {
               </div>
             )}
 
-            <div className="grid lg:grid-cols-12 gap-4 items-start">
+            <div className="grid min-w-0 max-w-full xl:grid-cols-12 gap-4 items-start overflow-x-hidden">
               {/* ── Left column ── */}
-              <div className="lg:col-span-4 space-y-3">
+              <div className="min-w-0 xl:col-span-4 space-y-3">
                 {/* Schedule config card */}
-                <div className="rounded-sm border border-border/70 bg-card p-5 space-y-4">
+                <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5 space-y-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <LayoutGrid size={16} className="text-primary" />
                     Custom date range
                   </h3>
 
                   {/* Date range */}
-                  <div className="space-y-1.5">
+                  <div className="min-w-0 space-y-1.5">
                     <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                       {t("pages.doctor.pick_range")}
                     </Label>
@@ -1037,12 +1076,12 @@ const DoctorAvailability = () => {
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full h-10 justify-start gap-2.5 font-normal border-border/60 hover:border-primary/40 hover:bg-primary/5 px-3 text-sm"
+                          className="w-full min-w-0 h-auto min-h-10 justify-start gap-2.5 font-normal border-border/60 hover:border-primary/40 hover:bg-primary/5 px-3 py-2 text-sm"
                         >
                           <CalendarIcon className="h-4 w-4 text-primary shrink-0" />
                           <div className="flex flex-col items-start flex-1 min-w-0">
                             {range?.from && range?.to ? (
-                              <span className="font-medium text-foreground">
+                              <span className="max-w-full truncate font-medium text-foreground">
                                 {moment(range.from).format("MMM D")} →{" "}
                                 {moment(range.to).format("MMM D, YYYY")}
                               </span>
@@ -1053,7 +1092,7 @@ const DoctorAvailability = () => {
                             )}
                           </div>
                           {dayCount !== null && (
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-sm bg-primary/10 text-primary shrink-0">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-[6px] bg-primary/10 text-primary shrink-0">
                               {dayCount}d
                             </span>
                           )}
@@ -1081,8 +1120,59 @@ const DoctorAvailability = () => {
                     </Popover>
                   </div>
 
+                  {/* Weekend mode */}
+                  <div className="min-w-0 overflow-hidden rounded-[6px] border border-border/60 bg-background/50 p-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground">
+                          Weekend days
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">
+                          {includeWeekends
+                            ? "Saturday and Sunday will be generated."
+                            : "Only Monday to Friday will be generated."}
+                        </p>
+                      </div>
+                      <div className="flex w-full rounded-[6px] border border-border/60 bg-muted/40 p-1 sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setIncludeWeekends(false)}
+                          className={cn(
+                            "h-8 flex-1 px-3 rounded-[6px] text-xs font-semibold transition-colors sm:flex-none",
+                            !includeWeekends
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          Exclude
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIncludeWeekends(true)}
+                          className={cn(
+                            "h-8 flex-1 px-3 rounded-[6px] text-xs font-semibold transition-colors sm:flex-none",
+                            includeWeekends
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          Include
+                        </button>
+                      </div>
+                    </div>
+                    {rangeDayStats.total > 0 && (
+                      <p className="mt-3 text-[11px] text-muted-foreground">
+                        Schedule will be created for{" "}
+                        <span className="font-semibold text-foreground">
+                          {rangeDayStats.schedulable}
+                        </span>{" "}
+                        of {rangeDayStats.total} selected days.
+                      </p>
+                    )}
+                  </div>
+
                   {/* Time inputs */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                         {t("pages.doctor.start_time")}
@@ -1120,17 +1210,17 @@ const DoctorAvailability = () => {
                   </div>
 
                   {/* Interval */}
-                  <div className="space-y-1.5">
+                  <div className="min-w-0 space-y-1.5">
                     <Label className="text-xs uppercase tracking-widest text-muted-foreground/80">
                       {t("pages.doctor.interval")}
                     </Label>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid min-w-0 grid-cols-3 sm:grid-cols-5 gap-1.5">
                       {intervalOptions.map((m) => (
                         <button
                           key={m}
                           onClick={() => setInterval(m)}
                           className={cn(
-                            "py-2 rounded-md text-sm font-semibold border transition-all duration-150",
+                            "py-2 rounded-[6px] text-sm font-semibold border transition-all duration-150",
                             interval === m
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-muted/50 border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5",
@@ -1159,7 +1249,7 @@ const DoctorAvailability = () => {
                 </div>
 
                 {/* Legend */}
-                <div className="rounded-sm border border-border/70 bg-card p-4">
+                <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4">
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
                     {t("pages.doctor.legend")}
                   </h4>
@@ -1190,20 +1280,20 @@ const DoctorAvailability = () => {
               </div>
 
               {/* ── Right column ── */}
-              <div className="lg:col-span-8 space-y-3">
+              <div className="min-w-0 xl:col-span-8 space-y-3">
                 {/* Day Picker — grouped by month */}
-                <div className="rounded-sm border border-border/70 bg-card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
+                  <div className="flex min-w-0 items-center justify-between gap-3 mb-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center">
                         <CalendarDays size={16} className="text-primary" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="text-base font-semibold text-foreground leading-tight">
                           {t("pages.doctor.day_picker")}
                         </h3>
                         {days.length > 0 && (
-                          <p className="text-sm text-muted-foreground/60">
+                          <p className="truncate text-sm text-muted-foreground/60">
                             {days.length} days · {interval}-min intervals
                           </p>
                         )}
@@ -1217,7 +1307,7 @@ const DoctorAvailability = () => {
                             setSelectedDay(Math.max(0, selectedDay - 1))
                           }
                           disabled={selectedDay === 0}
-                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
                           <ChevronLeft size={16} />
                         </button>
@@ -1228,7 +1318,7 @@ const DoctorAvailability = () => {
                             )
                           }
                           disabled={selectedDay >= days.length - 1}
-                          className="w-8 h-8 rounded-md border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+                          className="w-8 h-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
                         >
                           <ChevronRight size={16} />
                         </button>
@@ -1246,7 +1336,7 @@ const DoctorAvailability = () => {
 
                 {/* Slots panel */}
                 {currentDay && dayStats && (
-                  <div className="rounded-sm border border-border/70 bg-card p-5">
+                  <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5">
                     {/* Header */}
                     <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                       <div>
@@ -1309,7 +1399,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("available")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-md border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-[6px] border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
                         <CheckCircle2 size={14} />
                         Open
@@ -1317,7 +1407,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("blocked")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-md border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <Ban size={14} />
                         Block
@@ -1325,7 +1415,7 @@ const DoctorAvailability = () => {
                       <button
                         onClick={() => handleBulkSetDay("reserved")}
                         disabled={isBulkUpdating}
-                        className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
                         <BookMarked size={14} />
                         Reserve
@@ -1339,7 +1429,7 @@ const DoctorAvailability = () => {
                     </div>
 
                     {/* Slot grid */}
-                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1.5">
+                    <div className="grid min-w-0 grid-cols-2 min-[360px]:grid-cols-3 min-[480px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 xl:grid-cols-8 gap-1.5">
                       {currentDay.slots.map((slot) => (
                         <SlotChip
                           key={slot.id}

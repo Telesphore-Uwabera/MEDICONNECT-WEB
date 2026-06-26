@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import moment from "moment";
 import {
   Bell,
@@ -16,6 +16,8 @@ import {
   Building2,
   CreditCard,
   FileText,
+  ChevronDown,
+  Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -139,15 +141,57 @@ function groupNotifications(
 /* ─── Category filters ────────────────────────────────────────────── */
 
 const CATEGORY_FILTERS = [
-  "Consultations",
-  "Payments",
-  "Pharmacy",
-  "Alerts",
+  {
+    value: "consultations",
+    label: "Consultations",
+    keywords: ["consult", "appointment", "booking", "doctor", "video", "call", "instant"],
+  },
+  {
+    value: "payments",
+    label: "Payments",
+    keywords: ["payment", "wallet", "withdraw", "invoice", "payout", "paid", "billing"],
+  },
+  {
+    value: "pharmacy",
+    label: "Pharmacy",
+    keywords: ["pharmacy", "prescription", "medicine", "drug"],
+  },
+  {
+    value: "hospital",
+    label: "Hospital",
+    keywords: ["hospital", "facility", "service", "department"],
+  },
+  {
+    value: "documents",
+    label: "Documents",
+    keywords: ["document", "file", "certificate", "record", "report", "medical"],
+  },
+  {
+    value: "alerts",
+    label: "Alerts",
+    keywords: ["alert", "warning", "failed", "rejected", "cancelled", "urgent"],
+  },
 ] as const;
-type CategoryFilter = (typeof CATEGORY_FILTERS)[number];
+type CategoryFilter = (typeof CATEGORY_FILTERS)[number]["value"];
+
+function getCategoryOption(value: CategoryFilter | null) {
+  return CATEGORY_FILTERS.find((option) => option.value === value) ?? null;
+}
 
 function matchesCategory(n: Notification, cat: CategoryFilter): boolean {
-  return getTypeConfig(n.type).label === cat;
+  const option = getCategoryOption(cat);
+  if (!option) return true;
+  const haystack = [
+    n.type,
+    n.resource?.type,
+    n.title,
+    n.message,
+    getTypeConfig(n.type).label,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return option.keywords.some((keyword) => haystack.includes(keyword));
 }
 
 /* ─── NotificationCard ───────────────────────────────────────────── */
@@ -156,31 +200,98 @@ function NotificationCard({
   notification,
   onMarkRead,
   onDelete,
+  expanded,
+  onToggleExpanded,
 }: {
   notification: Notification;
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  expanded: boolean;
+  onToggleExpanded: (id: string) => void;
 }) {
   const isUnread = !notification.is_read;
   const cfg = getTypeConfig(notification.type);
   const Icon = cfg.icon;
+  const body = getBody(notification);
+  const dragStartX = useRef<number | null>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragX = useRef(0);
+  const dragged = useRef(false);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const handleOpen = () => {
+    if (dragged.current) return;
+    if (isUnread) onMarkRead(notification.id);
+    onToggleExpanded(notification.id);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragStartX.current = e.clientX;
+    dragStartY.current = e.clientY;
+    dragX.current = 0;
+    dragged.current = false;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartX.current === null || dragStartY.current === null) return;
+    const dx = e.clientX - dragStartX.current;
+    const dy = e.clientY - dragStartY.current;
+
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 10) return;
+    if (dx >= 0) {
+      setOffsetX(0);
+      return;
+    }
+
+    dragged.current = Math.abs(dx) > 8;
+    dragX.current = dx;
+    setOffsetX(Math.max(dx, -120));
+  };
+
+  const handlePointerEnd = () => {
+    const shouldDelete = dragX.current <= -82;
+    dragStartX.current = null;
+    dragStartY.current = null;
+    dragX.current = 0;
+    setOffsetX(0);
+
+    if (shouldDelete) {
+      onDelete(notification.id);
+      return;
+    }
+
+    window.setTimeout(() => {
+      dragged.current = false;
+    }, 0);
+  };
 
   return (
-    <div
-      className={cn(
-        "group relative flex items-start gap-2.5 px-2.5 py-2 rounded-lg border transition-all duration-150 cursor-pointer",
-        "bg-card border-border/40 hover:bg-muted/30 hover:border-border/70"
-      )}
-    >
+    <div className="relative overflow-hidden rounded-[6px]">
+      <div className="absolute inset-y-0 right-0 flex w-28 items-center justify-end bg-red-500/10 pr-4 text-red-600">
+        <Trash2 className="h-4 w-4" />
+      </div>
+      <div
+        onClick={handleOpen}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        className={cn(
+          "group relative flex touch-pan-y items-start gap-2.5 px-2.5 py-2 rounded-[6px] border transition-colors duration-150 cursor-pointer",
+          "bg-card border-border/40 hover:bg-muted/30 hover:border-border/70",
+          offsetX !== 0 && "transition-none"
+        )}
+        style={{ transform: `translateX(${offsetX}px)` }}
+      >
       {/* Unread left accent bar */}
       {isUnread && (
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-[6px] bg-primary" />
       )}
 
       {/* Type icon */}
       <div
         className={cn(
-          "shrink-0 h-7 w-7 rounded-md flex items-center justify-center border",
+          "shrink-0 h-7 w-7 rounded-[6px] flex items-center justify-center border",
           cfg.bg,
           cfg.border
         )}
@@ -202,13 +313,18 @@ function NotificationCard({
             {getTitle(notification)}
           </p>
           {isUnread && (
-            <span className="shrink-0 h-[6px] w-[6px] rounded-full bg-primary mt-[3px]" />
+            <span className="shrink-0 h-[6px] w-[6px] rounded-[6px] bg-primary mt-[3px]" />
           )}
         </div>
 
-        {getBody(notification) && (
-          <p className="text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed line-clamp-2">
-            {getBody(notification)}
+        {body && (
+          <p
+            className={cn(
+              "text-[10px] text-muted-foreground/70 mt-0.5 leading-relaxed",
+              expanded ? "whitespace-pre-wrap" : "line-clamp-2"
+            )}
+          >
+            {body}
           </p>
         )}
 
@@ -219,7 +335,7 @@ function NotificationCard({
           <span className="text-[9px] text-muted-foreground/30">·</span>
           <span
             className={cn(
-              "text-[9.5px] px-1.5 py-0.5 rounded-sm font-medium",
+              "text-[9.5px] px-1.5 py-0.5 rounded-[6px] font-medium",
               cfg.bg,
               cfg.color,
               "opacity-80"
@@ -237,9 +353,10 @@ function NotificationCard({
             onClick={(e) => {
               e.stopPropagation();
               onMarkRead(notification.id);
+              onToggleExpanded(notification.id);
             }}
             title="Mark as read"
-            className="p-1.5 rounded-md text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
+            className="p-1.5 rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
           >
             <Check className="h-3 w-3" />
           </button>
@@ -250,10 +367,11 @@ function NotificationCard({
             onDelete(notification.id);
           }}
           title="Delete"
-          className="p-1.5 rounded-md text-muted-foreground/50 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all"
+          className="p-1.5 rounded-[6px] text-muted-foreground/50 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all"
         >
           <Trash2 className="h-3 w-3" />
         </button>
+      </div>
       </div>
     </div>
   );
@@ -292,7 +410,7 @@ function StatusSection({
         />
         <span
           className={cn(
-            "text-[9px] font-medium px-1.5 py-0.5 rounded-sm",
+            "text-[9px] font-medium px-1.5 py-0.5 rounded-[6px]",
             isUnread
               ? "bg-primary/10 text-primary"
               : "bg-secondary text-muted-foreground/50"
@@ -315,11 +433,15 @@ function DateGroupSection({
   items,
   onMarkRead,
   onDelete,
+  expandedIds,
+  onToggleExpanded,
 }: {
   group: string;
   items: Notification[];
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
+  expandedIds: Set<string>;
+  onToggleExpanded: (id: string) => void;
 }) {
   return (
     <div className="mb-0.5">
@@ -336,6 +458,8 @@ function DateGroupSection({
             notification={n}
             onMarkRead={onMarkRead}
             onDelete={onDelete}
+            expanded={expandedIds.has(n.id)}
+            onToggleExpanded={onToggleExpanded}
           />
         ))}
       </div>
@@ -351,9 +475,9 @@ function SkeletonLoader() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex items-start gap-2.5 p-2 rounded-lg border border-border/30"
+          className="flex items-start gap-2.5 p-2 rounded-[6px] border border-border/30"
         >
-          <div className="h-7 w-7 rounded-md bg-muted/60 shrink-0 animate-pulse" />
+          <div className="h-7 w-7 rounded-[6px] bg-muted/60 shrink-0 animate-pulse" />
           <div className="flex-1 space-y-1.5">
             <div className="h-2 bg-muted/60 rounded w-3/4 animate-pulse" />
             <div className="h-1.5 bg-muted/60 rounded w-full animate-pulse" />
@@ -394,7 +518,7 @@ function TabButton({
       {label}
       <span
         className={cn(
-          "text-[9px] px-1.5 py-0.5 rounded-full font-semibold transition-all",
+          "text-[9px] px-1.5 py-0.5 rounded-[6px] font-semibold transition-all",
           active
             ? "bg-primary text-primary-foreground"
             : "bg-secondary text-muted-foreground"
@@ -403,7 +527,7 @@ function TabButton({
         {count}
       </span>
       {active && (
-        <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-t-full bg-primary" />
+        <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-[6px] bg-primary" />
       )}
     </button>
   );
@@ -421,6 +545,8 @@ interface MyNotificationsProps {
 export function MyNotifications({ open, onClose }: MyNotificationsProps) {
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter | null>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading, isError } = useGetNotifications({ per_page: 50 });
   const markOne = useMarkOneRead();
@@ -442,6 +568,16 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
     [notifications, readFilter, categoryFilter]
   );
 
+  const selectedCategory = getCategoryOption(categoryFilter);
+  const categoryCounts = useMemo(
+    () =>
+      CATEGORY_FILTERS.reduce<Record<CategoryFilter, number>>((acc, option) => {
+        acc[option.value] = notifications.filter((n) => matchesCategory(n, option.value)).length;
+        return acc;
+      }, {} as Record<CategoryFilter, number>),
+    [notifications]
+  );
+
   const unreadItems = useMemo(() => filtered.filter((n) => !n.is_read), [filtered]);
   const readItems = useMemo(() => filtered.filter((n) => n.is_read), [filtered]);
 
@@ -449,7 +585,22 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
   const groupedRead = useMemo(() => groupNotifications(readItems), [readItems]);
 
   const handleMarkRead = useCallback((id: string) => markOne.mutate(id), [markOne]);
-  const handleDelete = useCallback((id: string) => deleteOne.mutate(id), [deleteOne]);
+  const handleDelete = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    deleteOne.mutate(id);
+  }, [deleteOne]);
+  const handleToggleExpanded = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const isEmpty = unreadItems.length === 0 && readItems.length === 0;
 
@@ -463,18 +614,24 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         )}
-        onClick={onClose}
+        onClick={() => {
+          setCategoryOpen(false);
+          onClose();
+        }}
       />
 
-      {/* Drawer */}
+      {/* Dropdown */}
       <aside
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-[500px] max-w-[calc(100vw-16px)]",
-          "bg-card border-l border-border/50",
-          "flex flex-col transition-transform duration-300 ease-in-out shadow-xl",
-          open ? "translate-x-0" : "translate-x-full"
+          "fixed top-[58px] right-3 sm:right-5 z-50",
+          "w-[min(620px,calc(100vw-24px))] max-h-[calc(100vh-76px)]",
+          "bg-card border border-border/70 rounded-[6px]",
+          "flex flex-col overflow-hidden shadow-2xl",
+          "origin-top-right transition-all duration-200 ease-out",
+          open
+            ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+            : "opacity-0 -translate-y-2 scale-[0.98] pointer-events-none"
         )}
-        style={{ borderRadius: "12px 0 0 12px" }}
         aria-label="Notifications"
         role="dialog"
         aria-modal="true"
@@ -483,10 +640,10 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
         <div className="px-4 pt-3.5 pb-0 border-b border-border/50 shrink-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
-              <div className="relative p-1.5 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="relative p-1.5 rounded-[6px] bg-primary/10 border border-primary/20">
                 <Bell className="h-3.5 w-3.5 text-primary" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-red-500 text-[8.5px] font-bold text-white flex items-center justify-center border-2 border-card">
+                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-[6px] bg-red-500 text-[8.5px] font-bold text-white flex items-center justify-center border-2 border-card">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -498,7 +655,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 <p className="text-[9.5px] text-muted-foreground mt-0.5">
                   {unreadCount > 0 ? (
                     <span className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-[6px] bg-primary animate-pulse" />
                       {unreadCount} unread
                     </span>
                   ) : (
@@ -514,7 +671,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                   onClick={() => markAll.mutate()}
                   disabled={markAll.isPending}
                   title="Mark all as read"
-                  className="p-1.5 rounded-md text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-40"
+                  className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-40"
                 >
                   {markAll.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -528,7 +685,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                   onClick={() => deleteAll.mutate()}
                   disabled={deleteAll.isPending}
                   title="Clear all"
-                  className="p-1.5 rounded-md text-muted-foreground/60 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all disabled:opacity-40"
+                  className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all disabled:opacity-40"
                 >
                   {deleteAll.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -538,9 +695,12 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 </button>
               )}
               <button
-                onClick={onClose}
+                onClick={() => {
+                  setCategoryOpen(false);
+                  onClose();
+                }}
                 title="Close"
-                className="p-1.5 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-secondary transition-all"
+                className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-foreground hover:bg-secondary transition-all"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -566,46 +726,124 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
           </div>
 
           {/* ── Category Filter Pills ── */}
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-2">
+          <div className="relative py-2">
             <button
-              onClick={() => setCategoryFilter(null)}
+              type="button"
+              onClick={() => setCategoryOpen((prev) => !prev)}
               className={cn(
-                "shrink-0 px-2.5 py-1 rounded-md text-[9.5px] font-semibold transition-all border",
-                categoryFilter === null
-                  ? "bg-foreground text-background border-foreground"
-                  : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-border"
+                "w-full h-9 px-3 rounded-[6px] border border-border/60 bg-background",
+                "flex items-center justify-between gap-3 text-left transition-all",
+                "hover:bg-secondary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
               )}
+              aria-haspopup="menu"
+              aria-expanded={categoryOpen}
             >
-              All types
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="h-6 w-6 rounded-[6px] bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                  <Filter className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    Filter
+                  </span>
+                  <span className="block text-[12px] font-semibold text-foreground truncate">
+                    {selectedCategory?.label ?? "All notifications"}
+                  </span>
+                </span>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="rounded-[6px] bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {filtered.length}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform",
+                    categoryOpen && "rotate-180"
+                  )}
+                />
+              </span>
             </button>
 
-            {CATEGORY_FILTERS.map((cat) => (
-              <button
-                key={cat}
-                onClick={() =>
-                  setCategoryFilter((prev) => (prev === cat ? null : cat))
-                }
-                className={cn(
-                  "shrink-0 px-2.5 py-1 rounded-md text-[9.5px] font-semibold transition-all border",
-                  categoryFilter === cat
-                    ? "bg-foreground text-background border-foreground"
-                    : "border-border/40 text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-border"
-                )}
+            {categoryOpen && (
+              <div
+                role="menu"
+                className="absolute left-0 right-0 top-[46px] z-20 rounded-[6px] border border-border/70 bg-card shadow-xl overflow-hidden"
               >
-                {cat}
-              </button>
-            ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter(null);
+                    setCategoryOpen(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-secondary/50 transition-colors",
+                    categoryFilter === null && "bg-primary/10"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="h-7 w-7 rounded-[6px] bg-secondary flex items-center justify-center">
+                      <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
+                    </span>
+                    <span className="text-[12px] font-semibold text-foreground">All notifications</span>
+                  </span>
+                  <span className="text-[10px] font-semibold text-muted-foreground">{notifications.length}</span>
+                </button>
+
+                {CATEGORY_FILTERS.map((option) => {
+                  const active = categoryFilter === option.value;
+                  const count = categoryCounts[option.value] ?? 0;
+                  const configKey =
+                    option.value === "consultations"
+                      ? "consultation"
+                      : option.value === "payments"
+                        ? "payment"
+                        : option.value === "documents"
+                          ? "document"
+                          : option.value === "alerts"
+                            ? "alert"
+                            : option.value;
+                  const cfg = TYPE_CONFIG[configKey] ?? FALLBACK_CONFIG;
+                  const Icon = cfg.icon;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setCategoryFilter(option.value);
+                        setCategoryOpen(false);
+                      }}
+                      className={cn(
+                        "w-full px-3 py-2.5 flex items-center justify-between gap-3 text-left hover:bg-secondary/50 transition-colors border-t border-border/40",
+                        active && "bg-primary/10"
+                      )}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className={cn("h-7 w-7 rounded-[6px] border flex items-center justify-center shrink-0", cfg.bg, cfg.border)}>
+                          <Icon className={cn("h-3.5 w-3.5", cfg.color)} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-[12px] font-semibold text-foreground truncate">{option.label}</span>
+                          <span className="block text-[10px] text-muted-foreground">Show matching notifications</span>
+                        </span>
+                      </span>
+                      <span className={cn("text-[10px] font-semibold", active ? "text-primary" : "text-muted-foreground")}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
         {/* ── Scrollable List ── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
           <div className="py-1.5">
             {isLoading && <SkeletonLoader />}
 
             {isError && (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="h-9 w-9 rounded-lg bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-3 border border-red-200 dark:border-red-800">
+                <div className="h-9 w-9 rounded-[6px] bg-red-50 dark:bg-red-950/40 flex items-center justify-center mb-3 border border-red-200 dark:border-red-800">
                   <AlertCircle className="h-4.5 w-4.5 text-red-500" />
                 </div>
                 <p className="text-[11px] font-semibold text-foreground">
@@ -619,15 +857,15 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
 
             {!isLoading && !isError && isEmpty && (
               <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-                <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center mb-3 border border-border/30">
+                <div className="h-9 w-9 rounded-[6px] bg-secondary flex items-center justify-center mb-3 border border-border/30">
                   <BellOff className="h-4.5 w-4.5 text-muted-foreground/40" />
                 </div>
                 <p className="text-[11px] font-semibold text-foreground">
                   {readFilter === "unread"
                     ? "No unread notifications"
                     : categoryFilter
-                    ? `No ${categoryFilter.toLowerCase()} notifications`
-                    : "All caught up"}
+                      ? `No ${selectedCategory?.label.toLowerCase() ?? "matching"} notifications`
+                      : "All caught up"}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
                   {readFilter === "unread"
@@ -653,6 +891,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                         items={items}
                         onMarkRead={handleMarkRead}
                         onDelete={handleDelete}
+                        expandedIds={expandedIds}
+                        onToggleExpanded={handleToggleExpanded}
                       />
                     ))}
                   </StatusSection>
@@ -677,6 +917,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                         items={items}
                         onMarkRead={handleMarkRead}
                         onDelete={handleDelete}
+                        expandedIds={expandedIds}
+                        onToggleExpanded={handleToggleExpanded}
                       />
                     ))}
                   </StatusSection>

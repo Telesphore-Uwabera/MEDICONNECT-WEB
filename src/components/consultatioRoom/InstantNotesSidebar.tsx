@@ -2,6 +2,11 @@ import { useRef, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, X, Check, Loader2 } from "lucide-react";
 import {
+  prepareRichTextForSave,
+  RichTextarea,
+  richTextToPlainText,
+} from "@/components/ui/rich-textarea";
+import {
   useSaveInstantNotes,
   useAddNotes,
   useUpdateNotes,
@@ -46,7 +51,7 @@ function readLocalNotes(id?: number, mode?: "instant" | "appointment"): string {
 
 export function InstantNotesSidebar({ onClose, consultationId, patientName, mode = "instant" }: Props) {
   const { t } = useTranslation();
-  const textRef = useRef<HTMLTextAreaElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   const isAppointment = mode === "appointment";
 
   const saveInstant = useSaveInstantNotes();
@@ -59,6 +64,7 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
 
   // Local, consultation-scoped notes (seeded from localStorage).
   const [notes, setNotes] = useState<string>(() => readLocalNotes(consultationId, mode));
+  const plainNotes = richTextToPlainText(notes);
 
   // Tracks whether server-side appointment notes already exist (POST vs PUT).
   const notesExistRef = useRef(false);
@@ -105,8 +111,10 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
 
     setSaveStatus("saving");
 
+    const cleanedNotes = prepareRichTextForSave(debouncedNotes) ?? "";
+
     if (isAppointment) {
-      const payload = { additional_notes: debouncedNotes };
+      const payload = { additional_notes: cleanedNotes };
       const doPut = () =>
         updateApptNotes.mutate(
           { id: consultationId, payload },
@@ -137,7 +145,7 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
       }
     } else {
       saveInstant.mutate(
-        { id: consultationId, notes: debouncedNotes },
+        { id: consultationId, notes: cleanedNotes },
         { onSuccess: () => setSaveStatus("saved"), onError: () => setSaveStatus("error") },
       );
     }
@@ -154,15 +162,10 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
   };
 
   const insertTemplate = (tpl: string) => {
-    const prefix = `${tpl}:\n`;
-    const next = notes ? `${notes}\n\n${prefix}` : prefix;
+    const nextBlock = `<p><strong>${tpl}:</strong></p>`;
+    const next = notes ? `${notes}${nextBlock}` : nextBlock;
     updateNotes(next);
-    setTimeout(() => {
-      if (textRef.current) {
-        textRef.current.focus();
-        textRef.current.setSelectionRange(next.length, next.length);
-      }
-    }, 0);
+    setTimeout(() => textRef.current?.focus(), 0);
   };
 
   return (
@@ -181,7 +184,7 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
         <button
           onClick={onClose}
           aria-label="Close notes"
-          className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
+          className="h-6 w-6 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -199,7 +202,7 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
               <button
                 key={key}
                 onClick={() => insertTemplate(label)}
-                className="text-[10px] px-2 py-1 rounded-md border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+                className="text-[10px] px-2 py-1 rounded-[6px] border border-border/60 bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
               >
                 {label}
               </button>
@@ -208,19 +211,21 @@ export function InstantNotesSidebar({ onClose, consultationId, patientName, mode
         </div>
       </div>
 
-      {/* Textarea */}
-      <textarea
+      {/* Rich notes editor */}
+      <RichTextarea
         ref={textRef}
         value={notes}
-        onChange={(e) => updateNotes(e.target.value)}
+        onChange={updateNotes}
         placeholder={t("consult.notes.placeholder")}
-        className="flex-1 w-full resize-none bg-transparent text-[12px] leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none px-4 py-3 font-mono"
+        className="flex-1 min-h-0 border-0 rounded-none focus-within:ring-0 focus-within:ring-offset-0"
+        editorClassName="h-full text-[12px] leading-relaxed"
+        minHeight={280}
       />
 
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-border/60 shrink-0 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/50">
-          <span>{t("consult.notes.chars", { count: notes.length })}</span>
+          <span>{t("consult.notes.chars", { count: plainNotes.length })}</span>
           <span>·</span>
           {saveStatus === "saving" && <><Loader2 className="w-3 h-3 animate-spin" /> {t("consult.notes.saving")}</>}
           {saveStatus === "saved" && <><Check className="w-3 h-3 text-emerald-500" /> {t("consult.notes.saved")}</>}

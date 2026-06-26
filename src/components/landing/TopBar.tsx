@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { PublicGeneralSettings } from "@/hooks/use-public-settings";
 
 const SOCIALS = [
   {
@@ -20,8 +21,14 @@ const SOCIALS = [
   },
 ];
 
-const TopBar = () => {
-  const { t, i18n } = useTranslation();
+interface TopBarProps {
+  settings?: PublicGeneralSettings;
+}
+
+const TopBar = ({ settings }: TopBarProps) => {
+  const { t } = useTranslation();
+  const email = settings?.contact_email || t("nav.topnav.email");
+  const phone = settings?.contact_phone || t("nav.topnav.phone");
 
   return (
     <div className="bg-[#3a8fa3] dark:bg-[#1e5f70] text-white text-xs">
@@ -45,7 +52,7 @@ const TopBar = () => {
         {/* Contact info */}
         <div className="flex items-center gap-3">
           <a
-            href="mailto:admin@mediconnect.rw"
+            href={`mailto:${email}`}
             className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
           >
             <svg
@@ -58,13 +65,13 @@ const TopBar = () => {
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
               <polyline points="22,6 12,13 2,6" />
             </svg>
-            <span className="hidden md:inline">{t("nav.topnav.email")}</span>
+            <span className="hidden md:inline">{email}</span>
           </a>
 
           <span className="text-white/30">|</span>
 
           <a
-            href="tel:+250782168650"
+            href={`tel:${phone.replace(/\s+/g, "")}`}
             className="flex items-center gap-1.5 text-white/90 hover:text-white transition-colors"
           >
             <svg
@@ -76,7 +83,7 @@ const TopBar = () => {
             >
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.08 6.08l1.08-.9a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
             </svg>
-            <span className="hidden md:inline">{t("nav.topnav.phone")}</span>
+            <span className="hidden md:inline">{phone}</span>
           </a>
 
           <span className="text-white/30">|</span>

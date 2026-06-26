@@ -21,19 +21,19 @@ function ManagePharmacies() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { filters, set, clearAll, hasActiveFilters, searchInput, setSearchInput } = usePharmacyFilters();
-  const [selected, setSelected]     = useState<ApiPharmacy | null>(null);
+  const [selected, setSelected] = useState<ApiPharmacy | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
 
   // ── Data ──
   const { data, isLoading, isError } = useGetAdminPharmacies({
     status: filters.status !== "all" ? filters.status : undefined,
-    city:   filters.city   || undefined,
+    city: filters.city || undefined,
     search: filters.search || undefined,
-    page:   filters.page,
+    page: filters.page,
   });
 
-  const pharmacies = data?.data     ?? [];
-  const total      = data?.total    ?? 0;
+  const pharmacies = data?.data ?? [];
+  const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / (data?.per_page ?? 20));
 
   const statusCounts = useMemo(() => {
@@ -50,13 +50,13 @@ function ManagePharmacies() {
 
   const sorted = useMemo(() => [...pharmacies].sort((a, b) => {
     if (filters.sort === "joined-asc") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    if (filters.sort === "name")       return a.name_en.localeCompare(b.name_en);
+    if (filters.sort === "name") return a.name_en.localeCompare(b.name_en);
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   }), [pharmacies, filters.sort]);
 
   // ── Mutations ──
   const approveMutation = useApprovePharmacy();
-  const rejectMutation  = useRejectPharmacy();
+  const rejectMutation = useRejectPharmacy();
   const suspendMutation = useSuspendPharmacy();
   const isActing = approveMutation.isPending || rejectMutation.isPending || suspendMutation.isPending;
 
@@ -149,7 +149,7 @@ function ManagePharmacies() {
               </p>
 
               {(statusCounts["pending"] ?? 0) > 0 && (
-                <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                   {statusCounts["pending"]} pending
                 </span>
@@ -165,13 +165,13 @@ function ManagePharmacies() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name, phone, email…"
-                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
 
               {/* Refresh Button */}
               <button
-                className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
@@ -182,7 +182,7 @@ function ManagePharmacies() {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as any)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
+                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -202,26 +202,26 @@ function ManagePharmacies() {
           </div>
 
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total pharmacies" value={total}                           icon={FlaskConical} accent="primary" />
-            <StatCard label="Active"            value={statusCounts["active"]    ?? 0} icon={CheckCircle2} accent="success" />
-            <StatCard label="Pending review"    value={statusCounts["pending"]   ?? 0} icon={Clock}        accent="warning" />
-            <StatCard label="Suspended"         value={statusCounts["suspended"] ?? 0} icon={XCircle}      accent="warning" />
+            <StatCard label="Total pharmacies" value={total} icon={FlaskConical} accent="primary" />
+            <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
+            <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
+            <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
           </div>
 
           <div className="p-3 sm:p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <p className="text-[12px] font-semibold text-destructive">Failed to load pharmacies</p>
-                  <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
-                </div>
-              ) : (
-                <PharmacyTable
-                  pharmacies={sorted} isLoading={isLoading} page={filters.page} totalPages={totalPages}
-                  onManage={setSelected} onPageChange={(p) => set("page", p)} onClearAll={clearAll}
-                />
-              )}
-            </div>
-          </main>
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                <p className="text-[12px] font-semibold text-destructive">Failed to load pharmacies</p>
+                <p className="text-[11px] text-muted-foreground/70">Check your connection and try again</p>
+              </div>
+            ) : (
+              <PharmacyTable
+                pharmacies={sorted} isLoading={isLoading} page={filters.page} totalPages={totalPages}
+                onManage={setSelected} onPageChange={(p) => set("page", p)} onClearAll={clearAll}
+              />
+            )}
+          </div>
+        </main>
       </div>
 
       <PharmacyPanel

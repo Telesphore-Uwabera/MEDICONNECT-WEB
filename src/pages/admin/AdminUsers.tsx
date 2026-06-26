@@ -37,6 +37,7 @@ import {
   Calendar,
   Hash,
   RefreshCw,
+  Globe,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
@@ -176,7 +177,7 @@ function UserRow({
       <td className="px-4 py-3">
         <span
           className={cn(
-            "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm border font-medium",
+            "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-[6px] border font-medium",
             roleStyle[role],
           )}
         >
@@ -205,7 +206,7 @@ function UserRow({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
           onClick={() => onManage(u)}
         >
           {t("admin.users.manage")}
@@ -227,7 +228,7 @@ function UserCard({
   const Icon = roleIcon[role] ?? UserCircle;
 
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       {u.avatar ? (
         <img
           src={u.avatar}
@@ -265,7 +266,7 @@ function UserCard({
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span
             className={cn(
-              "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-sm border font-medium",
+              "inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-[6px] border font-medium",
               roleStyle[role],
             )}
           >
@@ -282,7 +283,7 @@ function UserCard({
         <Button
           size="sm"
           variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
+          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
           onClick={() => onManage(u)}
         >
           {t("admin.users.manage")}
@@ -403,7 +404,7 @@ function UserPanel({
             <div className="flex-1 overflow-y-auto">
               <div className="px-5 py-5 space-y-4">
                 {/* ── Identity card ── */}
-                <div className="rounded-xl border border-border/60 bg-secondary/20 overflow-hidden">
+                <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
                   {/* Top accent strip using role color */}
                   <div
                     className={cn(
@@ -509,7 +510,7 @@ function UserPanel({
                 </div>
 
                 {/* ── Activity strip ── */}
-                <div className="rounded-xl border border-border/60 bg-secondary/20 divide-y divide-border/40">
+                <div className="rounded-[6px] border border-border/60 bg-secondary/20 divide-y divide-border/40">
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -555,7 +556,7 @@ function UserPanel({
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
-                  className="h-10 text-[12px] rounded-lg gap-2"
+                  className="h-10 text-[12px] rounded-[6px] gap-2"
                   disabled={isActing}
                   onClick={() => onToggleStatus(user)}
                 >
@@ -573,7 +574,7 @@ function UserPanel({
 
                 <Button
                   variant="outline"
-                  className="h-10 text-[12px] rounded-lg gap-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+                  className="h-10 text-[12px] rounded-[6px] gap-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
                   disabled={isDeleting}
                   onClick={() => onDelete(user)}
                 >
@@ -588,7 +589,7 @@ function UserPanel({
 
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
               >
                 {t("admin.common.close")}
@@ -791,255 +792,255 @@ const AdminUsers = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
-            {/* Stats */}
-            <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label="Total users"
-                value={total}
-                icon={Users}
-                accent="primary"
+          {/* Stats */}
+          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <StatCard
+              label="Total users"
+              value={total}
+              icon={Users}
+              accent="primary"
+            />
+            <StatCard
+              label="Active"
+              value={statusCounts["active"] ?? 0}
+              icon={CheckCircle2}
+              accent="success"
+            />
+            <StatCard
+              label="Pending review"
+              value={statusCounts["pending"] ?? 0}
+              icon={Clock}
+              accent="warning"
+            />
+            <StatCard
+              label="Suspended"
+              value={statusCounts["suspended"] ?? 0}
+              icon={XCircle}
+              accent="warning"
+            />
+          </div>
+
+          {/* Mobile search */}
+          <div className="sm:hidden px-3 pt-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search name, email, phone…"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
-              <StatCard
-                label="Active"
-                value={statusCounts["active"] ?? 0}
-                icon={CheckCircle2}
-                accent="success"
-              />
-              <StatCard
-                label="Pending review"
-                value={statusCounts["pending"] ?? 0}
-                icon={Clock}
-                accent="warning"
-              />
-              <StatCard
-                label="Suspended"
-                value={statusCounts["suspended"] ?? 0}
-                icon={XCircle}
-                accent="warning"
-              />
+              {searchInput && (
+                <button
+                  onClick={() => setSearchInput("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <p className="text-[11px] text-muted-foreground shrink-0">
+                {isLoading ? (
+                  <span className="text-muted-foreground/50">Loading…</span>
+                ) : (
+                  <>
+                    <span className="font-bold text-foreground">{total}</span>{" "}
+                    {total === 1 ? "user" : "users"}
+                  </>
+                )}
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
+                  >
+                    Reset
+                  </button>
+                )}
+              </p>
+
+              {pendingCount > 0 && (
+                <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {pendingCount} pending
+                </span>
+              )}
             </div>
 
-            {/* Mobile search */}
-            <div className="sm:hidden px-3 pt-3">
-              <div className="relative">
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Desktop search */}
+              <div className="relative hidden sm:block">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name, email, phone…"
-                  className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
-                {searchInput && (
-                  <button
-                    onClick={() => setSearchInput("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
+
             </div>
 
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <p className="text-[11px] text-muted-foreground shrink-0">
-                  {isLoading ? (
-                    <span className="text-muted-foreground/50">Loading…</span>
-                  ) : (
-                    <>
-                      <span className="font-bold text-foreground">{total}</span>{" "}
-                      {total === 1 ? "user" : "users"}
-                    </>
-                  )}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </p>
+            {/* Refresh Button */}
+            <button
+              onClick={() => refetch()}
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+            </button>
 
-                {pendingCount > 0 && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    {pendingCount} pending
-                  </span>
-                )}
-              </div>
+            <FilterToggleButton
+              open={filterOpen}
+              onToggle={() => setFilterOpen(!filterOpen)}
+              hasActiveFilters={hasActiveFilters}
+            />
 
-              <div className="flex items-center gap-2 shrink-0">
-                {/* Desktop search */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search name, email, phone…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={() => refetch()}
-                className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                title="Refresh"
+            {/* Sort */}
+            <div className="relative">
+              <select
+                value={filters.sort}
+                onChange={(e) => set("sort", e.target.value as SortOption)}
+                className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
               >
-                <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
-              </button>
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+            </div>
 
-              <FilterToggleButton
-                open={filterOpen}
-                onToggle={() => setFilterOpen(!filterOpen)}
-                hasActiveFilters={hasActiveFilters}
-              />
+            <FilterToggleButton
+              open={filterOpen}
+              onToggle={() => setFilterOpen(!filterOpen)}
+              hasActiveFilters={hasActiveFilters}
+            />
+          </div>
 
-              {/* Sort */}
-              <div className="relative">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+          {/* Content */}
+          <div className="p-3 sm:p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                <p className="text-[12px] font-semibold text-destructive">
+                  Failed to load users
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  Check your connection and try again
+                </p>
               </div>
-
-              <FilterToggleButton
-                open={filterOpen}
-                onToggle={() => setFilterOpen(!filterOpen)}
-                hasActiveFilters={hasActiveFilters}
-              />
-            </div>
-
-            {/* Content */}
-            <div className="p-3 sm:p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <p className="text-[12px] font-semibold text-destructive">
-                    Failed to load users
+            ) : !isLoading && sorted.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Users className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    No users match your filters
                   </p>
-                  <p className="text-[11px] text-muted-foreground/70">
-                    Check your connection and try again
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    Try widening your search criteria
                   </p>
                 </div>
-              ) : !isLoading && sorted.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Users className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      No users match your filters
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
-                    </p>
-                  </div>
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/* Desktop table */}
-                  <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            {t("admin.users.name")}
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            {t("admin.users.contact")}
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            {t("admin.users.role")}
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            {t("admin.users.status")}
-                          </th>
-                          <th className="text-left px-4 py-3 font-semibold">
-                            {t("admin.users.joined")}
-                          </th>
-                          <th className="px-4 py-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading ? (
-                          <SkeletonRows />
-                        ) : (
-                          sorted.map((u) => (
-                            <UserRow key={u.id} u={u} onManage={setSelected} />
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile card list */}
-                  <div className="md:hidden flex flex-col gap-2">
-                    {isLoading
-                      ? Array.from({ length: 4 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-24 rounded-sm border border-border/60 bg-card animate-pulse"
-                          />
+                <button
+                  onClick={clearAll}
+                  className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          {t("admin.users.name")}
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          {t("admin.users.contact")}
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          {t("admin.users.role")}
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          {t("admin.users.status")}
+                        </th>
+                        <th className="text-left px-4 py-3 font-semibold">
+                          {t("admin.users.joined")}
+                        </th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isLoading ? (
+                        <SkeletonRows />
+                      ) : (
+                        sorted.map((u) => (
+                          <UserRow key={u.id} u={u} onManage={setSelected} />
                         ))
-                      : sorted.map((u) => (
-                          <UserCard key={u.id} u={u} onManage={setSelected} />
-                        ))}
-                  </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                      <p className="text-[11px] text-muted-foreground">
-                        Page{" "}
-                        <span className="font-semibold text-foreground">
-                          {filters.page}
-                        </span>{" "}
-                        of{" "}
-                        <span className="font-semibold text-foreground">
-                          {totalPages}
-                        </span>
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          disabled={filters.page <= 1}
-                          onClick={() => set("page", filters.page - 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={filters.page >= totalPages}
-                          onClick={() => set("page", filters.page + 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                {/* Mobile card list */}
+                <div className="md:hidden flex flex-col gap-2">
+                  {isLoading
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                      />
+                    ))
+                    : sorted.map((u) => (
+                      <UserCard key={u.id} u={u} onManage={setSelected} />
+                    ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                    <p className="text-[11px] text-muted-foreground">
+                      Page{" "}
+                      <span className="font-semibold text-foreground">
+                        {filters.page}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-semibold text-foreground">
+                        {totalPages}
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={filters.page <= 1}
+                        onClick={() => set("page", filters.page - 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        disabled={filters.page >= totalPages}
+                        onClick={() => set("page", filters.page + 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </main>
       </div>
 
@@ -1088,7 +1089,7 @@ const InfoTile = ({
   label: string;
   value: string;
 }) => (
-  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+  <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
       {icon}
       {label}

@@ -1,9 +1,9 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { StatCard }         from "@/components/StatCard";
-import { PageHeader }       from "@/components/PageHeader";
-import { Button }           from "@/components/ui/button";
+import { StatCard } from "@/components/StatCard";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import {
   Building2,
   Clock,
@@ -13,7 +13,7 @@ import {
   X,
   Search,
   ChevronDown,
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
@@ -26,7 +26,7 @@ import {
   type ApiHospital,
 } from "@/hooks/admin/use-admin-hospitals";
 import { useToast } from "@/hooks/use-toast";
-import { cn }       from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 import {
   type FilterState,
@@ -36,9 +36,9 @@ import {
   INITIAL_FILTERS,
   SORT_OPTIONS,
 } from "./components/hospital/Types";
-import { HospitalRow }   from "./components/hospital/Hospitalrow";
-import { HospitalCard }  from "./components/hospital/Hospitalcard";
-import { SkeletonRows }  from "./components/hospital/Skeletonrows";
+import { HospitalRow } from "./components/hospital/Hospitalrow";
+import { HospitalCard } from "./components/hospital/Hospitalcard";
+import { SkeletonRows } from "./components/hospital/Skeletonrows";
 import { HospitalPanel } from "./components/hospital/Hospitalpanel";
 import { getErrorMessage } from "./components/hospital/Utils";
 
@@ -47,7 +47,7 @@ import { getErrorMessage } from "./components/hospital/Utils";
 function ManageHospitals() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [selected, setSelected]     = useState<ApiHospital | null>(null);
+  const [selected, setSelected] = useState<ApiHospital | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const { toast } = useToast();
 
@@ -61,18 +61,18 @@ function ManageHospitals() {
   // ── API ──
   const { data, isLoading, isError } = useGetAdminHospitals({
     status: filters.status !== "all" ? filters.status : undefined,
-    type:   filters.type   !== "all" ? filters.type   : undefined,
+    type: filters.type !== "all" ? filters.type : undefined,
     search: filters.search || undefined,
-    page:   filters.page,
+    page: filters.page,
   });
 
   const approveMutation = useApproveHospital();
-  const rejectMutation  = useRejectHospital();
+  const rejectMutation = useRejectHospital();
   const suspendMutation = useSuspendHospital();
 
-  const hospitals  = data?.data     ?? [];
-  const total      = data?.total    ?? 0;
-  const perPage    = data?.per_page ?? 20;
+  const hospitals = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
   const statusCounts = useMemo(() => {
@@ -162,7 +162,7 @@ function ManageHospitals() {
 
   const isActing =
     approveMutation.isPending ||
-    rejectMutation.isPending  ||
+    rejectMutation.isPending ||
     suspendMutation.isPending;
 
   const pendingCount = statusCounts["pending"] ?? 0;
@@ -237,7 +237,7 @@ function ManageHospitals() {
               </p>
 
               {pendingCount > 0 && (
-                <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+                <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                   {pendingCount} pending
                 </span>
@@ -253,13 +253,13 @@ function ManageHospitals() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name or admin…"
-                  className="w-44 md:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-44 md:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
 
               {/* Refresh Button */}
               <button
-                className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
@@ -270,7 +270,7 @@ function ManageHospitals() {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
+                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -288,10 +288,10 @@ function ManageHospitals() {
           </div>
 
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Total hospitals" value={total}                          icon={Building2}    accent="primary"  />
-            <StatCard label="Active"          value={statusCounts["active"]    ?? 0} icon={CheckCircle2} accent="success"  />
-            <StatCard label="Pending review"  value={statusCounts["pending"]   ?? 0} icon={Clock}        accent="warning"  />
-            <StatCard label="Suspended"       value={statusCounts["suspended"] ?? 0} icon={XCircle}      accent="warning"  />
+            <StatCard label="Total hospitals" value={total} icon={Building2} accent="primary" />
+            <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
+            <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
+            <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
           </div>
 
           <div className="sm:hidden px-3 pt-3">
@@ -302,7 +302,7 @@ function ManageHospitals() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search name, email, phone…"
-                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
                 <button
@@ -315,114 +315,114 @@ function ManageHospitals() {
             </div>
           </div>
 
-            {/* Content area */}
-            <div className="p-3 sm:p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <p className="text-[12px] font-semibold text-destructive">
-                    Failed to load hospitals
+          {/* Content area */}
+          <div className="p-3 sm:p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                <p className="text-[12px] font-semibold text-destructive">
+                  Failed to load hospitals
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  Check your connection and try again
+                </p>
+              </div>
+            ) : !isLoading && sorted.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Building2 className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    No hospitals match your filters
                   </p>
-                  <p className="text-[11px] text-muted-foreground/70">
-                    Check your connection and try again
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    Try widening your search criteria
                   </p>
                 </div>
-              ) : !isLoading && sorted.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Building2 className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      No hospitals match your filters
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
-                    </p>
-                  </div>
-                  <button
-                    onClick={clearAll}
-                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {/*
+                <button
+                  onClick={clearAll}
+                  className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            ) : (
+              <>
+                {/*
                    * Desktop table — only at lg+ (1024px+).
                    * Tablets get the card layout below for a better experience.
                    */}
-                  <div className="hidden lg:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                    <table className="w-full text-[11px]">
-                      <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Hospital</th>
-                          <th className="text-left px-4 py-3 font-semibold">Type</th>
-                          <th className="text-left px-4 py-3 font-semibold">Staff</th>
-                          <th className="text-left px-4 py-3 font-semibold">Status</th>
-                          <th className="text-left px-4 py-3 font-semibold">Joined</th>
-                          <th className="px-4 py-3" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading ? (
-                          <SkeletonRows />
-                        ) : (
-                          sorted.map((h) => (
-                            <HospitalRow key={h.id} h={h} onManage={setSelected} />
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="hidden lg:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">Hospital</th>
+                        <th className="text-left px-4 py-3 font-semibold">Type</th>
+                        <th className="text-left px-4 py-3 font-semibold">Staff</th>
+                        <th className="text-left px-4 py-3 font-semibold">Status</th>
+                        <th className="text-left px-4 py-3 font-semibold">Joined</th>
+                        <th className="px-4 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isLoading ? (
+                        <SkeletonRows />
+                      ) : (
+                        sorted.map((h) => (
+                          <HospitalRow key={h.id} h={h} onManage={setSelected} />
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                  {/*
+                {/*
                    * Card layout — phone AND tablet (hidden at lg+).
                    * Two-column grid on tablet for better use of space.
                    */}
-                  <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                    {isLoading
-                      ? Array.from({ length: 4 }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-24 rounded-sm border border-border/60 bg-card animate-pulse"
-                          />
-                        ))
-                      : sorted.map((h) => (
-                          <HospitalCard key={h.id} h={h} onManage={setSelected} />
-                        ))}
-                  </div>
+                <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+                  {isLoading
+                    ? Array.from({ length: 4 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                      />
+                    ))
+                    : sorted.map((h) => (
+                      <HospitalCard key={h.id} h={h} onManage={setSelected} />
+                    ))}
+                </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                      <p className="text-[11px] text-muted-foreground">
-                        Page{" "}
-                        <span className="font-semibold text-foreground">{filters.page}</span>
-                        {" "}of{" "}
-                        <span className="font-semibold text-foreground">{totalPages}</span>
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          disabled={filters.page <= 1}
-                          onClick={() => set("page", filters.page - 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronLeft className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={filters.page >= totalPages}
-                          onClick={() => set("page", filters.page + 1)}
-                          className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                    <p className="text-[11px] text-muted-foreground">
+                      Page{" "}
+                      <span className="font-semibold text-foreground">{filters.page}</span>
+                      {" "}of{" "}
+                      <span className="font-semibold text-foreground">{totalPages}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        disabled={filters.page <= 1}
+                        onClick={() => set("page", filters.page - 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        disabled={filters.page >= totalPages}
+                        onClick={() => set("page", filters.page + 1)}
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </main>
       </div>
 

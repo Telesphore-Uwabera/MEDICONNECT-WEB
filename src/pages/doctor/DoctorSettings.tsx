@@ -66,10 +66,10 @@ function formatDate(iso: string | null | undefined): string {
 // ─── Shared input styles ──────────────────────────────────────────────────────
 
 const inputCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 // ─── Field ────────────────────────────────────────────────────────────────────
 
@@ -126,14 +126,14 @@ function DisplayField({
 function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
   if (verified) {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-sm">
+      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
         Verified{date ? ` · ${formatDate(date)}` : ""}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-sm">
+    <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
       <Clock className="w-3 h-3" />
       Unverified
     </span>
@@ -191,9 +191,9 @@ function SectionCard({
   isEditing?: boolean;
 }) {
   return (
-    <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+    <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-border/50 flex items-center gap-3">
-        <div className="h-8 w-8 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+        <div className="h-8 w-8 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
           <Icon className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
@@ -203,7 +203,7 @@ function SectionCard({
         {onEdit && !isEditing && (
           <button
             onClick={onEdit}
-            className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-sm border border-border/50 transition-all"
+            className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-[6px] border border-border/50 transition-all"
           >
             <Pencil className="w-3 h-3" />
             Edit
@@ -230,7 +230,7 @@ function OtpStep({
 }) {
   const [otp, setOtp] = useState("");
   return (
-    <div className="mt-4 p-4 rounded-sm border border-primary/20 bg-primary/5 space-y-3">
+    <div className="mt-4 p-4 rounded-[6px] border border-primary/20 bg-primary/5 space-y-3">
       <p className="text-[11px] text-foreground font-medium">{label}</p>
       <Field label="OTP code" required>
         <input
@@ -246,7 +246,7 @@ function OtpStep({
       <div className="flex gap-2">
         <Button
           size="sm"
-          className="flex-1 h-8 text-[11px] rounded-sm gap-1.5"
+          className="flex-1 h-8 text-[11px] rounded-[6px] gap-1.5"
           onClick={() => onVerify(otp)}
           disabled={isPending || otp.length < 6}
         >
@@ -290,10 +290,10 @@ function InfoRow({
 type TabKey = "profile" | "security" | "contact" | "danger";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "profile",  label: "Profile",  icon: UserCog    },
-  { key: "security", label: "Security", icon: KeyRound   },
-  { key: "contact",  label: "Contact",  icon: Mail       },
-  { key: "danger",   label: "Danger",   icon: ShieldAlert },
+  { key: "profile", label: "Profile", icon: UserCog },
+  { key: "security", label: "Security", icon: KeyRound },
+  { key: "contact", label: "Contact", icon: Mail },
+  { key: "danger", label: "Danger", icon: ShieldAlert },
 ];
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -313,9 +313,9 @@ function DoctorSettings() {
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
 
   // Edit mode toggles
-  const [editingProfile, setEditingProfile]   = useState(false);
-  const [editingEmail, setEditingEmail]       = useState(false);
-  const [editingPhone, setEditingPhone]       = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
   const [editingPassword, setEditingPassword] = useState(false);
 
   // Profile form
@@ -354,15 +354,15 @@ function DoctorSettings() {
   const { data: settingsResponse, isLoading } = useGetMySettings();
   const settings = settingsResponse?.data;
 
-  const updateProfile  = useUpdateProfile();
-  const updateAvatar   = useUpdateAvatar();
-  const deleteAvatar   = useDeleteAvatar();
+  const updateProfile = useUpdateProfile();
+  const updateAvatar = useUpdateAvatar();
+  const deleteAvatar = useDeleteAvatar();
   const updatePassword = useUpdatePassword();
-  const requestEmail   = useRequestEmailChange();
-  const verifyEmail    = useVerifyEmailChange();
-  const requestPhone   = useRequestPhoneChange();
-  const verifyPhone    = useVerifyPhoneChange();
-  const deleteAccount  = useDeleteAccount();
+  const requestEmail = useRequestEmailChange();
+  const verifyEmail = useVerifyEmailChange();
+  const requestPhone = useRequestPhoneChange();
+  const verifyPhone = useVerifyPhoneChange();
+  const deleteAccount = useDeleteAccount();
 
   // Reset avatar error when URL changes
   useEffect(() => {
@@ -522,9 +522,9 @@ function DoctorSettings() {
         <div className="flex flex-col h-full">
           <PageHeader title="Settings" subtitle="Manage your account" />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-            <div className="h-36 rounded-sm border border-border/60 bg-card animate-pulse" />
+            <div className="h-36 rounded-[6px] border border-border/60 bg-card animate-pulse" />
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="h-40 rounded-sm border border-border/60 bg-card animate-pulse" />
+              <div key={i} className="h-40 rounded-[6px] border border-border/60 bg-card animate-pulse" />
             ))}
           </main>
         </div>
@@ -544,7 +544,7 @@ function DoctorSettings() {
 
           {/* ── Identity Hero Banner ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 mt-3 sm:mt-4">
-            <div className="rounded-sm border border-border/60 bg-card shadow-sm overflow-hidden">
+            <div className="rounded-[6px] border border-border/60 bg-card shadow-sm overflow-hidden">
               {/* Subtle teal gradient top strip */}
               <div className="px-5 py-4 flex items-center gap-4">
                 {/* Avatar — large, prominent */}
@@ -554,10 +554,10 @@ function DoctorSettings() {
                       src={settings!.avatar!}
                       alt={settings?.name ?? "Avatar"}
                       onError={() => setAvatarError(true)}
-                      className="h-[72px] w-[72px] rounded-sm object-cover border-2 border-primary/30 shadow-md"
+                      className="h-[72px] w-[72px] rounded-[6px] object-cover border-2 border-primary/30 shadow-md"
                     />
                   ) : (
-                    <div className="h-[72px] w-[72px] rounded-sm bg-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-md">
+                    <div className="h-[72px] w-[72px] rounded-[6px] bg-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-md">
                       <User className="w-8 h-8 text-primary/60" />
                     </div>
                   )}
@@ -565,7 +565,7 @@ function DoctorSettings() {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={updateAvatar.isPending}
-                    className="absolute inset-0 rounded-sm bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 rounded-[6px] bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Change photo"
                   >
                     {updateAvatar.isPending
@@ -593,12 +593,12 @@ function DoctorSettings() {
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                     {/* Account status */}
                     {settings?.is_verified ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-sm">
+                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <BadgeCheck className="w-3 h-3" />
                         Verified
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-sm">
+                      <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <Clock className="w-3 h-3" />
                         Unverified
                       </span>
@@ -607,7 +607,7 @@ function DoctorSettings() {
                     {settings?.roles?.map((role) => (
                       <span
                         key={role}
-                        className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20"
+                        className="inline-flex items-center px-1.5 py-0.5 rounded-[6px] text-[10px] font-semibold uppercase tracking-wide bg-primary/10 text-primary border border-primary/20"
                       >
                         {role}
                       </span>
@@ -620,7 +620,7 @@ function DoctorSettings() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 px-2.5 text-[11px] rounded-sm gap-1.5"
+                    className="h-7 px-2.5 text-[11px] rounded-[6px] gap-1.5"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={updateAvatar.isPending}
                   >
@@ -631,7 +631,7 @@ function DoctorSettings() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 px-2.5 text-[11px] rounded-sm border border-border/40 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 gap-1.5"
+                      className="h-7 px-2.5 text-[11px] rounded-[6px] border border-border/40 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 gap-1.5"
                       onClick={handleDeleteAvatar}
                       disabled={deleteAvatar.isPending}
                     >
@@ -649,16 +649,16 @@ function DoctorSettings() {
 
           {/* Tabs */}
           <div className="px-3 sm:px-4 mt-3">
-            <div className="flex items-center gap-1 p-1 rounded-sm bg-secondary/40 border border-border/40">
+            <div className="flex items-center gap-1 p-1 rounded-[6px] bg-secondary/40 border border-border/40">
               {TABS.map((tab) => {
-                const Icon   = tab.icon;
+                const Icon = tab.icon;
                 const active = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-sm transition-all duration-200",
+                      "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-[6px] transition-all duration-200",
                       active
                         ? "bg-card text-foreground shadow-sm border border-border/40"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
@@ -764,7 +764,7 @@ function DoctorSettings() {
                     </Field>
                     <div className="flex gap-2">
                       <Button
-                        className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
+                        className="h-9 px-5 text-[12px] rounded-[6px] gap-1.5"
                         onClick={handleProfileSave}
                         disabled={updateProfile.isPending}
                       >
@@ -777,7 +777,7 @@ function DoctorSettings() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="h-9 px-4 text-[12px] rounded-sm"
+                        className="h-9 px-4 text-[12px] rounded-[6px]"
                         onClick={() => setEditingProfile(false)}
                         disabled={updateProfile.isPending}
                       >
@@ -840,7 +840,7 @@ function DoctorSettings() {
                     </Field>
                     <div className="flex gap-2">
                       <Button
-                        className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
+                        className="h-9 px-5 text-[12px] rounded-[6px] gap-1.5"
                         onClick={handlePasswordSave}
                         disabled={updatePassword.isPending}
                       >
@@ -853,7 +853,7 @@ function DoctorSettings() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="h-9 px-4 text-[12px] rounded-sm"
+                        className="h-9 px-4 text-[12px] rounded-[6px]"
                         onClick={() => {
                           setEditingPassword(false);
                           setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
@@ -903,7 +903,7 @@ function DoctorSettings() {
                   ) : (
                     <>
                       {settings?.email && (
-                        <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
+                        <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
                           <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">{settings.email}</p>
                         </div>
@@ -929,7 +929,7 @@ function DoctorSettings() {
                       {!emailOtpStep ? (
                         <div className="flex gap-2">
                           <Button
-                            className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
+                            className="h-9 px-5 text-[12px] rounded-[6px] gap-1.5"
                             onClick={handleRequestEmail}
                             disabled={requestEmail.isPending}
                           >
@@ -942,7 +942,7 @@ function DoctorSettings() {
                           </Button>
                           <Button
                             variant="ghost"
-                            className="h-9 px-4 text-[12px] rounded-sm"
+                            className="h-9 px-4 text-[12px] rounded-[6px]"
                             onClick={() => setEditingEmail(false)}
                             disabled={requestEmail.isPending}
                           >
@@ -998,7 +998,7 @@ function DoctorSettings() {
                   ) : (
                     <>
                       {settings?.phone && (
-                        <div className="px-3 py-2.5 rounded-sm bg-secondary/40 border border-border/60">
+                        <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
                           <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">
                             {settings.country_code} {settings.phone}
@@ -1045,7 +1045,7 @@ function DoctorSettings() {
                       {!phoneOtpStep ? (
                         <div className="flex gap-2">
                           <Button
-                            className="h-9 px-5 text-[12px] rounded-sm gap-1.5"
+                            className="h-9 px-5 text-[12px] rounded-[6px] gap-1.5"
                             onClick={handleRequestPhone}
                             disabled={requestPhone.isPending}
                           >
@@ -1058,7 +1058,7 @@ function DoctorSettings() {
                           </Button>
                           <Button
                             variant="ghost"
-                            className="h-9 px-4 text-[12px] rounded-sm"
+                            className="h-9 px-4 text-[12px] rounded-[6px]"
                             onClick={() => setEditingPhone(false)}
                             disabled={requestPhone.isPending}
                           >
@@ -1082,10 +1082,10 @@ function DoctorSettings() {
 
             {/* ── Danger Tab ──────────────────────────────────────────────── */}
             {activeTab === "danger" && (
-              <div className="rounded-sm border border-red-200 bg-card overflow-hidden shadow-sm dark:border-red-900/50">
+              <div className="rounded-[6px] border border-red-200 bg-card overflow-hidden shadow-sm dark:border-red-900/50">
                 <div className="h-0.5 bg-gradient-to-r from-red-400/60 via-red-500 to-red-400/40" />
                 <div className="px-5 py-4 border-b border-red-200/80 dark:border-red-900/50 flex items-center gap-3 bg-red-50/50 dark:bg-red-950/20">
-                  <div className="h-8 w-8 rounded-sm bg-red-100 flex items-center justify-center border border-red-200 shrink-0 dark:bg-red-950/40 dark:border-red-900">
+                  <div className="h-8 w-8 rounded-[6px] bg-red-100 flex items-center justify-center border border-red-200 shrink-0 dark:bg-red-950/40 dark:border-red-900">
                     <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
@@ -1108,7 +1108,7 @@ function DoctorSettings() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 px-5 text-[12px] rounded-sm border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 gap-1.5"
+                        className="h-9 px-5 text-[12px] rounded-[6px] border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 gap-1.5"
                         onClick={() => setShowDeleteConfirm(true)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1117,7 +1117,7 @@ function DoctorSettings() {
                     </>
                   ) : (
                     <>
-                      <div className="p-3 rounded-sm bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
+                      <div className="p-3 rounded-[6px] bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
                         <p className="text-[11px] text-red-700 dark:text-red-400 font-medium">
                           Enter your password to confirm account deletion.
                         </p>
@@ -1133,7 +1133,7 @@ function DoctorSettings() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="flex-1 h-9 text-[12px] rounded-sm gap-1.5"
+                          className="flex-1 h-9 text-[12px] rounded-[6px] gap-1.5"
                           onClick={handleDeleteAccount}
                           disabled={deleteAccount.isPending || !deletePassword}
                         >
@@ -1147,7 +1147,7 @@ function DoctorSettings() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-9 px-4 text-[12px] rounded-sm"
+                          className="h-9 px-4 text-[12px] rounded-[6px]"
                           onClick={() => {
                             setShowDeleteConfirm(false);
                             setDeletePassword("");

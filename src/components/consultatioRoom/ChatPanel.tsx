@@ -40,7 +40,7 @@ const Bubble = ({
       >
         <div
           className={cn(
-            "px-3 py-2 rounded-2xl text-[12px] leading-relaxed break-words",
+            "px-3 py-2 rounded-[6px] text-[12px] leading-relaxed break-words",
             isMe
               ? "bg-primary text-primary-foreground rounded-br-sm"
               : "bg-white/10 text-white/90 rounded-bl-sm",
@@ -175,7 +175,7 @@ export const ChatPanel = ({
 
       {/* Input */}
       <div className="shrink-0 px-3 pb-3 pt-2 border-t border-white/10">
-        <div className="flex items-end gap-2 rounded-xl bg-white/8 border border-white/10 px-3 py-2 focus-within:border-white/25 transition-colors">
+        <div className="flex items-end gap-2 rounded-[6px] bg-white/8 border border-white/10 px-3 py-2 focus-within:border-white/25 transition-colors">
           <textarea
             ref={inputRef}
             rows={1}
@@ -199,7 +199,7 @@ export const ChatPanel = ({
             onClick={handleSend}
             disabled={!draft.trim() || chat.sending}
             className={cn(
-              "h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-all",
+              "h-7 w-7 rounded-[6px] flex items-center justify-center shrink-0 transition-all",
               draft.trim() && !chat.sending
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
                 : "text-white/20 cursor-not-allowed",

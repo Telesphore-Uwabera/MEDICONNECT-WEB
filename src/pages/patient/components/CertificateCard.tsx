@@ -138,7 +138,7 @@ function DrawerSection({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center flex-shrink-0">
+        <div className="w-6 h-6 rounded-[6px] bg-primary/8 flex items-center justify-center flex-shrink-0">
           <Icon className="h-3.5 w-3.5 text-primary" />
         </div>
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -266,7 +266,7 @@ function CertificateDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors flex-shrink-0 mt-0.5"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors flex-shrink-0 mt-0.5"
           >
             <X className="h-4 w-4" />
           </button>
@@ -278,7 +278,7 @@ function CertificateDrawer({
           {cert.decision && (
             <div
               className={cn(
-                "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border text-[12px] font-medium",
+                "flex items-center gap-2.5 px-3.5 py-2.5 rounded-[6px] border text-[12px] font-medium",
                 cert.decision === "fit"
                   ? "bg-emerald-500/8 border-emerald-500/25 text-emerald-700"
                   : "bg-destructive/8 border-destructive/25 text-destructive",
@@ -292,7 +292,7 @@ function CertificateDrawer({
 
           {/* Doctor notes */}
           {cert.doctor_notes && (
-            <div className="px-3.5 py-2.5 rounded-xl border border-border bg-muted/30 text-[11px] text-muted-foreground italic leading-relaxed">
+            <div className="px-3.5 py-2.5 rounded-[6px] border border-border bg-muted/30 text-[11px] text-muted-foreground italic leading-relaxed">
               "{cert.doctor_notes}"
               {cert.doctor && (
                 <span className="block mt-1 not-italic font-medium text-foreground/70">
@@ -304,7 +304,7 @@ function CertificateDrawer({
 
           {/* Red flags alert */}
           {activeRedFlags.length > 0 && (
-            <div className="px-3.5 py-3 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-1.5">
+            <div className="px-3.5 py-3 rounded-[6px] border border-amber-500/25 bg-amber-500/5 space-y-1.5">
               <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 mb-2">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Red flags detected
@@ -348,7 +348,7 @@ function CertificateDrawer({
             <DrawerSection icon={Activity} title="Vitals">
               <div className="grid grid-cols-2 gap-2">
                 {cert.temperature && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Thermometer className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Temp</p>
@@ -357,7 +357,7 @@ function CertificateDrawer({
                   </div>
                 )}
                 {cert.blood_pressure && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Heart className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wide">BP</p>
@@ -366,7 +366,7 @@ function CertificateDrawer({
                   </div>
                 )}
                 {cert.pulse && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Zap className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Pulse</p>
@@ -375,7 +375,7 @@ function CertificateDrawer({
                   </div>
                 )}
                 {cert.oxygen_saturation && (
-                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40 border border-border">
+                  <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Wind className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase tracking-wide">SpO₂</p>
@@ -412,7 +412,7 @@ function CertificateDrawer({
           {/* Symptom answers */}
           {step2Answers.length > 0 && (
             <DrawerSection icon={Stethoscope} title="Symptoms screening">
-              <div className="rounded-lg border border-border overflow-hidden bg-muted/20">
+              <div className="rounded-[6px] border border-border overflow-hidden bg-muted/20">
                 <div className="divide-y divide-border/50 px-3">
                   {step2Answers.map((a) => (
                     <AnswerItem key={a.id ?? a.question_key} answer={a} />
@@ -425,7 +425,7 @@ function CertificateDrawer({
           {/* Medical history answers */}
           {step3Answers.length > 0 && (
             <DrawerSection icon={ClipboardCheck} title="Medical history">
-              <div className="rounded-lg border border-border overflow-hidden bg-muted/20">
+              <div className="rounded-[6px] border border-border overflow-hidden bg-muted/20">
                 <div className="divide-y divide-border/50 px-3">
                   {step3Answers.map((a) => (
                     <AnswerItem key={a.id ?? a.question_key} answer={a} />
@@ -568,7 +568,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
   return (
     <>
-      <div className="border border-border/60 rounded-[16px] overflow-hidden bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+      <div className="border border-border/60 rounded-[6px] overflow-hidden bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
         {/* Progress bar for draft */}
         {cert.status === "draft" && (
           <div className="h-1 bg-muted">
@@ -585,7 +585,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
             {/* Left icon */}
             <div
               className={cn(
-                "w-12 h-12 rounded-[12px] flex items-center justify-center flex-shrink-0 border shadow-sm",
+                "w-12 h-12 rounded-[6px] flex items-center justify-center flex-shrink-0 border shadow-sm",
                 isApproved
                   ? "bg-emerald-500/10 border-emerald-500/20"
                   : cert.status === "rejected"
@@ -664,7 +664,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               size="sm"
               variant="ghost"
               onClick={() => setDrawerOpen(true)}
-              className="h-8 text-xs font-bold gap-1.5 text-muted-foreground hover:text-foreground px-3 rounded-[8px] hover:bg-muted/50"
+              className="h-8 text-xs font-bold gap-1.5 text-muted-foreground hover:text-foreground px-3 rounded-[6px] hover:bg-muted/50"
             >
               <Eye className="h-4 w-4" />
               View details
@@ -679,7 +679,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 size="sm"
                 onClick={handleJoinVerification}
                 disabled={joinSession.isPending}
-                className="h-8 text-xs font-bold gap-1.5 rounded-[8px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow"
+                className="h-8 text-xs font-bold gap-1.5 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow"
               >
                 {joinSession.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -696,14 +696,14 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 size="sm"
                 variant="outline"
                 onClick={handleDownload}
-                className="h-8 text-xs font-bold gap-1.5 border-border/60 hover:bg-muted/50 rounded-[8px]"
+                className="h-8 text-xs font-bold gap-1.5 border-border/60 hover:bg-muted/50 rounded-[6px]"
               >
                 <Download className="h-4 w-4 text-primary" />
                 Download PDF
               </Button>
             )}
             {isApproved && downloadPhase === "loading" && (
-              <Button size="sm" variant="outline" disabled className="h-8 text-xs font-bold gap-1.5 rounded-[8px]">
+              <Button size="sm" variant="outline" disabled className="h-8 text-xs font-bold gap-1.5 rounded-[6px]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading…
               </Button>
@@ -713,7 +713,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
         {/* Inline error */}
         {errorMsg && (
-          <div className="mx-4 mb-3 flex items-start gap-2 p-2.5 rounded-lg bg-destructive/5 border border-destructive/20 text-[11px] text-destructive">
+          <div className="mx-4 mb-3 flex items-start gap-2 p-2.5 rounded-[6px] bg-destructive/5 border border-destructive/20 text-[11px] text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             {errorMsg}
             <button
@@ -736,21 +736,21 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               A one-time fee applies to download your certificate PDF
             </span>
 
-           <div className="m-4" >
-             <PaymentPanel
-              title=""
-              paymentInfo={downloadPayment}
-              onPaymentConfirmed={handleDownloadPaymentConfirmed}
-              onRefreshInvoice={handleRefreshDownloadInvoice}
-              isRefreshingInvoice={isRefreshingDownloadInvoice}
-              onPayInitiate={handleDownloadPayInitiate}
-              onCancel={() => {
-                setDownloadPayment(null);
-                setDownloadPhase("idle");
-              }}
-              cancelLabel="Cancel download"
-            />
-           </div>
+            <div className="m-4" >
+              <PaymentPanel
+                title=""
+                paymentInfo={downloadPayment}
+                onPaymentConfirmed={handleDownloadPaymentConfirmed}
+                onRefreshInvoice={handleRefreshDownloadInvoice}
+                isRefreshingInvoice={isRefreshingDownloadInvoice}
+                onPayInitiate={handleDownloadPayInitiate}
+                onCancel={() => {
+                  setDownloadPayment(null);
+                  setDownloadPhase("idle");
+                }}
+                cancelLabel="Cancel download"
+              />
+            </div>
           </div>
         )}
 

@@ -31,6 +31,14 @@ export interface DoctorProfile {
     in_person_fee?: string | number;
     currency?: string;
   };
+  /** Specialist sub-types the doctor saved under their sub-specialization.
+   *  Field/name shape is read defensively (name / sub_type / sub_specialization). */
+  sub_specializations?: Array<{
+    id: number;
+    name?: string;
+    sub_type?: string;
+    sub_specialization?: string;
+  }>;
   educations: Education[];
   experiences: Experience[];
   qualifications: Qualification[];
@@ -57,6 +65,7 @@ export interface Experience {
   id: number;
   job_title: string;
   workplace: string;
+  description?: string | null;
   country: string;
   start_date: string;
   end_date: string | null;
@@ -107,6 +116,8 @@ export interface UpsertProfilePayload {
   bio_kiny?: string;
   // Add these:
   specialization_fee_id?: number | null;
+  sub_specialization?: string | null;   // "other" for a custom specialization
+  sub_specializations?: { id: number }[]; // specialist sub-types: [{ id }, …]
   years_of_experience?: number;
 }
 
@@ -121,6 +132,7 @@ export interface AddEducationPayload {
 export interface AddExperiencePayload {
   job_title: string;
   workplace: string;
+  description?: string | null;
   country: string;
   start_date: string;
   end_date?: string | null;
@@ -230,7 +242,7 @@ export function useAddExperience() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: AddExperiencePayload) =>
-      // Payload: { job_title, workplace, country, start_date, end_date, is_current }
+      // Payload: { job_title, workplace, description, country, start_date, end_date, is_current }
       apiFetch(`${BASE}/experience`, { method: "POST", body: payload }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["doctor-profile"] });

@@ -9,7 +9,7 @@ export const ThemeToggle = ({ className }: { className?: string }) => {
     <button
       onClick={toggleTheme}
       className={cn(
-        "relative flex items-center justify-center w-9 h-9 rounded-xl",
+        "relative flex items-center justify-center w-9 h-9 rounded-[6px]",
         "text-muted-foreground hover:text-foreground hover:bg-secondary",
         "transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30",
         className

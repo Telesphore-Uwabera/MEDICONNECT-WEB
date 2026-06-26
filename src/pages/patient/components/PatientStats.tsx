@@ -255,14 +255,14 @@ function KpiCard({
   loading,
 }: KpiCardProps) {
   return (
-    <div className="rounded-md border border-border/70 bg-card p-4 shadow-sm flex flex-col gap-3">
+    <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide leading-none">
           {label}
         </span>
         <div
           className={cn(
-            "w-8 h-8 rounded-md border flex items-center justify-center flex-shrink-0",
+            "w-8 h-8 rounded-[6px] border flex items-center justify-center flex-shrink-0",
             accentMap[accent],
           )}
         >
@@ -304,7 +304,7 @@ interface CustomTooltipProps {
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-md border border-border/60 bg-card shadow-lg p-3 text-xs">
+    <div className="rounded-[6px] border border-border/60 bg-card shadow-lg p-3 text-xs">
       <p className="font-semibold text-foreground mb-1.5">
         {String(label ?? "")}
       </p>
@@ -423,7 +423,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
     return (
       <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="grid lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 rounded-md border border-border/70 bg-card p-5 shadow-sm">
+          <div className="lg:col-span-2 rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
@@ -438,7 +438,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               </div>
               <Link
                 to="/patient/search-doctors"
-                className="h-9 inline-flex items-center justify-center rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                className="h-9 inline-flex items-center justify-center rounded-[6px] bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Find care
               </Link>
@@ -451,9 +451,9 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                   <Link
                     key={item.label}
                     to={item.to}
-                    className="rounded-md border border-border/60 bg-secondary/20 p-4 hover:border-primary/40 hover:bg-secondary/40 transition-colors"
+                    className="rounded-[6px] border border-border/60 bg-secondary/20 p-4 hover:border-primary/40 hover:bg-secondary/40 transition-colors"
                   >
-                    <div className={cn("h-9 w-9 rounded-md flex items-center justify-center", item.tone)}>
+                    <div className={cn("h-9 w-9 rounded-[6px] flex items-center justify-center", item.tone)}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <p className="text-2xl font-bold text-foreground mt-4 leading-none">
@@ -471,7 +471,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </div>
           </div>
 
-          <div className="rounded-md border border-border/70 bg-card p-5 shadow-sm flex flex-col gap-4">
+          <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -483,7 +483,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               </div>
               <span
                 className={cn(
-                  "h-9 w-9 rounded-md flex items-center justify-center",
+                  "h-9 w-9 rounded-[6px] flex items-center justify-center",
                   medProfile?.complete ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500",
                 )}
               >
@@ -492,7 +492,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </div>
             <div className="grid grid-cols-2 gap-2">
               {profileItems.map((item) => (
-                <div key={item.label} className="rounded-md border border-border/60 bg-secondary/20 px-3 py-2">
+                <div key={item.label} className="rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                     {item.label}
                   </p>
@@ -504,7 +504,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </div>
             <Link
               to="/patient/service-bookings"
-              className="mt-auto h-9 inline-flex items-center justify-center rounded-md border border-primary/30 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+              className="mt-auto h-9 inline-flex items-center justify-center rounded-[6px] border border-primary/30 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             >
               Review medical info
             </Link>
@@ -512,7 +512,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
-          <div className="rounded-md border border-border/70 bg-card p-5 shadow-sm">
+          <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               This period
             </p>
@@ -533,7 +533,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </div>
           </div>
 
-          <div className="rounded-md border border-border/70 bg-card p-5 shadow-sm">
+          <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               Payments
             </p>
@@ -548,7 +548,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </p>
           </div>
 
-          <div className="rounded-md border border-border/70 bg-card p-5 shadow-sm">
+          <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               Documents
             </p>
@@ -560,7 +560,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <Link
                   key={item.label}
                   to={item.to}
-                  className="flex items-center justify-between rounded-md border border-border/60 bg-secondary/20 px-3 py-2 hover:border-primary/40"
+                  className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2 hover:border-primary/40"
                 >
                   <span className="text-xs text-muted-foreground">{item.label}</span>
                   <span className="text-sm font-bold text-foreground">{isLoading ? "..." : item.value}</span>
@@ -576,256 +576,256 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
   return (
     <div className="space-y-4">
       {/* ── Filter Bar ── */}
-      <div className="rounded-md border border-border/70 bg-card shadow-sm p-4 space-y-3">
+      <div className="rounded-[6px] border border-border/70 bg-card shadow-sm p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-2">
-                <Filter className="w-4 h-4" />
-                Filters
-              </div>
-
-              {/* Period */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs rounded-md border-border/60 gap-1.5"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    {PERIOD_LABELS[filters.period]}
-                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="text-xs">
-                  {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-                    <DropdownMenuItem
-                      key={p}
-                      className={cn(
-                        "text-xs",
-                        filters.period === p && "text-primary font-semibold",
-                      )}
-                      onSelect={() => set("period", p)}
-                    >
-                      {PERIOD_LABELS[p]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Custom date range */}
-              {filters.period === "custom" && (
-                <>
-                  <Input
-                    type="date"
-                    className="h-8 text-xs rounded-md w-32"
-                    value={filters.start_date ?? ""}
-                    onChange={(e) => set("start_date", e.target.value)}
-                  />
-                  <span className="text-xs text-muted-foreground">→</span>
-                  <Input
-                    type="date"
-                    className="h-8 text-xs rounded-md w-32"
-                    value={filters.end_date ?? ""}
-                    onChange={(e) => set("end_date", e.target.value)}
-                  />
-                </>
-              )}
-
-              {/* Appointment Type */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "h-8 px-3 text-xs rounded-md border-border/60 gap-1.5",
-                      filters.appointment_type !== "all" &&
-                        "border-primary/40 text-primary bg-primary/5",
-                    )}
-                  >
-                    {TYPE_LABELS[filters.appointment_type]}
-                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {(Object.keys(TYPE_LABELS) as AppointmentType[]).map((t) => (
-                    <DropdownMenuItem
-                      key={t}
-                      className={cn(
-                        "text-xs",
-                        filters.appointment_type === t &&
-                          "text-primary font-semibold",
-                      )}
-                      onSelect={() => set("appointment_type", t)}
-                    >
-                      {TYPE_LABELS[t]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Status */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "h-8 px-3 text-xs rounded-md border-border/60 gap-1.5",
-                      filters.status !== "all" &&
-                        "border-primary/40 text-primary bg-primary/5",
-                    )}
-                  >
-                    {STATUS_LABELS[filters.status]}
-                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((s) => (
-                    <DropdownMenuItem
-                      key={s}
-                      className={cn(
-                        "text-xs",
-                        filters.status === s && "text-primary font-semibold",
-                      )}
-                      onSelect={() => set("status", s)}
-                    >
-                      {STATUS_LABELS[s]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Chart Group */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3 text-xs rounded-md border-border/60 gap-1.5"
-                  >
-                    <BarChart2 className="w-3.5 h-3.5" />
-                    {GROUP_LABELS[filters.chart_group]}
-                    <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {(Object.keys(GROUP_LABELS) as ChartGroup[]).map((g) => (
-                    <DropdownMenuItem
-                      key={g}
-                      className={cn(
-                        "text-xs",
-                        filters.chart_group === g &&
-                          "text-primary font-semibold",
-                      )}
-                      onSelect={() => set("chart_group", g)}
-                    >
-                      {GROUP_LABELS[g]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Search */}
-              <div className="flex items-center gap-2 ml-auto">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search doctor, hospital…"
-                    className={cn(
-                      "h-8 pl-8 pr-3 text-xs rounded-md w-48 transition-colors",
-                      filters.search && "border-primary/40 bg-primary/5",
-                    )}
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") set("search", searchInput);
-                    }}
-                  />
-                  {searchInput && (
-                    <button
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        setSearchInput("");
-                        set("search", "");
-                      }}
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  className="h-8 px-4 text-xs rounded-md"
-                  onClick={() => set("search", searchInput)}
-                >
-                  Search
-                </Button>
-              </div>
-
-              {isFetching && (
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              )}
-            </div>
-
-            {/* Active Filter Pills */}
-            {hasActiveFilters && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
-                <span className="text-xs text-muted-foreground font-medium mr-1">
-                  Active:
-                </span>
-
-                {filters.appointment_type !== "all" && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    onClick={() => set("appointment_type", "all")}
-                  >
-                    {TYPE_LABELS[filters.appointment_type]}
-                    <XCircle className="w-3 h-3" />
-                  </Badge>
-                )}
-
-                {filters.status !== "all" && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    onClick={() => set("status", "all")}
-                  >
-                    {STATUS_LABELS[filters.status]}
-                    <XCircle className="w-3 h-3" />
-                  </Badge>
-                )}
-
-                {filters.search && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    onClick={() => {
-                      set("search", "");
-                      setSearchInput("");
-                    }}
-                  >
-                    &ldquo;{filters.search}&rdquo;
-                    <XCircle className="w-3 h-3" />
-                  </Badge>
-                )}
-
-                <button
-                  onClick={clearAllFilters}
-                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-2 transition-colors"
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-2">
+            <Filter className="w-4 h-4" />
+            Filters
           </div>
 
-          {/* ── Tab Content ── */}
-          {activeTab === "activity" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* ── Today's Snapshot ── */}
-              <div>
+          {/* Period */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs rounded-[6px] border-border/60 gap-1.5"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                {PERIOD_LABELS[filters.period]}
+                <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="text-xs">
+              {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                <DropdownMenuItem
+                  key={p}
+                  className={cn(
+                    "text-xs",
+                    filters.period === p && "text-primary font-semibold",
+                  )}
+                  onSelect={() => set("period", p)}
+                >
+                  {PERIOD_LABELS[p]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Custom date range */}
+          {filters.period === "custom" && (
+            <>
+              <Input
+                type="date"
+                className="h-8 text-xs rounded-[6px] w-32"
+                value={filters.start_date ?? ""}
+                onChange={(e) => set("start_date", e.target.value)}
+              />
+              <span className="text-xs text-muted-foreground">→</span>
+              <Input
+                type="date"
+                className="h-8 text-xs rounded-[6px] w-32"
+                value={filters.end_date ?? ""}
+                onChange={(e) => set("end_date", e.target.value)}
+              />
+            </>
+          )}
+
+          {/* Appointment Type */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 px-3 text-xs rounded-[6px] border-border/60 gap-1.5",
+                  filters.appointment_type !== "all" &&
+                  "border-primary/40 text-primary bg-primary/5",
+                )}
+              >
+                {TYPE_LABELS[filters.appointment_type]}
+                <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {(Object.keys(TYPE_LABELS) as AppointmentType[]).map((t) => (
+                <DropdownMenuItem
+                  key={t}
+                  className={cn(
+                    "text-xs",
+                    filters.appointment_type === t &&
+                    "text-primary font-semibold",
+                  )}
+                  onSelect={() => set("appointment_type", t)}
+                >
+                  {TYPE_LABELS[t]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Status */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 px-3 text-xs rounded-[6px] border-border/60 gap-1.5",
+                  filters.status !== "all" &&
+                  "border-primary/40 text-primary bg-primary/5",
+                )}
+              >
+                {STATUS_LABELS[filters.status]}
+                <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {(Object.keys(STATUS_LABELS) as StatusFilter[]).map((s) => (
+                <DropdownMenuItem
+                  key={s}
+                  className={cn(
+                    "text-xs",
+                    filters.status === s && "text-primary font-semibold",
+                  )}
+                  onSelect={() => set("status", s)}
+                >
+                  {STATUS_LABELS[s]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Chart Group */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs rounded-[6px] border-border/60 gap-1.5"
+              >
+                <BarChart2 className="w-3.5 h-3.5" />
+                {GROUP_LABELS[filters.chart_group]}
+                <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {(Object.keys(GROUP_LABELS) as ChartGroup[]).map((g) => (
+                <DropdownMenuItem
+                  key={g}
+                  className={cn(
+                    "text-xs",
+                    filters.chart_group === g &&
+                    "text-primary font-semibold",
+                  )}
+                  onSelect={() => set("chart_group", g)}
+                >
+                  {GROUP_LABELS[g]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Search */}
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search doctor, hospital…"
+                className={cn(
+                  "h-8 pl-8 pr-3 text-xs rounded-[6px] w-48 transition-colors",
+                  filters.search && "border-primary/40 bg-primary/5",
+                )}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") set("search", searchInput);
+                }}
+              />
+              {searchInput && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setSearchInput("");
+                    set("search", "");
+                  }}
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <Button
+              size="sm"
+              className="h-8 px-4 text-xs rounded-[6px]"
+              onClick={() => set("search", searchInput)}
+            >
+              Search
+            </Button>
+          </div>
+
+          {isFetching && (
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+
+        {/* Active Filter Pills */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
+            <span className="text-xs text-muted-foreground font-medium mr-1">
+              Active:
+            </span>
+
+            {filters.appointment_type !== "all" && (
+              <Badge
+                variant="secondary"
+                className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => set("appointment_type", "all")}
+              >
+                {TYPE_LABELS[filters.appointment_type]}
+                <XCircle className="w-3 h-3" />
+              </Badge>
+            )}
+
+            {filters.status !== "all" && (
+              <Badge
+                variant="secondary"
+                className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => set("status", "all")}
+              >
+                {STATUS_LABELS[filters.status]}
+                <XCircle className="w-3 h-3" />
+              </Badge>
+            )}
+
+            {filters.search && (
+              <Badge
+                variant="secondary"
+                className="text-xs h-6 px-2.5 gap-1.5 cursor-pointer hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => {
+                  set("search", "");
+                  setSearchInput("");
+                }}
+              >
+                &ldquo;{filters.search}&rdquo;
+                <XCircle className="w-3 h-3" />
+              </Badge>
+            )}
+
+            <button
+              onClick={clearAllFilters}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-2 transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Tab Content ── */}
+      {activeTab === "activity" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* ── Today's Snapshot ── */}
+          <div>
             <SectionLabel>Today</SectionLabel>
             <div className="grid grid-cols-3 lg:grid-cols-6 gap-1.5">
               <KpiCard
@@ -878,8 +878,8 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <SectionLabel>
               Period —{" "}
               {filters.period === "custom" &&
-              filters.start_date &&
-              filters.end_date
+                filters.start_date &&
+                filters.end_date
                 ? `${filters.start_date} → ${filters.end_date}`
                 : data?.filters_applied?.from
                   ? `${data.filters_applied.from} → ${data.filters_applied.to}`
@@ -948,7 +948,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
           </div>
 
           {/* ── Activity Chart ── */}
-          <div className="rounded-[16px] border border-border/80 bg-card shadow-sm overflow-hidden">
+          <div className="rounded-[6px] border border-border/80 bg-card shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
               <div>
                 <h2 className="text-sm font-bold text-foreground">
@@ -963,7 +963,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                     ` · ${STATUS_LABELS[filters.status]}`}
                 </p>
               </div>
-              <div className="flex items-center gap-1 rounded-[8px] border border-border/60 p-1 bg-background/50">
+              <div className="flex items-center gap-1 rounded-[6px] border border-border/60 p-1 bg-background/50">
                 {(["area", "bar"] as const).map((t) => (
                   <button
                     key={t}
@@ -1161,259 +1161,259 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               )}
             </div>
           </div>
-            </div>
-          )}
-
-          {activeTab === "financial" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* ── Spending ── */}
-              <div>
-                <SectionLabel>Spending</SectionLabel>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-                  <KpiCard
-                    label="Total Spent"
-                    value={`RWF${spending?.total ?? 0}`}
-                    icon={TrendingUp}
-                    accent="primary"
-                    loading={isLoading}
-                    sub={
-                      spending?.change_percent != null
-                        ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
-                        : undefined
-                    }
-                  />
-                  <KpiCard
-                    label="Insurance Saved"
-                    value={`RWF${spending?.total_insurance_saved ?? 0}`}
-                    icon={ShieldCheck}
-                    accent="success"
-                    loading={isLoading}
-                  />
-                  <KpiCard
-                    label="Avg / Appointment"
-                    value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
-                    icon={BarChart2}
-                    accent="info"
-                    loading={isLoading}
-                  />
-                  <KpiCard
-                    label="Service Bookings"
-                    value={spending?.breakdown.service_bookings.booking_count ?? 0}
-                    icon={FileText}
-                    accent="violet"
-                    loading={isLoading}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "clinical" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* ── Instant / Prescriptions / Certificates ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
-                {/* Instant Consults */}
-                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-amber-500/10">
-                      <Zap className="w-4 h-4 text-amber-500" />
-                    </div>
-                    Instant Consults
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {[
-                      { label: "Total", val: instant?.total ?? 0 },
-                      { label: "Completed", val: instant?.completed ?? 0 },
-                      { label: "Pending", val: instant?.pending ?? 0 },
-                      { label: "Declined", val: instant?.declined ?? 0 },
-                      { label: "Active Now", val: instant?.active_now ?? 0 },
-                      {
-                        label: "Avg Duration",
-                        val: `${instant?.avg_duration_min ?? 0}m`,
-                      },
-                    ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
-                      >
-                        <span className="text-muted-foreground font-medium">{label}</span>
-                        <span className="font-bold text-foreground text-sm">{val}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Prescriptions */}
-                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-emerald-500/10">
-                      <Pill className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    Prescriptions
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {[
-                      { label: "Total", val: prescriptions?.total ?? 0 },
-                      { label: "Active", val: prescriptions?.active ?? 0 },
-                      { label: "Issued", val: prescriptions?.issued ?? 0 },
-                      { label: "Signed", val: prescriptions?.signed ?? 0 },
-                      { label: "Draft", val: prescriptions?.draft ?? 0 },
-                      {
-                        label: "Expiring Soon",
-                        val: prescriptions?.expiring_soon ?? 0,
-                      },
-                    ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
-                      >
-                        <span className="text-muted-foreground font-medium">{label}</span>
-                        <span
-                          className={cn(
-                            "font-bold text-foreground text-sm",
-                            label === "Expiring Soon" &&
-                              (val as number) > 0 &&
-                              "text-amber-500",
-                          )}
-                        >
-                          {val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Certificates */}
-                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-sky-500/10">
-                      <FileText className="w-4 h-4 text-sky-500" />
-                    </div>
-                    Certificates
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {[
-                      { label: "Total", val: certificates?.total ?? 0 },
-                      { label: "Issued", val: certificates?.issued ?? 0 },
-                      { label: "Pending", val: certificates?.pending ?? 0 },
-                      { label: "Signed", val: certificates?.signed ?? 0 },
-                      { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
-                      {
-                        label: "Req. In-Person",
-                        val: certificates?.required_inperson ?? 0,
-                      },
-                    ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
-                      >
-                        <span className="text-muted-foreground font-medium">{label}</span>
-                        <span
-                          className={cn(
-                            "font-bold text-foreground text-sm",
-                            label === "Red Flags" &&
-                              (val as number) > 0 &&
-                              "text-rose-500",
-                          )}
-                        >
-                          {val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {/* ── Reviews & Medical Profile ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
-                {/* Reviews */}
-                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-amber-400/10">
-                      <Star className="w-4 h-4 text-amber-400" />
-                    </div>
-                    Reviews
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {[
-                      { label: "Total", val: reviews?.total ?? 0 },
-                      {
-                        label: "Avg Rating",
-                        val:
-                          reviews?.avg_rating != null
-                            ? reviews.avg_rating.toFixed(1)
-                            : "—",
-                      },
-                      { label: "5 Star", val: reviews?.five_star ?? 0 },
-                      { label: "4 Star", val: reviews?.four_star ?? 0 },
-                      { label: "3 Star", val: reviews?.three_star ?? 0 },
-                      {
-                        label: "Pending Review",
-                        val: reviews?.pending_review ?? 0,
-                      },
-                    ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
-                      >
-                        <span className="text-muted-foreground font-medium">{label}</span>
-                        <span className="font-bold text-foreground text-sm">{val}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Medical Profile */}
-                <div className="rounded-[12px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-sky-500/10">
-                      <Stethoscope className="w-4 h-4 text-sky-500" />
-                    </div>
-                    Medical Profile
-                    {medProfile?.complete && (
-                      <Badge
-                        variant="outline"
-                        className="ml-auto text-[10px] px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10 rounded-[4px]"
-                      >
-                        Complete
-                      </Badge>
-                    )}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    {[
-                      { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
-                      {
-                        label: "Conditions",
-                        val: medProfile?.conditions_count ?? 0,
-                      },
-                      {
-                        label: "Medications",
-                        val: medProfile?.medications_count ?? 0,
-                      },
-                      { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
-                      { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
-                      { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
-                    ].map(({ label, val }) => (
-                      <div
-                        key={label}
-                        className="flex flex-col gap-1 border-b border-border/40 pb-2"
-                      >
-                        <span className="text-muted-foreground font-medium">{label}</span>
-                        <span className="font-bold text-foreground text-sm capitalize">
-                          {val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  {medProfile?.has_family_history && (
-                    <div className="mt-4 p-2.5 rounded-md border border-amber-500/20 bg-amber-500/10 flex items-center gap-2 text-xs font-medium text-amber-600">
-                      <AlertTriangle className="w-4 h-4" /> Has family history recorded
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
+      )}
+
+      {activeTab === "financial" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* ── Spending ── */}
+          <div>
+            <SectionLabel>Spending</SectionLabel>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+              <KpiCard
+                label="Total Spent"
+                value={`RWF${spending?.total ?? 0}`}
+                icon={TrendingUp}
+                accent="primary"
+                loading={isLoading}
+                sub={
+                  spending?.change_percent != null
+                    ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
+                    : undefined
+                }
+              />
+              <KpiCard
+                label="Insurance Saved"
+                value={`RWF${spending?.total_insurance_saved ?? 0}`}
+                icon={ShieldCheck}
+                accent="success"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Avg / Appointment"
+                value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
+                icon={BarChart2}
+                accent="info"
+                loading={isLoading}
+              />
+              <KpiCard
+                label="Service Bookings"
+                value={spending?.breakdown.service_bookings.booking_count ?? 0}
+                icon={FileText}
+                accent="violet"
+                loading={isLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "clinical" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* ── Instant / Prescriptions / Certificates ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
+            {/* Instant Consults */}
+            <div className="rounded-[6px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-[6px] bg-amber-500/10">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                </div>
+                Instant Consults
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  { label: "Total", val: instant?.total ?? 0 },
+                  { label: "Completed", val: instant?.completed ?? 0 },
+                  { label: "Pending", val: instant?.pending ?? 0 },
+                  { label: "Declined", val: instant?.declined ?? 0 },
+                  { label: "Active Now", val: instant?.active_now ?? 0 },
+                  {
+                    label: "Avg Duration",
+                    val: `${instant?.avg_duration_min ?? 0}m`,
+                  },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                  >
+                    <span className="text-muted-foreground font-medium">{label}</span>
+                    <span className="font-bold text-foreground text-sm">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Prescriptions */}
+            <div className="rounded-[6px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-[6px] bg-emerald-500/10">
+                  <Pill className="w-4 h-4 text-emerald-500" />
+                </div>
+                Prescriptions
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  { label: "Total", val: prescriptions?.total ?? 0 },
+                  { label: "Active", val: prescriptions?.active ?? 0 },
+                  { label: "Issued", val: prescriptions?.issued ?? 0 },
+                  { label: "Signed", val: prescriptions?.signed ?? 0 },
+                  { label: "Draft", val: prescriptions?.draft ?? 0 },
+                  {
+                    label: "Expiring Soon",
+                    val: prescriptions?.expiring_soon ?? 0,
+                  },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                  >
+                    <span className="text-muted-foreground font-medium">{label}</span>
+                    <span
+                      className={cn(
+                        "font-bold text-foreground text-sm",
+                        label === "Expiring Soon" &&
+                        (val as number) > 0 &&
+                        "text-amber-500",
+                      )}
+                    >
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Certificates */}
+            <div className="rounded-[6px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-[6px] bg-sky-500/10">
+                  <FileText className="w-4 h-4 text-sky-500" />
+                </div>
+                Certificates
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  { label: "Total", val: certificates?.total ?? 0 },
+                  { label: "Issued", val: certificates?.issued ?? 0 },
+                  { label: "Pending", val: certificates?.pending ?? 0 },
+                  { label: "Signed", val: certificates?.signed ?? 0 },
+                  { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
+                  {
+                    label: "Req. In-Person",
+                    val: certificates?.required_inperson ?? 0,
+                  },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                  >
+                    <span className="text-muted-foreground font-medium">{label}</span>
+                    <span
+                      className={cn(
+                        "font-bold text-foreground text-sm",
+                        label === "Red Flags" &&
+                        (val as number) > 0 &&
+                        "text-rose-500",
+                      )}
+                    >
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* ── Reviews & Medical Profile ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+            {/* Reviews */}
+            <div className="rounded-[6px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-[6px] bg-amber-400/10">
+                  <Star className="w-4 h-4 text-amber-400" />
+                </div>
+                Reviews
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  { label: "Total", val: reviews?.total ?? 0 },
+                  {
+                    label: "Avg Rating",
+                    val:
+                      reviews?.avg_rating != null
+                        ? reviews.avg_rating.toFixed(1)
+                        : "—",
+                  },
+                  { label: "5 Star", val: reviews?.five_star ?? 0 },
+                  { label: "4 Star", val: reviews?.four_star ?? 0 },
+                  { label: "3 Star", val: reviews?.three_star ?? 0 },
+                  {
+                    label: "Pending Review",
+                    val: reviews?.pending_review ?? 0,
+                  },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                  >
+                    <span className="text-muted-foreground font-medium">{label}</span>
+                    <span className="font-bold text-foreground text-sm">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Medical Profile */}
+            <div className="rounded-[6px] border border-border/80 bg-card shadow-sm p-5 hover:shadow-md transition-shadow">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="p-1.5 rounded-[6px] bg-sky-500/10">
+                  <Stethoscope className="w-4 h-4 text-sky-500" />
+                </div>
+                Medical Profile
+                {medProfile?.complete && (
+                  <Badge
+                    variant="outline"
+                    className="ml-auto text-[10px] px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10 rounded-[4px]"
+                  >
+                    Complete
+                  </Badge>
+                )}
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                {[
+                  { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
+                  {
+                    label: "Conditions",
+                    val: medProfile?.conditions_count ?? 0,
+                  },
+                  {
+                    label: "Medications",
+                    val: medProfile?.medications_count ?? 0,
+                  },
+                  { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
+                  { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
+                  { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
+                ].map(({ label, val }) => (
+                  <div
+                    key={label}
+                    className="flex flex-col gap-1 border-b border-border/40 pb-2"
+                  >
+                    <span className="text-muted-foreground font-medium">{label}</span>
+                    <span className="font-bold text-foreground text-sm capitalize">
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {medProfile?.has_family_history && (
+                <div className="mt-4 p-2.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 flex items-center gap-2 text-xs font-medium text-amber-600">
+                  <AlertTriangle className="w-4 h-4" /> Has family history recorded
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

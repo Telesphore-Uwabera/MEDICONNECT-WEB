@@ -33,16 +33,16 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 }
 
 function PillGroup<T extends string>({ value, onChange, options }: {
-  value:    T;
+  value: T;
   onChange: (v: T) => void;
-  options:  { value: T; label: string; count?: number }[];
+  options: { value: T; label: string; count?: number }[];
 }) {
   return (
     <div className="flex flex-col gap-1">
       {options.map((o) => (
         <button key={o.value} onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center justify-between",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -63,18 +63,18 @@ function PillGroup<T extends string>({ value, onChange, options }: {
 // ─── FilterSidebar ────────────────────────────────────────────────────────────
 
 export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters, onSet, onClearAll }: {
-  filters:          FilterState;
-  cities:           string[];
-  statusCounts:     Record<string, number>;
+  filters: FilterState;
+  cities: string[];
+  statusCounts: Record<string, number>;
   hasActiveFilters: boolean;
-  onSet:            <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
-  onClearAll:       () => void;
+  onSet: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void;
+  onClearAll: () => void;
 }) {
   return (
     <>
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-sm bg-primary/10 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-[6px] bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-3 h-3 text-primary" />
           </div>
           <span className="text-[11px] font-semibold text-foreground">Filters</span>
@@ -93,11 +93,11 @@ export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters,
             value={filters.status}
             onChange={(v) => onSet("status", v)}
             options={[
-              { value: "all",       label: "All" },
-              { value: "active",    label: "Active",    count: statusCounts["active"]    ?? 0 },
-              { value: "pending",   label: "Pending",   count: statusCounts["pending"]   ?? 0 },
+              { value: "all", label: "All" },
+              { value: "active", label: "Active", count: statusCounts["active"] ?? 0 },
+              { value: "pending", label: "Pending", count: statusCounts["pending"] ?? 0 },
               { value: "suspended", label: "Suspended", count: statusCounts["suspended"] ?? 0 },
-              { value: "rejected",  label: "Rejected",  count: statusCounts["rejected"]  ?? 0 },
+              { value: "rejected", label: "Rejected", count: statusCounts["rejected"] ?? 0 },
             ]}
           />
         </FilterSection>
@@ -108,7 +108,7 @@ export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters,
               {["", ...cities].map((city) => (
                 <button key={city || "__all__"} onClick={() => onSet("city", city)}
                   className={cn(
-                    "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
+                    "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left",
                     filters.city === city
                       ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
                       : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -127,8 +127,8 @@ export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters,
 // ─── MobileFilterSheet ────────────────────────────────────────────────────────
 
 export function MobileFilterSheet({ open, onClose, children }: {
-  open:     boolean;
-  onClose:  () => void;
+  open: boolean;
+  onClose: () => void;
   children: React.ReactNode;
 }) {
   useEffect(() => {
@@ -152,7 +152,7 @@ export function MobileFilterSheet({ open, onClose, children }: {
         <div className="overflow-y-auto flex-1">{children}</div>
         <div className="flex-shrink-0 px-4 py-4 border-t border-border">
           <button onClick={onClose}
-            className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
+            className="w-full py-3 rounded-[6px] bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors">
             Show results
           </button>
         </div>
@@ -164,16 +164,16 @@ export function MobileFilterSheet({ open, onClose, children }: {
 // ─── MetaBar ──────────────────────────────────────────────────────────────────
 
 export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, searchInput, sort, onSearch, onSort, onClearAll, onFilterOpen }: {
-  total:            number;
-  isLoading:        boolean;
-  pendingCount:     number;
+  total: number;
+  isLoading: boolean;
+  pendingCount: number;
   hasActiveFilters: boolean;
-  searchInput:      string;
-  sort:             SortOption;
-  onSearch:         (v: string) => void;
-  onSort:           (v: SortOption) => void;
-  onClearAll:       () => void;
-  onFilterOpen:     () => void;
+  searchInput: string;
+  sort: SortOption;
+  onSearch: (v: string) => void;
+  onSort: (v: SortOption) => void;
+  onClearAll: () => void;
+  onFilterOpen: () => void;
 }) {
   return (
     <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
@@ -190,7 +190,7 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
           )}
         </p>
         {pendingCount > 0 && (
-          <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm shrink-0">
+          <span className="hidden sm:flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />{pendingCount} pending
           </span>
         )}
@@ -201,17 +201,17 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <input type="text" value={searchInput} onChange={(e) => onSearch(e.target.value)}
             placeholder="Search name, phone, email…"
-            className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
+            className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
         </div>
         <div className="relative">
           <select value={sort} onChange={(e) => onSort(e.target.value as SortOption)}
-            className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none">
+            className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none">
             {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
         </div>
         <button onClick={onFilterOpen}
-          className={cn("md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-sm border text-[11px] transition-colors",
+          className={cn("md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-[6px] border text-[11px] transition-colors",
             hasActiveFilters ? "bg-primary text-white border-primary" : "border-border/60 text-muted-foreground bg-card")}>
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span className="hidden xs:inline">Filters</span>
@@ -231,7 +231,7 @@ export function MobileSearchBar({ searchInput, onSearch }: { searchInput: string
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
         <input type="text" value={searchInput} onChange={(e) => onSearch(e.target.value)}
           placeholder="Search name, phone, email…"
-          className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
+          className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
         {searchInput && (
           <button onClick={() => onSearch("")}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground">
@@ -246,18 +246,18 @@ export function MobileSearchBar({ searchInput, onSearch }: { searchInput: string
 // ─── PharmacyTable ────────────────────────────────────────────────────────────
 
 export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManage, onPageChange, onClearAll }: {
-  pharmacies:   ApiPharmacy[];
-  isLoading:    boolean;
-  page:         number;
-  totalPages:   number;
-  onManage:     (p: ApiPharmacy) => void;
+  pharmacies: ApiPharmacy[];
+  isLoading: boolean;
+  page: number;
+  totalPages: number;
+  onManage: (p: ApiPharmacy) => void;
   onPageChange: (page: number) => void;
-  onClearAll:   () => void;
+  onClearAll: () => void;
 }) {
   if (!isLoading && pharmacies.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-        <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+        <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
           <FlaskConical className="w-6 h-6 text-muted-foreground/50" />
         </div>
         <div>
@@ -275,7 +275,7 @@ export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManag
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+      <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
         <table className="w-full text-[11px]">
           <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
             <tr>
@@ -298,8 +298,8 @@ export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManag
       <div className="md:hidden flex flex-col gap-2">
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
-            ))
+            <div key={i} className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse" />
+          ))
           : pharmacies.map((p) => <PharmacyCard key={p.id} p={p} onManage={onManage} />)}
       </div>
 
@@ -312,11 +312,11 @@ export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManag
           </p>
           <div className="flex items-center gap-1.5">
             {[
-              { icon: ChevronLeft,  disabled: page <= 1,           next: page - 1 },
-              { icon: ChevronRight, disabled: page >= totalPages,  next: page + 1 },
+              { icon: ChevronLeft, disabled: page <= 1, next: page - 1 },
+              { icon: ChevronRight, disabled: page >= totalPages, next: page + 1 },
             ].map(({ icon: Icon, disabled, next }) => (
               <button key={next} disabled={disabled} onClick={() => onPageChange(next)}
-                className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <Icon className="w-3.5 h-3.5" />
               </button>
             ))}
@@ -341,7 +341,7 @@ function PanelInfoTile({
 }) {
   return (
     <div className={cn(
-      "group p-3 rounded-[10px] border border-border/40 bg-card/60",
+      "group p-3 rounded-[6px] border border-border/40 bg-card/60",
       "hover:border-primary/40 hover:bg-accent/30 transition-all duration-150",
       full && "col-span-2",
     )}>
@@ -383,11 +383,11 @@ function StatusPill({ children, variant = "default" }: {
   const styles: Record<string, string> = {
     default: "bg-secondary/70 text-muted-foreground border-border/35",
     primary: "bg-accent text-accent-foreground border-primary/30",
-    teal:    "bg-accent/60 text-accent-foreground border-primary/25",
-    amber:   "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-    red:     "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
+    teal: "bg-accent/60 text-accent-foreground border-primary/25",
+    amber: "bg-amber-50 dark:bg-amber-950/25 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
+    red: "bg-red-50 dark:bg-red-950/25 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/60",
     emerald: "bg-emerald-50 dark:bg-emerald-950/25 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-    violet:  "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
+    violet: "bg-violet-50 dark:bg-violet-950/25 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   };
   return (
     <span className={cn(
@@ -403,7 +403,7 @@ function LoadingRows() {
   return (
     <div className="flex flex-col gap-2 animate-pulse max-w-[640px]">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 rounded-[10px] bg-accent/20" />
+        <div key={i} className="h-14 rounded-[6px] bg-accent/20" />
       ))}
     </div>
   );
@@ -418,7 +418,7 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
 
         {/* Description */}
         {(p.description_en || p.description_rw) && (
-          <div className="p-4 rounded-[10px] border border-primary/20 bg-accent/20">
+          <div className="p-4 rounded-[6px] border border-primary/20 bg-accent/20">
             <div className="flex items-center gap-1.5 mb-2">
               <FileText className="w-3 h-3 text-primary" />
               <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-primary/60">About</span>
@@ -441,8 +441,8 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
             {p.registration_number && (
               <PanelInfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Registration no." value={p.registration_number} mono full />
             )}
-            <PanelInfoTile icon={<Hash     className="w-2.5 h-2.5" />} label="Pharmacy ID" value={`#${p.id}`} mono />
-            <PanelInfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined"      value={new Date(p.created_at).toLocaleDateString()} />
+            <PanelInfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Pharmacy ID" value={`#${p.id}`} mono />
+            <PanelInfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(p.created_at).toLocaleDateString()} />
             {p.updated_at && (
               <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Last updated" value={new Date(p.updated_at).toLocaleDateString()} />
             )}
@@ -464,7 +464,7 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
               <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value="Open 24 hours" full />
             ) : p.opens_at && p.closes_at ? (
               <>
-                <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Opens at"  value={p.opens_at.slice(0, 5)} />
+                <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Opens at" value={p.opens_at.slice(0, 5)} />
                 <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Closes at" value={p.closes_at.slice(0, 5)} />
               </>
             ) : (
@@ -478,10 +478,10 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
           <div>
             <SectionHeading>Location</SectionHeading>
             <div className="grid grid-cols-2 gap-2">
-              {p.address  && <PanelInfoTile icon={<MapPin   className="w-2.5 h-2.5" />} label="Address"   value={p.address}  full />}
-              {p.city     && <PanelInfoTile icon={<MapPin   className="w-2.5 h-2.5" />} label="City"      value={p.city}     />}
-              {p.province && <PanelInfoTile icon={<MapPin   className="w-2.5 h-2.5" />} label="Province"  value={p.province} />}
-              {p.country  && <PanelInfoTile icon={<Globe    className="w-2.5 h-2.5" />} label="Country"   value={p.country}  />}
+              {p.address && <PanelInfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Address" value={p.address} full />}
+              {p.city && <PanelInfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="City" value={p.city} />}
+              {p.province && <PanelInfoTile icon={<MapPin className="w-2.5 h-2.5" />} label="Province" value={p.province} />}
+              {p.country && <PanelInfoTile icon={<Globe className="w-2.5 h-2.5" />} label="Country" value={p.country} />}
               {p.latitude != null && p.longitude != null && (
                 <PanelInfoTile
                   icon={<Navigation className="w-2.5 h-2.5" />}
@@ -501,13 +501,13 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
             <SectionHeading>Contact</SectionHeading>
             <div className="grid grid-cols-2 gap-2">
               {p.phone && <PanelInfoTile icon={<Phone className="w-2.5 h-2.5" />} label="Phone" value={p.phone} mono />}
-              {p.email && <PanelInfoTile icon={<Mail  className="w-2.5 h-2.5" />} label="Email" value={p.email} full />}
+              {p.email && <PanelInfoTile icon={<Mail className="w-2.5 h-2.5" />} label="Email" value={p.email} full />}
             </div>
             {p.website && (
               <a href={p.website} target="_blank" rel="noopener noreferrer"
-                className="mt-2 flex items-center justify-between p-3 rounded-[10px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group">
+                className="mt-2 flex items-center justify-between p-3 rounded-[6px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-[8px] bg-accent flex items-center justify-center border border-primary/20">
+                  <div className="w-7 h-7 rounded-[6px] bg-accent flex items-center justify-center border border-primary/20">
                     <Globe className="w-3 h-3 text-primary" />
                   </div>
                   <span className="text-[11.5px] font-medium text-foreground/80 truncate max-w-[240px]">{p.website}</span>
@@ -554,7 +554,7 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
               {(p.socialLinks as { platform?: string; url?: string; id?: number }[]).map((s, i) => (
                 s.url ? (
                   <a key={s.id ?? i} href={s.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-[8px] border border-border/35 hover:border-primary/30 hover:bg-accent/10 transition-all group">
+                    className="flex items-center justify-between p-2.5 rounded-[6px] border border-border/35 hover:border-primary/30 hover:bg-accent/10 transition-all group">
                     <div className="flex items-center gap-2 min-w-0">
                       <Link2 className="w-3 h-3 text-primary/40 shrink-0" />
                       <span className="text-[10.5px] font-medium text-muted-foreground/60 capitalize">{s.platform ?? "Link"}</span>
@@ -576,12 +576,12 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
               {(p.images as { url?: string; id?: number }[]).map((img, i) =>
                 img.url ? (
                   <a key={img.id ?? i} href={img.url} target="_blank" rel="noopener noreferrer"
-                    className="aspect-square rounded-[8px] overflow-hidden border border-border/35 hover:border-primary/30 transition-all group">
+                    className="aspect-square rounded-[6px] overflow-hidden border border-border/35 hover:border-primary/30 transition-all group">
                     <img src={img.url} alt={`Gallery ${i + 1}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                   </a>
                 ) : (
-                  <div key={i} className="aspect-square rounded-[8px] bg-accent/20 border border-border/25 flex items-center justify-center">
+                  <div key={i} className="aspect-square rounded-[6px] bg-accent/20 border border-border/25 flex items-center justify-center">
                     <ImageIcon className="w-4 h-4 text-muted-foreground/20" />
                   </div>
                 )
@@ -594,7 +594,7 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
         {p.user && (
           <div>
             <SectionHeading>Admin account</SectionHeading>
-            <div className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 flex items-center gap-3">
+            <div className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px] border border-primary/20 shrink-0">
                 {getInitials(p.user.name)}
               </div>
@@ -623,13 +623,13 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
         <div>
           <SectionHeading>Flags</SectionHeading>
           <div className="flex flex-wrap gap-1.5">
-            {p.offers_delivery && <StatusPill variant="teal"><Truck       className="w-2 h-2" /> Delivery</StatusPill>}
-            {p.offers_pickup   && <StatusPill variant="teal"><Package     className="w-2 h-2" /> Pickup</StatusPill>}
-            {p.is_open_24h     && <StatusPill variant="teal"><Clock       className="w-2 h-2" /> Open 24h</StatusPill>}
-            {p.show_homepage   && <StatusPill variant="primary"><Globe    className="w-2 h-2" /> On homepage</StatusPill>}
+            {p.offers_delivery && <StatusPill variant="teal"><Truck className="w-2 h-2" /> Delivery</StatusPill>}
+            {p.offers_pickup && <StatusPill variant="teal"><Package className="w-2 h-2" /> Pickup</StatusPill>}
+            {p.is_open_24h && <StatusPill variant="teal"><Clock className="w-2 h-2" /> Open 24h</StatusPill>}
+            {p.show_homepage && <StatusPill variant="primary"><Globe className="w-2 h-2" /> On homepage</StatusPill>}
             {p.registration_fee_paid
               ? <StatusPill variant="emerald"><Wallet className="w-2 h-2" /> Fee paid</StatusPill>
-              : <StatusPill variant="amber"><Wallet   className="w-2 h-2" /> Fee unpaid</StatusPill>
+              : <StatusPill variant="amber"><Wallet className="w-2 h-2" /> Fee unpaid</StatusPill>
             }
             {!p.is_active && <StatusPill variant="red"><AlertCircle className="w-2 h-2" /> Inactive</StatusPill>}
           </div>
@@ -644,23 +644,23 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
 
 const RX_STATUS_STYLE: Record<string, string> = {
   issued: "bg-accent text-accent-foreground border-primary/30",
-  draft:  "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
+  draft: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
 };
 
 function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
   // ── Filter state ──
-  const [statusFilter,    setStatusFilter]    = useState<PrescriptionStatus | "">("");
-  const [signedFilter,    setSignedFilter]    = useState<"" | "true" | "false">("");
-  const [activeFilter,    setActiveFilter]    = useState<"" | "true" | "false">("");
-  const [searchInput,     setSearchInput]     = useState("");
-  const [search,          setSearch]          = useState("");
-  const [diagnosisInput,  setDiagnosisInput]  = useState("");
-  const [diagnosis,       setDiagnosis]       = useState("");
-  const [fromDate,        setFromDate]        = useState("");
-  const [toDate,          setToDate]          = useState("");
-  const [validUntil,      setValidUntil]      = useState("");
-  const [page,            setPage]            = useState(1);
-  const [showAdvanced,    setShowAdvanced]    = useState(false);
+  const [statusFilter, setStatusFilter] = useState<PrescriptionStatus | "">("");
+  const [signedFilter, setSignedFilter] = useState<"" | "true" | "false">("");
+  const [activeFilter, setActiveFilter] = useState<"" | "true" | "false">("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [diagnosisInput, setDiagnosisInput] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [validUntil, setValidUntil] = useState("");
+  const [page, setPage] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Debounce search + diagnosis
   useEffect(() => {
@@ -674,25 +674,25 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
   }, [diagnosisInput]);
 
   // Reset page on filter changes
-  const setStatus  = (v: PrescriptionStatus | "")   => { setStatusFilter(v);  setPage(1); };
-  const setSigned  = (v: "" | "true" | "false")     => { setSignedFilter(v);  setPage(1); };
-  const setActive  = (v: "" | "true" | "false")     => { setActiveFilter(v);  setPage(1); };
-  const setFrom    = (v: string)                    => { setFromDate(v);       setPage(1); };
-  const setTo      = (v: string)                    => { setToDate(v);         setPage(1); };
-  const setVU      = (v: string)                    => { setValidUntil(v);     setPage(1); };
+  const setStatus = (v: PrescriptionStatus | "") => { setStatusFilter(v); setPage(1); };
+  const setSigned = (v: "" | "true" | "false") => { setSignedFilter(v); setPage(1); };
+  const setActive = (v: "" | "true" | "false") => { setActiveFilter(v); setPage(1); };
+  const setFrom = (v: string) => { setFromDate(v); setPage(1); };
+  const setTo = (v: string) => { setToDate(v); setPage(1); };
+  const setVU = (v: string) => { setValidUntil(v); setPage(1); };
 
   const hasAdvancedFilters = !!(diagnosisInput || fromDate || toDate || validUntil || activeFilter);
 
   const { data, isLoading } = usePharmacyPrescriptions({
-    doctor_id:   pharmacyId,
-    status:      statusFilter  || undefined,
-    is_signed:   signedFilter  === "" ? undefined : signedFilter === "true",
-    is_active:   activeFilter  === "" ? undefined : activeFilter === "true",
-    search:      search        || undefined,
-    diagnosis:   diagnosis     || undefined,
-    from:        fromDate      || undefined,
-    to:          toDate        || undefined,
-    valid_until: validUntil    || undefined,
+    doctor_id: pharmacyId,
+    status: statusFilter || undefined,
+    is_signed: signedFilter === "" ? undefined : signedFilter === "true",
+    is_active: activeFilter === "" ? undefined : activeFilter === "true",
+    search: search || undefined,
+    diagnosis: diagnosis || undefined,
+    from: fromDate || undefined,
+    to: toDate || undefined,
+    valid_until: validUntil || undefined,
     page,
   });
 
@@ -708,7 +708,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by patient name…"
-            className="w-full h-8 rounded-[8px] border border-border/45 bg-background pl-7 pr-8 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
+            className="w-full h-8 rounded-[6px] border border-border/45 bg-background pl-7 pr-8 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
           />
           {searchInput && (
             <button onClick={() => setSearchInput("")}
@@ -767,7 +767,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
 
         {/* ── Advanced filter panel ── */}
         {showAdvanced && (
-          <div className="rounded-[10px] border border-border/35 bg-card/40 p-3 space-y-2.5">
+          <div className="rounded-[6px] border border-border/35 bg-card/40 p-3 space-y-2.5">
 
             {/* Diagnosis */}
             <div>
@@ -866,7 +866,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
             <div className="flex flex-col gap-2">
               {data.data.map((rx) => (
                 <div key={rx.id}
-                  className="p-3.5 rounded-[10px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all">
+                  className="p-3.5 rounded-[6px] border border-border/40 bg-card/60 hover:border-primary/25 hover:bg-accent/10 transition-all">
 
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -905,7 +905,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                     )}
                     {rx.is_signed
                       ? <StatusPill variant="emerald"><CheckCircle2 className="w-2 h-2" /> Signed</StatusPill>
-                      : <StatusPill variant="amber"><AlertCircle   className="w-2 h-2" /> Unsigned</StatusPill>
+                      : <StatusPill variant="amber"><AlertCircle className="w-2 h-2" /> Unsigned</StatusPill>
                     }
                     {!rx.is_active && (
                       <StatusPill variant="red"><AlertCircle className="w-2 h-2" /> Inactive</StatusPill>
@@ -923,9 +923,9 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                             <span className="text-[11px] font-medium text-foreground/80 truncate">{med.name}</span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                            {med.dosage    && <StatusPill>{med.dosage}</StatusPill>}
+                            {med.dosage && <StatusPill>{med.dosage}</StatusPill>}
                             {med.frequency && <StatusPill variant="teal">{med.frequency}</StatusPill>}
-                            {med.duration  && <StatusPill>{med.duration}</StatusPill>}
+                            {med.duration && <StatusPill>{med.duration}</StatusPill>}
                           </div>
                         </div>
                       ))}
@@ -950,13 +950,13 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                 </span>
                 <div className="flex gap-1.5">
                   <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}>
                     Prev
                   </Button>
                   <Button variant="outline" size="sm"
-                    className="h-7 text-[10.5px] px-3 rounded-[8px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-7 text-[10.5px] px-3 rounded-[6px] hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={page >= (data?.last_page ?? 1)}
                     onClick={() => setPage((p) => p + 1)}>
                     Next
@@ -976,22 +976,22 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
 type PanelTabId = "overview" | "prescriptions";
 
 const PANEL_TABS: { id: PanelTabId; label: string; icon: React.ReactNode }[] = [
-  { id: "overview",      label: "Overview",      icon: <Building2    className="w-3 h-3" /> },
+  { id: "overview", label: "Overview", icon: <Building2 className="w-3 h-3" /> },
   { id: "prescriptions", label: "Prescriptions", icon: <CalendarDays className="w-3 h-3" /> },
 ];
 
 type ActingAction = "approve" | "reject" | "suspend" | null;
 
 export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspend, isActing }: {
-  pharmacy:  ApiPharmacy | null;
-  onClose:   () => void;
+  pharmacy: ApiPharmacy | null;
+  onClose: () => void;
   onApprove: (p: ApiPharmacy) => void;
-  onReject:  (p: ApiPharmacy) => void;
+  onReject: (p: ApiPharmacy) => void;
   onSuspend: (p: ApiPharmacy) => void;
-  isActing:  boolean;
+  isActing: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const [tab,         setTab]         = useState<PanelTabId>("overview");
+  const [tab, setTab] = useState<PanelTabId>("overview");
   const [actingAction, setActingAction] = useState<ActingAction>(null);
   const open = !!pharmacy;
 
@@ -999,7 +999,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
   useEffect(() => { if (!isActing) setActingAction(null); }, [isActing]);
 
   const handleApprove = (p: ApiPharmacy) => { setActingAction("approve"); onApprove(p); };
-  const handleReject  = (p: ApiPharmacy) => { setActingAction("reject");  onReject(p);  };
+  const handleReject = (p: ApiPharmacy) => { setActingAction("reject"); onReject(p); };
   const handleSuspend = (p: ApiPharmacy) => { setActingAction("suspend"); onSuspend(p); };
 
   useEffect(() => { if (pharmacy) setTab("overview"); }, [pharmacy?.id]);
@@ -1044,7 +1044,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                   <p className="text-[10px] text-muted-foreground/45 mt-0.5">Review details and manage account status</p>
                 </div>
                 <button onClick={onClose}
-                  className="w-7 h-7 rounded-[8px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
+                  className="w-7 h-7 rounded-[6px] border border-border/45 bg-background/80 flex items-center justify-center hover:bg-accent/40 hover:border-primary/30 transition-all"
                   aria-label="Close">
                   <X className="w-3 h-3 text-muted-foreground" />
                 </button>
@@ -1105,7 +1105,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
             {/* ── Body ── */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-5">
-                {tab === "overview"      && <OverviewTab      p={pharmacy} />}
+                {tab === "overview" && <OverviewTab p={pharmacy} />}
                 {tab === "prescriptions" && <PrescriptionsTab pharmacyId={pharmacy.id} />}
               </div>
             </div>
@@ -1115,7 +1115,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
               <div className="flex gap-2 items-center max-w-[640px]">
                 {(pharmacy.status === "pending" || pharmacy.status === "rejected") && (
                   <Button size="sm"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2  hover:bg-emerald-700  font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2  hover:bg-emerald-700  font-medium"
                     disabled={!!actingAction} onClick={() => handleApprove(pharmacy)}>
                     {actingAction === "approve"
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1125,7 +1125,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                 )}
                 {pharmacy.status === "active" && (
                   <Button size="sm" variant="outline"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={!!actingAction} onClick={() => handleSuspend(pharmacy)}>
                     {actingAction === "suspend"
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1135,7 +1135,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                 )}
                 {pharmacy.status === "pending" && (
                   <Button size="sm" variant="outline"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
                     disabled={!!actingAction} onClick={() => handleReject(pharmacy)}>
                     {actingAction === "reject"
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1145,7 +1145,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                 )}
                 {pharmacy.status === "suspended" && (
                   <Button size="sm"
-                    className="h-9 px-5 text-[11.5px] rounded-[10px] gap-2  hover:bg-emerald-700 text-white font-medium"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2  hover:bg-emerald-700 text-white font-medium"
                     disabled={!!actingAction} onClick={() => handleApprove(pharmacy)}>
                     {actingAction === "approve"
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1154,7 +1154,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                   </Button>
                 )}
                 <Button size="sm" variant="ghost"
-                  className="h-9 px-4 text-[11px] rounded-[10px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
+                  className="h-9 px-4 text-[11px] rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-accent/20"
                   disabled={!!actingAction}
                   onClick={onClose}>
                   Close

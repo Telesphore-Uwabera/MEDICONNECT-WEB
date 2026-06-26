@@ -187,7 +187,7 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2.5">
+    <div className="flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-3 py-2.5">
       <div>
         <p className="text-xs font-medium text-foreground">{label}</p>
         {sub && (
@@ -214,7 +214,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
+    <div className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
       <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
         {label}
       </span>
@@ -367,7 +367,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -1021,7 +1021,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
           <ViewField label="Department" value={profile.personal.department} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-          <div className="flex items-center gap-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2.5">
             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-primary">
               <Mail size={13} />
             </div>
@@ -1029,7 +1029,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
               {profile.personal.email}
             </span>
           </div>
-          <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/40 px-3 py-2.5">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
               <Phone size={13} />
             </div>
@@ -1037,7 +1037,7 @@ function AdminProfileView({ profile }: { profile: AdminProfileData }) {
               {profile.personal.phone}
             </span>
           </div>
-          <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+          <div className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/40 px-3 py-2.5">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
               <Globe size={13} />
             </div>
@@ -1205,18 +1205,18 @@ const AdminProfile = () => {
 
   const stats = profileData
     ? {
-        name: `${profileData.personal.first_name} ${profileData.personal.last_name}`,
-        role: humanRole(profileData.permissions.role),
-        department: profileData.personal.department,
-        twoFa: profileData.security.two_factor_enabled
-          ? "Enabled"
-          : "Disabled",
-        permissions: Object.entries(profileData.permissions).filter(
-          ([k, v]) => k !== "role" && v === true,
-        ).length,
-        notifications: Object.values(profileData.notifications).filter(Boolean)
-          .length,
-      }
+      name: `${profileData.personal.first_name} ${profileData.personal.last_name}`,
+      role: humanRole(profileData.permissions.role),
+      department: profileData.personal.department,
+      twoFa: profileData.security.two_factor_enabled
+        ? "Enabled"
+        : "Disabled",
+      permissions: Object.entries(profileData.permissions).filter(
+        ([k, v]) => k !== "role" && v === true,
+      ).length,
+      notifications: Object.values(profileData.notifications).filter(Boolean)
+        .length,
+    }
     : null;
 
   return (
@@ -1229,9 +1229,9 @@ const AdminProfile = () => {
               ? "Update your admin account information"
               : "Fill in the details below to configure your account"
             : t(
-                "admin.profile.subtitle",
-                "Manage your account, security & preferences",
-              )
+              "admin.profile.subtitle",
+              "Manage your account, security & preferences",
+            )
         }
       />
 
@@ -1257,7 +1257,7 @@ const AdminProfile = () => {
         )}
 
         {/* Unified card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}

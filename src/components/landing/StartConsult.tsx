@@ -28,9 +28,9 @@ const StartConsult = () => {
           <div className="grid grid-cols-2 gap-3">
 
             {/* /patient/search-doctors instant */}
-            {/* <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            {/* <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                   <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
@@ -49,9 +49,9 @@ const StartConsult = () => {
             </button> */}
 
             <Link to="/patient/search-doctors?instant=true">
-              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                     <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </span>
                   <div className="text-left min-w-0">
@@ -70,9 +70,9 @@ const StartConsult = () => {
               </button>
             </Link>
             <Link to="/patient/search-doctors">
-              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                     <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </span>
                   <div className="text-left min-w-0">
@@ -121,9 +121,9 @@ const StartConsult = () => {
       <div className="mt-7 flex flex-col gap-3  w-full">
         <div className="grid grid-cols-2 gap-3">
           <Link to="/patient/search-doctors?instant=true">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                   <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
@@ -143,9 +143,9 @@ const StartConsult = () => {
           </Link>
 
           <Link to="/patient/search-doctors">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                   <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">

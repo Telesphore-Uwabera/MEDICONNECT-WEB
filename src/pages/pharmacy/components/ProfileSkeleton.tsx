@@ -8,14 +8,14 @@ function ProfileSkeleton() {
   return (
     <div className="flex-1 p-4 sm:p-5 space-y-4">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="rounded-xl border border-border p-4 space-y-3">
+        <div key={i} className="rounded-[6px] border border-border p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2"><Skeleton className="h-7 w-7 rounded-lg" /><Skeleton className="h-4 w-36" /></div>
-            <Skeleton className="h-7 w-14 rounded-md" />
+            <div className="flex items-center gap-2"><Skeleton className="h-7 w-7 rounded-[6px]" /><Skeleton className="h-4 w-36" /></div>
+            <Skeleton className="h-7 w-14 rounded-[6px]" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-8 rounded-lg" /><Skeleton className="h-8 rounded-lg" />
-            <Skeleton className="h-8 rounded-lg col-span-2" />
+            <Skeleton className="h-8 rounded-[6px]" /><Skeleton className="h-8 rounded-[6px]" />
+            <Skeleton className="h-8 rounded-[6px] col-span-2" />
           </div>
         </div>
       ))}

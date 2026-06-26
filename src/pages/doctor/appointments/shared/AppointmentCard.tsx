@@ -16,13 +16,13 @@ interface Props {
 }
 
 export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: Props) {
-  const status      = appt.status as UIStatus;
-  const canStart    = status === "confirmed" || status === "pending";
+  const status = appt.status as UIStatus;
+  const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
 
   return (
-    <div className="bg-card border border-border/70 rounded-md p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
-      <div className="w-10 h-10 rounded-md bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
+    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex items-center gap-4 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+      <div className="w-10 h-10 rounded-[6px] bg-gradient-to-br from-primary/15 to-primary/5 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 border border-primary/10">
         {appt.patient?.name?.slice(0, 2).toUpperCase() || "PT"}
       </div>
 
@@ -61,7 +61,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
 
         <button
           onClick={() => onView(appt)}
-          className="h-9 w-9 flex items-center justify-center rounded-md border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors"
+          className="h-9 w-9 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors"
           title="View details"
         >
           <Eye className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           <Button
             size="sm"
             onClick={() => onRejoin(appt)}
-            className="h-9 px-4 text-sm font-semibold rounded-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1.5"
+            className="h-9 px-4 text-sm font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1.5"
           >
             <Video className="h-4 w-4" />
             {t("consult.booking.rejoin")}
@@ -84,18 +84,24 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           <Button
             size="sm"
             onClick={() => onStart(appt)}
-            className="h-9 px-4 text-sm font-semibold rounded-md bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            className="h-9 px-4 text-sm font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           >
             {t("consult.booking.start")}
           </Button>
         )}
 
         {/* Notes — completed */}
-        {!canStart && !isInProgress && (
+        {status === "pending" && (
+          <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+            Awaiting confirmation
+          </span>
+        )}
+
+        {!canStart && !isInProgress && status !== "pending" && (
           <Button
             size="sm"
             variant="ghost"
-            className="h-9 px-4 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-md"
+            className="h-9 px-4 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px]"
           >
             {t("consult.booking.notes")}
           </Button>

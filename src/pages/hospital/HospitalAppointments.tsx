@@ -442,10 +442,10 @@ function DrawerFooter({
       {(booking.status === "completed" ||
         booking.status === "rejected" ||
         booking.status === "cancelled") && (
-        <p className="text-[10px] text-muted-foreground/40 italic text-center w-full self-center">
-          No further actions available
-        </p>
-      )}
+          <p className="text-[10px] text-muted-foreground/40 italic text-center w-full self-center">
+            No further actions available
+          </p>
+        )}
     </div>
   );
 }
@@ -507,7 +507,7 @@ function RejectModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-card border border-border rounded-xl shadow-xl w-full max-w-sm p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-card border border-border rounded-[6px] shadow-xl w-full max-w-sm p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-[5px] bg-destructive/10 flex items-center justify-center shrink-0">
             <XCircle className="w-3.5 h-3.5 text-destructive" />
@@ -591,7 +591,7 @@ function AcceptModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={isLoading ? undefined : onClose}
       />
-      <div className="relative bg-card border border-border rounded-xl shadow-xl w-full max-w-sm p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-card border border-border rounded-[6px] shadow-xl w-full max-w-sm p-5 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-[5px] bg-primary/10 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -857,10 +857,10 @@ function AppointmentCard({
         {(booking.status === "completed" ||
           booking.status === "rejected" ||
           booking.status === "cancelled") && (
-          <span className="text-[10px] text-muted-foreground/40 italic self-center">
-            No actions
-          </span>
-        )}
+            <span className="text-[10px] text-muted-foreground/40 italic self-center">
+              No actions
+            </span>
+          )}
       </div>
     </div>
   );
@@ -999,7 +999,7 @@ const HospitalAppointments = () => {
               type="date"
               value={filters.dateFrom}
               onChange={(e) => set("dateFrom", e.target.value)}
-              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
             />
             <span className="text-[11px] text-muted-foreground">to</span>
             <input
@@ -1007,7 +1007,7 @@ const HospitalAppointments = () => {
               value={filters.dateTo}
               min={filters.dateFrom}
               onChange={(e) => set("dateTo", e.target.value)}
-              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
+              className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
             />
           </div>
           {(filters.dateFrom || filters.dateTo) && (
@@ -1044,144 +1044,144 @@ const HospitalAppointments = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  <span className="font-bold text-foreground">
-                    {isLoading ? "—" : filtered.length}
-                  </span>{" "}
-                  {filtered.length === 1 ? "booking" : "bookings"}
-                  {!isLoading && data && (
-                    <span className="text-muted-foreground/50 ml-1">
-                      / {data.total} total
-                    </span>
-                  )}
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      className="ml-2 text-primary hover:underline text-[10px] font-medium"
-                    >
-                      Reset filters
-                    </button>
-                  )}
-                </p>
-
-                {pendingCount > 0 && !isLoading && (
-                  <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[4px]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    {pendingCount} pending
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <p className="text-[11px] text-muted-foreground">
+                <span className="font-bold text-foreground">
+                  {isLoading ? "—" : filtered.length}
+                </span>{" "}
+                {filtered.length === 1 ? "booking" : "bookings"}
+                {!isLoading && data && (
+                  <span className="text-muted-foreground/50 ml-1">
+                    / {data.total} total
                   </span>
                 )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Search */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search patient, service…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                {/* Refresh */}
-                <button
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                  style={{ borderRadius: "5px" }}
-                  className="w-7 h-7 flex items-center justify-center border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw
-                    className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
-                  />
-                </button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-12 h-12 rounded-[5px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
-                    <AlertCircle className="w-5 h-5 text-destructive/60" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Failed to load bookings
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {error instanceof Error ? error.message : "Unknown error"}
-                    </p>
-                  </div>
+                {hasActiveFilters && (
                   <button
-                    onClick={() => refetch()}
-                    style={{ borderRadius: "5px" }}
-                    className="text-[11px] text-primary hover:underline font-semibold"
+                    onClick={clearAll}
+                    className="ml-2 text-primary hover:underline text-[10px] font-medium"
                   >
-                    Try again
+                    Reset filters
                   </button>
-                </div>
-              ) : isLoading ? (
-                <div className="flex flex-col gap-2">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <SkeletonCard key={i} />
-                  ))}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-12 h-12 rounded-[5px] bg-muted/50 flex items-center justify-center border border-border/40">
-                    <Calendar className="w-5 h-5 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {hasActiveFilters
-                        ? "No bookings match your filters"
-                        : "No bookings yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters
-                        ? "Try widening your search criteria"
-                        : "Bookings will appear here once patients request services"}
-                    </p>
-                  </div>
-                  {hasActiveFilters && (
-                    <button
-                      onClick={clearAll}
-                      style={{ borderRadius: "5px" }}
-                      className="text-[11px] text-primary hover:underline font-semibold mt-1"
-                    >
-                      Clear all filters
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {filtered.map((b) => (
-                    <AppointmentCard
-                      key={b.id}
-                      booking={b}
-                      onView={(b) => setViewingId(b.id)}
-                      onAccept={setAcceptingBooking}
-                      onReject={setRejectingBooking}
-                      onComplete={handleComplete}
-                      isActing={isActing}
-                    />
-                  ))}
-                </div>
+                )}
+              </p>
+
+              {pendingCount > 0 && !isLoading && (
+                <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[4px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {pendingCount} pending
+                </span>
               )}
             </div>
-          </main>
+
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search patient, service…"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              {/* Refresh */}
+              <button
+                onClick={() => refetch()}
+                disabled={isLoading}
+                style={{ borderRadius: "5px" }}
+                className="w-7 h-7 flex items-center justify-center border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw
+                  className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
+                />
+              </button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-12 h-12 rounded-[5px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <AlertCircle className="w-5 h-5 text-destructive/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Failed to load bookings
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {error instanceof Error ? error.message : "Unknown error"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => refetch()}
+                  style={{ borderRadius: "5px" }}
+                  className="text-[11px] text-primary hover:underline font-semibold"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-12 h-12 rounded-[5px] bg-muted/50 flex items-center justify-center border border-border/40">
+                  <Calendar className="w-5 h-5 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {hasActiveFilters
+                      ? "No bookings match your filters"
+                      : "No bookings yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters
+                      ? "Try widening your search criteria"
+                      : "Bookings will appear here once patients request services"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    style={{ borderRadius: "5px" }}
+                    className="text-[11px] text-primary hover:underline font-semibold mt-1"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {filtered.map((b) => (
+                  <AppointmentCard
+                    key={b.id}
+                    booking={b}
+                    onView={(b) => setViewingId(b.id)}
+                    onAccept={setAcceptingBooking}
+                    onReject={setRejectingBooking}
+                    onComplete={handleComplete}
+                    isActing={isActing}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* Detail drawer */}

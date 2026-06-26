@@ -92,7 +92,7 @@ const InfoTile = ({
   label: string;
   value: string;
 }) => (
-  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+  <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
       {icon}
       {label}
@@ -123,10 +123,10 @@ function Field({
 }
 
 const inputCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 // ─── Contact popover for table ────────────────────────────────────────────────
 
@@ -155,7 +155,7 @@ function ContactPopover({ ins }: { ins: ApiInsurance }) {
         Contact
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-56 bg-card border border-border/60 rounded-lg shadow-lg p-3 space-y-2">
+        <div className="absolute z-50 mt-1 w-56 bg-card border border-border/60 rounded-[6px] shadow-lg p-3 space-y-2">
           {ins.website && (
             <a
               href={ins.website}
@@ -209,10 +209,10 @@ function InsuranceRow({
             <img
               src={ins.logo}
               alt={ins.name}
-              className="h-9 w-9 rounded-sm object-contain flex-shrink-0 border border-border/40 bg-white p-0.5"
+              className="h-9 w-9 rounded-[6px] object-contain flex-shrink-0 border border-border/40 bg-white p-0.5"
             />
           ) : (
-            <div className="h-9 w-9 rounded-sm bg-muted/60 flex items-center justify-center shrink-0 border border-border/40">
+            <div className="h-9 w-9 rounded-[6px] bg-muted/60 flex items-center justify-center shrink-0 border border-border/40">
               <ImageOff className="w-4 h-4 text-muted-foreground/40" />
             </div>
           )}
@@ -280,7 +280,7 @@ function InsuranceRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(ins)}
           >
             <Pencil className="w-3 h-3 mr-1" />
@@ -289,7 +289,7 @@ function InsuranceRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
+            className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
             onClick={() => onDelete(ins)}
             disabled={isDeleting}
           >
@@ -319,15 +319,15 @@ function InsuranceCard({
   isDeleting: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       {ins.logo ? (
         <img
           src={ins.logo}
           alt={ins.name}
-          className="h-10 w-10 rounded-sm object-contain flex-shrink-0 mt-0.5 border border-border/40 bg-white p-0.5"
+          className="h-10 w-10 rounded-[6px] object-contain flex-shrink-0 mt-0.5 border border-border/40 bg-white p-0.5"
         />
       ) : (
-        <div className="h-10 w-10 rounded-sm bg-muted/60 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
+        <div className="h-10 w-10 rounded-[6px] bg-muted/60 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
           <ImageOff className="w-4 h-4 text-muted-foreground/40" />
         </div>
       )}
@@ -396,7 +396,7 @@ function InsuranceCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="flex-1 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(ins)}
           >
             <Pencil className="w-3 h-3 mr-1" />
@@ -405,7 +405,7 @@ function InsuranceCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-3 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
             onClick={() => onDelete(ins)}
             disabled={isDeleting}
           >
@@ -617,7 +617,7 @@ function InsurancePanel({
                   Logo
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-xl border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  <div className="h-16 w-16 rounded-[6px] border border-border/60 bg-secondary/30 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {form.logoPreview ? (
                       <img
                         src={form.logoPreview}
@@ -640,7 +640,7 @@ function InsurancePanel({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-8 px-3 text-[11px] rounded-sm border-border/60 gap-1.5 hover:border-primary/40 hover:bg-secondary/30 transition-all"
+                      className="h-8 px-3 text-[11px] rounded-[6px] border-border/60 gap-1.5 hover:border-primary/40 hover:bg-secondary/30 transition-all"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-3.5 h-3.5" />
@@ -826,7 +826,7 @@ function InsurancePanel({
             {/* Footer */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={handleSubmit}
                 disabled={isSaving || !form.name.trim()}
               >
@@ -840,12 +840,12 @@ function InsurancePanel({
                 {isSaving
                   ? "Saving…"
                   : isEdit
-                  ? "Save changes"
-                  : "Create insurance"}
+                    ? "Save changes"
+                    : "Create insurance"}
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -879,7 +879,7 @@ function DeleteDialog({
         onClick={onCancel}
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
       />
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
+      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-[6px] shadow-xl p-5 flex flex-col gap-4">
         <div>
           <p className="text-[14px] font-semibold text-foreground">
             Delete insurance?
@@ -892,7 +892,7 @@ function DeleteDialog({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+            className="flex-1 h-9 text-[12px] rounded-[6px] border-border/60"
             onClick={onCancel}
             disabled={isDeleting}
           >
@@ -900,7 +900,7 @@ function DeleteDialog({
           </Button>
           <Button
             variant="destructive"
-            className="flex-1 h-9 text-[12px] rounded-lg gap-1.5"
+            className="flex-1 h-9 text-[12px] rounded-[6px] gap-1.5"
             onClick={onConfirm}
             disabled={isDeleting}
           >
@@ -934,8 +934,8 @@ function ManageInsurances() {
   const deleteMutation = useDeleteInsurance();
 
   const insurances = data?.data ?? [];
-  const total      = data?.total ?? 0;
-  const perPage    = data?.per_page ?? 20;
+  const total = data?.total ?? 0;
+  const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
 
   // Client-side filter only when server doesn't search (fallback)
@@ -952,7 +952,7 @@ function ManageInsurances() {
     );
   }, [insurances, search]);
 
-  const withLogo    = insurances.filter((i) => !!i.logo).length;
+  const withLogo = insurances.filter((i) => !!i.logo).length;
   const withoutLogo = insurances.filter((i) => !i.logo).length;
   const activeCount = insurances.filter((i) => i.is_active).length;
   const inactiveCount = insurances.filter((i) => !i.is_active).length;
@@ -1001,10 +1001,10 @@ function ManageInsurances() {
         <main className="flex-1 overflow-y-auto">
           {/* Stats */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total insurances" value={total}        icon={ShieldCheck}  accent="primary" />
-            <StatCard label="Active"           value={activeCount}  icon={Power}       accent="success" />
-            <StatCard label="With logo"        value={withLogo}     icon={CheckCircle2} accent="info" />
-            <StatCard label="Missing logo"     value={withoutLogo}  icon={ImageOff}     accent="warning" />
+            <StatCard label="Total insurances" value={total} icon={ShieldCheck} accent="primary" />
+            <StatCard label="Active" value={activeCount} icon={Power} accent="success" />
+            <StatCard label="With logo" value={withLogo} icon={CheckCircle2} accent="info" />
+            <StatCard label="Missing logo" value={withoutLogo} icon={ImageOff} accent="warning" />
           </div>
 
           {/* Meta bar */}
@@ -1032,7 +1032,7 @@ function ManageInsurances() {
                     setPage(1);
                   }}
                   placeholder="Search name, code, country, phone, email…"
-                  className="w-64 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-64 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {search && (
                   <button
@@ -1046,7 +1046,7 @@ function ManageInsurances() {
 
               <Button
                 size="sm"
-                className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
+                className="h-8 px-3 text-[11px] rounded-[6px] gap-1.5"
                 onClick={openCreate}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1064,7 +1064,7 @@ function ManageInsurances() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search name, code, country, phone, email…"
-                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
             </div>
           </div>
@@ -1082,7 +1082,7 @@ function ManageInsurances() {
               </div>
             ) : !isLoading && filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                   <ShieldCheck className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
@@ -1100,7 +1100,7 @@ function ManageInsurances() {
                 {!search && (
                   <Button
                     size="sm"
-                    className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5"
+                    className="mt-1 h-8 px-4 text-[11px] rounded-[6px] gap-1.5"
                     onClick={openCreate}
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -1111,7 +1111,7 @@ function ManageInsurances() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
@@ -1146,20 +1146,20 @@ function ManageInsurances() {
                 <div className="md:hidden flex flex-col gap-2">
                   {isLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-20 rounded-sm border border-border/60 bg-card animate-pulse"
-                        />
-                      ))
+                      <div
+                        key={i}
+                        className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                      />
+                    ))
                     : filtered.map((ins) => (
-                        <InsuranceCard
-                          key={ins.id}
-                          ins={ins}
-                          onEdit={openEdit}
-                          onDelete={requestDelete}
-                          isDeleting={deletingId === ins.id}
-                        />
-                      ))}
+                      <InsuranceCard
+                        key={ins.id}
+                        ins={ins}
+                        onEdit={openEdit}
+                        onDelete={requestDelete}
+                        isDeleting={deletingId === ins.id}
+                      />
+                    ))}
                 </div>
 
                 {/* Pagination */}
@@ -1177,14 +1177,14 @@ function ManageInsurances() {
                       <button
                         disabled={page <= 1}
                         onClick={() => setPage((p) => p - 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="w-3.5 h-3.5" />
                       </button>
                       <button
                         disabled={page >= totalPages}
                         onClick={() => setPage((p) => p + 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>

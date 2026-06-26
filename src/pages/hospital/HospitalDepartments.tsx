@@ -4,7 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { DepartmentFormModal } from "./components/Departmentformmodal";
- 
+
 import {
   Search,
   SlidersHorizontal,
@@ -32,15 +32,17 @@ import {
 import { cn } from "@/lib/utils";
 import { ServiceFormModal } from "./components/Serviceformmodal";
 import type { Department, DepartmentPayload, Service, ServicePayload } from "@/types/Hospital";
-import { useGetDepartments, 
-    useGetDepartment,
+import {
+  useGetDepartments,
+  useGetDepartment,
   useCreateDepartment,
   useUpdateDepartment,
   useDeleteDepartment,
   useGetServicesByDepartment,
   useCreateService,
   useUpdateService,
-  useDeleteService, } from "@/hooks/hospital/use-hospital-departments";
+  useDeleteService,
+} from "@/hooks/hospital/use-hospital-departments";
 
 
 
@@ -101,9 +103,9 @@ function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-card border border-border/70 rounded-sm shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
+      <div className="relative bg-card border border-border/70 rounded-[6px] shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-sm bg-destructive/10 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-[6px] bg-destructive/10 flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4 text-destructive" />
           </div>
           <div>
@@ -114,14 +116,14 @@ function ConfirmDialog({
         <div className="flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-3.5 py-1.5 text-[11px] rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            className="px-3.5 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-3.5 py-1.5 text-[11px] rounded-sm bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 text-[11px] rounded-[6px] bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             Delete
@@ -166,13 +168,13 @@ function ServiceRow({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[12px] font-medium text-foreground truncate">{service.name_en}</span>
           {service.code && (
-            <span className="text-[9px] font-mono text-muted-foreground/60 bg-secondary/60 px-1.5 py-0.5 rounded-sm">
+            <span className="text-[9px] font-mono text-muted-foreground/60 bg-secondary/60 px-1.5 py-0.5 rounded-[6px]">
               {service.code}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-sm border", typeColors[service.type] ?? typeColors["in_person"])}>
+          <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-[6px] border", typeColors[service.type] ?? typeColors["in_person"])}>
             {service.type === "in_person" ? "In Person" : service.type === "online" ? "Online" : "Both"}
           </span>
           {service.insurance_covered && (
@@ -195,13 +197,13 @@ function ServiceRow({
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onEdit(service)}
-          className="w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
         >
           <Pencil className="w-3 h-3" />
         </button>
         <button
           onClick={() => onDelete(service)}
-          className="w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -279,7 +281,7 @@ function DepartmentDrawer({
         {/* Header */}
         <div className="flex items-start gap-3 px-5 py-4 border-b border-border/60 shrink-0">
           <div
-            className="h-9 w-9 rounded-sm flex items-center justify-center shrink-0 border"
+            className="h-9 w-9 rounded-[6px] flex items-center justify-center shrink-0 border"
             style={{ backgroundColor: `${dept.color_code ?? "#6366f1"}20`, borderColor: `${dept.color_code ?? "#6366f1"}40` }}
           >
             <DeptIcon icon={dept.icon} style={{ color: dept.color_code ?? "#6366f1" }} className="w-4 h-4" />
@@ -288,12 +290,12 @@ function DepartmentDrawer({
             <div className="flex items-center gap-2">
               <h2 className="text-[14px] font-bold text-foreground truncate">{dept.name_en}</h2>
               {dept.is_emergency && (
-                <span className="text-[9px] font-semibold bg-destructive/10 text-destructive border border-destructive/30 px-1.5 py-0.5 rounded-sm">
+                <span className="text-[9px] font-semibold bg-destructive/10 text-destructive border border-destructive/30 px-1.5 py-0.5 rounded-[6px]">
                   EMERGENCY
                 </span>
               )}
               {!dept.is_active && (
-                <span className="text-[9px] font-semibold bg-muted text-muted-foreground border border-border/60 px-1.5 py-0.5 rounded-sm">
+                <span className="text-[9px] font-semibold bg-muted text-muted-foreground border border-border/60 px-1.5 py-0.5 rounded-[6px]">
                   INACTIVE
                 </span>
               )}
@@ -305,19 +307,19 @@ function DepartmentDrawer({
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => onEdit(dept)}
-              className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onDelete(dept)}
-              className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -392,7 +394,7 @@ function DepartmentDrawer({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 gap-2 text-center px-5">
-                  <div className="w-10 h-10 rounded-sm bg-muted/50 flex items-center justify-center border border-border/40">
+                  <div className="w-10 h-10 rounded-[6px] bg-muted/50 flex items-center justify-center border border-border/40">
                     <Stethoscope className="w-4 h-4 text-muted-foreground/40" />
                   </div>
                   <p className="text-[11px] text-muted-foreground">No services yet</p>
@@ -477,13 +479,13 @@ function DepartmentCard({
 
   return (
     <div
-      className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
+      className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
       onClick={onClick}
     >
       {/* Emergency badge */}
       {dept.is_emergency && (
         <div className="absolute top-2 right-2">
-          <span className="text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-sm">
+          <span className="text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-[6px]">
             EMERGENCY
           </span>
         </div>
@@ -492,7 +494,7 @@ function DepartmentCard({
       {/* Header */}
       <div className="flex items-center gap-3">
         <div
-          className="h-9 w-9 rounded-sm flex items-center justify-center shrink-0 border"
+          className="h-9 w-9 rounded-[6px] flex items-center justify-center shrink-0 border"
           style={{
             backgroundColor: `${accentColor}18`,
             borderColor: `${accentColor}30`,
@@ -536,13 +538,13 @@ function DepartmentCard({
         >
           <button
             onClick={() => onEdit(dept)}
-            className="w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/60 opacity-0 group-hover:opacity-100 transition-all"
+            className="w-6 h-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 opacity-0 group-hover:opacity-100 transition-all"
           >
             <Pencil className="w-3 h-3" />
           </button>
           <button
             onClick={() => onDelete(dept)}
-            className="w-6 h-6 flex items-center justify-center rounded-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+            className="w-6 h-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -554,7 +556,7 @@ function DepartmentCard({
 
 function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-sm bg-secondary/40 border border-border/30 p-2">
+    <div className="rounded-[6px] bg-secondary/40 border border-border/30 p-2">
       <div className="text-[9px] text-muted-foreground/60 mb-0.5">{label}</div>
       <div className="font-bold text-[15px] tabular-nums text-foreground">{value}</div>
     </div>
@@ -565,20 +567,20 @@ function MiniStat({ label, value }: { label: string; value: React.ReactNode }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-card border border-border/70 rounded-sm p-4 flex flex-col gap-3 animate-pulse">
+    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 animate-pulse">
       <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-sm bg-secondary/60" />
+        <div className="h-9 w-9 rounded-[6px] bg-secondary/60" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3 bg-secondary/60 rounded-sm w-3/4" />
-          <div className="h-2 bg-secondary/40 rounded-sm w-1/2" />
+          <div className="h-3 bg-secondary/60 rounded-[6px] w-3/4" />
+          <div className="h-2 bg-secondary/40 rounded-[6px] w-1/2" />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-sm bg-secondary/40 border border-border/30 p-2 h-11" />
+          <div key={i} className="rounded-[6px] bg-secondary/40 border border-border/30 p-2 h-11" />
         ))}
       </div>
-      <div className="h-2 bg-secondary/40 rounded-sm w-1/3" />
+      <div className="h-2 bg-secondary/40 rounded-[6px] w-1/3" />
     </div>
   );
 }
@@ -608,7 +610,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -756,7 +758,7 @@ const HospitalDepartments = () => {
             type="checkbox"
             checked={filters.active_only}
             onChange={(e) => set("active_only", e.target.checked)}
-            className="w-3.5 h-3.5 rounded-sm accent-primary"
+            className="w-3.5 h-3.5 rounded-[6px] accent-primary"
           />
           <span className="text-[11px] text-foreground">Active only</span>
         </label>
@@ -782,134 +784,134 @@ const HospitalDepartments = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground">
-                {isLoading ? (
-                  <span className="text-muted-foreground/50">Loading…</span>
-                ) : (
-                  <>
-                    <span className="font-bold text-foreground">{filtered.length}</span>
-                    {" "}
-                    {filtered.length === 1 ? "department" : "departments"}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearAll}
-                        className="ml-2 text-primary hover:underline text-[10px] font-medium"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </>
-                )}
-              </p>
-
-              <div className="flex items-center gap-2">
-                {/* Search */}
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search departments…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                {/* Refresh */}
-                <button
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-50 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
-                </button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
-                {/* Add */}
-                <button
-                  onClick={() => { setMutError(null); setDeptModal({ open: true, editing: null }); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-sm hover:bg-primary/90 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">New Department</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-destructive/10 flex items-center justify-center border border-destructive/20">
-                    <AlertCircle className="w-6 h-6 text-destructive/60" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load departments</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {error instanceof Error ? error.message : "Unknown error"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => refetch()}
-                    className="text-[11px] text-primary hover:underline font-semibold"
-                  >
-                    Try again
-                  </button>
-                </div>
-              ) : isLoading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Stethoscope className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {hasActiveFilters ? "No departments match your filters" : "No departments yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters ? "Try widening your search criteria" : "Create your first department to get started"}
-                    </p>
-                  </div>
-                  {hasActiveFilters ? (
-                    <button onClick={clearAll} className="text-[11px] text-primary hover:underline font-semibold">
-                      Clear filters
-                    </button>
-                  ) : (
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-[11px] text-muted-foreground">
+              {isLoading ? (
+                <span className="text-muted-foreground/50">Loading…</span>
+              ) : (
+                <>
+                  <span className="font-bold text-foreground">{filtered.length}</span>
+                  {" "}
+                  {filtered.length === 1 ? "department" : "departments"}
+                  {hasActiveFilters && (
                     <button
-                      onClick={() => setDeptModal({ open: true, editing: null })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-sm hover:bg-primary/90"
+                      onClick={clearAll}
+                      className="ml-2 text-primary hover:underline text-[10px] font-medium"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      New Department
+                      Reset
                     </button>
                   )}
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {filtered.map((d) => (
-                    <DepartmentCard
-                      key={d.id}
-                      dept={d}
-                      onClick={() => setSelectedDept(d)}
-                      onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
-                      onDelete={setDeletingDept}
-                    />
-                  ))}
-                </div>
+                </>
               )}
+            </p>
+
+            <div className="flex items-center gap-2">
+              {/* Search */}
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search departments…"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              {/* Refresh */}
+              <button
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-50 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
+              </button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+
+              {/* Add */}
+              <button
+                onClick={() => { setMutError(null); setDeptModal({ open: true, editing: null }); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-[6px] hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">New Department</span>
+              </button>
             </div>
-          </main>
+          </div>
+
+          {/* Content */}
+          <div className="p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <AlertCircle className="w-6 h-6 text-destructive/60" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">Failed to load departments</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {error instanceof Error ? error.message : "Unknown error"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => refetch()}
+                  className="text-[11px] text-primary hover:underline font-semibold"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Stethoscope className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {hasActiveFilters ? "No departments match your filters" : "No departments yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters ? "Try widening your search criteria" : "Create your first department to get started"}
+                  </p>
+                </div>
+                {hasActiveFilters ? (
+                  <button onClick={clearAll} className="text-[11px] text-primary hover:underline font-semibold">
+                    Clear filters
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setDeptModal({ open: true, editing: null })}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-[6px] hover:bg-primary/90"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    New Department
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {filtered.map((d) => (
+                  <DepartmentCard
+                    key={d.id}
+                    dept={d}
+                    onClick={() => setSelectedDept(d)}
+                    onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
+                    onDelete={setDeletingDept}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* ── Department detail drawer ── */}

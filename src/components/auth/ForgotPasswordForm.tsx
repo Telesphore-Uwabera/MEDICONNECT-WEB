@@ -29,7 +29,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
   const isLoading = forgotPassword.isPending || resetPassword.isPending;
 
   const inputCls =
-    "h-10 rounded-sm border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
+    "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
   // ── Step 1: send OTP to email ──
   const onSendOtp = (e: React.FormEvent) => {
@@ -123,7 +123,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <button
               type="submit"
               disabled={isLoading || !email}
-              className="w-full h-10 mt-1 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
             >
               {forgotPassword.isPending ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
@@ -165,7 +165,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="h-10 w-10 rounded-sm border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+                      className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
                     />
                   ))}
                 </InputOTPGroup>
@@ -245,7 +245,7 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <button
               type="submit"
               disabled={isLoading || otp.length !== 6 || !password || !passwordConfirmation}
-              className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
             >
               {resetPassword.isPending ? (
                 <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />

@@ -26,9 +26,9 @@ function SkeletonCard() {
     <div className="flex flex-col overflow-hidden rounded-[6px] border border-border bg-card animate-pulse min-h-[300px] relative">
       <div className="absolute inset-0 bg-muted" />
       <div className="relative mt-auto p-4 md:p-5 flex flex-col w-full space-y-2">
-        <div className="h-3 w-1/3 rounded-sm bg-muted-foreground/20" />
-        <div className="h-4 w-3/4 rounded-sm bg-muted-foreground/30" />
-        <div className="h-3 w-1/2 rounded-sm bg-muted-foreground/20" />
+        <div className="h-3 w-1/3 rounded-[6px] bg-muted-foreground/20" />
+        <div className="h-4 w-3/4 rounded-[6px] bg-muted-foreground/30" />
+        <div className="h-3 w-1/2 rounded-[6px] bg-muted-foreground/20" />
       </div>
     </div>
   );
@@ -64,7 +64,7 @@ function MemberModal({
       }}
     >
       <div
-        className="relative w-full sm:max-w-lg bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-slideUp"
+        className="relative w-full sm:max-w-lg bg-card border border-border/80 rounded-t-2xl sm:rounded-[6px] shadow-2xl overflow-hidden animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -110,7 +110,7 @@ function MemberModal({
               {member.name}
             </h3>
             {member.title && (
-              <span className="inline-block mt-1.5 rounded-md bg-white/15 border border-white/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+              <span className="inline-block mt-1.5 rounded-[6px] bg-white/15 border border-white/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
                 {member.title}
               </span>
             )}
@@ -132,7 +132,7 @@ function MemberModal({
 
           {/* Stats */}
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-lg bg-muted/60 px-3 py-2.5">
+            <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
                 Joined
               </p>
@@ -141,7 +141,7 @@ function MemberModal({
                 {yrs} year{yrs !== 1 ? "s" : ""} ago
               </p>
             </div>
-            <div className="rounded-lg bg-muted/60 px-3 py-2.5">
+            <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
                 Experience
               </p>
@@ -234,7 +234,7 @@ function OurTeam() {
   const members: ApiTeamMember[] = data?.data ?? [];
 
   return (
-    <section className="w-full px-6 py-10 md:px-10">
+    <section className="w-full lg:px-6 py-10 md:px-10">
       {/* Header */}
       <div className="mb-8 text-center sm:text-left">
         <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary mb-2">
@@ -244,7 +244,7 @@ function OurTeam() {
 
       {/* Error state */}
       {isError && (
-        <div className="rounded-xl border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
+        <div className="rounded-[6px] border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
           <p className="text-sm text-destructive font-medium">
             Failed to load team members.
           </p>
@@ -259,7 +259,7 @@ function OurTeam() {
 
       {/* Grid */}
       {!isError && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid lg:grid-cols-4 grid-cols-1 gap-3 sm:grid-cols-2 ">
           {isLoading
             ? Array(8)
               .fill(null)

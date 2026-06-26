@@ -37,7 +37,7 @@ export const EntryCard = React.memo(function EntryCard({
   onRemove,
 }: EntryCardProps) {
   return (
-    <div className="relative rounded-md border border-border bg-muted/50 p-4 pr-10">
+    <div className="relative rounded-[6px] border border-border bg-muted/50 p-4 pr-10">
       {children}
       <button
         type="button"

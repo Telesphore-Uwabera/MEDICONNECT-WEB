@@ -73,7 +73,7 @@ export const AdminLayout = ({ children }: Props) => {
                   to={item.to}
                   end
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm font-medium transition-smooth",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-smooth",
                     active
                       ? "bg-primary-soft text-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -101,7 +101,7 @@ export const AdminLayout = ({ children }: Props) => {
           aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           className={cn(
-            "hidden lg:flex fixed top-0 left-0 z-[9999] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
+            "hidden lg:flex fixed top-0 left-0 z-[9997] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
             sidebarOpen ? "left-[202px]" : "left-0",
           )}
         >

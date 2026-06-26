@@ -70,6 +70,17 @@ function formatCurrency(value: string | number, currency = "RWF"): string {
   return `${num.toLocaleString()} ${currency}`;
 }
 
+function formatDate(value?: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 const statusStyle: Record<string, string> = {
   pending:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
@@ -139,14 +150,54 @@ function Field({
 }
 
 const inputCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
-  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 type TabKey = "doctors" | "withdrawals" | "payouts" | "transactions" | "main";
+
+function WalletMetric({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  tone = "primary",
+}: {
+  label: string;
+  value: React.ReactNode;
+  detail?: string;
+  icon: React.ElementType;
+  tone?: "primary" | "success" | "warning" | "info";
+}) {
+  const toneCls = {
+    primary: "bg-primary/10 text-primary border-primary/20",
+    success: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    warning: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    info: "bg-sky-500/10 text-sky-600 border-sky-500/20",
+  }[tone];
+
+  return (
+    <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm min-h-[118px] flex flex-col justify-between">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+          {label}
+        </p>
+        <span className={cn("h-8 w-8 rounded-[6px] border flex items-center justify-center shrink-0", toneCls)}>
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground tabular-nums leading-tight">
+          {value}
+        </p>
+        {detail && <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>}
+      </div>
+    </div>
+  );
+}
 
 
 // ─── Doctor Wallet Row ─────────────────────────────────────────────────────────
@@ -168,7 +219,7 @@ function DoctorWalletRow({
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-sm bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+          <div className="h-9 w-9 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
             <User className="w-4 h-4 text-primary" />
           </div>
           <div className="min-w-0">
@@ -184,14 +235,14 @@ function DoctorWalletRow({
         {wallet.currency}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">
-        {new Date(wallet.updated_at).toLocaleDateString()}
+        {wallet.last_topup ? new Date(wallet.last_topup).toLocaleDateString() : "—"}
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[10px] rounded-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 dark:border-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-950/30 transition-all"
+            className="h-7 px-2 text-[10px] rounded-[6px] border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 dark:border-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-950/30 transition-all"
             onClick={() => onTopUp(wallet)}
             disabled={isMutating}
           >
@@ -201,7 +252,7 @@ function DoctorWalletRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[10px] rounded-sm border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all"
+            className="h-7 px-2 text-[10px] rounded-[6px] border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all"
             onClick={() => onDeduct(wallet)}
             disabled={isMutating}
           >
@@ -211,7 +262,7 @@ function DoctorWalletRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all"
+            className="h-7 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all"
             onClick={() => onDelete(wallet)}
             disabled={isMutating}
           >
@@ -239,8 +290,8 @@ function DoctorWalletCard({
   isMutating: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      <div className="h-10 w-10 rounded-sm bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-primary/20">
+    <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+      <div className="h-10 w-10 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-primary/20">
         <User className="w-4 h-4 text-primary" />
       </div>
       <div className="flex-1 min-w-0">
@@ -258,7 +309,7 @@ function DoctorWalletCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-7 px-2 text-[10px] rounded-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400"
+            className="flex-1 h-7 px-2 text-[10px] rounded-[6px] border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400"
             onClick={() => onTopUp(wallet)}
             disabled={isMutating}
           >
@@ -268,7 +319,7 @@ function DoctorWalletCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 h-7 px-2 text-[10px] rounded-sm border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400"
+            className="flex-1 h-7 px-2 text-[10px] rounded-[6px] border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400"
             onClick={() => onDeduct(wallet)}
             disabled={isMutating}
           >
@@ -278,7 +329,7 @@ function DoctorWalletCard({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600"
+            className="h-7 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600"
             onClick={() => onDelete(wallet)}
             disabled={isMutating}
           >
@@ -341,7 +392,7 @@ function PayoutRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 px-2 text-[10px] rounded-sm border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all"
+            className="h-7 px-2 text-[10px] rounded-[6px] border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-400 dark:hover:bg-amber-950/30 transition-all"
             onClick={() => onRefund(payout)}
             disabled={isMutating}
           >
@@ -366,7 +417,7 @@ function PayoutCard({
   isMutating: boolean;
 }) {
   return (
-    <div className="p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold text-[12px] text-foreground truncate">{payout.doctor_name}</p>
@@ -393,7 +444,7 @@ function PayoutCard({
         <Button
           size="sm"
           variant="outline"
-          className="w-full mt-2 h-7 text-[10px] rounded-sm border-amber-200 text-amber-700 hover:bg-amber-50"
+          className="w-full mt-2 h-7 text-[10px] rounded-[6px] border-amber-200 text-amber-700 hover:bg-amber-50"
           onClick={() => onRefund(payout)}
           disabled={isMutating}
         >
@@ -419,8 +470,8 @@ function WithdrawalRequestRow({
   isMutating: boolean;
 }) {
   const status = String(request.status);
-  const canApprove = status === "pending";
-  const canComplete = status === "approved" || status === "processing";
+  const canApprove = status === "processing";
+  const canComplete = status === "approved";
   const canReject = status === "pending" || status === "approved" || status === "processing";
   const canCancel = status === "pending" || status === "approved" || status === "processing";
 
@@ -444,11 +495,11 @@ function WithdrawalRequestRow({
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">{request.created_at ? new Date(request.created_at).toLocaleString() : "—"}</td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm" onClick={() => onView(request.id)}><Eye className="w-3 h-3" /></Button>
-          {canApprove && <Button size="sm" className="h-7 px-2 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
-          {canComplete && <Button size="sm" className="h-7 px-2 text-[10px] rounded-sm bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
-          {canReject && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
-          {canCancel && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-[6px]" onClick={() => onView(request.id)}><Eye className="w-3 h-3" /></Button>
+          {canApprove && <Button size="sm" className="h-7 px-2 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
+          {canComplete && <Button size="sm" className="h-7 px-2 text-[10px] rounded-[6px] bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
+          {canReject && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-[6px] border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
+          {canCancel && <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
         </div>
       </td>
     </tr>
@@ -467,13 +518,13 @@ function WithdrawalRequestCard({
   isMutating: boolean;
 }) {
   const status = String(request.status);
-  const canApprove = status === "pending";
-  const canComplete = status === "approved" || status === "processing";
+  const canApprove = status === "processing";
+  const canComplete = status === "approved";
   const canReject = status === "pending" || status === "approved" || status === "processing";
   const canCancel = status === "pending" || status === "approved" || status === "processing";
 
   return (
-    <div className="p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold text-[12px] text-foreground truncate">{request.doctor_name}</p>
@@ -487,11 +538,11 @@ function WithdrawalRequestCard({
       </div>
       <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "—"} · {request.account_number ?? "—"}</p>
       <div className="grid grid-cols-2 gap-2 mt-3">
-        <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm" onClick={() => onView(request.id)}><Eye className="w-3 h-3 mr-1" /> View</Button>
-        {canApprove && <Button size="sm" className="h-7 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
-        {canComplete && <Button size="sm" className="h-7 text-[10px] rounded-sm bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
-        {canReject && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
-        {canCancel && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-sm" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
+        <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-[6px]" onClick={() => onView(request.id)}><Eye className="w-3 h-3 mr-1" /> View</Button>
+        {canApprove && <Button size="sm" className="h-7 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
+        {canComplete && <Button size="sm" className="h-7 text-[10px] rounded-[6px] bg-emerald-600 hover:bg-emerald-700" disabled={isMutating} onClick={() => onAction(request, "complete")}>Complete</Button>}
+        {canReject && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-[6px] border-red-200 text-red-700 hover:bg-red-50" disabled={isMutating} onClick={() => onAction(request, "reject")}>Reject</Button>}
+        {canCancel && <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "cancel")}>Cancel</Button>}
       </div>
     </div>
   );
@@ -537,7 +588,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
 
 function TransactionCard({ tx }: { tx: Transaction }) {
   return (
-    <div className="p-3.5 rounded-sm border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
+    <div className="p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge
@@ -670,7 +721,7 @@ function ActionPanel({
     }
     try {
       await topUpMutation.mutateAsync({
-        id: wallet.id,
+        id: wallet.doctor_id,
         payload: { amount: parseFloat(topUpForm.amount), note: topUpForm.note || undefined },
       });
       toast({ title: "Wallet topped up successfully." });
@@ -687,7 +738,7 @@ function ActionPanel({
     }
     try {
       await deductMutation.mutateAsync({
-        id: wallet.id,
+        id: wallet.doctor_id,
         payload: { amount: parseFloat(deductForm.amount), note: deductForm.note || undefined },
       });
       toast({ title: "Amount deducted successfully." });
@@ -799,7 +850,7 @@ function ActionPanel({
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border/60 bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
+                className="w-8 h-8 rounded-[6px] border border-border/60 bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
                 aria-label="Close panel"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
@@ -811,7 +862,7 @@ function ActionPanel({
               {(action === "topup" || action === "deduct") && (
                 <>
                   {wallet && (
-                    <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+                    <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1">
                         <Wallet className="w-3.5 h-3.5" />
                         Current balance
@@ -915,7 +966,7 @@ function ActionPanel({
               {action === "refund" && (
                 <>
                   {payout && (
-                    <div className="p-3 rounded-lg border border-border/60 bg-secondary/30 space-y-1">
+                    <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] text-muted-foreground">Payout amount</span>
                         <span className="text-[12px] font-bold text-foreground">{formatCurrency(payout.amount)}</span>
@@ -941,7 +992,7 @@ function ActionPanel({
 
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={handleSubmit}
                 disabled={isSaving}
               >
@@ -950,7 +1001,7 @@ function ActionPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -981,7 +1032,7 @@ function DeleteDialog({
   return (
     <>
       <div onClick={onCancel} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]" />
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
+      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-[6px] shadow-xl p-5 flex flex-col gap-4">
         <div>
           <p className="text-[14px] font-semibold text-foreground">Delete wallet?</p>
           <p className="text-[12px] text-muted-foreground mt-1">
@@ -992,7 +1043,7 @@ function DeleteDialog({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+            className="flex-1 h-9 text-[12px] rounded-[6px] border-border/60"
             onClick={onCancel}
             disabled={isDeleting}
           >
@@ -1000,7 +1051,7 @@ function DeleteDialog({
           </Button>
           <Button
             variant="destructive"
-            className="flex-1 h-9 text-[12px] rounded-lg gap-1.5"
+            className="flex-1 h-9 text-[12px] rounded-[6px] gap-1.5"
             onClick={onConfirm}
             disabled={isDeleting}
           >
@@ -1054,10 +1105,10 @@ function MainWalletCard({
   };
 
   return (
-    <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+    <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-sm bg-primary/10 flex items-center justify-center border border-primary/20">
+          <div className="h-8 w-8 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/20">
             <Landmark className="w-4 h-4 text-primary" />
           </div>
           <div>
@@ -1111,7 +1162,7 @@ function MainWalletCard({
           <div className="flex gap-2">
             <Button
               size="sm"
-              className="flex-1 h-8 text-[11px] rounded-sm"
+              className="flex-1 h-8 text-[11px] rounded-[6px]"
               onClick={handleMainAction}
               disabled={topUpMutation.isPending || deductMutation.isPending}
             >
@@ -1131,7 +1182,7 @@ function MainWalletCard({
         <Button
           size="sm"
           variant="outline"
-          className="flex-1 h-8 text-[11px] rounded-sm border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400"
+          className="flex-1 h-8 text-[11px] rounded-[6px] border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900 dark:text-emerald-400"
           onClick={() => {
             setAction("topup");
             setAmount("");
@@ -1144,7 +1195,7 @@ function MainWalletCard({
         <Button
           size="sm"
           variant="outline"
-          className="flex-1 h-8 text-[11px] rounded-sm border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400"
+          className="flex-1 h-8 text-[11px] rounded-[6px] border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-900 dark:text-amber-400"
           onClick={() => {
             setAction("deduct");
             setAmount("");
@@ -1168,7 +1219,7 @@ function ManageAdminWallet() {
   const [activeTab, setActiveTab] = useState<TabKey>("doctors");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [withdrawalStatus, setWithdrawalStatus] = useState("pending");
+  const [withdrawalStatus, setWithdrawalStatus] = useState("");
   const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<number | null>(null);
   const [withdrawalAction, setWithdrawalAction] = useState<{
     request: WithdrawalRequest;
@@ -1194,7 +1245,7 @@ function ManageAdminWallet() {
     useGetDoctorWallets(search || undefined, page);
   const { data: mainWallet, isLoading: mainLoading } = useGetMainWallet();
   const { data: payoutsData, isLoading: payoutsLoading, isError: payoutsError } =
-    useGetPayouts(undefined, undefined, activeTab === "payouts" ? page : 1);
+    useGetPayouts(undefined, undefined, activeTab === "payouts" ? page : 1, activeTab === "payouts");
   const {
     data: withdrawalRequestsData,
     isLoading: withdrawalRequestsLoading,
@@ -1204,11 +1255,12 @@ function ManageAdminWallet() {
     withdrawalStatus,
     activeTab === "withdrawals" ? page : 1,
     activeTab === "withdrawals",
+    search || undefined,
   );
   const { data: selectedWithdrawal, isLoading: selectedWithdrawalLoading } =
     useGetWithdrawalRequest(selectedWithdrawalId);
   const { data: transactionsData, isLoading: txLoading, isError: txError } =
-    useGetTransactions(undefined, undefined, activeTab === "transactions" ? page : 1);
+    useGetTransactions(undefined, undefined, activeTab === "transactions" ? page : 1, activeTab === "transactions");
 
   const wallets = walletsData?.data ?? [];
   const payouts = payoutsData?.data ?? [];
@@ -1232,8 +1284,20 @@ function ManageAdminWallet() {
   const totalPages = Math.ceil(total / perPage);
 
   const totalBalance = wallets.reduce((sum, w) => sum + parseFloat(w.balance || "0"), 0);
-  const pendingPayouts = payouts.filter((p) => p.status === "pending").length;
-  const completedPayouts = payouts.filter((p) => p.status === "completed").length;
+  const withdrawalSummary = withdrawalRequestsData?.summary as Record<string, unknown> | undefined;
+  const pendingWithdrawals = Number(withdrawalSummary?.pending ?? withdrawalRequests.filter((r) => r.status === "pending").length);
+  const processingWithdrawals = Number(withdrawalSummary?.processing ?? withdrawalRequests.filter((r) => r.status === "processing").length);
+  const completedWithdrawals = Number(withdrawalSummary?.completed ?? withdrawalRequests.filter((r) => r.status === "completed").length);
+  const mainBalance = mainWallet ? formatCurrency(mainWallet.balance, mainWallet.currency) : "—";
+  const pendingAmount = withdrawalSummary?.total_pending_amount != null
+    ? formatCurrency(withdrawalSummary.total_pending_amount as string | number)
+    : undefined;
+  const activeLabel =
+    activeTab === "doctors" ? "Doctor wallet balances"
+      : activeTab === "withdrawals" ? "Withdrawal approval queue"
+        : activeTab === "main" ? "Main platform wallet"
+          : activeTab === "payouts" ? "Payout history"
+            : "Wallet transactions";
 
   const openTopUp = useCallback((wallet: DoctorWallet) => {
     setSelectedWallet(wallet);
@@ -1265,11 +1329,6 @@ function ManageAdminWallet() {
 
   const confirmWithdrawalAction = useCallback(async () => {
     if (!withdrawalAction) return;
-    const needsReason = withdrawalAction.action === "reject" || withdrawalAction.action === "cancel";
-    if (needsReason && !withdrawalReason.trim()) {
-      toast({ title: "Reason is required.", variant: "destructive" });
-      return;
-    }
 
     try {
       await withdrawalActionMutation.mutateAsync({
@@ -1297,9 +1356,9 @@ function ManageAdminWallet() {
 
   const confirmDelete = useCallback(async () => {
     if (!deletingWallet) return;
-    setDeletingId(deletingWallet.id);
+    setDeletingId(deletingWallet.doctor_id);
     try {
-      await deleteMutation.mutateAsync(deletingWallet.id);
+      await deleteMutation.mutateAsync(deletingWallet.doctor_id);
       toast({ title: "Wallet deleted." });
     } catch (error) {
       toast({ title: getErrorMessage(error), variant: "destructive" });
@@ -1325,8 +1384,6 @@ function ManageAdminWallet() {
   const tabs: { key: TabKey; label: string; icon: React.ElementType }[] = [
     { key: "doctors", label: "Doctor Wallets", icon: Wallet },
     { key: "withdrawals" as const, label: "Withdrawals", icon: Receipt },
-    { key: "payouts", label: "Payouts", icon: Send },
-    { key: "transactions", label: "Transactions", icon: ArrowRightLeft },
     { key: "main", label: "Main Wallet", icon: Landmark },
   ];
 
@@ -1339,200 +1396,334 @@ function ManageAdminWallet() {
         />
 
         <main className="flex-1 overflow-y-auto">
-          {/* Stats */}
-          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total doctors" value={walletsData?.total ?? 0} icon={User} accent="primary" />
-            <StatCard label="Total balance" value={formatCurrency(totalBalance)} icon={CreditCard} accent="success" />
-            <StatCard label="Pending payouts" value={pendingPayouts} icon={Clock} accent="warning" />
-            <StatCard label="Completed payouts" value={completedPayouts} icon={CheckCircle2} accent="info" />
-          </div>
+          <div className="p-3 sm:p-5 space-y-4">
+            <section className="grid xl:grid-cols-[minmax(340px,420px)_1fr] gap-4">
+              <div className="rounded-[6px] border border-primary/25 bg-card p-5 shadow-sm flex flex-col justify-between min-h-[236px]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+                      Platform wallet
+                    </p>
+                    <h2 className="text-3xl font-bold text-foreground mt-3 tabular-nums">
+                      {mainLoading ? "Loading..." : mainBalance}
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Reserve balance used to complete approved doctor withdrawals.
+                    </p>
+                  </div>
+                  <span className="h-11 w-11 rounded-[6px] bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                    <Landmark className="h-5 w-5" />
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-4">
+                  <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Last topup</p>
+                    <p className="text-sm font-semibold text-foreground mt-1">{formatDate(mainWallet?.last_topup)}</p>
+                  </div>
+                  <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-3">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Last withdrawn</p>
+                    <p className="text-sm font-semibold text-foreground mt-1">{formatDate(mainWallet?.last_withdrawn)}</p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Tabs */}
-          <div className="px-3 sm:px-4 mt-3 sm:mt-4">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/40 border border-border/40">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const active = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setPage(1); }}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-md transition-all duration-200",
-                      active
-                        ? "bg-card text-foreground shadow-sm border border-border/40"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+              <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                <WalletMetric label="Doctor wallets" value={walletsData?.total ?? 0} detail="Registered balances" icon={User} />
+                <WalletMetric label="Doctor balance" value={formatCurrency(totalBalance)} detail="Visible on this page" icon={CreditCard} tone="success" />
+                <WalletMetric label="Pending queue" value={pendingWithdrawals} detail={pendingAmount ? `${pendingAmount} pending` : "Awaiting review"} icon={Clock} tone="warning" />
+                <WalletMetric label="Processing" value={processingWithdrawals} detail={`${completedWithdrawals} completed`} icon={CheckCircle2} tone="info" />
+              </div>
+            </section>
+
+            <section className="rounded-[6px] border border-border/70 bg-card shadow-sm overflow-hidden">
+              <div className="border-b border-border/60 p-3 sm:p-4 space-y-3">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{activeLabel}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {isLoading ? "Loading..." : `${total} ${total === 1 ? "record" : "records"}`}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    {(activeTab === "doctors" || activeTab === "withdrawals") && (
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                        <input
+                          type="text"
+                          value={search}
+                          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                          placeholder={activeTab === "withdrawals" ? "Search withdrawal..." : "Search doctor..."}
+                          className="h-9 w-full sm:w-64 pl-8 pr-8 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                        />
+                        {search && (
+                          <button
+                            onClick={() => { setSearch(""); setPage(1); }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     )}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Meta bar */}
-          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-            <p className="text-[11px] text-muted-foreground shrink-0">
-              {isLoading ? (
-                <span className="text-muted-foreground/50">Loading…</span>
-              ) : (
-                <>
-                  <span className="font-bold text-foreground">{total}</span>{" "}
-                  {total === 1
-                    ? activeTab === "doctors" ? "wallet" : activeTab === "withdrawals" ? "withdrawal" : activeTab === "payouts" ? "payout" : "transaction"
-                    : activeTab === "doctors" ? "wallets" : activeTab === "withdrawals" ? "withdrawals" : activeTab === "payouts" ? "payouts" : "transactions"}
-                </>
-              )}
-            </p>
+                    {activeTab === "withdrawals" && (
+                      <select
+                        value={withdrawalStatus}
+                        onChange={(e) => {
+                          setWithdrawalStatus(e.target.value);
+                          setPage(1);
+                        }}
+                        className="h-9 px-3 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                      >
+                        {["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => (
+                          <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              {activeTab === "doctors" && (
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                    placeholder="Search doctor..."
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                <div className="flex gap-1 overflow-x-auto">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const active = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => { setActiveTab(tab.key); setPage(1); }}
+                        className={cn(
+                          "h-9 px-3 rounded-[6px] text-[12px] font-semibold flex items-center gap-2 whitespace-nowrap border transition-colors",
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-border/60 hover:text-foreground hover:bg-secondary/40",
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              {/* Stats */}
+              <div className="hidden px-3 sm:px-4 pt-3 sm:pt-4 grid-cols-2 lg:grid-cols-4 gap-2">
+                <StatCard label="Total doctors" value={walletsData?.total ?? 0} icon={User} accent="primary" />
+                <StatCard label="Total balance" value={formatCurrency(totalBalance)} icon={CreditCard} accent="success" />
+                <StatCard label="Pending withdrawals" value={pendingWithdrawals} icon={Clock} accent="warning" />
+                <StatCard label="Completed withdrawals" value={completedWithdrawals} icon={CheckCircle2} accent="info" />
+              </div>
+
+              {/* Tabs */}
+              <div className="hidden px-3 sm:px-4 mt-3 sm:mt-4">
+                <div className="flex items-center gap-1 p-1 rounded-[6px] bg-secondary/40 border border-border/40">
+                  {tabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const active = activeTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => { setActiveTab(tab.key); setPage(1); }}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-1.5 h-8 text-[11px] font-medium rounded-[6px] transition-all duration-200",
+                          active
+                            ? "bg-card text-foreground shadow-sm border border-border/40"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Meta bar */}
+              <div className="hidden sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 items-center justify-between gap-2 sm:gap-3">
+                <p className="text-[11px] text-muted-foreground shrink-0">
+                  {isLoading ? (
+                    <span className="text-muted-foreground/50">Loading…</span>
+                  ) : (
+                    <>
+                      <span className="font-bold text-foreground">{total}</span>{" "}
+                      {total === 1
+                        ? activeTab === "doctors" ? "wallet" : activeTab === "withdrawals" ? "withdrawal" : activeTab === "payouts" ? "payout" : "transaction"
+                        : activeTab === "doctors" ? "wallets" : activeTab === "withdrawals" ? "withdrawals" : activeTab === "payouts" ? "payouts" : "transactions"}
+                    </>
+                  )}
+                </p>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {(activeTab === "doctors" || activeTab === "withdrawals") && (
+                    <div className="relative hidden sm:block">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                        placeholder={activeTab === "withdrawals" ? "Search withdrawal..." : "Search doctor..."}
+                        className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                      />
+                      {search && (
+                        <button
+                          onClick={() => setSearch("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "payouts" && (
+                    <Button
+                      size="sm"
+                      className="h-8 px-3 text-[11px] rounded-[6px] gap-1.5"
+                      onClick={openPayout}
                     >
-                      <X className="w-3 h-3" />
-                    </button>
+                      <Plus className="w-3.5 h-3.5" />
+                      New payout
+                    </Button>
+                  )}
+
+                  {activeTab === "withdrawals" && (
+                    <select
+                      value={withdrawalStatus}
+                      onChange={(e) => {
+                        setWithdrawalStatus(e.target.value);
+                        setPage(1);
+                      }}
+                      className="h-8 px-3 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                    >
+                      {["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => (
+                        <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
+                      ))}
+                    </select>
                   )}
                 </div>
-              )}
-
-              {activeTab === "payouts" && (
-                <Button
-                  size="sm"
-                  className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
-                  onClick={openPayout}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  New payout
-                </Button>
-              )}
-
-              {activeTab === "withdrawals" && (
-                <select
-                  value={withdrawalStatus}
-                  onChange={(e) => {
-                    setWithdrawalStatus(e.target.value);
-                    setPage(1);
-                  }}
-                  className="h-8 px-3 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
-                >
-                  {["pending", "approved", "processing", "completed", "rejected", "cancelled", "all"].map((status) => (
-                    <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile search */}
-          {activeTab === "doctors" && (
-            <div className="sm:hidden px-3 pt-3">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search doctor..."
-                  className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                />
               </div>
-            </div>
-          )}
 
-          {/* Content */}
-          <div className="p-3 sm:p-4">
-            {isError ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                <p className="text-[12px] font-semibold text-destructive">
-                  {activeTab === "withdrawals" ? "Failed to load withdrawal requests" : "Failed to load data"}
-                </p>
-                <p className="text-[11px] text-muted-foreground/70 max-w-md">
-                  {activeTab === "withdrawals"
-                    ? getErrorMessage(withdrawalRequestsErrorObj) || "The withdrawal requests API returned an error."
-                    : "Check your connection and try again"}
-                </p>
-              </div>
-            ) : !isLoading && total === 0 && activeTab !== "main" ? (
-              <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                  <Wallet className="w-6 h-6 text-muted-foreground/50" />
+              {/* Mobile search */}
+              {(activeTab === "doctors" || activeTab === "withdrawals") && (
+                <div className="hidden sm:hidden px-3 pt-3">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                      placeholder={activeTab === "withdrawals" ? "Search withdrawal..." : "Search doctor..."}
+                      className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[12px] font-semibold text-foreground">
-                    {activeTab === "doctors"
-                      ? "No doctor wallets yet"
-                      : activeTab === "withdrawals"
-                        ? "No withdrawal requests"
-                        : activeTab === "payouts"
-                          ? "No payouts yet"
-                          : "No transactions yet"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {activeTab === "doctors"
-                      ? "Doctor wallets will appear here"
-                      : activeTab === "withdrawals"
-                        ? "Doctor withdrawal requests will appear here"
-                        : activeTab === "payouts"
-                          ? "Create your first payout"
-                          : "Transactions will appear here"}
-                  </p>
-                </div>
-                {activeTab === "payouts" && (
-                  <Button
-                    size="sm"
-                    className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5"
-                    onClick={openPayout}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    New payout
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Main Wallet Tab */}
-                {activeTab === "main" && (
-                  <MainWalletCard
-                    mainWallet={mainWallet}
-                    onTopUp={() => { }}
-                    onDeduct={() => { }}
-                  />
-                )}
+              )}
 
-                {/* Doctor Wallets Table */}
-                {activeTab === "doctors" && (
+              {/* Content */}
+              <div className="p-3 sm:p-4">
+                {isError ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <p className="text-[12px] font-semibold text-destructive">
+                      {activeTab === "withdrawals" ? "Failed to load withdrawal requests" : "Failed to load data"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/70 max-w-md">
+                      {activeTab === "withdrawals"
+                        ? getErrorMessage(withdrawalRequestsErrorObj) || "The withdrawal requests API returned an error."
+                        : "Check your connection and try again"}
+                    </p>
+                  </div>
+                ) : !isLoading && total === 0 && activeTab !== "main" ? (
+                  <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
+                    <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                      <Wallet className="w-6 h-6 text-muted-foreground/50" />
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-foreground">
+                        {activeTab === "doctors"
+                          ? "No doctor wallets yet"
+                          : activeTab === "withdrawals"
+                            ? "No withdrawal requests"
+                            : activeTab === "payouts"
+                              ? "No payouts yet"
+                              : "No transactions yet"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground/70 mt-1">
+                        {activeTab === "doctors"
+                          ? "Doctor wallets will appear here"
+                          : activeTab === "withdrawals"
+                            ? "Doctor withdrawal requests will appear here"
+                            : activeTab === "payouts"
+                              ? "Create your first payout"
+                              : "Transactions will appear here"}
+                      </p>
+                    </div>
+                    {activeTab === "payouts" && (
+                      <Button
+                        size="sm"
+                        className="mt-1 h-8 px-4 text-[11px] rounded-[6px] gap-1.5"
+                        onClick={openPayout}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        New payout
+                      </Button>
+                    )}
+                  </div>
+                ) : (
                   <>
-                    <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                            <th className="text-left px-4 py-3 font-semibold">Balance</th>
-                            <th className="text-left px-4 py-3 font-semibold">Currency</th>
-                            <th className="text-left px-4 py-3 font-semibold">Updated</th>
-                            <th className="px-4 py-3" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {walletsLoading ? (
-                            <SkeletonRows cols={5} />
-                          ) : (
-                            wallets.map((wallet) => (
-                              <DoctorWalletRow
+                    {/* Main Wallet Tab */}
+                    {activeTab === "main" && (
+                      <MainWalletCard
+                        mainWallet={mainWallet}
+                        onTopUp={() => { }}
+                        onDeduct={() => { }}
+                      />
+                    )}
+
+                    {/* Doctor Wallets Table */}
+                    {activeTab === "doctors" && (
+                      <>
+                        <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                          <table className="w-full text-[11px]">
+                            <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                              <tr>
+                                <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                                <th className="text-left px-4 py-3 font-semibold">Balance</th>
+                                <th className="text-left px-4 py-3 font-semibold">Currency</th>
+                                <th className="text-left px-4 py-3 font-semibold">Last topup</th>
+                                <th className="px-4 py-3" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {walletsLoading ? (
+                                <SkeletonRows cols={5} />
+                              ) : (
+                                wallets.map((wallet) => (
+                                  <DoctorWalletRow
+                                    key={wallet.id}
+                                    wallet={wallet}
+                                    onTopUp={openTopUp}
+                                    onDeduct={openDeduct}
+                                    onDelete={requestDelete}
+                                    isMutating={
+                                      topUpMutation.isPending ||
+                                      deductMutation.isPending ||
+                                      deleteMutation.isPending
+                                    }
+                                  />
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="md:hidden flex flex-col gap-2">
+                          {walletsLoading
+                            ? Array.from({ length: 4 }).map((_, i) => (
+                              <div key={i} className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse" />
+                            ))
+                            : wallets.map((wallet) => (
+                              <DoctorWalletCard
                                 key={wallet.id}
                                 wallet={wallet}
                                 onTopUp={openTopUp}
@@ -1544,202 +1735,180 @@ function ManageAdminWallet() {
                                   deleteMutation.isPending
                                 }
                               />
+                            ))}
+                        </div>
+                      </>
+                    )}
+
+                    {activeTab === "withdrawals" && (
+                      <>
+                        <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                          <table className="w-full text-[11px]">
+                            <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                              <tr>
+                                <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                                <th className="text-left px-4 py-3 font-semibold">Amount</th>
+                                <th className="text-left px-4 py-3 font-semibold">Method</th>
+                                <th className="text-left px-4 py-3 font-semibold">Account</th>
+                                <th className="text-left px-4 py-3 font-semibold">Status</th>
+                                <th className="text-left px-4 py-3 font-semibold">Requested</th>
+                                <th className="px-4 py-3" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {withdrawalRequestsLoading ? (
+                                <SkeletonRows cols={7} />
+                              ) : (
+                                withdrawalRequests.map((request) => (
+                                  <WithdrawalRequestRow
+                                    key={request.id}
+                                    request={request}
+                                    onView={setSelectedWithdrawalId}
+                                    onAction={openWithdrawalAction}
+                                    isMutating={withdrawalActionMutation.isPending}
+                                  />
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="md:hidden flex flex-col gap-2">
+                          {withdrawalRequestsLoading
+                            ? Array.from({ length: 4 }).map((_, i) => (
+                              <div key={i} className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse" />
                             ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="md:hidden flex flex-col gap-2">
-                      {walletsLoading
-                        ? Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                        ))
-                        : wallets.map((wallet) => (
-                          <DoctorWalletCard
-                            key={wallet.id}
-                            wallet={wallet}
-                            onTopUp={openTopUp}
-                            onDeduct={openDeduct}
-                            onDelete={requestDelete}
-                            isMutating={
-                              topUpMutation.isPending ||
-                              deductMutation.isPending ||
-                              deleteMutation.isPending
-                            }
-                          />
-                        ))}
-                    </div>
-                  </>
-                )}
-
-                {activeTab === "withdrawals" && (
-                  <>
-                    <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                            <th className="text-left px-4 py-3 font-semibold">Amount</th>
-                            <th className="text-left px-4 py-3 font-semibold">Method</th>
-                            <th className="text-left px-4 py-3 font-semibold">Account</th>
-                            <th className="text-left px-4 py-3 font-semibold">Status</th>
-                            <th className="text-left px-4 py-3 font-semibold">Requested</th>
-                            <th className="px-4 py-3" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {withdrawalRequestsLoading ? (
-                            <SkeletonRows cols={7} />
-                          ) : (
-                            withdrawalRequests.map((request) => (
-                              <WithdrawalRequestRow
+                            : withdrawalRequests.map((request) => (
+                              <WithdrawalRequestCard
                                 key={request.id}
                                 request={request}
                                 onView={setSelectedWithdrawalId}
                                 onAction={openWithdrawalAction}
                                 isMutating={withdrawalActionMutation.isPending}
                               />
+                            ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Payouts Table */}
+                    {activeTab === "payouts" && (
+                      <>
+                        <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                          <table className="w-full text-[11px]">
+                            <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                              <tr>
+                                <th className="text-left px-4 py-3 font-semibold">Doctor</th>
+                                <th className="text-left px-4 py-3 font-semibold">Amount</th>
+                                <th className="text-left px-4 py-3 font-semibold">Status</th>
+                                <th className="text-left px-4 py-3 font-semibold">Method</th>
+                                <th className="text-left px-4 py-3 font-semibold">Reference</th>
+                                <th className="text-left px-4 py-3 font-semibold">Date</th>
+                                <th className="px-4 py-3" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {payoutsLoading ? (
+                                <SkeletonRows cols={7} />
+                              ) : (
+                                payouts.map((payout) => (
+                                  <PayoutRow
+                                    key={payout.id}
+                                    payout={payout}
+                                    onRefund={openRefund}
+                                    isMutating={refundMutation.isPending}
+                                  />
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="md:hidden flex flex-col gap-2">
+                          {payoutsLoading
+                            ? Array.from({ length: 4 }).map((_, i) => (
+                              <div key={i} className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse" />
                             ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="md:hidden flex flex-col gap-2">
-                      {withdrawalRequestsLoading
-                        ? Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-24 rounded-sm border border-border/60 bg-card animate-pulse" />
-                        ))
-                        : withdrawalRequests.map((request) => (
-                          <WithdrawalRequestCard
-                            key={request.id}
-                            request={request}
-                            onView={setSelectedWithdrawalId}
-                            onAction={openWithdrawalAction}
-                            isMutating={withdrawalActionMutation.isPending}
-                          />
-                        ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Payouts Table */}
-                {activeTab === "payouts" && (
-                  <>
-                    <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-semibold">Doctor</th>
-                            <th className="text-left px-4 py-3 font-semibold">Amount</th>
-                            <th className="text-left px-4 py-3 font-semibold">Status</th>
-                            <th className="text-left px-4 py-3 font-semibold">Method</th>
-                            <th className="text-left px-4 py-3 font-semibold">Reference</th>
-                            <th className="text-left px-4 py-3 font-semibold">Date</th>
-                            <th className="px-4 py-3" />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {payoutsLoading ? (
-                            <SkeletonRows cols={7} />
-                          ) : (
-                            payouts.map((payout) => (
-                              <PayoutRow
+                            : payouts.map((payout) => (
+                              <PayoutCard
                                 key={payout.id}
                                 payout={payout}
                                 onRefund={openRefund}
                                 isMutating={refundMutation.isPending}
                               />
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                            ))}
+                        </div>
+                      </>
+                    )}
 
-                    <div className="md:hidden flex flex-col gap-2">
-                      {payoutsLoading
-                        ? Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                        ))
-                        : payouts.map((payout) => (
-                          <PayoutCard
-                            key={payout.id}
-                            payout={payout}
-                            onRefund={openRefund}
-                            isMutating={refundMutation.isPending}
-                          />
-                        ))}
-                    </div>
+                    {/* Transactions Table */}
+                    {activeTab === "transactions" && (
+                      <>
+                        <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                          <table className="w-full text-[11px]">
+                            <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                              <tr>
+                                <th className="text-left px-4 py-3 font-semibold">ID</th>
+                                <th className="text-left px-4 py-3 font-semibold">Type</th>
+                                <th className="text-left px-4 py-3 font-semibold">Amount</th>
+                                <th className="text-left px-4 py-3 font-semibold">Balance After</th>
+                                <th className="text-left px-4 py-3 font-semibold">Description</th>
+                                <th className="text-left px-4 py-3 font-semibold">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {txLoading ? (
+                                <SkeletonRows cols={6} />
+                              ) : (
+                                transactions.map((tx) => (
+                                  <TransactionRow key={tx.id} tx={tx} />
+                                ))
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="md:hidden flex flex-col gap-2">
+                          {txLoading
+                            ? Array.from({ length: 4 }).map((_, i) => (
+                              <div key={i} className="h-20 rounded-[6px] border border-border/60 bg-card animate-pulse" />
+                            ))
+                            : transactions.map((tx) => (
+                              <TransactionCard key={tx.id} tx={tx} />
+                            ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && activeTab !== "main" && (
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                        <p className="text-[11px] text-muted-foreground">
+                          Page <span className="font-semibold text-foreground">{page}</span>{" "}of{" "}
+                          <span className="font-semibold text-foreground">{totalPages}</span>
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            disabled={page <= 1}
+                            onClick={() => setPage((p) => p - 1)}
+                            className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            disabled={page >= totalPages}
+                            onClick={() => setPage((p) => p + 1)}
+                            className="p-1.5 rounded-[6px] border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
-
-                {/* Transactions Table */}
-                {activeTab === "transactions" && (
-                  <>
-                    <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                      <table className="w-full text-[11px]">
-                        <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                          <tr>
-                            <th className="text-left px-4 py-3 font-semibold">ID</th>
-                            <th className="text-left px-4 py-3 font-semibold">Type</th>
-                            <th className="text-left px-4 py-3 font-semibold">Amount</th>
-                            <th className="text-left px-4 py-3 font-semibold">Balance After</th>
-                            <th className="text-left px-4 py-3 font-semibold">Description</th>
-                            <th className="text-left px-4 py-3 font-semibold">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {txLoading ? (
-                            <SkeletonRows cols={6} />
-                          ) : (
-                            transactions.map((tx) => (
-                              <TransactionRow key={tx.id} tx={tx} />
-                            ))
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="md:hidden flex flex-col gap-2">
-                      {txLoading
-                        ? Array.from({ length: 4 }).map((_, i) => (
-                          <div key={i} className="h-20 rounded-sm border border-border/60 bg-card animate-pulse" />
-                        ))
-                        : transactions.map((tx) => (
-                          <TransactionCard key={tx.id} tx={tx} />
-                        ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Pagination */}
-                {totalPages > 1 && activeTab !== "main" && (
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                    <p className="text-[11px] text-muted-foreground">
-                      Page <span className="font-semibold text-foreground">{page}</span>{" "}of{" "}
-                      <span className="font-semibold text-foreground">{totalPages}</span>
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        disabled={page <= 1}
-                        onClick={() => setPage((p) => p - 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        disabled={page >= totalPages}
-                        onClick={() => setPage((p) => p + 1)}
-                        className="p-1.5 rounded-sm border border-border/60 text-muted-foreground hover:bg-secondary/30 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+              </div>
+            </section>
           </div>
         </main>
       </div>
@@ -1768,7 +1937,7 @@ function ManageAdminWallet() {
               </div>
               <button
                 onClick={() => setSelectedWithdrawalId(null)}
-                className="h-8 w-8 rounded-sm hover:bg-secondary flex items-center justify-center text-muted-foreground"
+                className="h-8 w-8 rounded-[6px] hover:bg-secondary flex items-center justify-center text-muted-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1780,7 +1949,7 @@ function ManageAdminWallet() {
               </div>
             ) : selectedWithdrawal ? (
               <div className="p-4 space-y-4">
-                <div className="rounded-sm border border-border/60 bg-secondary/20 p-4">
+                <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-4">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Amount</p>
                   <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(selectedWithdrawal.amount)}</p>
                   <Badge variant="outline" className={cn("mt-3 border text-[10px] capitalize", statusStyle[String(selectedWithdrawal.status)] ?? "bg-muted text-muted-foreground border-border")}>
@@ -1804,6 +1973,51 @@ function ManageAdminWallet() {
                     <p className="text-sm text-foreground mt-1 break-words">{value}</p>
                   </div>
                 ))}
+
+                {(["pending", "processing", "approved"].includes(String(selectedWithdrawal.status))) && (
+                  <div className="pt-3 border-t border-border flex flex-wrap gap-2">
+                    {String(selectedWithdrawal.status) === "processing" && (
+                      <Button
+                        size="sm"
+                        onClick={() => openWithdrawalAction(selectedWithdrawal, "approve")}
+                        disabled={withdrawalActionMutation.isPending}
+                      >
+                        Approve
+                      </Button>
+                    )}
+                    {String(selectedWithdrawal.status) === "approved" && (
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => openWithdrawalAction(selectedWithdrawal, "complete")}
+                        disabled={withdrawalActionMutation.isPending}
+                      >
+                        Complete
+                      </Button>
+                    )}
+                    {["pending", "processing", "approved"].includes(String(selectedWithdrawal.status)) && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-200 text-red-700 hover:bg-red-50"
+                          onClick={() => openWithdrawalAction(selectedWithdrawal, "reject")}
+                          disabled={withdrawalActionMutation.isPending}
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openWithdrawalAction(selectedWithdrawal, "cancel")}
+                          disabled={withdrawalActionMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-4 text-sm text-muted-foreground">Request not found.</div>
@@ -1814,7 +2028,7 @@ function ManageAdminWallet() {
 
       {withdrawalAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-sm border border-border bg-card shadow-xl">
+          <div className="w-full max-w-sm rounded-[6px] border border-border bg-card shadow-xl">
             <div className="p-4 border-b border-border">
               <p className="text-sm font-semibold text-foreground capitalize">
                 {withdrawalAction.action} withdrawal
@@ -1825,7 +2039,7 @@ function ManageAdminWallet() {
             </div>
             <div className="p-4 space-y-3">
               {(withdrawalAction.action === "reject" || withdrawalAction.action === "cancel") && (
-                <Field label="Reason" required>
+                <Field label="Reason">
                   <textarea
                     value={withdrawalReason}
                     onChange={(e) => setWithdrawalReason(e.target.value)}

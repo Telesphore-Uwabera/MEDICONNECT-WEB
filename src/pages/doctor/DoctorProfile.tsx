@@ -5,6 +5,11 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  prepareRichTextForSave,
+  RichTextRenderer,
+  sanitizeRichText,
+} from "@/components/ui/rich-textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +21,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 // ── Extracted step components & shared modules ───────────────────────────────
 import {
@@ -65,9 +71,9 @@ const formatFee = (fee: number | string, currency: string) =>
 const formatDateDisplay = (d: string) =>
   d
     ? new Date(d).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-      })
+      year: "numeric",
+      month: "short",
+    })
     : "—";
 
 const toDateInputValue = (isoOrDate: string | null | undefined): string => {
@@ -79,6 +85,35 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
 };
 
 const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
+
+const getStepLabel = (stepId: string) =>
+  STEPS.find((step) => step.id === stepId)?.label ?? "section";
+
+const flattenValidationErrors = (errors: unknown): string => {
+  if (!errors || typeof errors !== "object") return "";
+  return Object.values(errors as Record<string, unknown>)
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" · ");
+};
+
+const getProfileSaveErrorMessage = (err: unknown): string => {
+  const apiData = (err as { data?: { message?: string; errors?: unknown } })?.data;
+  const directMessage =
+    err instanceof Error
+      ? err.message
+      : typeof err === "string"
+        ? err
+        : (err as { message?: string })?.message;
+  const validationMessage = flattenValidationErrors(apiData?.errors);
+  const baseMessage = apiData?.message || directMessage;
+
+  if (validationMessage && baseMessage && !baseMessage.includes(validationMessage)) {
+    return `${baseMessage} · ${validationMessage}`;
+  }
+
+  return baseMessage || validationMessage || "Please check the form and try again.";
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API → Form mapper
@@ -108,6 +143,13 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
         ? parseFloat(String(doc.specialization_fee.in_person_fee))
         : undefined,
       fee_currency: doc.specialization_fee?.currency ?? undefined,
+      // Saved specialist sub-types (read defensively across likely field names).
+      sub_specializations: (doc.sub_specializations ?? []).map((x) => ({
+        id: x.id,
+      })),
+      sub_specialization_names: (doc.sub_specializations ?? []).map(
+        (x) => x.name ?? x.sub_type ?? x.sub_specialization ?? `#${x.id}`,
+      ),
     },
 
     education: (doc.educations ?? []).map((e) => ({
@@ -124,6 +166,7 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
       apiId: e.id,
       job_title: e.job_title,
       workplace: e.workplace,
+      description: e.description ?? "",
       country: e.country,
       start_date: toDateInputValue(e.start_date),
       end_date: e.end_date ? toDateInputValue(e.end_date) : null,
@@ -243,7 +286,7 @@ const StatsSkeleton = React.memo(function StatsSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-1.5"
+          className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-1.5"
         >
           <Skeleton className="h-2.5 w-16 rounded" />
           <Skeleton className="h-3.5 w-20 rounded" />
@@ -274,7 +317,7 @@ const SidebarSkeleton = React.memo(function SidebarSkeleton() {
         {STEPS.map((step) => (
           <div
             key={step.id}
-            className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-md"
+            className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[6px]"
           >
             <Skeleton className="w-6 h-6 rounded-full shrink-0" />
             <div className="hidden sm:flex flex-col gap-1 flex-1 min-w-0">
@@ -296,7 +339,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
           <Skeleton className="w-1.5 h-1.5 rounded-full" />
           <Skeleton className="h-2.5 w-36 rounded" />
         </div>
-        <Skeleton className="h-7 w-14 rounded-md" />
+        <Skeleton className="h-7 w-14 rounded-[6px]" />
       </div>
       <div className="flex-1 p-4 sm:p-5 space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -317,7 +360,7 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
           {Array.from({ length: 2 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-md border border-border bg-muted/40 p-4 space-y-3"
+              className="rounded-[6px] border border-border bg-muted/40 p-4 space-y-3"
             >
               <Skeleton className="h-3.5 w-40 rounded" />
               <div className="grid grid-cols-3 gap-3">
@@ -357,7 +400,7 @@ const StatCard = React.memo(function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
+    <div className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
       <span className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">
         {label}
       </span>
@@ -415,7 +458,7 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
   onFill: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-lg bg-muted/30">
+    <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-[6px] bg-muted/30">
       <div className="rounded-full bg-muted p-3">
         <Plus className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -473,9 +516,7 @@ const ViewPersonal = React.memo(function ViewPersonal({
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Bio ({lang})
             </p>
-            <p className="text-[13px] text-foreground leading-relaxed">
-              {value}
-            </p>
+            <RichTextRenderer value={value} className="text-[13px] text-foreground" />
           </div>
         ))}
     </div>
@@ -490,6 +531,8 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
   const s = data.specializations;
   if (!s.primary) return null;
 
+  const subNames = s.sub_specialization_names ?? [];
+
   return (
     <div className="space-y-5">
       <ViewField label="Primary specialization" value={s.primary} />
@@ -501,52 +544,36 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
         />
       )}
 
-      {s.specialization_fee_id && (s.fee_name || s.tier_name) && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-              Selected fee configuration
-            </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
-              ID: {s.specialization_fee_id}
-            </span>
-          </div>
+      {s.specialization_fee_id && s.fee_name && (
+        <div className="rounded-[6px] border border-primary/20 bg-primary/5 p-4 space-y-3">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Selected sub-specialization
+          </span>
+          <ViewField label="Sub-specialization" value={s.fee_name} />
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            <ViewField label="Sub-specialization" value={s.fee_name} />
-            {s.tier_name && <ViewField label="Tier" value={s.tier_name} />}
+      {subNames.length > 0 && (
+        <div className="rounded-[6px] border border-border bg-card p-4 space-y-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Sub-specialties
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {subNames.map((name, i) => (
+              <span
+                key={`${name}-${i}`}
+                className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary"
+              >
+                {name}
+              </span>
+            ))}
           </div>
-
-          {(s.online_fee !== undefined || s.in_person_fee !== undefined) && (
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t border-primary/10">
-              {s.in_person_fee !== undefined && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    In-person fee
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {s.fee_currency} {Number(s.in_person_fee).toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {s.online_fee !== undefined && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Online fee
-                  </span>
-                  <span className="text-[13px] font-semibold text-foreground">
-                    {s.fee_currency} {Number(s.online_fee).toLocaleString()}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
       {s.specialization_fee_id && !s.fee_name && (
         <ViewField
-          label="Fee configuration ID"
+          label="Sub-specialization ID"
           value={s.specialization_fee_id}
         />
       )}
@@ -565,7 +592,7 @@ const ViewEducation = React.memo(function ViewEducation({
       {data.education.map((edu) => (
         <div
           key={edu.id}
-          className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+          className="rounded-[6px] border border-border bg-muted/30 p-4 space-y-3"
         >
           <p className="text-[13px] font-semibold text-foreground capitalize">
             {edu.degree}
@@ -595,7 +622,7 @@ const ViewExperience = React.memo(function ViewExperience({
       {data.experience.map((exp) => (
         <div
           key={exp.id}
-          className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+          className="rounded-[6px] border border-border bg-muted/30 p-4 space-y-3"
         >
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] font-semibold text-foreground">
@@ -619,6 +646,12 @@ const ViewExperience = React.memo(function ViewExperience({
               }
             />
           </div>
+          {exp.description && (
+            <RichTextRenderer
+              value={exp.description}
+              className="text-xs text-muted-foreground"
+            />
+          )}
         </div>
       ))}
     </div>
@@ -640,7 +673,7 @@ const ViewQualifications = React.memo(function ViewQualifications({
           <div
             key={q.id}
             className={cn(
-              "rounded-lg border p-4 space-y-3",
+              "rounded-[6px] border p-4 space-y-3",
               isExpired
                 ? "border-destructive/30 bg-destructive/5"
                 : "border-primary/20 bg-primary/5",
@@ -723,7 +756,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
       {newFiles.map(([label, file]) => (
         <div
           key={label}
-          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+          className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
         >
           <FileText className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
@@ -743,7 +776,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
           // ── Profile image: show as avatar thumbnail ──────────────────────
           <div
             key="existing-profile-photo"
-            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3"
+            className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
           >
             <img
               src={url}
@@ -766,7 +799,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+            className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
           >
             <FileText className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
@@ -802,7 +835,7 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({
           href={data.linksSection[key]}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+          className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-2.5 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
         >
           <Link2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide w-28 shrink-0">
@@ -976,7 +1009,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
               key={step.id}
               onClick={() => onSelect(i)}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150 cursor-pointer",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150 cursor-pointer",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isEmpty
@@ -1196,6 +1229,7 @@ const DoctorProfile = () => {
         const payload = {
           job_title: entry.job_title,
           workplace: entry.workplace,
+          description: prepareRichTextForSave(entry.description) ?? null,
           country: entry.country,
           start_date: entry.start_date,
           end_date: entry.is_current ? null : (entry.end_date ?? null),
@@ -1270,17 +1304,35 @@ const DoctorProfile = () => {
     async (stepId: string, data: Partial<DoctorProfileData>) => {
       setStepState(stepId, "saving");
       try {
+        const withRequiredProfileFields = (
+          payload: UpsertProfilePayload,
+        ): UpsertProfilePayload => {
+          const personal = data.personal ?? profileData?.personal;
+          if (!personal) return payload;
+
+          return {
+            doctor_degree: personal.doctor_degree,
+            medical_license: personal.medical_license,
+            bio_en: sanitizeRichText(personal.bio_en),
+            bio_fr: sanitizeRichText(personal.bio_fr),
+            bio_kiny: sanitizeRichText(personal.bio_kiny),
+            preferred_language: personal.preferred_language,
+            is_available: true,
+            ...payload,
+          };
+        };
+
         switch (stepId) {
           case "personal": {
-            await upsertProfile.mutateAsync({
+            await upsertProfile.mutateAsync(withRequiredProfileFields({
               doctor_degree: data.personal!.doctor_degree,
               medical_license: data.personal!.medical_license,
-              bio_en: data.personal!.bio_en,
+              bio_en: sanitizeRichText(data.personal!.bio_en),
               preferred_language: data.personal!.preferred_language,
               is_available: true,
-              bio_fr: data.personal!.bio_fr,
-              bio_kiny: data.personal!.bio_kiny,
-            });
+              bio_fr: sanitizeRichText(data.personal!.bio_fr),
+              bio_kiny: sanitizeRichText(data.personal!.bio_kiny),
+            }));
             setProfileData((prev) =>
               prev
                 ? { ...prev, personal: data.personal! }
@@ -1295,11 +1347,17 @@ const DoctorProfile = () => {
             if (data.specializations?.specialization_fee_id !== undefined)
               payload.specialization_fee_id =
                 data.specializations.specialization_fee_id;
+            if (data.specializations?.sub_specialization !== undefined)
+              payload.sub_specialization =
+                data.specializations.sub_specialization;
+            if (data.specializations?.sub_specializations !== undefined)
+              payload.sub_specializations =
+                data.specializations.sub_specializations;
             if (data.specializations?.years_of_experience !== undefined)
               payload.years_of_experience =
                 data.specializations.years_of_experience;
             if (Object.keys(payload).length > 0)
-              await upsertProfile.mutateAsync(payload);
+              await upsertProfile.mutateAsync(withRequiredProfileFields(payload));
             setProfileData((prev) =>
               prev
                 ? { ...prev, specializations: data.specializations! }
@@ -1380,6 +1438,9 @@ const DoctorProfile = () => {
         setStepState(stepId, "saved");
       } catch (err) {
         console.error(`Failed to save step "${stepId}":`, err);
+        toast.error(`Could not save ${getStepLabel(stepId)}`, {
+          description: getProfileSaveErrorMessage(err),
+        });
         setStepState(stepId, "error");
       }
     },
@@ -1427,7 +1488,7 @@ const DoctorProfile = () => {
         />
         <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
           <StatsSkeleton />
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+          <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
             <SidebarSkeleton />
             <ContentSkeleton />
           </div>
@@ -1449,9 +1510,9 @@ const DoctorProfile = () => {
               ? "Update your professional information"
               : "Fill in the details below to get started"
             : t(
-                "pages.doctor.profile_sub",
-                "Manage your professional information",
-              )
+              "pages.doctor.profile_sub",
+              "Manage your professional information",
+            )
         }
       />
 
@@ -1496,7 +1557,7 @@ const DoctorProfile = () => {
           ) : null)}
 
         {/* Main card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           {/* Sidebar */}
           {isFetchingProfile && !profileData ? (
             <SidebarSkeleton />

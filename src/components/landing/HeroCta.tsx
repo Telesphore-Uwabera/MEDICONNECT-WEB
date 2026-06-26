@@ -28,9 +28,9 @@ const HeroCta = () => {
           <div className="grid grid-cols-2 gap-4">
 
             {/* /patient/search-doctors instant */}
-            <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl bg-[#0A0E27] text-white hover:scale-[1.02] transition-all duration-300 group shadow-lg border border-[#1D1D1D]/20 hover:shadow-xl">
+            <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] bg-[#0A0E27] text-white hover:scale-[1.02] transition-all duration-300 group shadow-lg border border-[#1D1D1D]/20 hover:shadow-xl">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#FB9129] to-[#FF9B00] text-[#0A0E27] shrink-0 shadow-inner">
+                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-gradient-to-br from-[#FB9129] to-[#FF9B00] text-[#0A0E27] shrink-0 shadow-inner">
                   <LayoutDashboard className="h-5 w-5" />
                 </span>
                 <div className="text-left min-w-0">
@@ -49,9 +49,9 @@ const HeroCta = () => {
             </button>
 
             <Link to="/patient/search-doctors" className="w-full">
-              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl bg-[#0A0E27] text-white hover:scale-[1.02] transition-all duration-300 group shadow-lg border border-[#1D1D1D]/20 hover:shadow-xl">
+              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] bg-[#0A0E27] text-white hover:scale-[1.02] transition-all duration-300 group shadow-lg border border-[#1D1D1D]/20 hover:shadow-xl">
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[#00ABAB] to-[#009191] text-white shrink-0 shadow-inner">
+                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-gradient-to-br from-[#00ABAB] to-[#009191] text-white shrink-0 shadow-inner">
                     <Stethoscope className="h-5 w-5" />
                   </span>
                   <div className="text-left min-w-0">
@@ -70,9 +70,9 @@ const HeroCta = () => {
 
           <div className="grid grid-cols-2 gap-4 mt-1">
             <Link to="/patient/search-pharmacy" className="group w-full">
-              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl border border-border bg-card/80 backdrop-blur-sm hover:border-[#6672C7]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
+              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] border border-border bg-card/80 backdrop-blur-sm hover:border-[#6672C7]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#6672C7]/10 text-[#6672C7] shrink-0 group-hover:bg-[#6672C7] group-hover:text-white transition-colors duration-300">
+                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-[#6672C7]/10 text-[#6672C7] shrink-0 group-hover:bg-[#6672C7] group-hover:text-white transition-colors duration-300">
                     <Pill className="h-5 w-5" />
                   </span>
                   <div className="text-left min-w-0">
@@ -89,9 +89,9 @@ const HeroCta = () => {
             </Link>
 
             <Link to="/patient/search-facilities" className="group w-full">
-              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl border border-border bg-card/80 backdrop-blur-sm hover:border-[#eb5757]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
+              <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] border border-border bg-card/80 backdrop-blur-sm hover:border-[#eb5757]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#eb5757]/10 text-[#eb5757] shrink-0 group-hover:bg-[#eb5757] group-hover:text-white transition-colors duration-300">
+                  <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-[#eb5757]/10 text-[#eb5757] shrink-0 group-hover:bg-[#eb5757] group-hover:text-white transition-colors duration-300">
                     <Hospital className="h-5 w-5" />
                   </span>
                   <div className="text-left min-w-0">
@@ -139,9 +139,9 @@ const HeroCta = () => {
     <>
       <div className="mt-7 flex flex-col gap-4 w-full">
         {/* <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+          <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+              <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                 <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </span>
               <div className="text-left min-w-0">
@@ -157,9 +157,9 @@ const HeroCta = () => {
           </button>
 
           <Link to="/patient/search-doctors">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-sm bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-sm bg-white/15 shrink-0">
+                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
                   <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
@@ -178,9 +178,9 @@ const HeroCta = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <Link to="/patient/search-pharmacy" className="group w-full">
-            <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl border border-border bg-card/80 backdrop-blur-sm hover:border-[#6672C7]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
+            <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] border border-border bg-card/80 backdrop-blur-sm hover:border-[#6672C7]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#6672C7]/10 text-[#6672C7] shrink-0 group-hover:bg-[#6672C7] group-hover:text-white transition-colors duration-300">
+                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-[#6672C7]/10 text-[#6672C7] shrink-0 group-hover:bg-[#6672C7] group-hover:text-white transition-colors duration-300">
                   <Pill className="h-5 w-5" />
                 </span>
                 <div className="text-left min-w-0">
@@ -197,9 +197,9 @@ const HeroCta = () => {
           </Link>
 
           <Link to="/patient/search-facilities" className="group w-full">
-            <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-2xl border border-border bg-card/80 backdrop-blur-sm hover:border-[#eb5757]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
+            <button className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 sm:py-5 rounded-[6px] border border-border bg-card/80 backdrop-blur-sm hover:border-[#eb5757]/40 hover:bg-accent hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#eb5757]/10 text-[#eb5757] shrink-0 group-hover:bg-[#eb5757] group-hover:text-white transition-colors duration-300">
+                <span className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-[6px] bg-[#eb5757]/10 text-[#eb5757] shrink-0 group-hover:bg-[#eb5757] group-hover:text-white transition-colors duration-300">
                   <Hospital className="h-5 w-5" />
                 </span>
                 <div className="text-left min-w-0">

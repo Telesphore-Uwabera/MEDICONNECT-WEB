@@ -18,7 +18,7 @@ export const FileUploadBox = React.memo(function FileUploadBox({
   onChange,
 }: FileUploadBoxProps) {
   return (
-    <label className="flex flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border bg-muted/50 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer px-4 py-6 text-center">
+    <label className="flex flex-col items-center justify-center gap-2 rounded-[6px] border-2 border-dashed border-border bg-muted/50 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer px-4 py-6 text-center">
       <input
         type="file"
         accept={accept}

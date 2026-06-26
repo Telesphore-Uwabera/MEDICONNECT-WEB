@@ -17,6 +17,7 @@ import { dashboardPath } from "@/lib/auth-store";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import type { PublicGeneralSettings } from "@/hooks/use-public-settings";
 import {
   SpecializationSelect,
   SpecializationValue,
@@ -26,16 +27,19 @@ interface HeroHeaderProps {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   activeSection?: string;
+  settings?: PublicGeneralSettings;
 }
 
 export function HeroHeader({
   mobileMenuOpen,
   setMobileMenuOpen,
   activeSection,
+  settings,
 }: HeroHeaderProps) {
   const { t } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
-  const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
+  const logo = settings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
+  const appName = settings?.app_name || "MEDICONNECT";
   const location = useLocation();
   const navigate = useNavigate();
   const activeHash = activeSection ? `#${activeSection}` : location.hash || "#doctors";
@@ -138,9 +142,9 @@ export function HeroHeader({
       <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
 
         {/* Logo */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 lg:shrink-0">
           <Link to="/">
-            <img src={logo} alt="Logo" className="h-16 w-auto" />
+            <img src={logo} alt={appName} className="lg:h-16 lg:w-auto w-[40%]" />
           </Link>
         </div>
 
@@ -153,7 +157,7 @@ export function HeroHeader({
                 key={l.href}
                 onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-sm transition-smooth cursor-pointer whitespace-nowrap",
+                  "relative px-3 py-2 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
                   active
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -199,7 +203,7 @@ export function HeroHeader({
 
               <Link
                 to={dashboardPath(user.role)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-sm hover:bg-accent transition-colors"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-[6px] hover:bg-accent transition-colors"
               >
                 {user.avatar ? (
                   <img
@@ -252,7 +256,7 @@ export function HeroHeader({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
-            className="ml-1 w-9 h-9 rounded-sm flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+            className="ml-1 w-9 h-9 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />
@@ -296,7 +300,7 @@ export function HeroHeader({
                         handleNavClick(l.href);
                       }}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-sm text-sm font-medium transition-smooth text-left",
+                        "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
                         active
                           ? "bg-accent text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary",
@@ -319,7 +323,7 @@ export function HeroHeader({
               <div className="px-4 sm:px-6 py-4 flex flex-col gap-2">
                 {user ? (
                   <>
-                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-sm bg-muted/50 mb-1">
+                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-[6px] bg-muted/50 mb-1">
                       {user.avatar ? (
                         <img
                           src={user.avatar}

@@ -93,7 +93,7 @@ const InfoTile = ({
   label: string;
   value: string;
 }) => (
-  <div className="p-3 rounded-lg border border-border/60 bg-secondary/30">
+  <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
       {icon}
       {label}
@@ -133,7 +133,7 @@ function LangField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+        className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
       />
     </div>
   );
@@ -214,7 +214,7 @@ function SubSpecRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            className="h-6 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
             onClick={() => onEdit(fee)}
           >
             <Pencil className="w-3 h-3 mr-1" />
@@ -223,7 +223,7 @@ function SubSpecRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
+            className="h-6 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
             onClick={() => onDelete(fee)}
             disabled={isDeleting}
           >
@@ -366,7 +366,7 @@ function SpecializationRow({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-sky-400/60 hover:bg-sky-50/50 hover:text-sky-700 dark:hover:bg-sky-950/20 dark:hover:text-sky-400 transition-all duration-200"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-sky-400/60 hover:bg-sky-50/50 hover:text-sky-700 dark:hover:bg-sky-950/20 dark:hover:text-sky-400 transition-all duration-200"
               onClick={() => onAddSubSpec(spec)}
               title="Add sub-specialization"
             >
@@ -376,7 +376,7 @@ function SpecializationRow({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
               onClick={() => onEdit(spec)}
             >
               <Pencil className="w-3 h-3 mr-1" />
@@ -385,7 +385,7 @@ function SpecializationRow({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
               onClick={() => onDelete(spec)}
               disabled={isDeleting}
             >
@@ -440,9 +440,9 @@ function SpecializationCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-sm border border-border/60 bg-card overflow-hidden">
+    <div className="rounded-[6px] border border-border/60 bg-card overflow-hidden">
       <div className="flex items-start gap-3 p-3.5 hover:bg-secondary/20 transition-colors">
-        <div className="h-10 w-10 rounded-sm bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
+        <div className="h-10 w-10 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 mt-0.5 border border-border/40">
           <Stethoscope className="w-4 h-4 text-primary/60" />
         </div>
         <div className="flex-1 min-w-0">
@@ -474,7 +474,7 @@ function SpecializationCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-sky-400/60 hover:bg-sky-50/50 hover:text-sky-700 transition-all duration-200"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-sky-400/60 hover:bg-sky-50/50 hover:text-sky-700 transition-all duration-200"
               onClick={() => onAddSubSpec(spec)}
             >
               <Plus className="w-3 h-3 mr-1" />
@@ -483,7 +483,7 @@ function SpecializationCard({
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+              className="flex-1 h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
               onClick={() => onEdit(spec)}
             >
               <Pencil className="w-3 h-3 mr-1" />
@@ -492,7 +492,7 @@ function SpecializationCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:bg-red-50/50 hover:text-red-600 dark:hover:bg-red-950/20 dark:hover:text-red-400 transition-all duration-200"
               onClick={() => onDelete(spec)}
               disabled={isDeleting}
             >
@@ -540,7 +540,7 @@ function SpecializationCard({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-6 px-2 text-[10px] rounded-sm border-border/60 hover:border-primary/40"
+                      className="h-6 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40"
                       onClick={() => onEditFee(fee)}
                     >
                       <Pencil className="w-3 h-3" />
@@ -548,7 +548,7 @@ function SpecializationCard({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-6 px-2 text-[10px] rounded-sm border-border/60 hover:border-red-400/60 hover:text-red-600"
+                      className="h-6 px-2 text-[10px] rounded-[6px] border-border/60 hover:border-red-400/60 hover:text-red-600"
                       onClick={() => onDeleteFee(fee)}
                       disabled={deletingFeeId === fee.id}
                     >
@@ -746,7 +746,7 @@ function SpecializationPanel({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description of this specialization…"
                   rows={3}
-                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
+                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
                 />
               </div>
 
@@ -760,7 +760,7 @@ function SpecializationPanel({
                   value={icon}
                   onChange={(e) => setIcon(e.target.value)}
                   placeholder="e.g. heart-icon"
-                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
 
@@ -774,7 +774,7 @@ function SpecializationPanel({
                     type="button"
                     onClick={() => setIsActive((v) => !v)}
                     className={cn(
-                      "flex items-center gap-2.5 w-full p-3 rounded-lg border transition-colors",
+                      "flex items-center gap-2.5 w-full p-3 rounded-[6px] border transition-colors",
                       isActive
                         ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20"
                         : "border-border/60 bg-secondary/30",
@@ -812,7 +812,7 @@ function SpecializationPanel({
             {/* Footer */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={handleSubmit}
                 disabled={isSaving || !name.trim()}
               >
@@ -831,7 +831,7 @@ function SpecializationPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -1064,7 +1064,7 @@ function SubSpecPanel({
                   value={tierName}
                   onChange={(e) => setTierName(e.target.value)}
                   placeholder="e.g. Junior, Senior, Principal"
-                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
 
@@ -1085,7 +1085,7 @@ function SubSpecPanel({
                     value={onlineFee}
                     onChange={(e) => setOnlineFee(e.target.value)}
                     placeholder="e.g. 5000"
-                    className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
 
@@ -1100,7 +1100,7 @@ function SubSpecPanel({
                     value={inPersonFee}
                     onChange={(e) => setInPersonFee(e.target.value)}
                     placeholder="e.g. 8000"
-                    className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                    className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                 </div>
               </div>
@@ -1115,7 +1115,7 @@ function SubSpecPanel({
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="e.g. Senior interventional cardiologist"
                   rows={2}
-                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
+                  className="w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
                 />
               </div>
 
@@ -1129,7 +1129,7 @@ function SubSpecPanel({
                     type="button"
                     onClick={() => setIsActive((v) => !v)}
                     className={cn(
-                      "flex items-center gap-2.5 w-full p-3 rounded-lg border transition-colors",
+                      "flex items-center gap-2.5 w-full p-3 rounded-[6px] border transition-colors",
                       isActive
                         ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/20"
                         : "border-border/60 bg-secondary/30",
@@ -1158,7 +1158,7 @@ function SubSpecPanel({
             {/* Footer */}
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <Button
-                className="w-full h-10 text-[12px] rounded-lg gap-2"
+                className="w-full h-10 text-[12px] rounded-[6px] gap-2"
                 onClick={handleSubmit}
                 disabled={isSaving}
               >
@@ -1177,7 +1177,7 @@ function SubSpecPanel({
               </Button>
               <Button
                 variant="ghost"
-                className="w-full h-9 text-[12px] rounded-lg text-muted-foreground"
+                className="w-full h-9 text-[12px] rounded-[6px] text-muted-foreground"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -1218,7 +1218,7 @@ function DeleteDialog({
         onClick={onCancel}
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px]"
       />
-      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-xl shadow-xl p-5 flex flex-col gap-4">
+      <div className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm bg-card border border-border rounded-[6px] shadow-xl p-5 flex flex-col gap-4">
         {conflictMessage ? (
           <>
             <div className="flex items-start gap-3">
@@ -1240,7 +1240,7 @@ function DeleteDialog({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+                className="flex-1 h-9 text-[12px] rounded-[6px] border-border/60"
                 onClick={onCancel}
               >
                 Cancel
@@ -1248,7 +1248,7 @@ function DeleteDialog({
               {onDeactivate && (
                 <Button
                   variant="outline"
-                  className="flex-1 h-9 text-[12px] rounded-lg border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/20 gap-1.5"
+                  className="flex-1 h-9 text-[12px] rounded-[6px] border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/20 gap-1.5"
                   onClick={onDeactivate}
                   disabled={isDeactivating}
                 >
@@ -1276,7 +1276,7 @@ function DeleteDialog({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 h-9 text-[12px] rounded-lg border-border/60"
+                className="flex-1 h-9 text-[12px] rounded-[6px] border-border/60"
                 onClick={onCancel}
                 disabled={isDeleting}
               >
@@ -1284,7 +1284,7 @@ function DeleteDialog({
               </Button>
               <Button
                 variant="destructive"
-                className="flex-1 h-9 text-[12px] rounded-lg gap-1.5"
+                className="flex-1 h-9 text-[12px] rounded-[6px] gap-1.5"
                 onClick={onConfirm}
                 disabled={isDeleting}
               >
@@ -1568,7 +1568,7 @@ function ManageSpecializations() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search specializations…"
-                  className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {search && (
                   <button
@@ -1582,7 +1582,7 @@ function ManageSpecializations() {
 
               <Button
                 size="sm"
-                className="h-8 px-3 text-[11px] rounded-sm gap-1.5"
+                className="h-8 px-3 text-[11px] rounded-[6px] gap-1.5"
                 onClick={openCreateSpec}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1600,7 +1600,7 @@ function ManageSpecializations() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search…"
-                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
             </div>
           </div>
@@ -1619,7 +1619,7 @@ function ManageSpecializations() {
               </div>
             ) : !isLoading && filteredSpecs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 sm:py-24 gap-3 text-center">
-                <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
                   <Stethoscope className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
@@ -1637,7 +1637,7 @@ function ManageSpecializations() {
                 {!search && (
                   <Button
                     size="sm"
-                    className="mt-1 h-8 px-4 text-[11px] rounded-sm gap-1.5"
+                    className="mt-1 h-8 px-4 text-[11px] rounded-[6px] gap-1.5"
                     onClick={openCreateSpec}
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -1648,7 +1648,7 @@ function ManageSpecializations() {
             ) : (
               <>
                 {/* Desktop table */}
-                <div className="hidden md:block rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
+                <div className="hidden md:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
@@ -1699,25 +1699,25 @@ function ManageSpecializations() {
                 <div className="md:hidden flex flex-col gap-2">
                   {isLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="h-24 rounded-sm border border-border/60 bg-card animate-pulse"
-                        />
-                      ))
+                      <div
+                        key={i}
+                        className="h-24 rounded-[6px] border border-border/60 bg-card animate-pulse"
+                      />
+                    ))
                     : filteredSpecs.map((spec) => (
-                        <SpecializationCard
-                          key={spec.id}
-                          spec={spec}
-                          fees={feesBySpecId[spec.id] ?? []}
-                          onEdit={openEditSpec}
-                          onDelete={setDeletingSpec}
-                          onAddSubSpec={openAddSubSpec}
-                          isDeleting={deletingSpecId === spec.id}
-                          deletingFeeId={deletingFeeId}
-                          onEditFee={openEditFee}
-                          onDeleteFee={setDeletingFee}
-                        />
-                      ))}
+                      <SpecializationCard
+                        key={spec.id}
+                        spec={spec}
+                        fees={feesBySpecId[spec.id] ?? []}
+                        onEdit={openEditSpec}
+                        onDelete={setDeletingSpec}
+                        onAddSubSpec={openAddSubSpec}
+                        isDeleting={deletingSpecId === spec.id}
+                        deletingFeeId={deletingFeeId}
+                        onEditFee={openEditFee}
+                        onDeleteFee={setDeletingFee}
+                      />
+                    ))}
                 </div>
               </>
             )}

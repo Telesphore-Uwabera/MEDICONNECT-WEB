@@ -51,6 +51,7 @@ import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
 import { useState, useCallback } from "react";
+import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 
@@ -138,7 +139,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         { to: "/admin/settings", label: t("sidebar.settings"), icon: Settings },
         { to: "/admin/reviews", label: t("sidebar.reviews"), icon: History },
-        { to: "/admin/our-team", label: t("sidebar.ourteam"), icon: Wrench },
+        { to: "/admin/our-team", label: t("sidebar.team"), icon: Wrench },
       ],
     },
     {
@@ -450,7 +451,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           <img
             src={logo}
             alt="MEDICONNECT"
-            className="h-16 w-auto flex-shrink-0 rounded-sm"
+            className="h-12 w-[80%] flex-shrink-0 rounded-[6px]"
           />
         </NavLink>
 
@@ -458,7 +459,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* ── Role badge ── */}
       <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/10 border border-primary/15 w-fit">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-primary/10 border border-primary/15 w-fit">
           <span className="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary text-[10px] font-black flex-shrink-0">
             {cfg.initials}
           </span>
@@ -510,7 +511,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
                             end={item.to === `/${role}`}
                             onClick={() => setMobileOpen(false)}
                             className={cn(
-                              "group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-150",
+                              "group relative flex items-center gap-3 px-3 py-2.5 rounded-[6px] text-sm font-medium transition-all duration-150",
                               active
                                 ? "bg-primary/10 text-primary"
                                 : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/70",
@@ -610,7 +611,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
         )}
       >
         <button
-          className="absolute top-4 right-3 p-1.5 rounded-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          className="absolute top-4 right-3 p-1.5 rounded-[6px] text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
           onClick={() => setMobileOpen(false)}
         >
           <X className="h-4 w-4" />
@@ -626,7 +627,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           className={cn(
-            "hidden lg:flex fixed top-0 left-0 z-[9999] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
+            "hidden lg:flex fixed top-0 left-0 z-[99] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
             sidebarOpen ? "left-[202px]" : "left-0",
           )}
         >
@@ -635,7 +636,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
         <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-card sticky top-0 z-30">
           <button
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             onClick={() => setMobileOpen(true)}
           >
             <Menu className="h-5 w-5" />
@@ -644,9 +645,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
             <img
               src={logo}
               alt="MEDICONNECT"
-              className="h-12 w-auto rounded-sm"
+              className="h-12 w-auto rounded-[6px]"
             />
-            
+
           </NavLink>
         </div>
 
@@ -659,6 +660,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
         >
           {children}
         </motion.main>
+        {role === "doctor" && <InstantPaidAlertListener />}
       </div>
     </div>
   );
@@ -683,8 +685,8 @@ const ActiveRoleBadge = ({
   const { label, icon: Icon } = roleMap[role];
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-md bg-primary/10 border border-primary/15">
-      <span className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/20 text-primary flex-shrink-0">
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-[6px] bg-primary/10 border border-primary/15">
+      <span className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-primary/20 text-primary flex-shrink-0">
         <Icon className="h-4 w-4" strokeWidth={2.5} />
       </span>
       <div className="flex flex-col min-w-0">

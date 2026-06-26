@@ -46,7 +46,7 @@ const Auth = () => {
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <TopBar />
-     
+
       <HeroHeader
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
@@ -118,9 +118,9 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
+                  className="self-start bg-white/10 backdrop-blur-md rounded-[6px] px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
-                  <div className="w-7 h-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-[6px] bg-emerald-500/20 flex items-center justify-center">
                     <span className="text-sm">💉</span>
                   </div>
                   <div>
@@ -137,9 +137,9 @@ const Auth = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.75, duration: 0.5 }}
-                  className="self-start bg-white/10 backdrop-blur-md rounded-sm px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
+                  className="self-start bg-white/10 backdrop-blur-md rounded-[6px] px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
-                  <div className="w-7 h-7 rounded-md bg-teal-500/20 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-[6px] bg-teal-500/20 flex items-center justify-center">
                     <span className="text-sm">🩺</span>
                   </div>
                   <div>
@@ -167,9 +167,9 @@ const Auth = () => {
             <div className="flex-1 flex flex-col overflow-y-auto px-6 py-6 md:px-8 md:py-8">
               {/* ── Tab Switcher ── */}
               <div className="relative mb-6">
-                <div className="relative flex bg-muted/80 rounded-sm p-1.5 border border-border">
+                <div className="relative flex bg-muted/80 rounded-[6px] p-1.5 border border-border">
                   <motion.div
-                    className="absolute top-1.5 bottom-1.5 rounded-sm bg-card border border-border"
+                    className="absolute top-1.5 bottom-1.5 rounded-[6px] bg-card border border-border"
                     initial={false}
                     animate={{
                       left: tab === "signin" ? "6px" : "50%",
@@ -182,11 +182,10 @@ const Auth = () => {
                       key={t.id}
                       type="button"
                       onClick={() => setTab(t.id)}
-                      className={`relative z-10 flex-1 py-2 text-xs font-semibold rounded-sm transition-colors duration-200 ${
-                        tab === t.id
-                          ? "text-primary"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`relative z-10 flex-1 py-2 text-xs font-semibold rounded-[6px] transition-colors duration-200 ${tab === t.id
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       {t.label}
                     </button>

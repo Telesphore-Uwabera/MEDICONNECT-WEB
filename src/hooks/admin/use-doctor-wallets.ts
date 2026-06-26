@@ -18,11 +18,11 @@ export interface DoctorUser {
 }
 
 export interface DoctorNested {
-  id: number;
-  user_id: number;
-  slug: string;
-  specialization: string;
-  currency: string;
+  id?: number;
+  user_id?: number;
+  slug?: string;
+  specialization?: string;
+  currency?: string;
   user: DoctorUser;
 }
 
@@ -30,12 +30,12 @@ export interface DoctorWallet {
   id: number;
   doctor_id: number;
   balance: string;
-  currency: string;
+  currency?: string;
   last_withdrawn: string | null;
   last_topup: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
   doctor: DoctorNested;
   // computed helpers
   doctor_name: string;
@@ -45,11 +45,11 @@ export interface DoctorWallet {
 export interface MainWallet {
   id: number;
   balance: string;
-  currency: string;
+  currency?: string;
   last_withdrawn: string | null;
   last_topup: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Payout {
@@ -97,6 +97,7 @@ export interface PaginatedResponse<T> {
   prev_page_url: string | null;
   to: number | null;
   total: number;
+  summary?: unknown;
 }
 
 export interface TopUpPayload {
@@ -126,7 +127,7 @@ export type WithdrawalRequestStatus =
   | "approved"
   | "processing"
   | "completed"
-  | "rejected"
+  | "failed"
   | "cancelled";
 
 export interface WithdrawalRequest {
@@ -162,6 +163,32 @@ type RawWithdrawalRequest = Omit<WithdrawalRequest, "doctor_name" | "doctor_emai
 type RawDoctorWallet = Omit<DoctorWallet, "doctor_name" | "doctor_email">;
 type RawPayout = Omit<Payout, "doctor_name">;
 
+interface SingleDoctorWalletResponse {
+  doctor: {
+    id: number;
+    name: string;
+    email: string;
+    phone?: string | null;
+  };
+  wallet: RawDoctorWallet;
+}
+
+interface WithdrawalRequestsResponse {
+  summary?: {
+    pending?: number;
+    processing?: number;
+    approved?: number;
+    completed?: number;
+    failed?: number;
+    cancelled?: number;
+    total_pending_amount?: string | number;
+    total_processing_amount?: string | number;
+    total_approved_amount?: string | number;
+    total_completed_amount?: string | number;
+  };
+  data: PaginatedResponse<RawWithdrawalRequest>;
+}
+
 function normalizeWallet(raw: RawDoctorWallet): DoctorWallet {
   return {
     ...raw,
@@ -191,15 +218,16 @@ function normalizeWithdrawalRequest(raw: RawWithdrawalRequest): WithdrawalReques
 }
 
 export function useGetDoctorWallets(search?: string, page = 1) {
-  const queryString = search
-    ? `?search=${encodeURIComponent(search)}&page=${page}`
-    : `?page=${page}`;
+  const params = new URLSearchParams();
+  params.append("page", String(page));
+  params.append("per_page", "20");
+  if (search) params.append("search", search);
 
   return useQuery<PaginatedResponse<DoctorWallet>>({
     queryKey: ["admin-wallets-doctors", search ?? "", page],
     queryFn: async () => {
       const res = await apiFetch<PaginatedResponse<RawDoctorWallet>>(
-        `${DOCTORS_BASE}${queryString}`
+        `${DOCTORS_BASE}?${params.toString()}`
       );
       return { ...res, data: res.data.map(normalizeWallet) };
     },
@@ -210,8 +238,19 @@ export function useGetDoctorWallet(id: number | null) {
   return useQuery<DoctorWallet>({
     queryKey: ["admin-wallet-doctor", id],
     queryFn: async () => {
-      const raw = await apiFetch<RawDoctorWallet>(`${DOCTORS_BASE}/${id}`);
-      return normalizeWallet(raw);
+      const res = await apiFetch<SingleDoctorWalletResponse>(`${DOCTORS_BASE}/${id}`);
+      return normalizeWallet({
+        ...res.wallet,
+        doctor: {
+          id: res.doctor.id,
+          user: {
+            id: res.doctor.id,
+            name: res.doctor.name,
+            email: res.doctor.email,
+            phone: res.doctor.phone ?? "",
+          },
+        },
+      });
     },
     enabled: !!id,
   });
@@ -294,7 +333,7 @@ export function useDeductMainWallet() {
    PAYOUTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export function useGetPayouts(status?: string, doctorId?: number, page = 1) {
+export function useGetPayouts(status?: string, doctorId?: number, page = 1, enabled = true) {
   const params = new URLSearchParams();
   if (status) params.append("status", status);
   if (doctorId) params.append("doctor_id", String(doctorId));
@@ -302,6 +341,7 @@ export function useGetPayouts(status?: string, doctorId?: number, page = 1) {
 
   return useQuery<PaginatedResponse<Payout>>({
     queryKey: ["admin-payouts", status ?? "", doctorId ?? "", page],
+    enabled,
     queryFn: async () => {
       const res = await apiFetch<PaginatedResponse<RawPayout>>(
         `${PAYOUTS_BASE}?${params.toString()}`
@@ -352,7 +392,7 @@ export function useRefundPayout() {
    TRANSACTIONS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-export function useGetTransactions(doctorId?: number, type?: "credit" | "debit", page = 1) {
+export function useGetTransactions(doctorId?: number, type?: "credit" | "debit", page = 1, enabled = true) {
   const params = new URLSearchParams();
   if (doctorId) params.append("doctor_id", String(doctorId));
   if (type) params.append("type", type);
@@ -360,6 +400,7 @@ export function useGetTransactions(doctorId?: number, type?: "credit" | "debit",
 
   return useQuery<PaginatedResponse<Transaction>>({
     queryKey: ["admin-transactions", doctorId ?? "", type ?? "", page],
+    enabled,
     queryFn: () =>
       apiFetch<PaginatedResponse<Transaction>>(
         `${PAYOUTS_BASE}/transactions?${params.toString()}`
@@ -367,19 +408,21 @@ export function useGetTransactions(doctorId?: number, type?: "credit" | "debit",
   });
 }
 
-export function useGetWithdrawalRequests(status?: string, page = 1, enabled = true) {
+export function useGetWithdrawalRequests(status?: string, page = 1, enabled = true, search?: string) {
   const params = new URLSearchParams();
   if (status && status !== "all") params.append("status", status);
   params.append("page", String(page));
+  params.append("per_page", "20");
+  if (search) params.append("search", search);
 
   return useQuery<PaginatedResponse<WithdrawalRequest>>({
-    queryKey: ["admin-withdrawal-requests", status ?? "all", page],
+    queryKey: ["admin-withdrawal-requests", status ?? "all", page, search ?? ""],
     enabled,
     queryFn: async () => {
-      const res = await apiFetch<PaginatedResponse<RawWithdrawalRequest>>(
+      const res = await apiFetch<WithdrawalRequestsResponse>(
         `${WITHDRAWAL_REQUESTS_BASE}?${params.toString()}`
       );
-      return { ...res, data: res.data.map(normalizeWithdrawalRequest) };
+      return { ...res.data, summary: res.summary, data: res.data.data.map(normalizeWithdrawalRequest) };
     },
   });
 }

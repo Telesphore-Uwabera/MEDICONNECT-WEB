@@ -148,7 +148,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-2.5 py-1.5 rounded-sm text-[11px] border transition-all duration-200 text-left flex items-center gap-2",
+            "px-2.5 py-1.5 rounded-[6px] text-[11px] border transition-all duration-200 text-left flex items-center gap-2",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -170,7 +170,7 @@ function PillGroup<T extends string>({
 }
 
 const inputCls =
-  "w-full bg-background border border-border/60 rounded-sm px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
+  "w-full bg-background border border-border/60 rounded-[6px] px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
@@ -283,7 +283,7 @@ function CreateRequestDrawer({
           </div>
 
           {error && (
-            <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
+            <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2">
               {error.message}
             </p>
           )}
@@ -295,7 +295,7 @@ function CreateRequestDrawer({
             size="sm"
             variant="outline"
             onClick={onClose}
-            className="flex-1 h-7 text-[11px] rounded-sm"
+            className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
             Cancel
           </Button>
@@ -304,7 +304,7 @@ function CreateRequestDrawer({
             form={CREATE_FORM_ID}
             size="sm"
             disabled={isPending || !form.medicine_id}
-            className="flex-1 h-7 text-[11px] font-semibold rounded-sm shadow-sm"
+            className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
             Submit Request
@@ -427,7 +427,7 @@ function ReceiveDrawer({
             </div>
 
             {error && (
-              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
+              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2">
                 {error.message}
               </p>
             )}
@@ -440,7 +440,7 @@ function ReceiveDrawer({
             size="sm"
             variant="outline"
             onClick={onClose}
-            className="flex-1 h-7 text-[11px] rounded-sm"
+            className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
             Cancel
           </Button>
@@ -449,7 +449,7 @@ function ReceiveDrawer({
             form={RECEIVE_FORM_ID}
             size="sm"
             disabled={isPending || !request}
-            className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-sm"
+            className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
             Confirm Receipt
@@ -516,7 +516,7 @@ function RejectDrawer({
               />
             </div>
             {error && (
-              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2">
+              <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2">
                 {error.message}
               </p>
             )}
@@ -529,7 +529,7 @@ function RejectDrawer({
             size="sm"
             variant="outline"
             onClick={onClose}
-            className="flex-1 h-7 text-[11px] rounded-sm"
+            className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
             Cancel
           </Button>
@@ -538,7 +538,7 @@ function RejectDrawer({
             form={REJECT_FORM_ID}
             size="sm"
             disabled={isPending || !reason.trim() || !request}
-            className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-sm shadow-sm"
+            className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
             Reject
@@ -589,12 +589,12 @@ function RequestDetailsDrawer({
 
   const med = request.medicine as
     | (StockRequest["medicine"] & {
-        price?: string;
-        currency?: string;
-        unit?: string;
-        barcode?: string;
-        requires_prescription?: boolean;
-      })
+      price?: string;
+      currency?: string;
+      unit?: string;
+      barcode?: string;
+      requires_prescription?: boolean;
+    })
     | undefined;
 
   return (
@@ -602,7 +602,7 @@ function RequestDetailsDrawer({
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-sm bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0">
               <ClipboardList className="w-3.5 h-3.5 text-primary" />
             </div>
             <div className="min-w-0">
@@ -646,7 +646,7 @@ function RequestDetailsDrawer({
           </div>
 
           {/* Quantities */}
-          <div className="rounded-sm border border-border/60 bg-secondary/10 p-3 grid grid-cols-2 gap-2.5">
+          <div className="rounded-[6px] border border-border/60 bg-secondary/10 p-3 grid grid-cols-2 gap-2.5">
             <div>
               <p className="text-[10px] text-muted-foreground/70">Requested</p>
               <p className="text-[14px] font-bold tabular-nums text-foreground">
@@ -689,7 +689,7 @@ function RequestDetailsDrawer({
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
                 Notes
               </p>
-              <div className="flex items-start gap-2 rounded-sm border border-border/50 bg-secondary/10 px-3 py-2">
+              <div className="flex items-start gap-2 rounded-[6px] border border-border/50 bg-secondary/10 px-3 py-2">
                 <StickyNote className="w-3 h-3 text-muted-foreground/60 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-foreground/90 leading-relaxed">
                   {request.notes}
@@ -705,7 +705,7 @@ function RequestDetailsDrawer({
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
                   Rejection Reason
                 </p>
-                <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-sm px-3 py-2 leading-relaxed">
+                <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2 leading-relaxed">
                   {request.reason ?? request.rejection_reason}
                 </p>
               </div>
@@ -795,7 +795,7 @@ function RequestDetailsDrawer({
                 variant="outline"
                 disabled={deleting || approving}
                 onClick={() => deleteReq(request.id, { onSuccess: onClose })}
-                className="flex-1 h-7 text-[11px] rounded-sm"
+                className="flex-1 h-7 text-[11px] rounded-[6px]"
               >
                 {deleting ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -810,7 +810,7 @@ function RequestDetailsDrawer({
                 variant="outline"
                 disabled={deleting || approving}
                 onClick={() => onReject(request)}
-                className="flex-1 h-7 text-[11px] rounded-sm text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
+                className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
               >
                 Reject
               </Button>
@@ -818,7 +818,7 @@ function RequestDetailsDrawer({
                 size="sm"
                 disabled={deleting || approving}
                 onClick={() => approve(request.id)}
-                className="flex-1 h-7 text-[11px] font-semibold rounded-sm shadow-sm"
+                className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm"
               >
                 {approving ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -834,14 +834,14 @@ function RequestDetailsDrawer({
                 size="sm"
                 variant="outline"
                 onClick={() => onReject(request)}
-                className="flex-1 h-7 text-[11px] rounded-sm text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
+                className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
               >
                 Reject
               </Button>
               <Button
                 size="sm"
                 onClick={() => onReceive(request)}
-                className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-sm"
+                className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm"
               >
                 Receive
               </Button>
@@ -852,7 +852,7 @@ function RequestDetailsDrawer({
               size="sm"
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-7 text-[11px] rounded-sm"
+              className="flex-1 h-7 text-[11px] rounded-[6px]"
             >
               Close
             </Button>
@@ -886,7 +886,7 @@ function RequestActions({
         size="sm"
         variant="ghost"
         onClick={() => onView(request)}
-        className="h-7 w-7 p-0 rounded-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
+        className="h-7 w-7 p-0 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
       >
         <Eye className="w-3 h-3" />
       </Button>
@@ -898,7 +898,7 @@ function RequestActions({
             variant="outline"
             disabled={busy}
             onClick={() => deleteReq(request.id)}
-            className="h-7 px-3 text-[10px] rounded-sm border-border/60 text-muted-foreground hover:bg-secondary/50 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 text-muted-foreground hover:bg-secondary/50 transition-all duration-200"
           >
             {deleting ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -911,7 +911,7 @@ function RequestActions({
             variant="outline"
             disabled={busy}
             onClick={() => onReject(request)}
-            className="h-7 px-3 text-[10px] rounded-sm border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
           >
             Reject
           </Button>
@@ -919,7 +919,7 @@ function RequestActions({
             size="sm"
             disabled={busy}
             onClick={() => approve(request.id)}
-            className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm shadow-sm transition-all duration-200"
+            className="h-7 px-3 text-[10px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm transition-all duration-200"
           >
             {approving ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -936,14 +936,14 @@ function RequestActions({
             size="sm"
             variant="outline"
             onClick={() => onReject(request)}
-            className="h-7 px-3 text-[10px] rounded-sm border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
           >
             Reject
           </Button>
           <Button
             size="sm"
             onClick={() => onReceive(request)}
-            className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm shadow-sm transition-all duration-200"
+            className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
           >
             Receive
           </Button>
@@ -1065,358 +1065,358 @@ const RestockRequests = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Stat cards */}
-            <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard
-                label="Pending"
-                value={isLoading ? "—" : counts.pending}
-                icon={ClipboardList}
-                accent="warning"
-              />
-              <StatCard
-                label="Approved"
-                value={isLoading ? "—" : counts.approved}
-                icon={PackagePlus}
-                accent="info"
-              />
-              <StatCard
-                label="Received"
-                value={isLoading ? "—" : counts.received}
-                icon={CheckCircle2}
-                accent="success"
-              />
-              <StatCard
-                label="Rejected"
-                value={isLoading ? "—" : counts.rejected}
-                icon={XCircle}
-                accent="warning"
-              />
-            </div>
+          {/* Stat cards */}
+          <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            <StatCard
+              label="Pending"
+              value={isLoading ? "—" : counts.pending}
+              icon={ClipboardList}
+              accent="warning"
+            />
+            <StatCard
+              label="Approved"
+              value={isLoading ? "—" : counts.approved}
+              icon={PackagePlus}
+              accent="info"
+            />
+            <StatCard
+              label="Received"
+              value={isLoading ? "—" : counts.received}
+              icon={CheckCircle2}
+              accent="success"
+            />
+            <StatCard
+              label="Rejected"
+              value={isLoading ? "—" : counts.rejected}
+              icon={XCircle}
+              accent="warning"
+            />
+          </div>
 
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {isLoading ? (
-                  <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Loading requests…
-                  </span>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    <span className="font-bold text-foreground">
-                      {filtered.length}
-                    </span>{" "}
-                    {filtered.length === 1 ? "request" : "requests"}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearAll}
-                        className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </p>
-                )}
-
-                {!isLoading && (
-                  <div className="hidden lg:flex items-center gap-2">
-                    {counts.pending > 0 && (
-                      <button
-                        onClick={() => set("status", "pending")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        {counts.pending} pending
-                      </button>
-                    )}
-                    {counts.approved > 0 && (
-                      <button
-                        onClick={() => set("status", "approved")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                        {counts.approved} approved
-                      </button>
-                    )}
-                    {counts.received > 0 && (
-                      <button
-                        onClick={() => set("status", "received")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        {counts.received} received
-                      </button>
-                    )}
-                    {counts.rejected > 0 && (
-                      <button
-                        onClick={() => set("status", "rejected")}
-                        className="flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-sm hover:opacity-80 transition-opacity"
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                        {counts.rejected} rejected
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => refetch()}
-                  title="Refresh"
-                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
-                >
-                  <RefreshCw
-                    className={cn("w-3 h-3", isLoading && "animate-spin")}
-                  />
-                </button>
-
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={filters.search}
-                    onChange={(e) => set("search", e.target.value)}
-                    placeholder="Search medicine, requester…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                <Button
-                  size="sm"
-                  onClick={() => setShowCreate(true)}
-                  className="hidden sm:flex h-7 px-3 text-[11px] font-semibold rounded-sm shadow-sm items-center gap-1.5"
-                >
-                  <Plus className="w-3 h-3" />
-                  New Request
-                </Button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-              </div>
-            </div>
-
-            {/* Table area */}
-            <div className="p-4">
-              {/* Error state */}
-              {isError && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
-                    <AlertCircle className="w-6 h-6 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      Failed to load requests
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Check your connection and try again
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => refetch()}
-                    className="text-[11px] h-7 px-3 rounded-sm mt-1"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-1.5" />
-                    Retry
-                  </Button>
-                </div>
-              )}
-
-              {/* Loading skeleton */}
-              {isLoading && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        {[
-                          "Medicine",
-                          "Requested",
-                          "Received",
-                          "Status",
-                          "Requester",
-                          "Date",
-                          "",
-                        ].map((h) => (
-                          <th
-                            key={h}
-                            className="text-left px-4 py-3 font-semibold"
-                          >
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: 6 }).map((_, i) => (
-                        <tr key={i} className="border-t border-border/40">
-                          {Array.from({ length: 7 }).map((_, j) => (
-                            <td key={j} className="px-4 py-3.5">
-                              <div
-                                className="h-2.5 rounded bg-muted/60 animate-pulse"
-                                style={{
-                                  width: `${50 + ((i * 3 + j * 7) % 40)}%`,
-                                }}
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Empty state */}
-              {!isLoading && !isError && filtered.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-sm bg-muted/60 flex items-center justify-center border border-border/40">
-                    <ClipboardList className="w-6 h-6 text-muted-foreground/50" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold text-foreground">
-                      {hasActiveFilters
-                        ? "No requests match your filters"
-                        : "No stock requests yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters
-                        ? "Try widening your search criteria"
-                        : "Create one using the button above"}
-                    </p>
-                  </div>
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {isLoading ? (
+                <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading requests…
+                </span>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  <span className="font-bold text-foreground">
+                    {filtered.length}
+                  </span>{" "}
+                  {filtered.length === 1 ? "request" : "requests"}
                   {hasActiveFilters && (
                     <button
                       onClick={clearAll}
-                      className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                      className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                     >
-                      Clear all filters
+                      Reset
+                    </button>
+                  )}
+                </p>
+              )}
+
+              {!isLoading && (
+                <div className="hidden lg:flex items-center gap-2">
+                  {counts.pending > 0 && (
+                    <button
+                      onClick={() => set("status", "pending")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      {counts.pending} pending
+                    </button>
+                  )}
+                  {counts.approved > 0 && (
+                    <button
+                      onClick={() => set("status", "approved")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                      {counts.approved} approved
+                    </button>
+                  )}
+                  {counts.received > 0 && (
+                    <button
+                      onClick={() => set("status", "received")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {counts.received} received
+                    </button>
+                  )}
+                  {counts.rejected > 0 && (
+                    <button
+                      onClick={() => set("status", "rejected")}
+                      className="flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      {counts.rejected} rejected
                     </button>
                   )}
                 </div>
               )}
+            </div>
 
-              {/* Data table */}
-              {!isLoading && !isError && filtered.length > 0 && (
-                <div className="rounded-sm border border-border/70 bg-card overflow-hidden shadow-sm">
-                  <table className="w-full text-[11px]">
-                    <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
-                      <tr>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Medicine
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Requested
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Received
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Status
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Requester
-                        </th>
-                        <th className="text-left px-4 py-3 font-semibold">
-                          Date
-                        </th>
-                        <th className="px-4 py-3" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((req) => (
-                        <tr
-                          key={req.id}
-                          onClick={() => openView(req)}
-                          className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => refetch()}
+                title="Refresh"
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw
+                  className={cn("w-3 h-3", isLoading && "animate-spin")}
+                />
+              </button>
+
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => set("search", e.target.value)}
+                  placeholder="Search medicine, requester…"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              <Button
+                size="sm"
+                onClick={() => setShowCreate(true)}
+                className="hidden sm:flex h-7 px-3 text-[11px] font-semibold rounded-[6px] shadow-sm items-center gap-1.5"
+              >
+                <Plus className="w-3 h-3" />
+                New Request
+              </Button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
+          </div>
+
+          {/* Table area */}
+          <div className="p-4">
+            {/* Error state */}
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
+                  <AlertCircle className="w-6 h-6 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    Failed to load requests
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    Check your connection and try again
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => refetch()}
+                  className="text-[11px] h-7 px-3 rounded-[6px] mt-1"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1.5" />
+                  Retry
+                </Button>
+              </div>
+            )}
+
+            {/* Loading skeleton */}
+            {isLoading && (
+              <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                <table className="w-full text-[11px]">
+                  <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                    <tr>
+                      {[
+                        "Medicine",
+                        "Requested",
+                        "Received",
+                        "Status",
+                        "Requester",
+                        "Date",
+                        "",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-3 font-semibold"
                         >
-                          <td className="px-4 py-3 font-semibold text-[11px] text-foreground">
-                            {req.medicine?.name ??
-                              `Medicine #${req.medicine_id}`}
-                            {req.medicine?.category?.name && (
-                              <span className="block text-[10px] font-normal text-muted-foreground/60 mt-0.5">
-                                {req.medicine.category.name}
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3 tabular-nums font-bold text-[12px] text-foreground">
-                            {req.requested_quantity.toLocaleString()}
-                          </td>
-
-                          <td className="px-4 py-3 tabular-nums text-foreground">
-                            {req.received_quantity != null ? (
-                              req.received_quantity.toLocaleString()
-                            ) : (
-                              <span className="text-muted-foreground/40">
-                                —
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "border text-[9px] px-1.5 py-0 font-medium capitalize",
-                                STATUS_STYLES[req.status],
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "w-1 h-1 rounded-full mr-1",
-                                  STATUS_DOT[req.status],
-                                  req.status === "pending" && "animate-pulse",
-                                )}
-                              />
-                              {req.status}
-                            </Badge>
-                          </td>
-
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {req.requester?.name ?? (
-                              <span className="text-muted-foreground/40">
-                                —
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-4 py-3 text-muted-foreground/70 text-[10px] whitespace-nowrap">
-                            {formatDate(req.created_at)}
-                          </td>
-
-                          <td
-                            className="px-4 py-3 text-right"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <RequestActions
-                              request={req}
-                              onView={openView}
-                              onReceive={openReceive}
-                              onReject={openReject}
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={i} className="border-t border-border/40">
+                        {Array.from({ length: 7 }).map((_, j) => (
+                          <td key={j} className="px-4 py-3.5">
+                            <div
+                              className="h-2.5 rounded bg-muted/60 animate-pulse"
+                              style={{
+                                width: `${50 + ((i * 3 + j * 7) % 40)}%`,
+                              }}
                             />
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                  {data && data.last_page > 1 && (
-                    <div className="px-4 py-2.5 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between bg-secondary/10">
-                      <span>
-                        Page {data.current_page} of {data.last_page} ·{" "}
-                        {data.total} total
-                      </span>
-                    </div>
-                  )}
+            {/* Empty state */}
+            {!isLoading && !isError && filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <ClipboardList className="w-6 h-6 text-muted-foreground/50" />
                 </div>
-              )}
-            </div>
-          </main>
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">
+                    {hasActiveFilters
+                      ? "No requests match your filters"
+                      : "No stock requests yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters
+                      ? "Try widening your search criteria"
+                      : "Create one using the button above"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAll}
+                    className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Data table */}
+            {!isLoading && !isError && filtered.length > 0 && (
+              <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
+                <table className="w-full text-[11px]">
+                  <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Medicine
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Requested
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Received
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Requester
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Date
+                      </th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((req) => (
+                      <tr
+                        key={req.id}
+                        onClick={() => openView(req)}
+                        className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150 cursor-pointer"
+                      >
+                        <td className="px-4 py-3 font-semibold text-[11px] text-foreground">
+                          {req.medicine?.name ??
+                            `Medicine #${req.medicine_id}`}
+                          {req.medicine?.category?.name && (
+                            <span className="block text-[10px] font-normal text-muted-foreground/60 mt-0.5">
+                              {req.medicine.category.name}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 tabular-nums font-bold text-[12px] text-foreground">
+                          {req.requested_quantity.toLocaleString()}
+                        </td>
+
+                        <td className="px-4 py-3 tabular-nums text-foreground">
+                          {req.received_quantity != null ? (
+                            req.received_quantity.toLocaleString()
+                          ) : (
+                            <span className="text-muted-foreground/40">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "border text-[9px] px-1.5 py-0 font-medium capitalize",
+                              STATUS_STYLES[req.status],
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "w-1 h-1 rounded-full mr-1",
+                                STATUS_DOT[req.status],
+                                req.status === "pending" && "animate-pulse",
+                              )}
+                            />
+                            {req.status}
+                          </Badge>
+                        </td>
+
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {req.requester?.name ?? (
+                            <span className="text-muted-foreground/40">
+                              —
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3 text-muted-foreground/70 text-[10px] whitespace-nowrap">
+                          {formatDate(req.created_at)}
+                        </td>
+
+                        <td
+                          className="px-4 py-3 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <RequestActions
+                            request={req}
+                            onView={openView}
+                            onReceive={openReceive}
+                            onReject={openReject}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {data && data.last_page > 1 && (
+                  <div className="px-4 py-2.5 border-t border-border/60 text-[10px] text-muted-foreground/70 flex items-center justify-between bg-secondary/10">
+                    <span>
+                      Page {data.current_page} of {data.last_page} ·{" "}
+                      {data.total} total
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* Drawers */}

@@ -30,7 +30,7 @@ function PillGroup<T extends string>({
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "px-3 py-2 rounded-md text-sm border transition-all duration-200 text-left",
+            "px-3 py-2 rounded-[6px] text-sm border transition-all duration-200 text-left",
             value === o.value
               ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
               : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -60,7 +60,7 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
     <>
       <div className="px-3.5 pt-4 pb-3 flex items-center justify-between border-b border-border/60">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-4 h-4 text-primary" />
           </div>
           <span className="text-sm font-semibold text-foreground">Filters</span>
@@ -81,11 +81,11 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "All",         label: "All statuses" },
-              { value: "pending",     label: "Pending"      },
-              { value: "confirmed",   label: "Confirmed"    },
-              { value: "in_progress", label: "In progress"  },
-              { value: "completed",   label: "Completed"    },
+              { value: "All", label: "All statuses" },
+              { value: "pending", label: "Pending" },
+              { value: "confirmed", label: "Confirmed" },
+              { value: "in_progress", label: "In progress" },
+              { value: "completed", label: "Completed" },
             ]}
           />
         </FilterSection>
@@ -95,8 +95,8 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
             value={filters.type}
             onChange={(v) => set("type", v)}
             options={[
-              { value: "All",       label: "All types"       },
-              { value: "online",    label: "Video consult"   },
+              { value: "All", label: "All types" },
+              { value: "online", label: "Video consult" },
               { value: "in_person", label: "In-person visit" },
             ]}
           />
@@ -106,8 +106,8 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
           <div className="flex flex-col gap-1 mb-2">
             {[
               { label: "All dates", today: false, upcoming: false },
-              { label: "Today",     today: true,  upcoming: false },
-              { label: "Upcoming",  today: false, upcoming: true  },
+              { label: "Today", today: true, upcoming: false },
+              { label: "Upcoming", today: false, upcoming: true },
             ].map((opt) => {
               const active = filters.today === opt.today && filters.upcoming === opt.upcoming && !filters.date;
               return (
@@ -117,7 +117,7 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
                     setFilters((f) => ({ ...f, today: opt.today, upcoming: opt.upcoming, date: "" }))
                   }
                   className={cn(
-                    "px-3 py-2 rounded-md text-sm border transition-all duration-200 text-left",
+                    "px-3 py-2 rounded-[6px] text-sm border transition-all duration-200 text-left",
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm font-medium"
                       : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30",
@@ -137,7 +137,7 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
                 const d = e.target.value;
                 setFilters((f) => ({ ...f, date: d, today: false, upcoming: false }));
               }}
-              className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
+              className="w-full px-3 py-2 text-sm bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
             />
             {filters.date && (
               <button

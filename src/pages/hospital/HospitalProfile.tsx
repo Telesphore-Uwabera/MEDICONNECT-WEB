@@ -125,47 +125,47 @@ const SOCIAL_PLATFORMS: Array<{
   label: string;
   placeholder: string;
 }> = [
-  {
-    key: "linkedin",
-    label: "LinkedIn",
-    placeholder: "https://linkedin.com/company/your-hospital",
-  },
-  {
-    key: "twitter",
-    label: "X / Twitter",
-    placeholder: "https://x.com/your-handle",
-  },
-  {
-    key: "facebook",
-    label: "Facebook",
-    placeholder: "https://facebook.com/your-page",
-  },
-  {
-    key: "instagram",
-    label: "Instagram",
-    placeholder: "https://instagram.com/your-handle",
-  },
-  {
-    key: "youtube",
-    label: "YouTube",
-    placeholder: "https://youtube.com/@your-channel",
-  },
-  {
-    key: "whatsapp",
-    label: "WhatsApp",
-    placeholder: "https://wa.me/250788000001",
-  },
-  {
-    key: "tiktok",
-    label: "TikTok",
-    placeholder: "https://tiktok.com/@your-handle",
-  },
-  {
-    key: "website",
-    label: "Official website",
-    placeholder: "https://yourhospital.rw",
-  },
-];
+    {
+      key: "linkedin",
+      label: "LinkedIn",
+      placeholder: "https://linkedin.com/company/your-hospital",
+    },
+    {
+      key: "twitter",
+      label: "X / Twitter",
+      placeholder: "https://x.com/your-handle",
+    },
+    {
+      key: "facebook",
+      label: "Facebook",
+      placeholder: "https://facebook.com/your-page",
+    },
+    {
+      key: "instagram",
+      label: "Instagram",
+      placeholder: "https://instagram.com/your-handle",
+    },
+    {
+      key: "youtube",
+      label: "YouTube",
+      placeholder: "https://youtube.com/@your-channel",
+    },
+    {
+      key: "whatsapp",
+      label: "WhatsApp",
+      placeholder: "https://wa.me/250788000001",
+    },
+    {
+      key: "tiktok",
+      label: "TikTok",
+      placeholder: "https://tiktok.com/@your-handle",
+    },
+    {
+      key: "website",
+      label: "Official website",
+      placeholder: "https://yourhospital.rw",
+    },
+  ];
 
 const DEFAULT_SOCIAL_LINKS: SocialLinksInfo = {
   linkedin: "",
@@ -321,7 +321,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
+    <div className="rounded-[6px] bg-card border border-border px-4 py-3 shadow-sm flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
         {label}
       </span>
@@ -445,7 +445,7 @@ function GalleryStep({
             await processFiles(e.dataTransfer.files);
           }}
           className={cn(
-            "w-full rounded-lg border-2 border-dashed transition-all duration-200 py-8 flex flex-col items-center gap-2 cursor-pointer",
+            "w-full rounded-[6px] border-2 border-dashed transition-all duration-200 py-8 flex flex-col items-center gap-2 cursor-pointer",
             dragging
               ? "border-primary bg-primary/5"
               : "border-border hover:border-primary/50 hover:bg-muted/50",
@@ -488,7 +488,7 @@ function GalleryStep({
           {remoteImages.map((img, idx) => (
             <div
               key={`remote-${img.id}`}
-              className="group relative rounded-md overflow-hidden border border-border bg-muted aspect-video"
+              className="group relative rounded-[6px] overflow-hidden border border-border bg-muted aspect-video"
             >
               <img
                 src={img.image_url}
@@ -523,7 +523,7 @@ function GalleryStep({
           {stagedImages.map((img, idx) => (
             <div
               key={img.id}
-              className="group relative rounded-md overflow-hidden border border-primary/40 bg-muted aspect-video"
+              className="group relative rounded-[6px] overflow-hidden border border-primary/40 bg-muted aspect-video"
             >
               <img
                 src={img.dataUrl}
@@ -576,7 +576,7 @@ function GalleryStep({
       )}
 
       {remoteImages.length === 0 && stagedImages.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-6 gap-1.5 rounded-md border border-dashed border-border text-center">
+        <div className="flex flex-col items-center justify-center py-6 gap-1.5 rounded-[6px] border border-dashed border-border text-center">
           <ImageOff className="h-6 w-6 text-muted-foreground/40" />
           <p className="text-[11px] text-muted-foreground">
             No images uploaded yet
@@ -666,7 +666,7 @@ function GalleryLightbox({
         <img
           src={img.src}
           alt={img.caption}
-          className="w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+          className="w-full max-h-[70vh] object-contain rounded-[6px] shadow-2xl"
         />
         <div className="flex items-center justify-between px-1">
           <div>
@@ -744,7 +744,7 @@ function GalleryView({
       </div>
 
       {images.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-md border border-dashed border-border text-center">
+        <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-[6px] border border-dashed border-border text-center">
           <ImageOff className="h-6 w-6 text-muted-foreground/30" />
           <p className="text-xs text-muted-foreground">No photos added yet.</p>
           {onEdit && (
@@ -762,7 +762,7 @@ function GalleryView({
             {images[0] && (
               <button
                 onClick={() => setLightboxIndex(0)}
-                className="col-span-2 row-span-2 relative group rounded-md overflow-hidden aspect-video"
+                className="col-span-2 row-span-2 relative group rounded-[6px] overflow-hidden aspect-video"
               >
                 <img
                   src={images[0].src}
@@ -789,7 +789,7 @@ function GalleryView({
                 <button
                   key={img.id}
                   onClick={() => setLightboxIndex(realIdx)}
-                  className="relative group rounded-md overflow-hidden aspect-square"
+                  className="relative group rounded-[6px] overflow-hidden aspect-square"
                 >
                   <img
                     src={img.src}
@@ -891,7 +891,7 @@ function UnifiedSidebar({
         ) : hospitalName ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-md flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
+              <div className="w-9 h-9 rounded-[6px] flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
                 <Building2 className="h-4 w-4" />
               </div>
               <div className="min-w-0">
@@ -934,7 +934,7 @@ function UnifiedSidebar({
               onClick={() => (isForm ? onSelect(i) : undefined)}
               disabled={!isForm}
               className={cn(
-                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-md text-left transition-all duration-150",
+                "flex shrink-0 sm:shrink sm:w-full items-center gap-2 sm:gap-2.5 px-2 sm:px-2.5 py-2 sm:py-2.5 rounded-[6px] text-left transition-all duration-150",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : isForm
@@ -1340,7 +1340,7 @@ function HospitalForm({
         {/* ── Step 4: Hours ── */}
         {step.id === "hours" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2.5">
+            <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-[6px] border border-border bg-muted/50 px-3 py-2.5">
               <div>
                 <p className="text-xs font-medium text-foreground">
                   {t("hospital.field.open_24h", "Open 24 hours")}
@@ -1383,7 +1383,7 @@ function HospitalForm({
             </FormField>
 
             {open24h && (
-              <div className="col-span-1 sm:col-span-2 flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-3 py-2">
+              <div className="col-span-1 sm:col-span-2 flex items-center gap-2 rounded-[6px] border border-primary/30 bg-primary/5 px-3 py-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <p className="text-[11px] text-primary">
                   This facility is available around the clock.
@@ -1516,7 +1516,7 @@ function TabSectionHeader({
       </h3>
       <button
         onClick={onEdit}
-        className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors border border-primary/25 bg-primary/5 hover:bg-primary/10 rounded-md px-2.5 py-1"
+        className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors border border-primary/25 bg-primary/5 hover:bg-primary/10 rounded-[6px] px-2.5 py-1"
       >
         <Pencil className="h-2.5 w-2.5" />
         {editLabel}
@@ -1529,13 +1529,13 @@ function TabSectionHeader({
 // View tab definitions (mirrors STEPS order)
 // ─────────────────────────────────────────────────────────────────────────────
 const VIEW_TABS = [
-  { id: "identity",     label: "Identity",     icon: Building2, stepIndex: 0 },
-  { id: "location",     label: "Location",     icon: MapPin,    stepIndex: 1 },
-  { id: "contact",      label: "Contact",      icon: Phone,     stepIndex: 2 },
-  { id: "hours",        label: "Hours",        icon: Clock,     stepIndex: 3 },
-  { id: "social",       label: "Social",       icon: Link2,     stepIndex: 4 },
-  { id: "gallery",      label: "Gallery",      icon: Images,    stepIndex: 5 },
-  { id: "prescriptions",label: "Prescriptions",icon: Pill,      stepIndex: -1 },
+  { id: "identity", label: "Identity", icon: Building2, stepIndex: 0 },
+  { id: "location", label: "Location", icon: MapPin, stepIndex: 1 },
+  { id: "contact", label: "Contact", icon: Phone, stepIndex: 2 },
+  { id: "hours", label: "Hours", icon: Clock, stepIndex: 3 },
+  { id: "social", label: "Social", icon: Link2, stepIndex: 4 },
+  { id: "gallery", label: "Gallery", icon: Images, stepIndex: 5 },
+  { id: "prescriptions", label: "Prescriptions", icon: Pill, stepIndex: -1 },
 ] as const;
 
 type ViewTabId = (typeof VIEW_TABS)[number]["id"];
@@ -1668,7 +1668,7 @@ function HospitalProfileView({
             />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {hospital.phone && (
-                <div className="flex items-center gap-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5">
+                <div className="flex items-center gap-3 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2.5">
                   <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-primary">
                     <Phone size={13} />
                   </div>
@@ -1678,7 +1678,7 @@ function HospitalProfileView({
                 </div>
               )}
               {hospital.email && (
-                <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+                <div className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/40 px-3 py-2.5">
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
                     <Mail size={13} />
                   </div>
@@ -1688,7 +1688,7 @@ function HospitalProfileView({
                 </div>
               )}
               {hospital.website && (
-                <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">
+                <div className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/40 px-3 py-2.5">
                   <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
                     <Globe size={13} />
                   </div>
@@ -1760,7 +1760,7 @@ function HospitalProfileView({
               onEdit={() => onEditStep(4)}
             />
             {socialLinksCount === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-md border border-dashed border-border text-center">
+              <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-[6px] border border-dashed border-border text-center">
                 <Link2 className="h-6 w-6 text-muted-foreground/30" />
                 <p className="text-xs text-muted-foreground">No social links added yet.</p>
                 <button
@@ -1779,7 +1779,7 @@ function HospitalProfileView({
                       href={socialLinks[key]}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 rounded-md border border-border bg-muted/30 hover:bg-muted/60 px-3 py-2 transition-colors group"
+                      className="flex items-center gap-2.5 rounded-[6px] border border-border bg-muted/30 hover:bg-muted/60 px-3 py-2 transition-colors group"
                     >
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <Link2 className="h-3 w-3 text-primary" />
@@ -1831,7 +1831,7 @@ function HospitalProfileView({
             </div>
 
             {rxList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center rounded-md border border-dashed border-border">
+              <div className="flex flex-col items-center justify-center py-8 gap-2 text-center rounded-[6px] border border-dashed border-border">
                 <Pill className="h-7 w-7 text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">
                   No prescriptions issued yet.
@@ -1846,11 +1846,11 @@ function HospitalProfileView({
                 </Button>
               </div>
             ) : (
-              <ul className="divide-y divide-border rounded-md border border-border overflow-hidden">
+              <ul className="divide-y divide-border rounded-[6px] border border-border overflow-hidden">
                 {rxList.map((rx) => {
                   const Icon =
                     channelIcon[
-                      (rx.channels?.[0] as keyof typeof channelIcon) ?? "app"
+                    (rx.channels?.[0] as keyof typeof channelIcon) ?? "app"
                     ] ?? User;
                   const style =
                     statusStyle[rx.status as RxStatus] ?? statusStyle["active"];
@@ -1987,28 +1987,28 @@ const HospitalProfile = () => {
   const defaultFormValues: Partial<HospitalFormData> | undefined =
     serverHospital
       ? {
-          hospital: {
-            name_en: serverHospital.name_en,
-            name_fr: serverHospital.name_fr,
-            name_kiny: serverHospital.name_kiny,
-            description_en: serverHospital.description_en ?? "",
-            type: serverHospital.type,
-            registration_number: serverHospital.registration_number ?? "",
-            address: serverHospital.address,
-            city: serverHospital.city,
-            province: serverHospital.province,
-            country: serverHospital.country,
-            latitude: String(serverHospital.latitude ?? ""),
-            longitude: String(serverHospital.longitude ?? ""),
-            phone: serverHospital.phone,
-            email: serverHospital.email,
-            website: serverHospital.website,
-            opens_at: serverHospital.opens_at,
-            closes_at: serverHospital.closes_at,
-            is_open_24h: serverHospital.is_open_24h,
-          },
-          linksSection: normaliseSocialLinks(serverHospital.social_links),
-        }
+        hospital: {
+          name_en: serverHospital.name_en,
+          name_fr: serverHospital.name_fr,
+          name_kiny: serverHospital.name_kiny,
+          description_en: serverHospital.description_en ?? "",
+          type: serverHospital.type,
+          registration_number: serverHospital.registration_number ?? "",
+          address: serverHospital.address,
+          city: serverHospital.city,
+          province: serverHospital.province,
+          country: serverHospital.country,
+          latitude: String(serverHospital.latitude ?? ""),
+          longitude: String(serverHospital.longitude ?? ""),
+          phone: serverHospital.phone,
+          email: serverHospital.email,
+          website: serverHospital.website,
+          opens_at: serverHospital.opens_at,
+          closes_at: serverHospital.closes_at,
+          is_open_24h: serverHospital.is_open_24h,
+        },
+        linksSection: normaliseSocialLinks(serverHospital.social_links),
+      }
       : undefined;
 
   // ── Submit handler ─────────────────────────────────────────────────────────
@@ -2085,22 +2085,22 @@ const HospitalProfile = () => {
   // ── Stats ──────────────────────────────────────────────────────────────────
   const stats = serverHospital
     ? {
-        type: humanType(serverHospital.type),
-        city: serverHospital.city,
-        hours: serverHospital.is_open_24h
-          ? "24 hours"
-          : `${serverHospital.opens_at} – ${serverHospital.closes_at}`,
-        status: isOpenNow(
-          serverHospital.opens_at,
-          serverHospital.closes_at,
-          serverHospital.is_open_24h,
-        )
-          ? "Open"
-          : "Closed",
-        prescriptions: rxList.length,
-        country: serverHospital.country,
-        photos: remoteImages.length,
-      }
+      type: humanType(serverHospital.type),
+      city: serverHospital.city,
+      hours: serverHospital.is_open_24h
+        ? "24 hours"
+        : `${serverHospital.opens_at} – ${serverHospital.closes_at}`,
+      status: isOpenNow(
+        serverHospital.opens_at,
+        serverHospital.closes_at,
+        serverHospital.is_open_24h,
+      )
+        ? "Open"
+        : "Closed",
+      prescriptions: rxList.length,
+      country: serverHospital.country,
+      photos: remoteImages.length,
+    }
     : null;
 
   const submitting = upsertProfile.isPending || uploadImages.isPending;
@@ -2127,20 +2127,20 @@ const HospitalProfile = () => {
         subtitle={
           isForm
             ? t(
-                "hospital.form.subtitle",
-                mode === "edit"
-                  ? "Update your hospital information"
-                  : "Fill in the details below to register your hospital",
-              )
+              "hospital.form.subtitle",
+              mode === "edit"
+                ? "Update your hospital information"
+                : "Fill in the details below to register your hospital",
+            )
             : t("pages.hospital.rx_sub", {
-                name: serverHospital?.name_en ?? HOSPITAL_CONST,
-              })
+              name: serverHospital?.name_en ?? HOSPITAL_CONST,
+            })
         }
       />
 
       {/* API error banner */}
       {(upsertProfile.error || uploadImages.error) && (
-        <div className="mx-3 sm:mx-6 mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
+        <div className="mx-3 sm:mx-6 mt-2 rounded-[6px] border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
           {upsertProfile.error?.message ??
             uploadImages.error?.message ??
             "Something went wrong"}
@@ -2166,7 +2166,7 @@ const HospitalProfile = () => {
         )}
 
         {/* Unified card */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
+        <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm flex flex-col sm:flex-row min-h-[560px]">
           <UnifiedSidebar
             currentStep={currentStep}
             visited={visited}

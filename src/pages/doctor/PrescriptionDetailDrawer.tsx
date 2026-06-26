@@ -7,6 +7,7 @@ import {
   AlertCircle, ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
 
@@ -55,40 +56,40 @@ function initials(name?: string): string {
 ───────────────────────────────────────────── */
 
 const STATUS_STYLES: Partial<Record<PrescriptionStatus, string>> = {
-  draft:            "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
-  issued:           "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
+  draft: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
+  issued: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
   sent_to_pharmacy: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
-  filled:           "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  cancelled:        "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
-  active:           "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900",
-  completed:        "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-  expired:          "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
+  filled: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+  active: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-900",
+  completed: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  expired: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
 };
 
 const STATUS_DOT: Partial<Record<PrescriptionStatus, string>> = {
-  draft:            "bg-slate-400",
-  issued:           "bg-sky-500",
+  draft: "bg-slate-400",
+  issued: "bg-sky-500",
   sent_to_pharmacy: "bg-amber-500",
-  filled:           "bg-emerald-500",
-  cancelled:        "bg-red-500",
-  active:           "bg-green-500",
-  completed:        "bg-emerald-500",
-  expired:          "bg-orange-500",
+  filled: "bg-emerald-500",
+  cancelled: "bg-red-500",
+  active: "bg-green-500",
+  completed: "bg-emerald-500",
+  expired: "bg-orange-500",
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  draft:            "Draft",
-  issued:           "Issued",
+  draft: "Draft",
+  issued: "Issued",
   sent_to_pharmacy: "Sent to pharmacy",
-  filled:           "Filled",
-  cancelled:        "Cancelled",
-  active:           "Active",
-  pending:          "Pending",
-  dispensed:        "Dispensed",
-  expired:          "Expired",
-  completed:        "Completed",
-  rejected:         "Rejected",
-  returned:         "Returned",
+  filled: "Filled",
+  cancelled: "Cancelled",
+  active: "Active",
+  pending: "Pending",
+  dispensed: "Dispensed",
+  expired: "Expired",
+  completed: "Completed",
+  rejected: "Rejected",
+  returned: "Returned",
 };
 
 /* ─────────────────────────────────────────────
@@ -101,7 +102,7 @@ function Section({ title, icon, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-border/60 rounded-md overflow-hidden">
+    <div className="border border-border/60 rounded-[6px] overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 bg-secondary/30 border-b border-border/50">
         <span className="text-muted-foreground/70">{icon}</span>
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
@@ -144,8 +145,8 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
     <div className="flex flex-col gap-3">
 
       {/* ── Header card ── */}
-      <div className="flex items-start gap-4 p-4 border border-border/60 rounded-md bg-gradient-to-br from-primary/5 to-transparent">
-        <div className="h-12 w-12 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-base border border-primary/15 flex-shrink-0">
+      <div className="flex items-start gap-4 p-4 border border-border/60 rounded-[6px] bg-gradient-to-br from-primary/5 to-transparent">
+        <div className="h-12 w-12 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-base border border-primary/15 flex-shrink-0">
           {initials(p.patient?.name)}
         </div>
         <div className="flex-1 min-w-0">
@@ -182,19 +183,19 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
       {/* ── Prescription meta ── */}
       <Section title="Prescription" icon={<FileText className="h-3 w-3" />}>
-        <Row label="Number"     value={p.prescription_number} mono />
-        <Row label="Diagnosis"  value={<span className="font-medium">{p.diagnosis}</span>} />
-        <Row label="Notes"      value={p.notes} />
+        <Row label="Number" value={p.prescription_number} mono />
+        <Row label="Diagnosis" value={<span className="font-medium">{p.diagnosis}</span>} />
+        <Row label="Notes" value={p.notes ? <RichTextRenderer value={p.notes} className="text-sm text-foreground" /> : undefined} />
         <Row label="Valid until" value={fmtDate(p.valid_until)} />
-        <Row label="Signed"     value={
+        <Row label="Signed" value={
           p.is_signed
             ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <CheckCircle2 className="h-3 w-3" /> Yes · {fmtDateTime(p.signed_at)}
-              </span>
+              <CheckCircle2 className="h-3 w-3" /> Yes · {fmtDateTime(p.signed_at)}
+            </span>
             : <span className="text-muted-foreground/50">Not signed</span>
         } />
-        <Row label="Created"    value={fmtDateTime(p.created_at)} />
-        <Row label="Updated"    value={fmtDateTime(p.updated_at)} />
+        <Row label="Created" value={fmtDateTime(p.created_at)} />
+        <Row label="Updated" value={fmtDateTime(p.updated_at)} />
       </Section>
 
       {/* ── Medications ── */}
@@ -203,20 +204,20 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
           {p.items.map((m, i) => (
             <div
               key={m.id ?? i}
-              className="border border-border/50 rounded-md p-3.5 bg-secondary/20"
+              className="border border-border/50 rounded-[6px] p-3.5 bg-secondary/20"
             >
               <div className="flex items-center gap-2 mb-2.5">
-                <div className="h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs font-bold border border-primary/10 flex-shrink-0">
+                <div className="h-6 w-6 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center text-xs font-bold border border-primary/10 flex-shrink-0">
                   {i + 1}
                 </div>
                 <span className="text-sm font-semibold text-foreground">{m.medicine_name}</span>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pl-8">
                 {[
-                  ["Dosage",     m.dosage],
-                  ["Frequency",  m.frequency],
-                  ["Duration",   m.duration],
-                  ["Quantity",   String(m.quantity)],
+                  ["Dosage", m.dosage],
+                  ["Frequency", m.frequency],
+                  ["Duration", m.duration],
+                  ["Quantity", String(m.quantity)],
                 ].map(([lbl, val]) => val ? (
                   <div key={lbl} className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground/60 w-16 shrink-0">{lbl}</span>
@@ -226,7 +227,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 {m.instructions && (
                   <div className="col-span-2 flex items-start gap-1.5 mt-1">
                     <span className="text-xs text-muted-foreground/60 w-16 shrink-0 pt-px">Instructions</span>
-                    <span className="text-sm text-muted-foreground italic">{m.instructions}</span>
+                    <RichTextRenderer value={m.instructions} className="text-sm text-muted-foreground italic" />
                   </div>
                 )}
               </div>
@@ -238,29 +239,29 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
       {/* ── Appointment ── */}
       {appt && (
         <Section title="Linked Appointment" icon={<Calendar className="h-3 w-3" />}>
-          <Row label="Date"     value={fmtDate(appt.appointment_date)} />
-          <Row label="Time"     value={fmtTime(appt.appointment_time)} />
-          <Row label="Type"     value={
+          <Row label="Date" value={fmtDate(appt.appointment_date)} />
+          <Row label="Time" value={fmtTime(appt.appointment_time)} />
+          <Row label="Type" value={
             <span className="flex items-center gap-1">
               {appt.type === "online"
                 ? <><Video className="h-3 w-3 text-sky-500" /> Online</>
                 : <><MapPin className="h-3 w-3 text-amber-500" /> In-person</>}
             </span>
           } />
-          <Row label="Status"   value={appt.status} />
-          <Row label="Booking"  value={appt.booking_type} />
+          <Row label="Status" value={appt.status} />
+          <Row label="Booking" value={appt.booking_type} />
           <Row label="Duration" value={appt.duration_minutes ? `${appt.duration_minutes} min` : undefined} />
-          <Row label="Fee"      value={
+          <Row label="Fee" value={
             appt.consultation_fee !== "0.00"
               ? `${appt.currency} ${parseFloat(appt.consultation_fee).toLocaleString()}`
               : "Free"
           } />
-          <Row label="Payment"  value={
+          <Row label="Payment" value={
             appt.payment_status === "paid"
               ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                  <CheckCircle2 className="h-3 w-3" /> Paid
-                  {appt.payment_method && ` · ${appt.payment_method.replace(/_/g, " ")}`}
-                </span>
+                <CheckCircle2 className="h-3 w-3" /> Paid
+                {appt.payment_method && ` · ${appt.payment_method.replace(/_/g, " ")}`}
+              </span>
               : appt.payment_status
           } />
           {appt.payment_reference && (
@@ -272,7 +273,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
       {/* ── Pharmacy ── */}
       {p.pharmacy && (
         <Section title="Pharmacy" icon={<Building2 className="h-3 w-3" />}>
-          <Row label="Name"    value={p.pharmacy.name} />
+          <Row label="Name" value={p.pharmacy.name} />
           <Row label="Address" value={p.pharmacy.address} />
         </Section>
       )}
@@ -286,7 +287,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 href={`${BASE_URL}${p.pdf_url}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
               >
                 <FileText className="h-4 w-4" />
                 Download PDF
@@ -298,7 +299,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 href={`${BASE_URL}${p.qr_code}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
               >
                 <QrCode className="h-4 w-4" />
                 View QR Code
@@ -319,8 +320,8 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
 interface PrescriptionDetailDrawerProps {
   prescription: Prescription | null;   // pass the list-item directly
-  open:         boolean;
-  onClose:      () => void;
+  open: boolean;
+  onClose: () => void;
 }
 
 export function PrescriptionDetailDrawer({
@@ -329,7 +330,7 @@ export function PrescriptionDetailDrawer({
   // Lock body scroll while open
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
-    else      document.body.style.overflow = "";
+    else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
@@ -375,7 +376,7 @@ export function PrescriptionDetailDrawer({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center border border-primary/15">
+                <div className="h-9 w-9 rounded-[6px] bg-primary/10 flex items-center justify-center border border-primary/15">
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div>
@@ -389,7 +390,7 @@ export function PrescriptionDetailDrawer({
               </div>
               <button
                 onClick={onClose}
-                className="h-9 w-9 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="h-9 w-9 flex items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -418,7 +419,7 @@ export function PrescriptionDetailDrawer({
             <div className="shrink-0 px-5 py-4 border-t border-border/60 flex items-center justify-end">
               <button
                 onClick={onClose}
-                className="px-5 py-2 rounded-md text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="px-5 py-2 rounded-[6px] text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 Close
               </button>

@@ -51,7 +51,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
   return (
     <div className="space-y-4">
       {entries.length === 0 && (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-4 py-3 border border-dashed border-border">
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-[6px] px-4 py-3 border border-dashed border-border">
           No qualifications yet. Click "Add qualification" below.
         </p>
       )}
@@ -118,7 +118,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
               label="Certificate file (optional)"
               className="col-span-1 sm:col-span-2"
             >
-              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md px-3 py-2 hover:border-primary hover:bg-primary/5 transition-colors">
+              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-[6px] px-3 py-2 hover:border-primary hover:bg-primary/5 transition-colors">
                 <input
                   type="file"
                   accept=".pdf,image/jpeg,image/png"

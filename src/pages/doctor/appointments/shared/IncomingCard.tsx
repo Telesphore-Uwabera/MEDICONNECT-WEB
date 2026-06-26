@@ -58,7 +58,7 @@
 //       <button
 //         onClick={call.toggleVideo}
 //         className={cn(
-//           "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all",
+//           "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[6px] text-[11px] font-medium border transition-all",
 //           call.videoEnabled
 //             ? "bg-primary/10 text-primary border-primary/25"
 //             : "bg-muted text-muted-foreground border-border",
@@ -70,7 +70,7 @@
 //       <button
 //         onClick={call.toggleAudio}
 //         className={cn(
-//           "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-lg text-[11px] font-medium border transition-all",
+//           "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[6px] text-[11px] font-medium border transition-all",
 //           call.audioEnabled
 //             ? "bg-primary/10 text-primary border-primary/25"
 //             : "bg-muted text-muted-foreground border-border",
@@ -103,7 +103,7 @@
 
 //       {/* Modal */}
 //       <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] max-w-[95vw]">
-//         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xl">
+//         <div className="bg-card border border-border rounded-[6px] overflow-hidden shadow-2xl">
 
 //           {/* Header */}
 //           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -115,7 +115,7 @@
 //             </div>
 //             <button
 //               onClick={onClose}
-//               className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+//               className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 //             >
 //               <X className="h-3.5 w-3.5" />
 //             </button>
@@ -123,8 +123,8 @@
 
 //           <div className="p-5 space-y-4">
 //             {/* Patient info */}
-//             <div className="flex items-center gap-3 p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5">
-//               <div className="h-11 w-11 rounded-xl bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none shrink-0">
+//             <div className="flex items-center gap-3 p-3.5 rounded-[6px] border border-blue-500/20 bg-blue-500/5">
+//               <div className="h-11 w-11 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center text-base font-bold select-none shrink-0">
 //                 {phoneAvatar(item.guest_phone)}
 //               </div>
 //               <div className="flex-1 min-w-0">
@@ -144,7 +144,7 @@
 //             <button
 //               onClick={onJoin}
 //               disabled={isJoining}
-//               className="w-full h-10 rounded-xl bg-blue-500 hover:bg-blue-400 text-white text-[12px] font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+//               className="w-full h-10 rounded-[6px] bg-blue-500 hover:bg-blue-400 text-white text-[12px] font-semibold flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-500/25 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
 //             >
 //               {isJoining
 //                 ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -154,7 +154,7 @@
 
 //             <button
 //               onClick={onClose}
-//               className="w-full h-9 rounded-xl border border-border text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+//               className="w-full h-9 rounded-[6px] border border-border text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 //             >
 //               Cancel
 //             </button>
@@ -195,7 +195,7 @@
 //   return (
 //     <>
 //       <div className={cn(
-//         "rounded-xl border bg-card p-4 transition-all duration-200",
+//         "rounded-[6px] border bg-card p-4 transition-all duration-200",
 //         isInactive
 //           ? "border-border/40 opacity-50"
 //           : item.status === "accepted"

@@ -18,7 +18,7 @@ function MedicalInfoContent() {
 
         {/* Left Column: Medical Record */}
         <div className="space-y-4">
-          <div className="bg-card border border-border/60 rounded-xl p-5 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
               <HeartPulse className="h-4 w-4 text-primary" /> My Medical Record
             </h3>
@@ -30,7 +30,7 @@ function MedicalInfoContent() {
               <RecordRows record={record.data} />
             )}
           </div>
-          <div className="bg-card border border-border/60 rounded-xl p-5 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
               <FileText className="h-4 w-4 text-primary" /> Files & Documents
             </h3>
@@ -44,7 +44,7 @@ function MedicalInfoContent() {
 
         {/* Right Column: Visits */}
         <div className="space-y-6">
-          <div className="bg-card border border-border/60 rounded-xl p-5 shadow-sm">
+          <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
               <Calendar className="h-4 w-4 text-primary" /> Past Visits
             </h3>

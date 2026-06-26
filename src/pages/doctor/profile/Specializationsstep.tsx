@@ -20,6 +20,7 @@ import {
 import { FormField } from "./UiPrimitives";
 import {
   useSpecializationSelect,
+  useGetSpecializationSubTypes,
   type Specialization,
   type SpecializationFee,
 } from "@/hooks/use-specialization-select";
@@ -30,29 +31,10 @@ interface SpecializationsStepProps {
   onChange: (v: SpecializationsInfo) => void;
 }
 
-/* ── Animated counter for selection feedback ─────────────────────────────── */
-function AnimatedPrice({ value, currency }: { value: number; currency: string }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    const duration = 400;
-    const start = performance.now();
-    const from = display;
-    const to = value;
-    const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
-      setDisplay(Math.round(from + (to - from) * eased));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-  return (
-    <span>
-      {currency} {display.toLocaleString()}
-    </span>
-  );
-}
+// Sentinel id for the synthetic "Other" sub-specialization. Selecting it saves
+// a null specialization_fee_id (no fee tier) while keeping the chosen
+// specialization (General Practitioner / Specialist) as `primary`.
+const OTHER_FEE_ID = -1;
 
 /* ── Selection summary chip ──────────────────────────────────────────────── */
 function SelectionChip({
@@ -65,46 +47,108 @@ function SelectionChip({
   onClear: () => void;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-primary/20 bg-primary/[0.03] p-3 animate-in slide-in-from-top-2 fade-in duration-300">
+    <div className="group relative overflow-hidden rounded-[6px] border border-primary/20 bg-primary/[0.03] p-3 animate-in slide-in-from-top-2 fade-in duration-300">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      
+
       <div className="relative flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
           <Sparkles className="h-4 w-4" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <span>{spec.name}</span>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-primary">{fee.sub_specialization}</span>
           </div>
-          
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Layers className="h-3 w-3" />
-              {fee.tier_name}
-            </span>
-            <span className="inline-flex items-center gap-1 font-medium text-foreground">
-              <AnimatedPrice value={Number(fee.in_person_fee)} currency={fee.currency} />
-              <span className="text-muted-foreground font-normal">in-person</span>
-            </span>
-            <span className="inline-flex items-center gap-1 font-medium text-foreground">
-              <AnimatedPrice value={Number(fee.online_fee)} currency={fee.currency} />
-              <span className="text-muted-foreground font-normal">online</span>
-            </span>
-          </div>
+
+          {fee.id === OTHER_FEE_ID && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Other specialization — fees will be set by the admin.
+            </p>
+          )}
         </div>
-        
+
         <button
           type="button"
           onClick={onClear}
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+          className="shrink-0 rounded-[6px] p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           aria-label="Clear selection"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ── Specialist sub-types (multi-select under a sub-specialization) ───────── */
+function SubTypePicker({
+  slug,
+  selectedIds,
+  onToggle,
+}: {
+  slug: string;
+  selectedIds: number[];
+  onToggle: (id: number) => void;
+}) {
+  const { data, isLoading, isError } = useGetSpecializationSubTypes(slug);
+  const subTypes = data?.sub_types ?? [];
+
+  return (
+    // Stop clicks here from bubbling to the parent row (which would re-toggle
+    // the sub-specialization selection).
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="mt-2 rounded-[6px] border border-border/60 bg-muted/20 p-2"
+    >
+      <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Sub-specialties · pick one or more
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 px-1 py-2 text-[11px] text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+        </div>
+      ) : isError ? (
+        <div className="flex items-center gap-2 px-1 py-2 text-[11px] text-destructive">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Couldn’t load sub-specialties.
+        </div>
+      ) : subTypes.length === 0 ? (
+        <p className="px-1 py-2 text-[11px] text-muted-foreground">
+          No sub-specialties available for this one.
+        </p>
+      ) : (
+        <div className="space-y-0.5">
+          {subTypes.map((st) => {
+            const checked = selectedIds.includes(st.id);
+            return (
+              <label
+                key={st.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-[5px] px-2 py-1.5 cursor-pointer transition-colors",
+                  checked ? "bg-primary/10" : "hover:bg-muted/50",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => onToggle(st.id)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                <span className="flex-1 text-[11px] font-medium text-foreground">
+                  {st.name}
+                </span>
+                {st.requires_approval && (
+                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
+                    needs approval
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -117,6 +161,9 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
   const [feeQuery, setFeeQuery] = useState("");
   const [highlightedSpec, setHighlightedSpec] = useState<number>(-1);
   const [highlightedFee, setHighlightedFee] = useState<number>(-1);
+  // Specialist-only: ids of the selected sub-types under the chosen
+  // sub-specialization (e.g. under Cardiology).
+  const [subTypeIds, setSubTypeIds] = useState<number[]>([]);
 
   const specListRef = useRef<HTMLUListElement>(null);
   const feeListRef = useRef<HTMLUListElement>(null);
@@ -129,21 +176,102 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
     errorSpecializations,
     fees,
     loadingFees,
-    errorFees,
     selectSpecialization,
     selectFee,
     clear,
   } = useSpecializationSelect();
 
-  // Sync hook → parent
+  // Sub-types only apply to "Specialist" (not General Practitioner).
+  const isSpecialist = (value.specialization?.name ?? "")
+    .toLowerCase()
+    .includes("specialist");
+
+  // Synthetic "Other" sub-specialization (General Practitioner / Specialist).
+  // Selecting it saves specialization_fee_id: null + sub_specialization: "other".
+  const otherFee: SpecializationFee = {
+    id: OTHER_FEE_ID,
+    specialization_id: value.specialization?.id ?? 0,
+    sub_specialization: "Other",
+    sub_specialization_fr: "Autre",
+    sub_specialization_kiny: null,
+    tier_name: "Custom",
+    slug: "other",
+    online_fee: "0",
+    in_person_fee: "0",
+    currency: fees[0]?.currency ?? "RWF",
+  };
+
+  // Pre-select the previously saved choice when opening the editor, by matching
+  // the saved name/id against the freshly fetched dropdown lists. Runs once.
+  const seededRef = useRef(false);
   useEffect(() => {
+    if (seededRef.current) return;
+    if (!data.primary) {
+      seededRef.current = true;
+      return;
+    }
+    // 1) specialization — match by name
+    if (!value.specialization) {
+      if (specializations.length) {
+        const spec = specializations.find(
+          (s) => s.name.trim().toLowerCase() === data.primary.trim().toLowerCase(),
+        );
+        if (spec) selectSpecialization(spec);
+        else seededRef.current = true; // saved spec not in the list
+      }
+      return;
+    }
+    // 2a) "Other" was saved
+    if (data.sub_specialization === "other" && !value.fee) {
+      selectFee(otherFee);
+      seededRef.current = true;
+      return;
+    }
+    // 2b) real sub-specialization — match by id, then restore its sub-types
+    if (data.specialization_fee_id != null && !value.fee) {
+      if (fees.length) {
+        const fee = fees.find((f) => f.id === data.specialization_fee_id);
+        if (fee) {
+          selectFee(fee);
+          setSubTypeIds((data.sub_specializations ?? []).map((x) => x.id));
+        }
+        seededRef.current = true; // fees loaded — done either way
+      }
+      return;
+    }
+    seededRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    data.primary,
+    data.sub_specialization,
+    data.specialization_fee_id,
+    specializations,
+    fees,
+    value.specialization,
+    value.fee,
+  ]);
+
+  // Push the selection up to the parent — but ONLY after the user actually
+  // changes something. This avoids blanking the saved data on mount (which was
+  // hiding the saved selection when re-opening the editor) and avoids fighting
+  // the seeding effect above. "Other" saves a null fee id.
+  const interactedRef = useRef(false);
+  useEffect(() => {
+    if (!interactedRef.current) return;
+    const isOther = value.fee?.id === OTHER_FEE_ID;
+    const subList =
+      isSpecialist && value.fee && !isOther
+        ? subTypeIds.map((id) => ({ id }))
+        : [];
     onChange({
       primary: value.specialization?.name ?? "",
-      specialization_fee_id: value.fee?.id ?? null,
+      specialization_fee_id: isOther ? null : (value.fee?.id ?? null),
+      sub_specialization: isOther ? "other" : null,
+      sub_specializations: subList,
       years_of_experience: data.years_of_experience,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value.specialization?.id, value.fee?.id]);
+  }, [value.specialization?.id, value.fee?.id, subTypeIds]);
 
   // Scroll highlighted items into view
   useEffect(() => {
@@ -162,6 +290,9 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
   const filteredSpecs = specializations.filter((s) =>
     s.name.toLowerCase().includes(specQuery.toLowerCase())
   );
+  // Real sub-specialization fees (filtered by the fee search). The synthetic
+  // "Other" is NOT mixed into this list — it's pinned separately below the
+  // scroll area so it's always visible, never buried under a long fee list.
   const filteredFees = fees.filter((f) =>
     f.sub_specialization.toLowerCase().includes(feeQuery.toLowerCase())
   );
@@ -170,9 +301,11 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
 
   const handleSelectSpec = useCallback(
     (spec: Specialization) => {
+      interactedRef.current = true;
       selectSpecialization(spec);
       setHighlightedSpec(-1);
       setFeeQuery(""); // reset fee search on new spec
+      setSubTypeIds([]); // new specialization → drop any picked sub-types
       // Focus fee search after a brief delay for animation
       setTimeout(() => {
         const feeInput = document.getElementById("fee-search") as HTMLInputElement;
@@ -184,18 +317,29 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
 
   const handleSelectFee = useCallback(
     (fee: SpecializationFee) => {
+      interactedRef.current = true;
       selectFee(fee);
       setHighlightedFee(-1);
+      setSubTypeIds([]); // new sub-specialization → reset its sub-types
     },
     [selectFee]
   );
 
+  const toggleSubType = useCallback((id: number) => {
+    interactedRef.current = true;
+    setSubTypeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
+
   const handleClear = useCallback(() => {
+    interactedRef.current = true;
     clear();
     setSpecQuery("");
     setFeeQuery("");
     setHighlightedSpec(-1);
     setHighlightedFee(-1);
+    setSubTypeIds([]);
     setTimeout(() => specInputRef.current?.focus(), 0);
   }, [clear]);
 
@@ -282,11 +426,11 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
 
   return (
     <div className="space-y-6">
-      
+
       {/* ── Split-Panel Selection ─────────────────────────────────────────── */}
       <FormField label="Specialization & Sub-specialization *">
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          
+        <div className="rounded-[6px] border border-border bg-card shadow-sm overflow-hidden">
+
           {/* Panel Header */}
           <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2.5">
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -305,7 +449,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
 
           {/* Two-Column Layout */}
           <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border">
-            
+
             {/* LEFT: Specializations */}
             <div className="flex flex-col">
               <div className="p-3 border-b border-border/50">
@@ -321,7 +465,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                     }}
                     onKeyDown={handleSpecKeyDown}
                     placeholder="Search specializations..."
-                    className="w-full h-8 rounded-md border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+                    className="w-full h-8 rounded-[6px] border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                     disabled={loadingSpecializations}
                   />
                   {specQuery && (
@@ -338,34 +482,34 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
 
               <div className="flex-1 min-h-[200px] max-h-[280px] overflow-y-auto">
                 {loadingSpecializations ? renderLoading() :
-                 errorSpecializations ? renderError() :
-                 filteredSpecs.length === 0 ? renderEmpty(specQuery, "spec") : (
-                  <ul ref={specListRef} className="py-1">
-                    {filteredSpecs.map((spec, i) => {
-                      const isSelected = value.specialization?.id === spec.id;
-                      const isHighlighted = highlightedSpec === i;
-                      return (
-                        <li
-                          key={spec.id}
-                          onClick={() => handleSelectSpec(spec)}
-                          onMouseEnter={() => setHighlightedSpec(i)}
-                          className={cn(
-                            "group flex items-center justify-between gap-2 px-3 py-2.5 text-xs cursor-pointer select-none transition-all duration-150",
-                            isHighlighted && "bg-accent text-accent-foreground",
-                            isSelected && !isHighlighted && "bg-primary/8 text-primary border-l-2 border-l-primary",
-                            !isHighlighted && !isSelected && "text-foreground hover:bg-muted/50 border-l-2 border-l-transparent",
-                          )}
-                        >
-                          <span className="font-medium">{spec.name}</span>
-                          <ChevronRight className={cn(
-                            "h-3.5 w-3.5 shrink-0 transition-colors",
-                            isSelected ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"
-                          )} />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                  errorSpecializations ? renderError() :
+                    filteredSpecs.length === 0 ? renderEmpty(specQuery, "spec") : (
+                      <ul ref={specListRef} className="py-1">
+                        {filteredSpecs.map((spec, i) => {
+                          const isSelected = value.specialization?.id === spec.id;
+                          const isHighlighted = highlightedSpec === i;
+                          return (
+                            <li
+                              key={spec.id}
+                              onClick={() => handleSelectSpec(spec)}
+                              onMouseEnter={() => setHighlightedSpec(i)}
+                              className={cn(
+                                "group flex items-center justify-between gap-2 px-3 py-2.5 text-xs cursor-pointer select-none transition-all duration-150",
+                                isHighlighted && "bg-accent text-accent-foreground",
+                                isSelected && !isHighlighted && "bg-primary/8 text-primary border-l-2 border-l-primary",
+                                !isHighlighted && !isSelected && "text-foreground hover:bg-muted/50 border-l-2 border-l-transparent",
+                              )}
+                            >
+                              <span className="font-medium">{spec.name}</span>
+                              <ChevronRight className={cn(
+                                "h-3.5 w-3.5 shrink-0 transition-colors",
+                                isSelected ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"
+                              )} />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
               </div>
             </div>
 
@@ -383,10 +527,10 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                       setHighlightedFee(-1);
                     }}
                     onKeyDown={handleFeeKeyDown}
-                    placeholder={value.specialization 
-                      ? `Search in ${value.specialization.name}...` 
+                    placeholder={value.specialization
+                      ? `Search in ${value.specialization.name}...`
                       : "Select specialization first..."}
-                    className="w-full h-8 rounded-md border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-8 rounded-[6px] border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!value.specialization || loadingFees}
                   />
                   {feeQuery && value.specialization && (
@@ -408,57 +552,88 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                     <p className="text-xs">Select a specialization to see options</p>
                   </div>
                 ) : loadingFees ? renderLoading() :
-                  errorFees ? renderError() :
-                  filteredFees.length === 0 ? renderEmpty(feeQuery, "fee") : (
-                  <ul ref={feeListRef} className="py-1">
-                    {filteredFees.map((fee, i) => {
-                      const isSelected = value.fee?.id === fee.id;
-                      const isHighlighted = highlightedFee === i;
-                      return (
-                        <li
-                          key={fee.id}
-                          onClick={() => handleSelectFee(fee)}
-                          onMouseEnter={() => setHighlightedFee(i)}
-                          className={cn(
-                            "group px-3 py-3 cursor-pointer select-none transition-all duration-150 border-l-2",
-                            isHighlighted && "bg-accent text-accent-foreground border-l-accent",
-                            isSelected && !isHighlighted && "bg-primary/8 border-l-primary",
-                            !isHighlighted && !isSelected && "hover:bg-muted/50 border-l-transparent",
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-foreground mb-1">
-                                {fee.sub_specialization}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted font-medium">
-                                  {fee.tier_name}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="font-medium text-foreground">
-                                    {fee.currency} {Number(fee.in_person_fee).toLocaleString()}
+                    filteredFees.length === 0 ? (
+                      feeQuery ? (
+                        renderEmpty(feeQuery, "fee")
+                      ) : (
+                        <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+                          No preset sub-specializations here. Choose “Other” below.
+                        </div>
+                      )
+                    ) : (
+                      <ul ref={feeListRef} className="py-1">
+                        {filteredFees.map((fee, i) => {
+                          const isSelected = value.fee?.id === fee.id;
+                          const isHighlighted = highlightedFee === i;
+                          return (
+                            <li
+                              key={fee.id}
+                              onClick={() => handleSelectFee(fee)}
+                              onMouseEnter={() => setHighlightedFee(i)}
+                              className={cn(
+                                "group px-3 py-3 cursor-pointer select-none transition-all duration-150 border-l-2",
+                                isHighlighted && "bg-accent text-accent-foreground border-l-accent",
+                                isSelected && !isHighlighted && "bg-primary/8 border-l-primary",
+                                !isHighlighted && !isSelected && "hover:bg-muted/50 border-l-transparent",
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-foreground mb-1">
+                                    {fee.sub_specialization}
+                                  </p>
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                                    {fee.tier_name}
                                   </span>
-                                  <span className="opacity-60">in-person</span>
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <span className="font-medium text-foreground">
-                                    {fee.currency} {Number(fee.online_fee).toLocaleString()}
-                                  </span>
-                                  <span className="opacity-60">online</span>
-                                </span>
+                                </div>
+                                {isSelected && (
+                                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                )}
                               </div>
-                            </div>
-                            {isSelected && (
-                              <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+
+                              {/* Specialist only: pick sub-types under this
+                                  sub-specialization once it's selected. */}
+                              {isSelected && isSpecialist && (
+                                <SubTypePicker
+                                  slug={fee.slug}
+                                  selectedIds={subTypeIds}
+                                  onToggle={toggleSubType}
+                                />
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
               </div>
+
+              {/* PINNED "Other" — always visible once a specialization is chosen,
+                  so it's never buried below a long fee list or hidden on a fetch
+                  error. Saves specialization_fee_id: null + sub_specialization: "other". */}
+              {value.specialization && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectFee(otherFee)}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 border-t border-border px-3 py-3 text-left transition-colors",
+                    value.fee?.id === OTHER_FEE_ID
+                      ? "bg-primary/8 border-l-2 border-l-primary"
+                      : "border-l-2 border-l-transparent hover:bg-muted/50",
+                  )}
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Other</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Not listed above · fees set by the admin
+                    </p>
+                  </div>
+                  {value.fee?.id === OTHER_FEE_ID ? (
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

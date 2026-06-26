@@ -15,6 +15,14 @@ export interface PersonalInfo {
 export interface SpecializationsInfo {
   primary: string;                    // specialization name
   specialization_fee_id: number | null;
+  /** "other" when the doctor picks the synthetic "Other" sub-specialization
+   *  (sent with a null specialization_fee_id); null otherwise. */
+  sub_specialization?: string | null;
+  /** Specialist-only: selected sub-types under the chosen sub-specialization.
+   *  Saved as [{ id }, …]. Empty for General Practitioner / "Other". */
+  sub_specializations?: { id: number }[];
+  /** Display-only: names of the saved sub-types (for the read-only view). */
+  sub_specialization_names?: string[];
   years_of_experience: number;
   // Add these for display after save
   fee_name?: string;                  // e.g. "sub -test namw"
@@ -39,6 +47,7 @@ export interface ExperienceEntry {
   apiId?: number;
   job_title: string;
   workplace: string;
+  description: string;
   country: string;
   start_date: string;
   end_date?: string | null;

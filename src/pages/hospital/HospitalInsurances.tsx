@@ -46,20 +46,20 @@ import {
 const fmtDate = (s: string) =>
   s
     ? new Date(s).toLocaleDateString("en-RW", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
     : "—";
 
 const fmtCurrency = (n: number | null, currency = "RWF") =>
   n == null
     ? "—"
     : new Intl.NumberFormat("en-RW", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-      }).format(n);
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(n);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Confirm dialog
@@ -86,9 +86,9 @@ function ConfirmDialog({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onCancel}
       />
-      <div className="relative bg-card border border-border/70 rounded-xl shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
+      <div className="relative bg-card border border-border/70 rounded-[6px] shadow-xl w-full max-w-sm p-5 flex flex-col gap-4">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-[6px] bg-destructive/10 flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4 text-destructive" />
           </div>
           <div>
@@ -99,10 +99,10 @@ function ConfirmDialog({
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          
+
           <button
             onClick={onCancel}
-            className="px-3.5 py-1.5 text-xs rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            className="px-3.5 py-1.5 text-xs rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
             Cancel
           </button>
@@ -110,7 +110,7 @@ function ConfirmDialog({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-3.5 py-1.5 text-xs rounded-lg bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 text-xs rounded-[6px] bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             Unlink
@@ -156,7 +156,7 @@ function LogoUploader({
         Logo
       </Label>
       <div className="flex items-center gap-3">
-        <div className="w-14 h-14 rounded-xl border border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-14 h-14 rounded-[6px] border border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
           {preview ? (
             <img
               src={preview}
@@ -171,7 +171,7 @@ function LogoUploader({
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploadLogo.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
           >
             {uploadLogo.isPending ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -238,7 +238,7 @@ function InsurancePicker({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "h-9 w-full flex items-center justify-between px-3 text-xs rounded-lg border transition-colors",
+          "h-9 w-full flex items-center justify-between px-3 text-xs rounded-[6px] border transition-colors",
           open
             ? "border-primary/50 ring-2 ring-primary/20"
             : "border-border/70 hover:border-border",
@@ -269,7 +269,7 @@ function InsurancePicker({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-popover border border-border rounded-xl shadow-xl overflow-hidden">
+        <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-popover border border-border rounded-[6px] shadow-xl overflow-hidden">
           {/* Search */}
           <div className="p-2 border-b border-border">
             <div className="relative">
@@ -279,7 +279,7 @@ function InsurancePicker({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search…"
-                className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-md text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40"
+                className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ function InsurancePicker({
                           : "hover:bg-muted/50 text-foreground",
                     )}
                   >
-                    <div className="w-7 h-7 rounded-lg border border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-7 h-7 rounded-[6px] border border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
                       {ins.logo ? (
                         <img
                           src={ins.logo}
@@ -390,7 +390,7 @@ function CoverageFields({
               type="button"
               onClick={() => onChange({ coverage_type: t })}
               className={cn(
-                "flex-1 py-2 text-xs rounded-lg border transition-all font-medium capitalize",
+                "flex-1 py-2 text-xs rounded-[6px] border transition-all font-medium capitalize",
                 state.coverage_type === t
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground",
@@ -472,7 +472,7 @@ function CoverageFields({
           onChange={(e) => onChange({ notes: e.target.value })}
           placeholder="e.g. Covers outpatient only"
           rows={2}
-          className="w-full px-3 py-2 text-xs rounded-lg border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/40 resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
+          className="w-full px-3 py-2 text-xs rounded-[6px] border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/40 resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
         />
       </div>
     </>
@@ -535,11 +535,11 @@ function LinkModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md flex flex-col rounded-t-2xl sm:rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-[90dvh]">
+      <div className="relative z-10 w-full max-w-md flex flex-col rounded-t-2xl sm:rounded-[6px] border border-border bg-card shadow-2xl overflow-hidden max-h-[90dvh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/15 flex items-center justify-center">
               <Shield className="h-4 w-4 text-primary" />
             </div>
             <div>
@@ -562,7 +562,7 @@ function LinkModal({
         {/* Body */}
         <div className="p-5 flex flex-col gap-4 overflow-y-auto">
           {error && (
-            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-3 py-2.5 text-xs">
+            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-[6px] px-3 py-2.5 text-xs">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               {error}
             </div>
@@ -587,8 +587,8 @@ function LinkModal({
 
           {/* Selected preview */}
           {selected && (
-            <div className="flex items-center gap-2 bg-muted/40 border border-border/50 rounded-lg px-3 py-2">
-              <div className="w-8 h-8 rounded-lg border border-border bg-background flex items-center justify-center overflow-hidden shrink-0">
+            <div className="flex items-center gap-2 bg-muted/40 border border-border/50 rounded-[6px] px-3 py-2">
+              <div className="w-8 h-8 rounded-[6px] border border-border bg-background flex items-center justify-center overflow-hidden shrink-0">
                 {selected.logo ? (
                   <img
                     src={selected.logo}
@@ -626,14 +626,14 @@ function LinkModal({
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-muted/30 shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            className="px-4 py-2 text-xs rounded-[6px] border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="px-4 py-2 text-xs rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 text-xs rounded-[6px] bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             <CheckCircle2 className="h-3.5 w-3.5" />
@@ -695,11 +695,11 @@ function EditCoverageModal({
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md flex flex-col rounded-t-2xl sm:rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-[90dvh]">
+      <div className="relative z-10 w-full max-w-md flex flex-col rounded-t-2xl sm:rounded-[6px] border border-border bg-card shadow-2xl overflow-hidden max-h-[90dvh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-[6px] bg-primary/15 flex items-center justify-center">
               <Shield className="h-4 w-4 text-primary" />
             </div>
             <div>
@@ -722,7 +722,7 @@ function EditCoverageModal({
         {/* Body */}
         <div className="p-5 flex flex-col gap-4 overflow-y-auto">
           {error && (
-            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-3 py-2.5 text-xs">
+            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-[6px] px-3 py-2.5 text-xs">
               <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               {error}
             </div>
@@ -744,14 +744,14 @@ function EditCoverageModal({
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-border bg-muted/30 shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            className="px-4 py-2 text-xs rounded-[6px] border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isLoading}
-            className="px-4 py-2 text-xs rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 text-xs rounded-[6px] bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             <CheckCircle2 className="h-3.5 w-3.5" />
@@ -776,10 +776,10 @@ function InsuranceCard({
   onDelete: (i: HospitalInsurance) => void;
 }) {
   return (
-    <div className="group bg-card border border-border/70 rounded-xl p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
+    <div className="group bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
       {/* Logo + name row */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl border border-border bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-12 h-12 rounded-[6px] border border-border bg-muted/40 flex items-center justify-center shrink-0 overflow-hidden">
           {ins.logo ? (
             <img
               src={ins.logo}
@@ -837,14 +837,14 @@ function InsuranceCard({
       <div className="flex items-center justify-end gap-1 pt-1 border-t border-border/40">
         <button
           onClick={() => onEdit(ins)}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 opacity-0 group-hover:opacity-100 transition-all"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted/40 opacity-0 group-hover:opacity-100 transition-all"
         >
           <Pencil className="w-3 h-3" />
           Edit
         </button>
         <button
           onClick={() => onDelete(ins)}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-[6px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
         >
           <Trash2 className="w-3 h-3" />
           Unlink
@@ -859,9 +859,9 @@ function InsuranceCard({
 // ─────────────────────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="bg-card border border-border/70 rounded-xl p-4 flex flex-col gap-3 animate-pulse">
+    <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 animate-pulse">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl bg-muted/60 shrink-0" />
+        <div className="w-12 h-12 rounded-[6px] bg-muted/60 shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-3.5 bg-muted/60 rounded w-3/4" />
           <div className="h-2.5 bg-muted/40 rounded w-1/2" />
@@ -1036,8 +1036,8 @@ function HospitalInsurances() {
         {/* ── Stats bar ── */}
         <div className="px-6 pt-5 pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+            <div className="rounded-[6px] border border-border bg-card px-4 py-3.5 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-[6px] bg-primary/15 flex items-center justify-center shrink-0">
                 <Shield className="h-4 w-4 text-primary" />
               </div>
               <div>
@@ -1050,8 +1050,8 @@ function HospitalInsurances() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <div className="rounded-[6px] border border-border bg-card px-4 py-3.5 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-[6px] bg-emerald-500/10 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               </div>
               <div>
@@ -1069,8 +1069,8 @@ function HospitalInsurances() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 flex items-start gap-3 col-span-2 sm:col-span-1">
-              <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <div className="rounded-[6px] border border-border bg-card px-4 py-3.5 flex items-start gap-3 col-span-2 sm:col-span-1">
+              <div className="w-9 h-9 rounded-[6px] bg-muted flex items-center justify-center shrink-0">
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
@@ -1099,150 +1099,150 @@ function HospitalInsurances() {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Meta bar */}
-            <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
-              <p className="text-[11px] text-muted-foreground">
-                {isLoading ? (
-                  <span className="text-muted-foreground/50">Loading…</span>
-                ) : (
-                  <>
-                    <span className="font-bold text-foreground">
-                      {filtered.length}
-                    </span>{" "}
-                    {filtered.length === 1 ? "provider" : "providers"}
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearFilters}
-                        className="ml-2 text-primary hover:underline text-[10px] font-medium"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </>
-                )}
-              </p>
-
-              <div className="flex items-center gap-2">
-                <div className="relative hidden sm:block">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search providers…"
-                    className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
-                  />
-                </div>
-
-                <button
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                  className="w-7 h-7 flex items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw
-                    className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
-                  />
-                </button>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
-                <Button
-                  onClick={() => {
-                    setMutError(null);
-                    setShowLinkModal(true);
-                  }}
-                  className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Link provider</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Grid */}
-            <div className="p-4">
-              {isError ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-destructive/10 flex items-center justify-center border border-destructive/20">
-                    <AlertCircle className="w-6 h-6 text-destructive/60" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Failed to load insurance providers
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {error instanceof Error ? error.message : "Unknown error"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => refetch()}
-                    className="text-[11px] text-primary hover:underline font-semibold"
-                  >
-                    Try again
-                  </button>
-                </div>
-              ) : isLoading ? (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <SkeletonCard key={i} />
-                  ))}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-muted/60 flex items-center justify-center border border-border/40">
-                    <Shield className="w-6 h-6 text-muted-foreground/40" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {hasActiveFilters
-                        ? "No providers match your filters"
-                        : "No insurance providers linked yet"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      {hasActiveFilters
-                        ? "Try clearing your filters"
-                        : "Link your first insurance partner to get started"}
-                    </p>
-                  </div>
-                  {hasActiveFilters ? (
+          {/* Meta bar */}
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-[11px] text-muted-foreground">
+              {isLoading ? (
+                <span className="text-muted-foreground/50">Loading…</span>
+              ) : (
+                <>
+                  <span className="font-bold text-foreground">
+                    {filtered.length}
+                  </span>{" "}
+                  {filtered.length === 1 ? "provider" : "providers"}
+                  {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
-                      className="text-[11px] text-primary hover:underline font-semibold"
+                      className="ml-2 text-primary hover:underline text-[10px] font-medium"
                     >
-                      Clear filters
+                      Reset
                     </button>
-                  ) : (
-                    <Button
-                      onClick={() => setShowLinkModal(true)}
-                      className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Link provider
-                    </Button>
                   )}
-                </div>
-              ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {filtered.map((ins) => (
-                    <InsuranceCard
-                      key={ins.id}
-                      ins={ins}
-                      onEdit={(i) => {
-                        setMutError(null);
-                        setEditingIns(i);
-                      }}
-                      onDelete={setDeletingIns}
-                    />
-                  ))}
-                </div>
+                </>
               )}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search providers…"
+                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                />
+              </div>
+
+              <button
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw
+                  className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
+                />
+              </button>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+
+              <Button
+                onClick={() => {
+                  setMutError(null);
+                  setShowLinkModal(true);
+                }}
+                className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Link provider</span>
+              </Button>
             </div>
-          </main>
+          </div>
+
+          {/* Grid */}
+          <div className="p-4">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-destructive/10 flex items-center justify-center border border-destructive/20">
+                  <AlertCircle className="w-6 h-6 text-destructive/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Failed to load insurance providers
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {error instanceof Error ? error.message : "Unknown error"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => refetch()}
+                  className="text-[11px] text-primary hover:underline font-semibold"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : isLoading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+                <div className="w-14 h-14 rounded-[6px] bg-muted/60 flex items-center justify-center border border-border/40">
+                  <Shield className="w-6 h-6 text-muted-foreground/40" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {hasActiveFilters
+                      ? "No providers match your filters"
+                      : "No insurance providers linked yet"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {hasActiveFilters
+                      ? "Try clearing your filters"
+                      : "Link your first insurance partner to get started"}
+                  </p>
+                </div>
+                {hasActiveFilters ? (
+                  <button
+                    onClick={clearFilters}
+                    className="text-[11px] text-primary hover:underline font-semibold"
+                  >
+                    Clear filters
+                  </button>
+                ) : (
+                  <Button
+                    onClick={() => setShowLinkModal(true)}
+                    className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Link provider
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {filtered.map((ins) => (
+                  <InsuranceCard
+                    key={ins.id}
+                    ins={ins}
+                    onEdit={(i) => {
+                      setMutError(null);
+                      setEditingIns(i);
+                    }}
+                    onDelete={setDeletingIns}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       {/* ── Link modal ── */}

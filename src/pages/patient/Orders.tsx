@@ -86,7 +86,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-xs font-semibold uppercase tracking-wide",
+        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] text-xs font-semibold uppercase tracking-wide",
         STATUS_STYLES[status],
       )}
     >
@@ -132,7 +132,7 @@ function PillGroup<T extends string>({
           key={String(opt.value)}
           onClick={() => onChange(opt.value)}
           className={cn(
-            "px-2 py-2 rounded-sm text-xs text-start  font-medium border transition-colors",
+            "px-2 py-2 rounded-[6px] text-xs text-start  font-medium border transition-colors",
             value === opt.value
               ? "bg-primary text-primary-foreground border-primary"
               : "bg-transparent text-muted-foreground border-border/40 hover:border-primary/30 hover:text-foreground",
@@ -158,7 +158,7 @@ function DateRangeInput({
           type="date"
           value={from}
           onChange={(e) => onFrom(e.target.value)}
-          className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"
+          className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-[6px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"
         />
       </div>
       <div className="flex items-center gap-1.5">
@@ -167,7 +167,7 @@ function DateRangeInput({
           type="date"
           value={to}
           onChange={(e) => onTo(e.target.value)}
-          className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"
+          className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-[6px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"
         />
       </div>
     </div>
@@ -179,7 +179,7 @@ function SkeletonRow() {
     <tr className="border-t border-border/35">
       {Array.from({ length: 5 }).map((_, i) => (
         <td key={i} className="px-3 py-3">
-          <div className="h-3 bg-muted/40 rounded-sm animate-pulse" style={{ width: `${60 + i * 10}%` }} />
+          <div className="h-3 bg-muted/40 rounded-[6px] animate-pulse" style={{ width: `${60 + i * 10}%` }} />
         </td>
       ))}
     </tr>
@@ -188,13 +188,13 @@ function SkeletonRow() {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-sm border border-border/50 bg-card p-3 space-y-2 animate-pulse">
+    <div className="rounded-[6px] border border-border/50 bg-card p-3 space-y-2 animate-pulse">
       <div className="flex justify-between">
-        <div className="h-3 w-24 bg-muted/40 rounded-sm" />
-        <div className="h-4 w-16 bg-muted/40 rounded-sm" />
+        <div className="h-3 w-24 bg-muted/40 rounded-[6px]" />
+        <div className="h-4 w-16 bg-muted/40 rounded-[6px]" />
       </div>
-      <div className="h-2.5 w-36 bg-muted/30 rounded-sm" />
-      <div className="h-2.5 w-28 bg-muted/30 rounded-sm" />
+      <div className="h-2.5 w-36 bg-muted/30 rounded-[6px]" />
+      <div className="h-2.5 w-28 bg-muted/30 rounded-[6px]" />
     </div>
   );
 }
@@ -211,7 +211,7 @@ function OrderCard({
   const canCancel = order.status === "draft" || order.status === "pending";
   return (
     <div
-      className="rounded-sm border border-border/60 bg-card p-3 flex flex-col gap-2 hover:shadow-sm transition-shadow cursor-pointer group"
+      className="rounded-[6px] border border-border/60 bg-card p-3 flex flex-col gap-2 hover:shadow-sm transition-shadow cursor-pointer group"
       onClick={() => onViewDetails(order)}
     >
       <div className="flex items-start justify-between gap-2">
@@ -255,7 +255,7 @@ function OrderCard({
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-xs rounded-sm border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 gap-1"
+              className="h-6 px-2 text-xs rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 gap-1"
               onClick={() => onCancel(order)}
             >
               <X className="h-2 w-2" />Cancel
@@ -311,7 +311,7 @@ function OrderDrawer({
                 <p className="text-xs font-semibold text-foreground">Order #{order.id}</p>
                 <p className="text-xs text-muted-foreground/60">{order.pharmacy.name}</p>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-sm hover:bg-secondary/50 text-muted-foreground transition-colors">
+              <button onClick={onClose} className="p-1.5 rounded-[6px] hover:bg-secondary/50 text-muted-foreground transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -324,7 +324,7 @@ function OrderDrawer({
               </div>
 
               {/* Pharmacy */}
-              <div className="rounded-sm border border-border/50 bg-secondary/10 p-2.5 space-y-1">
+              <div className="rounded-[6px] border border-border/50 bg-secondary/10 p-2.5 space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Pharmacy</p>
                 <p className="text-xs font-semibold text-foreground">{order.pharmacy.name}</p>
                 {order.pharmacy.address && (
@@ -344,12 +344,12 @@ function OrderDrawer({
                 </p>
                 <div className="space-y-1.5">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded-sm border border-border/40 bg-secondary/10 px-2.5 py-1.5">
+                    <div key={item.id} className="flex items-center justify-between rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
                       <div>
                         <p className="text-xs font-medium text-foreground">{item.medicine_name}</p>
                         {item.dosage && <p className="text-xs text-muted-foreground/50">{item.dosage}</p>}
                       </div>
-                      <span className="text-xs font-semibold text-foreground bg-secondary/50 px-1.5 py-0.5 rounded-sm">×{item.quantity}</span>
+                      <span className="text-xs font-semibold text-foreground bg-secondary/50 px-1.5 py-0.5 rounded-[6px]">×{item.quantity}</span>
                     </div>
                   ))}
                 </div>
@@ -373,13 +373,13 @@ function OrderDrawer({
 
               {/* Dates */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-sm border border-border/40 bg-secondary/10 px-2.5 py-1.5">
+                <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
                   <p className="text-xs text-muted-foreground/50">Placed</p>
                   <p className="text-xs font-medium text-foreground">
                     {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
                 </div>
-                <div className="rounded-sm border border-border/40 bg-secondary/10 px-2.5 py-1.5">
+                <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
                   <p className="text-xs text-muted-foreground/50">Updated</p>
                   <p className="text-xs font-medium text-foreground">
                     {new Date(order.updated_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -391,7 +391,7 @@ function OrderDrawer({
             {canCancel && (
               <div className="px-4 py-3 border-t border-border/50">
                 <Button
-                  className="w-full h-8 text-xs rounded-sm bg-red-600 hover:bg-red-700 text-white gap-1.5"
+                  className="w-full h-8 text-xs rounded-[6px] bg-red-600 hover:bg-red-700 text-white gap-1.5"
                   onClick={() => onCancel(order)}
                 >
                   <X className="h-4 w-4" />
@@ -424,9 +424,9 @@ function CancelConfirmModal({
     <>
       <div onClick={onClose} className="fixed inset-0 z-50 bg-black/50" />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-card border border-border rounded-sm shadow-lg w-full max-w-xs p-4 space-y-3">
+        <div className="bg-card border border-border rounded-[6px] shadow-lg w-full max-w-xs p-4 space-y-3">
           <div className="flex items-start gap-2">
-            <div className="w-8 h-8 rounded-sm bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-[6px] bg-red-100 dark:bg-red-950/40 flex items-center justify-center shrink-0">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
             </div>
             <div>
@@ -443,14 +443,14 @@ function CancelConfirmModal({
           <div className="flex gap-2 pt-1">
             <Button
               variant="outline"
-              className="flex-1 h-7 text-xs rounded-sm"
+              className="flex-1 h-7 text-xs rounded-[6px]"
               onClick={onClose}
               disabled={isPending}
             >
               Keep it
             </Button>
             <Button
-              className="flex-1 h-7 text-xs rounded-sm bg-red-600 hover:bg-red-700 text-white gap-1"
+              className="flex-1 h-7 text-xs rounded-[6px] bg-red-600 hover:bg-red-700 text-white gap-1"
               onClick={onConfirm}
               disabled={isPending}
             >
@@ -590,7 +590,7 @@ const Orders = () => {
             size="sm"
             variant="outline"
             onClick={() => setMedInfoOpen(true)}
-            className="h-8 px-3 text-[11px] font-medium rounded-sm gap-1.5"
+            className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
           >
             <HeartPulse className="h-3.5 w-3.5 text-primary" />
             My medical info
@@ -607,142 +607,98 @@ const Orders = () => {
         />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
-            {/* Stats */}
-            <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <StatCard label="Pending" value={pendingCount} icon={Clock} accent="warning" />
-              <StatCard label="Accepted" value={acceptedCount} icon={PackageCheck} accent="primary" />
-              <StatCard label="Completed" value={completedCount} icon={CheckCircle2} accent="success" />
-              <StatCard label="Cancelled" value={cancelledCount} icon={XCircle} accent="primary" />
-            </div>
+          {/* Stats */}
+          <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <StatCard label="Pending" value={pendingCount} icon={Clock} accent="warning" />
+            <StatCard label="Accepted" value={acceptedCount} icon={PackageCheck} accent="primary" />
+            <StatCard label="Completed" value={completedCount} icon={CheckCircle2} accent="success" />
+            <StatCard label="Cancelled" value={cancelledCount} icon={XCircle} accent="primary" />
+          </div>
 
-            {/* Toolbar */}
-            <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-2 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">
-                  {isLoading ? (
-                    <span className="text-muted-foreground/40">Loading…</span>
-                  ) : (
-                    <>
-                      <span className="font-bold text-foreground">{orders.length}</span>{" "}
-                      {orders.length === 1 ? "order" : "orders"}
-                    </>
-                  )}
-                  {hasActiveFilters && !isLoading && (
-                    <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-xs font-medium">
-                      Reset filters
-                    </button>
-                  )}
-                </p>
-                {isFetching && !isLoading && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
-                    <Loader2 className="w-4 h-4 animate-spin" />Refreshing
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  <option value="date-desc">Newest first</option>
-                  <option value="date-asc">Oldest first</option>
-                </select>
-
-                <FilterToggleButton
-                  open={filterOpen}
-                  onToggle={() => setFilterOpen(!filterOpen)}
-                  hasActiveFilters={hasActiveFilters}
-                />
-
-                <div className="flex rounded-sm border border-border overflow-hidden bg-card shadow-sm">
-                  <button
-                    onClick={() => setView("table")}
-                    className={cn(
-                      "p-1.5 transition-colors",
-                      view === "table" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setView("cards")}
-                    className={cn(
-                      "p-1.5 transition-colors",
-                      view === "cards" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
-                    )}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4">
-              {isError && (
-                <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                  <div className="w-12 h-12 rounded-sm bg-red-50 dark:bg-red-950/30 flex items-center justify-center border border-red-200 dark:border-red-900">
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">Failed to load orders</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
-                  </div>
-                  <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-primary hover:text-primary/70 font-semibold">
-                    <RefreshCw className="w-4 h-4" />Retry
-                  </button>
-                </div>
-              )}
-
-              {isLoading && !isError && (
-                view === "table" ? (
-                  <div className="rounded-sm border border-border/60 bg-card overflow-hidden">
-                    <table className="w-full text-xs">
-                      <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
-                        <tr>
-                          {["Pharmacy", "Items", "Delivery", "Date", "Status", ""].map((h) => (
-                            <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
-                      </tbody>
-                    </table>
-                  </div>
+          {/* Toolbar */}
+          <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/50 px-4 py-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                {isLoading ? (
+                  <span className="text-muted-foreground/40">Loading…</span>
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-2.5">
-                    {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-                  </div>
-                )
+                  <>
+                    <span className="font-bold text-foreground">{orders.length}</span>{" "}
+                    {orders.length === 1 ? "order" : "orders"}
+                  </>
+                )}
+                {hasActiveFilters && !isLoading && (
+                  <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-xs font-medium">
+                    Reset filters
+                  </button>
+                )}
+              </p>
+              {isFetching && !isLoading && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
+                  <Loader2 className="w-4 h-4 animate-spin" />Refreshing
+                </span>
               )}
+            </div>
 
-              {!isLoading && !isError && orders.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-                  <div className="w-12 h-12 rounded-sm bg-muted/50 flex items-center justify-center border border-border/30">
-                    <ShoppingBag className="w-5 h-5 text-muted-foreground/40" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">
-                      {hasActiveFilters ? "No orders match your filters" : "No orders yet"}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                      {hasActiveFilters ? "Try widening your search criteria" : "Orders sent to a pharmacy will appear here"}
-                    </p>
-                  </div>
-                  {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-xs text-primary hover:text-primary/70 font-semibold hover:underline">
-                      Clear all filters
-                    </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <select
+                value={filters.sort}
+                onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
+                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+              >
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
+              </select>
+
+              <FilterToggleButton
+                open={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                hasActiveFilters={hasActiveFilters}
+              />
+
+              <div className="flex rounded-[6px] border border-border overflow-hidden bg-card shadow-sm">
+                <button
+                  onClick={() => setView("table")}
+                  className={cn(
+                    "p-1.5 transition-colors",
+                    view === "table" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
                   )}
-                </div>
-              )}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setView("cards")}
+                  className={cn(
+                    "p-1.5 transition-colors",
+                    view === "cards" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary",
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
 
-              {/* Table view */}
-              {!isLoading && !isError && orders.length > 0 && view === "table" && (
-                <div className="rounded-sm border border-border/60 bg-card overflow-hidden shadow-sm">
+          {/* Content */}
+          <div className="p-4">
+            {isError && (
+              <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+                <div className="w-12 h-12 rounded-[6px] bg-red-50 dark:bg-red-950/30 flex items-center justify-center border border-red-200 dark:border-red-900">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Failed to load orders</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
+                </div>
+                <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-primary hover:text-primary/70 font-semibold">
+                  <RefreshCw className="w-4 h-4" />Retry
+                </button>
+              </div>
+            )}
+
+            {isLoading && !isError && (
+              view === "table" ? (
+                <div className="rounded-[6px] border border-border/60 bg-card overflow-hidden">
                   <table className="w-full text-xs">
                     <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                       <tr>
@@ -752,93 +708,137 @@ const Orders = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.map((order) => {
-                        const canCancel = order.status === "draft" || order.status === "pending";
-                        return (
-                          <tr
-                            key={order.id}
-                            className="border-t border-border/35 hover:bg-secondary/15 transition-colors cursor-pointer"
-                            onClick={() => handleViewDetails(order)}
-                          >
-                            <td className="px-3 py-2.5">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                  <Store className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-xs text-foreground">{order.pharmacy.name}</p>
-                                  {order.pharmacy.address && (
-                                    <p className="text-xs text-muted-foreground/60 truncate max-w-[120px]">{order.pharmacy.address}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <div className="flex flex-col gap-0.5">
-                                {order.items.slice(0, 2).map((item) => (
-                                  <span key={item.id} className="text-xs text-muted-foreground/70">
-                                    <span className="font-medium text-foreground/80">{item.medicine_name}</span>
-                                    <span className="text-muted-foreground/45"> ×{item.quantity}</span>
-                                  </span>
-                                ))}
-                                {order.items.length > 2 && (
-                                  <span className="text-xs text-muted-foreground/40">+{order.items.length - 2} more</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <DeliveryBadge type={order.delivery_type} />
-                            </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-xs">
-                              <div className="flex items-center gap-1">
-                                <CalendarDays className="w-4 h-4" />
-                                {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <StatusBadge status={order.status} />
-                            </td>
-                            <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs rounded-sm border-border/50 hover:border-primary/30 hover:bg-secondary/30"
-                                  onClick={() => handleViewDetails(order)}
-                                >
-                                  Details
-                                </Button>
-                                {canCancel && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs rounded-sm border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 gap-1"
-                                    onClick={() => handleCancel(order)}
-                                  >
-                                    <X className="h-2 w-2" />
-                                    {order.status === "draft" ? "Delete" : "Cancel"}
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
                     </tbody>
                   </table>
                 </div>
-              )}
-
-              {/* Card view */}
-              {!isLoading && !isError && orders.length > 0 && view === "cards" && (
+              ) : (
                 <div className="grid md:grid-cols-2 gap-2.5">
-                  {orders.map((order) => (
-                    <OrderCard key={order.id} order={order} onCancel={handleCancel} onViewDetails={handleViewDetails} />
-                  ))}
+                  {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
-              )}
-            </div>
-          </main>
+              )
+            )}
+
+            {!isLoading && !isError && orders.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+                <div className="w-12 h-12 rounded-[6px] bg-muted/50 flex items-center justify-center border border-border/30">
+                  <ShoppingBag className="w-5 h-5 text-muted-foreground/40" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">
+                    {hasActiveFilters ? "No orders match your filters" : "No orders yet"}
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    {hasActiveFilters ? "Try widening your search criteria" : "Orders sent to a pharmacy will appear here"}
+                  </p>
+                </div>
+                {hasActiveFilters && (
+                  <button onClick={clearAll} className="text-xs text-primary hover:text-primary/70 font-semibold hover:underline">
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Table view */}
+            {!isLoading && !isError && orders.length > 0 && view === "table" && (
+              <div className="rounded-[6px] border border-border/60 bg-card overflow-hidden shadow-sm">
+                <table className="w-full text-xs">
+                  <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
+                    <tr>
+                      {["Pharmacy", "Items", "Delivery", "Date", "Status", ""].map((h) => (
+                        <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => {
+                      const canCancel = order.status === "draft" || order.status === "pending";
+                      return (
+                        <tr
+                          key={order.id}
+                          className="border-t border-border/35 hover:bg-secondary/15 transition-colors cursor-pointer"
+                          onClick={() => handleViewDetails(order)}
+                        >
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <Store className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-xs text-foreground">{order.pharmacy.name}</p>
+                                {order.pharmacy.address && (
+                                  <p className="text-xs text-muted-foreground/60 truncate max-w-[120px]">{order.pharmacy.address}</p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <div className="flex flex-col gap-0.5">
+                              {order.items.slice(0, 2).map((item) => (
+                                <span key={item.id} className="text-xs text-muted-foreground/70">
+                                  <span className="font-medium text-foreground/80">{item.medicine_name}</span>
+                                  <span className="text-muted-foreground/45"> ×{item.quantity}</span>
+                                </span>
+                              ))}
+                              {order.items.length > 2 && (
+                                <span className="text-xs text-muted-foreground/40">+{order.items.length - 2} more</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <DeliveryBadge type={order.delivery_type} />
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-xs">
+                            <div className="flex items-center gap-1">
+                              <CalendarDays className="w-4 h-4" />
+                              {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <StatusBadge status={order.status} />
+                          </td>
+                          <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30"
+                                onClick={() => handleViewDetails(order)}
+                              >
+                                Details
+                              </Button>
+                              {canCancel && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 gap-1"
+                                  onClick={() => handleCancel(order)}
+                                >
+                                  <X className="h-2 w-2" />
+                                  {order.status === "draft" ? "Delete" : "Cancel"}
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Card view */}
+            {!isLoading && !isError && orders.length > 0 && view === "cards" && (
+              <div className="grid md:grid-cols-2 gap-2.5">
+                {orders.map((order) => (
+                  <OrderCard key={order.id} order={order} onCancel={handleCancel} onViewDetails={handleViewDetails} />
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
       <MyMedicalInfoDrawer open={medInfoOpen} onClose={() => setMedInfoOpen(false)} />

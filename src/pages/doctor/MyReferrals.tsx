@@ -209,7 +209,7 @@ function CancelConfirmDialog({
         onClick={onClose}
       />
       {/* Dialog */}
-      <div className="relative z-10 w-full max-w-sm rounded-xl border border-border bg-card shadow-xl p-5 space-y-4">
+      <div className="relative z-10 w-full max-w-sm rounded-[6px] border border-border bg-card shadow-xl p-5 space-y-4">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
             <AlertCircle className="h-4 w-4 text-destructive" />
@@ -289,7 +289,7 @@ function ReferralDetailDrawer({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -341,7 +341,7 @@ function ReferralDetailDrawer({
               <Section title="Reason for referral" icon={Stethoscope}>
                 <p className="text-xs text-foreground leading-relaxed">{referral.reason}</p>
                 {referral.notes && (
-                  <div className="mt-2 rounded-md bg-muted/60 border border-border px-3 py-2">
+                  <div className="mt-2 rounded-[6px] bg-muted/60 border border-border px-3 py-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</p>
                     <p className="text-xs text-foreground leading-relaxed">{referral.notes}</p>
                   </div>
@@ -428,7 +428,7 @@ function DoctorRow({
   doctor: { id: number; name: string; specialization?: string; image?: string | null };
 }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-md bg-muted/50 border border-border px-3 py-2">
+    <div className="flex items-center gap-2.5 rounded-[6px] bg-muted/50 border border-border px-3 py-2">
       <Avatar name={doctor.name} src={doctor.image} size="sm" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -476,7 +476,7 @@ function ReferralCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all duration-150 shadow-sm group"
+      className="w-full text-left rounded-[6px] border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all duration-150 shadow-sm group"
     >
       <div className="p-4">
         <div className="flex items-start gap-3">
@@ -534,7 +534,7 @@ function ReferralCard({
 
 function SkeletonReferralCard() {
   return (
-    <div className="w-full text-left rounded-xl border border-border bg-card shadow-sm p-4">
+    <div className="w-full text-left rounded-[6px] border border-border bg-card shadow-sm p-4">
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <Skeleton className="w-9 h-9 rounded-full shrink-0" />
@@ -628,13 +628,13 @@ function MyReferrals() {
           {/* ── Toolbar ── */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* Status tabs */}
-            <div className="flex items-center gap-1 bg-muted/60 rounded-lg p-1 overflow-x-auto shrink-0">
+            <div className="flex items-center gap-1 bg-muted/60 rounded-[6px] p-1 overflow-x-auto shrink-0">
               {STATUS_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-[11px] font-semibold whitespace-nowrap transition-all duration-150",
+                    "px-3 py-1.5 rounded-[6px] text-[11px] font-semibold whitespace-nowrap transition-all duration-150",
                     activeTab === tab.id
                       ? "bg-card text-foreground shadow-sm border border-border"
                       : "text-muted-foreground hover:text-foreground"

@@ -70,7 +70,7 @@ const TermsSection = ({
   }, [isLoading, isError, content, checkIfReadable]);
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-[6px] border border-border overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 bg-muted/60 border-b border-border">
         <div className="flex items-center gap-2">
           {isRead ? (
@@ -180,7 +180,7 @@ const TermsDrawer = ({ open, onClose, role, onAccept }: TermsDrawerProps) => {
               </div>
               <button
                 onClick={onClose}
-                className="w-7 h-7 rounded-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -237,7 +237,7 @@ const TermsDrawer = ({ open, onClose, role, onAccept }: TermsDrawerProps) => {
               <button
                 onClick={handleAccept}
                 disabled={!allRead}
-                className="w-full h-10 rounded-sm font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 bg-gradient-primary"
+                className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 bg-gradient-primary"
               >
                 {allRead ? (
                   <>
