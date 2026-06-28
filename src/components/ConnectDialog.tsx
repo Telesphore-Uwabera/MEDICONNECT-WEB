@@ -10,6 +10,7 @@ import {
   type RejoinTarget,
 } from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
+import { useGoToRole } from "@/hooks/useRoleManagement";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import {
   useInstantConsultationRequest,
@@ -328,7 +329,10 @@ export const ConnectDialogContent = ({
   };
 
   const { data: me } = useMe();
+  const { go: goToRole } = useGoToRole();
   const isLoggedIn = !!me;
+  // Resume the instant request after a stay-and-switch to patient.
+  const [resumeRequest, setResumeRequest] = useState(false);
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
   const [phase, setPhase] = useState<CallPhase>("idle");
@@ -653,6 +657,21 @@ export const ConnectDialogContent = ({
       return;
     }
 
+    // ── Role gate: instant consults are patient-only. If signed in as another
+    // role, offer a one-click switch instead of failing with "unauthorized". ──
+    const activeRole = (me?.active_role ?? me?.role) as string | undefined;
+    if (isLoggedIn && activeRole && activeRole !== "patient") {
+      toast.error("Switch to your patient role to start an instant consult", {
+        description: `You're signed in as a ${activeRole}. Switch to patient to connect.`,
+        duration: 8000,
+        action: {
+          label: "Switch to patient",
+          onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeRequest(true) }),
+        },
+      });
+      return;
+    }
+
     // ── Normal path: send a fresh request ──────────────────────────────────
     setPhase("requesting");
     setErrorMsg(null);
@@ -734,6 +753,19 @@ export const ConnectDialogContent = ({
       setPaymentInfo({ amount, currency: "RWF" });
       setPhase("payment");
     } catch (err: unknown) {
+      // Wrong-role rejection → offer a one-click switch to patient.
+      if ((err as { status?: number })?.status === 403) {
+        toast.error("Switch to your patient role to start an instant consult", {
+          description: "This account can't start consultations as its current role.",
+          duration: 8000,
+          action: {
+            label: "Switch to patient",
+            onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeRequest(true) }),
+          },
+        });
+        setPhase("idle");
+        return;
+      }
       setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
       // If the backend blocked this because a consultation is already active,
       // surface a one-click rejoin to that session.
@@ -742,6 +774,16 @@ export const ConnectDialogContent = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, guestEmail, me, guestDescription, guestPassword]);
+
+  // Once the session reflects the patient role after a stay-and-switch, retry.
+  useEffect(() => {
+    if (!resumeRequest) return;
+    if ((me?.active_role ?? me?.role) === "patient") {
+      setResumeRequest(false);
+      void handleRequest();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeRequest, me]);
 
   // ── Pay ───────────────────────────────────────────────────────────────────
   const handlePay = useCallback(async () => {

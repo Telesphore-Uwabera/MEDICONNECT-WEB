@@ -43,6 +43,7 @@ import {
   Shield,
   PanelLeftClose,
   PanelLeftOpen,
+  ArrowRightLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -52,6 +53,7 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
 import { useState, useCallback } from "react";
 import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 
@@ -432,6 +434,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<
     Record<number, boolean>
   >({});
@@ -462,17 +465,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       </div>
 
-      {/* ── Role badge ── */}
-      <div className="px-4 py-3 border-b border-sidebar-border flex-shrink-0">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-primary/10 border border-primary/15 w-fit">
-          <span className="flex items-center justify-center w-6 h-6 rounded bg-primary/20 text-primary text-[10px] font-black flex-shrink-0">
-            {cfg.initials}
-          </span>
-          <span className="text-xs font-bold tracking-widest uppercase text-primary truncate">
-            {t(cfg.labelKey)}
-          </span>
-        </div>
-      </div>
+  
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 space-y-0.5 scrollbar-thin">
@@ -575,13 +568,16 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
       {/* ── Role Switcher ── */}
       <div className="px-3 py-3 border-t border-sidebar-border flex-shrink-0">
-        <ActiveRoleBadge role={role} t={t} />
+        <ActiveRoleBadge role={role} t={t} onClick={() => setRoleSwitcherOpen(true)} />
       </div>
     </div>
   );
 
   return (
     <div className="min-h-dvh bg-background flex">
+      {/* Role switcher (add + switch active role) */}
+      <RoleSwitcher open={roleSwitcherOpen} onClose={() => setRoleSwitcherOpen(false)} />
+
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
@@ -675,9 +671,11 @@ export const DashboardLayout = ({ role, children }: Props) => {
 const ActiveRoleBadge = ({
   role,
   t,
+  onClick,
 }: {
   role: Role;
   t: (k: string) => string;
+  onClick?: () => void;
 }) => {
   const roleMap: Record<Role, { label: string; icon: LucideIcon }> = {
     patient: { label: t("sidebar.patient"), icon: User },
@@ -690,11 +688,16 @@ const ActiveRoleBadge = ({
   const { label, icon: Icon } = roleMap[role];
 
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-[6px] bg-primary/10 border border-primary/15">
+    <button
+      type="button"
+      onClick={onClick}
+      title="Switch role"
+      className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[6px] bg-primary/10 border border-primary/15 hover:bg-primary/15 hover:border-primary/30 transition-colors"
+    >
       <span className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-primary/20 text-primary flex-shrink-0">
         <Icon className="h-4 w-4" strokeWidth={2.5} />
       </span>
-      <div className="flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0 flex-1">
         <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40 leading-none mb-1">
           {t("sidebar.activeRole")}
         </span>
@@ -702,6 +705,7 @@ const ActiveRoleBadge = ({
           {label}
         </span>
       </div>
-    </div>
+      <ArrowRightLeft className="h-3.5 w-3.5 text-primary/50 group-hover:text-primary shrink-0" />
+    </button>
   );
 };

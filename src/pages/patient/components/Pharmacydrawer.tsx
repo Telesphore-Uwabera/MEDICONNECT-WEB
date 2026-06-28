@@ -114,7 +114,7 @@ const MedicineModal = ({
     <>
       <div
         className={cn(
-          "fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm transition-opacity duration-200",
+          "fixed inset-0 z-[60] bg-background/70 backdrop-blur-[2px] transition-opacity duration-200",
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
         )}
         onClick={onClose}
@@ -329,7 +329,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
         {/* Backdrop */}
         <div
           className={cn(
-            "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+            "fixed inset-0 z-40 bg-background/70 backdrop-blur-[2px] transition-opacity duration-300",
             open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
           )}
           onClick={resetAndClose}
@@ -338,13 +338,13 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
         {/* Drawer */}
         <div
           className={cn(
-            "fixed inset-y-0 right-0 z-50 w-[52vw] flex flex-col bg-background",
+            "fixed inset-y-0 right-0 z-50 flex w-full max-w-[760px] flex-col bg-background",
             "border-l border-border shadow-2xl transition-transform duration-300 ease-in-out",
             open ? "translate-x-0" : "translate-x-full",
           )}
         >
           {/* ── Header ─────────────────────────────────────────────── */}
-          <div className="px-5 pt-4 pb-3 border-b border-border shrink-0 bg-card">
+          <div className="px-4 pt-4 pb-3 sm:px-5 border-b border-border shrink-0 bg-card/95 backdrop-blur">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ring-1 ring-primary/20">
                 {ph.logo
@@ -387,7 +387,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               </button>
             </div>
 
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+            <div className="mt-3 grid grid-cols-1 gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
               <MetaItem icon={<MapPin className="h-3 w-3" />}>{ph.city}, {ph.province}</MetaItem>
               {ph.phone && <MetaItem icon={<Phone className="h-3 w-3" />}>{ph.phone}</MetaItem>}
               {ph.email && <MetaItem icon={<Mail className="h-3 w-3" />}>{ph.email}</MetaItem>}
@@ -413,13 +413,13 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
 
           {/* ── Working hours ──────────────────────────────────────── */}
           {ph.working_hours?.length > 0 && (
-            <div className="px-5 py-2.5 border-b border-border shrink-0 bg-muted/20">
+            <div className="px-4 py-3 sm:px-5 border-b border-border shrink-0 bg-muted/20">
               <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
                 Working Hours
               </p>
-              <div className="grid grid-cols-4 gap-x-4 gap-y-1">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {ph.working_hours.map((h) => (
-                  <div key={h.id} className="flex items-center justify-between text-[10px]">
+                  <div key={h.id} className="flex items-center justify-between rounded-[6px] border border-border/60 bg-card px-2 py-1 text-[10px]">
                     <span className={cn("font-semibold w-6", h.day_of_week === TODAY ? "text-primary" : "text-muted-foreground")}>
                       {DAY_LABELS[h.day_of_week]}
                     </span>
@@ -438,7 +438,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
 
           {/* ── Medicine section ───────────────────────────────────── */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="px-5 pt-3 pb-2.5 shrink-0 space-y-2.5 border-b border-border bg-card">
+            <div className="px-4 pt-3 pb-2.5 sm:px-5 shrink-0 space-y-2.5 border-b border-border bg-card/95 backdrop-blur">
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   Medicines
@@ -529,9 +529,9 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
             </div>
 
             {/* Scrollable medicine grid */}
-            <div className="flex-1 overflow-y-auto px-5 py-3">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5">
               {isLoading && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 9 }).map((_, i) => (
                     <div key={i} className="p-3 rounded-[6px] border border-border space-y-2">
                       <div className="flex items-center gap-2">
@@ -574,7 +574,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               )}
 
               {!isLoading && filtered.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {filtered.map((med) => {
                     const cartItem = cartItems.find((c) => c.medicine_id === med.id);
                     const outOfStock = !med.is_available || med.quantity === 0;
@@ -606,7 +606,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
 
             {/* Sticky cart bar */}
             {cartCount > 0 && (
-              <div className="px-5 py-2.5 border-t border-border bg-card shrink-0">
+              <div className="px-4 py-2.5 sm:px-5 border-t border-border bg-card shrink-0">
                 <PharmacyCart variant="inline" currency={ph.delivery_currency ?? "RWF"} />
               </div>
             )}

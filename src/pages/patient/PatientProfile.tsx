@@ -125,26 +125,82 @@ const PROFILE_STEPS = [
 
 type MainTab = "profile" | "medical" | "insurance";
 type ProfileMode = "view" | "create" | "edit";
+type ProfileStepId = (typeof PROFILE_STEPS)[number]["id"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const toDateInput = (iso: string): string => (iso ? iso.split("T")[0] : "");
+const EMPTY_VALUE = "-";
+const MIN_BIRTH_YEAR = 1900;
+const MAX_PATIENT_AGE = 130;
 
-const formatDate = (d: string) => {
-  const date = new Date(toDateInput(d));
+const parseProfileDate = (value?: string | null): Date | null => {
+  const raw = String(value ?? "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const currentYear = new Date().getUTCFullYear();
+
+  if (year < MIN_BIRTH_YEAR || year > currentYear) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  if (date.getTime() > Date.now()) return null;
+  return date;
+};
+
+const toDateInput = (iso?: string | null): string => {
+  const date = parseProfileDate(iso);
+  if (!date) return "";
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (d?: string | null) => {
+  const date = parseProfileDate(d);
+  if (!date) return EMPTY_VALUE;
   return date.toLocaleDateString("en-US", {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 };
 
-const calcAge = (d: string) =>
-  Math.floor(
-    (Date.now() - new Date(toDateInput(d)).getTime()) /
-    (1000 * 60 * 60 * 24 * 365.25)
-  );
+const calcAge = (d?: string | null): number | null => {
+  const date = parseProfileDate(d);
+  if (!date) return null;
+
+  const now = new Date();
+  let age = now.getUTCFullYear() - date.getUTCFullYear();
+  const hasBirthdayPassed =
+    now.getUTCMonth() > date.getUTCMonth() ||
+    (now.getUTCMonth() === date.getUTCMonth() && now.getUTCDate() >= date.getUTCDate());
+  if (!hasBirthdayPassed) age -= 1;
+
+  if (age < 0 || age > MAX_PATIENT_AGE) return null;
+  return age;
+};
+
+const formatAge = (d?: string | null) => {
+  const age = calcAge(d);
+  return age == null ? EMPTY_VALUE : `${age} yrs`;
+};
+
+const formatGender = (gender?: string | null) =>
+  gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : EMPTY_VALUE;
 
 const getInitials = (name: string) =>
   (name ?? "")
@@ -167,6 +223,50 @@ const profileToForm = (p: TPatientProfile): ProfileFormData => ({
   emergency_contact_phone: p.emergency_contact_phone ?? "",
   emergency_contact_relation: p.emergency_contact_relation ?? "",
 });
+
+const isProfileFieldFilled = (field: keyof ProfileFormData, value: unknown) => {
+  if (field === "date_of_birth") return Boolean(parseProfileDate(String(value ?? "")));
+  return String(value ?? "").trim().length > 0;
+};
+
+const getProfileCompletion = (profile: TPatientProfile) => {
+  const form = profileToForm(profile);
+  const sections = PROFILE_STEPS.reduce(
+    (acc, step) => {
+      const filled = step.fields.filter((field) => isProfileFieldFilled(field, form[field])).length;
+      acc[step.id] = {
+        filled,
+        total: step.fields.length,
+        complete: filled === step.fields.length,
+        missing: step.fields.filter((field) => !isProfileFieldFilled(field, form[field])),
+      };
+      return acc;
+    },
+    {} as Record<
+      ProfileStepId,
+      {
+        filled: number;
+        total: number;
+        complete: boolean;
+        missing: (keyof ProfileFormData)[];
+      }
+    >
+  );
+
+  const total = PROFILE_STEPS.reduce((sum, step) => sum + step.fields.length, 0);
+  const filled = PROFILE_STEPS.reduce((sum, step) => sum + sections[step.id].filled, 0);
+  const completedSections = PROFILE_STEPS.filter((step) => sections[step.id].complete).length;
+  const missingSections = PROFILE_STEPS.filter((step) => !sections[step.id].complete).map((step) => step.label);
+
+  return {
+    sections,
+    total,
+    filled,
+    completedSections,
+    missingSections,
+    percent: total ? Math.round((filled / total) * 100) : 0,
+  };
+};
 
 const toMutationError = (err: unknown): MutationError =>
   err instanceof Error ? { message: err.message } : {};
@@ -403,8 +503,11 @@ function ProfileSidebar({
   onDelete: () => void;
 }) {
   const isForm = mode === "create" || mode === "edit";
-  const visitedCount = visited.size;
-  const pct = Math.round((visitedCount / PROFILE_STEPS.length) * 100);
+  const completion = profile ? getProfileCompletion(profile) : null;
+  const visitedCount = isForm ? visited.size : completion?.completedSections ?? 0;
+  const pct = isForm
+    ? Math.round((visitedCount / PROFILE_STEPS.length) * 100)
+    : completion?.percent ?? 0;
 
   return (
     <div className="w-full sm:w-52 shrink-0 flex flex-col border-b sm:border-b-0 sm:border-r border-border bg-card/50">
@@ -454,10 +557,10 @@ function ProfileSidebar({
               {[
                 {
                   label: "Age",
-                  value: profile.date_of_birth ? `${calcAge(profile.date_of_birth)} yrs` : "—",
+                  value: formatAge(profile.date_of_birth),
                 },
-                { label: "Blood type", value: profile.blood_type ?? "—" },
-                { label: "City", value: profile.city ?? "—" },
+                { label: "Blood type", value: profile.blood_type ?? EMPTY_VALUE },
+                { label: "City", value: profile.city ?? EMPTY_VALUE },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -465,6 +568,28 @@ function ProfileSidebar({
                 </div>
               ))}
             </div>
+            {completion && (
+              <div className="space-y-1.5 rounded-[6px] border border-border bg-background/60 p-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Profile filled
+                  </span>
+                  <span className="text-[10px] font-bold text-primary">{completion.percent}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-500",
+                      completion.percent === 100 ? "bg-primary" : "bg-yellow-500"
+                    )}
+                    style={{ width: `${completion.percent}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  {completion.filled} of {completion.total} required fields filled
+                </p>
+              </div>
+            )}
           </div>
         ) : null}
       </div>
@@ -472,8 +597,12 @@ function ProfileSidebar({
       <div className="flex flex-row sm:flex-col gap-0.5 py-2 px-2.5 sm:py-3 sm:flex-1 overflow-x-auto sm:overflow-x-hidden overflow-y-hidden sm:overflow-y-auto">
         {PROFILE_STEPS.map((step, i) => {
           const Icon = step.icon;
+          const sectionStatus = completion?.sections[step.id];
           const isActive = i === currentStep && isForm;
-          const isDone = visited.has(i) && (!isForm || i !== currentStep);
+          const isDone = isForm
+            ? visited.has(i) && i !== currentStep
+            : Boolean(sectionStatus?.complete);
+          const isMissing = !isForm && Boolean(profile) && !sectionStatus?.complete;
 
           return (
             <button
@@ -496,10 +625,18 @@ function ProfileSidebar({
                     ? "bg-primary border-primary text-primary-foreground"
                     : isDone
                       ? "bg-primary/20 border-primary/40 text-primary"
+                      : isMissing
+                        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-600"
                       : "bg-muted border-border text-muted-foreground"
                 )}
               >
-                {isDone ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
+                {isDone ? (
+                  <Check className="h-3 w-3" />
+                ) : isMissing ? (
+                  <AlertTriangle className="h-3 w-3" />
+                ) : (
+                  <Icon className="h-3 w-3" />
+                )}
               </div>
               <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
@@ -514,6 +651,16 @@ function ProfileSidebar({
                   {isDone && isForm && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
                       done
+                    </span>
+                  )}
+                  {isDone && !isForm && (
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
+                      filled
+                    </span>
+                  )}
+                  {isMissing && (
+                    <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-yellow-600 shrink-0">
+                      missing
                     </span>
                   )}
                 </div>
@@ -645,7 +792,10 @@ function ProfileForm({
             <FormField label={t("profile.field.dob", "Date of birth")} error={errors.date_of_birth?.message}>
               <Input
                 type="date"
-                {...register("date_of_birth", { required: "Required" })}
+                {...register("date_of_birth", {
+                  required: "Required",
+                  validate: (value) => Boolean(parseProfileDate(value)) || "Enter a valid date of birth",
+                })}
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
@@ -813,8 +963,10 @@ function ProfileForm({
 // ─────────────────────────────────────────────────────────────────────────────
 // Profile View
 // ─────────────────────────────────────────────────────────────────────────────
-function ProfileView({ profile }: { profile: TPatientProfile }) {
+function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: () => void }) {
   const { t, i18n } = useTranslation();
+  const completion = getProfileCompletion(profile);
+  const isComplete = completion.percent === 100;
 
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
@@ -839,8 +991,7 @@ function ProfileView({ profile }: { profile: TPatientProfile }) {
               Active
             </Badge>
             <Badge className="text-[11px] font-medium rounded-full px-3 bg-muted text-muted-foreground border border-border">
-              {profile.gender?.charAt(0).toUpperCase() + (profile.gender?.slice(1) ?? "")} ·{" "}
-              {profile.date_of_birth ? calcAge(profile.date_of_birth) : "—"} yrs
+              {formatGender(profile.gender)} · {formatAge(profile.date_of_birth)}
             </Badge>
             {profile.blood_type && (
               <Badge className="text-[11px] font-medium rounded-full px-3 bg-destructive/15 text-destructive border border-destructive/25">
@@ -851,19 +1002,55 @@ function ProfileView({ profile }: { profile: TPatientProfile }) {
         </div>
       </div>
 
+      <div
+        className={cn(
+          "rounded-[6px] border p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+          isComplete
+            ? "border-primary/25 bg-primary/5"
+            : "border-yellow-500/30 bg-yellow-500/10"
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px]",
+              isComplete ? "bg-primary/15 text-primary" : "bg-yellow-500/15 text-yellow-600"
+            )}
+          >
+            {isComplete ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-foreground">
+              {isComplete ? "Profile information complete" : "Complete your profile information"}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {completion.filled} of {completion.total} required fields are filled
+              {!isComplete && completion.missingSections.length > 0
+                ? `. Missing: ${completion.missingSections.join(", ")}.`
+                : "."}
+            </p>
+          </div>
+        </div>
+        {!isComplete && (
+          <Button onClick={onEdit} size="sm" className="h-8 text-xs text-primary-foreground">
+            Complete profile
+          </Button>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SectionCard icon={User} title={t("profile.section.personal", "Personal Information")}>
           <div className="grid grid-cols-2 gap-3">
             <Field
               label={t("profile.field.dob", "Date of birth")}
-              value={profile.date_of_birth ? formatDate(profile.date_of_birth) : "—"}
+              value={formatDate(profile.date_of_birth)}
             />
             <Field
               label={t("profile.field.gender", "Gender")}
-              value={profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : "—"}
+              value={formatGender(profile.gender)}
             />
             <div className="col-span-2">
-              <Field label={t("profile.field.national_id", "National ID")} value={profile.national_id ?? "—"} mono />
+              <Field label={t("profile.field.national_id", "National ID")} value={profile.national_id ?? EMPTY_VALUE} mono />
             </div>
           </div>
         </SectionCard>
@@ -1093,7 +1280,7 @@ function MedicalInfoTab() {
           <h3 className="text-sm font-semibold text-foreground">Medical Information</h3>
           {patient && (
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {patient.user?.name} · {patient.date_of_birth ? calcAge(patient.date_of_birth) : "—"} yrs
+              {patient.user?.name} · {formatAge(patient.date_of_birth)}
             </p>
           )}
         </div>
@@ -1495,7 +1682,7 @@ const PatientProfile = () => {
       return resolvedMode === "edit"
         ? "Update your personal and medical information"
         : "Fill in the details below to get started";
-    return t("pages.patient.profile_sub");
+    return t("pages.patient.profile_sub", "Manage your profile, medical details and insurance");
   })();
 
   return (
@@ -1534,7 +1721,7 @@ const PatientProfile = () => {
                     isSaving={upsert.isPending}
                   />
                 ) : profile ? (
-                  <ProfileView profile={profile} />
+                  <ProfileView profile={profile} onEdit={openEdit} />
                 ) : null}
               </>
             )}

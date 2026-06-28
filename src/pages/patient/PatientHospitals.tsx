@@ -109,10 +109,10 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
           <Building2 className="w-4.5 h-4.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[12px] font-semibold text-foreground leading-tight line-clamp-2">
+          <h3 className="text-[14px] font-semibold text-foreground leading-tight line-clamp-2">
             {hospital.name_en}
           </h3>
-          <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground/70">
+          <div className="flex items-center gap-1 mt-0.5 text-[12px] text-muted-foreground/70">
             <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
             <span className="truncate">{hospital.city}</span>
             {hospital.address && (
@@ -124,11 +124,11 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
 
       {/* Badges */}
       <div className="flex flex-wrap gap-1">
-        <span className={cn("px-1.5 py-px text-[9px] font-semibold rounded-[6px] border", TYPE_BADGE_STYLE[hospital.type])}>
+        <span className={cn("px-2 py-0.5 text-[11px] font-semibold rounded-[6px] border", TYPE_BADGE_STYLE[hospital.type])}>
           {TYPE_LABEL[hospital.type]}
         </span>
         {hospital.is_open_24h && (
-          <span className="flex items-center gap-0.5 px-1.5 py-px text-[9px] font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+          <span className="flex items-center gap-0.5 px-2 py-0.5 text-[11px] font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
             <Clock className="w-2.5 h-2.5" />
             24h Open
           </span>
@@ -141,13 +141,13 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
           {hospital.departments.slice(0, 3).map((dept) => (
             <span
               key={dept.id}
-              className="px-1.5 py-px text-[9px] rounded-[6px] bg-secondary/60 text-muted-foreground border border-border/40"
+              className="px-2 py-0.5 text-[11px] rounded-[6px] bg-secondary/60 text-muted-foreground border border-border/40"
             >
               {dept.name_en}
             </span>
           ))}
           {hospital.departments.length > 3 && (
-            <span className="px-1.5 py-px text-[9px] rounded-[6px] bg-secondary/40 text-muted-foreground/70 border border-border/40">
+            <span className="px-2 py-0.5 text-[11px] rounded-[6px] bg-secondary/40 text-muted-foreground/70 border border-border/40">
               +{hospital.departments.length - 3} more
             </span>
           )}
@@ -156,7 +156,7 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
 
       {/* Insurances */}
       {hospital.insurances.length > 0 && (
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+        <div className="flex items-center gap-1 text-[12px] text-muted-foreground/60">
           <Shield className="w-2.5 h-2.5 flex-shrink-0" />
           <span className="truncate">
             {hospital.insurances.map((i) => i.name).slice(0, 2).join(", ")}
@@ -167,7 +167,7 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
 
       {/* Stats + CTA */}
       <div className="flex items-center justify-between pt-1.5 border-t border-border/40">
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground/70">
+        <div className="flex items-center gap-3 text-[12px] text-muted-foreground/70">
           <span>
             <span className="font-semibold text-foreground">{hospital.doctors_count}</span> doctors
           </span>
@@ -175,7 +175,7 @@ function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
             <span className="font-semibold text-foreground">{hospital.departments_count}</span> depts
           </span>
         </div>
-        <button className="px-2.5 py-1 rounded-[6px] text-[11px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm">
+        <button className="px-2.5 py-1 rounded-[6px] text-[13px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-95 shadow-sm">
           View
         </button>
       </div>
@@ -235,7 +235,7 @@ function Pagination({
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-card/50">
-      <p className="text-[10px] text-muted-foreground">
+      <p className="text-[12px] text-muted-foreground">
         Showing <span className="font-semibold text-foreground">{from}–{to}</span> of{" "}
         <span className="font-semibold text-foreground">{total}</span> hospitals
       </p>
@@ -252,7 +252,7 @@ function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={cn(
-              "w-7 h-7 flex items-center justify-center rounded-[6px] border text-[11px] font-medium transition-all",
+              "w-7 h-7 flex items-center justify-center rounded-[6px] border text-[13px] font-medium transition-all",
               currentPage === p
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
@@ -308,7 +308,7 @@ function SearchStats({
               ) : (
                 <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
               )}
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <p className="mt-1 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
                 {card.label}
               </p>
             </div>
@@ -355,10 +355,10 @@ function PaginationV2({
     <div className="border-t border-border/70 bg-card px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold text-foreground">
+          <p className="text-[13px] font-semibold text-foreground">
             Page {safeCurrentPage} of {safeLastPage}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground">
             Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
             <span className="font-semibold text-foreground">{total}</span> {itemLabel}
           </p>
@@ -557,7 +557,7 @@ const PatientHospitals = () => {
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {isLoading ? (
                     <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                   ) : (
@@ -567,7 +567,7 @@ const PatientHospitals = () => {
                       <span className="font-medium text-foreground">{cityCount}</span>{" "}
                       {cityCount === 1 ? "city" : "cities"}
                       {hasActiveFilters && (
-                        <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors">
+                        <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[12px] font-medium transition-colors">
                           Reset
                         </button>
                       )}
@@ -577,7 +577,7 @@ const PatientHospitals = () => {
 
                 {/* Live stats */}
                 {!isLoading && open24hCount > 0 && (
-                  <span className="hidden lg:flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
+                  <span className="hidden lg:flex items-center gap-1 text-[12px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
                     <Clock className="w-2.5 h-2.5" />
                     {open24hCount} open 24h
                   </span>
@@ -589,7 +589,7 @@ const PatientHospitals = () => {
                 <select
                   value={filters.sort}
                   onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                  className="hidden sm:block px-2 py-1.5 text-[13px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -643,12 +643,12 @@ const PatientHospitals = () => {
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">Failed to load hospitals</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                    <p className="text-[14px] font-semibold text-foreground">Failed to load hospitals</p>
+                    <p className="text-[13px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
                   </div>
                   <button
                     onClick={() => refetch()}
-                    className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
+                    className="flex items-center gap-1.5 text-[13px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                   >
                     <RefreshCw className="w-3 h-3" />
                     Retry
@@ -670,11 +670,11 @@ const PatientHospitals = () => {
                     <Building2 className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-foreground">No hospitals match your filters</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
+                    <p className="text-[14px] font-semibold text-foreground">No hospitals match your filters</p>
+                    <p className="text-[13px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
                   </div>
                   {hasActiveFilters && (
-                    <button onClick={clearAll} className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
+                    <button onClick={clearAll} className="text-[13px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
                       Clear all filters
                     </button>
                   )}

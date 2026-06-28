@@ -226,7 +226,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
                 {ph.name}
                 {ph.is_verified && <BadgeCheck className="h-4 w-4 text-primary shrink-0" />}
               </h3>
-              <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1 mt-1 truncate">
+              <p className="text-[15px] font-medium text-muted-foreground flex items-center gap-1 mt-1 truncate">
                 <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                 {ph.city}{ph.address ? `, ${ph.address}` : ""}
               </p>
@@ -238,7 +238,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
             <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
               <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                 <Truck className="h-3.5 w-3.5" />
-                <span className="text-[10px] uppercase tracking-wider font-semibold">Delivery</span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold">Delivery</span>
               </div>
               <span className="text-xs font-semibold text-foreground">
                 {ph.offers_delivery && ph.delivery_fee != null ? `${ph.delivery_fee} ${ph.delivery_currency}` : ph.offers_delivery ? "Yes" : "No"}
@@ -247,7 +247,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
             <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
               <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                 <Navigation className="h-3.5 w-3.5" />
-                <span className="text-[10px] uppercase tracking-wider font-semibold">Distance</span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold">Distance</span>
               </div>
               <span className="text-xs font-semibold text-foreground">
                 {ph.distance_km != null ? `${ph.distance_km.toFixed(1)} km` : "—"}
@@ -256,7 +256,7 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
             <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
               <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                 <Clock className="h-3.5 w-3.5" />
-                <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+                <span className="text-[12px] uppercase tracking-wider font-semibold">Time</span>
               </div>
               <span className="text-xs font-semibold text-foreground">
                 {deliveryMins != null ? `~${deliveryMins}m` : "—"}
@@ -267,17 +267,17 @@ function PharmacyGridCard({ pharmacy: ph }: { pharmacy: Pharmacy }) {
           {/* Badges / Features */}
           <div className="mt-3 flex flex-wrap gap-1">
             {ph.offers_delivery && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+              <span className="text-[12px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                 Delivery
               </span>
             )}
             {ph.offers_pickup && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
+              <span className="text-[12px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
                 Pickup
               </span>
             )}
             {ph.is_open_24h && (
-              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary border border-primary/20">
+              <span className="text-[12px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary border border-primary/20">
                 24h Open
               </span>
             )}
@@ -498,7 +498,7 @@ function SearchStats({
               ) : (
                 <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
               )}
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+              <p className="mt-1 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
                 {card.label}
               </p>
             </div>
@@ -545,10 +545,10 @@ function PaginationV2({
     <div className="border-t border-border/70 bg-card px-4 py-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold text-foreground">
+          <p className="text-[13px] font-semibold text-foreground">
             Page {safeCurrentPage} of {safeLastPage}
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-[12px] text-muted-foreground">
             Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
             <span className="font-semibold text-foreground">{total}</span> {itemLabel}
           </p>
@@ -746,7 +746,7 @@ const PatientPharmacy = () => {
       render: () => (
         nearbyCoords ? (
           <div className="flex items-center gap-2 mt-1">
-            <div className="flex-1 flex items-center justify-center gap-1.5 h-[28px] rounded-[6px] bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium">
+            <div className="flex-1 flex items-center justify-center gap-1.5 h-[28px] rounded-[6px] bg-primary/10 border border-primary/20 text-[13px] text-primary font-medium">
               <Navigation className="h-3 w-3 shrink-0" />
               Using location
             </div>
@@ -760,7 +760,7 @@ const PatientPharmacy = () => {
         ) : (
           <button
             onClick={handleUseMyLocation}
-            className="w-full mt-1 h-[28px] rounded-[6px] text-[11px] border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30 transition-all duration-200 flex items-center justify-center gap-1.5"
+            className="w-full mt-1 h-[28px] rounded-[6px] text-[13px] border border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-secondary/30 transition-all duration-200 flex items-center justify-center gap-1.5"
           >
             {locLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
             {locLoading ? "Detecting…" : "Use my location"}
@@ -776,25 +776,25 @@ const PatientPharmacy = () => {
         <div className="flex flex-wrap gap-1 mt-1">
           <button
             onClick={() => set("offers_delivery", !filters.offers_delivery)}
-            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.offers_delivery ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[12px] border flex items-center gap-1 transition-all", filters.offers_delivery ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Truck className="w-3 h-3" /> Delivery
           </button>
           <button
             onClick={() => set("offers_pickup", !filters.offers_pickup)}
-            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.offers_pickup ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[12px] border flex items-center gap-1 transition-all", filters.offers_pickup ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <MapPin className="w-3 h-3" /> Pickup
           </button>
           <button
             onClick={() => set("is_open_24h", !filters.is_open_24h)}
-            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.is_open_24h ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[12px] border flex items-center gap-1 transition-all", filters.is_open_24h ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Clock className="w-3 h-3" /> 24h
           </button>
           <button
             onClick={() => set("open_now", !filters.open_now)}
-            className={cn("px-2 h-[28px] rounded-[6px] text-[10px] border flex items-center gap-1 transition-all", filters.open_now ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
+            className={cn("px-2 h-[28px] rounded-[6px] text-[12px] border flex items-center gap-1 transition-all", filters.open_now ? "bg-primary text-primary-foreground border-primary font-medium shadow-sm" : "border-border/60 text-muted-foreground bg-card hover:bg-muted/50")}
           >
             <Wifi className="w-3 h-3" /> Open Now
           </button>
@@ -834,7 +834,7 @@ const PatientPharmacy = () => {
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {isLoading ? (
                   <span className="inline-block w-24 h-3 bg-muted rounded-[6px] animate-pulse" />
                 ) : (
@@ -843,7 +843,7 @@ const PatientPharmacy = () => {
                     {totalPharmacies === 1 ? "pharmacy" : "pharmacies"} found
                     {searchQ && ` for "${searchQ}"`}
                     {hasActiveFilters && (
-                      <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors">
+                      <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[12px] font-medium transition-colors">
                         Reset
                       </button>
                     )}
@@ -853,13 +853,13 @@ const PatientPharmacy = () => {
 
               {/* Live stats */}
               {!isLoading && deliveryCount > 0 && (
-                <span className="hidden lg:flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+                <span className="hidden lg:flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
                   <Truck className="w-3.5 h-3.5" />
                   {deliveryCount} with delivery
                 </span>
               )}
               {!isLoading && open24hCount > 0 && (
-                <span className="hidden lg:flex items-center gap-1 text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
+                <span className="hidden lg:flex items-center gap-1 text-[12px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-[4px] uppercase tracking-wider">
                   <Clock className="w-3.5 h-3.5" />
                   {open24hCount} open 24h
                 </span>
@@ -870,7 +870,7 @@ const PatientPharmacy = () => {
               <select
                 value={filters.sort}
                 onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
+                className="hidden sm:block px-2 py-1.5 text-[13px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>

@@ -26,6 +26,7 @@ import {
 } from "@/hooks/patient/use-patient-booking";
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 import { useMe } from "@/hooks/useAuth";
+import { useGoToRole } from "@/hooks/useRoleManagement";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -296,6 +297,18 @@ export const BookingDialog = ({
   const payAppointment = usePayAppointment();
   const invoicePoller = useInvoicePoller();
   const { data: me } = useMe();
+  const { go: goToRole } = useGoToRole();
+  // After a stay-and-switch to patient, resume the booking automatically once
+  // the session reflects the new role.
+  const [resumeBooking, setResumeBooking] = useState(false);
+  useEffect(() => {
+    if (!resumeBooking) return;
+    if ((me?.active_role ?? me?.role) === "patient") {
+      setResumeBooking(false);
+      void handleConfirm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeBooking, me]);
 
   // Fresh doctor query (only active after a successful booking) ─────────────────────────────
   const { data: freshDoctorData } = useGetDoctorBySlug(
@@ -351,11 +364,16 @@ export const BookingDialog = ({
       navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
       return;
     }
-    const role = (me as { role?: string } | undefined)?.role;
-    if (role && role !== "patient") {
-      // Signed in, but on a doctor/hospital/etc. account.
-      toast.error("Switch to a patient account", {
-        description: `You're signed in as a ${role}. To book a consultation and get treatment, switch to (or create) a patient account.`,
+    const activeRole = (me?.active_role ?? me?.role) as string | undefined;
+    if (activeRole && activeRole !== "patient") {
+      // Signed in, but acting as doctor/hospital/etc. Offer a one-click switch.
+      toast.error("Switch to your patient role to book", {
+        description: `You're signed in as a ${activeRole}. Switch to patient to book a consultation.`,
+        duration: 8000,
+        action: {
+          label: "Switch to patient",
+          onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
+        },
       });
       return;
     }
@@ -453,8 +471,13 @@ export const BookingDialog = ({
 
       // Authenticated but the wrong kind of account (e.g. a doctor).
       if (status === 403) {
-        toast.error("Switch to a patient account", {
-          description: "This account can't book consultations. Switch to a patient account to get treatment.",
+        toast.error("Switch to your patient role to book", {
+          description: "This account can't book consultations as its current role.",
+          duration: 8000,
+          action: {
+            label: "Switch to patient",
+            onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
+          },
         });
         return;
       }

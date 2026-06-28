@@ -14,6 +14,7 @@ import {
   Building2,
   Sparkles,
   HeartPulse,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -30,6 +31,7 @@ import { Link } from "react-router-dom";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
+import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -484,6 +486,16 @@ const PatientAppointments = () => {
     (acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }),
     {} as Record<string, number>
   ), [appointments]);
+  const statsItems = useMemo<PatientStatItem[]>(() => {
+    const active = (counts.confirmed ?? 0) + (counts.in_progress ?? 0);
+    return [
+      { label: "Total", value: data?.total ?? appointments.length, helper: "All appointments", icon: Calendar, tone: "primary" },
+      { label: "Ready to join", value: active, helper: "Confirmed or live", icon: Video, tone: "sky" },
+      { label: "Pending", value: counts.pending ?? 0, helper: "Waiting approval", icon: Clock, tone: "amber" },
+      { label: "Completed", value: counts.completed ?? 0, helper: "Finished visits", icon: CheckCircle2, tone: "emerald" },
+      { label: "Cancelled", value: counts.cancelled ?? 0, helper: "Not active", icon: X, tone: "red" },
+    ];
+  }, [appointments.length, counts, data?.total]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -494,20 +506,6 @@ const PatientAppointments = () => {
           title={t("pages.doctor.overview_title")}
           subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
-
-        {/* Quick access to the patient's own medical record */}
-        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setMedInfoOpen(true)}
-            className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
-          >
-            <HeartPulse className="h-3.5 w-3.5 text-primary" />
-            My medical info
-          </Button>
-        </div>
-
         <FilterBar
           open={filterOpen}
           onToggle={() => setFilterOpen(!filterOpen)}
@@ -523,23 +521,8 @@ const PatientAppointments = () => {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-xs text-muted-foreground">
-                <span className="font-bold text-foreground text-sm">{data?.total ?? 0}</span> appointments
-                {hasActiveFilters && (
-                  <button onClick={clearAll} className="ml-3 text-primary hover:text-primary/80 hover:underline text-xs font-medium">
-                    Reset filters
-                  </button>
-                )}
-              </p>
-              <div className="hidden lg:flex items-center gap-2.5">
-                {(["confirmed", "in_progress", "pending"] as ApiAppointmentStatus[]).map((s) =>
-                  counts[s] ? (
-                    <span key={s} className={cn("flex items-center gap-1.5 text-xs font-medium border px-2.5 py-1 rounded-[6px]", STATUS_STYLES[s])}>
-                      <span className={cn("w-2 h-2 rounded-full", STATUS_DOT[s])} />
-                      {counts[s]} {STATUS_LABEL[s].toLowerCase()}
-                    </span>
-                  ) : null
-                )}
-              </div>
+             Manage Appointments 
+              </p> 
             </div>
 
             <div className="flex items-center gap-2">
@@ -624,6 +607,8 @@ const PatientAppointments = () => {
               </Link>
 
             </div>
+
+            <PatientStatsGrid items={statsItems} />
 
             {/* Empty state */}
             {!isLoading && sorted.length === 0 && (
