@@ -98,7 +98,12 @@ export function isExpired(validUntil: string): boolean {
 export function getPdfUrl(path: string): string {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  return `${BASE_URL}${path}`;
+  // PDFs are served from the host root, NOT under /api/v1. Strip the API prefix
+  // (matching the doctor prescription drawer) and guard the leading slash so we
+  // never produce ".../api/v1prescriptions/..." or "...rwprescriptions/...".
+  const host = String(BASE_URL ?? "").replace("/api/v1", "").replace(/\/+$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${host}${p}`;
 }
 
 export { BASE_URL };

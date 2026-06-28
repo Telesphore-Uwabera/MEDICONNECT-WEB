@@ -69,6 +69,29 @@ function filtersToParams(filters: FilterState): GetAppointmentsParams {
   return params;
 }
 
+function minutesFromTimeRange(start?: string, end?: string): number | null {
+  if (!start || !end) return null;
+  const toMinutes = (value: string) => {
+    const [h, m] = value.slice(0, 5).split(":").map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+    return h * 60 + m;
+  };
+  const startMinutes = toMinutes(start);
+  const endMinutes = toMinutes(end);
+  if (startMinutes == null || endMinutes == null) return null;
+  const diff = endMinutes - startMinutes;
+  return diff > 0 ? diff : diff + 24 * 60;
+}
+
+function appointmentDurationMinutes(appt: Appointment): number | null {
+  const slotDuration = minutesFromTimeRange(appt.slot?.start_time, appt.slot?.end_time);
+  if (slotDuration) return slotDuration;
+
+  const raw = (appt as any).duration_minutes ?? (appt as any).duration;
+  const duration = Number(raw);
+  return Number.isFinite(duration) && duration > 0 ? duration : null;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AppointmentsTab() {
@@ -186,6 +209,7 @@ export function AppointmentsTab() {
         const started = startInAppCallFromJoin(startCall, res as any, {
           consultationId: appt.id,
           isOwner: true,
+          appointmentDurationMinutes: appointmentDurationMinutes(appt),
         });
         if (!started) {
           call.startScheduledCall(apptCtx, MOCK_DOCTOR);

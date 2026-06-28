@@ -17,7 +17,7 @@ import { dashboardPath } from "@/lib/auth-store";
 import { useMe, useLogout } from "@/hooks/useAuth";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
-import type { PublicGeneralSettings } from "@/hooks/use-public-settings";
+import type { PublicGeneralSettings } from "@/hooks/use-public-settings"; 
 import {
   SpecializationSelect,
   SpecializationValue,
@@ -141,10 +141,10 @@ export function HeroHeader({
       {/* ── Navbar row ── */}
       <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
 
-        {/* Logo */}
+        {/* Logo */} 
         <div className="flex items-center gap-2 lg:shrink-0">
           <Link to="/">
-            <img src={logo} alt={appName} className="lg:h-16 lg:w-auto w-[40%]" />
+            <img src={logo} alt={appName} className="lg:h-12 lg:w-auto w-[50%]" />
           </Link>
         </div>
 

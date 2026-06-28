@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
+import { openPrescriptionDocument } from "@/lib/prescription-document";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -279,22 +280,26 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
       )}
 
       {/* ── Documents ── */}
-      {(p.pdf_url || p.qr_code) && (
+      {(
         <Section title="Documents" icon={<Download className="h-3 w-3" />}>
           <div className="flex flex-wrap gap-2 pt-0.5">
-            {p.pdf_url && (
-              <a
-                href={`${BASE_URL}${p.pdf_url}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
-              >
-                <FileText className="h-4 w-4" />
-                Download PDF
-                <ExternalLink className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />
-              </a>
-            )}
-            {p.qr_code && (
+            <button
+              type="button"
+              onClick={() => openPrescriptionDocument(p)}
+              className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+            >
+              <FileText className="h-4 w-4" />
+              View document
+            </button>
+            <button
+              type="button"
+              onClick={() => openPrescriptionDocument(p, true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </button>
+            {/* {p.qr_code && (
               <a
                 href={`${BASE_URL}${p.qr_code}`}
                 target="_blank"
@@ -305,7 +310,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 View QR Code
                 <ExternalLink className="h-3.5 w-3.5 ml-1 text-muted-foreground/50" />
               </a>
-            )}
+            )} */}
           </div>
         </Section>
       )}

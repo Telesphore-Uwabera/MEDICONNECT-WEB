@@ -101,7 +101,6 @@ function sortHospitals(hospitals: ApiHospital[], sort: SortOption): ApiHospital[
 // ─── Hospital Grid Card ──────────────────────────────────────────────────────────
 
 function HospitalGridCard({ hospital }: { hospital: ApiHospital }) {
-  console.log("Rendering card for hospital:", hospital);
   return (
     <div className="bg-card border border-border/70 rounded-[6px] p-3 flex flex-col gap-2.5 hover:border-primary/30 hover:shadow-md transition-all duration-200">
       {/* Header */}
@@ -274,6 +273,144 @@ function Pagination({
   );
 }
 
+function SearchStats({
+  isLoading,
+  total,
+  shown,
+  open24h,
+  cities,
+}: {
+  isLoading: boolean;
+  total: number;
+  shown: number;
+  open24h: number;
+  cities: number;
+}) {
+  const cards = [
+    { label: "Matching facilities", value: total, icon: Building2, tone: "text-primary bg-primary/10 border-primary/20" },
+    { label: "Shown now", value: shown, icon: Stethoscope, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+    { label: "Open 24h", value: open24h, icon: Clock, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+    { label: "Cities", value: cities, icon: MapPin, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 p-4 pb-2">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div key={card.label} className="rounded-[6px] border border-border/70 bg-card p-3 flex items-center gap-3 min-w-0">
+            <div className={cn("h-9 w-9 rounded-[6px] border flex items-center justify-center shrink-0", card.tone)}>
+              <Icon className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              {isLoading ? (
+                <div className="h-5 w-12 rounded-[6px] bg-muted animate-pulse" />
+              ) : (
+                <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
+              )}
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+                {card.label}
+              </p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaginationV2({
+  currentPage,
+  lastPage,
+  total,
+  perPage,
+  itemLabel,
+  onPageChange,
+}: {
+  currentPage: number;
+  lastPage: number;
+  total: number;
+  perPage: number;
+  itemLabel: string;
+  onPageChange: (p: number) => void;
+}) {
+  if (total <= 0) return null;
+
+  const safeLastPage = Math.max(1, lastPage);
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), safeLastPage);
+  const from = (safeCurrentPage - 1) * perPage + 1;
+  const to = Math.min(safeCurrentPage * perPage, total);
+  const goToPage = (nextPage: number) =>
+    onPageChange(Math.min(Math.max(1, nextPage), safeLastPage));
+
+  const pageNumbers = (() => {
+    const pages = new Set<number>([1, safeLastPage, safeCurrentPage]);
+    for (let p = safeCurrentPage - 1; p <= safeCurrentPage + 1; p += 1) {
+      if (p >= 1 && p <= safeLastPage) pages.add(p);
+    }
+    return Array.from(pages).sort((a, b) => a - b);
+  })();
+
+  return (
+    <div className="border-t border-border/70 bg-card px-4 py-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold text-foreground">
+            Page {safeCurrentPage} of {safeLastPage}
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
+            <span className="font-semibold text-foreground">{total}</span> {itemLabel}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => goToPage(safeCurrentPage - 1)}
+            disabled={safeCurrentPage <= 1}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Prev
+          </button>
+
+          {pageNumbers.map((pageNumber, index) => {
+            const previous = pageNumbers[index - 1];
+            return (
+              <span key={pageNumber} className="inline-flex items-center gap-1.5">
+                {previous != null && pageNumber - previous > 1 && (
+                  <span className="px-1 text-xs text-muted-foreground">...</span>
+                )}
+                <button
+                  onClick={() => goToPage(pageNumber)}
+                  aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
+                  className={cn(
+                    "h-9 min-w-9 px-3 flex items-center justify-center rounded-[6px] border text-xs font-bold transition-all",
+                    safeCurrentPage === pageNumber
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50",
+                  )}
+                >
+                  {pageNumber}
+                </button>
+              </span>
+            );
+          })}
+
+          <button
+            onClick={() => goToPage(safeCurrentPage + 1)}
+            disabled={safeCurrentPage >= safeLastPage}
+            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────────
 
 const PatientHospitals = () => {
@@ -302,12 +439,16 @@ const PatientHospitals = () => {
   );
 
   const { data, isLoading, isError, refetch } = useGetSearchHospitals(apiParams);
-  console.log("API Params:", data);
 
   const hospitals = useMemo(() => {
     if (!data?.data) return [];
     return sortHospitals(data.data, filters.sort);
   }, [data, filters.sort]);
+
+  useEffect(() => {
+    if (!data?.last_page || data.last_page < 1) return;
+    if (page > data.last_page) setPage(data.last_page);
+  }, [data?.last_page, page]);
 
   const set = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -338,6 +479,16 @@ const PatientHospitals = () => {
 
   const open24hCount = hospitals.filter((h) => h.is_open_24h).length;
   const lastPage = data?.last_page ?? (data ? Math.ceil(data.total / data.per_page) : 1);
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPage(nextPage);
+    requestAnimationFrame(() => {
+      document.querySelector("[data-hospital-results]")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, []);
 
   return (
     <DashboardLayout role="patient">
@@ -394,7 +545,14 @@ const PatientHospitals = () => {
           />
 
           {/* ── Results ── */}
-          <main className="flex-1 overflow-y-auto flex flex-col">
+          <main className="flex-1 overflow-y-auto flex flex-col" data-hospital-results>
+            <SearchStats
+              isLoading={isLoading}
+              total={data?.total ?? 0}
+              shown={hospitals.length}
+              open24h={open24hCount}
+              cities={cityCount}
+            />
 
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
@@ -538,13 +696,14 @@ const PatientHospitals = () => {
             </div>
 
             {/* Pagination */}
-            {data && lastPage > 1 && (
-              <Pagination
+            {data && (
+              <PaginationV2
                 currentPage={data.current_page}
                 lastPage={lastPage}
                 total={data.total}
                 perPage={data.per_page}
-                onPageChange={setPage}
+                itemLabel="facilities"
+                onPageChange={handlePageChange}
               />
             )}
           </main>

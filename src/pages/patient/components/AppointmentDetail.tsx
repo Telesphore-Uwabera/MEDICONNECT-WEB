@@ -5,6 +5,10 @@ import {
   useGetPatientAppointment,
   ApiAppointmentStatus,
 } from "@/hooks/patient/use-patient-appointment";
+import { usePatientAppointmentSummary } from "@/hooks/patient/use-patient-consultation-summary";
+import { SummaryDetails } from "@/components/consultatioRoom/SummaryDetails";
+import { openSummaryDocument } from "@/lib/summary-document";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { apiFetch } from "@/lib/api";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
@@ -40,6 +44,8 @@ import {
   ChevronDown,
   ChevronUp,
   Wifi,
+  Download,
+  Eye,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { t } from "i18next";
@@ -239,6 +245,109 @@ function Section({
         )}
       </button>
       {open && <div className="px-4 py-2">{children}</div>}
+    </div>
+  );
+}
+
+// ─── Notes (string OR structured doctor-notes object) ─────────────────────────
+
+function NotesContent({ notes }: { notes: unknown }) {
+  if (!notes) return null;
+
+  // Legacy: a plain string note.
+  if (typeof notes === "string") {
+    return notes.trim() ? <InfoRow icon={FileText} label="Notes" value={notes} /> : null;
+  }
+  if (typeof notes !== "object") return null;
+
+  const n = notes as Record<string, unknown>;
+  const str = (v: unknown) => (v == null ? "" : String(v));
+  const textFields: Array<[string, unknown]> = [
+    ["Chief complaint", n.chief_complaint],
+    ["Diagnosis", n.diagnosis],
+    ["Treatment plan", n.treatment_plan],
+    ["Recommendations", n.recommendations],
+    ["Additional notes", n.additional_notes],
+    ["Follow-up notes", n.follow_up_notes],
+  ].filter(([, v]) => str(v).trim());
+
+  const vitals = [
+    n.blood_pressure && `BP ${str(n.blood_pressure)}`,
+    n.temperature && `Temp ${str(n.temperature)}`,
+    n.pulse_rate && `Pulse ${str(n.pulse_rate)}`,
+    n.weight && `Wt ${str(n.weight)}`,
+    n.height && `Ht ${str(n.height)}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  if (textFields.length === 0 && !vitals) return null;
+
+  return (
+    <div className="py-3 space-y-3">
+      {textFields.map(([label, v]) => (
+        <div key={label} className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+            {label}
+          </p>
+          <RichTextRenderer value={str(v)} className="text-sm text-foreground" />
+        </div>
+      ))}
+      {vitals && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+            Vitals
+          </p>
+          <p className="text-sm text-foreground">{vitals}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Consultation summary section ─────────────────────────────────────────────
+
+function SummarySection({ appointmentId }: { appointmentId: string }) {
+  const { data, isLoading, isError } = usePatientAppointmentSummary(appointmentId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading summary…
+      </div>
+    );
+  }
+  if (isError || !data?.summary) {
+    return (
+      <p className="py-4 text-sm text-muted-foreground">
+        No consultation summary was recorded for this visit.
+      </p>
+    );
+  }
+
+  const summary = data.summary;
+
+  return (
+    <div className="py-2 space-y-3">
+      <SummaryDetails summary={summary} />
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => openSummaryDocument(summary)}
+          className="h-9 rounded-[6px] text-sm gap-2"
+        >
+          <Eye className="w-4 h-4" /> View document
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => openSummaryDocument(summary, true)}
+          className="h-9 rounded-[6px] text-sm gap-2"
+        >
+          <Download className="w-4 h-4" /> Download PDF
+        </Button>
+      </div>
     </div>
   );
 }
@@ -474,6 +583,7 @@ export function AppointmentDetailContent({
         const started = startInAppCallFromJoin(startCall, res, {
           consultationId: appointmentId,
           isOwner: false,
+          appointmentDurationMinutes: data?.duration_minutes,
         });
         if (started) {
           onClose();
@@ -725,6 +835,13 @@ export function AppointmentDetailContent({
               </div>
             </div>
 
+            {/* ── Consultation summary (completed only) ── */}
+            {appt.status === "completed" && (
+              <Section title="Consultation summary">
+                <SummarySection appointmentId={appointmentId} />
+              </Section>
+            )}
+
             {/* ── Appointment details ── */}
             <Section title="Appointment">
               <InfoRow icon={FileText} label="Booking type" value={appt.booking_type ?? "—"} />
@@ -735,7 +852,7 @@ export function AppointmentDetailContent({
               />
               <InfoRow icon={Calendar} label="Date" value={formatDate(appt.appointment_date)} />
               <InfoRow icon={Clock} label="Time" value={formatTime(appt.appointment_time)} />
-              {appt.notes && <InfoRow icon={FileText} label="Notes" value={appt.notes} />}
+              <NotesContent notes={appt.notes} />
             </Section>
 
             {/* ── Payment ── */}
@@ -971,7 +1088,7 @@ export function AppointmentDetailContent({
             )}
 
             {/* ── Review CTA ── */}
-            {canReview && (
+            {/* {canReview && (
               <div className="rounded-[6px] border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-5 py-5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-800 flex items-center justify-center">
@@ -994,7 +1111,7 @@ export function AppointmentDetailContent({
                   Review
                 </Button>
               </div>
-            )}
+            )} */}
 
             {/* ── Cancellation info ── */}
             {appt.status === "cancelled" && appt.cancellation_reason && (

@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   FileText, Stethoscope,
   UserCheck, Clock3, Users, CheckCircle2, Activity, Video, History,
@@ -18,14 +18,17 @@ import {
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useCallStore } from "@/context/CallStore";
 import { useCallContext } from "@/context/CallContext";
-import { sessionToRejoinTarget } from "@/lib/rejoin";
+import { sessionToRejoinTarget, type LiveSessionResponse } from "@/lib/rejoin";
+import { apiFetch } from "@/lib/api";
+import { openBlankSummaryWindow, writeSummaryToWindow } from "@/lib/summary-document";
+import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
 import { IncomingCard } from "./shared/IncomingCard";
 import { InstantNotesSidebar } from "./shared/InstantNotesSidebar";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
-import { MedicalRecordModal } from "./shared/MedicalRecordModal";
+import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
 import { t } from "i18next";
 
 type ItemAction = {
@@ -108,6 +111,11 @@ export function InstantConsultTab() {
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
 
+  // Queue items expose only the request id. The consultation-summary endpoint
+  // validates against the real `instant_consultations` id, so we remember the
+  // mapping (request id → consultation id) captured from the join token.
+  const consultIdByRequest = useRef<Record<number, number>>({});
+
   const isInCall = call.phase === "connected" && call.role === "doctor";
 
   const { data: queueData, isLoading: queueLoading } = useGetInstantQueue(!isInCall);
@@ -120,7 +128,19 @@ export function InstantConsultTab() {
   // In-progress session the doctor can rejoin after navigating away. Suppressed
   // while a call overlay is already open.
   const { data: liveSession } = useDoctorLiveSession(!isInCall && !activeCall);
-  const liveTarget = useMemo(() => sessionToRejoinTarget(liveSession, "doctor"), [liveSession]);
+  // Only offer "rejoin" for a genuinely in-progress session — never one that has
+  // already been completed/cancelled (which can briefly leak through a stale
+  // cache after the doctor finishes the consult).
+  const liveStatus = String(
+    (liveSession as LiveSessionResponse | null)?.status ?? "",
+  ).toLowerCase();
+  const liveIsTerminal = [
+    "completed", "resolved", "cancelled", "declined", "expired", "withdrawn",
+  ].includes(liveStatus);
+  const liveTarget = useMemo(
+    () => (liveSession && !liveIsTerminal ? sessionToRejoinTarget(liveSession, "doctor") : null),
+    [liveSession, liveIsTerminal],
+  );
 
   const handleRejoinLive = () => {
     if (liveTarget) startCall(liveTarget.roomName, liveTarget.token);
@@ -168,6 +188,13 @@ export function InstantConsultTab() {
         let decodedToken: any;
         try {
           decodedToken = JSON.parse(atob(decodeURIComponent(res.doctor_token)));
+          // The token natively carries the real instant_consultations id — capture
+          // it (keyed by request id) for the consultation-summary payload before we
+          // overwrite it below for the chat API.
+          const nativeCid = Number(decodedToken?.consultation_id);
+          if (Number.isFinite(nativeCid) && nativeCid > 0 && nativeCid !== item.id) {
+            consultIdByRequest.current[item.id] = nativeCid;
+          }
           // The chat API needs the consultation id; it isn't in the token natively.
           decodedToken.consultation_id = Number.isFinite(consultationId) ? consultationId : item.id;
           enrichedToken = encodeURIComponent(btoa(JSON.stringify(decodedToken)));
@@ -210,6 +237,43 @@ export function InstantConsultTab() {
     item == null
       ? null
       : ((item as any).user_id ?? (item as any).patient_id ?? (item as any).patient?.id ?? null);
+
+  // Resolve the real `instant_consultations` id for the summary payload, since
+  // the queue item only carries the request id.
+  const resolveInstantConsultId = (item: InstantConsultQueueItem | null): number | null => {
+    if (!item) return null;
+    // 1. captured from this session's join token
+    const captured = consultIdByRequest.current[item.id];
+    if (captured) return captured;
+    // 2. the doctor's in-progress live session (matched by request id)
+    const ls = (liveSession ?? null) as LiveSessionResponse | null;
+    const lsReqId = ls?.instant_consultation_request_id ?? ls?.id;
+    if (ls?.consultation_id && lsReqId === item.id) return ls.consultation_id;
+    // 3. fall back to the request id
+    return item.id;
+  };
+
+  // Open the consultation-summary document (formatted on the frontend) for a
+  // completed instant consult. Opens the tab first (user gesture) then fills it.
+  const handleViewSummary = async (item: InstantConsultQueueItem) => {
+    const win = openBlankSummaryWindow();
+    try {
+      const cid = resolveInstantConsultId(item);
+      const res = await apiFetch<{ data: ConsultationSummary[] }>(
+        `/doctor/consultation-summaries?instant_consultation_id=${cid}`,
+      );
+      const summary = res.data?.[0];
+      if (summary) {
+        writeSummaryToWindow(win, summary, false);
+      } else {
+        win?.close();
+        toast.error("No consultation summary was recorded for this consultation.");
+      }
+    } catch (err: unknown) {
+      win?.close();
+      toast.error(getErrMsg(err, "Could not load the consultation summary."));
+    }
+  };
 
   const recordPatientId = patientIdOf(recordItem);
   const bookingPatientId = patientIdOf(bookingItem);
@@ -503,7 +567,17 @@ export function InstantConsultTab() {
                   count={completed.length}
                 />
                 {completed.map((item) => (
-                  <IncomingCard key={item.id} item={item} />
+                  <div key={item.id} className="space-y-1.5">
+                    <IncomingCard item={item} />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleViewSummary(item)}
+                        className="h-7 px-2.5 rounded-[6px] border border-border text-[11px] font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors flex items-center gap-1.5"
+                      >
+                        <FileText className="h-3 w-3" /> View summary
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </section>
             )}
@@ -552,12 +626,12 @@ export function InstantConsultTab() {
         </div>
       </aside>
 
-      {/* Step 1 — required: patient medical record */}
+      {/* Step 1 — required: consultation summary (SOAP note) */}
       {recordItem != null && (
-        <MedicalRecordModal
+        <ConsultationSummaryModal
+          instantConsultationId={resolveInstantConsultId(recordItem)}
           patientId={recordPatientId}
           patientName={recordItem.guest_phone}
-          sourceId={recordItem.id}
           onClose={() => setRecordItem(null)}
           onSaved={() => {
             const item = recordItem;

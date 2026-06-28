@@ -28,8 +28,10 @@ import {
   Clock,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMe } from "@/hooks/useAuth";
 import {
   useHospitalDetail,
   useCreateBooking,
@@ -76,6 +78,8 @@ export const HospitalBookingDialog = ({
   );
 
   const createBooking = useCreateBooking();
+  const navigate = useNavigate();
+  const { data: me } = useMe();
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -165,6 +169,25 @@ export const HospitalBookingDialog = ({
   const handleConfirm = () => {
     if (!canConfirm || !chosenService || !chosenDepartment) return;
 
+    // ── Gate: only a signed-in patient can book ──────────────────────────────
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      // Not signed in → send to login instead of failing with "not authenticated".
+      toast.message("Please sign in to book", {
+        description: "You need a patient account to book a hospital spot.",
+      });
+      onOpenChange(false);
+      navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+      return;
+    }
+    const role = (me as { role?: string } | undefined)?.role;
+    if (role && role !== "patient") {
+      toast.error("Switch to a patient account", {
+        description: `You're signed in as a ${role}. To book a hospital spot and get treatment, switch to (or create) a patient account.`,
+      });
+      return;
+    }
+
     const payload: BookingPayload = {
       hospital_id: hospital.id,
       hospital_service_id: chosenService.id,
@@ -187,7 +210,28 @@ export const HospitalBookingDialog = ({
         });
       },
       onError: (err: Error) => {
-        toast.error("Booking failed", { description: err.message });
+        const status = (err as { status?: number })?.status;
+        const msg = err?.message ?? "";
+
+        // Session expired / not authenticated → go to login.
+        if (status === 401 || /unauthor|not authenticated/i.test(msg)) {
+          toast.message("Please sign in to book", {
+            description: "Your session has expired or you're not signed in.",
+          });
+          onOpenChange(false);
+          navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+          return;
+        }
+
+        // Authenticated but the wrong kind of account.
+        if (status === 403) {
+          toast.error("Switch to a patient account", {
+            description: "This account can't book hospital spots. Switch to a patient account to get treatment.",
+          });
+          return;
+        }
+
+        toast.error("Booking failed", { description: msg || "Please try again." });
       },
     });
   };

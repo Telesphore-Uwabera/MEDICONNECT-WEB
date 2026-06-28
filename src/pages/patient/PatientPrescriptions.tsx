@@ -43,8 +43,8 @@ import {
   type FilterState,
   type ViewMode,
   isExpiringSoon,
-  getPdfUrl,
 } from "./components/prescription-constants";
+import { openPrescriptionDocument } from "@/lib/prescription-document";
 
 import {
   StatusBadge,
@@ -149,7 +149,9 @@ const PatientPrescriptions = () => {
   const expiringSoonCount = prescriptions.filter((p) => isExpiringSoon(p.valid_until)).length;
 
   const handleAction = useCallback((p: Prescription, action: "pdf" | "send") => {
-    if (action === "pdf" && p.pdf_url) window.open(getPdfUrl(p.pdf_url), "_blank");
+    // The backend PDF isn't publicly reachable (storage 403 / route 404), so we
+    // render the prescription document on the frontend instead.
+    if (action === "pdf") openPrescriptionDocument(p);
     if (action === "send") { setPrescriptionToSend(p); setPharmacyModalOpen(true); }
   }, []);
 

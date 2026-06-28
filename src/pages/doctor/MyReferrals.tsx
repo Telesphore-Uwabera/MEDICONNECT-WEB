@@ -599,13 +599,34 @@ function MyReferrals() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Referral | null>(null);
 
-  const { data, isLoading, isError, refetch, isFetching } = useGetDoctorReferrals(
-    activeTab === "all" ? undefined : activeTab
-  );
+  // Fetch all referrals once; filter client-side so the stat cards always
+  // reflect real totals regardless of the active tab.
+  const { data, isLoading, isError, refetch, isFetching } = useGetDoctorReferrals();
 
   const cancelReferral = useCancelReferral();
 
-  const referrals = data?.referrals ?? [];
+  const allReferrals = data?.referrals ?? [];
+  const referrals =
+    activeTab === "all"
+      ? allReferrals
+      : allReferrals.filter((r) => r.status === activeTab);
+
+  const countBy = (s: ReferralStatus) =>
+    allReferrals.filter((r) => r.status === s).length;
+
+  const stats: {
+    key: TabStatus;
+    label: string;
+    value: number;
+    icon: React.ElementType;
+    tone: string;
+  }[] = [
+    { key: "all", label: "Total", value: allReferrals.length, icon: ArrowUpRight, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "pending", label: "Pending", value: countBy("pending"), icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "accepted", label: "Accepted", value: countBy("accepted"), icon: CheckCircle2, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "completed", label: "Completed", value: countBy("completed"), icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "rejected", label: "Rejected", value: countBy("rejected"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+  ];
 
   const handleCancelConfirm = async () => {
     if (!cancelTarget) return;
@@ -624,6 +645,31 @@ function MyReferrals() {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-6 space-y-4 flex-1">
+
+          {/* ── Stats cards (also quick filters) ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+            {stats.map(({ key, label, value, icon: Icon, tone }) => {
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-[6px] border bg-card px-3 py-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                    active ? "border-primary ring-1 ring-primary/30" : "border-border/70",
+                  )}
+                >
+                  <span className={cn("h-9 w-9 rounded-[6px] flex items-center justify-center border shrink-0", tone)}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-lg font-bold leading-none text-foreground tabular-nums">{value}</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">{label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
           {/* ── Toolbar ── */}
           <div className="flex items-center justify-between gap-3 flex-wrap">

@@ -503,7 +503,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               ))}
             </div>
             <Link
-              to="/patient/service-bookings"
+              to="/patient/medical-records"
               className="mt-auto h-9 inline-flex items-center justify-center rounded-[6px] border border-primary/30 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             >
               Review medical info

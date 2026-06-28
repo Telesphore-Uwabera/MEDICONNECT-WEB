@@ -349,6 +349,7 @@ const PatientAppointments = () => {
           const started = startInAppCallFromJoin(startCall, res, {
             consultationId: appt.id,
             isOwner: false,
+            appointmentDurationMinutes: appt.duration_minutes,
           });
           if (started) return;
           // Otherwise the session is hosted on Daily.co — open the room URL the

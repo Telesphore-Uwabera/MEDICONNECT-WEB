@@ -164,13 +164,15 @@ function SectionCard({
   icon: Icon,
   title,
   children,
+  id,
 }: {
   icon: React.ElementType;
   title: string;
   children: React.ReactNode;
+  id?: string;
 }) {
   return (
-    <div className="rounded-[6px] border border-border/60 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+    <div id={id} className="scroll-mt-3 rounded-[6px] border border-border/60 bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-2.5 px-3 sm:px-4 py-3 sm:py-3.5 border-b border-border/60 bg-muted/20">
         <div className="w-8 h-8 rounded-[6px] flex items-center justify-center bg-primary/10 shrink-0 border border-primary/10">
           <Icon size={14} className="text-primary" />
@@ -412,6 +414,102 @@ function SkeletonRequestCard({ compact }: { compact?: boolean }) {
 // Detail View
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Workflow stepper — guides the doctor through each step and scrolls to it
+// ─────────────────────────────────────────────────────────────────────────────
+
+function scrollToAnchor(anchor: string) {
+  document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function CertStepper({ cert }: { cert: Certificate }) {
+  const terminal = cert.status === "rejected" || cert.status === "revoked";
+  const issued = cert.is_signed || cert.status === "issued";
+
+  const steps = [
+    { label: "Request", anchor: "cert-sec-patient", done: true, hint: "Review the request" },
+    {
+      label: "Identity",
+      anchor: "cert-sec-identity",
+      done: cert.identity_verified_via_video,
+      hint: "Verify identity via video",
+    },
+    { label: "Decision", anchor: "cert-sec-decision", done: !!cert.decision, hint: "Record your decision" },
+    { label: "Sign & issue", anchor: "cert-sec-decision", done: issued, hint: "Sign & issue the certificate" },
+  ];
+  const activeIndex = terminal || issued ? -1 : steps.findIndex((s) => !s.done);
+
+  return (
+    <div className="rounded-[6px] border border-border/60 bg-card px-3 sm:px-4 py-3">
+      <div className="flex items-center">
+        {steps.map((s, i) => {
+          const state = s.done ? "done" : i === activeIndex ? "active" : "pending";
+          return (
+            <React.Fragment key={s.label}>
+              <button
+                type="button"
+                onClick={() => scrollToAnchor(s.anchor)}
+                className="flex flex-col items-center gap-1 shrink-0"
+                title={`Go to: ${s.label}`}
+              >
+                <span
+                  className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors",
+                    state === "done"
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : state === "active"
+                        ? "bg-primary/15 border-primary text-primary ring-2 ring-primary/20"
+                        : "bg-muted border-border text-muted-foreground",
+                  )}
+                >
+                  {state === "done" ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px] font-medium whitespace-nowrap",
+                    state === "pending" ? "text-muted-foreground" : "text-foreground",
+                  )}
+                >
+                  {s.label}
+                </span>
+              </button>
+              {i < steps.length - 1 && (
+                <div
+                  className={cn(
+                    "flex-1 h-0.5 mx-1.5 sm:mx-2 rounded -mt-4",
+                    s.done ? "bg-emerald-500/60" : "bg-border",
+                  )}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {terminal ? (
+        <p className="mt-2.5 text-[11px] font-medium text-destructive capitalize">
+          This request was {cert.status}.
+        </p>
+      ) : activeIndex >= 0 ? (
+        <p className="mt-2.5 text-[11px] text-muted-foreground">
+          Next:{" "}
+          <button
+            type="button"
+            onClick={() => scrollToAnchor(steps[activeIndex].anchor)}
+            className="text-primary font-semibold hover:underline"
+          >
+            {steps[activeIndex].hint}
+          </button>
+        </p>
+      ) : (
+        <p className="mt-2.5 text-[11px] font-medium text-emerald-600">
+          Certificate issued — all steps complete.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function RequestDetail({
   certId,
   onBack,
@@ -648,6 +746,9 @@ function RequestDetail({
 
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
+        {/* ── Workflow stepper ── */}
+        <CertStepper cert={cert} />
+
         {/* ── Cannot-sign warning ── */}
         {decidable && decision === "fit" && !signable && (
           <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-blue-400/30 bg-blue-500/10">
@@ -687,7 +788,7 @@ function RequestDetail({
         )}
 
         {/* ── 1. Patient Information ── */}
-        <SectionCard icon={User} title="Patient Information">
+        <SectionCard id="cert-sec-patient" icon={User} title="Patient Information">
           <div className="flex items-center gap-3 mb-1 pb-3 border-b border-border">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
               {getInitials(cert.patient_full_name)}
@@ -887,7 +988,7 @@ function RequestDetail({
         </SectionCard>
 
         {/* ── 7. Video Confirmation ── */}
-        <SectionCard icon={Video} title="Video Confirmation">
+        <SectionCard id="cert-sec-identity" icon={Video} title="Video Confirmation">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
               label="Confirmation session"
@@ -991,6 +1092,7 @@ function RequestDetail({
 
         {/* ── 10. Doctor's Decision ── */}
         <SectionCard
+          id="cert-sec-decision"
           icon={Stethoscope}
           title={decidable ? "Doctor's Decision" : "Review Summary"}
         >
@@ -1225,14 +1327,30 @@ function RequestDetail({
 function DoctorFitnessCertificates() {
   const { t, i18n } = useTranslation();
 
-  const [activeFilter, setActiveFilter] = useState<CertStatus | "all">("all");
+  type CertFilter = CertStatus | "all" | "action" | "high_risk" | "declined";
+  const [activeFilter, setActiveFilter] = useState<CertFilter>("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const { data: certificates = [], isLoading } = useGetCertificates();
 
+  const isAction = (c: Certificate) =>
+    c.status === "pending" || c.status === "in_review";
+  const isHighRisk = (c: Certificate) => !c.job_none_of_above;
+  const isDeclined = (c: Certificate) =>
+    c.status === "rejected" || c.status === "revoked";
+
   const filtered = certificates.filter((cert) => {
-    const matchFilter = activeFilter === "all" || cert.status === activeFilter;
+    const matchFilter =
+      activeFilter === "all"
+        ? true
+        : activeFilter === "action"
+          ? isAction(cert)
+          : activeFilter === "high_risk"
+            ? isHighRisk(cert)
+            : activeFilter === "declined"
+              ? isDeclined(cert)
+              : cert.status === activeFilter;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
@@ -1251,6 +1369,21 @@ function DoctorFitnessCertificates() {
     ]),
   ) as Record<CertStatus | "all", number>;
 
+  // Top-line stats (each card also acts as a quick filter).
+  const stats: {
+    key: CertFilter;
+    label: string;
+    value: number;
+    icon: React.ElementType;
+    tone: string;
+  }[] = [
+    { key: "all", label: "Total", value: certificates.length, icon: ClipboardList, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "action", label: "Needs action", value: certificates.filter(isAction).length, icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "issued", label: "Issued", value: certificates.filter((c) => c.status === "issued").length, icon: ShieldCheck, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "declined", label: "Declined", value: certificates.filter(isDeclined).length, icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+    { key: "high_risk", label: "High-risk", value: certificates.filter(isHighRisk).length, icon: AlertTriangle, tone: "text-orange-600 bg-orange-500/10 border-orange-400/20" },
+  ];
+
   return (
     <DashboardLayout role="doctor">
       <div className="flex flex-col h-full">
@@ -1266,6 +1399,31 @@ function DoctorFitnessCertificates() {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
+          {/* ── Stats cards (also quick filters) ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 mb-4">
+            {stats.map(({ key, label, value, icon: Icon, tone }) => {
+              const active = activeFilter === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveFilter(key)}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-[6px] border bg-card px-3 py-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                    active ? "border-primary ring-1 ring-primary/30" : "border-border/70",
+                  )}
+                >
+                  <span className={cn("h-9 w-9 rounded-[6px] flex items-center justify-center border shrink-0", tone)}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-lg font-bold leading-none text-foreground tabular-nums">{value}</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5 truncate">{label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-lg flex min-h-[580px]">
             {/* ── Left panel ── */}
             <div

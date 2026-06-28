@@ -182,6 +182,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           icon: FileText,
         },
         {
+          to: "/doctor/consultation-summaries",
+          label: "Consultation Summaries",
+          icon: Stethoscope,
+        },
+        {
           to: "/doctor/fitness-certificates",
           label: t("sidebar.fitnessCertificates"),
           icon: CheckCircle,

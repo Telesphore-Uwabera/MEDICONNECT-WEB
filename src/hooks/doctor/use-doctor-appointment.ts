@@ -503,6 +503,9 @@ export function useCompleteInstant() {
             apiFetch<{ message: string }>(`${IC}/${id}/complete`, { method: "POST" }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["instant-consultations"] });
+            // The consult is finished — drop the "rejoin in-progress" live session
+            // so the banner disappears automatically.
+            qc.invalidateQueries({ queryKey: ["doctor-instant-live-session"] });
         },
     });
 }

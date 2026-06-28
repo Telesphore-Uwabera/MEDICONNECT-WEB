@@ -83,10 +83,7 @@ export function useGetSearchHospitals(params: HospitalSearchParams = {}) {
   return useQuery({
     queryKey: ["search-hospitals", params],
     queryFn: (): Promise<ApiHospitalListResponse> =>
-      apiFetch(url).then((res) => {
-        console.log("Hospitals fetched:", res);
-        return res as ApiHospitalListResponse;
-      }),
+      apiFetch(url).then((res) => res as ApiHospitalListResponse),
     staleTime: 30_000,
   });
 }

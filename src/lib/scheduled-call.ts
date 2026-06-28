@@ -52,7 +52,11 @@ export function decodeCallToken(raw: string | undefined | null): any | null {
 export function startInAppCallFromJoin(
   startCall: (roomName: string, token: any) => void,
   res: JoinTokenResponse | undefined,
-  opts: { consultationId?: number | string; isOwner?: boolean } = {},
+  opts: {
+    consultationId?: number | string;
+    isOwner?: boolean;
+    appointmentDurationMinutes?: number | string | null;
+  } = {},
 ): boolean {
   if (!res?.token) return false;
 
@@ -85,6 +89,12 @@ export function startInAppCallFromJoin(
   }
   if (opts.isOwner != null && decoded.is_owner == null) {
     decoded.is_owner = opts.isOwner;
+  }
+  if (opts.appointmentDurationMinutes != null) {
+    const duration = Number(opts.appointmentDurationMinutes);
+    if (Number.isFinite(duration) && duration > 0) {
+      decoded.appointment_duration_minutes = duration;
+    }
   }
   decoded.chat_mode = "appointment";
 

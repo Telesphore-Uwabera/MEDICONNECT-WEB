@@ -58,6 +58,14 @@ const getAlertSpeech = (alert: PaidAlert) => {
   return `New confirmed appointment from ${patientLabel}. Please open your appointments.`;
 };
 
+const getAlertTitle = (alert: PaidAlert) =>
+  alert.kind === "instant" ? "Paid instant consultation" : "Confirmed appointment";
+
+const getAlertBody = (alert: PaidAlert) =>
+  alert.kind === "instant"
+    ? `A patient is waiting: ${getAlertPatientLabel(alert)}`
+    : `Appointment ready: ${getAlertPatientLabel(alert)}`;
+
 export function InstantPaidAlertListener() {
   const navigate = useNavigate();
   const { data: instantData } = useGetInstantQueue(true);
@@ -66,6 +74,10 @@ export function InstantPaidAlertListener() {
     { refetchInterval: 10_000 },
   );
   const [activeAlert, setActiveAlert] = useState<PaidAlert | null>(null);
+  const notificationsSupported = typeof window !== "undefined" && "Notification" in window;
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    notificationsSupported ? Notification.permission : "denied",
+  );
 
   const seenInstantIdsRef = useRef<Set<number>>(loadSeenIds(SEEN_STORAGE_KEY));
   const seenAppointmentIdsRef = useRef<Set<number>>(loadSeenIds(SEEN_APPOINTMENT_STORAGE_KEY));
@@ -81,6 +93,42 @@ export function InstantPaidAlertListener() {
   const confirmedAppointments = useMemo(
     () => (appointmentData?.data ?? []).filter((item) => item.status === "confirmed"),
     [appointmentData?.data],
+  );
+
+  const openAlertTarget = useCallback(
+    (alert: PaidAlert | null) => {
+      navigate(alert?.kind === "instant" ? "/doctor/appointments?tab=instant" : "/doctor/appointments");
+    },
+    [navigate],
+  );
+
+  const requestNotificationPermission = useCallback(async () => {
+    if (!notificationsSupported) return "denied" as NotificationPermission;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    return permission;
+  }, [notificationsSupported]);
+
+  const showBrowserNotification = useCallback(
+    (alert: PaidAlert) => {
+      if (!notificationsSupported || Notification.permission !== "granted") return;
+
+      const notification = new Notification(getAlertTitle(alert), {
+        body: getAlertBody(alert),
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        tag: `${alert.kind}-${alert.item.id}`,
+        renotify: true,
+        requireInteraction: true,
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        openAlertTarget(alert);
+        notification.close();
+      };
+    },
+    [notificationsSupported, openAlertTarget],
   );
 
   const stopAlertSound = useCallback(() => {
@@ -129,14 +177,22 @@ export function InstantPaidAlertListener() {
     [speakAlert, stopAlertSound],
   );
 
+  const raiseAlert = useCallback(
+    (alert: PaidAlert) => {
+      setActiveAlert(alert);
+      startAlertSound(alert);
+      showBrowserNotification(alert);
+    },
+    [showBrowserNotification, startAlertSound],
+  );
+
   useEffect(() => {
     const unseenInstant = paidRequests.find((item) => !seenInstantIdsRef.current.has(item.id));
     if (unseenInstant) {
       seenInstantIdsRef.current.add(unseenInstant.id);
       saveSeenIds(SEEN_STORAGE_KEY, seenInstantIdsRef.current);
       const alert: PaidAlert = { kind: "instant", item: unseenInstant };
-      setActiveAlert(alert);
-      startAlertSound(alert);
+      raiseAlert(alert);
       return;
     }
 
@@ -148,9 +204,8 @@ export function InstantPaidAlertListener() {
     seenAppointmentIdsRef.current.add(unseenAppointment.id);
     saveSeenIds(SEEN_APPOINTMENT_STORAGE_KEY, seenAppointmentIdsRef.current);
     const alert: PaidAlert = { kind: "appointment", item: unseenAppointment };
-    setActiveAlert(alert);
-    startAlertSound(alert);
-  }, [confirmedAppointments, paidRequests, startAlertSound]);
+    raiseAlert(alert);
+  }, [confirmedAppointments, paidRequests, raiseAlert]);
 
   useEffect(() => stopAlertSound, [stopAlertSound]);
 
@@ -161,10 +216,23 @@ export function InstantPaidAlertListener() {
 
   const openQueue = () => {
     dismiss();
-    navigate(activeAlert?.kind === "instant" ? "/doctor/appointments?tab=instant" : "/doctor/appointments");
+    openAlertTarget(activeAlert);
   };
 
-  if (!activeAlert) return null;
+  if (!activeAlert) {
+    if (notificationPermission !== "default") return null;
+
+    return (
+      <button
+        type="button"
+        onClick={requestNotificationPermission}
+        className="fixed bottom-5 right-5 z-[95] inline-flex h-10 items-center gap-2 rounded-[6px] border border-primary/30 bg-card px-3 text-xs font-semibold text-foreground shadow-lg hover:bg-muted"
+      >
+        <BellRing className="h-4 w-4 text-primary" />
+        Enable desktop alerts
+      </button>
+    );
+  }
 
   return (
     <div className="fixed bottom-5 right-5 z-[95] w-[min(380px,calc(100vw-24px))] rounded-[6px] border border-primary/30 bg-card shadow-2xl">
@@ -211,6 +279,15 @@ export function InstantPaidAlertListener() {
           </div>
 
           <div className="mt-3 flex items-center justify-end gap-2">
+            {notificationPermission === "default" && (
+              <button
+                type="button"
+                onClick={requestNotificationPermission}
+                className="h-9 rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
+              >
+                Enable desktop alerts
+              </button>
+            )}
             <button
               type="button"
               onClick={dismiss}

@@ -399,7 +399,7 @@ const PatientOverview = () => {
                           a.doctor?.designations ?? a.doctor?.user?.name ?? "—";
                         const specialty = a.doctor?.specialization ?? "—";
                         const canJoin =
-                          a.status === "in_progress" && !!a.daily_room_url;
+                          a.status === "in_progress";
 
                         return (
                           <div
