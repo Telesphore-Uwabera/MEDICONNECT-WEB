@@ -39,6 +39,7 @@ import {
 import { StatCard } from "@/components/StatCard";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { toast as sonnerToast } from "sonner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -631,8 +632,8 @@ function SpecializationPanel({
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+    if (!name.trim()) { 
+      sonnerToast.error("Name is required"); 
       return;
     }
     try {
@@ -655,12 +656,11 @@ function SpecializationPanel({
           icon: icon.trim() || undefined,
         });
       }
-      toast({
-        title: isEdit ? "Specialization updated." : "Specialization created.",
-      });
+      
+      sonnerToast.success(isEdit ? "Specialization updated.sadasd" : "Specialization created.");
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error)); 
     }
   };
 
@@ -916,24 +916,22 @@ function SubSpecPanel({
 
   const handleSubmit = async () => {
     if (!isEdit && !subSpec.trim()) {
-      toast({
-        title: "Sub-specialization name is required",
-        variant: "destructive",
-      });
+      
+      sonnerToast.error("Sub-specialization name is required"); 
       return;
     }
-    if (!isEdit && !tierName.trim()) {
-      toast({ title: "Tier name is required", variant: "destructive" });
+    if (!isEdit && !tierName.trim()) { 
+      sonnerToast.error("Tier name is required");
       return;
     }
     const online = Number(onlineFee);
     const inPerson = Number(inPersonFee);
-    if (!onlineFee || isNaN(online) || online < 0) {
-      toast({ title: "Enter a valid online fee", variant: "destructive" });
+    if (!onlineFee || isNaN(online) || online < 0) { 
+      sonnerToast.error("Enter a valid online fee");
       return;
     }
-    if (!inPersonFee || isNaN(inPerson) || inPerson < 0) {
-      toast({ title: "Enter a valid in-person fee", variant: "destructive" });
+    if (!inPersonFee || isNaN(inPerson) || inPerson < 0) { 
+      sonnerToast.error("Enter a valid in-person fee");
       return;
     }
     try {
@@ -958,14 +956,14 @@ function SubSpecPanel({
           description: description.trim() || undefined,
         });
       }
-      toast({
-        title: isEdit
+      sonnerToast.success(
+        isEdit
           ? "Sub-specialization updated."
-          : "Sub-specialization created.",
-      });
+          : "Sub-specialization created."
+      );
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
   };
 
@@ -1421,7 +1419,7 @@ function ManageSpecializations() {
     setSpecDeleteConflict(null);
     try {
       await deleteSpecMutation.mutateAsync(deletingSpec.id);
-      toast({ title: "Specialization deleted." });
+      sonnerToast.success("Specialization deleted.");
       setDeletingSpec(null);
     } catch (error) {
       const msg = getErrorMessage(error);
@@ -1431,7 +1429,7 @@ function ManageSpecializations() {
       ) {
         setSpecDeleteConflict(msg);
       } else {
-        toast({ title: msg, variant: "destructive" });
+        sonnerToast.error(msg);
         setDeletingSpec(null);
       }
     } finally {
@@ -1462,7 +1460,7 @@ function ManageSpecializations() {
     setFeeDeleteConflict(null);
     try {
       await deleteFeeMutation.mutateAsync(deletingFee.id);
-      toast({ title: "Sub-specialization deleted." });
+      sonnerToast.success("Sub-specialization deleted.");
       setDeletingFee(null);
     } catch (error) {
       const msg = getErrorMessage(error);
@@ -1473,13 +1471,13 @@ function ManageSpecializations() {
       ) {
         setFeeDeleteConflict(msg);
       } else {
-        toast({ title: msg, variant: "destructive" });
+        sonnerToast.error(msg);
         setDeletingFee(null);
       }
     } finally {
       setDeletingFeeId(null);
     }
-  }, [deletingFee, deleteFeeMutation, toast]);
+  }, [deletingFee, deleteFeeMutation, sonnerToast]);
 
   const handleDeactivateFee = useCallback(async () => {
     if (!deletingFee) return;
@@ -1489,15 +1487,15 @@ function ManageSpecializations() {
         id: deletingFee.id,
         is_active: false,
       });
-      toast({ title: "Sub-specialization deactivated." });
+      sonnerToast.success("Sub-specialization deactivated.");
       setDeletingFee(null);
       setFeeDeleteConflict(null);
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     } finally {
       setIsDeactivatingFee(false);
     }
-  }, [deletingFee, updateFeeMutation, toast]);
+  }, [deletingFee, updateFeeMutation, sonnerToast]);
 
   const isLoading = specsLoading || feesLoading;
   const isError = specsError || feesError;
@@ -1507,7 +1505,7 @@ function ManageSpecializations() {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.specializations.overview_title")}
-          subtitle={t("pages.specializations.overview_sub")}
+          subtitle={t("pages.admin.overview_sub")}
         />
 
         <main className="flex-1 overflow-y-auto">

@@ -17,7 +17,7 @@
     "online": "Online",
     "sessions": "Sessions",
     "what_we_do": "What we do",
-    "features_title": "A complete healthcare loop, built for speed",
+    "features_title": "A complete healthcare loop",
     "f_smart_booking_t": "Smart Booking",
     "f_smart_booking_d": "30-min slot calendar with custom date ranges and live availability",
     "f_instant_t": "Instant Consult",
@@ -53,7 +53,7 @@
     "pharmacies_d": "Incoming scripts, stock, fulfillment",
     "open_dashboard": "Open dashboard",
     "footer": "© 2026 MEDICONNECT. Bringing care to your fingertips",
-    "health_facility": "Health Facilities"
+    "health_facility": "Health facilities"
   },
   "patient": {
     "overview_title": "Welcome back",

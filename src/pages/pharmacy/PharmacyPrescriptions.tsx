@@ -1,6 +1,9 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { StatCard } from "@/components/StatCard";
+
+import { toast as sonnerToast } from "sonner";
 import {
   Pill,
   SlidersHorizontal,
@@ -35,8 +38,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge"; 
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
@@ -277,17 +279,28 @@ function DetailDrawer({
   open: boolean;
   onClose: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"summary" | "people" | "medicines" | "documents">("summary");
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     if (open) window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (open) setActiveTab("summary");
+  }, [open, rx?.id]);
+
   const pdfUrl = resolveUrl(rx?.prescription?.pdf_url);
   const qrUrl = resolveUrl(rx?.prescription?.qr_code);
   const patient = rx?.prescription?.patient;
   const doctor = rx?.prescription?.doctor;
   const items = rx?.prescription?.items ?? [];
+  const detailTabs = [
+    { id: "summary" as const, label: "Summary", icon: FileText },
+    { id: "people" as const, label: "People", icon: User },
+    { id: "medicines" as const, label: `Medicines (${items.length})`, icon: FlaskConical },
+    { id: "documents" as const, label: "Docs & timeline", icon: CalendarDays },
+  ];
 
   return (
     <>
@@ -300,7 +313,7 @@ function DetailDrawer({
       />
       <div
         className={cn(
-          "fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[480px] bg-background border-l border-border/60 shadow-2xl flex flex-col transition-transform duration-300 ease-out",
+          "fixed top-0 right-0 bottom-0 z-50 w-full sm:w-[560px] lg:w-[640px] bg-background border-l border-border/60 shadow-2xl flex flex-col transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -345,6 +358,29 @@ function DetailDrawer({
         <div className="flex-1 overflow-y-auto px-5 py-5">
           {rx && (
             <>
+              <div className="mb-5 flex gap-1 overflow-x-auto border-b border-border/60">
+                {detailTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-[12px] font-semibold transition-colors",
+                        activeTab === tab.id
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeTab === "people" && (
+                <>
               {/* Patient */}
               <DrawerSection icon={User} title="Patient">
                 <DetailRow label="Name" value={patient?.name} />
@@ -364,7 +400,11 @@ function DetailDrawer({
                 <DetailRow label="Degree" value={doctor?.doctor_degree} />
                 <DetailRow label="License" value={doctor?.medical_license} />
               </DrawerSection>
+                </>
+              )}
 
+              {activeTab === "summary" && (
+                <>
               {/* Prescription details */}
               <DrawerSection icon={FileText} title="Prescription Details">
                 <DetailRow label="Rx #" value={rx.prescription?.prescription_number} />
@@ -398,16 +438,29 @@ function DetailDrawer({
                 {rx.delivery_address && <DetailRow label="Address" value={rx.delivery_address} />}
                 {rx.notes && <DetailRow label="Notes" value={rx.notes} />}
               </DrawerSection>
+                </>
+              )}
 
+              {activeTab === "medicines" && (
+                <>
               {/* Medicines */}
-              {items.length > 0 && (
+              {items.length > 0 ? (
                 <DrawerSection icon={FlaskConical} title={`Medicines (${items.length})`}>
                   {items.map((item, i) => (
                     <MedicineRow key={item.id} item={item} index={i} />
                   ))}
                 </DrawerSection>
+              ) : (
+                <div className="rounded-[6px] border border-dashed border-border/70 bg-secondary/10 px-4 py-8 text-center">
+                  <p className="text-[13px] font-semibold text-foreground">No medicines listed</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">This prescription has no medicine items attached.</p>
+                </div>
+              )}
+                </>
               )}
 
+              {activeTab === "documents" && (
+                <>
               {/* Rejection reason */}
               {rx.status === "rejected" && rx.rejection_reason && (
                 <DrawerSection icon={XCircle} title="Rejection Reason">
@@ -462,6 +515,8 @@ function DetailDrawer({
                 <DetailRow label="Created" value={`${fmtDate(rx.created_at)} ${fmtTime(rx.created_at)}`} />
                 <DetailRow label="Updated" value={`${fmtDate(rx.updated_at)} ${fmtTime(rx.updated_at)}`} />
               </DrawerSection>
+                </>
+              )}
             </>
           )}
         </div>
@@ -503,8 +558,8 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
         size="sm"
         disabled={busy}
         onClick={() =>
-          review.mutate(rx.id, {
-            onSuccess: () => toast({ title: t("pages.pharmacy.marked_reviewing", "Marked as reviewing") }),
+          review.mutate(rx.id, {  
+            onSuccess: () => sonnerToast.success(t("pages.pharmacy.marked_reviewing", "Marked as reviewing")),
           })
         }
         variant="outline"
@@ -527,7 +582,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
           onClick={() =>
             reject.mutate(
               { id: rx.id, reason: "Prescription is expired" },
-              { onSuccess: () => toast({ title: "Prescription rejected", variant: "destructive" }) },
+              { onSuccess: () => sonnerToast.success("Prescription rejected") },
             )
           }
           className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
@@ -541,7 +596,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
           disabled={busy}
           onClick={() =>
             approve.mutate(rx.id, {
-              onSuccess: () => toast({ title: "Prescription approved" }),
+              onSuccess: () => sonnerToast.success("Prescription approved"),
             })
           }
           className="h-7 px-3 text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
@@ -561,7 +616,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
         disabled={busy}
         onClick={() =>
           fulfill.mutate(rx.id, {
-            onSuccess: () => toast({ title: "Prescription fulfilled", description: patientName }),
+            onSuccess: () => sonnerToast.success("Prescription fulfilled"),
           })
         }
         className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
@@ -866,18 +921,43 @@ const PharmacyPrescriptions = () => {
           subtitle={t("pages.pharmacy.rx_sub", "Review and fulfill incoming prescriptions")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
+            <StatCard
+              label="Total requests"
+              value={isLoading ? "—" : requests.length}
+              icon={FileText}
+              accent="primary"
+            />
+            <StatCard
+              label="Pending"
+              value={isLoading ? "—" : counts.pending}
+              icon={Clock}
+              accent="warning"
+            />
+            <StatCard
+              label="Reviewing"
+              value={isLoading ? "—" : counts.reviewing}
+              icon={Eye}
+              accent="primary"
+            />
+            <StatCard
+              label="Approved"
+              value={isLoading ? "—" : counts.approved}
+              icon={CheckCircle2}
+              accent="success"
+            />
+            <StatCard
+              label="Fulfilled"
+              value={isLoading ? "—" : counts.fulfilled}
+              icon={PackageCheck}
+              accent="success"
+            />
+          </div>
+
           {/* Meta / toolbar bar */}
-          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -975,6 +1055,14 @@ const PharmacyPrescriptions = () => {
             </div>
           </div>
 
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
           {/* Table */}
           <div className="flex-1 p-4">
             {isError && (

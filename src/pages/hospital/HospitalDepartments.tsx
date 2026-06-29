@@ -774,14 +774,6 @@ const HospitalDepartments = () => {
           subtitle={t("pages.hospital.departments_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 4 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
           {/* Meta bar */}
@@ -845,6 +837,16 @@ const HospitalDepartments = () => {
               </button>
             </div>
           </div>
+
+
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 4 }}
+          />
 
           {/* Content */}
           <div className="p-4">

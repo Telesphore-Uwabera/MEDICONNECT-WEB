@@ -637,14 +637,6 @@ function PharmacyCategories() {
           subtitle={t("pages.pharmacy.categories_sub", "Organise your inventory into logical groups")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
@@ -755,6 +747,14 @@ function PharmacyCategories() {
             </div>
           </div>
 
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
           {/* Table area */}
           <div className="p-4">
 

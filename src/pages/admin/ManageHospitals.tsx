@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+
+import { toast as sonnerToast } from "sonner";
 import {
   Building2,
   Clock,
@@ -24,8 +26,7 @@ import {
   useRejectHospital,
   useSuspendHospital,
   type ApiHospital,
-} from "@/hooks/admin/use-admin-hospitals";
-import { useToast } from "@/hooks/use-toast";
+} from "@/hooks/admin/use-admin-hospitals"; 
 import { cn } from "@/lib/utils";
 
 import {
@@ -49,7 +50,7 @@ function ManageHospitals() {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [selected, setSelected] = useState<ApiHospital | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { toast } = useToast();
+
 
   // Debounced search value
   const [searchInput, setSearchInput] = useState("");
@@ -132,11 +133,11 @@ function ManageHospitals() {
       setSelected((prev) =>
         prev ? { ...prev, status: "active", verified_at: new Date().toISOString() } : null,
       );
-      toast({ title: "Hospital approved." });
+      sonnerToast.success("Hospital approved.");
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [approveMutation, toast]);
+  }, [approveMutation, sonnerToast]);
 
   const handleReject = useCallback(async (h: ApiHospital) => {
     try {
@@ -144,21 +145,21 @@ function ManageHospitals() {
       setSelected((prev) =>
         prev ? { ...prev, status: "rejected", verified_at: null } : null,
       );
-      toast({ title: "Hospital rejected." });
+      sonnerToast.success("Hospital rejected.");
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [rejectMutation, toast]);
+  }, [rejectMutation, sonnerToast]);
 
   const handleSuspend = useCallback(async (h: ApiHospital) => {
     try {
       await suspendMutation.mutateAsync({ id: h.id });
       setSelected((prev) => prev ? { ...prev, status: "suspended" } : null);
-      toast({ title: "Hospital suspended." });
+      sonnerToast.success("Hospital suspended.");
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [suspendMutation, toast]);
+  }, [suspendMutation, sonnerToast]);
 
   const isActing =
     approveMutation.isPending ||
@@ -205,16 +206,17 @@ function ManageHospitals() {
           subtitle={t("pages.admin.overview_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2 }}
-        />
+    
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
+
+          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <StatCard label="Total hospitals" value={total} icon={Building2} accent="primary" />
+            <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
+            <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
+            <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
+          </div>
+
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <p className="text-[11px] text-muted-foreground shrink-0">
@@ -285,15 +287,16 @@ function ManageHospitals() {
                 hasActiveFilters={hasActiveFilters}
               />
             </div>
+            
           </div>
-
-          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Total hospitals" value={total} icon={Building2} accent="primary" />
-            <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
-            <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
-            <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
-          </div>
-
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2 }}
+          />
           <div className="sm:hidden px-3 pt-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />

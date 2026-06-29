@@ -39,6 +39,16 @@ export interface PharmacyOrder {
   pharmacy: Pharmacy;
   items: OrderItem[];
   prescription_id?: number;
+  receipt_url?: string | null;
+  invoice_url?: string | null;
+  pdf_url?: string | null;
+  receipt?: { url?: string | null } | null;
+  invoice?: { url?: string | null } | null;
+  payment?: {
+    receipt_url?: string | null;
+    invoice_url?: string | null;
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface PharmacyOrdersResponse {

@@ -631,7 +631,8 @@ const PatientAppointments = () => {
             {/* ── Table view ── */}
             {view === "table" && (isLoading || sorted.length > 0) && (
               <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm overflow-auto">
                   <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
                       <th className="text-left px-5 py-4 font-semibold">Doctor / Hospital</th>
@@ -642,7 +643,7 @@ const PatientAppointments = () => {
                       <th className="px-5 py-4" />
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="overflow-auto">
                     {isLoading
                       ? Array.from({ length: 5 }).map((_, i) => <AppointmentRowSkeleton key={i} />)
                       : sorted.map((a) => (
@@ -721,6 +722,7 @@ const PatientAppointments = () => {
                       ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
 

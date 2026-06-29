@@ -58,20 +58,34 @@ export interface FilterBarProps {
 /* ─── Select className ───────────────────────────────────────────────── */
 
 const selectCls =
-  "w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all";
+  "w-full h-8 px-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all";
 
 const inputCls =
-  "w-full pl-7 pr-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
+  "w-full h-8 pl-7 pr-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
 const labelCls =
   "text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80";
 
 /* ─── FilterField ────────────────────────────────────────────────────── */
 
-function FilterField({ field }: { field: FilterFieldDef }) {
+function FilterField({
+  field,
+  compact = false,
+}: {
+  field: FilterFieldDef;
+  compact?: boolean;
+}) {
   return (
-    <div className="space-y-1.5">
-      <p className={labelCls}>{field.label}</p>
+    <div
+      className={cn(
+        compact && field.type === "search"
+          ? "w-full"
+          : compact
+            ? "min-w-[124px] max-w-[180px] shrink-0"
+            : "space-y-1.5",
+      )}
+    >
+      <p className={compact ? "sr-only" : labelCls}>{field.label}</p>
 
       {field.type === "search" && (
         <div className="relative">
@@ -81,7 +95,7 @@ function FilterField({ field }: { field: FilterFieldDef }) {
             placeholder={field.placeholder ?? `Search…`}
             value={field.value}
             onChange={(e) => field.onChange(e.target.value)}
-            className={inputCls}
+            className={cn(inputCls, compact && "h-9 text-[12px]")}
           />
           {field.value && (
             <button
@@ -98,7 +112,12 @@ function FilterField({ field }: { field: FilterFieldDef }) {
         <select
           value={field.value}
           onChange={(e) => field.onChange(e.target.value)}
-          className={selectCls}
+          aria-label={field.label}
+          className={cn(
+            selectCls,
+            compact &&
+              "h-9 rounded-[6px] bg-secondary/70 px-3 pr-7 text-[12px] font-semibold shadow-sm",
+          )}
         >
           {field.options.map((o) => (
             <option key={o.value} value={o.value}>
@@ -130,6 +149,8 @@ function FilterPanel({
 }) {
   const { default: d = 1, sm = 2, lg = 3, xl } = cols;
   const resolvedXl = xl ?? Math.min(fields.length + (extraSlot ? 1 : 0), 6);
+  const searchFields = fields.filter((field) => field.type === "search");
+  const compactFields = fields.filter((field) => field.type !== "search");
 
   const gridCls = cn(
     "grid gap-x-5 gap-y-4",
@@ -146,8 +167,25 @@ function FilterPanel({
   );
 
   return (
-    <div className="border-b border-border/60 bg-card/60 backdrop-blur-sm px-4 py-4">
-      <div className={gridCls}>
+    <div className="border-b border-border/60 bg-card/60 backdrop-blur-sm px-3 py-3 sm:px-4 sm:py-4">
+      <div className="space-y-2 sm:hidden">
+        {searchFields.map((f) => (
+          <FilterField key={f.key} field={f} compact />
+        ))}
+
+        {(compactFields.length > 0 || extraSlot) && (
+          <div className="-mx-3 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max items-center gap-2">
+              {compactFields.map((f) => (
+                <FilterField key={f.key} field={f} compact />
+              ))}
+              {extraSlot && <div className="min-w-[160px] shrink-0">{extraSlot}</div>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className={cn(gridCls, "hidden sm:grid")}>
         {fields.map((f) => (
           <FilterField key={f.key} field={f} />
         ))}
@@ -155,10 +193,10 @@ function FilterPanel({
       </div>
 
       {hasActiveFilters && onClearAll && (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-2 sm:mt-3 flex justify-end">
           <button
             onClick={onClearAll}
-            className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
+            className="text-[11px] sm:text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
           >
             <X className="w-3 h-3" />
             Reset all filters
@@ -187,7 +225,7 @@ export function FilterToggleButton({
     <button
       onClick={onToggle}
       className={cn(
-        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] border text-[11px] transition-all duration-200 font-medium",
+        "flex h-8 items-center gap-1.5 px-2.5 rounded-[6px] border text-[11px] transition-all duration-200 font-medium whitespace-nowrap",
         open || hasActiveFilters
           ? "bg-primary text-primary-foreground border-primary shadow-sm"
           : "border-border/60 text-muted-foreground bg-card hover:border-primary/40 hover:text-foreground",

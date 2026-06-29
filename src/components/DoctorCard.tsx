@@ -40,6 +40,7 @@ import type {
 } from "@/hooks/patient/use-patient-doctor";
 import { readConsultSession } from "@/hooks/patient/se-consultation-session";
 import { Card } from "./ui/card";
+import { RichTextRenderer } from "./ui/rich-textarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -531,7 +532,8 @@ export function UnifiedModal({
                         About
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        {bio}
+                        <RichTextRenderer value={bio} className="text-xs text-foreground" />
+
                       </p>
                     </div>
                   )}

@@ -55,7 +55,7 @@ import {
 } from "./types";
 import { InfoTile, InstantToggleButton } from "./components";
 import moment from "moment";
-
+import { toast as sonnerToast } from "sonner";
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 const fmtDate = (iso?: string | null) =>
@@ -1212,19 +1212,17 @@ export function AssignPanel({
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!selectedDoctor) {
-      toast({ title: "Select a doctor", variant: "destructive" });
+    if (!selectedDoctor) { 
+      sonnerToast.error("Select a doctor")  ;
       return;
     }
     if (!selectedFeeId) {
-      toast({ title: "Select a fee tier", variant: "destructive" });
+      sonnerToast.error("Select a fee tier");
+      return;
       return;
     }
     if (!primarySpec.trim()) {
-      toast({
-        title: "Primary specialization is required",
-        variant: "destructive",
-      });
+      sonnerToast.error("Primary specialization is required");  
       return;
     }
     try {
@@ -1234,10 +1232,10 @@ export function AssignPanel({
         primary_specialization: primarySpec.trim(),
         secondary_specialization: secondarySpec.trim() || undefined,
       });
-      toast({ title: "Doctor assigned to consultation." });
+      sonnerToast.success("Doctor assigned to consultation.");
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error) || "Failed to assign doctor to consultation.");
     }
   };
 

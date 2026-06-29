@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -23,6 +24,7 @@ import {
   Store,
   CalendarDays,
   PackageCheck,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -79,6 +81,38 @@ const INITIAL_FILTERS: FilterState = {
   sort: "date-desc",
   search: "",
 };
+
+const API_BASE_URL =
+  import.meta.env.VITE_APP_BASE_URL ?? import.meta.env.VITE_API_BASE_URL ?? "";
+const PUBLIC_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+function resolveOrderReceiptUrl(order: PharmacyOrder): string | null {
+  const url =
+    order.receipt_url ??
+    order.invoice_url ??
+    order.pdf_url ??
+    order.receipt?.url ??
+    order.invoice?.url ??
+    order.payment?.receipt_url ??
+    order.payment?.invoice_url ??
+    null;
+
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = PUBLIC_BASE_URL || window.location.origin;
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
+function openOrderReceipt(order: PharmacyOrder) {
+  const url = resolveOrderReceiptUrl(order);
+  if (!url) {
+    sonnerToast.error("Receipt is not available yet.", {
+      description: "The pharmacy order does not include a receipt link from the API.",
+    });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
@@ -388,8 +422,18 @@ function OrderDrawer({
               </div>
             </div>
 
-            {canCancel && (
-              <div className="px-4 py-3 border-t border-border/50">
+            {(canCancel || order.status === "completed") && (
+              <div className="px-4 py-3 border-t border-border/50 space-y-2">
+                {order.status === "completed" && (
+                  <Button
+                    className="w-full h-8 text-xs rounded-[6px] gap-1.5"
+                    onClick={() => openOrderReceipt(order)}
+                  >
+                    <Download className="h-4 w-4" />
+                    View receipt
+                  </Button>
+                )}
+                {canCancel && (
                 <Button
                   className="w-full h-8 text-xs rounded-[6px] bg-red-600 hover:bg-red-700 text-white gap-1.5"
                   onClick={() => onCancel(order)}
@@ -397,6 +441,7 @@ function OrderDrawer({
                   <X className="h-4 w-4" />
                   {order.status === "draft" ? "Delete draft" : "Cancel order"}
                 </Button>
+                )}
               </div>
             )}
           </>

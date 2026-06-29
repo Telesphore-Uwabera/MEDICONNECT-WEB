@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast as sonnerToast } from "sonner";
 import {
   Wallet,
   Plus,
@@ -53,8 +54,7 @@ import {
   type Transaction,
   type WithdrawalRequest,
 } from "@/hooks/admin/use-doctor-wallets";
-import { StatCard } from "@/components/StatCard";
-import { useToast } from "@/hooks/use-toast";
+import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ function WalletMetric({
         </span>
       </div>
       <div>
-        <p className="text-2xl font-bold text-foreground tabular-nums leading-tight">
+        <p className=" leading-none font-bold text-foreground text-sm tabular-nums leading-tight">
           {value}
         </p>
         {detail && <p className="text-[11px] text-muted-foreground mt-1">{detail}</p>}
@@ -654,8 +654,7 @@ function ActionPanel({
   payout: Payout | null;
   onClose: () => void;
 }) {
-  const open = !!action;
-  const { toast } = useToast();
+  const open = !!action; 
 
   const [topUpForm, setTopUpForm] = useState<TopUpForm>({ amount: "", note: "" });
   const [deductForm, setDeductForm] = useState<DeductForm>({ amount: "", note: "" });
@@ -715,8 +714,8 @@ function ActionPanel({
   }, [open]);
 
   const handleTopUp = async () => {
-    if (!wallet || !topUpForm.amount || parseFloat(topUpForm.amount) <= 0) {
-      toast({ title: "Valid amount is required", variant: "destructive" });
+    if (!wallet || !topUpForm.amount || parseFloat(topUpForm.amount) <= 0) { 
+      sonnerToast.error("Valid amount is required" );
       return;
     }
     try {
@@ -724,16 +723,16 @@ function ActionPanel({
         id: wallet.doctor_id,
         payload: { amount: parseFloat(topUpForm.amount), note: topUpForm.note || undefined },
       });
-      toast({ title: "Wallet topped up successfully." });
+      sonnerToast.success("Wallet topped up successfully." );
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error( getErrorMessage(error) );
     }
   };
 
   const handleDeduct = async () => {
     if (!wallet || !deductForm.amount || parseFloat(deductForm.amount) <= 0) {
-      toast({ title: "Valid amount is required", variant: "destructive" });
+      sonnerToast.error("Valid amount is required" );
       return;
     }
     try {
@@ -741,16 +740,16 @@ function ActionPanel({
         id: wallet.doctor_id,
         payload: { amount: parseFloat(deductForm.amount), note: deductForm.note || undefined },
       });
-      toast({ title: "Amount deducted successfully." });
+      sonnerToast.success("Amount deducted successfully." );
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error( getErrorMessage(error));
     }
   };
 
   const handleCreatePayout = async () => {
     if (!payoutForm.doctor_id || !payoutForm.amount || parseFloat(payoutForm.amount) <= 0) {
-      toast({ title: "Doctor and valid amount are required", variant: "destructive" });
+      sonnerToast.error("Doctor and valid amount are required" );
       return;
     }
     try {
@@ -761,16 +760,16 @@ function ActionPanel({
         payment_reference: payoutForm.payment_reference || undefined,
         note: payoutForm.note || undefined,
       });
-      toast({ title: "Payout created successfully." });
+      sonnerToast.success("Payout created successfully." );
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error( getErrorMessage(error) );
     }
   };
 
   const handleRefund = async () => {
     if (!payout || !refundForm.reason.trim()) {
-      toast({ title: "Reason is required", variant: "destructive" });
+      sonnerToast.error("Reason is required" );
       return;
     }
     try {
@@ -778,10 +777,10 @@ function ActionPanel({
         id: payout.id,
         payload: { reason: refundForm.reason },
       });
-      toast({ title: "Payout refunded successfully." });
+      sonnerToast.success("Payout refunded successfully." );
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error( getErrorMessage(error) );
     }
   };
 
@@ -1077,7 +1076,7 @@ function MainWalletCard({
 }) {
   const topUpMutation = useTopUpMainWallet();
   const deductMutation = useDeductMainWallet();
-  const { toast } = useToast();
+ 
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -1085,22 +1084,22 @@ function MainWalletCard({
 
   const handleMainAction = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      toast({ title: "Valid amount is required", variant: "destructive" });
+      sonnerToast.error("Valid amount is required");
       return;
     }
     try {
       if (action === "topup") {
         await topUpMutation.mutateAsync({ amount: parseFloat(amount), note: note || undefined });
-        toast({ title: "Main wallet topped up successfully." });
+        sonnerToast.success("Main wallet topped up successfully.");
       } else {
         await deductMutation.mutateAsync({ amount: parseFloat(amount), note: note || undefined });
-        toast({ title: "Amount deducted from main wallet." });
+        sonnerToast.success("Amount deducted from main wallet.");
       }
       setAmount("");
       setNote("");
       setAction(null);
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error( getErrorMessage(error) );
     }
   };
 
@@ -1214,7 +1213,7 @@ function MainWalletCard({
 
 function ManageAdminWallet() {
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+
 
   const [activeTab, setActiveTab] = useState<TabKey>("doctors");
   const [search, setSearch] = useState("");
@@ -1336,13 +1335,13 @@ function ManageAdminWallet() {
         action: withdrawalAction.action,
         reason: withdrawalReason.trim() || undefined,
       });
-      toast({ title: `Withdrawal ${withdrawalAction.action}ed.` });
+      sonnerToast.success(`Withdrawal ${withdrawalAction.action}ed.`);
       setWithdrawalAction(null);
       setWithdrawalReason("");
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [toast, withdrawalAction, withdrawalActionMutation, withdrawalReason]);
+  }, [sonnerToast, withdrawalAction, withdrawalActionMutation, withdrawalReason]);
 
   const closePanel = useCallback(() => {
     setPanelAction(null);
@@ -1359,14 +1358,14 @@ function ManageAdminWallet() {
     setDeletingId(deletingWallet.doctor_id);
     try {
       await deleteMutation.mutateAsync(deletingWallet.doctor_id);
-      toast({ title: "Wallet deleted." });
+      sonnerToast.success("Wallet deleted.");
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     } finally {
       setDeletingId(null);
       setDeletingWallet(null);
     }
-  }, [deletingWallet, deleteMutation, toast]);
+  }, [deletingWallet, deleteMutation, sonnerToast]);
 
   const isLoading =
     (activeTab === "doctors" && walletsLoading) ||
@@ -1404,7 +1403,7 @@ function ManageAdminWallet() {
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">
                       Platform wallet
                     </p>
-                    <h2 className="text-3xl font-bold text-foreground mt-3 tabular-nums">
+                    <h2 className="text-xl font-bold text-foreground mt-3 tabular-nums">
                       {mainLoading ? "Loading..." : mainBalance}
                     </h2>
                     <p className="text-xs text-muted-foreground mt-2">
@@ -1951,7 +1950,7 @@ function ManageAdminWallet() {
               <div className="p-4 space-y-4">
                 <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-4">
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Amount</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">{formatCurrency(selectedWithdrawal.amount)}</p>
+                    <p className=" leading-none font-bold text-foreground text-sm mt-1">{formatCurrency(selectedWithdrawal.amount)}</p>
                   <Badge variant="outline" className={cn("mt-3 border text-[10px] capitalize", statusStyle[String(selectedWithdrawal.status)] ?? "bg-muted text-muted-foreground border-border")}>
                     {String(selectedWithdrawal.status)}
                   </Badge>

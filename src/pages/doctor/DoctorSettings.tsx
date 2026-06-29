@@ -1,11 +1,10 @@
-
-
-
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+
+import { toast as sonnerToast } from "sonner";
 import {
   User,
   Lock,
@@ -43,8 +42,7 @@ import {
   type UpdatePasswordPayload,
   type RequestEmailChangePayload,
   type RequestPhoneChangePayload,
-} from "@/hooks/admin/use-admin-settings";
-import { useToast } from "@/hooks/use-toast";
+} from "@/hooks/admin/use-admin-settings"; 
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -305,8 +303,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function DoctorSettings() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState(false);
 
@@ -391,15 +388,15 @@ function DoctorSettings() {
 
   const handleProfileSave = async () => {
     if (!profileForm.name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+      sonnerToast.error("Name is required");
       return;
     }
     try {
       await updateProfile.mutateAsync(profileForm);
-      toast({ title: "Profile updated." });
+      sonnerToast.success("Profile updated.");
       setEditingProfile(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
@@ -407,15 +404,15 @@ function DoctorSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Avatar must be under 2 MB", variant: "destructive" });
+      sonnerToast.error("Avatar must be under 2 MB");
       return;
     }
     try {
       await updateAvatar.mutateAsync(file);
-      toast({ title: "Avatar updated." });
+      sonnerToast.success("Avatar updated.");
       setAvatarError(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
     e.target.value = "";
   };
@@ -423,92 +420,93 @@ function DoctorSettings() {
   const handleDeleteAvatar = async () => {
     try {
       await deleteAvatar.mutateAsync();
-      toast({ title: "Avatar removed." });
+      sonnerToast.success("Avatar removed.");
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handlePasswordSave = async () => {
     if (!passwordForm.current_password || !passwordForm.password) {
-      toast({ title: "All password fields are required", variant: "destructive" });
+      sonnerToast.error("All password fields are required");
       return;
     }
     if (passwordForm.password !== passwordForm.password_confirmation) {
-      toast({ title: "Passwords do not match", variant: "destructive" });
+      sonnerToast.error("Passwords do not match");
       return;
     }
     try {
       await updatePassword.mutateAsync(passwordForm);
-      toast({ title: "Password updated. Other sessions have been logged out." });
+      sonnerToast.success("Password updated. Other sessions have been logged out.");
       setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
       setEditingPassword(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleRequestEmail = async () => {
     if (!emailForm.email || !emailForm.current_password) {
-      toast({ title: "All fields are required", variant: "destructive" });
+      sonnerToast.error("All fields are required");
       return;
     }
     try {
       await requestEmail.mutateAsync(emailForm);
-      toast({ title: "OTP sent to your new email." });
+      sonnerToast.success("OTP sent to your new email.");
       setEmailOtpStep(true);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleVerifyEmail = async (otp: string) => {
     try {
       await verifyEmail.mutateAsync({ otp });
-      toast({ title: "Email updated successfully." });
+      sonnerToast.success("Email updated successfully.");
       setEmailOtpStep(false);
       setEmailForm({ email: "", current_password: "" });
       setEditingEmail(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleRequestPhone = async () => {
     if (!phoneForm.phone || !phoneForm.current_password) {
-      toast({ title: "All fields are required", variant: "destructive" });
+      sonnerToast.error("All fields are required");
       return;
     }
     try {
       await requestPhone.mutateAsync(phoneForm);
-      toast({ title: "OTP sent to your new phone number." });
+      sonnerToast.success("OTP sent to your new phone number.");
       setPhoneOtpStep(true);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleVerifyPhone = async (otp: string) => {
     try {
       await verifyPhone.mutateAsync({ otp });
-      toast({ title: "Phone number updated successfully." });
+      sonnerToast.success("Phone number updated successfully.");
       setPhoneOtpStep(false);
       setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
       setEditingPhone(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
-      toast({ title: "Password is required", variant: "destructive" });
+      sonnerToast.error("Password is required");
       return;
     }
     try {
       await deleteAccount.mutateAsync({ password: deletePassword });
+      sonnerToast.success("Account deleted successfully.");
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 

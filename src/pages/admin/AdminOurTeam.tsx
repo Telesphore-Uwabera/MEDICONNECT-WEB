@@ -346,15 +346,6 @@ function AdminOurTeam() {
           subtitle={t("admin.team.subtitle", { defaultValue: "Manage your medical team members" })}
         />
 
-        {/* Top filter bar — same as ManageAppointments */}
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
 
@@ -464,6 +455,15 @@ function AdminOurTeam() {
             </div>
           </div>
 
+          {/* Top filter bar — same as ManageAppointments */}
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
           {/* Content */}
           <div className="p-3 sm:p-4">
             {isError ? (

@@ -7,8 +7,8 @@ import { PageHeader } from "@/components/PageHeader";
 import {
   useGetAdminPharmacies, useApprovePharmacy, useRejectPharmacy, useSuspendPharmacy,
   type ApiPharmacy,
-} from "@/hooks/admin/use-admin-pharmacies";
-import { useToast } from "@/hooks/use-toast";
+} from "@/hooks/admin/use-admin-pharmacies"; 
+import { toast as sonnerToast } from "sonner";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { usePharmacyFilters, getErrorMessage, SORT_OPTIONS } from "./components/Pharmacy/config";
 import {
@@ -18,8 +18,7 @@ import { Search, ChevronDown, SlidersHorizontal, X, RefreshCw } from "lucide-rea
 import { cn } from "@/lib/utils";
 
 function ManagePharmacies() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
   const { filters, set, clearAll, hasActiveFilters, searchInput, setSearchInput } = usePharmacyFilters();
   const [selected, setSelected] = useState<ApiPharmacy | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -64,25 +63,25 @@ function ManagePharmacies() {
     try {
       await approveMutation.mutateAsync(p.id);
       setSelected((prev) => prev ? { ...prev, status: "active", verified_at: new Date().toISOString() } : null);
-      toast({ title: "Pharmacy approved." });
-    } catch (e) { toast({ title: getErrorMessage(e), variant: "destructive" }); }
-  }, [approveMutation, toast]);
+      sonnerToast.success("Pharmacy approved.");
+    } catch (e) { sonnerToast.error(getErrorMessage(e)); }
+  }, [approveMutation, sonnerToast]);
 
   const handleReject = useCallback(async (p: ApiPharmacy) => {
     try {
       await rejectMutation.mutateAsync({ id: p.id });
       setSelected((prev) => prev ? { ...prev, status: "rejected", verified_at: null } : null);
-      toast({ title: "Pharmacy rejected." });
-    } catch (e) { toast({ title: getErrorMessage(e), variant: "destructive" }); }
-  }, [rejectMutation, toast]);
+      sonnerToast.success("Pharmacy rejected.");
+    } catch (e) { sonnerToast.error(getErrorMessage(e)); }
+  }, [rejectMutation, sonnerToast]);
 
   const handleSuspend = useCallback(async (p: ApiPharmacy) => {
     try {
       await suspendMutation.mutateAsync({ id: p.id });
       setSelected((prev) => prev ? { ...prev, status: "suspended" } : null);
-      toast({ title: "Pharmacy suspended." });
-    } catch (e) { toast({ title: getErrorMessage(e), variant: "destructive" }); }
-  }, [suspendMutation, toast]);
+      sonnerToast.success("Pharmacy suspended.");
+    } catch (e) { sonnerToast.error(getErrorMessage(e)); }
+  }, [suspendMutation, sonnerToast]);
 
   const filterFields = useMemo(() => [
     {
@@ -117,14 +116,12 @@ function ManagePharmacies() {
       <div className="flex flex-col h-full">
         <PageHeader title={t("pages.admin.overview_title")} subtitle={t("pages.admin.overview_sub")} />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2 }}
-        />
+        <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <StatCard label="Total pharmacies" value={total} icon={FlaskConical} accent="primary" />
+          <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
+          <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
+          <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
+        </div>
 
         <main className="flex-1 overflow-y-auto flex flex-col">
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
@@ -200,13 +197,16 @@ function ManagePharmacies() {
               />
             </div>
           </div>
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2 }}
+          />
 
-          <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Total pharmacies" value={total} icon={FlaskConical} accent="primary" />
-            <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
-            <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
-            <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
-          </div>
+      
 
           <div className="p-3 sm:p-4">
             {isError ? (

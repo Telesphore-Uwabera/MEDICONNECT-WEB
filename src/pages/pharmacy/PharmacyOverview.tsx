@@ -39,6 +39,7 @@ import {
   type OutOfStockItem,
   type ExpiringSoonItem,
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
+import { Link } from "react-router-dom";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtRWF(n: number): string {
@@ -284,7 +285,7 @@ function StockAlertsSection({
 
   return (
     <Section title="Stock Alerts" icon={AlertTriangle}
-      action={<span className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Manage <ChevronRight size={11} /></span>}
+      action={<Link to={'/pharmacy/restock-requests'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Manage <ChevronRight size={11} /></Link>}
     >
       <div className="flex border-b border-border">
         {tabs.map((t) => (
@@ -390,7 +391,7 @@ function TopMedicines({ medicines, loading }: {
 }) {
   return (
     <Section title="Top Medicines" icon={Star}
-      action={<span className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Full report <ChevronRight size={11} /></span>}
+      action={<Link to={'/pharmacy/inventory'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Full report <ChevronRight size={11} /></Link>}
     >
       <div className="divide-y divide-border">
         {loading
@@ -506,7 +507,7 @@ function RevenueBreakdownCard({ revenue, loading }: {
       ) : revenue ? (
         <div className="p-4 space-y-3">
           <div>
-            <p className="text-2xl font-bold text-foreground">{fmtRWF(revenue.total)}</p>
+              <p className=" leading-none font-bold text-foreground text-sm">{fmtRWF(revenue.total)}</p>
             {change && (
               <div className={cn("flex items-center gap-1 text-[11px] font-medium mt-0.5", change.cls)}>
                 <change.icon size={12} />

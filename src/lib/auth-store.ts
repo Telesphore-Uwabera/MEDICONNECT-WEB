@@ -128,7 +128,7 @@ export const dashboardPath = (role: Role): string =>
   role === "patient"  ? "/patient"
   : role === "doctor"   ? "/doctor"
   : role === "hospital" ? "/hospital"
-  : role === "pharmacy" ? "/pharmacy/overview"
+  : role === "pharmacy" ? "/pharmacy"
   : role === "admin"    ? "/admin"
   : "/";
 

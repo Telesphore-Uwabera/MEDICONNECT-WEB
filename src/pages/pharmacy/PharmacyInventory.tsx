@@ -34,7 +34,11 @@ import {
   Calendar,
   Clock,
   Hash,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 
@@ -43,6 +47,8 @@ import {
   useCreateMedicine,
   useUpdateMedicine,
   useDeleteMedicine,
+  useImportMedicines,
+  downloadMedicineImportTemplate,
   type Medicine,
   type MedicineUnit,
   type CreateMedicinePayload,
@@ -247,6 +253,135 @@ function medicineToForm(m: Medicine): MedicineFormData {
 }
 
 const MEDICINE_FORM_ID = "medicine-form";
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Something went wrong";
+}
+
+function ImportMedicinesDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const importMedicines = useImportMedicines();
+
+  useEffect(() => {
+    if (!open) setFile(null);
+  }, [open]);
+
+  const handleDownloadTemplate = async () => {
+    setDownloading(true);
+    try {
+      await downloadMedicineImportTemplate();
+      toast.success("Template downloaded.");
+    } catch (error) {
+      toast.error("Could not download template.", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleImport = () => {
+    if (!file) {
+      toast.error("Choose an Excel or CSV file first.");
+      return;
+    }
+
+    importMedicines.mutate(file, {
+      onSuccess: (res) => {
+        toast.success(res.message || "Medicines imported successfully.", {
+          description: [
+            typeof res.imported === "number" ? `${res.imported} imported` : null,
+            typeof res.updated === "number" ? `${res.updated} updated` : null,
+            typeof res.skipped === "number" ? `${res.skipped} skipped` : null,
+          ].filter(Boolean).join(" · ") || undefined,
+        });
+        onClose();
+      },
+      onError: (error) => {
+        toast.error("Import failed.", { description: getErrorMessage(error) });
+      },
+    });
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
+        <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
+          <SheetTitle className="text-[13px] font-semibold text-foreground">
+            Import medicines
+          </SheetTitle>
+          <SheetDescription className="text-[10px] text-muted-foreground/70">
+            Download the template, fill it, then upload the Excel or CSV file.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary border border-primary/15 flex items-center justify-center shrink-0">
+                <FileSpreadsheet className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold text-foreground">Medicine import template</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Use the backend template so columns match the expected format.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadTemplate}
+              disabled={downloading}
+              className="h-8 w-full rounded-[6px] text-[11px]"
+            >
+              {downloading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-2 h-3.5 w-3.5" />}
+              Download template
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <label className={labelCls}>Upload filled file</label>
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="block w-full text-[11px] text-muted-foreground file:mr-3 file:h-8 file:rounded-[6px] file:border-0 file:bg-primary file:px-3 file:text-[11px] file:font-semibold file:text-primary-foreground hover:file:bg-primary/90"
+            />
+            {file && (
+              <p className="text-[10px] text-muted-foreground">
+                Selected: <span className="font-medium text-foreground">{file.name}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <SheetFooter className="px-5 py-4 border-t border-border/60 flex-row gap-2">
+          <Button type="button" variant="outline" onClick={onClose} className="h-8 rounded-[6px] text-[11px]">
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleImport}
+            disabled={!file || importMedicines.isPending}
+            className="h-8 rounded-[6px] text-[11px]"
+          >
+            {importMedicines.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-2 h-3.5 w-3.5" />}
+            Import medicines
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
 
 function MedicineFormDrawer({
   open,
@@ -690,6 +825,7 @@ const PharmacyInventory = () => {
 
   // ── modal / drawer state ─────────────────────────────────────────────────────
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Medicine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
   const [viewTarget, setViewTarget] = useState<Medicine | null>(null);
@@ -817,14 +953,6 @@ const PharmacyInventory = () => {
           subtitle={t("pages.pharmacy.inventory_sub", "Manage medicines, stock levels and pricing")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
@@ -941,6 +1069,17 @@ const PharmacyInventory = () => {
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
               </div>
 
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+                className="flex h-7 w-7 sm:w-auto sm:px-3 p-0 sm:p-2 text-[10px] font-semibold rounded-[6px] border-border/60"
+                title="Import medicines"
+              >
+                <Upload className="h-3 w-3 sm:mr-1" />
+                <span className="hidden sm:inline">Import</span>
+              </Button>
+
               {/* Add medicine button */}
               <Button
                 size="sm"
@@ -958,6 +1097,15 @@ const PharmacyInventory = () => {
               />
             </div>
           </div>
+
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
 
           {/* Table area */}
           <div className="p-4">
@@ -1190,6 +1338,10 @@ const PharmacyInventory = () => {
         onClose={() => { setFormOpen(false); setEditTarget(null); }}
         editing={editTarget}
         categories={categories}
+      />
+      <ImportMedicinesDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
       <DeleteConfirmDrawer
         medicine={deleteTarget}

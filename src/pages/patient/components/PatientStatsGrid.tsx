@@ -37,7 +37,7 @@ export function PatientStatsGrid({ items }: { items: PatientStatItem[] }) {
                 <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {item.label}
                 </p>
-                <p className="mt-2 text-xl font-bold leading-none text-foreground">
+                <p className="mt-2  leading-none font-bold text-foreground text-sm">
                   {item.value}
                 </p>
                 {item.helper && (

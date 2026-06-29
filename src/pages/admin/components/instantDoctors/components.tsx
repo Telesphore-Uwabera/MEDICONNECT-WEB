@@ -1,11 +1,12 @@
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button"; 
 import { useToggleInstantConsultation, type ApiDoctorConsultation } from "@/hooks/admin/use-doctor-insitant";
 import { cn } from "@/lib/utils";
 import { activeStyle, activeDot, instantStyle, getInitials, resolvedFee, fmt, getErrorMessage } from "./types";
 import { Loader2, Zap, ToggleLeft, ToggleRight } from "lucide-react";
+
+import { toast as sonnerToast } from "sonner";
 // ─── FilterSection ────────────────────────────────────────────────────────────
 
 export function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -87,17 +88,18 @@ export function SkeletonRows() {
 
 export function InstantToggleButton({ doctorId, isInstant, compact = false }: {
   doctorId: number; isInstant: boolean; compact?: boolean;
-}) {
-  const { toast } = useToast();
+}) { 
+   
   const toggleMutation = useToggleInstantConsultation();
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       const res = await toggleMutation.mutateAsync({ doctor_id: doctorId, active: !isInstant });
-      toast({ title: res.message });
+ 
+      sonnerToast.success(res.message);
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error) || "Failed to toggle instant consultation.");
     }
   };
 

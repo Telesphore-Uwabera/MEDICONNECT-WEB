@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { downloadAuthedFile } from "@/lib/download-file";
 
 const BASE = "/pharmacy/inventory/medicines";
 const QK = ["inventory-medicines"] as const;
@@ -155,4 +156,35 @@ export function useDeleteMedicine() {
     mutationFn: (id) => apiFetch(`${BASE}/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
+}
+
+export interface ImportMedicinesResponse {
+  message?: string;
+  imported?: number;
+  updated?: number;
+  skipped?: number;
+  errors?: Record<string, string[]> | string[];
+}
+
+export function useImportMedicines() {
+  const qc = useQueryClient();
+  return useMutation<ImportMedicinesResponse, Error, File>({
+    mutationFn: (file) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return apiFetch<ImportMedicinesResponse>(`${BASE}/import`, {
+        method: "POST",
+        body: fd,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
+  });
+}
+
+export function downloadMedicineImportTemplate() {
+  return downloadAuthedFile(
+    `${BASE}/import/template`,
+    "medicine_import_template.xlsx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,*/*",
+  );
 }

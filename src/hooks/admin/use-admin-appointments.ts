@@ -45,6 +45,52 @@ export interface ApiAppointmentNote {
   created_at: string;
 }
 
+export interface ApiAppointmentSummary {
+  id?: number;
+  chief_complaint?: string | null;
+  diagnosis?: string | null;
+  treatment_plan?: string | null;
+  recommendations?: string | null;
+  additional_notes?: string | null;
+  blood_pressure?: string | null;
+  temperature?: string | null;
+  pulse_rate?: string | null;
+  weight?: string | null;
+  height?: string | null;
+  needs_follow_up?: boolean;
+  follow_up_date?: string | null;
+  follow_up_notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  [key: string]: unknown;
+}
+
+export interface ApiAppointmentPrescriptionItem {
+  id?: number;
+  medicine_name?: string;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  quantity?: number | string;
+  instructions?: string | null;
+}
+
+export interface ApiAppointmentPrescription {
+  id: number;
+  prescription_number?: string | null;
+  diagnosis?: string | null;
+  notes?: string | null;
+  valid_until?: string | null;
+  status?: string | null;
+  is_signed?: boolean;
+  signed_at?: string | null;
+  issued_at?: string | null;
+  pdf_url?: string | null;
+  items?: ApiAppointmentPrescriptionItem[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 export interface ApiAppointment {
   id: number;
   status: string;               // confirmed | pending | in_progress | cancelled | completed | no_show
@@ -52,11 +98,19 @@ export interface ApiAppointment {
   booking_type: string;         // scheduled | walk_in
   appointment_date: string;     // ISO timestamp
   appointment_time: string;     // ISO timestamp
+  started_at?: string | null;
+  ended_at?: string | null;
+  completed_at?: string | null;
+  duration_minutes?: number | string | null;
   patient: ApiAppointmentPatient;
   doctor: ApiAppointmentDoctor;
   hospital: ApiHospital | null; // null for online appointments
   insurance: ApiInsurance | null;
-  notes?: ApiAppointmentNote[];
+  notes?: ApiAppointmentNote[] | ApiAppointmentSummary | null;
+  summary?: ApiAppointmentSummary | null;
+  consultation_summary?: ApiAppointmentSummary | null;
+  prescription?: ApiAppointmentPrescription | null;
+  prescriptions?: ApiAppointmentPrescription[];
   slot?: ApiSlot;
 }
 

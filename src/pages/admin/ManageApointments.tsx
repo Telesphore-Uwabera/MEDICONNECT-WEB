@@ -27,16 +27,23 @@ import {
   ClipboardList,
   CalendarDays,
   RefreshCw,
+  FileText,
+  Pill,
+  ExternalLink,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
   useGetAdminAppointments,
   useGetAdminAppointment,
   type ApiAppointment,
+  type ApiAppointmentNote,
+  type ApiAppointmentPrescription,
+  type ApiAppointmentSummary,
 } from "@/hooks/admin/use-admin-appointments";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -368,6 +375,196 @@ const InfoTile = ({
 
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 
+type AppointmentDetailTab = "overview" | "summary" | "prescriptions";
+
+const DETAIL_TABS: Array<{ id: AppointmentDetailTab; label: string; icon: React.ReactNode }> = [
+  { id: "overview", label: "Overview", icon: <CalendarClock className="h-3.5 w-3.5" /> },
+  { id: "summary", label: "Summary", icon: <FileText className="h-3.5 w-3.5" /> },
+  { id: "prescriptions", label: "Prescriptions", icon: <Pill className="h-3.5 w-3.5" /> },
+];
+
+function isNoteArray(notes: ApiAppointment["notes"]): notes is ApiAppointmentNote[] {
+  return Array.isArray(notes);
+}
+
+function getAppointmentSummary(appt: ApiAppointment): ApiAppointmentSummary | null {
+  if (appt.summary) return appt.summary;
+  if (appt.consultation_summary) return appt.consultation_summary;
+  if (appt.notes && !Array.isArray(appt.notes)) return appt.notes;
+  return null;
+}
+
+function getAppointmentPrescriptions(appt: ApiAppointment): ApiAppointmentPrescription[] {
+  if (Array.isArray(appt.prescriptions)) return appt.prescriptions;
+  return appt.prescription ? [appt.prescription] : [];
+}
+
+function hasSummaryValue(summary: ApiAppointmentSummary | null): boolean {
+  if (!summary) return false;
+  return [
+    summary.chief_complaint,
+    summary.diagnosis,
+    summary.treatment_plan,
+    summary.recommendations,
+    summary.additional_notes,
+    summary.blood_pressure,
+    summary.temperature,
+    summary.pulse_rate,
+    summary.weight,
+    summary.height,
+    summary.follow_up_date,
+    summary.follow_up_notes,
+  ].some((v) => v !== undefined && v !== null && String(v).trim() !== "");
+}
+
+function EmptyPanel({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="rounded-[6px] border border-dashed border-border/70 bg-secondary/10 px-4 py-8 text-center">
+      <p className="text-[13px] font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-[11px] text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function SummaryLine({ label, value }: { label: string; value?: string | number | null }) {
+  if (value === undefined || value === null || String(value).trim() === "") return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">{label}</p>
+      <RichTextRenderer value={String(value)} className="text-[13px] leading-relaxed text-foreground" />
+    </div>
+  );
+}
+
+function AppointmentSummaryTab({ summary }: { summary: ApiAppointmentSummary | null }) {
+  if (!hasSummaryValue(summary)) {
+    return (
+      <EmptyPanel
+        title="No consultation summary"
+        description="The doctor has not saved a visible summary for this appointment yet."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-4 space-y-4">
+        <SummaryLine label="Chief complaint" value={summary?.chief_complaint} />
+        <SummaryLine label="Diagnosis" value={summary?.diagnosis} />
+        <SummaryLine label="Treatment plan" value={summary?.treatment_plan} />
+        <SummaryLine label="Recommendations" value={summary?.recommendations} />
+        <SummaryLine label="Additional notes" value={summary?.additional_notes} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Blood pressure" value={String(summary?.blood_pressure ?? "—")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Temperature" value={String(summary?.temperature ?? "—")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Pulse" value={String(summary?.pulse_rate ?? "—")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Weight" value={String(summary?.weight ?? "—")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Height" value={String(summary?.height ?? "—")} />
+        <InfoTile
+          icon={<CalendarDays className="w-3.5 h-3.5" />}
+          label="Follow-up"
+          value={summary?.needs_follow_up ? formatDate(String(summary?.follow_up_date ?? "")) : "Not required"}
+        />
+      </div>
+
+      {summary?.follow_up_notes && (
+        <div className="rounded-[6px] border border-border/60 bg-secondary/20 p-4">
+          <SummaryLine label="Follow-up notes" value={summary.follow_up_notes} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrescriptionCard({ prescription }: { prescription: ApiAppointmentPrescription }) {
+  const items = prescription.items ?? [];
+  return (
+    <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
+      <div className="px-4 py-3 border-b border-border/40 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-foreground truncate">
+            {prescription.prescription_number ?? `Prescription #${prescription.id}`}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {prescription.created_at ? formatDate(prescription.created_at) : "Created date unavailable"}
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-[6px] border-border/60 text-[10px] capitalize">
+          {String(prescription.status ?? "unknown").replace("_", " ")}
+        </Badge>
+      </div>
+
+      <div className="p-4 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <SummaryLine label="Diagnosis" value={prescription.diagnosis} />
+          <SummaryLine label="Valid until" value={prescription.valid_until ? formatDate(prescription.valid_until) : null} />
+          <SummaryLine label="Signed" value={prescription.is_signed ? `Yes${prescription.signed_at ? ` · ${formatDate(prescription.signed_at)}` : ""}` : "No"} />
+          {prescription.pdf_url && (
+            <a
+              href={prescription.pdf_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-8 items-center justify-center gap-2 rounded-[6px] border border-border/60 bg-background px-3 text-[11px] font-semibold text-primary hover:bg-secondary"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open PDF
+            </a>
+          )}
+        </div>
+
+        {prescription.notes && <SummaryLine label="Prescription notes" value={prescription.notes} />}
+
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            Medicines ({items.length})
+          </p>
+          {items.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">No medicine items included.</p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item, index) => (
+                <div key={item.id ?? index} className="rounded-[6px] border border-border/50 bg-background p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-[13px] font-semibold text-foreground">{item.medicine_name ?? `Medicine ${index + 1}`}</p>
+                    {item.quantity != null && <span className="text-[11px] text-muted-foreground">Qty {item.quantity}</span>}
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {[item.dosage, item.frequency, item.duration].filter(Boolean).join(" · ") || "Dose details unavailable"}
+                  </p>
+                  {item.instructions && (
+                    <RichTextRenderer value={item.instructions} className="mt-2 text-[11px] text-muted-foreground" />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppointmentPrescriptionsTab({ prescriptions }: { prescriptions: ApiAppointmentPrescription[] }) {
+  if (prescriptions.length === 0) {
+    return (
+      <EmptyPanel
+        title="No prescription found"
+        description="If a doctor issues a prescription for this appointment, it will appear here."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {prescriptions.map((prescription) => (
+        <PrescriptionCard key={prescription.id} prescription={prescription} />
+      ))}
+    </div>
+  );
+}
+
 function AppointmentPanel({
   appointmentId,
   appointmentPreview,
@@ -378,12 +575,16 @@ function AppointmentPanel({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<AppointmentDetailTab>("overview");
   const open = !!appointmentId;
 
   const { data: detailData, isLoading: detailLoading } =
     useGetAdminAppointment(appointmentId);
 
   const appt = detailData?.appointment ?? appointmentPreview;
+  const summary = appt ? getAppointmentSummary(appt) : null;
+  const prescriptions = appt ? getAppointmentPrescriptions(appt) : [];
+  const timelineNotes = appt && isNoteArray(appt.notes) ? appt.notes : [];
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -397,6 +598,10 @@ function AppointmentPanel({
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
+
+  useEffect(() => {
+    if (open) setActiveTab("overview");
+  }, [appointmentId, open]);
 
   return (
     <>
@@ -413,7 +618,7 @@ function AppointmentPanel({
       <div
         ref={panelRef}
         className={cn(
-          "fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] lg:w-[440px]",
+          "fixed top-0 right-0 z-50 h-full w-full sm:w-[560px] lg:w-[640px]",
           "bg-card border-l border-border/60 flex flex-col",
           "transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "translate-x-full",
@@ -507,6 +712,34 @@ function AppointmentPanel({
                     </div>
                   </div>
 
+                  <div className="flex gap-1 border-b border-border/60 overflow-x-auto">
+                    {DETAIL_TABS.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={cn(
+                          "inline-flex items-center gap-2 border-b-2 px-3 py-2 text-[12px] font-semibold whitespace-nowrap transition-colors",
+                          activeTab === tab.id
+                            ? "border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {tab.icon}
+                        {tab.label}
+                        {tab.id === "summary" && hasSummaryValue(summary) && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        )}
+                        {tab.id === "prescriptions" && prescriptions.length > 0 && (
+                          <span className="rounded-[6px] bg-primary/15 px-1.5 py-0.5 text-[10px] text-primary">
+                            {prescriptions.length}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {activeTab === "overview" && (
+                    <div className="space-y-4">
                   {/* Info grid */}
                   <div className="grid grid-cols-2 gap-2.5">
                     <InfoTile
@@ -534,6 +767,18 @@ function AppointmentPanel({
                       label="Appointment ID"
                       value={`#${appt.id}`}
                     />
+                    <InfoTile
+                      icon={<CalendarClock className="w-3.5 h-3.5" />}
+                      label="Ended"
+                      value={formatDate(appt.ended_at ?? appt.completed_at ?? "")}
+                    />
+                    {appt.duration_minutes != null && (
+                      <InfoTile
+                        icon={<Clock className="w-3.5 h-3.5" />}
+                        label="Duration"
+                        value={`${appt.duration_minutes} min`}
+                      />
+                    )}
                     {appt.insurance && (
                       <InfoTile
                         icon={<ShieldCheck className="w-3.5 h-3.5" />}
@@ -544,15 +789,15 @@ function AppointmentPanel({
                   </div>
 
                   {/* Notes */}
-                  {appt.notes && appt.notes.length > 0 && (
+                  {timelineNotes.length > 0 && (
                     <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
                       <div className="px-4 py-2.5 border-b border-border/40">
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                          Notes ({appt.notes.length})
+                          Notes ({timelineNotes.length})
                         </p>
                       </div>
                       <div className="divide-y divide-border/40">
-                        {appt.notes.map((note) => (
+                        {timelineNotes.map((note) => (
                           <div key={note.id} className="px-4 py-3">
                             <p className="text-[12px] text-foreground leading-relaxed">
                               {note.content}
@@ -566,6 +811,11 @@ function AppointmentPanel({
                     </div>
                   )}
 
+                    </div>
+                  )}
+
+                  {activeTab === "summary" && <AppointmentSummaryTab summary={summary} />}
+                  {activeTab === "prescriptions" && <AppointmentPrescriptionsTab prescriptions={prescriptions} />}
                 </div>
               ) : null}
             </div>
@@ -751,14 +1001,6 @@ function ManageAppointments() {
           subtitle={t("pages.admin.overview_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
 
@@ -817,7 +1059,7 @@ function ManageAppointments() {
           </div>
 
           {/* Sticky meta bar */}
-          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-right justify-end gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
@@ -900,6 +1142,14 @@ function ManageAppointments() {
             />
           </div>
 
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
           {/* Content */}
           <div className="p-3 sm:p-4">
             {isError ? (

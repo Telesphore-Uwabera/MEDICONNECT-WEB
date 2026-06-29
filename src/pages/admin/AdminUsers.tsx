@@ -1,5 +1,8 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,8 @@ import {
   Hash,
   RefreshCw,
   Globe,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
@@ -47,13 +52,44 @@ import {
   useDeleteUser,
   type ApiUser,
 } from "@/hooks/admin/use-admin-users";
-import { useToast } from "@/hooks/use-toast";
+import {
+  useApproveDoctor,
+  useRejectDoctor,
+  useSuspendDoctor,
+  type ApiDoctor,
+  type PaginatedDoctors,
+} from "@/hooks/admin/use-admin-doctors";
+import {
+  useActivatePatient,
+  useSuspendPatient,
+  type ApiPatient,
+  type PaginatedPatients,
+} from "@/hooks/admin/use-admin-patients";
+import {
+  useApproveHospital,
+  useRejectHospital,
+  useSuspendHospital,
+  type ApiHospital,
+  type PaginatedHospitals,
+} from "@/hooks/admin/use-admin-hospitals";
+import {
+  useApprovePharmacy,
+  useRejectPharmacy,
+  useSuspendPharmacy,
+  type ApiPharmacy,
+  type PaginatedPharmacies,
+} from "@/hooks/admin/use-admin-pharmacies"; 
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
+import { DoctorPanel } from "./components/doctor/DoctorPanel";
+import { PatientPanel } from "./components/patients/PatientPanel";
+import { HospitalPanel } from "./components/hospital/Hospitalpanel";
+import { PharmacyPanel } from "./components/Pharmacy/components";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type RoleFilter = "all" | "doctor" | "hospital" | "pharmacy" | "patient";
+type RoleFilter = "all" | "doctor" | "hospital" | "pharmacy" | "patient" | "admin";
 type StatusFilter = "all" | "active" | "pending" | "suspended" | "rejected";
 type SortOption = "name" | "joined-desc" | "joined-asc" | "role";
 
@@ -79,6 +115,28 @@ const INITIAL_FILTERS: FilterState = {
   sort: "joined-desc",
   page: 1,
 };
+
+function getErrorMessage(error: unknown): string {
+  if (error && typeof error === "object") {
+    const data = "data" in error ? (error as { data?: unknown }).data : null;
+    if (data && typeof data === "object") {
+      const payload = data as {
+        message?: unknown;
+        errors?: Record<string, string[]> | string[];
+      };
+      if (payload.errors) {
+        const flat = Array.isArray(payload.errors)
+          ? payload.errors
+          : Object.values(payload.errors).flat();
+        if (flat.length > 0) return flat.join(" · ");
+      }
+      if (typeof payload.message === "string") return payload.message;
+    }
+  }
+
+  if (error instanceof Error) return error.message;
+  return "Something went wrong";
+}
 
 // ─── Style maps ───────────────────────────────────────────────────────────────
 
@@ -118,6 +176,24 @@ const roleIcon: Record<string, React.ElementType> = {
   admin: ShieldCheck,
 };
 
+const USER_TABS: Array<{
+  value: RoleFilter;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+}> = [
+  { value: "all", label: "All users", description: "Every account", icon: Users },
+  { value: "patient", label: "Patients", description: "Care seekers", icon: UserCircle },
+  { value: "doctor", label: "Doctors", description: "Clinical users", icon: Stethoscope },
+  { value: "hospital", label: "Facilities", description: "Hospitals", icon: Building2 },
+  { value: "pharmacy", label: "Pharmacies", description: "Medicine providers", icon: Pill },
+  { value: "admin", label: "Admins", description: "Back office", icon: ShieldCheck },
+];
+
+function isRoleFilter(value: string | null): value is RoleFilter {
+  return USER_TABS.some((tab) => tab.value === value);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getRole(u: ApiUser): string {
@@ -133,18 +209,39 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function userSearchTerm(user: ApiUser | null) {
+  if (!user) return "";
+  return user.email || user.phone || user.name || String(user.id);
+}
+
+function queryString(params: Record<string, string | number | undefined>) {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") qs.set(key, String(value));
+  });
+  return qs.toString();
+}
+
+function sameUserId(candidate: { user_id?: number; user?: { id?: number } }, user: ApiUser | null) {
+  if (!user) return false;
+  return candidate.user_id === user.id || candidate.user?.id === user.id;
+}
+
 
 
 function UserRow({
   u,
   onManage,
+  onEdit,
 }: {
   u: ApiUser;
   onManage: (u: ApiUser) => void;
+  onEdit: (u: ApiUser) => void;
 }) {
   const { t, i18n } = useTranslation();
   const role = getRole(u);
   const Icon = roleIcon[role] ?? UserCircle;
+  const canEdit = ["doctor", "patient", "hospital", "pharmacy"].includes(role);
 
   return (
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
@@ -203,14 +300,27 @@ function UserRow({
         {new Date(u.created_at).toLocaleDateString()}
       </td>
       <td className="px-4 py-3 text-right">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
-          onClick={() => onManage(u)}
-        >
-          {t("admin.users.manage")}
-        </Button>
+        <div className="flex items-center justify-end gap-1.5">
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+              onClick={() => onEdit(u)}
+            >
+              <Pencil className="mr-1 h-3 w-3" />
+              Edit
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            onClick={() => onManage(u)}
+          >
+            {t("admin.users.manage")}
+          </Button>
+        </div>
       </td>
     </tr>
   );
@@ -219,13 +329,16 @@ function UserRow({
 function UserCard({
   u,
   onManage,
+  onEdit,
 }: {
   u: ApiUser;
   onManage: (u: ApiUser) => void;
+  onEdit: (u: ApiUser) => void;
 }) {
   const { t, i18n } = useTranslation();
   const role = getRole(u);
   const Icon = roleIcon[role] ?? UserCircle;
+  const canEdit = ["doctor", "patient", "hospital", "pharmacy"].includes(role);
 
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
@@ -280,14 +393,27 @@ function UserCard({
             {new Date(u.created_at).toLocaleDateString()}
           </span>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-2.5 h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200 w-full"
-          onClick={() => onManage(u)}
-        >
-          {t("admin.users.manage")}
-        </Button>
+        <div className={cn("mt-2.5 grid gap-2", canEdit ? "grid-cols-2" : "grid-cols-1")}>
+          {canEdit && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+              onClick={() => onEdit(u)}
+            >
+              <Pencil className="mr-1 h-3 w-3" />
+              Edit
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-3 text-[10px] rounded-[6px] border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all duration-200"
+            onClick={() => onManage(u)}
+          >
+            {t("admin.users.manage")}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -605,12 +731,14 @@ function UserPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const AdminUsers = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [selected, setSelected] = useState<ApiUser | null>(null);
+  const [editingUser, setEditingUser] = useState<ApiUser | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ApiUser | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { toast } = useToast();
+  
 
   // Debounced search
   const [searchInput, setSearchInput] = useState("");
@@ -630,11 +758,66 @@ const AdminUsers = () => {
   const suspendMutation = useSuspendUser();
   const activateMutation = useActivateUser();
   const deleteMutation = useDeleteUser();
+  const approveDoctorMutation = useApproveDoctor();
+  const rejectDoctorMutation = useRejectDoctor();
+  const suspendDoctorMutation = useSuspendDoctor();
+  const activatePatientMutation = useActivatePatient();
+  const suspendPatientMutation = useSuspendPatient();
+  const approveHospitalMutation = useApproveHospital();
+  const rejectHospitalMutation = useRejectHospital();
+  const suspendHospitalMutation = useSuspendHospital();
+  const approvePharmacyMutation = useApprovePharmacy();
+  const rejectPharmacyMutation = useRejectPharmacy();
+  const suspendPharmacyMutation = useSuspendPharmacy();
 
   const users = data?.data ?? [];
   const total = data?.total ?? 0;
   const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
+  const selectedRole = selected ? getRole(selected) : "";
+  const lookupUser = editingUser ?? selected;
+  const lookupRole = lookupUser ? getRole(lookupUser) : "";
+  const lookupSearch = userSearchTerm(lookupUser);
+
+  const doctorLookup = useQuery({
+    queryKey: ["admin-users-role-profile", "doctor", lookupUser?.id, lookupSearch],
+    enabled: lookupRole === "doctor" && !!lookupUser,
+    queryFn: async () => {
+      const qs = queryString({ search: lookupSearch, page: 1 });
+      const res = await apiFetch<PaginatedDoctors>(`/admin/doctors${qs ? `?${qs}` : ""}`);
+      return res.data.find((doctor) => sameUserId(doctor, lookupUser)) ?? null;
+    },
+  });
+
+  const patientLookup = useQuery({
+    queryKey: ["admin-users-role-profile", "patient", lookupUser?.id, lookupSearch],
+    enabled: lookupRole === "patient" && !!lookupUser,
+    queryFn: async () => {
+      const qs = queryString({ search: lookupSearch, page: 1 });
+      const res = await apiFetch<PaginatedPatients>(`/admin/patients${qs ? `?${qs}` : ""}`);
+      return res.data.find((patient) => patient.id === lookupUser?.id || sameUserId(patient.patient ?? {}, lookupUser)) ?? null;
+    },
+  });
+
+  const hospitalLookup = useQuery({
+    queryKey: ["admin-users-role-profile", "hospital", lookupUser?.id, lookupSearch],
+    enabled: lookupRole === "hospital" && !!lookupUser,
+    queryFn: async () => {
+      const qs = queryString({ search: lookupSearch, page: 1 });
+      const res = await apiFetch<PaginatedHospitals>(`/admin/hospitals${qs ? `?${qs}` : ""}`);
+      return res.data.find((hospital) => sameUserId(hospital, lookupUser)) ?? null;
+    },
+  });
+
+  const pharmacyLookup = useQuery({
+    queryKey: ["admin-users-role-profile", "pharmacy", lookupUser?.id, lookupSearch],
+    enabled: lookupRole === "pharmacy" && !!lookupUser,
+    queryFn: async () => {
+      const qs = queryString({ search: lookupSearch, page: 1 });
+      const res = await apiFetch<PaginatedPharmacies>(`/admin/pharmacies${qs ? `?${qs}` : ""}`);
+      return res.data.find((pharmacy) => sameUserId(pharmacy, lookupUser)) ?? null;
+    },
+  });
 
   const roleCounts = useMemo(() => {
     const counts: Record<string, number> = { all: total };
@@ -684,10 +867,45 @@ const AdminUsers = () => {
     [],
   );
 
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (!tab) return;
+
+    if (isRoleFilter(tab)) {
+      setFilters((prev) =>
+        prev.role === tab ? prev : { ...prev, role: tab, page: 1 },
+      );
+      return;
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete("tab");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const currentTab = useMemo(
+    () => USER_TABS.find((tab) => tab.value === filters.role) ?? USER_TABS[0],
+    [filters.role],
+  );
+
+  const selectRoleTab = useCallback(
+    (role: RoleFilter) => {
+      setFilters((prev) => ({ ...prev, role, page: 1 }));
+      const next = new URLSearchParams(searchParams);
+      if (role === "all") next.delete("tab");
+      else next.set("tab", role);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setSearchInput("");
-  }, []);
+    const next = new URLSearchParams(searchParams);
+    next.delete("tab");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const hasActiveFilters = useMemo(
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
@@ -719,45 +937,144 @@ const AdminUsers = () => {
         } else {
           await activateMutation.mutateAsync(u.id);
           setSelected((prev) => (prev ? { ...prev, status: "active" } : null));
-        }
-        toast({ title: t("admin.users.status_changed") });
-      } catch (error: unknown) {
-        toast({ title: getErrorMessage(error), variant: "destructive" });
+        } 
+        sonnerToast.success(t("admin.users.status_changed"));
+      } catch (error: unknown) { 
+        sonnerToast.error(getErrorMessage(error) || t("admin.users.status_change_failed"));
       }
     },
-    [suspendMutation, activateMutation, t, toast],
+    [suspendMutation, activateMutation, t, sonnerToast],
   );
 
   const removeUser = useCallback(async () => {
     if (!confirmDelete) return;
     try {
       await deleteMutation.mutateAsync(confirmDelete.id);
-      toast({ title: t("admin.users.deleted_toast") });
+      sonnerToast.success(t("admin.users.deleted_toast"));
       setConfirmDelete(null);
       setSelected(null);
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error) || t("admin.users.delete_failed"));
     }
-  }, [confirmDelete, deleteMutation, t, toast]);
+  }, [confirmDelete, deleteMutation, t, sonnerToast]);
+
+  const handleDoctorApprove = useCallback(async (doctor: ApiDoctor) => {
+    try {
+      await approveDoctorMutation.mutateAsync(doctor.id);
+      sonnerToast.success("Doctor approved.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to approve doctor.");
+    }
+  }, [approveDoctorMutation, sonnerToast]);
+
+  const handleDoctorReject = useCallback(async (doctor: ApiDoctor) => {
+    try {
+      await rejectDoctorMutation.mutateAsync({ id: doctor.id });
+      sonnerToast.error("Doctor rejected.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to reject doctor.");
+    }
+  }, [rejectDoctorMutation, sonnerToast]);
+
+  const handleDoctorSuspend = useCallback(async (doctor: ApiDoctor) => {
+    try {
+      await suspendDoctorMutation.mutateAsync({ id: doctor.id });
+      sonnerToast.success("Doctor suspended.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to suspend doctor.");
+    }
+  }, [suspendDoctorMutation, sonnerToast]);
+
+  const handlePatientToggle = useCallback(async (patient: ApiPatient) => {
+    try {
+      if (patient.status === "active") {
+        await suspendPatientMutation.mutateAsync(patient.id);
+      } else {
+        await activatePatientMutation.mutateAsync(patient.id);
+      }
+      sonnerToast.success(t("admin.users.status_changed"));
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || t("admin.users.status_change_failed"));
+    }
+  }, [activatePatientMutation, suspendPatientMutation, t, sonnerToast]);
+
+  const handleHospitalApprove = useCallback(async (hospital: ApiHospital) => {
+    try {
+      await approveHospitalMutation.mutateAsync(hospital.id);
+      sonnerToast.success("Hospital approved.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to approve hospital.");
+    }
+  }, [approveHospitalMutation, sonnerToast]);
+
+  const handleHospitalReject = useCallback(async (hospital: ApiHospital) => {
+    try {
+      await rejectHospitalMutation.mutateAsync({ id: hospital.id });
+      sonnerToast.error("Hospital rejected.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to reject hospital.");
+    }
+  }, [rejectHospitalMutation, sonnerToast]);
+
+  const handleHospitalSuspend = useCallback(async (hospital: ApiHospital) => {
+    try {
+      await suspendHospitalMutation.mutateAsync({ id: hospital.id });
+      sonnerToast.success("Hospital suspended.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to suspend hospital.");
+    }
+  }, [suspendHospitalMutation, sonnerToast]);
+
+  const handlePharmacyApprove = useCallback(async (pharmacy: ApiPharmacy) => {
+    try {
+      await approvePharmacyMutation.mutateAsync(pharmacy.id);
+      sonnerToast.success("Pharmacy approved.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to approve pharmacy.");
+    }
+  }, [approvePharmacyMutation, sonnerToast]);
+
+  const handlePharmacyReject = useCallback(async (pharmacy: ApiPharmacy) => {
+    try {
+      await rejectPharmacyMutation.mutateAsync({ id: pharmacy.id });
+      sonnerToast.error("Pharmacy rejected.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to reject pharmacy.");
+    }
+  }, [rejectPharmacyMutation, sonnerToast]);
+
+  const handlePharmacySuspend = useCallback(async (pharmacy: ApiPharmacy) => {
+    try {
+      await suspendPharmacyMutation.mutateAsync({ id: pharmacy.id });
+      sonnerToast.success("Pharmacy suspended.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to suspend pharmacy.");
+    }
+  }, [suspendPharmacyMutation, sonnerToast]);
 
   const pendingCount = statusCounts["pending"] ?? 0;
   const isActing = suspendMutation.isPending || activateMutation.isPending;
+  const isDoctorActing =
+    approveDoctorMutation.isPending ||
+    rejectDoctorMutation.isPending ||
+    suspendDoctorMutation.isPending;
+  const isPatientActing = activatePatientMutation.isPending || suspendPatientMutation.isPending;
+  const isHospitalActing =
+    approveHospitalMutation.isPending ||
+    rejectHospitalMutation.isPending ||
+    suspendHospitalMutation.isPending;
+  const isPharmacyActing =
+    approvePharmacyMutation.isPending ||
+    rejectPharmacyMutation.isPending ||
+    suspendPharmacyMutation.isPending;
+  const resultLabel =
+    currentTab.value === "all"
+      ? total === 1
+        ? "user"
+        : "users"
+      : currentTab.label.toLowerCase();
 
   const filterFields = useMemo(() => [
-    {
-      type: "select" as const,
-      key: "role",
-      label: "Role",
-      value: filters.role,
-      options: [
-        { value: "all", label: t("admin.users.all") },
-        { value: "doctor", label: t("admin.roles.doctor") },
-        { value: "hospital", label: t("admin.roles.hospital") },
-        { value: "pharmacy", label: t("admin.roles.pharmacy") },
-        { value: "patient", label: t("admin.roles.patient") },
-      ],
-      onChange: (v: string) => set("role", v as any),
-    },
     {
       type: "select" as const,
       key: "status",
@@ -772,24 +1089,54 @@ const AdminUsers = () => {
       ],
       onChange: (v: string) => set("status", v as any),
     }
-  ], [filters.role, filters.status, set, t]);
+  ], [filters.status, set, t]);
 
   return (
     <DashboardLayout role="admin">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+          title="Manage users"
+          subtitle="Review all platform accounts from one place"
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2 }}
-        />
+        <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {USER_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const active = filters.role === tab.value;
+            const count =
+              tab.value === filters.role || (tab.value === "all" && filters.role === "all")
+                ? total
+                : roleCounts[tab.value];
+
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => selectRoleTab(tab.value)}
+                className={cn(
+                  "relative flex items-center gap-2 px-3 sm:px-5 py-4 text-xs sm:text-sm font-medium border-b-2 transition-all duration-200 shrink-0 whitespace-nowrap",
+                  active
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
+                )}
+                aria-pressed={active}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span>{tab.label}</span>
+                {typeof count === "number" && count > 0 && (
+                  <span
+                    className={cn(
+                      "h-5 min-w-[20px] px-1.5 rounded-[6px] text-[10px] font-bold flex items-center justify-center leading-none",
+                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground",
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
           {/* Stats */}
@@ -821,7 +1168,7 @@ const AdminUsers = () => {
           </div>
 
           {/* Mobile search */}
-          <div className="sm:hidden px-3 pt-3">
+          <div className="hidden">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
               <input
@@ -843,15 +1190,15 @@ const AdminUsers = () => {
           </div>
 
           {/* Meta bar */}
-          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 justify-between lg:justify-start">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
                   <span className="text-muted-foreground/50">Loading…</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{total}</span>{" "}
-                    {total === 1 ? "user" : "users"}
+                    {resultLabel}
                   </>
                 )}
                 {hasActiveFilters && (
@@ -872,42 +1219,43 @@ const AdminUsers = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="-mx-1 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max items-center gap-2">
               {/* Desktop search */}
-              <div className="relative hidden sm:block">
+              <div className="relative w-[210px] sm:w-64">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Search name, email, phone…"
-                  className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+                  className="h-8 w-full pl-8 pr-8 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-
-            </div>
 
             {/* Refresh Button */}
             <button
               onClick={() => refetch()}
-              className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
+              className="h-8 w-8 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors shrink-0"
               title="Refresh"
             >
               <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
             </button>
 
-            <FilterToggleButton
-              open={filterOpen}
-              onToggle={() => setFilterOpen(!filterOpen)}
-              hasActiveFilters={hasActiveFilters}
-            />
-
             {/* Sort */}
-            <div className="relative">
+            <div className="relative shrink-0">
               <select
                 value={filters.sort}
                 onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
+                className="h-8 appearance-none pl-2.5 pr-7 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer w-[170px] sm:w-[190px]"
               >
                 {SORT_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -915,7 +1263,7 @@ const AdminUsers = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
             </div>
 
             <FilterToggleButton
@@ -923,7 +1271,18 @@ const AdminUsers = () => {
               onToggle={() => setFilterOpen(!filterOpen)}
               hasActiveFilters={hasActiveFilters}
             />
+              </div>
+            </div>
           </div>
+
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2 }}
+          />
 
           {/* Content */}
           <div className="p-3 sm:p-4">
@@ -986,7 +1345,7 @@ const AdminUsers = () => {
                         <SkeletonRows />
                       ) : (
                         sorted.map((u) => (
-                          <UserRow key={u.id} u={u} onManage={setSelected} />
+                          <UserRow key={u.id} u={u} onManage={setSelected} onEdit={setEditingUser} />
                         ))
                       )}
                     </tbody>
@@ -1003,7 +1362,7 @@ const AdminUsers = () => {
                       />
                     ))
                     : sorted.map((u) => (
-                      <UserCard key={u.id} u={u} onManage={setSelected} />
+                      <UserCard key={u.id} u={u} onManage={setSelected} onEdit={setEditingUser} />
                     ))}
                 </div>
 
@@ -1045,8 +1404,50 @@ const AdminUsers = () => {
       </div>
 
       {/* ── Right-side user panel ── */}
+      <DoctorPanel
+        doctor={selectedRole === "doctor" ? (doctorLookup.data ?? null) : null}
+        onClose={() => setSelected(null)}
+        onApprove={handleDoctorApprove}
+        onReject={handleDoctorReject}
+        onSuspend={handleDoctorSuspend}
+        isActing={isDoctorActing}
+      />
+
+      <PatientPanel
+        patient={selectedRole === "patient" ? (patientLookup.data ?? null) : null}
+        onClose={() => setSelected(null)}
+        onToggleStatus={handlePatientToggle}
+        isActing={isPatientActing}
+      />
+
+      <HospitalPanel
+        hospital={selectedRole === "hospital" ? (hospitalLookup.data ?? null) : null}
+        onClose={() => setSelected(null)}
+        onApprove={handleHospitalApprove}
+        onReject={handleHospitalReject}
+        onSuspend={handleHospitalSuspend}
+        isActing={isHospitalActing}
+      />
+
+      <PharmacyPanel
+        pharmacy={selectedRole === "pharmacy" ? (pharmacyLookup.data ?? null) : null}
+        onClose={() => setSelected(null)}
+        onApprove={handlePharmacyApprove}
+        onReject={handlePharmacyReject}
+        onSuspend={handlePharmacySuspend}
+        isActing={isPharmacyActing}
+      />
+
       <UserPanel
-        user={selected}
+        user={
+          !["doctor", "patient", "hospital", "pharmacy"].includes(selectedRole) ||
+          (selectedRole === "doctor" && doctorLookup.isFetched && !doctorLookup.data) ||
+          (selectedRole === "patient" && patientLookup.isFetched && !patientLookup.data) ||
+          (selectedRole === "hospital" && hospitalLookup.isFetched && !hospitalLookup.data) ||
+          (selectedRole === "pharmacy" && pharmacyLookup.isFetched && !pharmacyLookup.data)
+            ? selected
+            : null
+        }
         onClose={() => setSelected(null)}
         onToggleStatus={toggleStatus}
         onDelete={(u) => setConfirmDelete(u)}
@@ -1055,6 +1456,32 @@ const AdminUsers = () => {
       />
 
       {/* ── Delete confirm ── */}
+      <AdminUserEditModal
+        user={editingUser}
+        roleData={
+          lookupRole === "doctor" ? (doctorLookup.data ?? null) :
+            lookupRole === "patient" ? (patientLookup.data ?? null) :
+              lookupRole === "hospital" ? (hospitalLookup.data ?? null) :
+                lookupRole === "pharmacy" ? (pharmacyLookup.data ?? null) :
+                  null
+        }
+        loading={
+          lookupRole === "doctor" ? doctorLookup.isLoading :
+            lookupRole === "patient" ? patientLookup.isLoading :
+              lookupRole === "hospital" ? hospitalLookup.isLoading :
+                lookupRole === "pharmacy" ? pharmacyLookup.isLoading :
+                  false
+        }
+        onClose={() => setEditingUser(null)}
+        onSaved={() => {
+          refetch();
+          doctorLookup.refetch();
+          patientLookup.refetch();
+          hospitalLookup.refetch();
+          pharmacyLookup.refetch();
+        }}
+      />
+
       <AlertDialog
         open={!!confirmDelete}
         onOpenChange={(o) => !o && setConfirmDelete(null)}
@@ -1079,6 +1506,221 @@ const AdminUsers = () => {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+type EditableRoleData = ApiDoctor | ApiPatient | ApiHospital | ApiPharmacy | null;
+
+function AdminUserEditModal({
+  user,
+  roleData,
+  loading,
+  onClose,
+  onSaved,
+}: {
+  user: ApiUser | null;
+  roleData: EditableRoleData;
+  loading: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<Record<string, string | boolean>>({});
+  const [saving, setSaving] = useState(false);
+  const role = user ? getRole(user) : "";
+  const open = !!user;
+
+  useEffect(() => {
+    if (!user) {
+      setForm({});
+      return;
+    }
+    if (role === "doctor") {
+      const d = roleData as ApiDoctor | null;
+      setForm({
+        specialization: typeof d?.specialization === "string" ? d.specialization : d?.specialization?.name ?? "",
+        doctor_degree: d?.doctor_degree ?? "",
+        medical_license: d?.medical_license ?? "",
+        designations: d?.designations ?? "",
+        bio_en: d?.bio_en ?? "",
+        bio_fr: d?.bio_fr ?? "",
+        bio_kiny: d?.bio_kiny ?? "",
+        preferred_language: d?.preferred_language ?? "en",
+        status: d?.status ?? user.status,
+        consultation_type: d?.consultation_type ?? "both",
+        is_available: Boolean(d?.is_available),
+        is_active: d?.is_active ?? user.status === "active",
+      });
+      return;
+    }
+    if (role === "patient") {
+      const p = roleData as ApiPatient | null;
+      setForm({
+        name: p?.name ?? user.name,
+        date_of_birth: p?.patient?.date_of_birth ?? "",
+        gender: p?.patient?.gender ?? "",
+        national_id: p?.patient?.national_id ?? "",
+        blood_type: p?.patient?.blood_type ?? "",
+        address: p?.patient?.address ?? "",
+        city: p?.patient?.city ?? "",
+        province: p?.patient?.province ?? "",
+        country: p?.patient?.country ?? "",
+        emergency_contact_name: p?.patient?.emergency_contact_name ?? "",
+        emergency_contact_phone: p?.patient?.emergency_contact_phone ?? "",
+        emergency_contact_relation: p?.patient?.emergency_contact_relation ?? "",
+        preferred_language: p?.preferred_language ?? user.preferred_language ?? "en",
+        is_active: p?.patient?.is_active ?? user.status === "active",
+      });
+      return;
+    }
+    if (role === "hospital") {
+      const h = roleData as ApiHospital | null;
+      setForm({
+        name_en: h?.name_en ?? user.name,
+        name_fr: h?.name_fr ?? "",
+        name_kiny: h?.name_kiny ?? "",
+        description_en: h?.description_en ?? "",
+        type: h?.type ?? "hospital",
+        registration_number: h?.registration_number ?? "",
+        address: h?.address ?? "",
+        city: h?.city ?? "",
+        province: h?.province ?? "",
+        country: h?.country ?? "",
+        phone: h?.phone ?? user.phone ?? "",
+        email: h?.email ?? user.email ?? "",
+        website: h?.website ?? "",
+        opens_at: h?.opens_at ?? "",
+        closes_at: h?.closes_at ?? "",
+        status: h?.status ?? user.status,
+        is_active: h?.is_active ?? user.status === "active",
+      });
+      return;
+    }
+    if (role === "pharmacy") {
+      const p = roleData as ApiPharmacy | null;
+      setForm({
+        name_en: p?.name_en ?? user.name,
+        name_rw: p?.name_rw ?? "",
+        description_en: p?.description_en ?? "",
+        description_rw: p?.description_rw ?? "",
+        registration_number: p?.registration_number ?? "",
+        address: p?.address ?? "",
+        city: p?.city ?? "",
+        province: p?.province ?? "",
+        country: p?.country ?? "",
+        phone: p?.phone ?? user.phone ?? "",
+        email: p?.email ?? user.email ?? "",
+        website: p?.website ?? "",
+        opens_at: p?.opens_at ?? "",
+        closes_at: p?.closes_at ?? "",
+        delivery_fee: p?.delivery_fee != null ? String(p.delivery_fee) : "",
+        delivery_currency: p?.delivery_currency ?? "RWF",
+        delivery_radius_km: p?.delivery_radius_km != null ? String(p.delivery_radius_km) : "",
+        estimated_delivery_minutes: p?.estimated_delivery_minutes != null ? String(p.estimated_delivery_minutes) : "",
+        status: p?.status ?? user.status,
+        is_open_24h: Boolean(p?.is_open_24h),
+        offers_delivery: Boolean(p?.offers_delivery),
+        offers_pickup: Boolean(p?.offers_pickup),
+        is_active: p?.is_active ?? user.status === "active",
+      });
+      return;
+    }
+    setForm({ name: user.name, preferred_language: user.preferred_language ?? "en", status: user.status });
+  }, [role, roleData, user]);
+
+  if (!open) return null;
+
+  const setValue = (key: string, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const endpoint = (() => {
+    if (role === "doctor") return { path: "doctors", id: (roleData as ApiDoctor | null)?.id };
+    if (role === "patient") {
+      const p = roleData as ApiPatient | null;
+      return { path: "patients", id: p?.patient?.id ?? p?.id };
+    }
+    if (role === "hospital") return { path: "hospitals", id: (roleData as ApiHospital | null)?.id };
+    if (role === "pharmacy") return { path: "pharmacies", id: (roleData as ApiPharmacy | null)?.id };
+    return null;
+  })();
+
+  const save = async () => {
+    if (!endpoint?.id) {
+      sonnerToast.error("Profile details are still loading.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch(`/admin/manage/${endpoint.path}/${endpoint.id}`, { method: "PATCH", body: form });
+      sonnerToast.success("Information updated.");
+      onSaved();
+      onClose();
+    } catch (error: unknown) {
+      sonnerToast.error("Could not update information.", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (key: string, label: string, type = "text") => (
+    <label className="space-y-1">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      <input type={type} value={String(form[key] ?? "")} onChange={(e) => setValue(key, e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50" />
+    </label>
+  );
+  const textarea = (key: string, label: string) => (
+    <label className="space-y-1 md:col-span-2">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      <textarea value={String(form[key] ?? "")} onChange={(e) => setValue(key, e.target.value)} className="min-h-20 w-full rounded-[6px] border border-border bg-background px-3 py-2 text-[12px] outline-none focus:border-primary/50" />
+    </label>
+  );
+  const select = (key: string, label: string, options: string[]) => (
+    <label className="space-y-1">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      <select value={String(form[key] ?? "")} onChange={(e) => setValue(key, e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50">
+        <option value="">Select</option>
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  );
+  const checkbox = (key: string, label: string) => (
+    <label className="flex items-center gap-2 rounded-[6px] border border-border bg-secondary/20 px-3 py-2 text-[12px] font-medium">
+      <input type="checkbox" checked={Boolean(form[key])} onChange={(e) => setValue(key, e.target.checked)} />
+      {label}
+    </label>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[6px] border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <p className="text-[14px] font-semibold text-foreground">Edit {role || "user"} information</p>
+            <p className="text-[11px] text-muted-foreground">{user.name}</p>
+          </div>
+          <button onClick={onClose} className="rounded-[6px] border border-border p-2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-[12px] text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading profile details...</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {role === "doctor" && <>{field("specialization", "Specialization")}{field("doctor_degree", "Doctor degree")}{field("medical_license", "Medical license")}{field("designations", "Designations")}{select("preferred_language", "Preferred language", ["en", "fr", "rw"])}{select("status", "Status", ["pending", "submitted", "active", "rejected", "suspended"])}{select("consultation_type", "Consultation type", ["online", "in_person", "both"])}{checkbox("is_available", "Available")}{checkbox("is_active", "Active")}{textarea("bio_en", "Bio EN")}{textarea("bio_fr", "Bio FR")}{textarea("bio_kiny", "Bio Kiny")}</>}
+              {role === "patient" && <>{field("name", "Name")}{field("date_of_birth", "Date of birth", "date")}{select("gender", "Gender", ["male", "female", "other"])}{field("national_id", "National ID")}{select("blood_type", "Blood type", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])}{field("address", "Address")}{field("city", "City")}{field("province", "Province")}{field("country", "Country")}{field("emergency_contact_name", "Emergency contact name")}{field("emergency_contact_phone", "Emergency contact phone")}{field("emergency_contact_relation", "Emergency relation")}{select("preferred_language", "Preferred language", ["en", "fr", "rw"])}{checkbox("is_active", "Active")}</>}
+              {role === "hospital" && <>{field("name_en", "Name EN")}{field("name_fr", "Name FR")}{field("name_kiny", "Name Kiny")}{select("type", "Type", ["hospital", "clinic", "health_center", "pharmacy_clinic"])}{field("registration_number", "Registration number")}{field("address", "Address")}{field("city", "City")}{field("province", "Province")}{field("country", "Country")}{field("phone", "Phone")}{field("email", "Email", "email")}{field("website", "Website")}{field("opens_at", "Opens at", "time")}{field("closes_at", "Closes at", "time")}{select("status", "Status", ["active", "pending", "suspended", "rejected"])}{checkbox("is_active", "Active")}{textarea("description_en", "Description EN")}</>}
+              {role === "pharmacy" && <>{field("name_en", "Name EN")}{field("name_rw", "Name RW")}{field("registration_number", "Registration number")}{field("address", "Address")}{field("city", "City")}{field("province", "Province")}{field("country", "Country")}{field("phone", "Phone")}{field("email", "Email", "email")}{field("website", "Website")}{field("opens_at", "Opens at", "time")}{field("closes_at", "Closes at", "time")}{field("delivery_fee", "Delivery fee", "number")}{field("delivery_currency", "Delivery currency")}{field("delivery_radius_km", "Delivery radius km", "number")}{field("estimated_delivery_minutes", "Estimated minutes", "number")}{select("status", "Status", ["active", "pending", "suspended", "rejected"])}{checkbox("is_open_24h", "Open 24h")}{checkbox("offers_delivery", "Offers delivery")}{checkbox("offers_pickup", "Offers pickup")}{checkbox("is_active", "Active")}{textarea("description_en", "Description EN")}{textarea("description_rw", "Description RW")}</>}
+              {!["doctor", "patient", "hospital", "pharmacy"].includes(role) && <>{field("name", "Name")}{select("preferred_language", "Preferred language", ["en", "fr", "rw"])}{select("status", "Status", ["active", "pending", "suspended", "rejected"])}</>}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <Button variant="outline" className="h-9 rounded-[6px] text-[12px]" onClick={onClose}>Cancel</Button>
+          <Button className="h-9 rounded-[6px] text-[12px]" onClick={save} disabled={saving || loading}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save changes</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const InfoTile = ({
   icon,

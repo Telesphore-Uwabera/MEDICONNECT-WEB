@@ -35,7 +35,7 @@ import {
   type CreateChecklistQuestionPayload,
   type UpdateChecklistQuestionPayload,
 } from "@/hooks/admin/use-admin-checklist-questions";
-import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -736,8 +736,7 @@ function DeleteConfirmPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ChecklistQuestions() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
 
   const [searchInput, setSearchInput] = useState("");
   const [panelMode, setPanelMode] = useState<"create" | "edit" | null>(null);
@@ -789,32 +788,32 @@ function ChecklistQuestions() {
           question_kiny: text,
           answer_type: "boolean",
         };
-        await createMutation.mutateAsync(payload);
-        toast({ title: "Question created." });
+        await createMutation.mutateAsync(payload); 
+        sonnerToast.success("Question created successfully.");
       } else if (panelMode === "edit" && selectedQuestion) {
         const payload: UpdateChecklistQuestionPayload = {
           id: selectedQuestion.id,
           question_en: text,
         };
-        await updateMutation.mutateAsync(payload);
-        toast({ title: "Question updated." });
+        await updateMutation.mutateAsync(payload); 
+        sonnerToast.success("Question updated successfully.");
       }
       closePanel();
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [panelMode, selectedQuestion, createMutation, updateMutation, toast, closePanel]);
+  }, [panelMode, selectedQuestion, createMutation, updateMutation, sonnerToast, closePanel]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deletingQuestion) return;
     try {
       await deleteMutation.mutateAsync(deletingQuestion.id);
-      toast({ title: "Question deleted." });
+      sonnerToast.success("Question deleted successfully.");
       setDeletingQuestion(null);
     } catch (error: unknown) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
-  }, [deletingQuestion, deleteMutation, toast]);
+  }, [deletingQuestion, deleteMutation, sonnerToast]);
 
   return (
     <DashboardLayout role="admin">

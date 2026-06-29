@@ -80,7 +80,7 @@ function KpiCard({
         {loading ? (
           <div className="h-7 w-16 rounded bg-muted animate-pulse mt-0.5" />
         ) : (
-          <p className={cn("text-xl font-bold tabular-nums leading-tight", accent ? "text-primary" : "text-foreground")}>{value}</p>
+          <p className={cn("text-sm font-bold tabular-nums leading-tight", accent ? "text-primary" : "text-foreground")}>{value}</p>
         )}
         {sub && !loading && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
       </div>
@@ -343,7 +343,7 @@ const AdminOverview = () => {
                       <div className={cn("w-7 h-7 rounded-[6px] flex items-center justify-center mb-2", roleColor[key])}>
                         <Icon className="h-3.5 w-3.5" />
                       </div>
-                      <p className="text-[18px] font-bold tabular-nums text-foreground leading-none">{count}</p>
+                      <p className="text-sm font-bold tabular-nums text-foreground leading-none">{count}</p>
                       <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">
                         {t(`admin.roles.${key.slice(0, -1)}`) /* patients→patient etc */}
                       </p>
@@ -362,7 +362,7 @@ const AdminOverview = () => {
               <div className="rounded-[6px] border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
                 <div>
                   <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Total registered</p>
-                  <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">{users.total}</p>
+                  <p className="text-sm font-bold text-foreground tabular-nums leading-tight">{users.total}</p>
                 </div>
                 <div className="relative w-10 h-10">
                   <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
@@ -399,7 +399,7 @@ const AdminOverview = () => {
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
+                      <p className="text-sm font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
                       <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
                     </div>
                   </div>
@@ -426,7 +426,7 @@ const AdminOverview = () => {
                       <div className={cn("w-6 h-6 rounded-[6px] flex items-center justify-center mb-1.5", color)}>
                         <Icon className="h-3 w-3" />
                       </div>
-                      <p className="text-[16px] font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
+                      <p className="text-sm font-bold tabular-nums text-foreground leading-none">{value.toLocaleString()}</p>
                       <p className="text-[9px] text-muted-foreground mt-0.5">{label}</p>
                     </div>
                   ))}
@@ -443,7 +443,7 @@ const AdminOverview = () => {
                 <div className="mt-3 rounded-[6px] border border-border bg-muted/40 px-2.5 py-2 flex items-center justify-between">
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Active consultations</p>
-                    <p className="text-[18px] font-bold text-foreground tabular-nums leading-tight">
+                    <p className="text-sm font-bold text-foreground tabular-nums leading-tight">
                       {consultations?.active ?? 0}
                     </p>
                   </div>

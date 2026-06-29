@@ -1,8 +1,5 @@
 
-
-
-
-
+import { toast as sonnerToast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { SkeletonCard } from "@/components/SkeletonCard";
@@ -30,6 +27,9 @@ import {
   Clock,
   Hash,
   Globe,
+  Database,
+  ServerCog,
+  PlugZap,
 } from "lucide-react";
 import {
   useGetMySettings,
@@ -46,8 +46,12 @@ import {
   type UpdatePasswordPayload,
   type RequestEmailChangePayload,
   type RequestPhoneChangePayload,
-} from "@/hooks/admin/use-admin-settings";
-import { useToast } from "@/hooks/use-toast";
+} from "@/hooks/admin/use-admin-settings"; 
+import {
+  useGetInventoryMode,
+  useSwitchInventoryMode,
+  type PharmacyInventoryMode,
+} from "@/hooks/pharmacy/use-pharmacy-profile";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -290,12 +294,13 @@ function InfoRow({
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 
-type TabKey = "profile" | "security" | "contact" | "danger";
+type TabKey = "profile" | "security" | "contact" | "inventory_mode" | "danger";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: "profile", label: "Profile", icon: UserCog },
   { key: "security", label: "Security", icon: KeyRound },
   { key: "contact", label: "Contact", icon: Mail },
+  { key: "inventory_mode", label: "Inventory mode", icon: Database },
   { key: "danger", label: "Danger", icon: ShieldAlert },
 ];
 
@@ -308,8 +313,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function PharmacySettings() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState(false);
 
@@ -353,9 +357,24 @@ function PharmacySettings() {
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Inventory provider form. Kept in memory until backend exposes provider connection.
+  const [selectedInventoryMode, setSelectedInventoryMode] =
+    useState<PharmacyInventoryMode>("internal");
+  const [externalProviderForm, setExternalProviderForm] = useState({
+    provider: "ishyiga",
+    api_key: "",
+    secret_key: "",
+  });
+
   // ── Queries & mutations ────────────────────────────────────────────────────
   const { data: settingsResponse, isLoading } = useGetMySettings();
   const settings = settingsResponse?.data;
+  const {
+    data: inventoryModeResponse,
+    isLoading: inventoryModeLoading,
+    isError: inventoryModeError,
+    refetch: refetchInventoryMode,
+  } = useGetInventoryMode();
 
   const updateProfile = useUpdateProfile();
   const updateAvatar = useUpdateAvatar();
@@ -366,6 +385,9 @@ function PharmacySettings() {
   const requestPhone = useRequestPhoneChange();
   const verifyPhone = useVerifyPhoneChange();
   const deleteAccount = useDeleteAccount();
+  const switchInventoryMode = useSwitchInventoryMode();
+
+  const currentInventoryMode = inventoryModeResponse?.inventory_mode ?? "internal";
 
   // Reset avatar error when URL changes
   useEffect(() => {
@@ -382,6 +404,12 @@ function PharmacySettings() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (inventoryModeResponse?.inventory_mode) {
+      setSelectedInventoryMode(inventoryModeResponse.inventory_mode);
+    }
+  }, [inventoryModeResponse?.inventory_mode]);
+
   const openProfileEdit = () => {
     setProfileForm({
       name: settings?.name ?? "",
@@ -394,15 +422,15 @@ function PharmacySettings() {
 
   const handleProfileSave = async () => {
     if (!profileForm.name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+      sonnerToast.error("Name is required");
       return;
     }
     try {
       await updateProfile.mutateAsync(profileForm);
-      toast({ title: "Profile updated." });
+      sonnerToast.success("Profile updated.");
       setEditingProfile(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
@@ -410,15 +438,15 @@ function PharmacySettings() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Avatar must be under 2 MB", variant: "destructive" });
+      sonnerToast.error("Avatar must be under 2 MB");
       return;
     }
     try {
       await updateAvatar.mutateAsync(file);
-      toast({ title: "Avatar updated." });
+      sonnerToast.success("Avatar updated.");
       setAvatarError(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
     e.target.value = "";
   };
@@ -426,96 +454,117 @@ function PharmacySettings() {
   const handleDeleteAvatar = async () => {
     try {
       await deleteAvatar.mutateAsync();
-      toast({ title: "Avatar removed." });
+      sonnerToast.success("Avatar removed.");
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handlePasswordSave = async () => {
     if (!passwordForm.current_password || !passwordForm.password) {
-      toast({ title: "All password fields are required", variant: "destructive" });
+      sonnerToast.error("All password fields are required");
       return;
     }
     if (passwordForm.password !== passwordForm.password_confirmation) {
-      toast({ title: "Passwords do not match", variant: "destructive" });
+      sonnerToast.error("Passwords do not match");
       return;
     }
     try {
       await updatePassword.mutateAsync(passwordForm);
-      toast({ title: "Password updated. Other sessions have been logged out." });
+      sonnerToast.success("Password updated. Other sessions have been logged out.");
       setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
       setEditingPassword(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleRequestEmail = async () => {
     if (!emailForm.email || !emailForm.current_password) {
-      toast({ title: "All fields are required", variant: "destructive" });
+      sonnerToast.error("All fields are required");
       return;
     }
     try {
       await requestEmail.mutateAsync(emailForm);
-      toast({ title: "OTP sent to your new email." });
+      sonnerToast.success("OTP sent to your new email.");
       setEmailOtpStep(true);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleVerifyEmail = async (otp: string) => {
     try {
       await verifyEmail.mutateAsync({ otp });
-      toast({ title: "Email updated successfully." });
+      sonnerToast.success("Email updated successfully.");
       setEmailOtpStep(false);
       setEmailForm({ email: "", current_password: "" });
       setEditingEmail(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleRequestPhone = async () => {
     if (!phoneForm.phone || !phoneForm.current_password) {
-      toast({ title: "All fields are required", variant: "destructive" });
+      sonnerToast.error("All fields are required");
       return;
     }
     try {
       await requestPhone.mutateAsync(phoneForm);
-      toast({ title: "OTP sent to your new phone number." });
+      sonnerToast.success("OTP sent to your new phone number.");
       setPhoneOtpStep(true);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleVerifyPhone = async (otp: string) => {
     try {
       await verifyPhone.mutateAsync({ otp });
-      toast({ title: "Phone number updated successfully." });
+      sonnerToast.success("Phone number updated successfully.");
       setPhoneOtpStep(false);
       setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
       setEditingPhone(false);
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
-      toast({ title: "Password is required", variant: "destructive" });
+      sonnerToast.error("Password is required");
       return;
     }
     try {
       await deleteAccount.mutateAsync({ password: deletePassword });
     } catch (err) {
-      toast({ title: getErrorMessage(err), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(err));
     }
   };
 
   // ── Avatar display helper ─────────────────────────────────────────────────
+  const handleSwitchInventoryMode = async (mode: PharmacyInventoryMode) => {
+    try {
+      const response = await switchInventoryMode.mutateAsync(mode);
+      sonnerToast.success(response.message ?? `Inventory mode switched to ${mode}.`);
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleCaptureExternalCredentials = () => {
+    if (
+      !externalProviderForm.provider.trim() ||
+      !externalProviderForm.api_key.trim() ||
+      !externalProviderForm.secret_key.trim()
+    ) {
+      sonnerToast.error("Provider, API key and secret key are required.");
+      return;
+    }
+    sonnerToast.info("Credentials captured for this session. Backend connection endpoint is still pending.");
+  };
+
   const showAvatar = settings?.avatar && !avatarError;
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
@@ -677,7 +726,7 @@ function PharmacySettings() {
           </div>
 
           {/* Content */}
-          <div className="p-3 sm:p-4 space-y-4 max-w-2xl">
+          <div className="p-3 sm:p-4 space-y-4 max-w-4xl">
 
             {/* ── Profile Tab ─────────────────────────────────────────────── */}
             {activeTab === "profile" && (
@@ -1084,6 +1133,173 @@ function PharmacySettings() {
             )}
 
             {/* ── Danger Tab ──────────────────────────────────────────────── */}
+            {activeTab === "inventory_mode" && (
+              <SectionCard
+                icon={Database}
+                title="Inventory mode"
+                description="Choose whether stock comes from MediConnect data or an external pharmacy system."
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                    Current mode
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-[6px] border px-2 py-1 text-[11px] font-semibold capitalize",
+                      currentInventoryMode === "external"
+                        ? "border-blue-500/30 bg-blue-500/10 text-blue-500"
+                        : "border-primary/25 bg-primary/10 text-primary",
+                    )}
+                  >
+                    {inventoryModeLoading ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Database className="h-3 w-3" />
+                    )}
+                    {currentInventoryMode}
+                  </span>
+                  {inventoryModeError && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 rounded-[6px] px-2 text-[11px]"
+                      onClick={() => refetchInventoryMode()}
+                    >
+                      Retry
+                    </Button>
+                  )}
+                </div>
+
+                {inventoryModeError && (
+                  <div className="rounded-[6px] border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                    Pharmacy profile was not found or is inactive, so the inventory mode could not be loaded.
+                  </div>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedInventoryMode("internal");
+                      if (currentInventoryMode !== "internal") void handleSwitchInventoryMode("internal");
+                    }}
+                    disabled={switchInventoryMode.isPending}
+                    className={cn(
+                      "rounded-[6px] border p-4 text-left transition-all hover:border-primary/45 hover:bg-primary/5 disabled:opacity-60",
+                      selectedInventoryMode === "internal"
+                        ? "border-primary/50 bg-primary/10"
+                        : "border-border/70 bg-background",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+                        <Database className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13px] font-semibold text-foreground">Internal inventory</span>
+                        <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
+                          Use medicines and stock saved directly inside MediConnect.
+                        </span>
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedInventoryMode("external")}
+                    disabled={switchInventoryMode.isPending}
+                    className={cn(
+                      "rounded-[6px] border p-4 text-left transition-all hover:border-blue-500/45 hover:bg-blue-500/5 disabled:opacity-60",
+                      selectedInventoryMode === "external"
+                        ? "border-blue-500/50 bg-blue-500/10"
+                        : "border-border/70 bg-background",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-blue-500/20 bg-blue-500/10 text-blue-500">
+                        <PlugZap className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13px] font-semibold text-foreground">External provider</span>
+                        <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
+                          Prepare connection details for systems like Ishyiga or another stock API.
+                        </span>
+                      </span>
+                    </div>
+                  </button>
+                </div>
+
+                {selectedInventoryMode === "external" && (
+                  <div className="rounded-[6px] border border-border/70 bg-background p-4 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-border/60 bg-secondary/50 text-primary">
+                        <ServerCog className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <p className="text-[13px] font-semibold text-foreground">External API credentials</p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                          This form is ready for provider details. The keys are not persisted until the backend adds the provider connection endpoint.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Provider" required>
+                        <select
+                          value={externalProviderForm.provider}
+                          onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, provider: e.target.value }))}
+                          className={selectCls}
+                        >
+                          <option value="ishyiga">Ishyiga</option>
+                          <option value="open_api">Open API</option>
+                          <option value="other">Other provider</option>
+                        </select>
+                      </Field>
+                      <Field label="API key" required>
+                        <input
+                          value={externalProviderForm.api_key}
+                          onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
+                          className={inputCls}
+                          placeholder="Enter provider API key"
+                          autoComplete="off"
+                        />
+                      </Field>
+                      <Field label="Secret key" required>
+                        <PasswordInput
+                          value={externalProviderForm.secret_key}
+                          onChange={(secret_key) => setExternalProviderForm((prev) => ({ ...prev, secret_key }))}
+                          placeholder="Enter provider secret key"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className="flex flex-col gap-2 border-t border-border/50 pt-4 sm:flex-row">
+                      <Button
+                        className="h-9 rounded-[6px] px-4 text-[12px] gap-1.5"
+                        onClick={handleCaptureExternalCredentials}
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Keep credentials in form
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-9 rounded-[6px] px-4 text-[12px] gap-1.5"
+                        onClick={() => handleSwitchInventoryMode("external")}
+                        disabled={switchInventoryMode.isPending}
+                      >
+                        {switchInventoryMode.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <PlugZap className="h-3.5 w-3.5" />
+                        )}
+                        Switch to external
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </SectionCard>
+            )}
+
             {activeTab === "danger" && (
               <div className="rounded-[6px] border border-red-200 bg-card overflow-hidden shadow-sm dark:border-red-900/50">
                 <div className="h-0.5 bg-gradient-to-r from-red-400/60 via-red-500 to-red-400/40" />
