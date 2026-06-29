@@ -12,6 +12,7 @@ import {
   Wifi,
   Maximize2,
 } from "lucide-react";
+import { HeroHeadline } from "@/components/landing/HeroHeadline";
 
 import doctorPlaceholder from "@/assets/doctor-hero.png";
 import { HeroHeader } from "@/components/landing/HeroHeader";
@@ -427,13 +428,9 @@ export default function HeroSection() {
 
           {/* ── Left column ── */}
           <div className="relative z-10 order-2 lg:order-1">
-            <h1 className="lg:mt-2 lg:text-left text-center font-display text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">
-              Book a
-              <span className="text-primary"> Doctor Consultation</span>
-              Anytime, Anywhere
-            </h1>
+          <HeroHeadline />
             <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
-              Embark on your healing journey with MEDICONNECT
+              Begin your healing journey with MEDICONNECT — quality care, on your terms.
             </p>
             {/* Decorative medical illustration — tablet+ only */}
             <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
