@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -6,6 +6,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
+  SheetOverlay,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMe } from "@/hooks/useAuth";
+import { useGoToRole } from "@/hooks/useRoleManagement";
 import {
   useHospitalDetail,
   useCreateBooking,
@@ -80,6 +82,17 @@ export const HospitalBookingDialog = ({
   const createBooking = useCreateBooking();
   const navigate = useNavigate();
   const { data: me } = useMe();
+  const { go: goToRole } = useGoToRole();
+  // Resume the booking after a stay-and-switch to patient.
+  const [resumeBooking, setResumeBooking] = useState(false);
+  useEffect(() => {
+    if (!resumeBooking) return;
+    if ((me?.active_role ?? me?.role) === "patient") {
+      setResumeBooking(false);
+      handleConfirm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeBooking, me]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -180,10 +193,15 @@ export const HospitalBookingDialog = ({
       navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
       return;
     }
-    const role = (me as { role?: string } | undefined)?.role;
-    if (role && role !== "patient") {
-      toast.error("Switch to a patient account", {
-        description: `You're signed in as a ${role}. To book a hospital spot and get treatment, switch to (or create) a patient account.`,
+    const activeRole = (me?.active_role ?? me?.role) as string | undefined;
+    if (activeRole && activeRole !== "patient") {
+      toast.error("Switch to your patient role to book", {
+        description: `You're signed in as a ${activeRole}. Switch to patient to book a hospital spot.`,
+        duration: 8000,
+        action: {
+          label: "Switch to patient",
+          onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
+        },
       });
       return;
     }
@@ -225,8 +243,13 @@ export const HospitalBookingDialog = ({
 
         // Authenticated but the wrong kind of account.
         if (status === 403) {
-          toast.error("Switch to a patient account", {
-            description: "This account can't book hospital spots. Switch to a patient account to get treatment.",
+          toast.error("Switch to your patient role to book", {
+            description: "This account can't book hospital spots as its current role.",
+            duration: 8000,
+            action: {
+              label: "Switch to patient",
+              onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
+            },
           });
           return;
         }
@@ -255,12 +278,13 @@ export const HospitalBookingDialog = ({
         if (!o) reset();
       }}
     >
+      <SheetOverlay className="bg-background/70 backdrop-blur-[2px]" />
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[520px] flex flex-col gap-0 p-0 bg-background border-l border-border"
+        className="w-full sm:max-w-[680px] flex flex-col gap-0 p-0 bg-background border-l border-border"
       >
         {/* ── Header ── */}
-        <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
+        <SheetHeader className="px-4 sm:px-5 py-4 border-b border-border bg-card/95 backdrop-blur shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-[11px] shrink-0 border border-primary/15 overflow-hidden">
               {hospital.logo ? (
@@ -336,7 +360,7 @@ export const HospitalBookingDialog = ({
 
           {/* Form */}
           {!isLoading && !confirmed && (
-            <div className="px-5 py-4 space-y-5">
+            <div className="px-4 sm:px-5 py-4 space-y-4">
 
               {/* ── Weekly schedule overview ── */}
               <div>
@@ -344,7 +368,7 @@ export const HospitalBookingDialog = ({
                   <CalendarDays className="h-2.5 w-2.5" /> Working days
                 </p>
 
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
                   {weekSchedule.map((day) => {
                     const isOpen = !day.is_closed && day.is_active;
                     return (
@@ -409,7 +433,7 @@ export const HospitalBookingDialog = ({
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
+                    <div className="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto pr-0.5 sm:grid-cols-2 xl:grid-cols-3">
                       {dateSlots.map((slot) => (
                         <button
                           key={slot.date}
@@ -451,7 +475,7 @@ export const HospitalBookingDialog = ({
                     Preferred time{" "}
                     <span className="text-destructive">*</span>
                   </Label>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
                     {timeSlots.map((t) => (
                       <button
                         key={t}
@@ -612,7 +636,7 @@ export const HospitalBookingDialog = ({
 
         {/* ── Footer ── */}
         {!confirmed && !isLoading && (
-          <SheetFooter className="px-5 py-3.5 border-t border-border bg-muted/30 shrink-0 flex items-center justify-between sm:justify-between gap-2">
+          <SheetFooter className="px-4 sm:px-5 py-3.5 border-t border-border bg-card/95 backdrop-blur shrink-0 flex items-center justify-between sm:justify-between gap-2">
             <Button
               variant="outline"
               size="sm"

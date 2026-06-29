@@ -14,6 +14,7 @@ import {
   Building2,
   Sparkles,
   HeartPulse,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -31,6 +32,7 @@ import { Link } from "react-router-dom";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
+import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -353,7 +355,6 @@ const PatientInstant = () => {
     mutationFn: async (appt) => {
       if (appt.booking_type === "instant") {
         const detail = await apiFetch<InstantQuickDetail>(`/patient/quick/${appt.id}`);
-        console.log("[Quick] instant detail:", detail);
         const decoded = decodeCallToken(detail.daily_guest_token);
         const roomName = detail.daily_room_name || decoded?.room;
         if (decoded && roomName) {
@@ -380,7 +381,6 @@ const PatientInstant = () => {
         `/patient/appointments/${appt.id}/join`,
         { method: "POST" },
       );
-      console.log("[Quick] appointment join response:", res);
       const started = startInAppCallFromJoin(startCall, res, {
         consultationId: appt.id,
         isOwner: false,
@@ -504,6 +504,16 @@ const PatientInstant = () => {
     (acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }),
     {} as Record<string, number>
   ), [appointments]);
+  const statsItems = useMemo<PatientStatItem[]>(() => {
+    const active = (counts.confirmed ?? 0) + (counts.in_progress ?? 0);
+    return [
+      { label: "Total", value: data?.total ?? appointments.length, helper: "Instant requests", icon: Sparkles, tone: "primary" },
+      { label: "Ready to join", value: active, helper: "Accepted or live", icon: Video, tone: "sky" },
+      { label: "Pending", value: counts.pending ?? 0, helper: "Waiting doctor", icon: Clock, tone: "amber" },
+      { label: "Completed", value: counts.completed ?? 0, helper: "Resolved calls", icon: CheckCircle2, tone: "emerald" },
+      { label: "Cancelled", value: counts.cancelled ?? 0, helper: "Not active", icon: X, tone: "red" },
+    ];
+  }, [appointments.length, counts, data?.total]);
 
   // ── Sidebar content ────────────────────────────────────────────────────────
 
@@ -598,20 +608,6 @@ const PatientInstant = () => {
           title={t("pages.patient.instant_title") || "My Requests"}
           subtitle={t("pages.patient.instant_sub") || "Manage your instant consultations"}
         />
-
-        {/* Quick access to the patient's own medical record */}
-        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setMedInfoOpen(true)}
-            className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
-          >
-            <HeartPulse className="h-3.5 w-3.5 text-primary" />
-            My medical info
-          </Button>
-        </div>
-
         <FilterBar
           open={filterOpen}
           onToggle={() => setFilterOpen(!filterOpen)}
@@ -627,12 +623,7 @@ const PatientInstant = () => {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-xs text-muted-foreground">
-                <span className="font-bold text-foreground text-sm">{data?.total ?? 0}</span> requests
-                {hasActiveFilters && (
-                  <button onClick={clearAll} className="ml-3 text-primary hover:text-primary/80 hover:underline text-xs font-medium">
-                    Reset filters
-                  </button>
-                )}
+                Manage your instant consultations
               </p>
               <div className="hidden lg:flex items-center gap-2.5">
                 {(["confirmed", "in_progress", "pending"] as ApiAppointmentStatus[]).map((s) =>
@@ -727,6 +718,8 @@ const PatientInstant = () => {
               </Link>
 
             </div>
+
+            <PatientStatsGrid items={statsItems} />
 
             {/* Empty state */}
             {!isLoading && sorted.length === 0 && (

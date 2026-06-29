@@ -1,6 +1,9 @@
 export type Role = "patient" | "doctor" | "admin";
 export type OtpType = "register" | "login" | "reset";
 
+/** Roles a user can hold / switch between (admin is managed separately). */
+export type SwitchableRole = "patient" | "doctor" | "hospital" | "pharmacy";
+
 export interface User {
   id: number;
   name: string;
@@ -11,7 +14,10 @@ export interface User {
   role: Role;
   is_verified: boolean;
   status: string;
-  preferred_language: string;
+  preferred_language: string | null;
+  /** Active role + the roles this account has access to (role switching). */
+  active_role?: string;
+  available_roles?: string[];
 }
 
 // ── Register ──────────────────────────────────────────

@@ -132,7 +132,7 @@ const DAY_SHORT: Record<string, string> = {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
       {children}
     </p>
   );
@@ -154,10 +154,10 @@ function InfoRow({
     <div className="flex items-start gap-2.5 py-1.5">
       <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground leading-none mb-0.5">
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground leading-none mb-0.5">
           {label}
         </p>
-        <p className="text-[11px] text-foreground break-all leading-snug">{value}</p>
+        <p className="text-[13px] text-foreground break-all leading-snug">{value}</p>
       </div>
       {href && (
         <ChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0 mt-1" />
@@ -201,11 +201,11 @@ function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
           <div
             key={wh.id}
             className={cn(
-              "flex flex-col items-center py-2 px-0.5 text-center bg-card",
+              "flex flex-col items-center py-3 px-1 text-center bg-card",
               !isOpen && "opacity-45"
             )}
           >
-            <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {DAY_SHORT[wh.day_of_week]}
             </span>
             <div className="mt-1.5">
@@ -213,10 +213,10 @@ function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
                 <>
                   {wh.open_time && wh.close_time ? (
                     <>
-                      <p className="text-[8px] tabular-nums font-semibold text-foreground leading-none">
+                      <p className="text-[10px] tabular-nums font-semibold text-foreground leading-none">
                         {wh.open_time.slice(0, 5)}
                       </p>
-                      <p className="text-[8px] tabular-nums text-muted-foreground leading-none mt-0.5">
+                      <p className="text-[10px] tabular-nums text-muted-foreground leading-none mt-0.5">
                         {wh.close_time.slice(0, 5)}
                       </p>
                     </>
@@ -224,7 +224,7 @@ function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
                     <CheckCircle2 className="h-3 w-3 text-emerald-500 mx-auto" />
                   )}
                   {wh.max_patients && (
-                    <p className="text-[7px] text-muted-foreground mt-0.5 tabular-nums">
+                    <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
                       {wh.max_patients}pts
                     </p>
                   )}
@@ -265,8 +265,8 @@ function ScheduleSection({
         <div className="h-10 w-10 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
           <CalendarDays className="h-4 w-4 text-muted-foreground/40" />
         </div>
-        <p className="text-[11px] font-semibold text-foreground">No schedule yet</p>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-[13px] font-semibold text-foreground">No schedule yet</p>
+        <p className="text-[12px] text-muted-foreground">
           {t("pages.cards.no_published")}
         </p>
       </div>
@@ -284,10 +284,10 @@ function ScheduleSection({
       {/* Summary bar */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
             <Activity className="h-2.5 w-2.5" /> Open days this week
           </span>
-          <span className="text-[10px] font-semibold tabular-nums text-foreground">
+          <span className="text-[12px] font-semibold tabular-nums text-foreground">
             {activeDays.length} / {sorted.length}
           </span>
         </div>
@@ -300,7 +300,7 @@ function ScheduleSection({
           />
         </div>
         {totalCapacity > 0 && (
-          <p className="text-[9px] text-muted-foreground mt-1 tabular-nums">
+          <p className="text-[11px] text-muted-foreground mt-1 tabular-nums">
             {totalCapacity} total patient slots / week
           </p>
         )}
@@ -308,13 +308,13 @@ function ScheduleSection({
 
       {/* Header row */}
       <div className="flex items-center gap-3 pb-1.5 border-b border-border/60">
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex-1">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex-1">
           Day
         </span>
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground w-24 text-center">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-24 text-center">
           Hours
         </span>
-        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground w-20 text-right">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-20 text-right">
           Status
         </span>
       </div>
@@ -334,11 +334,11 @@ function ScheduleSection({
             >
               {/* Day name */}
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-semibold text-foreground leading-tight capitalize">
+                <p className="text-[13px] font-semibold text-foreground leading-tight capitalize">
                   {wh.day_of_week}
                 </p>
                 {isOpen && wh.max_patients && (
-                  <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">
+                  <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
                     max {wh.max_patients} patients
                   </p>
                 )}
@@ -348,25 +348,25 @@ function ScheduleSection({
               <div className="w-24 text-center">
                 {isOpen ? (
                   hasHours ? (
-                    <span className="text-[10px] tabular-nums text-foreground font-medium">
+                    <span className="text-[12px] tabular-nums text-foreground font-medium">
                       {wh.open_time!.slice(0, 5)} – {wh.close_time!.slice(0, 5)}
                     </span>
                   ) : (
-                    <span className="text-[9px] text-muted-foreground">All day</span>
+                    <span className="text-[11px] text-muted-foreground">All day</span>
                   )
                 ) : (
-                  <span className="text-[9px] text-muted-foreground">—</span>
+                  <span className="text-[11px] text-muted-foreground">—</span>
                 )}
               </div>
 
               {/* Status badge */}
               <div className="w-20 text-right">
                 {isOpen ? (
-                  <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
                     Open
                   </span>
                 ) : (
-                  <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wide">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                     {t("pages.cards.closed")}
                   </span>
                 )}
@@ -395,7 +395,7 @@ function TabBtn({
     <button
       onClick={onClick}
       className={cn(
-        "flex-1 py-1.5 text-[10px] font-semibold rounded-[6px] transition-all",
+        "flex-1 py-2 text-[12px] font-semibold rounded-[6px] transition-all",
         active
           ? "bg-background text-foreground shadow-sm border border-border"
           : "text-muted-foreground hover:text-foreground"
@@ -451,15 +451,15 @@ function HospitalViewDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetOverlay className="backdrop-blur-sm bg-black/40" />
+      <SheetOverlay className="bg-background/70 backdrop-blur-[2px]" />
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[520px] flex flex-col gap-0 p-0 bg-background border-l border-border"
+        className="w-full sm:max-w-[680px] flex flex-col gap-0 p-0 bg-background border-l border-border"
       >
         {/* ── Header ── */}
-        <SheetHeader className="px-5 py-4 border-b border-border bg-muted/40 shrink-0">
+        <SheetHeader className="px-4 sm:px-5 py-4 border-b border-border bg-card/95 backdrop-blur shrink-0">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-[13px] shrink-0 border border-primary/15 overflow-hidden">
+            <div className="h-10 w-10 rounded-[6px] flex items-center justify-center bg-primary/10 text-primary font-bold text-[15px] shrink-0 border border-primary/15 overflow-hidden">
               {hospital.logo ? (
                 <img
                   src={hospital.logo}
@@ -473,7 +473,7 @@ function HospitalViewDrawer({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <SheetTitle className="text-[13px] font-semibold text-foreground leading-tight">
+                <SheetTitle className="text-[15px] font-semibold text-foreground leading-tight">
                   {hospital.name_en}
                 </SheetTitle>
                 {verifiedDate && (
@@ -483,17 +483,17 @@ function HospitalViewDrawer({
                 )}
               </div>
               {hospital.name_fr && (
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                <p className="text-[12px] text-muted-foreground leading-tight mt-0.5">
                   {hospital.name_fr}
                 </p>
               )}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
+                <span className="text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
                   {hospital.type ?? "Hospital"}
                 </span>
                 <span
                   className={cn(
-                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] border",
+                    "text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-[6px] border",
                     hospital.status === "active"
                       ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                       : "bg-muted text-muted-foreground border-border/60"
@@ -503,7 +503,7 @@ function HospitalViewDrawer({
                 </span>
                 <span
                   className={cn(
-                    "text-[8px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-[6px] border",
+                    "text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-[6px] border",
                     isAccepting
                       ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800"
                       : "bg-muted text-muted-foreground border-border/60"
@@ -517,7 +517,7 @@ function HospitalViewDrawer({
         </SheetHeader>
 
         {/* ── Tabs ── */}
-        <div className="flex items-center gap-1 px-4 py-2 bg-muted/30 border-b border-border shrink-0">
+        <div className="flex items-center gap-1 px-4 py-2 bg-muted/20 border-b border-border shrink-0">
           <TabBtn active={tab === "overview"} onClick={() => setTab("overview")}>
             Overview
           </TabBtn>
@@ -531,10 +531,10 @@ function HospitalViewDrawer({
 
           {/* ══ OVERVIEW TAB ══ */}
           {tab === "overview" && (
-            <div className="px-5 py-4 space-y-5">
+            <div className="px-4 sm:px-5 py-4 space-y-4">
 
               {/* Stats row */}
-              <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
+              <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden bg-card">
                 {[
                   {
                     icon: <Users className="h-2.5 w-2.5 text-muted-foreground" />,
@@ -560,11 +560,11 @@ function HospitalViewDrawer({
                   >
                     <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                       {icon}
-                      <span className="text-[8px] uppercase tracking-wider font-semibold">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold">
                         {label}
                       </span>
                     </div>
-                    <span className="text-[12px] font-bold text-foreground tabular-nums">
+                    <span className="text-[14px] font-bold text-foreground tabular-nums">
                       {value}
                     </span>
                   </div>
@@ -576,7 +576,7 @@ function HospitalViewDrawer({
                 <SectionLabel>
                   <MapPin className="h-2.5 w-2.5" /> Location
                 </SectionLabel>
-                <div className="space-y-0.5 divide-y divide-border/40">
+                <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                   <InfoRow
                     icon={<MapPin className="h-3 w-3" />}
                     label="Address"
@@ -602,7 +602,7 @@ function HospitalViewDrawer({
                 <SectionLabel>
                   <Phone className="h-2.5 w-2.5" /> Contact
                 </SectionLabel>
-                <div className="space-y-0.5 divide-y divide-border/40">
+                <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                   <InfoRow
                     icon={<Phone className="h-3 w-3" />}
                     label="Phone"
@@ -632,7 +632,7 @@ function HospitalViewDrawer({
                   <Clock className="h-2.5 w-2.5" /> Opening Hours
                 </SectionLabel>
                 {hoursLabel && (
-                  <p className="text-[10px] text-foreground font-medium mb-2">
+                  <p className="text-[12px] text-foreground font-medium mb-2">
                     {hoursLabel}
                   </p>
                 )}
@@ -647,11 +647,11 @@ function HospitalViewDrawer({
                   <SectionLabel>
                     <Layers className="h-2.5 w-2.5" /> Departments
                   </SectionLabel>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {hospital.departments.map((dept) => (
                       <span
                         key={dept.id ?? dept.name_en}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
+                        className="text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
                       >
                         <Stethoscope className="h-2.5 w-2.5" />
                         {dept.name_en}
@@ -667,11 +667,11 @@ function HospitalViewDrawer({
                   <SectionLabel>
                     <Activity className="h-2.5 w-2.5" /> Services
                   </SectionLabel>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {allServices.map((svc) => (
                       <span
                         key={svc.id ?? svc.name_en}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
+                        className="text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60 flex items-center gap-1"
                       >
                         <Activity className="h-2.5 w-2.5" />
                         {svc.name_en}
@@ -685,7 +685,7 @@ function HospitalViewDrawer({
               {hospital.description_en && (
                 <div>
                   <SectionLabel>About</SectionLabel>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <p className="rounded-[6px] border border-border bg-card p-3 text-[13px] text-muted-foreground leading-relaxed">
                     {hospital.description_en}
                   </p>
                 </div>
@@ -697,7 +697,7 @@ function HospitalViewDrawer({
                   <SectionLabel>
                     <ShieldCheck className="h-2.5 w-2.5" /> Registration
                   </SectionLabel>
-                  <div className="space-y-0.5 divide-y divide-border/40">
+                  <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                     <InfoRow
                       icon={<ShieldCheck className="h-3 w-3" />}
                       label="Reg. Number"
@@ -718,11 +718,11 @@ function HospitalViewDrawer({
               {hospital.insurances && hospital.insurances.length > 0 && (
                 <div>
                   <SectionLabel>Insurances Accepted</SectionLabel>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {hospital.insurances.map((ins, i) => (
                       <span
                         key={ins.id ?? i}
-                        className="text-[9px] uppercase tracking-wider font-semibold px-2 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60"
+                        className="text-[11px] uppercase tracking-wider font-semibold px-3 py-1.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60"
                       >
                         {ins.name ?? String(ins)}
                       </span>
@@ -735,7 +735,7 @@ function HospitalViewDrawer({
 
           {/* ══ SCHEDULE TAB ══ */}
           {tab === "schedule" && (
-            <div className="px-5 py-4">
+            <div className="px-4 sm:px-5 py-4">
               <ScheduleSection
                 workingHours={hospital.working_days ?? []}
                 t={t}
@@ -745,10 +745,10 @@ function HospitalViewDrawer({
         </div>
 
         {/* ── Footer ── */}
-        <SheetFooter className="px-5 py-3 border-t border-border bg-muted/30 shrink-0 flex items-center justify-between sm:justify-between">
-          <p className="text-[9px] text-muted-foreground">
+        <SheetFooter className="px-4 sm:px-5 py-3 border-t border-border bg-card/95 backdrop-blur shrink-0 flex items-center justify-between sm:justify-between">
+          <p className="text-[11px] text-muted-foreground">
             {hospital.slug && (
-              <span className="font-mono text-[8px] opacity-60">
+              <span className="font-mono text-[10px] opacity-60">
                 {hospital.slug}
               </span>
             )}
@@ -757,7 +757,7 @@ function HospitalViewDrawer({
             size="sm"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="h-7 px-3 text-[10px] font-medium rounded-[6px]"
+            className="h-7 px-3 text-[12px] font-medium rounded-[6px]"
           >
             Close
           </Button>

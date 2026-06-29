@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
+import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 import {
   BookingStatus,
   useGetPatientServiceBookings,   // ← plural: fetches list with filters
@@ -738,7 +739,7 @@ function BookingCardItem({
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
           Service Booking
         </span>
-        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_CONFIG[booking.status].color)}>
+        <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_CONFIG[booking.status].badge)}>
           {STATUS_CONFIG[booking.status].label}
         </span>
       </div>
@@ -1008,6 +1009,25 @@ function ServiceBookings() {
       ),
     [data],
   );
+  const visibleValue = useMemo(
+    () =>
+      bookings.reduce((sum, booking) => {
+        const raw = booking.patient_pays ?? booking.price ?? booking.service.price;
+        const amount = raw ? Number.parseFloat(raw) : 0;
+        return Number.isFinite(amount) ? sum + amount : sum;
+      }, 0),
+    [bookings],
+  );
+  const statsItems = useMemo<PatientStatItem[]>(
+    () => [
+      { label: "Total", value: data?.total ?? bookings.length, helper: "Service bookings", icon: CalendarDays, tone: "primary" },
+      { label: "Pending", value: statusCounts.pending ?? 0, helper: "Waiting review", icon: Clock, tone: "amber" },
+      { label: "Accepted", value: statusCounts.accepted ?? 0, helper: "Ready for payment", icon: CheckCircle2, tone: "emerald" },
+      { label: "Completed", value: statusCounts.completed ?? 0, helper: "Finished services", icon: Stethoscope, tone: "sky" },
+      { label: "Visible value", value: formatPrice(String(visibleValue), "RWF"), helper: "Current results", icon: CreditCard, tone: "violet" },
+    ],
+    [bookings.length, data?.total, statusCounts.accepted, statusCounts.completed, statusCounts.pending, visibleValue],
+  );
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1018,20 +1038,6 @@ function ServiceBookings() {
           title={t("pages.patient.bookings_title")}
           subtitle={t("pages.patient.bookings_sub")}
         />
-
-        {/* Quick access to the patient's own medical record */}
-        <div className="flex items-center justify-end px-4 py-2 border-b border-border/60 bg-card/30 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setMedInfoOpen(true)}
-            className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
-          >
-            <HeartPulse className="h-3.5 w-3.5 text-primary" />
-            My medical info
-          </Button>
-        </div>
-
         <FilterBar
           open={filterOpen}
           onToggle={() => setFilterOpen(!filterOpen)}
@@ -1055,34 +1061,8 @@ function ServiceBookings() {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-                <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
-                booking{(data?.total ?? 0) !== 1 ? "s" : ""}
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearAll}
-                    className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium"
-                  >
-                    Reset
-                  </button>
-                )}
-              </p>
-              {/* Status pill counts — hidden on small screens */}
-              <div className="hidden lg:flex items-center gap-2">
-                {(["pending", "accepted"] as BookingStatus[]).map((s) =>
-                  statusCounts[s] ? (
-                    <span
-                      key={s}
-                      className={cn(
-                        "flex items-center gap-1 text-[10px] font-medium border px-2 py-0.5 rounded-[6px]",
-                        STATUS_CONFIG[s].badge,
-                      )}
-                    >
-                      <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_CONFIG[s].dot)} />
-                      {statusCounts[s]} {STATUS_CONFIG[s].label.toLowerCase()}
-                    </span>
-                  ) : null,
-                )}
-              </div>
+               Service bookings ({data?.total ?? bookings.length} total)
+              </p> 
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -1174,6 +1154,7 @@ function ServiceBookings() {
               </Link>
 
             </div>
+            <PatientStatsGrid items={statsItems} />
             {/* Error state */}
             {isError && (
               <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
