@@ -333,6 +333,8 @@ export const ConnectDialogContent = ({
   const isLoggedIn = !!me;
   // Resume the instant request after a stay-and-switch to patient.
   const [resumeRequest, setResumeRequest] = useState(false);
+  // Inline switch prompt (a toast button is unclickable behind the modal).
+  const [switchPromptRole, setSwitchPromptRole] = useState<string | null>(null);
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
   const [phase, setPhase] = useState<CallPhase>("idle");
@@ -661,14 +663,7 @@ export const ConnectDialogContent = ({
     // role, offer a one-click switch instead of failing with "unauthorized". ──
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
     if (isLoggedIn && activeRole && activeRole !== "patient") {
-      toast.error("Switch to your patient role to start an instant consult", {
-        description: `You're signed in as a ${activeRole}. Switch to patient to connect.`,
-        duration: 8000,
-        action: {
-          label: "Switch to patient",
-          onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeRequest(true) }),
-        },
-      });
+      setSwitchPromptRole(activeRole);
       return;
     }
 
@@ -755,14 +750,7 @@ export const ConnectDialogContent = ({
     } catch (err: unknown) {
       // Wrong-role rejection → offer a one-click switch to patient.
       if ((err as { status?: number })?.status === 403) {
-        toast.error("Switch to your patient role to start an instant consult", {
-          description: "This account can't start consultations as its current role.",
-          duration: 8000,
-          action: {
-            label: "Switch to patient",
-            onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeRequest(true) }),
-          },
-        });
+        setSwitchPromptRole((me?.active_role ?? me?.role ?? "another role") as string);
         setPhase("idle");
         return;
       }
@@ -1107,7 +1095,32 @@ export const ConnectDialogContent = ({
 
   // ── Pre-call / post-call panel ────────────────────────────────────────────
   return (
-    <div className="p-5 space-y-4">
+    <div className="min-h-0 flex-1 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-5 space-y-4">
+      {switchPromptRole && (
+        <div className="rounded-[6px] border border-amber-400/30 bg-amber-500/10 p-3 flex items-start gap-2.5">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold text-foreground">Switch to your patient role</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              You're signed in as {switchPromptRole}. Switch to patient to start an instant consult.
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              goToRole("patient", {
+                stay: true,
+                onSwitched: () => {
+                  setSwitchPromptRole(null);
+                  setResumeRequest(true);
+                },
+              })
+            }
+            className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
+          >
+            Switch to patient
+          </button>
+        </div>
+      )}
 
       {/* Title */}
       <div className="flex items-center gap-2">

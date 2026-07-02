@@ -36,6 +36,7 @@ import TopBar from "@/components/landing/TopBar";
 
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import { notifyAccessPrompt } from "@/lib/access-events";
  
 export type ErrorStatus = 400 | 401 | 403 | 404 | 419 | 422 | 429 | 500 | 502 | 503 | 504;
 
@@ -174,6 +175,7 @@ export default function ErrorPage({
     const fallback = ERROR_CONTENT[status] ?? ERROR_CONTENT[500];
     const Icon = fallback.icon;
     const technicalMessage = getErrorMessage(error);
+    const isAuthenticated = !!localStorage.getItem("auth_token");
 
     const { t, i18n } = useTranslation();
     const { resolvedTheme, theme } = useTheme();
@@ -263,6 +265,39 @@ export default function ErrorPage({
                     )}
 
                     <div className="mt-7 grid gap-2 sm:grid-cols-2">
+                        {status === 401 && (
+                            <Button
+                                className="h-10 rounded-[6px] sm:col-span-2"
+                                onClick={() => navigate("/auth")}
+                            >
+                                Sign in
+                            </Button>
+                        )}
+
+                        {status === 403 && isAuthenticated && (
+                            <Button
+                                className="h-10 rounded-[6px] sm:col-span-2"
+                                onClick={() =>
+                                    notifyAccessPrompt({
+                                        reason: "role",
+                                        message:
+                                            "Your current role does not have access to this resource. Switch roles to continue.",
+                                    })
+                                }
+                            >
+                                Switch role
+                            </Button>
+                        )}
+
+                        {status === 403 && !isAuthenticated && (
+                            <Button
+                                className="h-10 rounded-[6px] sm:col-span-2"
+                                onClick={() => navigate("/auth")}
+                            >
+                                Sign in
+                            </Button>
+                        )}
+
                         {showBackButton && (
                             <Button
                                 variant="outline"

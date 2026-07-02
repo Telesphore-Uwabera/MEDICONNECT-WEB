@@ -43,6 +43,10 @@ import {
   Globe,
   Pencil,
   Save,
+  Plus,
+  UserPlus,
+  BriefcaseBusiness,
+  Shield,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
@@ -50,7 +54,20 @@ import {
   useSuspendUser,
   useActivateUser,
   useDeleteUser,
+  useCreateAdminUser,
+  useGetAdminStaff,
+  useCreateStaff,
+  useUpdateStaffRole,
+  useSuspendStaff,
+  useActivateStaff,
+  useDeleteStaff,
+  useAdminRoles,
+  useAdminPermissions,
+  useRolePermissions,
+  useReplaceRolePermissions,
   type ApiUser,
+  type StaffUser,
+  type CreateStaffPayload,
 } from "@/hooks/admin/use-admin-users";
 import {
   useApproveDoctor,
@@ -89,7 +106,15 @@ import { PharmacyPanel } from "./components/Pharmacy/components";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type RoleFilter = "all" | "doctor" | "hospital" | "pharmacy" | "patient" | "admin";
+type RoleFilter =
+  | "all"
+  | "doctor"
+  | "hospital"
+  | "pharmacy"
+  | "patient"
+  | "admin"
+  | "staff"
+  | "roles";
 type StatusFilter = "all" | "active" | "pending" | "suspended" | "rejected";
 type SortOption = "name" | "joined-desc" | "joined-asc" | "role";
 
@@ -188,6 +213,8 @@ const USER_TABS: Array<{
   { value: "hospital", label: "Facilities", description: "Hospitals", icon: Building2 },
   { value: "pharmacy", label: "Pharmacies", description: "Medicine providers", icon: Pill },
   { value: "admin", label: "Admins", description: "Back office", icon: ShieldCheck },
+  { value: "staff", label: "Staff", description: "Operations users", icon: BriefcaseBusiness },
+  { value: "roles", label: "Roles", description: "Permissions", icon: Shield },
 ];
 
 function isRoleFilter(value: string | null): value is RoleFilter {
@@ -730,6 +757,332 @@ function UserPanel({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+function FormInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <label className="space-y-1">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50" />
+    </label>
+  );
+}
+
+function FormSelect({
+  label,
+  value,
+  options,
+  onChange,
+  compact = false,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  compact?: boolean;
+}) {
+  return (
+    <label className={cn("space-y-1", compact && "min-w-[180px]")}>
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50">
+        {options.map((option) => (
+          <option key={option} value={option}>{option || "Select"}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function PanelLoader({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 py-8 text-[12px] text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {label}
+    </div>
+  );
+}
+
+function CreateUserModal({
+  open,
+  mode,
+  defaultRole,
+  onClose,
+  onCreated,
+}: {
+  open: boolean;
+  mode: "user" | "staff";
+  defaultRole: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const createUser = useCreateAdminUser();
+  const createStaff = useCreateStaff();
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    country_code: "250",
+    role: mode === "staff" ? "moderator" : defaultRole,
+    gender: "",
+    preferred_language: "en",
+    password: "",
+    password_confirmation: "",
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    setForm((prev) => ({
+      ...prev,
+      role: mode === "staff" ? "moderator" : defaultRole,
+      password: "",
+      password_confirmation: "",
+    }));
+  }, [defaultRole, mode, open]);
+
+  if (!open) return null;
+
+  const setValue = (key: keyof typeof form, value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const save = async () => {
+    try {
+      if (mode === "staff") {
+        const res = await createStaff.mutateAsync({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          password: form.password,
+          password_confirmation: form.password_confirmation,
+          role: form.role as CreateStaffPayload["role"],
+        });
+        sonnerToast.success(res.message ?? "Staff user created.");
+      } else {
+        const res = await createUser.mutateAsync({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          country_code: form.country_code.trim() || undefined,
+          role: form.role,
+          gender: form.gender || undefined,
+          preferred_language: form.preferred_language || undefined,
+        });
+        sonnerToast.success(res.message ?? "User created successfully.");
+      }
+      onCreated();
+    } catch (error: unknown) {
+      sonnerToast.error(mode === "staff" ? "Could not create staff." : "Could not create user.", {
+        description: getErrorMessage(error),
+      });
+    }
+  };
+
+  const saving = createUser.isPending || createStaff.isPending;
+  const roles = mode === "staff" ? ["moderator", "finance", "help_desk"] : ["patient", "doctor", "hospital", "pharmacy", "admin"];
+
+  return (
+    <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
+      <div className="w-full max-w-2xl overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+              {mode === "staff" ? <BriefcaseBusiness className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+            </div>
+            <div>
+              <p className="text-[14px] font-semibold text-foreground">{mode === "staff" ? "Create staff account" : "Create user account"}</p>
+              <p className="text-[11px] text-muted-foreground">{mode === "staff" ? "Staff credentials are created by the admin." : "Login credentials will be sent to the user's email."}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-[6px] border border-border p-2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2">
+          <FormInput label="Name" value={form.name} onChange={(v) => setValue("name", v)} />
+          <FormInput label="Email" type="email" value={form.email} onChange={(v) => setValue("email", v)} />
+          <FormInput label="Phone" value={form.phone} onChange={(v) => setValue("phone", v)} />
+          {mode === "user" && <FormInput label="Country code" value={form.country_code} onChange={(v) => setValue("country_code", v)} />}
+          <FormSelect label="Role" value={form.role} options={roles} onChange={(v) => setValue("role", v)} />
+          {mode === "user" ? (
+            <>
+              <FormSelect label="Gender" value={form.gender} options={["", "male", "female", "other"]} onChange={(v) => setValue("gender", v)} />
+              <FormSelect label="Language" value={form.preferred_language} options={["en", "fr", "rw"]} onChange={(v) => setValue("preferred_language", v)} />
+            </>
+          ) : (
+            <>
+              <FormInput label="Password" type="password" value={form.password} onChange={(v) => setValue("password", v)} />
+              <FormInput label="Confirm password" type="password" value={form.password_confirmation} onChange={(v) => setValue("password_confirmation", v)} />
+            </>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <Button variant="outline" className="h-9 rounded-[6px] text-[12px]" onClick={onClose}>Cancel</Button>
+          <Button className="h-9 rounded-[6px] text-[12px]" onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            Create
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StaffManagementPanel({ search }: { search: string }) {
+  const [role, setRole] = useState("all");
+  const { data, isLoading, isError } = useGetAdminStaff({
+    role: role !== "all" ? role : undefined,
+    search: search || undefined,
+  });
+  const updateRole = useUpdateStaffRole();
+  const suspend = useSuspendStaff();
+  const activate = useActivateStaff();
+  const remove = useDeleteStaff();
+  const staff = data?.data ?? [];
+
+  const action = async (promise: Promise<unknown>, success: string) => {
+    try {
+      await promise;
+      sonnerToast.success(success);
+    } catch (error: unknown) {
+      sonnerToast.error("Staff action failed.", { description: getErrorMessage(error) });
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 rounded-[6px] border border-border/70 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[13px] font-semibold text-foreground">Staff management</p>
+          <p className="text-[11px] text-muted-foreground">Moderators, finance, and help desk users.</p>
+        </div>
+        <FormSelect label="Role" value={role} options={["all", "moderator", "finance", "help_desk"]} onChange={setRole} compact />
+      </div>
+      <div className="overflow-hidden rounded-[6px] border border-border/70 bg-card">
+        <table className="w-full text-[11px]">
+          <thead className="border-b border-border/60 bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80">
+            <tr>
+              <th className="px-4 py-3 text-left">Name</th>
+              <th className="px-4 py-3 text-left">Email</th>
+              <th className="px-4 py-3 text-left">Role</th>
+              <th className="px-4 py-3 text-left">Status</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <SkeletonRows />
+            ) : isError ? (
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-destructive">Failed to load staff</td></tr>
+            ) : staff.length === 0 ? (
+              <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No staff users found.</td></tr>
+            ) : (
+              staff.map((member: StaffUser) => {
+                const currentRole = member.roles?.[0]?.name ?? "moderator";
+                const suspended = member.status === "suspended";
+                return (
+                  <tr key={member.id} className="border-t border-border/40">
+                    <td className="px-4 py-3 font-semibold text-foreground">{member.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
+                    <td className="px-4 py-3">
+                      <select value={currentRole} onChange={(e) => action(updateRole.mutateAsync({ id: member.id, role: e.target.value as CreateStaffPayload["role"] }), "Staff role updated.")} className="h-8 rounded-[6px] border border-border bg-background px-2 text-[11px]">
+                        {["moderator", "finance", "help_desk"].map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="outline" className={cn("text-[9px] capitalize", statusStyle[member.status ?? "active"])}>{member.status ?? "active"}</Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="sm" className="h-7 rounded-[6px] text-[10px]" onClick={() => action(suspended ? activate.mutateAsync(member.id) : suspend.mutateAsync(member.id), suspended ? "Staff activated." : "Staff suspended.")}>{suspended ? "Activate" : "Suspend"}</Button>
+                        <Button variant="outline" size="sm" className="h-7 rounded-[6px] border-red-900/40 text-[10px] text-red-500" onClick={() => action(remove.mutateAsync(member.id), "Staff deleted.")}>Delete</Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function RolesPermissionsPanel() {
+  const { data: roles = [], isLoading: rolesLoading } = useAdminRoles();
+  const { data: permissions = [], isLoading: permissionsLoading } = useAdminPermissions();
+  const [roleId, setRoleId] = useState<number | null>(null);
+  const rolePermissions = useRolePermissions(roleId);
+  const replacePermissions = useReplaceRolePermissions();
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (roleId === null && roles.length > 0) setRoleId(roles.find((role) => role.name !== "admin")?.id ?? roles[0].id);
+  }, [roleId, roles]);
+
+  useEffect(() => {
+    setSelectedPermissions(rolePermissions.data?.permissions ?? []);
+  }, [rolePermissions.data]);
+
+  const save = async () => {
+    if (roleId === null) return;
+    try {
+      const res = await replacePermissions.mutateAsync({ roleId, permissions: selectedPermissions });
+      sonnerToast.success(res.message ?? "Role permissions updated.");
+    } catch (error: unknown) {
+      sonnerToast.error("Could not update permissions.", { description: getErrorMessage(error) });
+    }
+  };
+
+  const selectedRole = roles.find((role) => role.id === roleId);
+  const adminRole = selectedRole?.name === "admin";
+
+  return (
+    <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
+      <div className="rounded-[6px] border border-border/70 bg-card p-3">
+        <p className="text-[13px] font-semibold text-foreground">Roles</p>
+        <p className="mb-3 text-[11px] text-muted-foreground">Select a role to manage permissions.</p>
+        <div className="space-y-1.5">
+          {rolesLoading ? <PanelLoader label="Loading roles..." /> : roles.map((role) => (
+            <button key={role.id} type="button" onClick={() => setRoleId(role.id)} className={cn("flex w-full items-center justify-between rounded-[6px] border px-3 py-2 text-left text-[12px] font-semibold", roleId === role.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground")}>
+              {role.name}
+              {role.name === "admin" && <ShieldCheck className="h-3.5 w-3.5" />}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-[6px] border border-border/70 bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <p className="text-[13px] font-semibold text-foreground">{selectedRole ? `${selectedRole.name} permissions` : "Permissions"}</p>
+            <p className="text-[11px] text-muted-foreground">{adminRole ? "Admin role permissions cannot be modified." : "Tick permissions and save to replace this role's access."}</p>
+          </div>
+          <Button className="h-8 rounded-[6px] text-[11px]" onClick={save} disabled={adminRole || replacePermissions.isPending || rolePermissions.isLoading}>
+            {replacePermissions.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Save className="mr-2 h-3.5 w-3.5" />}
+            Save permissions
+          </Button>
+        </div>
+        <div className="grid max-h-[520px] grid-cols-1 gap-2 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-3">
+          {permissionsLoading || rolePermissions.isLoading ? <PanelLoader label="Loading permissions..." /> : permissions.map((permission) => {
+            const checked = selectedPermissions.includes(permission.name);
+            return (
+              <label key={permission.id} className={cn("flex cursor-pointer items-center gap-2 rounded-[6px] border px-3 py-2 text-[11px] font-medium", checked ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground", adminRole && "cursor-not-allowed opacity-60")}>
+                <input type="checkbox" checked={checked} disabled={adminRole} onChange={(e) => setSelectedPermissions((prev) => e.target.checked ? [...prev, permission.name] : prev.filter((name) => name !== permission.name))} />
+                {permission.name}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AdminUsers = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -738,6 +1091,7 @@ const AdminUsers = () => {
   const [editingUser, setEditingUser] = useState<ApiUser | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ApiUser | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
   
 
   // Debounced search
@@ -753,6 +1107,7 @@ const AdminUsers = () => {
     status: filters.status !== "all" ? filters.status : undefined,
     search: filters.search || undefined,
     page: filters.page,
+    enabled: !["staff", "roles"].includes(filters.role),
   });
 
   const suspendMutation = useSuspendUser();
@@ -1241,6 +1596,17 @@ const AdminUsers = () => {
                 )}
               </div>
 
+            {filters.role !== "roles" && (
+              <Button
+                type="button"
+                onClick={() => setCreateUserOpen(true)}
+                className="h-8 rounded-[6px] px-3 text-[11px] font-semibold gap-1.5 shrink-0"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                {filters.role === "staff" ? "Create staff" : "Create user"}
+              </Button>
+            )}
+
             {/* Refresh Button */}
             <button
               onClick={() => refetch()}
@@ -1286,7 +1652,11 @@ const AdminUsers = () => {
 
           {/* Content */}
           <div className="p-3 sm:p-4">
-            {isError ? (
+            {filters.role === "staff" ? (
+              <StaffManagementPanel search={filters.search} />
+            ) : filters.role === "roles" ? (
+              <RolesPermissionsPanel />
+            ) : isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                 <p className="text-[12px] font-semibold text-destructive">
                   Failed to load users
@@ -1479,6 +1849,21 @@ const AdminUsers = () => {
           patientLookup.refetch();
           hospitalLookup.refetch();
           pharmacyLookup.refetch();
+        }}
+      />
+
+      <CreateUserModal
+        open={createUserOpen}
+        mode={filters.role === "staff" ? "staff" : "user"}
+        defaultRole={
+          ["doctor", "hospital", "pharmacy", "patient", "admin"].includes(filters.role)
+            ? filters.role
+            : "patient"
+        }
+        onClose={() => setCreateUserOpen(false)}
+        onCreated={() => {
+          refetch();
+          setCreateUserOpen(false);
         }}
       />
 

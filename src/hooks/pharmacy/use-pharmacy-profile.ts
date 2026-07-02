@@ -72,6 +72,8 @@ export const pharmacyKeys = {
   workingHours: ["pharmacy-working-hours"] as const,
   closures: ["pharmacy-closures"] as const,
   inventoryMode: ["pharmacy-inventory-mode"] as const,
+  externalProviders: ["pharmacy-external-providers"] as const,
+  externalProviderLogs: (id: number) => ["pharmacy-external-provider-logs", id] as const,
 };
 
 export type PharmacyInventoryMode = "internal" | "external";
@@ -79,6 +81,49 @@ export type PharmacyInventoryMode = "internal" | "external";
 export interface PharmacyInventoryModeResponse {
   message?: string;
   inventory_mode: PharmacyInventoryMode;
+}
+
+export type PharmacyExternalAuthType = "api_key" | "bearer" | "basic";
+
+export interface PharmacyExternalProvider {
+  id: number;
+  pharmacy_id: number;
+  name: string;
+  api_url: string;
+  auth_type: PharmacyExternalAuthType;
+  extra_headers: Record<string, string> | null;
+  sync_interval_minutes: number;
+  is_active: boolean;
+  inventory_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PharmacyExternalProviderPayload {
+  name: string;
+  api_url: string;
+  api_key?: string;
+  api_secret?: string;
+  auth_type: PharmacyExternalAuthType;
+  extra_headers?: Record<string, string> | null;
+  sync_interval_minutes?: number;
+  is_active?: boolean;
+}
+
+export interface PharmacyExternalSyncLog {
+  id: number;
+  provider_id: number;
+  status: string;
+  items_synced?: number;
+  message?: string | null;
+  created_at?: string;
+}
+
+export interface PharmacyExternalSyncLogsResponse {
+  current_page: number;
+  data: PharmacyExternalSyncLog[];
+  per_page: number;
+  total: number;
 }
 
 export function useGetInventoryMode() {
@@ -102,6 +147,94 @@ export function useSwitchInventoryMode() {
       qc.setQueryData(pharmacyKeys.inventoryMode, data);
       qc.invalidateQueries({ queryKey: pharmacyKeys.inventoryMode });
     },
+  });
+}
+
+const EXTERNAL_PROVIDERS_BASE = "/pharmacy/inventory/external/providers";
+
+export function useGetExternalProviders() {
+  return useQuery({
+    queryKey: pharmacyKeys.externalProviders,
+    queryFn: () =>
+      apiFetch<{ providers: PharmacyExternalProvider[] }>(EXTERNAL_PROVIDERS_BASE).then(
+        (r) => r.providers ?? [],
+      ),
+    retry: false,
+  });
+}
+
+export function useConnectExternalProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: PharmacyExternalProviderPayload) =>
+      apiFetch<{ message: string; provider: PharmacyExternalProvider }>(EXTERNAL_PROVIDERS_BASE, {
+        method: "POST",
+        body: payload,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviders });
+    },
+  });
+}
+
+export function useUpdateExternalProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: Partial<PharmacyExternalProviderPayload>;
+    }) =>
+      apiFetch<{ message: string; provider: PharmacyExternalProvider }>(
+        `${EXTERNAL_PROVIDERS_BASE}/${id}`,
+        { method: "PUT", body: payload },
+      ),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviders });
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviderLogs(variables.id) });
+    },
+  });
+}
+
+export function useDeleteExternalProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ message: string }>(`${EXTERNAL_PROVIDERS_BASE}/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviders });
+      qc.removeQueries({ queryKey: pharmacyKeys.externalProviderLogs(id) });
+    },
+  });
+}
+
+export function useSyncExternalProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ message: string }>(`${EXTERNAL_PROVIDERS_BASE}/${id}/sync`, {
+        method: "POST",
+      }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviderLogs(id) });
+      qc.invalidateQueries({ queryKey: pharmacyKeys.externalProviders });
+    },
+  });
+}
+
+export function useGetExternalProviderSyncLogs(providerId: number | null) {
+  return useQuery({
+    queryKey: providerId ? pharmacyKeys.externalProviderLogs(providerId) : ["pharmacy-external-provider-logs", "none"],
+    queryFn: () =>
+      apiFetch<PharmacyExternalSyncLogsResponse>(
+        `${EXTERNAL_PROVIDERS_BASE}/${providerId}/sync-logs`,
+      ),
+    enabled: !!providerId,
+    retry: false,
   });
 }
 

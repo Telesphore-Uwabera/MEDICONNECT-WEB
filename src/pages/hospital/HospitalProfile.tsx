@@ -56,6 +56,11 @@ import {
 } from "lucide-react";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
 import { cn } from "@/lib/utils";
+import {
+  prepareRichTextForSave,
+  RichTextarea,
+  RichTextRenderer,
+} from "@/components/ui/rich-textarea";
 
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -150,21 +155,7 @@ const SOCIAL_PLATFORMS: Array<{
       label: "YouTube",
       placeholder: "https://youtube.com/@your-channel",
     },
-    {
-      key: "whatsapp",
-      label: "WhatsApp",
-      placeholder: "https://wa.me/250788000001",
-    },
-    {
-      key: "tiktok",
-      label: "TikTok",
-      placeholder: "https://tiktok.com/@your-handle",
-    },
-    {
-      key: "website",
-      label: "Official website",
-      placeholder: "https://yourhospital.rw",
-    },
+    
   ];
 
 const DEFAULT_SOCIAL_LINKS: SocialLinksInfo = {
@@ -1076,6 +1067,7 @@ function HospitalForm({
     handleSubmit,
     trigger,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<HospitalData>({ defaultValues: defaultValues?.hospital });
 
@@ -1170,10 +1162,17 @@ function HospitalForm({
               error={errors.description_en?.message}
               className="col-span-1 sm:col-span-2"
             >
-              <Input
-                {...register("description_en")}
+              <RichTextarea
+                value={watch("description_en") ?? ""}
+                onChange={(value) =>
+                  setValue("description_en", value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
                 placeholder="Leading referral hospital in Rwanda"
-                className="border-border focus-visible:ring-primary text-xs h-9"
+                minHeight={130}
+                editorClassName="text-xs"
               />
             </FormField>
 
@@ -1619,9 +1618,7 @@ function HospitalProfileView({
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Description
                 </p>
-                <p className="text-[11px] text-foreground leading-relaxed">
-                  {hospital.description_en}
-                </p>
+                <RichTextRenderer value={hospital.description_en} className="text-[11px] text-foreground leading-relaxed" />
               </div>
             )}
           </div>
@@ -2023,7 +2020,7 @@ const HospitalProfile = () => {
       name_en: hospital.name_en,
       name_fr: hospital.name_fr,
       name_kiny: hospital.name_kiny,
-      description_en: hospital.description_en,
+      description_en: prepareRichTextForSave(hospital.description_en) ?? "",
       type: hospital.type,
       registration_number: hospital.registration_number,
       address: hospital.address,

@@ -179,7 +179,7 @@ export function GlobalInstantPill() {
 
       <Dialog open={open} onOpenChange={setOpen} modal={false}>
         <DialogContent
-          className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card shadow-2xl"
+          className="p-0 border-0 overflow-hidden sm:max-w-md w-full max-h-[calc(100dvh-2rem)] bg-card shadow-2xl"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { getAccessErrorMessage, notifyAccessPrompt } from "@/lib/access-events";
 
 const BASE = "/doctor/certificates";
 
@@ -36,6 +37,9 @@ export type CertDecision =
   message?: string;
 }
 export interface Certificate {
+  patient_id: ReactI18NextChildren | Iterable<ReactI18NextChildren>;
+  confirmation_session: any;
+  confirmation_requested_at: any;
   id: number;
   certificate_number: string;
   status: CertStatus;
@@ -409,6 +413,12 @@ export function useDownloadCertificate() {
       );
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          notifyAccessPrompt({
+            reason: response.status === 401 || !token ? "login" : "role",
+            message: getAccessErrorMessage(response.status, !!token) ?? undefined,
+          });
+        }
         throw new Error(`Download failed: ${response.status} ${response.statusText}`);
       }
 

@@ -30,6 +30,10 @@ import {
   Database,
   ServerCog,
   PlugZap,
+  RefreshCw,
+  FileClock,
+  Power,
+  PowerOff,
 } from "lucide-react";
 import {
   useGetMySettings,
@@ -50,7 +54,14 @@ import {
 import {
   useGetInventoryMode,
   useSwitchInventoryMode,
+  useGetExternalProviders,
+  useConnectExternalProvider,
+  useUpdateExternalProvider,
+  useDeleteExternalProvider,
+  useSyncExternalProvider,
+  useGetExternalProviderSyncLogs,
   type PharmacyInventoryMode,
+  type PharmacyExternalAuthType,
 } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { cn } from "@/lib/utils";
 
@@ -361,10 +372,15 @@ function PharmacySettings() {
   const [selectedInventoryMode, setSelectedInventoryMode] =
     useState<PharmacyInventoryMode>("internal");
   const [externalProviderForm, setExternalProviderForm] = useState({
-    provider: "ishyiga",
+    name: "",
+    api_url: "",
+    auth_type: "api_key" as PharmacyExternalAuthType,
     api_key: "",
     secret_key: "",
+    extra_headers: "",
+    sync_interval_minutes: 30,
   });
+  const [selectedProviderId, setSelectedProviderId] = useState<number | null>(null);
 
   // ── Queries & mutations ────────────────────────────────────────────────────
   const { data: settingsResponse, isLoading } = useGetMySettings();
@@ -375,6 +391,16 @@ function PharmacySettings() {
     isError: inventoryModeError,
     refetch: refetchInventoryMode,
   } = useGetInventoryMode();
+  const {
+    data: externalProviders = [],
+    isLoading: providersLoading,
+    isError: providersError,
+    refetch: refetchProviders,
+  } = useGetExternalProviders();
+  const selectedProvider =
+    externalProviders.find((provider) => provider.id === selectedProviderId) ?? externalProviders[0] ?? null;
+  const { data: syncLogsResponse, isLoading: syncLogsLoading } =
+    useGetExternalProviderSyncLogs(selectedProvider?.id ?? null);
 
   const updateProfile = useUpdateProfile();
   const updateAvatar = useUpdateAvatar();
@@ -386,6 +412,10 @@ function PharmacySettings() {
   const verifyPhone = useVerifyPhoneChange();
   const deleteAccount = useDeleteAccount();
   const switchInventoryMode = useSwitchInventoryMode();
+  const connectExternalProvider = useConnectExternalProvider();
+  const updateExternalProvider = useUpdateExternalProvider();
+  const deleteExternalProvider = useDeleteExternalProvider();
+  const syncExternalProvider = useSyncExternalProvider();
 
   const currentInventoryMode = inventoryModeResponse?.inventory_mode ?? "internal";
 
@@ -409,6 +439,15 @@ function PharmacySettings() {
       setSelectedInventoryMode(inventoryModeResponse.inventory_mode);
     }
   }, [inventoryModeResponse?.inventory_mode]);
+
+  useEffect(() => {
+    if (!selectedProviderId && externalProviders.length > 0) {
+      setSelectedProviderId(externalProviders[0].id);
+    }
+    if (selectedProviderId && externalProviders.length > 0 && !externalProviders.some((provider) => provider.id === selectedProviderId)) {
+      setSelectedProviderId(externalProviders[0].id);
+    }
+  }, [externalProviders, selectedProviderId]);
 
   const openProfileEdit = () => {
     setProfileForm({
@@ -553,16 +592,99 @@ function PharmacySettings() {
     }
   };
 
-  const handleCaptureExternalCredentials = () => {
+  const parseExtraHeaders = () => {
+    if (!externalProviderForm.extra_headers.trim()) return null;
+    try {
+      const parsed = JSON.parse(externalProviderForm.extra_headers);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("Extra headers must be a JSON object.");
+      }
+      return parsed as Record<string, string>;
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : "Extra headers must be valid JSON.");
+    }
+  };
+
+  const resetExternalProviderForm = () => {
+    setExternalProviderForm({
+      name: "",
+      api_url: "",
+      auth_type: "api_key",
+      api_key: "",
+      secret_key: "",
+      extra_headers: "",
+      sync_interval_minutes: 30,
+    });
+  };
+
+  const handleConnectExternalProvider = async () => {
     if (
-      !externalProviderForm.provider.trim() ||
+      !externalProviderForm.name.trim() ||
+      !externalProviderForm.api_url.trim() ||
       !externalProviderForm.api_key.trim() ||
-      !externalProviderForm.secret_key.trim()
+      !externalProviderForm.auth_type
     ) {
-      sonnerToast.error("Provider, API key and secret key are required.");
+      sonnerToast.error("Provider name, API URL, API key and auth type are required.");
       return;
     }
-    sonnerToast.info("Credentials captured for this session. Backend connection endpoint is still pending.");
+    try {
+      const response = await connectExternalProvider.mutateAsync({
+        name: externalProviderForm.name.trim(),
+        api_url: externalProviderForm.api_url.trim(),
+        api_key: externalProviderForm.api_key.trim(),
+        api_secret: externalProviderForm.secret_key.trim() || undefined,
+        auth_type: externalProviderForm.auth_type,
+        extra_headers: parseExtraHeaders(),
+        sync_interval_minutes: Number(externalProviderForm.sync_interval_minutes) || 30,
+      });
+      sonnerToast.success(response.message ?? "External provider connected.");
+      setSelectedProviderId(response.provider.id);
+      resetExternalProviderForm();
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleToggleProviderActive = async (id: number, isActive: boolean) => {
+    try {
+      const response = await updateExternalProvider.mutateAsync({
+        id,
+        payload: { is_active: !isActive },
+      });
+      sonnerToast.success(response.message ?? "Provider updated.");
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleUpdateProviderInterval = async (id: number, syncInterval: number) => {
+    try {
+      const response = await updateExternalProvider.mutateAsync({
+        id,
+        payload: { sync_interval_minutes: syncInterval },
+      });
+      sonnerToast.success(response.message ?? "Provider updated.");
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleDeleteProvider = async (id: number) => {
+    try {
+      const response = await deleteExternalProvider.mutateAsync(id);
+      sonnerToast.success(response.message ?? "Provider removed.");
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleSyncProvider = async (id: number) => {
+    try {
+      const response = await syncExternalProvider.mutateAsync(id);
+      sonnerToast.success(response.message ?? "Sync queued.");
+    } catch (err) {
+      sonnerToast.error(getErrorMessage(err));
+    }
   };
 
   const showAvatar = settings?.avatar && !avatarError;
@@ -1236,23 +1358,45 @@ function PharmacySettings() {
                         <ServerCog className="h-4 w-4" />
                       </span>
                       <div>
-                        <p className="text-[13px] font-semibold text-foreground">External API credentials</p>
+                        <p className="text-[13px] font-semibold text-foreground">Connect external provider</p>
                         <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                          This form is ready for provider details. The keys are not persisted until the backend adds the provider connection endpoint.
+                          Add the pharmacy stock API connection. Secrets are sent only when connecting and are hidden by the backend afterwards.
                         </p>
                       </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Provider" required>
+                      <Field label="Provider name" required>
+                        <input
+                          value={externalProviderForm.name}
+                          onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, name: e.target.value }))}
+                          className={inputCls}
+                          placeholder="MedSupply Rwanda"
+                        />
+                      </Field>
+                      <Field label="API URL" required>
+                        <input
+                          value={externalProviderForm.api_url}
+                          onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, api_url: e.target.value }))}
+                          className={inputCls}
+                          placeholder="https://api.provider.rw"
+                          inputMode="url"
+                        />
+                      </Field>
+                      <Field label="Auth type" required>
                         <select
-                          value={externalProviderForm.provider}
-                          onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, provider: e.target.value }))}
+                          value={externalProviderForm.auth_type}
+                          onChange={(e) =>
+                            setExternalProviderForm((prev) => ({
+                              ...prev,
+                              auth_type: e.target.value as PharmacyExternalAuthType,
+                            }))
+                          }
                           className={selectCls}
                         >
-                          <option value="ishyiga">Ishyiga</option>
-                          <option value="open_api">Open API</option>
-                          <option value="other">Other provider</option>
+                          <option value="api_key">API key</option>
+                          <option value="bearer">Bearer token</option>
+                          <option value="basic">Basic auth</option>
                         </select>
                       </Field>
                       <Field label="API key" required>
@@ -1271,15 +1415,47 @@ function PharmacySettings() {
                           placeholder="Enter provider secret key"
                         />
                       </Field>
+                      <Field label="Sync interval" required>
+                        <input
+                          type="number"
+                          min={5}
+                          step={5}
+                          value={externalProviderForm.sync_interval_minutes}
+                          onChange={(e) =>
+                            setExternalProviderForm((prev) => ({
+                              ...prev,
+                              sync_interval_minutes: Number(e.target.value),
+                            }))
+                          }
+                          className={inputCls}
+                        />
+                      </Field>
+                      <div className="sm:col-span-2">
+                        <Field label="Extra headers" hint='Optional JSON object, e.g. {"X-Client-Id":"mediconnect"}'>
+                          <textarea
+                            value={externalProviderForm.extra_headers}
+                            onChange={(e) =>
+                              setExternalProviderForm((prev) => ({ ...prev, extra_headers: e.target.value }))
+                            }
+                            className={cn(inputCls, "min-h-[76px] resize-y")}
+                            placeholder='{"X-Client-Id":"mediconnect"}'
+                          />
+                        </Field>
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-2 border-t border-border/50 pt-4 sm:flex-row">
                       <Button
                         className="h-9 rounded-[6px] px-4 text-[12px] gap-1.5"
-                        onClick={handleCaptureExternalCredentials}
+                        onClick={handleConnectExternalProvider}
+                        disabled={connectExternalProvider.isPending}
                       >
-                        <KeyRound className="h-3.5 w-3.5" />
-                        Keep credentials in form
+                        {connectExternalProvider.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <KeyRound className="h-3.5 w-3.5" />
+                        )}
+                        Connect provider
                       </Button>
                       <Button
                         variant="outline"
@@ -1297,6 +1473,202 @@ function PharmacySettings() {
                     </div>
                   </div>
                 )}
+
+                <div className="rounded-[6px] border border-border/70 bg-background overflow-hidden">
+                  <div className="flex flex-col gap-3 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[13px] font-semibold text-foreground">Connected providers</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Manage external stock APIs and trigger manual syncs.
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 rounded-[6px] px-3 text-[11px] gap-1.5 self-start sm:self-auto"
+                      onClick={() => refetchProviders()}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Refresh
+                    </Button>
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {providersLoading ? (
+                      <div className="flex items-center gap-2 py-6 text-[12px] text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading providers...
+                      </div>
+                    ) : providersError ? (
+                      <div className="rounded-[6px] border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+                        Could not load external providers. Make sure the pharmacy profile is active.
+                      </div>
+                    ) : externalProviders.length === 0 ? (
+                      <div className="rounded-[6px] border border-dashed border-border/70 px-4 py-8 text-center">
+                        <ServerCog className="mx-auto h-6 w-6 text-muted-foreground/50" />
+                        <p className="mt-2 text-[12px] font-semibold text-foreground">No external provider connected</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          Connect one above before switching fully to external inventory mode.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+                        <div className="space-y-2">
+                          {externalProviders.map((provider) => (
+                            <button
+                              key={provider.id}
+                              type="button"
+                              onClick={() => setSelectedProviderId(provider.id)}
+                              className={cn(
+                                "w-full rounded-[6px] border p-3 text-left transition-all hover:border-primary/40",
+                                selectedProvider?.id === provider.id
+                                  ? "border-primary/50 bg-primary/10"
+                                  : "border-border/70 bg-card",
+                              )}
+                            >
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="truncate text-[13px] font-semibold text-foreground">{provider.name}</p>
+                                    <span
+                                      className={cn(
+                                        "rounded-[6px] border px-1.5 py-0.5 text-[10px] font-semibold",
+                                        provider.is_active
+                                          ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500"
+                                          : "border-muted-foreground/25 bg-muted text-muted-foreground",
+                                      )}
+                                    >
+                                      {provider.is_active ? "Active" : "Inactive"}
+                                    </span>
+                                    <span className="rounded-[6px] border border-border/60 bg-secondary/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                      {provider.auth_type.replace(/_/g, " ")}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 truncate text-[11px] text-muted-foreground">{provider.api_url}</p>
+                                  <p className="mt-1 text-[10px] text-muted-foreground/70">
+                                    {provider.inventory_count ?? 0} inventory items · sync every {provider.sync_interval_minutes} min
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1.5 sm:justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 rounded-[6px] px-2 text-[10px] gap-1"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleSyncProvider(provider.id);
+                                    }}
+                                    disabled={syncExternalProvider.isPending || !provider.is_active}
+                                  >
+                                    <RefreshCw className="h-3 w-3" />
+                                    Sync
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 rounded-[6px] px-2 text-[10px] gap-1"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleToggleProviderActive(provider.id, provider.is_active);
+                                    }}
+                                    disabled={updateExternalProvider.isPending}
+                                  >
+                                    {provider.is_active ? <PowerOff className="h-3 w-3" /> : <Power className="h-3 w-3" />}
+                                    {provider.is_active ? "Disable" : "Enable"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 rounded-[6px] px-2 text-[10px] text-red-500 hover:text-red-500"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleDeleteProvider(provider.id);
+                                    }}
+                                    disabled={deleteExternalProvider.isPending}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-2">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                                  Interval
+                                </span>
+                                <select
+                                  value={provider.sync_interval_minutes}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    handleUpdateProviderInterval(provider.id, Number(event.target.value))
+                                  }
+                                  className="h-7 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] text-foreground"
+                                >
+                                  <option value={15}>15 min</option>
+                                  <option value={30}>30 min</option>
+                                  <option value={60}>60 min</option>
+                                  <option value={120}>2 hours</option>
+                                </select>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="rounded-[6px] border border-border/70 bg-card">
+                          <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+                            <FileClock className="h-4 w-4 text-primary" />
+                            <div>
+                              <p className="text-[12px] font-semibold text-foreground">Sync logs</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {selectedProvider?.name ?? "Select a provider"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="max-h-[260px] overflow-y-auto p-3">
+                            {!selectedProvider ? (
+                              <p className="py-6 text-center text-[11px] text-muted-foreground">No provider selected.</p>
+                            ) : syncLogsLoading ? (
+                              <div className="flex items-center gap-2 py-6 text-[11px] text-muted-foreground">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Loading logs...
+                              </div>
+                            ) : !syncLogsResponse?.data?.length ? (
+                              <p className="py-6 text-center text-[11px] text-muted-foreground">No sync logs yet.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {syncLogsResponse.data.map((log) => (
+                                  <div key={log.id} className="rounded-[6px] border border-border/60 bg-background px-3 py-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span
+                                        className={cn(
+                                          "rounded-[6px] px-1.5 py-0.5 text-[10px] font-semibold capitalize",
+                                          log.status === "success"
+                                            ? "bg-emerald-500/10 text-emerald-500"
+                                            : log.status === "failed"
+                                              ? "bg-red-500/10 text-red-500"
+                                              : "bg-amber-500/10 text-amber-500",
+                                        )}
+                                      >
+                                        {log.status}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {log.created_at ? formatDate(log.created_at) : ""}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 text-[11px] text-muted-foreground">
+                                      {log.items_synced ?? 0} items synced
+                                      {log.message ? ` · ${log.message}` : ""}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </SectionCard>
             )}
 
