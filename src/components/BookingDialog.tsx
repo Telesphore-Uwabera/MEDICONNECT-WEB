@@ -514,13 +514,13 @@ export const BookingDialog = ({
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-md pointer-events-none" />
       )}
       <DialogContent
-        className="max-w-[680px] p-0 overflow-hidden gap-0 bg-card/80 backdrop-blur-2xl"
+        className="max-w-[680px] max-h-[calc(100dvh-2rem)] p-0 overflow-hidden gap-0 bg-card/80 backdrop-blur-2xl flex flex-col"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
 
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-border/60">
+        <div className="px-6 pt-6 pb-4 border-b border-border/60 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
               {doctorAvatar
@@ -557,7 +557,7 @@ export const BookingDialog = ({
 
         {/* Loading state */}
         {showLoading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+          <div className="min-h-0 flex-1 overflow-y-auto flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
             <p className="text-sm">Loading available slots…</p>
           </div>
@@ -565,7 +565,7 @@ export const BookingDialog = ({
 
         {/* Error state */}
         {showError && (
-          <div className="flex flex-col items-center justify-center py-12 gap-2 text-destructive">
+          <div className="min-h-0 flex-1 overflow-y-auto flex flex-col items-center justify-center py-12 gap-2 text-destructive">
             <AlertTriangle className="h-6 w-6" />
             <p className="text-sm">Could not load availability. Please try again.</p>
           </div>
@@ -573,7 +573,7 @@ export const BookingDialog = ({
 
         {/* ── NEW: Confirmed state — shows refreshing indicator while doctor re-fetches ── */}
         {confirmed && (
-          <div className="px-6 py-10 text-center space-y-5">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-10 text-center space-y-5">
             <div className="mx-auto h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
               <Check className="h-7 w-7" />
             </div>
@@ -611,8 +611,9 @@ export const BookingDialog = ({
 
         {/* Main body */}
         {showBody && (
-          <>
-            <div className="grid grid-cols-[1fr_1px_1fr] min-h-[320px]">
+          <div className="min-h-0 flex-1 flex flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_1px_1fr]">
               {/* Left — calendar */}
               <div className="px-5 py-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
@@ -637,10 +638,10 @@ export const BookingDialog = ({
               </div>
 
               {/* Divider */}
-              <div className="bg-border/60" />
+              <div className="hidden bg-border/60 sm:block" />
 
               {/* Right — time slots */}
-              <div className="px-5 py-5 overflow-y-auto max-h-[380px]">
+              <div className="px-5 py-5 sm:max-h-[380px] sm:overflow-y-auto">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
                   Select time · {daySlots[0]?.duration ?? 30} min
                 </p>
@@ -667,10 +668,11 @@ export const BookingDialog = ({
                   />
                 )}
               </div>
+              </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-border/60 flex items-center justify-between gap-3 bg-muted/20">
+            <div className="px-4 sm:px-6 py-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 flex-shrink-0">
               <div className="text-sm text-muted-foreground min-w-0">
                 {date && time ? (
                   <span className="font-medium text-foreground truncate">
@@ -682,7 +684,7 @@ export const BookingDialog = ({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
@@ -703,7 +705,7 @@ export const BookingDialog = ({
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
