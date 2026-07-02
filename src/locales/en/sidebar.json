@@ -84,5 +84,6 @@
   "activeRole": "Active Role",
   "instantDoctors": "Instant Doctors",
     "team": "Team",
-  "wallet": "Wallets"
+  "wallet": "Wallets",
+  "system_settings": "System Settings"
 }

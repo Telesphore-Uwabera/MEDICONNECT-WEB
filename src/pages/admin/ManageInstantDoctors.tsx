@@ -142,14 +142,7 @@ function ManageInstantDoctors() {
           subtitle={t("pages.instant_doctors.overview_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
+  
 
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
           {/* Stats — 2 cols on phone, 4 cols from md (tablet) up */}
@@ -224,6 +217,15 @@ function ManageInstantDoctors() {
               />
             </div>
           </div>
+
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
 
           {/* Content */}
           <div className="p-3 sm:p-4">

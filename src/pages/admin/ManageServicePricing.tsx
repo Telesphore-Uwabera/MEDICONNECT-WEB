@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+
+import { toast as sonnerToast } from "sonner";
 import {
   Tag,
   Pencil,
@@ -20,8 +22,7 @@ import {
   useBulkUpdateServicePricing,
   type ApiPricingItem,
 } from "@/hooks/admin/use-admin-service-pricing";
-import { StatCard } from "@/components/StatCard";
-import { useToast } from "@/hooks/use-toast";
+import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -202,8 +203,7 @@ function PricingPanel({
   item: ApiPricingItem | null;
   onClose: () => void;
 }) {
-  const open = !!item;
-  const { toast } = useToast();
+  const open = !!item; 
   const [value, setValue] = useState("");
 
   const updateMutation = useUpdateServicePricing();
@@ -231,18 +231,15 @@ function PricingPanel({
   const handleSubmit = async () => {
     const parsed = Number(value);
     if (!value.trim() || isNaN(parsed) || parsed < 0) {
-      toast({
-        title: "Enter a valid non-negative number",
-        variant: "destructive",
-      });
+      sonnerToast.error("Enter a valid non-negative number");
       return;
     }
     try {
       await updateMutation.mutateAsync({ key: item!.key, value: parsed });
-      toast({ title: "Price updated." });
+      sonnerToast.success("Price updated.");
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
   };
 
@@ -368,8 +365,7 @@ function BulkEditDialog({
 }: {
   pricing: ApiPricingItem[] | null;
   onClose: () => void;
-}) {
-  const { toast } = useToast();
+}) { 
   const [values, setValues] = useState<Record<string, string>>({});
 
   const bulkMutation = useBulkUpdateServicePricing();
@@ -392,20 +388,17 @@ function BulkEditDialog({
     for (const [key, val] of Object.entries(values)) {
       const n = Number(val);
       if (isNaN(n) || n < 0) {
-        toast({
-          title: `Invalid value for "${formatKey(key)}"`,
-          variant: "destructive",
-        });
+        sonnerToast.error(`Invalid value for "${formatKey(key)}"`);
         return;
       }
       prices[key] = n;
     }
     try {
       await bulkMutation.mutateAsync(prices);
-      toast({ title: "All prices updated." });
+      sonnerToast.success("All prices updated.");
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
   };
 
@@ -474,8 +467,7 @@ function BulkEditDialog({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageServicePricing() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
 
   const [editingItem, setEditingItem] = useState<ApiPricingItem | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);

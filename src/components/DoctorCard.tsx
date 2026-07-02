@@ -40,6 +40,7 @@ import type {
 } from "@/hooks/patient/use-patient-doctor";
 import { readConsultSession } from "@/hooks/patient/se-consultation-session";
 import { Card } from "./ui/card";
+import { RichTextRenderer } from "./ui/rich-textarea";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -367,13 +368,13 @@ export function UnifiedModal({
         onClick={onMinimize}
       />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 pointer-events-none">
         <div
           className={cn(
-            "pointer-events-auto w-full",
+            "pointer-events-auto w-[calc(100vw-1.5rem)] sm:w-full",
             mode === "connect" ? "max-w-[420px]" : "max-w-3xl",
             "bg-card/80 backdrop-blur-2xl border border-border/60 rounded-[6px] shadow-2xl",
-            "flex flex-col max-h-[90dvh] overflow-hidden",
+            "flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)] overflow-hidden",
             "animate-in fade-in-0 zoom-in-95 duration-200",
           )}
           onClick={(e) => e.stopPropagation()}
@@ -431,8 +432,8 @@ export function UnifiedModal({
 
           {mode === "details" ? (
             <>
-              <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-                <div className="md:w-[260px] flex-shrink-0 border-b md:border-b-0 md:border-r border-border/50 bg-gradient-to-b from-primary/8 via-primary/4 to-transparent overflow-y-auto">
+              <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+                <div className="md:w-[260px] flex-shrink-0 border-b md:border-b-0 md:border-r border-border/50 bg-gradient-to-b from-primary/8 via-primary/4 to-transparent md:overflow-y-auto">
                   <div className="p-4 flex flex-col items-center text-center">
                     <div className="w-28 h-28 rounded-[6px] overflow-hidden border border-border/50 shadow-sm flex-shrink-0">
                       <DoctorAvatar doctor={doctor} size="lg" />
@@ -524,14 +525,15 @@ export function UnifiedModal({
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 min-w-0">
+                <div className="min-w-0 flex-shrink-0 md:flex-1 px-4 py-4 md:overflow-y-auto">
                   {bio && (
                     <div className="mb-4 p-3 rounded-[6px] bg-muted/30 border border-border/40">
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">
                         About
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        {bio}
+                        <RichTextRenderer value={bio} className="text-xs text-foreground" />
+
                       </p>
                     </div>
                   )}
@@ -653,7 +655,7 @@ export function UnifiedModal({
                 </div>
               </div>
 
-              <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex items-center justify-end gap-2 bg-card/80">
+              <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 bg-card/80">
                 <Button
                   variant="outline"
                   size="sm"
@@ -662,7 +664,7 @@ export function UnifiedModal({
                     onMinimize();
                     onBook();
                   }}
-                  className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]"
+                  className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]"
                 >
                   <CalendarCheck className="h-4 w-4 mr-1.5" />
                   Book Appointment
@@ -671,7 +673,7 @@ export function UnifiedModal({
                   <Button
                     size="sm"
                     onClick={() => setMode("connect")}
-                    className="w-[40%] sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
+                    className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Wifi className="h-4 w-4 mr-1.5" />
                     Connect Now
@@ -866,7 +868,7 @@ export const DoctorCard = ({
               </h3>
               <p className="text-xs text-primary font-medium mt-0.5 truncate">
 
-                {doctor.doctor_degree ? `  ${doctor.doctor_degree}` : ""}
+                {doctor.medical_license && (<> License : {doctor.medical_license ? `  ${doctor.medical_license}` : ""}</>)}
               </p>
               {doctor.specialization && (
                 <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">

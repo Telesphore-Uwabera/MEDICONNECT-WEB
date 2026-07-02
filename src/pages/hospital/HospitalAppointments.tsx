@@ -1034,15 +1034,7 @@ const HospitalAppointments = () => {
           subtitle={t("pages.hospital.appts_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2 }}
-        />
-
+    
         <main className="flex-1 overflow-y-auto flex flex-col">
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
@@ -1108,6 +1100,14 @@ const HospitalAppointments = () => {
               />
             </div>
           </div>
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2 }}
+          />
 
           {/* Content */}
           <div className="p-4">

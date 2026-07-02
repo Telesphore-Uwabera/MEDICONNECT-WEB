@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
+
+import { toast as sonnerToast } from "sonner";
 import {
   ShieldOff,
   Stethoscope,
@@ -24,8 +26,7 @@ import {
   useRejectDoctor,
   useSuspendDoctor,
   type ApiDoctor,
-} from "@/hooks/admin/use-admin-doctors";
-import { useToast } from "@/hooks/use-toast";
+} from "@/hooks/admin/use-admin-doctors"; 
 import { cn } from "@/lib/utils";
 
 import {
@@ -57,7 +58,7 @@ function ManageDoctors() {
   const [spec, setSpec] = useState<SpecializationValue>(INITIAL_SPEC);
   const [selected, setSelected] = useState<ApiDoctor | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { toast } = useToast();
+  
 
   // Debounced search
   const [searchInput, setSearchInput] = useState("");
@@ -158,12 +159,12 @@ function ManageDoctors() {
         setSelected((prev) =>
           prev ? { ...prev, status: "active", is_active: true } : null,
         );
-        toast({ title: "Doctor approved." });
+        sonnerToast.success("Doctor approved.");
       } catch (error: unknown) {
-        toast({ title: getErrorMessage(error), variant: "destructive" });
+        sonnerToast.error(getErrorMessage(error));
       }
     },
-    [approveMutation, toast],
+    [approveMutation, sonnerToast],
   );
 
   const handleReject = useCallback(
@@ -173,12 +174,12 @@ function ManageDoctors() {
         setSelected((prev) =>
           prev ? { ...prev, status: "rejected", is_active: false } : null,
         );
-        toast({ title: "Doctor rejected." });
+        sonnerToast.success("Doctor rejected.");
       } catch (error: unknown) {
-        toast({ title: getErrorMessage(error), variant: "destructive" });
+        sonnerToast.error(getErrorMessage(error));
       }
     },
-    [rejectMutation, toast],
+    [rejectMutation, sonnerToast],
   );
 
   const handleSuspend = useCallback(
@@ -188,12 +189,12 @@ function ManageDoctors() {
         setSelected((prev) =>
           prev ? { ...prev, status: "suspended", is_active: false } : null,
         );
-        toast({ title: "Doctor suspended." });
+        sonnerToast.success("Doctor suspended.");
       } catch (error: unknown) {
-        toast({ title: getErrorMessage(error), variant: "destructive" });
+        sonnerToast.error(getErrorMessage(error));
       }
     },
-    [suspendMutation, toast],
+    [suspendMutation, sonnerToast],
   );
 
   const isActing =

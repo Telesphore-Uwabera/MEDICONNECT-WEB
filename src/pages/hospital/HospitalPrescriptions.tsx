@@ -412,14 +412,7 @@ const HospitalPrescriptions = () => {
           subtitle={t("pages.hospital.rx_sub", { name: HOSPITAL })}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
+   
 
         {/* Info banner */}
         <div className="mx-4 mt-3 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] flex items-start gap-2 text-primary">
@@ -496,6 +489,14 @@ const HospitalPrescriptions = () => {
             </div>
           </div>
 
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
           {/* Grid */}
           <div className="p-4">
             {filtered.length === 0 ? (

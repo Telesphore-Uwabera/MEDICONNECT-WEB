@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   BrowserRouter,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -15,9 +16,7 @@ import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverla
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
 import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
 import { LogIn, X, ShieldAlert } from "lucide-react";
-
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Index from "./pages/Index.tsx"; 
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import ConsultationRoomPage from "./pages/ConsultationRoom.tsx";
@@ -84,8 +83,6 @@ import AdminModeration from "./pages/admin/AdminModeration";
 import AdminProfile from "./pages/admin/AdminProfile.tsx";
 import AdminSettings from "./pages/admin/AdminSettings.tsx";
 import AdminReviews from "./pages/admin/AdminReviews.tsx";
-import ManageDoctors from "./pages/admin/ManageDoctors.tsx";
-import ManagePatients from "./pages/admin/ManagePatients.tsx";
 import ManagePharmacies from "./pages/admin/ManagePharmacies.tsx";
 import ManageHospitals from "./pages/admin/ManageHospitals.tsx";
 import ManageAppointments from "./pages/admin/ManageApointments.tsx";
@@ -96,7 +93,10 @@ import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
 import AdminOurTeam from "./pages/admin/AdminOurTeam.tsx";
-
+import AdminSystemSettings from "./pages/admin/AdminSystemSettings.tsx";
+import Help from "./pages/Help.tsx";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import NotFound from "@/pages/errors/NotFound";
 /* ─────────────────────────────────────────────────────────────────
    RequireAuth
    Shows a confirmation dialog instead of hard-redirecting.
@@ -201,10 +201,12 @@ const App = () => (
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
           <GlobalInstantPill />
+          <ErrorBoundary>
           <Routes>
             {/* ── Public ──────────────────────────────────────── */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/help" element={<Help />} />
             <Route path="/onboarding/:role" element={<Onboarding />} />
             <Route
               path="/consultation/:roomName"
@@ -646,7 +648,7 @@ const App = () => (
               path="/admin/manage-doctors"
               element={
                 <RequireAuth>
-                  <ManageDoctors />
+                  <Navigate to="/admin/users?tab=doctor" replace />
                 </RequireAuth>
               }
             />
@@ -654,7 +656,7 @@ const App = () => (
               path="/admin/manage-patients"
               element={
                 <RequireAuth>
-                  <ManagePatients />
+                  <Navigate to="/admin/users?tab=patient" replace />
                 </RequireAuth>
               }
             />
@@ -732,10 +734,12 @@ const App = () => (
                 </RequireAuth>
               }
             />
+            <Route path="/admin/system-settings" element={<AdminSystemSettings />} />
 
             {/* ── 404 ─────────────────────────────────────────── */}
-            <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<NotFound />} />
           </Routes>
+        </ErrorBoundary>
         </CallProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
@@ -86,6 +88,38 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "total-asc", label: "Total: Low to high" },
   { value: "patient", label: "Patient (A–Z)" },
 ];
+
+const API_BASE_URL =
+  import.meta.env.VITE_APP_BASE_URL ?? import.meta.env.VITE_API_BASE_URL ?? "";
+const PUBLIC_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+
+function resolveOrderReceiptUrl(order: Order): string | null {
+  const url =
+    order.receipt_url ??
+    order.invoice_url ??
+    order.pdf_url ??
+    order.receipt?.url ??
+    order.invoice?.url ??
+    order.payment?.receipt_url ??
+    order.payment?.invoice_url ??
+    null;
+
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = PUBLIC_BASE_URL || window.location.origin;
+  return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
+}
+
+function openOrderReceipt(order: Order) {
+  const url = resolveOrderReceiptUrl(order);
+  if (!url) {
+    sonnerToast.error("Receipt is not available yet.", {
+      description: "The order is completed, but no receipt link was returned by the API.",
+    });
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
 
 // ─── Sidebar sub-components ───────────────────────────────────────────────────
 
@@ -223,8 +257,10 @@ function OrderActions({ order }: { order: Order }) {
       <Button
         size="sm"
         variant="ghost"
+        onClick={() => openOrderReceipt(order)}
         className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px] transition-all duration-200"
       >
+        <Download className="mr-1 h-3 w-3" />
         {t("pages.pharmacy.receipt", "Receipt")}
       </Button>
     );
@@ -268,6 +304,7 @@ const PharmacyOrders = () => {
   // React Query re-fetches automatically when apiParams changes (key changes).
   const { data, isLoading, isError, refetch } = useGetOrders(apiParams);
 
+  console.log("PharmacyOrders.tsx: data", data, "isLoading", isLoading, "isError", isError);
   const orders: Order[] = data?.data ?? [];
 
   // ── Client-side search + sort (status/source are server-side) ───────────
@@ -350,15 +387,7 @@ const PharmacyOrders = () => {
           subtitle={t("pages.pharmacy.orders_sub")}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
-
+      
         <main className="flex-1 overflow-y-auto flex flex-col">
 
           {/* Stat cards — counts from the current API page */}
@@ -505,6 +534,14 @@ const PharmacyOrders = () => {
               />
             </div>
           </div>
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
 
           {/* Table area */}
           <div className="p-4">

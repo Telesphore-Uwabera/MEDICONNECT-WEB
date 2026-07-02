@@ -1055,15 +1055,6 @@ const RestockRequests = () => {
           )}
         />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
-
         <main className="flex-1 overflow-y-auto flex flex-col">
           {/* Stat cards */}
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1198,6 +1189,15 @@ const RestockRequests = () => {
               />
             </div>
           </div>
+
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 3 }}
+          />
 
           {/* Table area */}
           <div className="p-4">

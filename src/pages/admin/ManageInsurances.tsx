@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+
+import { toast as sonnerToast } from "sonner";
 import {
   ShieldCheck,
   Plus,
@@ -35,8 +37,7 @@ import {
   type ApiInsurance,
   type InsurancePayload,
 } from "@/hooks/admin/use-admin-insurances";
-import { StatCard } from "@/components/StatCard";
-import { useToast } from "@/hooks/use-toast";
+import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -484,8 +485,7 @@ function InsurancePanel({
   onClose: () => void;
 }) {
   const open = !!mode;
-  const isEdit = mode === "edit";
-  const { toast } = useToast();
+  const isEdit = mode === "edit"; 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -531,7 +531,7 @@ function InsurancePanel({
 
   const handleSubmit = async () => {
     if (!form.name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+      sonnerToast.error("Name is required");
       return;
     }
 
@@ -554,14 +554,14 @@ function InsurancePanel({
     try {
       if (isEdit && insurance) {
         await updateMutation.mutateAsync({ id: insurance.id, ...payload });
-        toast({ title: "Insurance updated." });
+        sonnerToast.success("Insurance updated.");
       } else {
         await createMutation.mutateAsync(payload);
-        toast({ title: "Insurance created." });
+        sonnerToast.success("Insurance created.");
       }
       onClose();
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     }
   };
 
@@ -920,8 +920,7 @@ function DeleteDialog({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ManageInsurances() {
-  const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+  const { t, i18n } = useTranslation(); 
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -981,14 +980,14 @@ function ManageInsurances() {
     setDeletingId(deletingInsurance.id);
     try {
       await deleteMutation.mutateAsync(deletingInsurance.id);
-      toast({ title: "Insurance deleted." });
+      sonnerToast.success("Insurance deleted.");
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: "destructive" });
+      sonnerToast.error(getErrorMessage(error));
     } finally {
       setDeletingId(null);
       setDeletingInsurance(null);
     }
-  }, [deletingInsurance, deleteMutation, toast]);
+  }, [deletingInsurance, deleteMutation, sonnerToast]);
 
   return (
     <DashboardLayout role="admin">

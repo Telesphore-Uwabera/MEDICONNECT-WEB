@@ -57,6 +57,16 @@ export interface Order {
   updated_at?: string;
   patient: OrderPatient;
   items: OrderItem[];
+  receipt_url?: string | null;
+  invoice_url?: string | null;
+  pdf_url?: string | null;
+  receipt?: { url?: string | null } | null;
+  invoice?: { url?: string | null } | null;
+  payment?: {
+    receipt_url?: string | null;
+    invoice_url?: string | null;
+    [key: string]: unknown;
+  } | null;
 }
 
 export interface PaginatedOrders {

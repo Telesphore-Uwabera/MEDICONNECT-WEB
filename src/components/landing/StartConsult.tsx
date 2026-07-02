@@ -99,7 +99,7 @@ const StartConsult = () => {
         )}
         <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
           <DialogContent
-            className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card/80 backdrop-blur-2xl shadow-2xl"
+            className="p-0 border-0 overflow-hidden sm:max-w-md w-full max-h-[calc(100dvh-2rem)] bg-card/80 backdrop-blur-2xl shadow-2xl"
             onInteractOutside={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => e.preventDefault()}
           >
@@ -174,7 +174,7 @@ const StartConsult = () => {
       )}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen} modal={false}>
         <DialogContent
-          className="p-0 border-0 overflow-hidden sm:max-w-md w-full bg-card/80 backdrop-blur-2xl shadow-2xl"
+          className="p-0 border-0 overflow-hidden sm:max-w-md w-full max-h-[calc(100dvh-2rem)] bg-card/80 backdrop-blur-2xl shadow-2xl"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >

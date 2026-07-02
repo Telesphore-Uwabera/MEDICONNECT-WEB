@@ -28,7 +28,7 @@ export const StatCard = ({
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/80">
             {label}
           </p>
-          <p className="mt-1 text-base font-bold tabular-nums text-foreground">
+          <p className="mt-1 font-bold tabular-nums text-foreground text-sm">
             {value}
           </p>
         </div>

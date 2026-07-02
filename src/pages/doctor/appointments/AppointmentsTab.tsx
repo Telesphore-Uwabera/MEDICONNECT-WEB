@@ -415,7 +415,7 @@ export function AppointmentsTab() {
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 truncate">
                       {item.label}
                     </p>
-                    <p className="mt-1 text-2xl font-bold text-foreground">
+                    <p className="mt-1  leading-none font-bold text-foreground text-sm">
                       {isLoading ? "..." : item.value}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 truncate">

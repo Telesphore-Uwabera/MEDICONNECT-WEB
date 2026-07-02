@@ -220,33 +220,36 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
         <div className="px-6 py-3 flex items-center justify-between gap-6">
 
           {/* ── Left: Greeting ─────────────────────────────── */}
-          <div className="min-w-0 flex items-center gap-2.5">
-            <div className="p-1.5 rounded-[6px] bg-primary/8 shrink-0">
-              <GreetingIcon className="h-3.5 w-3.5 text-primary" />
+          <div className="min-w-0  ">
+            <div className="flex items-center gap-2.5 hidden sm:flex">
+              <div className="p-1.5 rounded-[6px] bg-primary/8 shrink-0">
+                <GreetingIcon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                {isAuth && isLoading ? (
+                  <div className="space-y-1">
+                    <div className="h-3 w-36 bg-muted animate-pulse rounded" />
+                    <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
+                  </div>
+                ) : (
+                  <>
+                    <h1 className="text-[12px] uppercase font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
+                      {greetingText}
+                      {/* Only show name when authenticated and resolved */}
+                      {isAuth && firstName && firstName !== "—" ? (
+                        <span className="text-primary">, {firstName}</span>
+                      ) : null}
+                    </h1>
+                    {subtitle && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                        {subtitle}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            <div className="min-w-0">
-              {isAuth && isLoading ? (
-                <div className="space-y-1">
-                  <div className="h-3 w-36 bg-muted animate-pulse rounded" />
-                  <div className="h-2.5 w-24 bg-muted animate-pulse rounded" />
-                </div>
-              ) : (
-                <>
-                  <h1 className="text-[12px] uppercase font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
-                    {greetingText}
-                    {/* Only show name when authenticated and resolved */}
-                    {isAuth && firstName && firstName !== "—" ? (
-                      <span className="text-primary">, {firstName}</span>
-                    ) : null}
-                  </h1>
-                  {subtitle && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                      {subtitle}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
+            
           </div>
 
           {/* ── Right controls ─────────────────────────────── */}
@@ -433,7 +436,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                           icon={HelpCircle}
                           label={t("header.help", "Help & Support")}
                           description="FAQs and contact"
-                          to="./help"
+                          to="/help"
                           onClick={() => setProfileOpen(false)}
                         />
                         <PopItem

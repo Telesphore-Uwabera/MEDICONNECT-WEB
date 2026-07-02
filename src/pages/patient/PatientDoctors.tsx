@@ -532,7 +532,7 @@ function SearchStats({
               {isLoading ? (
                 <div className="h-5 w-12 rounded-[6px] bg-muted animate-pulse" />
               ) : (
-                <p className="text-xl font-black text-foreground tabular-nums leading-none">{card.value}</p>
+                <p className="text-sm font-black text-foreground tabular-nums leading-none">{card.value}</p>
               )}
               <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
                 {card.label}

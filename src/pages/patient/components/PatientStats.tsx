@@ -273,7 +273,7 @@ function KpiCard({
         <div className="h-7 w-16 rounded bg-muted animate-pulse" />
       ) : (
         <div className="flex items-end gap-2">
-          <span className="text-2xl font-bold text-foreground leading-none">
+            <span className=" leading-none font-bold text-foreground text-sm leading-none">
             {value}
           </span>
           {sub && (
@@ -456,13 +456,13 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                     <div className={cn("h-9 w-9 rounded-[6px] flex items-center justify-center", item.tone)}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <p className="text-2xl font-bold text-foreground mt-4 leading-none">
+                    <p className=" mt-4 leading-none font-bold text-foreground text-sm">
                       {isLoading ? "..." : item.value}
                     </p>
                     <p className="text-xs font-semibold text-foreground mt-1">
                       {item.label}
                     </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-[11px] text-muted-foreground mt-0.5 ">
                       {item.hint}
                     </p>
                   </Link>
@@ -524,7 +524,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 { label: "In-person", value: ps?.in_person_count ?? 0 },
               ].map((item) => (
                 <div key={item.label}>
-                  <p className="text-2xl font-bold text-foreground leading-none">
+                  <p className=" leading-none font-bold text-foreground text-sm leading-none">
                     {isLoading ? "..." : item.value}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">{item.label}</p>
@@ -537,7 +537,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
               Payments
             </p>
-            <p className="text-3xl font-bold text-foreground mt-4 leading-none">
+            <p className=" leading-none font-bold text-foreground text-sm font-bold text-foreground mt-4 leading-none">
               {isLoading ? "..." : `RWF ${Number(spending?.total ?? 0).toLocaleString()}`}
             </p>
             <p className="text-xs text-muted-foreground mt-2">

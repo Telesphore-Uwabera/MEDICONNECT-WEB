@@ -698,7 +698,7 @@ const DoctorOverview = () => {
                                 <div className={cn("h-8 w-8 rounded-[6px] flex items-center justify-center", item.tone)}>
                                   <Icon className="h-4 w-4" />
                                 </div>
-                                <p className="text-2xl font-bold text-foreground mt-3 leading-none">
+                                <p className=" leading-none font-bold text-foreground text-sm mt-3 leading-none">
                                   {item.value}
                                 </p>
                                 <p className="text-xs font-semibold text-foreground mt-1">
@@ -727,7 +727,7 @@ const DoctorOverview = () => {
                             <Wallet className="h-4 w-4" />
                           </span>
                         </div>
-                        <p className={cn("text-2xl font-bold text-foreground tabular-nums", walletLoading && "opacity-40")}>
+                        <p className={cn(" leading-none font-bold text-foreground text-sm tabular-nums", walletLoading && "opacity-40")}>
                           {walletLoading ? "Loading..." : formatMoney(walletBalance, walletCurrency)}
                         </p>
                         <div className="space-y-2">
@@ -908,7 +908,7 @@ const DoctorOverview = () => {
                               <div>
                                 <p
                                   className={cn(
-                                    "text-2xl font-bold text-foreground tabular-nums leading-none",
+                                    " leading-none font-bold text-foreground text-sm tabular-nums leading-none",
                                     loading && "opacity-40",
                                   )}
                                 >
@@ -1633,7 +1633,7 @@ const DoctorOverview = () => {
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
                         Available
                       </p>
-                      <p className="text-2xl font-bold text-foreground mt-1">
+                      <p className=" leading-none font-bold text-foreground text-sm mt-1">
                         {formatMoney(walletBalance, walletCurrency)}
                       </p>
                     </div>

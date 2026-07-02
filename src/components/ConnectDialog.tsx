@@ -1107,7 +1107,7 @@ export const ConnectDialogContent = ({
 
   // ── Pre-call / post-call panel ────────────────────────────────────────────
   return (
-    <div className="p-5 space-y-4">
+    <div className="min-h-0 flex-1 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-5 space-y-4">
 
       {/* Title */}
       <div className="flex items-center gap-2">

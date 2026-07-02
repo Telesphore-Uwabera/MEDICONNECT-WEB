@@ -419,15 +419,6 @@ function AdminReviews() {
       <div className="flex flex-col h-full">
         <PageHeader title="Reviews" subtitle="Moderate and manage patient reviews" />
 
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2 }}
-        />
-
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
 
           {/*
@@ -465,7 +456,7 @@ function AdminReviews() {
           </div>
 
           {/* Sticky meta bar */}
-          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-end gap-2 sm:gap-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
@@ -544,6 +535,15 @@ function AdminReviews() {
               hasActiveFilters={hasActiveFilters}
             />
           </div>
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2 }}
+          />
+
 
           {/* Content */}
           <div className="p-3 sm:p-4">

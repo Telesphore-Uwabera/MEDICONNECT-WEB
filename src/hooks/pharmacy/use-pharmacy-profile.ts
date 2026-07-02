@@ -71,7 +71,39 @@ export const pharmacyKeys = {
   profile: ["pharmacy-profile"] as const,
   workingHours: ["pharmacy-working-hours"] as const,
   closures: ["pharmacy-closures"] as const,
+  inventoryMode: ["pharmacy-inventory-mode"] as const,
 };
+
+export type PharmacyInventoryMode = "internal" | "external";
+
+export interface PharmacyInventoryModeResponse {
+  message?: string;
+  inventory_mode: PharmacyInventoryMode;
+}
+
+export function useGetInventoryMode() {
+  return useQuery({
+    queryKey: pharmacyKeys.inventoryMode,
+    queryFn: () =>
+      apiFetch<PharmacyInventoryModeResponse>("/pharmacy/inventory/mode"),
+    retry: false,
+  });
+}
+
+export function useSwitchInventoryMode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (mode: PharmacyInventoryMode) =>
+      apiFetch<PharmacyInventoryModeResponse>("/pharmacy/inventory/mode", {
+        method: "PATCH",
+        body: { mode },
+      }),
+    onSuccess: (data) => {
+      qc.setQueryData(pharmacyKeys.inventoryMode, data);
+      qc.invalidateQueries({ queryKey: pharmacyKeys.inventoryMode });
+    },
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GET /profile
