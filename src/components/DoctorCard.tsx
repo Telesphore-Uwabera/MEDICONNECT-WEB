@@ -317,10 +317,10 @@ export function UnifiedModal({
 
   if (!open) return null;
 
-  const fee = parseFloat(doctor.consultation_fee);
-  const rating = parseFloat(doctor.rating_avg);
-  const feeLabel =
-    fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
+const fee = parseFloat(doctor.consultation_fee);
+const rating = parseFloat(doctor.rating_avg);
+const feeLabel =
+  !fee || fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
