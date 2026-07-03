@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '@/lib/Api';
+import { apiFetch } from '@/lib/api';
 
 interface LandingSpecializationFee {
   id: number;
