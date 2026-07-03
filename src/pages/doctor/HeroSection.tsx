@@ -424,7 +424,7 @@ export default function HeroSection() {
 
       <div className="relative pt-4 sm:pt-7">
         {/* ── Hero ── */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-center px-4 py-4 sm:px-6 sm:py-6 md:px-8 lg:p-10 relative">
+        <section id="landing-page" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-center px-4 py-4 sm:px-6 sm:py-6 md:px-8 lg:p-10 relative">
 
           {/* ── Left column ── */}
           <div className="relative z-10 order-2 lg:order-1">
