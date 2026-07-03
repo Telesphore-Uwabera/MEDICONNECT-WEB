@@ -1,6 +1,8 @@
 // Download a file from an authenticated API endpoint as a blob and trigger a
 // browser "Save as". Uses the same base URL + bearer token as apiFetch.
 
+import { getAccessErrorMessage, notifyAccessPrompt } from "@/lib/access-events";
+
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL ?? "";
 
 export async function downloadAuthedFile(
@@ -18,6 +20,14 @@ export async function downloadAuthedFile(
   });
 
   if (!res.ok) {
+    // Route auth/role failures through the central login / switch-role prompt.
+    if (res.status === 401 || res.status === 403) {
+      const hasToken = !!token;
+      notifyAccessPrompt({
+        reason: res.status === 401 || !hasToken ? "login" : "role",
+        message: getAccessErrorMessage(res.status, hasToken) ?? undefined,
+      });
+    }
     // Try to surface a JSON error message if the server sent one.
     let message = `Download failed (${res.status})`;
     try {

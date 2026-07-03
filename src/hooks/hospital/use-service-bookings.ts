@@ -15,7 +15,7 @@ export type BookingStatus =
   | "completed"
   | "cancelled";
 
-export type PaymentStatus = "unpaid" | "paid" | "refunded";
+export type PaymentStatus = "unpaid" | "paid" | "pending" | "refunded";
 
 export interface BookingPatient {
   id: number;
@@ -70,6 +70,17 @@ export interface ServiceBookingsPage {
   total: number;
 }
 
+export interface ServiceBookingFilters {
+  status?: BookingStatus;
+  department_id?: number;
+  hospital_service_id?: number;
+  doctor_id?: number;
+  patient_id?: number;
+  payment_status?: string;
+  date_from?: string;
+  date_to?: string;
+}
+
 // ─── Accept response ──────────────────────────────────────────────────────────
 
 export interface AcceptBookingResponse {
@@ -113,8 +124,8 @@ export interface PatientBookingsPage {
 export const serviceBookingKeys = {
   hospital: {
     all: ["hospital-service-bookings"] as const,
-    list: (status?: BookingStatus) =>
-      ["hospital-service-bookings", "list", status ?? "all"] as const,
+    list: (filters?: ServiceBookingFilters) =>
+      ["hospital-service-bookings", "list", filters ?? {}] as const,
     detail: (id: number) =>
       ["hospital-service-bookings", "detail", id] as const,
   },
@@ -143,13 +154,25 @@ export function normaliseDateString(raw: string): string {
 
 /**
  * GET /hospital/service-bookings
- * Optional status filter — pass undefined to fetch all.
+ * Optional filters — pass undefined to fetch all.
  */
-export function useGetServiceBookings(status?: BookingStatus) {
+export function useGetServiceBookings(filters?: ServiceBookingFilters) {
   return useQuery({
-    queryKey: serviceBookingKeys.hospital.list(status),
+    queryKey: serviceBookingKeys.hospital.list(filters),
     queryFn: () => {
-      const url = status ? `${HOSPITAL_BASE}?status=${status}` : HOSPITAL_BASE;
+      const params = new URLSearchParams();
+      if (filters?.status) params.set("status", filters.status);
+      if (filters?.department_id != null)
+        params.set("department_id", String(filters.department_id));
+      if (filters?.hospital_service_id != null)
+        params.set("hospital_service_id", String(filters.hospital_service_id));
+      if (filters?.doctor_id != null) params.set("doctor_id", String(filters.doctor_id));
+      if (filters?.patient_id != null) params.set("patient_id", String(filters.patient_id));
+      if (filters?.payment_status) params.set("payment_status", filters.payment_status);
+      if (filters?.date_from) params.set("date_from", filters.date_from);
+      if (filters?.date_to) params.set("date_to", filters.date_to);
+      const qs = params.toString();
+      const url = qs ? `${HOSPITAL_BASE}?${qs}` : HOSPITAL_BASE;
       return apiFetch<ServiceBookingsPage>(url);
     },
   });

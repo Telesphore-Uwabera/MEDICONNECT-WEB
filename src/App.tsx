@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   BrowserRouter,
@@ -15,6 +15,11 @@ import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
 import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
+import { RoleSwitcher } from "@/components/RoleSwitcher";
+import {
+  ACCESS_PROMPT_EVENT,
+  type AccessPromptDetail,
+} from "@/lib/access-events";
 import { LogIn, X, ShieldAlert } from "lucide-react";
 import Index from "./pages/Index.tsx"; 
 import Auth from "./pages/Auth";
@@ -183,6 +188,146 @@ const RequireAuth = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+const AccessPromptManager = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loginPrompt, setLoginPrompt] = useState<AccessPromptDetail | null>(null);
+  const [rolePrompt, setRolePrompt] = useState<AccessPromptDetail | null>(null);
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<AccessPromptDetail>).detail;
+      if (detail.reason === "login") {
+        setRolePrompt(null);
+        setRoleSwitcherOpen(false);
+        setLoginPrompt(detail);
+        return;
+      }
+      setLoginPrompt(null);
+      setRolePrompt(detail);
+    };
+
+    window.addEventListener(ACCESS_PROMPT_EVENT, handler);
+    return () => window.removeEventListener(ACCESS_PROMPT_EVENT, handler);
+  }, []);
+
+  const signIn = () => {
+    setLoginPrompt(null);
+    navigate("/auth", { state: { from: location } });
+  };
+
+  return (
+    <>
+      {loginPrompt && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-[420px] overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
+                  <ShieldAlert className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground">
+                    Sign in required
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Continue with your MediConnect account
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setLoginPrompt(null)}
+                className="rounded-[6px] p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                {loginPrompt.message ?? "Please sign in to continue."}
+              </p>
+            </div>
+            <div className="flex gap-2 px-5 pb-5">
+              <button
+                onClick={signIn}
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[6px] bg-primary px-4 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                Sign in
+              </button>
+              <button
+                onClick={() => setLoginPrompt(null)}
+                className="h-10 rounded-[6px] border border-border px-4 text-[12px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rolePrompt && !roleSwitcherOpen && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-[440px] overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
+                  <ShieldAlert className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-foreground">
+                    Switch role to continue
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Your current workspace cannot access this resource
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setRolePrompt(null)}
+                className="rounded-[6px] p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                {rolePrompt.message ??
+                  "Your current role does not have access to this resource. Switch roles to continue."}
+              </p>
+            </div>
+            <div className="flex gap-2 px-5 pb-5">
+              <button
+                onClick={() => setRoleSwitcherOpen(true)}
+                className="flex h-10 flex-1 items-center justify-center rounded-[6px] bg-primary px-4 text-[12px] font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Switch role
+              </button>
+              <button
+                onClick={() => setRolePrompt(null)}
+                className="h-10 rounded-[6px] border border-border px-4 text-[12px] font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <RoleSwitcher
+        open={roleSwitcherOpen}
+        onClose={() => {
+          setRoleSwitcherOpen(false);
+          setRolePrompt(null);
+        }}
+      />
+    </>
+  );
+};
+
 /* ─────────────────────────────────────────────────────────────────
    Query client
 ───────────────────────────────────────────────────────────────── */
@@ -201,11 +346,13 @@ const App = () => (
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
           <GlobalInstantPill />
+          <AccessPromptManager />
           <ErrorBoundary>
           <Routes>
             {/* ── Public ──────────────────────────────────────── */}
             <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/register" element={<Auth />} />
             <Route path="/help" element={<Help />} />
             <Route path="/onboarding/:role" element={<Onboarding />} />
             <Route
@@ -499,13 +646,21 @@ const App = () => (
 
             {/* ── Pharmacy: PROTECTED ─────────────────────────── */}
             <Route
-              path="/pharmacy/overview"
+              path="/pharmacy"
               element={
                 <RequireAuth>
                   <PharmacyOverview />
                 </RequireAuth>
               }
             />
+              <Route
+                path="/pharmacy/overview"
+                element={
+                  <RequireAuth>
+                    <PharmacyOverview />
+                  </RequireAuth>
+                }
+              />
             <Route
               path="/pharmacy/orders"
               element={

@@ -27,6 +27,7 @@ import {
   Loader2,
   Building2,
   Clock,
+  ShieldAlert,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -85,6 +86,9 @@ export const HospitalBookingDialog = ({
   const { go: goToRole } = useGoToRole();
   // Resume the booking after a stay-and-switch to patient.
   const [resumeBooking, setResumeBooking] = useState(false);
+  // Inline "switch to patient" prompt (a toast button is unclickable behind the
+  // modal sheet, so we show it inside the dialog). Holds the current role.
+  const [switchPrompt, setSwitchPrompt] = useState<string | null>(null);
   useEffect(() => {
     if (!resumeBooking) return;
     if ((me?.active_role ?? me?.role) === "patient") {
@@ -195,14 +199,7 @@ export const HospitalBookingDialog = ({
     }
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
     if (activeRole && activeRole !== "patient") {
-      toast.error("Switch to your patient role to book", {
-        description: `You're signed in as a ${activeRole}. Switch to patient to book a hospital spot.`,
-        duration: 8000,
-        action: {
-          label: "Switch to patient",
-          onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
-        },
-      });
+      setSwitchPrompt(activeRole);
       return;
     }
 
@@ -243,14 +240,7 @@ export const HospitalBookingDialog = ({
 
         // Authenticated but the wrong kind of account.
         if (status === 403) {
-          toast.error("Switch to your patient role to book", {
-            description: "This account can't book hospital spots as its current role.",
-            duration: 8000,
-            action: {
-              label: "Switch to patient",
-              onClick: () => goToRole("patient", { stay: true, onSwitched: () => setResumeBooking(true) }),
-            },
-          });
+          setSwitchPrompt((me?.active_role ?? me?.role ?? "another role") as string);
           return;
         }
 
@@ -633,6 +623,37 @@ export const HospitalBookingDialog = ({
             </div>
           )}
         </div>
+
+        {/* ── Switch-to-patient prompt (inline, so it's clickable over the sheet) ── */}
+        {!confirmed && !isLoading && switchPrompt && (
+          <div className="px-4 sm:px-5 py-3 border-t border-amber-400/30 bg-amber-500/10 shrink-0">
+            <div className="flex items-start gap-2.5">
+              <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-foreground">
+                  Switch to your patient role to book
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  You're signed in as {switchPrompt}. Switch to patient to book a hospital spot.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  goToRole("patient", {
+                    stay: true,
+                    onSwitched: () => {
+                      setSwitchPrompt(null);
+                      setResumeBooking(true);
+                    },
+                  })
+                }
+                className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
+              >
+                Switch to patient
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── Footer ── */}
         {!confirmed && !isLoading && (

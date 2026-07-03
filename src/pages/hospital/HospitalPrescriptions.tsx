@@ -3,9 +3,26 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pill, Send, User, Mail, Smartphone, Info, SlidersHorizontal, X, Search, ChevronDown } from "lucide-react";
+import {
+  Plus,
+  Pill,
+  Send,
+  User,
+  Mail,
+  Smartphone,
+  Info,
+  X,
+  Search,
+  LayoutGrid,
+  List,
+  CheckCircle2,
+  Clock,
+  Ban,
+  Building2,
+} from "lucide-react";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
 import { cn } from "@/lib/utils";
@@ -16,6 +33,7 @@ const channelIcon = { app: User, email: Mail, sms: Smartphone } as const;
 const HOSPITAL = "King Faisal Hospital";
 
 type SortOption = "date-desc" | "date-asc" | "patient";
+type ViewMode = "grid" | "list";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Date: Newest first" },
@@ -28,6 +46,8 @@ interface FilterState {
   status: RxStatus | "All";
   sort: SortOption;
   channelFilter: "All" | "app" | "email" | "sms";
+  dateFrom: string;
+  dateTo: string;
 }
 
 const INITIAL_FILTERS: FilterState = {
@@ -35,6 +55,8 @@ const INITIAL_FILTERS: FilterState = {
   status: "All",
   sort: "date-desc",
   channelFilter: "All",
+  dateFrom: "",
+  dateTo: "",
 };
 
 // ─── Status styles ────────────────────────────────────────────────────────────
@@ -269,6 +291,71 @@ function PrescriptionCard({
   );
 }
 
+function PrescriptionListRow({
+  p,
+  statusLabel,
+}: {
+  p: (typeof DUMMY_PRESCRIPTIONS)[number];
+  statusLabel: Record<RxStatus, string>;
+}) {
+  return (
+    <div className="rounded-[6px] border border-border/70 bg-card px-3 py-3 transition-all hover:border-primary/30 hover:shadow-sm">
+      <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_140px] lg:items-center">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+              <User className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-foreground">{p.patientName}</p>
+              <p className="truncate text-[11px] text-muted-foreground">{p.doctorName}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Medication</p>
+          <p className="truncate text-[12px] font-medium text-foreground">
+            {p.medications[0]?.name ?? "No medicine"}
+            {p.medications.length > 1 ? ` +${p.medications.length - 1}` : ""}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">{p.medications[0]?.frequency}</p>
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Delivery</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {p.channels.length ? (
+              p.channels.map((channel) => {
+                const Icon = channelIcon[channel];
+                return (
+                  <span key={channel} className="inline-flex items-center gap-1 rounded-[6px] border border-border/50 bg-secondary/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                    <Icon className="h-3 w-3" />
+                    {channel}
+                  </span>
+                );
+              })
+            ) : (
+              <span className="text-[11px] text-muted-foreground">Not sent</span>
+            )}
+          </div>
+          {p.pharmacyName && <p className="mt-1 truncate text-[10px] text-emerald-500">{p.pharmacyName}</p>}
+        </div>
+
+        <div className="flex items-center justify-between gap-2 lg:justify-end">
+          <div className="text-left lg:text-right">
+            <p className="text-[11px] font-medium text-foreground">{p.date}</p>
+            <Badge variant="outline" className={cn("mt-1 text-[9px] px-1.5 py-0 font-medium border", STATUS_STYLES[p.status] ?? "bg-secondary/50 text-muted-foreground border-border/60")}>
+              <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[p.status] ?? "bg-muted-foreground/40")} />
+              {statusLabel[p.status]}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const HospitalPrescriptions = () => {
@@ -276,6 +363,7 @@ const HospitalPrescriptions = () => {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const stored = usePrescriptions().filter(
     (p) => p.issuer === "hospital" && p.issuerOrg === HOSPITAL,
@@ -302,12 +390,6 @@ const HospitalPrescriptions = () => {
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS),
     [filters],
   );
-
-  useEffect(() => {
-    if (filterOpen) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [filterOpen]);
 
   const statusLabel: Record<RxStatus, string> = {
     draft: t("pages.doctor.rx_status_draft"),
@@ -354,9 +436,12 @@ const HospitalPrescriptions = () => {
           q &&
           !p.patientName.toLowerCase().includes(q) &&
           !p.doctorName.toLowerCase().includes(q) &&
-          !p.medications.some((m) => m.name.toLowerCase().includes(q))
+          !p.medications.some((m) => m.name.toLowerCase().includes(q)) &&
+          !(p.pharmacyName ?? "").toLowerCase().includes(q)
         )
           return false;
+        if (filters.dateFrom && p.date < filters.dateFrom) return false;
+        if (filters.dateTo && p.date > filters.dateTo) return false;
         return true;
       })
       .sort((a, b) => {
@@ -376,6 +461,8 @@ const HospitalPrescriptions = () => {
   ).length;
   const filledCount = allPrescriptions.filter((p) => p.status === "filled").length;
   const draftCount = allPrescriptions.filter((p) => p.status === "draft").length;
+  const cancelledCount = allPrescriptions.filter((p) => p.status === "cancelled").length;
+  const pharmacyCount = allPrescriptions.filter((p) => p.status === "sent-to-pharmacy").length;
 
   const filterFields = useMemo(() => [
     {
@@ -421,6 +508,15 @@ const HospitalPrescriptions = () => {
         </div>
 
         <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+              <StatCard label="Total prescriptions" value={allPrescriptions.length} icon={Pill} accent="primary" />
+              <StatCard label="Sent" value={sentCount} icon={Send} accent="info" />
+              <StatCard label="Filled" value={filledCount} icon={CheckCircle2} accent="success" />
+              <StatCard label="Drafts" value={draftCount} icon={Clock} accent="warning" />
+              <StatCard label="Cancelled" value={cancelledCount} icon={Ban} accent="warning" />
+            </div>
+          </div>
 
           {/* Meta bar */}
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
@@ -457,6 +553,12 @@ const HospitalPrescriptions = () => {
                     {draftCount} draft
                   </span>
                 )}
+                {pharmacyCount > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-[6px]">
+                    <Building2 className="h-2.5 w-2.5" />
+                    {pharmacyCount} pharmacy
+                  </span>
+                )}
               </div>
             </div>
 
@@ -471,6 +573,35 @@ const HospitalPrescriptions = () => {
                   placeholder="Search patient, doctor, medication…"
                   className="w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
+              </div>
+
+              <div className="hidden items-center rounded-[6px] border border-border/60 bg-card p-0.5 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-[10px] font-semibold transition-colors",
+                    viewMode === "list"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-[10px] font-semibold transition-colors",
+                    viewMode === "grid"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  Grid
+                </button>
               </div>
 
               <Button
@@ -496,6 +627,33 @@ const HospitalPrescriptions = () => {
             onClearAll={clearAll}
             fields={filterFields}
             cols={{ default: 1, sm: 2, lg: 3 }}
+            extraSlot={
+              <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+                    From date
+                  </span>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => set("dateFrom", e.target.value)}
+                    className="h-8 w-full rounded-[6px] border border-border/60 bg-background px-2.5 text-[11px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+                    To date
+                  </span>
+                  <input
+                    type="date"
+                    min={filters.dateFrom || undefined}
+                    value={filters.dateTo}
+                    onChange={(e) => set("dateTo", e.target.value)}
+                    className="h-8 w-full rounded-[6px] border border-border/60 bg-background px-2.5 text-[11px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+              </div>
+            }
           />
           {/* Grid */}
           <div className="p-4">
@@ -520,15 +678,27 @@ const HospitalPrescriptions = () => {
                 </button>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 gap-2">
-                {filtered.map((p) => (
-                  <PrescriptionCard
-                    key={p.id}
-                    p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
-                    statusLabel={statusLabel}
-                  />
-                ))}
-              </div>
+              viewMode === "list" ? (
+                <div className="space-y-2">
+                  {filtered.map((p) => (
+                    <PrescriptionListRow
+                      key={p.id}
+                      p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                      statusLabel={statusLabel}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-2">
+                  {filtered.map((p) => (
+                    <PrescriptionCard
+                      key={p.id}
+                      p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
+                      statusLabel={statusLabel}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </div>
         </main>

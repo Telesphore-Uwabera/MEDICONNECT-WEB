@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,9 +12,12 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useGetDepartments } from "@/hooks/hospital/use-hospital-departments";
+import { FilterBar, FilterToggleButton, type FilterFieldDef } from "@/components/FilterBar";
 import {
   BarChart,
   Bar,
@@ -303,6 +306,21 @@ function MiniBar({
   );
 }
 
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultCustomRange() {
+  const now = new Date();
+  return {
+    start_date: toDateInputValue(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end_date: toDateInputValue(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
+}
+
 /* ── Derived data types (for local chart arrays) ─────────────────── */
 
 interface DeptPieSlice {
@@ -326,12 +344,133 @@ interface StarRow {
 
 const HospitalAnalytics = () => {
   const { t } = useTranslation();
-  const { data = {}, isLoading } = useGetHospitalStats({ period: "month" });
+  const defaultCustomRange = getDefaultCustomRange();
+  const initialFilters = useMemo<HospitalDashboardParams>(
+    () => ({
+      period: "month",
+      chart_group: "day",
+      status: "all",
+      start_date: defaultCustomRange.start_date,
+      end_date: defaultCustomRange.end_date,
+    }),
+    [defaultCustomRange.end_date, defaultCustomRange.start_date],
+  );
+  const [filters, setFilters] = useState<HospitalDashboardParams>({
+    period: "month",
+    chart_group: "day",
+    status: "all",
+    start_date: defaultCustomRange.start_date,
+    end_date: defaultCustomRange.end_date,
+  });
+  const dashboardParams: HospitalDashboardParams = {
+    period: filters.period,
+    chart_group: filters.chart_group,
+    status: filters.status,
+    ...(filters.period === "custom"
+      ? { start_date: filters.start_date, end_date: filters.end_date }
+      : {}),
+    ...(filters.department_id ? { department_id: filters.department_id } : {}),
+    ...(filters.search?.trim() ? { search: filters.search.trim() } : {}),
+  };
+  const { data = {}, isLoading, isFetching } = useGetHospitalStats(dashboardParams);
+  const { data: departmentOptions = [] } = useGetDepartments({ active_only: true });
 
   const [activeTab, setActiveTab] = useState<"overview" | "financial" | "clinical" | "reviews">("overview");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [showLeftScroll, setShowLeftScroll] = useState(false);
   const [showRightScroll, setShowRightScroll] = useState(false);
+
+  const hasActiveFilters = useMemo(
+    () =>
+      filters.period !== initialFilters.period ||
+      filters.chart_group !== initialFilters.chart_group ||
+      filters.status !== initialFilters.status ||
+      !!filters.department_id ||
+      !!filters.search?.trim() ||
+      (filters.period === "custom" &&
+        (filters.start_date !== initialFilters.start_date || filters.end_date !== initialFilters.end_date)),
+    [filters, initialFilters],
+  );
+
+  const clearFilters = useCallback(() => {
+    setFilters(initialFilters);
+  }, [initialFilters]);
+
+  const filterFields = useMemo<FilterFieldDef[]>(
+    () => [
+      {
+        type: "select",
+        key: "period",
+        label: "Period",
+        value: filters.period ?? "month",
+        options: [
+          { value: "today", label: "Today" },
+          { value: "week", label: "This week" },
+          { value: "month", label: "This month" },
+          { value: "year", label: "This year" },
+          { value: "custom", label: "Custom range" },
+        ],
+        onChange: (value) => setFilters((prev) => ({ ...prev, period: value as DashboardPeriod })),
+      },
+      {
+        type: "select",
+        key: "chart_group",
+        label: "Chart group",
+        value: filters.chart_group ?? "day",
+        options: [
+          { value: "day", label: "Group by day" },
+          { value: "week", label: "Group by week" },
+          { value: "month", label: "Group by month" },
+        ],
+        onChange: (value) => setFilters((prev) => ({ ...prev, chart_group: value as ChartGroup })),
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "Status",
+        value: filters.status ?? "all",
+        options: [
+          { value: "all", label: "All statuses" },
+          { value: "pending", label: "Pending" },
+          { value: "accepted", label: "Accepted" },
+          { value: "completed", label: "Completed" },
+          { value: "rejected", label: "Rejected" },
+          { value: "cancelled", label: "Cancelled" },
+        ],
+        onChange: (value) => setFilters((prev) => ({ ...prev, status: value as BookingStatus })),
+      },
+      {
+        type: "select",
+        key: "department_id",
+        label: "Department",
+        value: filters.department_id ? String(filters.department_id) : "",
+        options: [
+          { value: "", label: "All departments" },
+          ...departmentOptions.map((department) => ({
+            value: String(department.id),
+            label:
+              department.name_en ??
+              department.name_fr ??
+              department.name_kiny ??
+              department.name ??
+              `Department ${department.id}`,
+          })),
+        ],
+        onChange: (value) =>
+          setFilters((prev) => ({ ...prev, department_id: value ? Number(value) : undefined })),
+      },
+      {
+        type: "search",
+        key: "search",
+        label: "Search",
+        value: filters.search ?? "",
+        placeholder: "Search patient, service, doctor...",
+        onChange: (value) => setFilters((prev) => ({ ...prev, search: value.slice(0, 100) })),
+      },
+    ],
+    [departmentOptions, filters.chart_group, filters.department_id, filters.period, filters.search, filters.status],
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -428,6 +567,82 @@ const HospitalAnalytics = () => {
 
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
+            <div className="rounded-[6px] border border-border/70 bg-card shadow-sm overflow-hidden">
+              <div className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground">Analytics filters</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      Narrow dashboard metrics by period, status, department, or search.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isFetching && !isLoading && (
+                    <span className="inline-flex items-center gap-1.5 rounded-[6px] border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                      <Activity className="h-3 w-3 animate-pulse" />
+                      Updating
+                    </span>
+                  )}
+                  <FilterToggleButton
+                    open={filtersOpen}
+                    onToggle={() => setFiltersOpen((open) => !open)}
+                    hasActiveFilters={hasActiveFilters}
+                  />
+                </div>
+              </div>
+              <FilterBar
+                open={filtersOpen}
+                onToggle={() => setFiltersOpen((open) => !open)}
+                fields={filterFields}
+                hasActiveFilters={hasActiveFilters}
+                onClearAll={clearFilters}
+                cols={{ default: 1, sm: 2, lg: 3, xl: 5 }}
+                extraSlot={
+                  filters.period === "custom" ? (
+                    <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-2">
+                      <label className="space-y-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+                          Start date
+                        </span>
+                        <input
+                          type="date"
+                          value={filters.start_date ?? defaultCustomRange.start_date}
+                          onChange={(event) =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              start_date: event.target.value,
+                              end_date:
+                                prev.end_date && prev.end_date >= event.target.value
+                                  ? prev.end_date
+                                  : event.target.value,
+                            }))
+                          }
+                          className="h-8 w-full rounded-[6px] border border-border/60 bg-background px-2.5 text-[11px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                        />
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+                          End date
+                        </span>
+                        <input
+                          type="date"
+                          min={filters.start_date ?? defaultCustomRange.start_date}
+                          value={filters.end_date ?? defaultCustomRange.end_date}
+                          onChange={(event) =>
+                            setFilters((prev) => ({ ...prev, end_date: event.target.value }))
+                          }
+                          className="h-8 w-full rounded-[6px] border border-border/60 bg-background px-2.5 text-[11px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+                        />
+                      </label>
+                    </div>
+                  ) : null
+                }
+              />
+            </div>
             {/* ── Scrollable Tabs ── */}
             <div className="relative flex items-center border-b border-border/60 mb-2">
               <div
@@ -526,7 +741,7 @@ const HospitalAnalytics = () => {
                       />
                       <StatCard
                         label={t("pages.hospital.stat_revenue")}
-                        value={`RWF${(grossRevenue / 1000).toFixed(0)}k`}
+                        value={`RWF ${(grossRevenue / 1000).toFixed(0)}`}
                         icon={CreditCard}
                         accent="success"
                       />
@@ -670,7 +885,7 @@ const HospitalAnalytics = () => {
                           Avg Booking Value
                         </span>
                         <span className="text-xl font-bold tabular-nums text-foreground">
-                          RWF{(revenue?.avg_booking_value ?? 0).toLocaleString()}
+                          RWF {(revenue?.avg_booking_value ?? 0).toLocaleString()}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           {revenue?.booking_count ?? 0} paid bookings
@@ -920,7 +1135,7 @@ const HospitalAnalytics = () => {
                               {r.label}
                             </p>
                             <p className="text-sm font-bold tabular-nums text-foreground">
-                              ${r.value.toLocaleString()}
+                              {r.value.toLocaleString()}
                             </p>
                           </div>
                         ))}
@@ -1191,7 +1406,7 @@ const HospitalAnalytics = () => {
                                       {s.booking_count} bk
                                     </span>
                                     <span className="tabular-nums text-success font-mono">
-                                      ${(s.revenue / 1000).toFixed(0)}k
+                                    {(s.revenue / 1000).toFixed(0)}
                                     </span>
                                   </span>
                                 </div>

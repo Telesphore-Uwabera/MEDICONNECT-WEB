@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,6 @@ import {
   Clock,
   User,
   X,
-  SlidersHorizontal,
   Search,
   AlertCircle,
   Loader2,
@@ -41,12 +41,21 @@ import {
   useRejectServiceBooking,
   normaliseDateString,
 } from "@/hooks/hospital/use-service-bookings";
+import {
+  useGetDepartments,
+  useGetServicesByDepartment,
+} from "@/hooks/hospital/use-hospital-departments";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FilterState {
   search: string;
   status: BookingStatus | "all";
+  paymentStatus: string;
+  departmentId: string;
+  serviceId: string;
+  doctorId: string;
+  patientId: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -54,6 +63,11 @@ interface FilterState {
 const INITIAL_FILTERS: FilterState = {
   search: "",
   status: "all",
+  paymentStatus: "all",
+  departmentId: "all",
+  serviceId: "all",
+  doctorId: "all",
+  patientId: "",
   dateFrom: "",
   dateTo: "",
 };
@@ -871,13 +885,6 @@ function AppointmentCard({
 const HospitalAppointments = () => {
   const { t, i18n } = useTranslation();
 
-  const { data, isLoading, isError, error, refetch } = useGetServiceBookings();
-  const bookings = data?.data ?? [];
-
-  const acceptMut = useAcceptServiceBooking();
-  const rejectMut = useRejectServiceBooking();
-  const completeMut = useCompleteServiceBooking();
-
   const [viewingId, setViewingId] = useState<number | null>(null);
   const [acceptingBooking, setAcceptingBooking] =
     useState<ServiceBookingSummary | null>(null);
@@ -885,6 +892,46 @@ const HospitalAppointments = () => {
     useState<ServiceBookingSummary | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  const { data: departments = [] } = useGetDepartments({ active_only: true });
+  const selectedDepartmentId =
+    filters.departmentId !== "all" ? Number(filters.departmentId) : null;
+  const { data: selectedDepartmentServices = [] } =
+    useGetServicesByDepartment(selectedDepartmentId);
+
+  const apiFilters = useMemo(
+    () => ({
+      status: filters.status !== "all" ? filters.status : undefined,
+      department_id:
+        filters.departmentId !== "all" ? Number(filters.departmentId) : undefined,
+      hospital_service_id:
+        filters.serviceId !== "all" ? Number(filters.serviceId) : undefined,
+      doctor_id: filters.doctorId !== "all" ? Number(filters.doctorId) : undefined,
+      patient_id: filters.patientId ? Number(filters.patientId) : undefined,
+      payment_status:
+        filters.paymentStatus !== "all" ? filters.paymentStatus : undefined,
+      date_from: filters.dateFrom || undefined,
+      date_to: filters.dateTo || undefined,
+    }),
+    [
+      filters.status,
+      filters.departmentId,
+      filters.serviceId,
+      filters.doctorId,
+      filters.patientId,
+      filters.paymentStatus,
+      filters.dateFrom,
+      filters.dateTo,
+    ],
+  );
+
+  const { data, isLoading, isError, error, refetch } =
+    useGetServiceBookings(apiFilters);
+  const bookings = data?.data ?? [];
+
+  const acceptMut = useAcceptServiceBooking();
+  const rejectMut = useRejectServiceBooking();
+  const completeMut = useCompleteServiceBooking();
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
@@ -897,6 +944,11 @@ const HospitalAppointments = () => {
   const hasActiveFilters =
     filters.search !== "" ||
     filters.status !== "all" ||
+    filters.paymentStatus !== "all" ||
+    filters.departmentId !== "all" ||
+    filters.serviceId !== "all" ||
+    filters.doctorId !== "all" ||
+    filters.patientId !== "" ||
     filters.dateFrom !== "" ||
     filters.dateTo !== "";
 
@@ -912,6 +964,19 @@ const HospitalAppointments = () => {
     const q = filters.search.toLowerCase().trim();
     return bookings.filter((b) => {
       if (filters.status !== "all" && b.status !== filters.status) return false;
+      if (
+        filters.paymentStatus !== "all" &&
+        b.payment_status !== filters.paymentStatus
+      )
+        return false;
+      if (
+        filters.departmentId !== "all" &&
+        b.department.id !== Number(filters.departmentId)
+      )
+        return false;
+      if (filters.serviceId !== "all" && b.service.id !== Number(filters.serviceId))
+        return false;
+      if (filters.patientId && b.patient.id !== Number(filters.patientId)) return false;
       const bookingDate = normaliseDateString(b.preferred_date);
       if (filters.dateFrom && bookingDate < filters.dateFrom) return false;
       if (filters.dateTo && bookingDate > filters.dateTo) return false;
@@ -919,14 +984,38 @@ const HospitalAppointments = () => {
         q &&
         !b.patient.name.toLowerCase().includes(q) &&
         !b.service.name_en.toLowerCase().includes(q) &&
-        !b.department.name_en.toLowerCase().includes(q)
+        !b.department.name_en.toLowerCase().includes(q) &&
+        !String(b.id).includes(q)
       )
         return false;
       return true;
+    }).sort((a, b) => {
+      const order: Record<BookingStatus, number> = {
+        pending: 0,
+        accepted: 1,
+        completed: 2,
+        rejected: 3,
+        cancelled: 4,
+      };
+      const statusDiff = order[a.status] - order[b.status];
+      if (statusDiff !== 0) return statusDiff;
+      return normaliseDateString(a.preferred_date).localeCompare(
+        normaliseDateString(b.preferred_date),
+      );
     });
   }, [bookings, filters]);
 
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const pending = bookings.filter((b) => b.status === "pending").length;
+    const accepted = bookings.filter((b) => b.status === "accepted").length;
+    const completed = bookings.filter((b) => b.status === "completed").length;
+    const paid = bookings.filter((b) => b.payment_status === "paid").length;
+    const unpaid = bookings.filter((b) => b.payment_status !== "paid").length;
+    return { total, pending, accepted, completed, paid, unpaid };
+  }, [bookings]);
+
+  const pendingCount = stats.pending;
 
   const handleAccept = async (notes?: string) => {
     if (!acceptingBooking) return;
@@ -972,7 +1061,69 @@ const HospitalAppointments = () => {
   const isActing =
     acceptMut.isPending || rejectMut.isPending || completeMut.isPending;
 
+  const departmentOptions = useMemo(
+    () => [
+      { value: "all", label: "All departments" },
+      ...departments.map((department) => ({
+        value: String(department.id),
+        label:
+          (i18n.language === "fr" && department.name_fr) ||
+          (i18n.language === "rw" && department.name_kiny) ||
+          department.name_en,
+      })),
+    ],
+    [departments, i18n.language],
+  );
+
+  const serviceOptions = useMemo(() => {
+    const services =
+      selectedDepartmentId !== null
+        ? selectedDepartmentServices
+        : departments.flatMap((department) => department.services ?? []);
+    return [
+      { value: "all", label: "All services" },
+      ...services.map((service) => ({
+        value: String(service.id),
+        label:
+          (i18n.language === "fr" && service.name_fr) ||
+          (i18n.language === "rw" && service.name_kiny) ||
+          service.name_en,
+      })),
+    ];
+  }, [departments, i18n.language, selectedDepartmentId, selectedDepartmentServices]);
+
+  const doctorOptions = useMemo(() => {
+    const doctors = (
+      selectedDepartmentId !== null
+        ? departments.find((department) => department.id === selectedDepartmentId)
+            ?.doctors
+        : departments.flatMap((department) => department.doctors ?? [])
+    ) ?? [];
+    const seen = new Set<number>();
+    return [
+      { value: "all", label: "All doctors" },
+      ...doctors
+        .filter((doctor) => {
+          if (seen.has(doctor.id)) return false;
+          seen.add(doctor.id);
+          return true;
+        })
+        .map((doctor) => ({
+          value: String(doctor.id),
+          label: doctor.name,
+        })),
+    ];
+  }, [departments, selectedDepartmentId]);
+
   const filterFields = useMemo(() => [
+    {
+      type: "search" as const,
+      key: "search",
+      label: "Search",
+      placeholder: "Search patient, service, booking ID...",
+      value: filters.search,
+      onChange: (v: string) => set("search", v),
+    },
     {
       type: "select" as const,
       key: "status",
@@ -986,7 +1137,67 @@ const HospitalAppointments = () => {
         { value: "rejected", label: "Rejected" },
         { value: "cancelled", label: "Cancelled" },
       ],
-      onChange: (v: string) => set("status", v as any)
+      onChange: (v: string) => set("status", v as FilterState["status"]),
+    },
+    {
+      type: "select" as const,
+      key: "paymentStatus",
+      label: "Payment",
+      value: filters.paymentStatus,
+      options: [
+        { value: "all", label: "All payments" },
+        { value: "paid", label: "Paid" },
+        { value: "unpaid", label: "Unpaid" },
+        { value: "pending", label: "Pending" },
+        { value: "refunded", label: "Refunded" },
+      ],
+      onChange: (v: string) => set("paymentStatus", v),
+    },
+    {
+      type: "select" as const,
+      key: "departmentId",
+      label: "Department",
+      value: filters.departmentId,
+      options: departmentOptions,
+      onChange: (v: string) => {
+        setFilters((prev) => ({
+          ...prev,
+          departmentId: v,
+          serviceId: "all",
+          doctorId: "all",
+        }));
+      },
+    },
+    {
+      type: "select" as const,
+      key: "serviceId",
+      label: "Service",
+      value: filters.serviceId,
+      options: serviceOptions,
+      onChange: (v: string) => set("serviceId", v),
+    },
+    {
+      type: "select" as const,
+      key: "doctorId",
+      label: "Doctor",
+      value: filters.doctorId,
+      options: doctorOptions,
+      onChange: (v: string) => set("doctorId", v),
+    },
+    {
+      type: "custom" as const,
+      key: "patientId",
+      label: "Patient ID",
+      render: () => (
+        <input
+          type="number"
+          min="1"
+          value={filters.patientId}
+          onChange={(e) => set("patientId", e.target.value)}
+          placeholder="Patient ID"
+          className="w-full h-8 px-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
+        />
+      ),
     },
     {
       type: "custom" as const,
@@ -1024,7 +1235,21 @@ const HospitalAppointments = () => {
         </div>
       )
     }
-  ], [filters.status, filters.dateFrom, filters.dateTo, set]);
+  ], [
+    filters.search,
+    filters.status,
+    filters.paymentStatus,
+    filters.departmentId,
+    filters.serviceId,
+    filters.doctorId,
+    filters.patientId,
+    filters.dateFrom,
+    filters.dateTo,
+    departmentOptions,
+    serviceOptions,
+    doctorOptions,
+    set,
+  ]);
 
   return (
     <DashboardLayout role="hospital">
@@ -1036,8 +1261,19 @@ const HospitalAppointments = () => {
 
     
         <main className="flex-1 overflow-y-auto flex flex-col">
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+              <StatCard label="Total bookings" value={isLoading ? "..." : stats.total} icon={Receipt} />
+              <StatCard label="Pending" value={isLoading ? "..." : stats.pending} icon={Clock} accent="warning" />
+              <StatCard label="Accepted" value={isLoading ? "..." : stats.accepted} icon={CheckCircle2} accent="info" />
+              <StatCard label="Completed" value={isLoading ? "..." : stats.completed} icon={Check} accent="success" />
+              <StatCard label="Paid" value={isLoading ? "..." : stats.paid} icon={CreditCard} accent="success" />
+              <StatCard label="Unpaid" value={isLoading ? "..." : stats.unpaid} icon={XCircle} accent="warning" />
+            </div>
+          </div>
+
           {/* Meta bar */}
-          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-10 mt-4 bg-background/90 backdrop-blur-md border-y border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-bold text-foreground">
