@@ -36,24 +36,24 @@ function Footer() {
 
   
       const footerPlatformLinks = [
-        { label: "Doctors", to: "/patient/search-doctors" },
-        { label: "Hospitals", to: "/patient/search-facilities" },
-        { label: "Pharmacy", to: "/patient/pharmacy" },
-        { label: "Sign in", to: "/auth" },
+        { label: t("pages.landing.doctors"), to: "/patient/search-doctors" },
+        { label: t("pages.landing.hospitals"), to: "/patient/search-facilities" },
+        { label: t("pages.landing.footer_pharmacy"), to: "/patient/pharmacy" },
+        { label: t("common.signIn"), to: "/auth" },
       ];
-    
+
       const footerForLinks = [
-        { label: "Patient", to: "/patient" },
-        { label: "Doctor", to: "/doctor" },
-        { label: "Hospital", to: "/hospital" },
-        { label: "Pharmacy", to: "/pharmacy" },
-        { label: "Admin", to: "/admin" },
+        { label: t("pages.landing.footer_role_patient"), to: "/patient" },
+        { label: t("pages.landing.footer_role_doctor"), to: "/doctor" },
+        { label: t("pages.landing.footer_role_hospital"), to: "/hospital" },
+        { label: t("pages.landing.footer_pharmacy"), to: "/pharmacy" },
+        { label: t("pages.landing.footer_role_admin"), to: "/admin" },
       ];
-    
+
       const footerLegalLinks = [
-        { label: "Privacy", href: generalSettings?.privacy_url || "#" },
-        { label: "Terms", href: generalSettings?.terms_url || "#" },
-        { label: "Cookies", href: "#" },
+        { label: t("pages.landing.footer_legal_privacy"), href: generalSettings?.privacy_url || "#" },
+        { label: t("pages.landing.footer_legal_terms"), href: generalSettings?.terms_url || "#" },
+        { label: t("pages.landing.footer_legal_cookies"), href: "#" },
       ];
     
       const footerSocials = [
@@ -134,14 +134,14 @@ function Footer() {
                             ))}
                             <div className="flex items-center gap-2 px-2 py-2 text-[11px] font-medium text-primary">
                                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                All systems operational
+                                {t("pages.landing.footer_status_operational")}
                             </div>
                         </div>
                     </div>
 
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                            Platform
+                            {t("pages.landing.footer_platform")}
                         </p>
                         <div className="mt-4 grid gap-3">
                             {footerPlatformLinks.map((l) => (
@@ -159,7 +159,7 @@ function Footer() {
 
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                            Workspaces
+                            {t("pages.landing.footer_workspaces")}
                         </p>
                         <div className="mt-4 grid gap-3">
                             {footerForLinks.map((l) => (
@@ -177,19 +177,18 @@ function Footer() {
 
                     <div className="lg:border-l lg:border-border lg:pl-8">
                         <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                            Start care now
+                            {t("pages.landing.footer_start_care")}
                         </p>
                         <h3 className="mt-3 text-xl font-semibold leading-tight text-foreground">
-                            Find a doctor or book instant care in minutes.
+                            {t("pages.landing.footer_cta_title")}
                         </h3>
                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            Search specialists, hospitals, and pharmacy services from one
-                            connected care platform.
+                            {t("pages.landing.footer_cta_sub")}
                         </p>
                         <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                             <Link to="/patient/search-doctors">
                                 <Button className="h-11 w-full justify-between rounded-[6px]">
-                                    Browse doctors
+                                    {t("pages.landing.browse_doctors")}
                                     <ArrowRight className="h-4 w-4" />
                                 </Button>
                             </Link>
@@ -198,7 +197,7 @@ function Footer() {
                                     variant="outline"
                                     className="h-11 w-full justify-between rounded-[6px]"
                                 >
-                                    Sign in
+                                    {t("common.signIn")}
                                     <ArrowRight className="h-4 w-4" />
                                 </Button>
                             </Link>
@@ -208,8 +207,7 @@ function Footer() {
 
                 <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-center text-xs text-muted-foreground sm:text-left">
-                        © {new Date().getFullYear()} {appName}. Bringing care to your
-                        fingertips.
+                        {t("pages.landing.footer_copyright", { year: new Date().getFullYear(), name: appName })}
                     </span>
                     <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                         {footerLegalLinks.map((l) => (

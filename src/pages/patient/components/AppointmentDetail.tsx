@@ -46,9 +46,10 @@ import {
   Wifi,
   Download,
   Eye,
+  CalendarClock,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { t } from "i18next";
+import type { TFunction } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +68,11 @@ interface JoinResponse {
   room_name: string;
   token: string;
   join_url: string;
+}
+
+interface RescheduleResponse {
+  message: string;
+  appointment: any;
 }
 
 // ─── API mutations ────────────────────────────────────────────────────────────
@@ -94,6 +100,25 @@ function useCancelAppointment(appointmentId: string) {
       apiFetch(`/patient/appointments/${appointmentId}`, {
         method: "DELETE",
         body: reason ? JSON.stringify({ reason }) : undefined,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
+      qc.invalidateQueries({ queryKey: ["patient-appointments"] });
+    },
+  });
+}
+
+function useRescheduleAppointment(appointmentId: string) {
+  const qc = useQueryClient();
+  return useMutation<
+    RescheduleResponse,
+    unknown,
+    { appointment_date: string; appointment_time: string }
+  >({
+    mutationFn: (payload) =>
+      apiFetch(`/patient/appointments/${appointmentId}/reschedule`, {
+        method: "POST",
+        body: payload,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
@@ -133,13 +158,9 @@ const STATUS_ACCENT: Record<ApiAppointmentStatus, string> = {
   cancelled: "bg-red-500",
 };
 
-const STATUS_LABEL: Record<ApiAppointmentStatus, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  in_progress: "In Progress",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
+function getStatusLabel(t: TFunction, status: ApiAppointmentStatus): string {
+  return t(`consult.appointment_detail.status.${status}`);
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -166,9 +187,20 @@ function formatCurrency(amount: string, currency: string) {
   return `${n.toLocaleString()} ${currency}`;
 }
 
+function prettyEnum(value: string) {
+  return value.replace(/_/g, " ");
+}
+
+function translateEnum(t: TFunction, prefix: string, value?: string | null) {
+  if (!value) return "\u2014";
+  const key = value.toLowerCase().replace(/\s+/g, "_");
+  return t(`${prefix}.${key}`, { defaultValue: prettyEnum(value) });
+}
+
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 
 function CopyButton({ value }: { value: string }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(value);
@@ -179,7 +211,8 @@ function CopyButton({ value }: { value: string }) {
     <button
       onClick={copy}
       className="ml-1.5 text-muted-foreground/50 hover:text-primary transition-colors"
-      title="Copy"
+      title={t("consult.appointment_detail.copy")}
+      aria-label={t("consult.appointment_detail.copy")}
     >
       {copied ? (
         <Check className="w-3 h-3 text-emerald-500" />
@@ -252,34 +285,35 @@ function Section({
 // ─── Notes (string OR structured doctor-notes object) ─────────────────────────
 
 function NotesContent({ notes }: { notes: unknown }) {
+  const { t } = useTranslation();
   if (!notes) return null;
 
   // Legacy: a plain string note.
   if (typeof notes === "string") {
-    return notes.trim() ? <InfoRow icon={FileText} label="Notes" value={notes} /> : null;
+    return notes.trim() ? <InfoRow icon={FileText} label={t("consult.appointment_detail.notes")} value={notes} /> : null;
   }
   if (typeof notes !== "object") return null;
 
   const n = notes as Record<string, unknown>;
   const str = (v: unknown) => (v == null ? "" : String(v));
   const textFields: Array<[string, unknown]> = [
-    ["Chief complaint", n.chief_complaint],
-    ["Diagnosis", n.diagnosis],
-    ["Treatment plan", n.treatment_plan],
-    ["Recommendations", n.recommendations],
-    ["Additional notes", n.additional_notes],
-    ["Follow-up notes", n.follow_up_notes],
+    [t("consult.appointment_detail.chief_complaint"), n.chief_complaint],
+    [t("consult.appointment_detail.diagnosis"), n.diagnosis],
+    [t("consult.appointment_detail.treatment_plan"), n.treatment_plan],
+    [t("consult.appointment_detail.recommendations"), n.recommendations],
+    [t("consult.appointment_detail.additional_notes"), n.additional_notes],
+    [t("consult.appointment_detail.follow_up_notes"), n.follow_up_notes],
   ].filter(([, v]) => str(v).trim());
 
   const vitals = [
-    n.blood_pressure && `BP ${str(n.blood_pressure)}`,
-    n.temperature && `Temp ${str(n.temperature)}`,
-    n.pulse_rate && `Pulse ${str(n.pulse_rate)}`,
-    n.weight && `Wt ${str(n.weight)}`,
-    n.height && `Ht ${str(n.height)}`,
+    n.blood_pressure && t("consult.appointment_detail.vital_bp", { value: str(n.blood_pressure) }),
+    n.temperature && t("consult.appointment_detail.vital_temp", { value: str(n.temperature) }),
+    n.pulse_rate && t("consult.appointment_detail.vital_pulse", { value: str(n.pulse_rate) }),
+    n.weight && t("consult.appointment_detail.vital_weight", { value: str(n.weight) }),
+    n.height && t("consult.appointment_detail.vital_height", { value: str(n.height) }),
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(" \u00b7 ");
 
   if (textFields.length === 0 && !vitals) return null;
 
@@ -296,7 +330,7 @@ function NotesContent({ notes }: { notes: unknown }) {
       {vitals && (
         <div className="space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-            Vitals
+            {t("consult.appointment_detail.vitals")}
           </p>
           <p className="text-sm text-foreground">{vitals}</p>
         </div>
@@ -308,19 +342,20 @@ function NotesContent({ notes }: { notes: unknown }) {
 // ─── Consultation summary section ─────────────────────────────────────────────
 
 function SummarySection({ appointmentId }: { appointmentId: string }) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = usePatientAppointmentSummary(appointmentId);
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading summary…
+        <Loader2 className="w-4 h-4 animate-spin" /> {t("consult.appointment_detail.loading_summary")}
       </div>
     );
   }
   if (isError || !data?.summary) {
     return (
       <p className="py-4 text-sm text-muted-foreground">
-        No consultation summary was recorded for this visit.
+        {t("consult.appointment_detail.no_summary")}
       </p>
     );
   }
@@ -337,7 +372,7 @@ function SummarySection({ appointmentId }: { appointmentId: string }) {
           onClick={() => openSummaryDocument(summary)}
           className="h-9 rounded-[6px] text-sm gap-2"
         >
-          <Eye className="w-4 h-4" /> View document
+          <Eye className="w-4 h-4" /> {t("consult.appointment_detail.view_document")}
         </Button>
         <Button
           variant="outline"
@@ -345,7 +380,7 @@ function SummarySection({ appointmentId }: { appointmentId: string }) {
           onClick={() => openSummaryDocument(summary, true)}
           className="h-9 rounded-[6px] text-sm gap-2"
         >
-          <Download className="w-4 h-4" /> Download PDF
+          <Download className="w-4 h-4" /> {t("consult.appointment_detail.download_pdf")}
         </Button>
       </div>
     </div>
@@ -361,6 +396,7 @@ function CancelDialog({
   appointmentId: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState("");
   const { mutate, isPending, isSuccess, isError, error } = useCancelAppointment(appointmentId);
 
@@ -382,21 +418,21 @@ function CancelDialog({
           <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 flex items-center justify-center mb-4">
             <XCircle className="w-6 h-6 text-red-500" />
           </div>
-          <p className="text-base font-semibold">Cancel appointment?</p>
+          <p className="text-base font-semibold">{t("consult.appointment_detail.cancel_title")}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            This action cannot be undone. Refund policies may apply.
+            {t("consult.appointment_detail.cancel_desc")}
           </p>
         </div>
 
         <div className="p-5 space-y-5">
           <div>
             <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2 block">
-              Reason <span className="normal-case font-normal">(optional)</span>
+              {t("consult.appointment_detail.reason")} <span className="normal-case font-normal">({t("consult.booking.optional")})</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. I can't make it at this time"
+              placeholder={t("consult.appointment_detail.cancel_reason_placeholder")}
               rows={3}
               className="w-full rounded-[6px] border border-border/60 bg-muted/30 px-4 py-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
             />
@@ -406,7 +442,7 @@ function CancelDialog({
             <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
               <p className="text-sm text-red-600 dark:text-red-400">
-                {(error as any)?.message ?? "Could not cancel. Please try again."}
+                {(error as any)?.message ?? t("consult.appointment_detail.cancel_error")}
               </p>
             </div>
           )}
@@ -415,7 +451,7 @@ function CancelDialog({
             <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
               <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                Appointment cancelled.
+                {t("consult.appointment_detail.cancel_success")}
               </p>
             </div>
           )}
@@ -428,7 +464,7 @@ function CancelDialog({
               disabled={isPending}
               className="flex-1 h-10 rounded-[6px] text-sm"
             >
-              Keep it
+              {t("consult.appointment_detail.keep_it")}
             </Button>
             <Button
               size="sm"
@@ -441,7 +477,128 @@ function CancelDialog({
               ) : (
                 <XCircle className="w-4 h-4" />
               )}
-              {isPending ? "Cancelling…" : "Yes, cancel"}
+              {isPending ? t("consult.appointment_detail.cancelling") : t("consult.appointment_detail.yes_cancel")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reschedule Dialog ────────────────────────────────────────────────────────
+
+function RescheduleDialog({
+  appointmentId,
+  currentDate,
+  currentTime,
+  onClose,
+}: {
+  appointmentId: string;
+  currentDate: string;
+  currentTime: string;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const [date, setDate] = useState(currentDate?.slice(0, 10) ?? "");
+  const [time, setTime] = useState(currentTime?.slice(0, 5) ?? "");
+  const { mutate, isPending, isSuccess, isError, error } = useRescheduleAppointment(appointmentId);
+
+  const handleReschedule = () => {
+    if (!date || !time) return;
+    mutate(
+      { appointment_date: date, appointment_time: time },
+      { onSuccess: () => setTimeout(onClose, 1500) }
+    );
+  };
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-sm bg-background border border-border/70 rounded-[6px] shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border/50">
+          <div className="w-12 h-12 rounded-full bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-900 flex items-center justify-center mb-4">
+            <CalendarClock className="w-6 h-6 text-sky-500" />
+          </div>
+          <p className="text-base font-semibold">{t("consult.appointment_detail.reschedule_title")}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {t("consult.appointment_detail.reschedule_desc")}
+          </p>
+        </div>
+
+        <div className="p-5 space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2 block">
+                {t("consult.booking.date")}
+              </label>
+              <input
+                type="date"
+                value={date}
+                min={todayStr}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-[6px] border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2 block">
+                {t("consult.booking.time")}
+              </label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full rounded-[6px] border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-all"
+              />
+            </div>
+          </div>
+
+          {isError && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {(error as any)?.message ?? t("consult.appointment_detail.reschedule_error")}
+              </p>
+            </div>
+          )}
+
+          {isSuccess && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900">
+              <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                {t("consult.appointment_detail.reschedule_success")}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              disabled={isPending}
+              className="flex-1 h-10 rounded-[6px] text-sm"
+            >
+              {t("consult.connect.close")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleReschedule}
+              disabled={isPending || isSuccess || !date || !time}
+              className="flex-1 h-10 rounded-[6px] text-sm font-semibold bg-sky-600 hover:bg-sky-700 border-sky-600 hover:border-sky-700 text-white gap-2"
+            >
+              {isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CalendarClock className="w-4 h-4" />
+              )}
+              {isPending ? t("consult.appointment_detail.rescheduling") : t("consult.appointment_detail.confirm")}
             </Button>
           </div>
         </div>
@@ -493,6 +650,7 @@ function ActionBar({
   onPay,
   onJoin,
   onCancel,
+  onReschedule,
   joinPending,
   payPending,
 }: {
@@ -500,16 +658,20 @@ function ActionBar({
   onPay: () => void;
   onJoin: () => void;
   onCancel: () => void;
+  onReschedule: () => void;
   joinPending: boolean;
   payPending?: boolean;
 }) {
+  const { t } = useTranslation();
   const status: ApiAppointmentStatus = appt.status;
   const unpaid = appt.payment_status !== "paid" && appt.status == "pending";
   const canJoin = (status === "confirmed" || status === "in_progress") && appt.daily_room_url;
   const canCancel = status === "pending" || status === "confirmed";
   const canPay = unpaid && status !== "cancelled" && status !== "completed";
+  const canReschedule =
+    appt.payment_status === "paid" && (status === "pending" || status === "confirmed");
 
-  if (!canPay && !canJoin && !canCancel) return null;
+  if (!canPay && !canJoin && !canCancel && !canReschedule) return null;
 
   return (
     <div className="flex gap-3 flex-wrap">
@@ -524,7 +686,7 @@ function ActionBar({
           ) : (
             <Video className="w-4 h-4" />
           )}
-          {joinPending ? "Joining…" : "Join Session"}
+          {joinPending ? t("consult.appointment_detail.joining") : t("consult.appointment_detail.join_session")}
         </Button>
       )}
       {canPay && (
@@ -538,7 +700,17 @@ function ActionBar({
           ) : (
             <CreditCard className="w-4 h-4" />
           )}
-          {payPending ? "Processing…" : "Pay Now"}
+          {payPending ? t("consult.appointment_detail.processing") : t("consult.appointment_detail.pay_now")}
+        </Button>
+      )}
+      {canReschedule && (
+        <Button
+          variant="outline"
+          onClick={onReschedule}
+          className="h-10 rounded-[6px] text-sm gap-2 text-sky-600 border-sky-200 dark:border-sky-900 hover:bg-sky-50 dark:hover:bg-sky-950/30 hover:border-sky-300 transition-all"
+        >
+          <CalendarClock className="w-4 h-4" />
+          {t("consult.appointment_detail.reschedule")}
         </Button>
       )}
       {canCancel && (
@@ -548,7 +720,7 @@ function ActionBar({
           className="h-10 rounded-[6px] text-sm gap-2 text-red-500 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 transition-all"
         >
           <XCircle className="w-4 h-4" />
-          Cancel
+          {t("consult.appointment_detail.cancel")}
         </Button>
       )}
     </div>
@@ -564,6 +736,7 @@ export function AppointmentDetailContent({
   appointmentId: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const invoicePoller = useInvoicePoller();
   const { startCall } = useCallContext();
@@ -571,6 +744,7 @@ export function AppointmentDetailContent({
 
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
 
   const joinMutation = useJoinSession(appointmentId);
   const payMutation = usePayAppointment(appointmentId);
@@ -620,20 +794,22 @@ export function AppointmentDetailContent({
           callback: (err: any) => {
             (window as any).IremboPay?.closeModal?.();
             if (err) {
-              toast.error("Payment failed", { description: "You can pay later from your dashboard." });
+              toast.error(t("consult.appointment_detail.payment_failed"), {
+                description: t("consult.appointment_detail.payment_failed_desc"),
+              });
             } else {
               setIsVerifyingPayment(true);
               invoicePoller.start(
                 res.invoice_number,
                 () => {
                   setIsVerifyingPayment(false);
-                  toast.success("Payment successful!");
+                  toast.success(t("consult.appointment_detail.payment_success"));
                   queryClient.invalidateQueries({ queryKey: ["patient-appointment", appointmentId] });
                   queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
                 },
                 () => {
                   setIsVerifyingPayment(false);
-                  toast.error("Could not verify payment status.");
+                  toast.error(t("consult.appointment_detail.payment_verify_failed"));
                 }
               );
             }
@@ -641,7 +817,7 @@ export function AppointmentDetailContent({
         });
       },
       onError: (err: any) => {
-        toast.error(err?.message || "Failed to initiate payment.");
+        toast.error(err?.message || t("consult.appointment_detail.payment_initiate_failed"));
       },
     });
   };
@@ -675,7 +851,7 @@ export function AppointmentDetailContent({
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
-          Appointments
+          {t("consult.bookings.appointments")}
         </button>
         {status && (
           <Badge
@@ -691,7 +867,7 @@ export function AppointmentDetailContent({
                 STATUS_DOT[status]
               )}
             />
-            {STATUS_LABEL[status]}
+            {getStatusLabel(t, status)}
           </Badge>
         )}
       </div>
@@ -706,9 +882,9 @@ export function AppointmentDetailContent({
               <AlertCircle className="w-7 h-7 text-red-500" />
             </div>
             <div>
-              <p className="text-base font-semibold text-foreground">Failed to load</p>
+              <p className="text-base font-semibold text-foreground">{t("consult.appointment_detail.failed_to_load")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Couldn't fetch appointment details
+                {t("consult.appointment_detail.fetch_failed")}
               </p>
             </div>
             <Button
@@ -717,7 +893,7 @@ export function AppointmentDetailContent({
               onClick={onClose}
               className="rounded-[6px] text-sm h-10 px-5"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" /> Go back
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t("consult.appointment_detail.go_back")}
             </Button>
           </div>
         )}
@@ -761,7 +937,7 @@ export function AppointmentDetailContent({
                         <span className="text-sm font-semibold text-foreground">
                           {parseFloat(doctor.rating_avg).toFixed(1)}
                         </span>
-                        <span className="text-xs text-muted-foreground/60">rating</span>
+                        <span className="text-xs text-muted-foreground/60">{t("consult.appointment_detail.rating")}</span>
                       </div>
                     )}
                   </div>
@@ -772,19 +948,19 @@ export function AppointmentDetailContent({
                   {[
                     {
                       icon: appt.type === "online" ? Wifi : MapPin,
-                      label: "Type",
-                      value: appt.type === "online" ? "Video" : "In-person",
+                      label: t("consult.booking.type"),
+                      value: appt.type === "online" ? t("consult.appointment_detail.video") : t("consult.appointment_detail.in_person"),
                       color: appt.type === "online" ? "text-sky-500" : "text-amber-500",
                     },
                     {
                       icon: Calendar,
-                      label: "Date",
+                      label: t("consult.booking.date"),
                       value: format(parseISO(appt.appointment_date), "MMM dd"),
                       color: "text-muted-foreground",
                     },
                     {
                       icon: Clock,
-                      label: "Time",
+                      label: t("consult.booking.time"),
                       value: formatTime(appt.appointment_time),
                       color: "text-muted-foreground",
                     },
@@ -804,11 +980,7 @@ export function AppointmentDetailContent({
                   <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900">
                     <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <p className="text-sm text-amber-700 dark:text-amber-400">
-                      Payment of{" "}
-                      <span className="font-semibold">
-                        {formatCurrency(appt.patient_pays, appt.currency)}
-                      </span>{" "}
-                      is due
+                      {t("consult.appointment_detail.payment_due", { amount: formatCurrency(appt.patient_pays, appt.currency) })}
                     </p>
                   </div>
                 )}
@@ -819,6 +991,7 @@ export function AppointmentDetailContent({
                   onPay={handlePayIrembo}
                   onJoin={handleJoin}
                   onCancel={() => setShowCancel(true)}
+                  onReschedule={() => setShowReschedule(true)}
                   joinPending={joinMutation.isPending}
                   payPending={payMutation.isPending || isVerifyingPayment}
                 />
@@ -828,7 +1001,7 @@ export function AppointmentDetailContent({
                   <div className="flex items-center gap-3 px-4 py-3 rounded-[6px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
                     <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                     <p className="text-sm text-red-600 dark:text-red-400">
-                      {(joinMutation.error as any)?.message ?? "Could not start session."}
+                      {(joinMutation.error as any)?.message ?? t("consult.appointment_detail.start_session_error")}
                     </p>
                   </div>
                 )}
@@ -837,41 +1010,41 @@ export function AppointmentDetailContent({
 
             {/* ── Consultation summary (completed only) ── */}
             {appt.status === "completed" && (
-              <Section title="Consultation summary">
+              <Section title={t("consult.appointment_detail.consultation_summary")}>
                 <SummarySection appointmentId={appointmentId} />
               </Section>
             )}
 
             {/* ── Appointment details ── */}
-            <Section title="Appointment">
-              <InfoRow icon={FileText} label="Booking type" value={appt.booking_type ?? "—"} />
+            <Section title={t("consult.appointment_detail.appointment")}>
+              <InfoRow icon={FileText} label={t("consult.appointment_detail.booking_type")} value={translateEnum(t, "consult.appointment_detail.booking_type_values", appt.booking_type)} />
               <InfoRow
                 icon={Clock}
-                label="Duration"
-                value={appt.duration_minutes ? `${appt.duration_minutes} min` : "—"}
+                label={t("consult.appointment_detail.duration")}
+                value={appt.duration_minutes ? t("consult.appointment_detail.minutes", { count: appt.duration_minutes }) : "\u2014"}
               />
-              <InfoRow icon={Calendar} label="Date" value={formatDate(appt.appointment_date)} />
-              <InfoRow icon={Clock} label="Time" value={formatTime(appt.appointment_time)} />
+              <InfoRow icon={Calendar} label={t("consult.booking.date")} value={formatDate(appt.appointment_date)} />
+              <InfoRow icon={Clock} label={t("consult.booking.time")} value={formatTime(appt.appointment_time)} />
               <NotesContent notes={appt.notes} />
             </Section>
 
             {/* ── Payment ── */}
-            <Section title="Payment">
+            <Section title={t("consult.appointment_detail.payment")}>
               <InfoRow
                 icon={CreditCard}
-                label="Consultation fee"
+                label={t("consult.appointment_detail.consultation_fee")}
                 value={formatCurrency(appt.consultation_fee, appt.currency)}
               />
               {insurance && (
                 <InfoRow
                   icon={Shield}
-                  label="Insurance covers"
+                  label={t("consult.appointment_detail.insurance_covers")}
                   value={formatCurrency(appt.insurance_covered, appt.currency)}
                 />
               )}
               <InfoRow
                 icon={CreditCard}
-                label="You pay"
+                label={t("consult.appointment_detail.you_pay")}
                 value={
                   <span className="font-semibold">
                     {formatCurrency(appt.patient_pays, appt.currency)}
@@ -880,7 +1053,7 @@ export function AppointmentDetailContent({
               />
               <InfoRow
                 icon={Check}
-                label="Status"
+                label={t("consult.booking.status")}
                 value={
                   <span
                     className={cn(
@@ -896,21 +1069,21 @@ export function AppointmentDetailContent({
                         appt.payment_status === "paid" ? "bg-emerald-500" : "bg-amber-500"
                       )}
                     />
-                    {appt.payment_status ?? "—"}
+                    {translateEnum(t, "consult.appointment_detail.payment_status", appt.payment_status)}
                   </span>
                 }
               />
               {appt.payment_method && (
                 <InfoRow
                   icon={Banknote}
-                  label="Method"
-                  value={appt.payment_method.replace(/_/g, " ")}
+                  label={t("consult.appointment_detail.method")}
+                  value={translateEnum(t, "consult.appointment_detail.payment_method", appt.payment_method)}
                 />
               )}
               {appt.payment_reference && (
                 <InfoRow
                   icon={FileText}
-                  label="Reference"
+                  label={t("consult.appointment_detail.reference")}
                   mono
                   value={
                     <span className="flex items-center gap-1">
@@ -924,29 +1097,29 @@ export function AppointmentDetailContent({
 
             {/* ── Doctor ── */}
             {doctor && (
-              <Section title="Doctor">
-                <InfoRow icon={User} label="Full name" value={doctor.user?.name ?? "—"} />
-                <InfoRow icon={FileText} label="Degree" value={doctor.doctor_degree ?? "—"} />
+              <Section title={t("consult.appointment_detail.doctor")}>
+                <InfoRow icon={User} label={t("consult.appointment_detail.full_name")} value={doctor.user?.name ?? "—"} />
+                <InfoRow icon={FileText} label={t("consult.appointment_detail.degree")} value={doctor.doctor_degree ?? "—"} />
                 <InfoRow
                   icon={FileText}
-                  label="License"
+                  label={t("consult.appointment_detail.license")}
                   value={doctor.medical_license ?? "—"}
                   mono
                 />
                 <InfoRow
                   icon={FileText}
-                  label="Specialization"
+                  label={t("consult.appointment_detail.specialization")}
                   value={doctor.specialization ?? "—"}
                 />
                 <InfoRow
                   icon={Globe}
-                  label="Consultation type"
-                  value={doctor.consultation_type?.replace(/_/g, " ") ?? "—"}
+                  label={t("consult.appointment_detail.consultation_type")}
+                  value={translateEnum(t, "consult.appointment_detail.consultation_type_values", doctor.consultation_type)}
                 />
                 {parseFloat(doctor.consultation_fee) > 0 && (
                   <InfoRow
                     icon={CreditCard}
-                    label="Fee"
+                    label={t("consult.appointment_detail.fee")}
                     value={formatCurrency(doctor.consultation_fee, doctor.currency)}
                   />
                 )}
@@ -955,17 +1128,17 @@ export function AppointmentDetailContent({
 
             {/* ── Hospital ── */}
             {hospital && (
-              <Section title="Hospital">
-                <InfoRow icon={Building2} label="Name" value={hospital.name_en} />
+              <Section title={t("consult.appointment_detail.hospital")}>
+                <InfoRow icon={Building2} label={t("consult.appointment_detail.name")} value={hospital.name_en} />
                 <InfoRow
                   icon={MapPin}
-                  label="Address"
+                  label={t("consult.appointment_detail.address")}
                   value={[hospital.address, hospital.city].filter(Boolean).join(", ")}
                 />
                 {hospital.phone && (
                   <InfoRow
                     icon={Phone}
-                    label="Phone"
+                    label={t("consult.connect.phone_number")}
                     value={
                       <a href={`tel:${hospital.phone}`} className="text-primary hover:underline">
                         {hospital.phone}
@@ -976,7 +1149,7 @@ export function AppointmentDetailContent({
                 {hospital.email && (
                   <InfoRow
                     icon={Mail}
-                    label="Email"
+                    label={t("consult.connect.email_address")}
                     value={
                       <a
                         href={`mailto:${hospital.email}`}
@@ -990,7 +1163,7 @@ export function AppointmentDetailContent({
                 {hospital.website && (
                   <InfoRow
                     icon={Globe}
-                    label="Website"
+                    label={t("consult.appointment_detail.website")}
                     value={
                       <a
                         href={hospital.website}
@@ -1009,7 +1182,7 @@ export function AppointmentDetailContent({
 
             {/* ── Insurance ── */}
             {insurance && (
-              <Section title="Insurance">
+              <Section title={t("consult.appointment_detail.insurance")}>
                 <div className="py-3 flex items-center gap-3 border-b border-border/30">
                   {insurance.logo && (
                     <img
@@ -1025,10 +1198,10 @@ export function AppointmentDetailContent({
                 </div>
                 <InfoRow
                   icon={Shield}
-                  label="Coverage"
+                  label={t("consult.appointment_detail.coverage")}
                   value={`${parseFloat(insurance.coverage_percentage ?? 0).toFixed(0)}%`}
                 />
-                <InfoRow icon={Globe} label="Type" value={insurance.type ?? "—"} />
+                <InfoRow icon={Globe} label={t("consult.booking.type")} value={translateEnum(t, "consult.appointment_detail.insurance_type", insurance.type)} />
                 {insurance.phone && (
                   <InfoRow
                     icon={Phone}
@@ -1059,10 +1232,10 @@ export function AppointmentDetailContent({
 
             {/* ── Session ── */}
             {appt.daily_room_url && (
-              <Section title="Session">
+              <Section title={t("consult.appointment_detail.session")}>
                 <InfoRow
                   icon={Video}
-                  label="Room"
+                  label={t("consult.appointment_detail.room")}
                   value={
                     <span className="flex items-center gap-2 font-mono text-xs">
                       {appt.daily_room_name}
@@ -1073,14 +1246,14 @@ export function AppointmentDetailContent({
                 {appt.session_started_at && (
                   <InfoRow
                     icon={Clock}
-                    label="Started"
+                    label={t("consult.appointment_detail.started")}
                     value={format(parseISO(appt.session_started_at), "MMM dd · hh:mm a")}
                   />
                 )}
                 {appt.session_ended_at && (
                   <InfoRow
                     icon={Clock}
-                    label="Ended"
+                    label={t("consult.appointment_detail.ended")}
                     value={format(parseISO(appt.session_ended_at), "MMM dd · hh:mm a")}
                   />
                 )}
@@ -1119,14 +1292,14 @@ export function AppointmentDetailContent({
                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                    Cancellation reason
+                    {t("consult.appointment_detail.cancellation_reason")}
                   </p>
                   <p className="text-sm text-red-600/80 dark:text-red-400/70 mt-1">
                     {appt.cancellation_reason}
                   </p>
                   {appt.cancelled_at && (
                     <p className="text-xs text-red-500/60 mt-1.5">
-                      Cancelled on {format(parseISO(appt.cancelled_at), "MMM dd, yyyy · hh:mm a")}
+                      {t("consult.appointment_detail.cancelled_on", { date: format(parseISO(appt.cancelled_at), "MMM dd, yyyy \u00b7 hh:mm a") })}
                     </p>
                   )}
                 </div>
@@ -1146,6 +1319,16 @@ export function AppointmentDetailContent({
           onClose={() => setShowCancel(false)}
         />
       )}
+
+      {/* ── Reschedule dialog ── */}
+      {showReschedule && appt && (
+        <RescheduleDialog
+          appointmentId={appointmentId}
+          currentDate={appt.appointment_date}
+          currentTime={appt.appointment_time}
+          onClose={() => setShowReschedule(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1159,6 +1342,7 @@ export function AppointmentDetailModal({
   appointmentId: string | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const isOpen = !!appointmentId;
 
   useEffect(() => {
@@ -1202,7 +1386,7 @@ export function AppointmentDetailModal({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-8 h-8 rounded-[6px] bg-secondary/80 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-border/60"
-          aria-label="Close"
+          aria-label={t("consult.connect.close")}
         >
           <X className="w-4 h-4" />
         </button>

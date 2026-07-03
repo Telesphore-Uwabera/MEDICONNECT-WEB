@@ -2,6 +2,7 @@
 // Lists every consultation summary with view (expand), edit and delete.
 
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import {
   ClipboardList, Loader2, AlertCircle, ChevronDown, Pencil, Trash2,
@@ -23,12 +24,13 @@ import { getErrMsg } from "./appointments/shared/helpers";
 
 const pretty = (s: string) => s.replace(/_/g, " ");
 
-function patientLabel(s: ConsultationSummary): string {
+function patientLabel(s: ConsultationSummary, t?: (key: string, options?: Record<string, unknown>) => string): string {
   const name = (s as unknown as { patient?: { name?: string; user?: { name?: string } } }).patient;
-  return name?.name || name?.user?.name || `Patient #${s.patient_id}`;
+  return name?.name || name?.user?.name || (t ? t("pages.doctor.patient_number", { id: s.patient_id }) : `Patient #${s.patient_id}`);
 }
 
 export default function DoctorConsultationSummaries() {
+  const { t } = useTranslation();
   const { data, isLoading, isError, refetch } = useConsultationSummaries();
   const deleteRx = useDeleteConsultationSummary();
 
@@ -44,7 +46,7 @@ export default function DoctorConsultationSummaries() {
     if (!q) return summaries;
     return summaries.filter((s) => {
       const hay = [
-        patientLabel(s),
+        patientLabel(s, t),
         s.chief_complaint?.main_complaint ?? "",
         s.clinical_assessment?.primary_diagnosis ?? "",
         `#${s.id}`,
@@ -53,16 +55,16 @@ export default function DoctorConsultationSummaries() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [summaries, search]);
+  }, [summaries, search, t]);
 
   const doDelete = (s: ConsultationSummary) => {
     deleteRx.mutate(s.id, {
       onSuccess: () => {
-        toast.success("Summary deleted.");
+        toast.success(t("pages.doctor.summary_deleted"));
         setConfirmDelete(null);
         if (expanded === s.id) setExpanded(null);
       },
-      onError: (err) => toast.error(getErrMsg(err, "Failed to delete the summary.")),
+      onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.summary_delete_failed"))),
     });
   };
 
@@ -70,8 +72,8 @@ export default function DoctorConsultationSummaries() {
     <DashboardLayout role="doctor">
       <div className="flex flex-col h-full">
         <PageHeader
-          title="Consultation Summaries"
-          subtitle="Clinical notes captured after appointments and instant consultations"
+          title={t("pages.doctor.consultation_summaries_title")}
+          subtitle={t("pages.doctor.consultation_summaries_subtitle")}
         />
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
@@ -81,7 +83,7 @@ export default function DoctorConsultationSummaries() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by patient, complaint, diagnosis…"
+              placeholder={t("pages.doctor.search_patient_complaint_diagnosis")}
               className="w-full h-9 rounded-[6px] border border-border bg-background pl-8 pr-8 text-[12px] outline-none focus:border-primary/50"
             />
             {search && (
@@ -96,17 +98,17 @@ export default function DoctorConsultationSummaries() {
 
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-16 text-[12px] text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading summaries…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("pages.doctor.loading_summaries")}
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <AlertCircle className="h-8 w-8 text-destructive/60" />
-              <p className="text-[12px] text-muted-foreground">Couldn’t load consultation summaries.</p>
+              <p className="text-[12px] text-muted-foreground">{t("pages.doctor.summaries_load_failed")}</p>
               <button
                 onClick={() => refetch()}
                 className="h-8 px-3 rounded-[5px] border border-border text-[12px] font-medium hover:bg-muted"
               >
-                Retry
+                {t("pages.doctor.retry")}
               </button>
             </div>
           ) : filtered.length === 0 ? (
@@ -115,10 +117,10 @@ export default function DoctorConsultationSummaries() {
                 <ClipboardList className="h-6 w-6 text-muted-foreground/60" />
               </div>
               <p className="text-[13px] font-semibold text-foreground">
-                {search ? "No summaries match your search" : "No consultation summaries yet"}
+                {search ? t("pages.doctor.no_summaries_match") : t("pages.doctor.no_summaries_yet")}
               </p>
               <p className="text-[11px] text-muted-foreground max-w-[320px]">
-                Summaries appear here after you complete an appointment or instant consultation.
+                {t("pages.doctor.summaries_empty_desc")}
               </p>
             </div>
           ) : (
@@ -154,9 +156,9 @@ export default function DoctorConsultationSummaries() {
                 <Trash2 className="h-4 w-4 text-destructive" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">Delete this summary?</p>
+                <p className="text-[13px] font-semibold text-foreground">{t("pages.doctor.delete_summary_title")}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  Summary #{confirmDelete.id} · {patientLabel(confirmDelete)}. This can’t be undone.
+                  {t("pages.doctor.delete_summary_desc", { id: confirmDelete.id, patient: patientLabel(confirmDelete, t) })}
                 </p>
               </div>
             </div>
@@ -165,7 +167,7 @@ export default function DoctorConsultationSummaries() {
                 onClick={() => setConfirmDelete(null)}
                 className="h-9 px-4 rounded-[5px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={() => doDelete(confirmDelete)}
@@ -173,7 +175,7 @@ export default function DoctorConsultationSummaries() {
                 className="h-9 px-4 rounded-[5px] bg-destructive text-destructive-foreground text-[12px] font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
               >
                 {deleteRx.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Delete
+                {t("pages.doctor.delete")}
               </button>
             </div>
           </div>
@@ -198,6 +200,7 @@ function SummaryCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const isInstant = s.instant_consultation_id != null;
   const alert = s.red_flag_screening?.alert_triggered;
   const diagnosis = s.clinical_assessment?.primary_diagnosis;
@@ -216,17 +219,17 @@ function SummaryCard({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-[13px] font-semibold text-foreground truncate">{patientLabel(s)}</p>
+              <p className="text-[13px] font-semibold text-foreground truncate">{patientLabel(s, t)}</p>
               <span className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium",
                 isInstant ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-600",
               )}>
                 {isInstant ? <Video className="h-2.5 w-2.5" /> : <CalendarClock className="h-2.5 w-2.5" />}
-                {isInstant ? "Instant" : "Appointment"}
+                {isInstant ? t("pages.doctor.instant") : t("pages.doctor.appointment")}
               </span>
               {alert && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[9px] font-medium text-destructive">
-                  <AlertTriangle className="h-2.5 w-2.5" /> Red flag
+                  <AlertTriangle className="h-2.5 w-2.5" /> {t("pages.doctor.red_flag")}
                 </span>
               )}
             </div>
@@ -241,37 +244,37 @@ function SummaryCard({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => openSummaryDocument(s)}
-            aria-label="View document"
-            title="View document"
+            aria-label={t("pages.doctor.view_document")}
+            title={t("pages.doctor.view_document")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => openSummaryDocument(s, true)}
-            aria-label="Download PDF"
-            title="Download / Print PDF"
+            aria-label={t("pages.doctor.download_pdf")}
+            title={t("pages.doctor.download_print_pdf")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Download className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={onEdit}
-            aria-label="Edit summary"
+            aria-label={t("pages.doctor.edit_summary")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={onDelete}
-            aria-label="Delete summary"
+            aria-label={t("pages.doctor.delete_summary")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={onToggle}
-            aria-label="Toggle details"
+            aria-label={t("pages.doctor.toggle_details")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
@@ -282,7 +285,7 @@ function SummaryCard({
       {/* Details */}
       {expanded && (
         <div className="border-t border-border px-4 py-4 space-y-4 bg-muted/10">
-          <Field label="Chief complaint">
+          <Field label={t("pages.doctor.chief_complaint")}>
             {s.chief_complaint?.main_complaint ? (
               <RichTextRenderer value={s.chief_complaint.main_complaint} className="text-[12px] text-foreground" />
             ) : (
@@ -290,25 +293,25 @@ function SummaryCard({
             )}
             {(s.chief_complaint?.duration_value != null) && (
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Duration: {s.chief_complaint.duration_value} {s.chief_complaint.duration_unit ?? ""}
+                {t("pages.doctor.duration_value", { value: s.chief_complaint.duration_value, unit: s.chief_complaint.duration_unit ?? "" })}
               </p>
             )}
           </Field>
 
           {s.history_of_present_illness && (
-            <Field label="History of present illness">
+            <Field label={t("pages.doctor.history_present_illness")}>
               <p className="text-[12px] text-foreground">
                 {[
-                  s.history_of_present_illness.onset && `Onset: ${s.history_of_present_illness.onset}`,
-                  s.history_of_present_illness.location && `Location: ${s.history_of_present_illness.location}`,
-                  s.history_of_present_illness.severity != null && `Severity: ${s.history_of_present_illness.severity}/10`,
+                  s.history_of_present_illness.onset && t("pages.doctor.onset_value", { value: s.history_of_present_illness.onset }),
+                  s.history_of_present_illness.location && t("pages.doctor.location_value", { value: s.history_of_present_illness.location }),
+                  s.history_of_present_illness.severity != null && t("pages.doctor.severity_value", { value: s.history_of_present_illness.severity }),
                 ].filter(Boolean).join(" · ") || <Muted />}
               </p>
             </Field>
           )}
 
           {Object.keys(ros).length > 0 && (
-            <Field label="Review of systems">
+            <Field label={t("pages.doctor.review_of_systems")}>
               <div className="space-y-1.5">
                 {Object.entries(ros).map(([sys, list]) =>
                   (list ?? []).length ? (
@@ -329,7 +332,7 @@ function SummaryCard({
           )}
 
           {activeFlags.length > 0 && (
-            <Field label="Red flags">
+            <Field label={t("pages.doctor.red_flags")}>
               <div className="flex flex-wrap gap-1.5">
                 {activeFlags.map(([k]) => (
                   <span key={k} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
@@ -341,13 +344,13 @@ function SummaryCard({
           )}
 
           {(s.clinical_assessment?.primary_diagnosis || s.clinical_assessment?.severity_classification) && (
-            <Field label="Clinical assessment">
+            <Field label={t("pages.doctor.clinical_assessment")}>
               <p className="text-[12px] text-foreground flex items-center gap-2">
                 <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
                 {s.clinical_assessment?.primary_diagnosis || "—"}
                 {s.clinical_assessment?.severity_classification && (
                   <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
-                    {s.clinical_assessment.severity_classification}
+                    {t(`pages.doctor.${s.clinical_assessment.severity_classification}`)}
                   </span>
                 )}
               </p>
@@ -355,7 +358,7 @@ function SummaryCard({
           )}
 
           {s.management_plan?.followup_plan && (
-            <Field label="Follow-up plan">
+            <Field label={t("pages.doctor.follow_up_plan")}>
               <RichTextRenderer value={s.management_plan.followup_plan} className="text-[12px] text-foreground" />
             </Field>
           )}
@@ -365,7 +368,7 @@ function SummaryCard({
               onClick={() => openSummaryDocument(s)}
               className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
             >
-              <Eye className="h-3 w-3" /> View
+              <Eye className="h-3 w-3" /> {t("pages.doctor.view")}
             </button>
             <button
               onClick={() => openSummaryDocument(s, true)}
@@ -377,13 +380,13 @@ function SummaryCard({
               onClick={onEdit}
               className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
             >
-              <Pencil className="h-3 w-3" /> Edit
+              <Pencil className="h-3 w-3" /> {t("pages.doctor.edit")}
             </button>
             <button
               onClick={onDelete}
               className="h-8 px-3 rounded-[5px] border border-destructive/30 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1.5"
             >
-              <Trash2 className="h-3 w-3" /> Delete
+              <Trash2 className="h-3 w-3" /> {t("pages.doctor.delete")}
             </button>
           </div>
         </div>

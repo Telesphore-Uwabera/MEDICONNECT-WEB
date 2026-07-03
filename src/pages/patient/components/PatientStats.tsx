@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Calendar,
   Activity,
@@ -191,33 +192,6 @@ interface Filters {
 
 // ─── Label Maps ───────────────────────────────────────────────────────────────
 
-const PERIOD_LABELS: Record<Period, string> = {
-  today: "Today",
-  week: "This Week",
-  month: "This Month",
-  year: "This Year",
-  custom: "Custom Range",
-};
-
-const TYPE_LABELS: Record<AppointmentType, string> = {
-  all: "All Types",
-  online: "Online",
-  in_person: "In-Person",
-};
-
-const STATUS_LABELS: Record<StatusFilter, string> = {
-  all: "All Statuses",
-  completed: "Completed",
-  pending: "Pending",
-  cancelled: "Cancelled",
-};
-
-const GROUP_LABELS: Record<ChartGroup, string> = {
-  day: "By Day",
-  week: "By Week",
-  month: "By Month",
-};
-
 const DEFAULT_FILTERS: Filters = {
   period: "month",
   appointment_type: "all",
@@ -335,6 +309,35 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const PatientStats = ({ activeTab }: { activeTab: string }) => {
+  const { t } = useTranslation();
+
+  const PERIOD_LABELS: Record<Period, string> = {
+    today: t("pages.patient.period_today"),
+    week: t("pages.patient.period_week"),
+    month: t("pages.patient.period_month"),
+    year: t("pages.patient.period_year"),
+    custom: t("pages.patient.period_custom"),
+  };
+
+  const TYPE_LABELS: Record<AppointmentType, string> = {
+    all: t("pages.patient.type_all"),
+    online: t("pages.patient.type_online"),
+    in_person: t("pages.patient.type_in_person"),
+  };
+
+  const STATUS_LABELS: Record<StatusFilter, string> = {
+    all: t("pages.patient.status_all"),
+    completed: t("pages.patient.status_completed"),
+    pending: t("pages.patient.status_pending"),
+    cancelled: t("pages.patient.status_cancelled"),
+  };
+
+  const GROUP_LABELS: Record<ChartGroup, string> = {
+    day: t("pages.patient.group_day"),
+    week: t("pages.patient.group_week"),
+    month: t("pages.patient.group_month"),
+  };
+
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [searchInput, setSearchInput] = useState("");
   const [chartType, setChartType] = useState<"area" | "bar">("area");
@@ -388,25 +391,25 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
   if (activeTab === "overview") {
     const nextSteps = [
       {
-        label: "Upcoming visits",
+        label: t("pages.patient.upcoming_visits"),
         value: today?.confirmed ?? 0,
-        hint: "Confirmed for today",
+        hint: t("pages.patient.upcoming_visits_hint"),
         icon: Calendar,
         tone: "text-primary bg-primary/10",
         to: "/patient/appointments",
       },
       {
-        label: "Instant care",
+        label: t("pages.patient.instant_care"),
         value: instant?.active_now ?? today?.instant_active ?? 0,
-        hint: "Active instant sessions",
+        hint: t("pages.patient.instant_care_hint"),
         icon: Zap,
         tone: "text-violet-500 bg-violet-500/10",
         to: "/patient/instant",
       },
       {
-        label: "Prescriptions",
+        label: t("pages.patient.prescriptions_label"),
         value: prescriptions?.active ?? 0,
-        hint: "Active prescriptions",
+        hint: t("pages.patient.prescriptions_hint"),
         icon: Pill,
         tone: "text-emerald-500 bg-emerald-500/10",
         to: "/patient/prescriptions",
@@ -414,10 +417,10 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
     ];
 
     const profileItems = [
-      { label: "Allergies", value: medProfile?.allergies_count ?? 0 },
-      { label: "Conditions", value: medProfile?.conditions_count ?? 0 },
-      { label: "Medications", value: medProfile?.medications_count ?? 0 },
-      { label: "Surgeries", value: medProfile?.surgeries_count ?? 0 },
+      { label: t("pages.patient.allergies"), value: medProfile?.allergies_count ?? 0 },
+      { label: t("pages.patient.conditions"), value: medProfile?.conditions_count ?? 0 },
+      { label: t("pages.patient.medications"), value: medProfile?.medications_count ?? 0 },
+      { label: t("pages.patient.surgeries"), value: medProfile?.surgeries_count ?? 0 },
     ];
 
     return (
@@ -427,20 +430,20 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-                  Care Hub
+                  {t("pages.patient.tab_care_hub")}
                 </p>
                 <h2 className="text-lg font-bold text-foreground mt-1">
-                  Your next care actions
+                  {t("pages.patient.next_care_title")}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Start with scheduled visits, active instant calls, and prescriptions that need attention.
+                  {t("pages.patient.next_care_sub")}
                 </p>
               </div>
               <Link
                 to="/patient/search-doctors"
                 className="h-9 inline-flex items-center justify-center rounded-[6px] bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                Find care
+                {t("pages.patient.find_care")}
               </Link>
             </div>
 
@@ -475,10 +478,10 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Medical Profile
+                  {t("pages.patient.medical_profile_eyebrow")}
                 </p>
                 <h3 className="text-sm font-semibold text-foreground mt-1">
-                  {medProfile?.complete ? "Ready for visits" : "Needs completion"}
+                  {medProfile?.complete ? t("pages.patient.profile_ready") : t("pages.patient.profile_needs_completion")}
                 </h3>
               </div>
               <span
@@ -506,7 +509,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               to="/patient/medical-records"
               className="mt-auto h-9 inline-flex items-center justify-center rounded-[6px] border border-primary/30 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             >
-              Review medical info
+              {t("pages.patient.review_medical_info")}
             </Link>
           </div>
         </div>
@@ -514,14 +517,14 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         <div className="grid lg:grid-cols-3 gap-4">
           <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              This period
+              {t("pages.patient.this_period")}
             </p>
             <div className="grid grid-cols-2 gap-3 mt-4">
               {[
-                { label: "Appointments", value: ps?.total_appointments ?? 0 },
-                { label: "Completed", value: ps?.completed ?? 0 },
-                { label: "Online", value: ps?.online_count ?? 0 },
-                { label: "In-person", value: ps?.in_person_count ?? 0 },
+                { label: t("pages.patient.stat_appointments"), value: ps?.total_appointments ?? 0 },
+                { label: t("pages.patient.stat_completed"), value: ps?.completed ?? 0 },
+                { label: t("pages.patient.stat_online"), value: ps?.online_count ?? 0 },
+                { label: t("pages.patient.stat_in_person"), value: ps?.in_person_count ?? 0 },
               ].map((item) => (
                 <div key={item.label}>
                   <p className=" leading-none font-bold text-foreground text-sm leading-none">
@@ -535,27 +538,27 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
 
           <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              Payments
+              {t("pages.patient.tab_payments")}
             </p>
             <p className=" leading-none font-bold text-foreground text-sm font-bold text-foreground mt-4 leading-none">
               {isLoading ? "..." : `RWF ${Number(spending?.total ?? 0).toLocaleString()}`}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              Total spent this period
+              {t("pages.patient.total_spent_period")}
             </p>
             <p className="text-xs text-emerald-500 mt-3">
-              Insurance saved RWF {Number(spending?.total_insurance_saved ?? 0).toLocaleString()}
+              {t("pages.patient.insurance_saved", { amount: Number(spending?.total_insurance_saved ?? 0).toLocaleString() })}
             </p>
           </div>
 
           <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-sm">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-              Documents
+              {t("pages.patient.documents_eyebrow")}
             </p>
             <div className="space-y-3 mt-4">
               {[
-                { label: "Certificates issued", value: certificates?.issued ?? 0, to: "/patient/fitness-certificates" },
-                { label: "Service bookings", value: ps?.service_bookings_total ?? 0, to: "/patient/service-bookings" },
+                { label: t("pages.patient.certificates_issued"), value: certificates?.issued ?? 0, to: "/patient/fitness-certificates" },
+                { label: t("pages.patient.service_bookings"), value: ps?.service_bookings_total ?? 0, to: "/patient/service-bookings" },
               ].map((item) => (
                 <Link
                   key={item.label}
@@ -580,7 +583,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mr-2">
             <Filter className="w-4 h-4" />
-            Filters
+            {t("pages.patient.filters_label")}
           </div>
 
           {/* Period */}
@@ -731,7 +734,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search doctor, hospital…"
+                placeholder={t("pages.patient.search_doctor_hospital_placeholder")}
                 className={cn(
                   "h-8 pl-8 pr-3 text-xs rounded-[6px] w-48 transition-colors",
                   filters.search && "border-primary/40 bg-primary/5",
@@ -759,7 +762,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               className="h-8 px-4 text-xs rounded-[6px]"
               onClick={() => set("search", searchInput)}
             >
-              Search
+              {t("pages.landing.search_action")}
             </Button>
           </div>
 
@@ -772,7 +775,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40">
             <span className="text-xs text-muted-foreground font-medium mr-1">
-              Active:
+              {t("pages.patient.active_label")}
             </span>
 
             {filters.appointment_type !== "all" && (
@@ -815,7 +818,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               onClick={clearAllFilters}
               className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 ml-2 transition-colors"
             >
-              Clear all
+              {t("pages.patient.clear_all")}
             </button>
           </div>
         )}
@@ -826,45 +829,45 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* ── Today's Snapshot ── */}
           <div>
-            <SectionLabel>Today</SectionLabel>
+            <SectionLabel>{t("pages.patient.today_section")}</SectionLabel>
             <div className="grid grid-cols-3 lg:grid-cols-6 gap-1.5">
               <KpiCard
-                label="Total"
+                label={t("pages.patient.kpi_total")}
                 value={today?.total ?? 0}
                 icon={Calendar}
                 accent="primary"
                 loading={isLoading}
               />
               <KpiCard
-                label="Completed"
+                label={t("pages.patient.kpi_completed")}
                 value={today?.completed ?? 0}
                 icon={CheckCircle2}
                 accent="success"
                 loading={isLoading}
               />
               <KpiCard
-                label="Pending"
+                label={t("pages.patient.kpi_pending")}
                 value={today?.pending ?? 0}
                 icon={Clock}
                 accent="warning"
                 loading={isLoading}
               />
               <KpiCard
-                label="Confirmed"
+                label={t("pages.patient.kpi_confirmed")}
                 value={today?.confirmed ?? 0}
                 icon={CheckCircle2}
                 accent="info"
                 loading={isLoading}
               />
               <KpiCard
-                label="Cancelled"
+                label={t("pages.patient.kpi_cancelled")}
                 value={today?.cancelled ?? 0}
                 icon={XCircle}
                 accent="danger"
                 loading={isLoading}
               />
               <KpiCard
-                label="Instant Active"
+                label={t("pages.patient.kpi_instant_active")}
                 value={today?.instant_active ?? 0}
                 icon={Zap}
                 accent="violet"
@@ -876,7 +879,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
           {/* ── Period Stats ── */}
           <div>
             <SectionLabel>
-              Period —{" "}
+              {t("pages.patient.period_section")} —{" "}
               {filters.period === "custom" &&
                 filters.start_date &&
                 filters.end_date
@@ -887,28 +890,28 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </SectionLabel>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 mb-1.5">
               <KpiCard
-                label="Total Appointments"
+                label={t("pages.patient.kpi_total_appointments")}
                 value={ps?.total_appointments ?? 0}
                 icon={Calendar}
                 accent="primary"
                 loading={isLoading}
               />
               <KpiCard
-                label="Completed"
+                label={t("pages.patient.kpi_completed")}
                 value={ps?.completed ?? 0}
                 icon={CheckCircle2}
                 accent="success"
                 loading={isLoading}
               />
               <KpiCard
-                label="Pending"
+                label={t("pages.patient.kpi_pending")}
                 value={ps?.pending ?? 0}
                 icon={Clock}
                 accent="warning"
                 loading={isLoading}
               />
               <KpiCard
-                label="Cancelled"
+                label={t("pages.patient.kpi_cancelled")}
                 value={ps?.cancelled ?? 0}
                 icon={XCircle}
                 accent="danger"
@@ -917,28 +920,28 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
               <KpiCard
-                label="Online Visits"
+                label={t("pages.patient.kpi_online_visits")}
                 value={ps?.online_count ?? 0}
                 icon={Activity}
                 accent="info"
                 loading={isLoading}
               />
               <KpiCard
-                label="In-Person"
+                label={t("pages.patient.kpi_in_person")}
                 value={ps?.in_person_count ?? 0}
                 icon={Users}
                 accent="primary"
                 loading={isLoading}
               />
               <KpiCard
-                label="Unique Doctors"
+                label={t("pages.patient.kpi_unique_doctors")}
                 value={ps?.unique_doctors ?? 0}
                 icon={Stethoscope}
                 accent="violet"
                 loading={isLoading}
               />
               <KpiCard
-                label="Completion Rate"
+                label={t("pages.patient.kpi_completion_rate")}
                 value={`${completionRate}%`}
                 icon={TrendingUp}
                 accent={completionRate >= 70 ? "success" : "warning"}
@@ -952,11 +955,10 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
             <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between bg-muted/20">
               <div>
                 <h2 className="text-sm font-bold text-foreground">
-                  Appointment Activity
+                  {t("pages.patient.appointment_activity")}
                 </h2>
                 <p className="text-xs font-medium text-muted-foreground/70 mt-1">
-                  {PERIOD_LABELS[filters.period]} · Grouped{" "}
-                  {GROUP_LABELS[filters.chart_group].toLowerCase()}
+                  {PERIOD_LABELS[filters.period]} · {t("pages.patient.grouped_by", { group: GROUP_LABELS[filters.chart_group].toLowerCase() })}
                   {filters.appointment_type !== "all" &&
                     ` · ${TYPE_LABELS[filters.appointment_type]}`}
                   {filters.status !== "all" &&
@@ -964,18 +966,18 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 </p>
               </div>
               <div className="flex items-center gap-1 rounded-[6px] border border-border/60 p-1 bg-background/50">
-                {(["area", "bar"] as const).map((t) => (
+                {(["area", "bar"] as const).map((ct) => (
                   <button
-                    key={t}
-                    onClick={() => setChartType(t)}
+                    key={ct}
+                    onClick={() => setChartType(ct)}
                     className={cn(
                       "px-3 py-1.5 text-xs rounded-[6px] font-bold transition-colors capitalize",
-                      chartType === t
+                      chartType === ct
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
-                    {t}
+                    {ct === "area" ? t("pages.patient.chart_area") : t("pages.patient.chart_bar")}
                   </button>
                 ))}
               </div>
@@ -990,7 +992,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="h-48 flex flex-col items-center justify-center gap-3 text-center">
                   <BarChart2 className="w-6 h-6 text-muted-foreground/30" />
                   <p className="text-xs font-medium text-muted-foreground">
-                    No chart data for this period
+                    {t("pages.patient.no_chart_data")}
                   </p>
                 </div>
               ) : chartType === "area" ? (
@@ -1168,36 +1170,36 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* ── Spending ── */}
           <div>
-            <SectionLabel>Spending</SectionLabel>
+            <SectionLabel>{t("pages.patient.spending_section")}</SectionLabel>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               <KpiCard
-                label="Total Spent"
+                label={t("pages.patient.kpi_total_spent")}
                 value={`RWF${spending?.total ?? 0}`}
                 icon={TrendingUp}
                 accent="primary"
                 loading={isLoading}
                 sub={
                   spending?.change_percent != null
-                    ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% vs prev`
+                    ? `${spending.change_percent > 0 ? "+" : ""}${spending.change_percent}% ${t("pages.patient.vs_prev")}`
                     : undefined
                 }
               />
               <KpiCard
-                label="Insurance Saved"
+                label={t("pages.patient.kpi_insurance_saved")}
                 value={`RWF${spending?.total_insurance_saved ?? 0}`}
                 icon={ShieldCheck}
                 accent="success"
                 loading={isLoading}
               />
               <KpiCard
-                label="Avg / Appointment"
+                label={t("pages.patient.kpi_avg_appointment")}
                 value={`RWF${spending?.breakdown.appointments.avg_per_appointment ?? 0}`}
                 icon={BarChart2}
                 accent="info"
                 loading={isLoading}
               />
               <KpiCard
-                label="Service Bookings"
+                label={t("pages.patient.kpi_service_bookings")}
                 value={spending?.breakdown.service_bookings.booking_count ?? 0}
                 icon={FileText}
                 accent="violet"
@@ -1218,17 +1220,17 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="p-1.5 rounded-[6px] bg-amber-500/10">
                   <Zap className="w-4 h-4 text-amber-500" />
                 </div>
-                Instant Consults
+                {t("pages.patient.instant_consults")}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "Total", val: instant?.total ?? 0 },
-                  { label: "Completed", val: instant?.completed ?? 0 },
-                  { label: "Pending", val: instant?.pending ?? 0 },
-                  { label: "Declined", val: instant?.declined ?? 0 },
-                  { label: "Active Now", val: instant?.active_now ?? 0 },
+                  { label: t("pages.patient.kpi_total"), val: instant?.total ?? 0 },
+                  { label: t("pages.patient.kpi_completed"), val: instant?.completed ?? 0 },
+                  { label: t("pages.patient.kpi_pending"), val: instant?.pending ?? 0 },
+                  { label: t("pages.patient.kpi_declined"), val: instant?.declined ?? 0 },
+                  { label: t("pages.patient.kpi_active_now"), val: instant?.active_now ?? 0 },
                   {
-                    label: "Avg Duration",
+                    label: t("pages.patient.kpi_avg_duration"),
                     val: `${instant?.avg_duration_min ?? 0}m`,
                   },
                 ].map(({ label, val }) => (
@@ -1249,29 +1251,30 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="p-1.5 rounded-[6px] bg-emerald-500/10">
                   <Pill className="w-4 h-4 text-emerald-500" />
                 </div>
-                Prescriptions
+                {t("pages.patient.prescriptions_section")}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "Total", val: prescriptions?.total ?? 0 },
-                  { label: "Active", val: prescriptions?.active ?? 0 },
-                  { label: "Issued", val: prescriptions?.issued ?? 0 },
-                  { label: "Signed", val: prescriptions?.signed ?? 0 },
-                  { label: "Draft", val: prescriptions?.draft ?? 0 },
+                  { key: "total", label: t("pages.patient.kpi_total"), val: prescriptions?.total ?? 0 },
+                  { key: "active", label: t("pages.patient.kpi_active"), val: prescriptions?.active ?? 0 },
+                  { key: "issued", label: t("pages.patient.kpi_issued"), val: prescriptions?.issued ?? 0 },
+                  { key: "signed", label: t("pages.patient.kpi_signed"), val: prescriptions?.signed ?? 0 },
+                  { key: "draft", label: t("pages.patient.kpi_draft"), val: prescriptions?.draft ?? 0 },
                   {
-                    label: "Expiring Soon",
+                    key: "expiring_soon",
+                    label: t("pages.patient.kpi_expiring_soon"),
                     val: prescriptions?.expiring_soon ?? 0,
                   },
-                ].map(({ label, val }) => (
+                ].map(({ key, label, val }) => (
                   <div
-                    key={label}
+                    key={key}
                     className="flex flex-col gap-1 border-b border-border/40 pb-2"
                   >
                     <span className="text-muted-foreground font-medium">{label}</span>
                     <span
                       className={cn(
                         "font-bold text-foreground text-sm",
-                        label === "Expiring Soon" &&
+                        key === "expiring_soon" &&
                         (val as number) > 0 &&
                         "text-amber-500",
                       )}
@@ -1289,29 +1292,30 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="p-1.5 rounded-[6px] bg-sky-500/10">
                   <FileText className="w-4 h-4 text-sky-500" />
                 </div>
-                Certificates
+                {t("pages.patient.certificates_section")}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "Total", val: certificates?.total ?? 0 },
-                  { label: "Issued", val: certificates?.issued ?? 0 },
-                  { label: "Pending", val: certificates?.pending ?? 0 },
-                  { label: "Signed", val: certificates?.signed ?? 0 },
-                  { label: "Red Flags", val: certificates?.had_red_flags ?? 0 },
+                  { key: "total", label: t("pages.patient.kpi_total"), val: certificates?.total ?? 0 },
+                  { key: "issued", label: t("pages.patient.kpi_issued"), val: certificates?.issued ?? 0 },
+                  { key: "pending", label: t("pages.patient.kpi_pending"), val: certificates?.pending ?? 0 },
+                  { key: "signed", label: t("pages.patient.kpi_signed"), val: certificates?.signed ?? 0 },
+                  { key: "red_flags", label: t("pages.patient.kpi_red_flags"), val: certificates?.had_red_flags ?? 0 },
                   {
-                    label: "Req. In-Person",
+                    key: "req_inperson",
+                    label: t("pages.patient.kpi_req_inperson"),
                     val: certificates?.required_inperson ?? 0,
                   },
-                ].map(({ label, val }) => (
+                ].map(({ key, label, val }) => (
                   <div
-                    key={label}
+                    key={key}
                     className="flex flex-col gap-1 border-b border-border/40 pb-2"
                   >
                     <span className="text-muted-foreground font-medium">{label}</span>
                     <span
                       className={cn(
                         "font-bold text-foreground text-sm",
-                        label === "Red Flags" &&
+                        key === "red_flags" &&
                         (val as number) > 0 &&
                         "text-rose-500",
                       )}
@@ -1331,23 +1335,23 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="p-1.5 rounded-[6px] bg-amber-400/10">
                   <Star className="w-4 h-4 text-amber-400" />
                 </div>
-                Reviews
+                {t("pages.patient.reviews_section")}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "Total", val: reviews?.total ?? 0 },
+                  { label: t("pages.patient.kpi_total"), val: reviews?.total ?? 0 },
                   {
-                    label: "Avg Rating",
+                    label: t("pages.patient.kpi_avg_rating"),
                     val:
                       reviews?.avg_rating != null
                         ? reviews.avg_rating.toFixed(1)
                         : "—",
                   },
-                  { label: "5 Star", val: reviews?.five_star ?? 0 },
-                  { label: "4 Star", val: reviews?.four_star ?? 0 },
-                  { label: "3 Star", val: reviews?.three_star ?? 0 },
+                  { label: t("pages.patient.kpi_5star"), val: reviews?.five_star ?? 0 },
+                  { label: t("pages.patient.kpi_4star"), val: reviews?.four_star ?? 0 },
+                  { label: t("pages.patient.kpi_3star"), val: reviews?.three_star ?? 0 },
                   {
-                    label: "Pending Review",
+                    label: t("pages.patient.kpi_pending_review"),
                     val: reviews?.pending_review ?? 0,
                   },
                 ].map(({ label, val }) => (
@@ -1368,30 +1372,30 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                 <div className="p-1.5 rounded-[6px] bg-sky-500/10">
                   <Stethoscope className="w-4 h-4 text-sky-500" />
                 </div>
-                Medical Profile
+                {t("pages.patient.medical_profile_eyebrow")}
                 {medProfile?.complete && (
                   <Badge
                     variant="outline"
                     className="ml-auto text-[10px] px-2 py-0.5 border-emerald-500/30 text-emerald-500 bg-emerald-500/10 rounded-[4px]"
                   >
-                    Complete
+                    {t("pages.patient.complete_badge")}
                   </Badge>
                 )}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  { label: "Allergies", val: medProfile?.allergies_count ?? 0 },
+                  { label: t("pages.patient.allergies"), val: medProfile?.allergies_count ?? 0 },
                   {
-                    label: "Conditions",
+                    label: t("pages.patient.conditions"),
                     val: medProfile?.conditions_count ?? 0,
                   },
                   {
-                    label: "Medications",
+                    label: t("pages.patient.medications"),
                     val: medProfile?.medications_count ?? 0,
                   },
-                  { label: "Surgeries", val: medProfile?.surgeries_count ?? 0 },
-                  { label: "Smoking", val: medProfile?.smoking_status ?? "—" },
-                  { label: "Alcohol", val: medProfile?.alcohol_use ?? "—" },
+                  { label: t("pages.patient.surgeries"), val: medProfile?.surgeries_count ?? 0 },
+                  { label: t("pages.patient.kpi_smoking"), val: medProfile?.smoking_status ?? "—" },
+                  { label: t("pages.patient.kpi_alcohol"), val: medProfile?.alcohol_use ?? "—" },
                 ].map(({ label, val }) => (
                   <div
                     key={label}
@@ -1406,7 +1410,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               </div>
               {medProfile?.has_family_history && (
                 <div className="mt-4 p-2.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 flex items-center gap-2 text-xs font-medium text-amber-600">
-                  <AlertTriangle className="w-4 h-4" /> Has family history recorded
+                  <AlertTriangle className="w-4 h-4" /> {t("pages.patient.family_history_note")}
                 </div>
               )}
             </div>

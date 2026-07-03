@@ -2,6 +2,7 @@
 // doctor list page and the patient appointment/instant summary views.
 
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Stethoscope } from "lucide-react";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
@@ -9,6 +10,7 @@ import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summar
 const pretty = (s: string) => s.replace(/_/g, " ");
 
 export function SummaryDetails({ summary: s }: { summary: ConsultationSummary }) {
+  const { t } = useTranslation();
   const ros = s.review_of_systems ?? {};
   const activeFlags = Object.entries(s.red_flag_screening ?? {}).filter(
     ([k, v]) => v && k !== "alert_triggered",
@@ -17,7 +19,7 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
 
   return (
     <div className="space-y-4">
-      <Field label="Chief complaint">
+      <Field label={t("consult.summary_details.chief_complaint")}>
         {s.chief_complaint?.main_complaint ? (
           <RichTextRenderer value={s.chief_complaint.main_complaint} className="text-sm text-foreground" />
         ) : (
@@ -25,18 +27,18 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
         )}
         {s.chief_complaint?.duration_value != null && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Duration: {s.chief_complaint.duration_value} {s.chief_complaint.duration_unit ?? ""}
+            {t("consult.summary_details.duration", { value: s.chief_complaint.duration_value, unit: s.chief_complaint.duration_unit ?? "" })}
           </p>
         )}
       </Field>
 
       {hpi && (hpi.onset || hpi.location || hpi.severity != null) && (
-        <Field label="History of present illness">
+        <Field label={t("consult.summary_details.history_present_illness")}>
           <p className="text-sm text-foreground">
             {[
-              hpi.onset && `Onset: ${hpi.onset}`,
-              hpi.location && `Location: ${hpi.location}`,
-              hpi.severity != null && `Severity: ${hpi.severity}/10`,
+              hpi.onset && t("consult.summary_details.onset", { value: hpi.onset }),
+              hpi.location && t("consult.summary_details.location", { value: hpi.location }),
+              hpi.severity != null && t("consult.summary_details.severity", { value: hpi.severity }),
             ]
               .filter(Boolean)
               .join(" · ") || <Muted />}
@@ -45,7 +47,7 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
       )}
 
       {Object.values(ros).some((l) => (l ?? []).length) && (
-        <Field label="Review of systems">
+        <Field label={t("consult.summary_details.review_of_systems")}>
           <div className="space-y-1.5">
             {Object.entries(ros).map(([sys, list]) =>
               (list ?? []).length ? (
@@ -66,7 +68,7 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
       )}
 
       {activeFlags.length > 0 && (
-        <Field label="Red flags">
+        <Field label={t("consult.summary_details.red_flags")}>
           <div className="flex flex-wrap gap-1.5">
             {activeFlags.map(([k]) => (
               <span key={k} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
@@ -78,7 +80,7 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
       )}
 
       {(s.clinical_assessment?.primary_diagnosis || s.clinical_assessment?.severity_classification) && (
-        <Field label="Clinical assessment">
+        <Field label={t("consult.summary_details.clinical_assessment")}>
           <p className="text-sm text-foreground flex items-center gap-2 flex-wrap">
             <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
             {s.clinical_assessment?.primary_diagnosis || "—"}
@@ -92,7 +94,7 @@ export function SummaryDetails({ summary: s }: { summary: ConsultationSummary })
       )}
 
       {s.management_plan?.followup_plan && (
-        <Field label="Follow-up plan">
+        <Field label={t("consult.summary_details.follow_up_plan")}>
           <RichTextRenderer value={s.management_plan.followup_plan} className="text-sm text-foreground" />
         </Field>
       )}

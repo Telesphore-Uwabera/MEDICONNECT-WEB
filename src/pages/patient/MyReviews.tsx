@@ -41,6 +41,7 @@ import {
   useUpdateReview,
   useDeleteReview,
   STATUS_DISPLAY,
+  getReviewStatusLabel,
   type Review,
   type ReviewStatus,
   type SubmitReviewPayload,
@@ -54,12 +55,7 @@ import {
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const FILTER_TABS: { id: ReviewStatus | "all"; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "pending", label: "Pending" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
-];
+const FILTER_TAB_IDS: (ReviewStatus | "all")[] = ["all", "pending", "approved", "rejected"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -311,6 +307,7 @@ function AppointmentSearchSelect({
   onSelect: (appt: ApiAppointment | null) => void;
   isLoading: boolean;
 }) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownRect, setDropdownRect] = useState<DOMRect | null>(null);
@@ -370,7 +367,7 @@ function AppointmentSearchSelect({
     });
   }, [appointments, searchQuery]);
 
-  const doctorName = (a: ApiAppointment) => a.doctor?.user?.name ?? "Unknown Doctor";
+  const doctorName = (a: ApiAppointment) => a.doctor?.user?.name ?? t("pages.patient.rev_unknown_doctor");
   const doctorDesig = (a: ApiAppointment) => a.doctor?.designations ?? "";
   const doctorSpec = (a: ApiAppointment) => a.doctor?.specialization ?? "";
   const clinicName = (a: ApiAppointment) => a.clinic?.name ?? "";
@@ -393,10 +390,10 @@ function AppointmentSearchSelect({
       <div className="flex flex-col items-center justify-center py-5 gap-1.5 text-center">
         <ClipboardList className="h-5 w-5 text-muted-foreground" />
         <p className="text-xs text-muted-foreground">
-          No completed appointments available to review.
+          {t("pages.patient.rev_no_completed")}
         </p>
         <p className="text-xs text-muted-foreground">
-          Only completed appointments that haven&apos;t been reviewed yet are shown.
+          {t("pages.patient.rev_only_completed")}
         </p>
       </div>
     );
@@ -425,7 +422,7 @@ function AppointmentSearchSelect({
                   autoFocus
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by doctor, specialization, or clinic…"
+                  placeholder={t("pages.patient.rev_search_appt_placeholder")}
                   className="pl-7 h-7 text-[10px] rounded-[6px] border-border focus-visible:ring-primary"
                 />
               </div>
@@ -437,7 +434,7 @@ function AppointmentSearchSelect({
                 <div className="flex flex-col items-center justify-center py-4 gap-1.5 text-center">
                   <Search className="h-4 w-4 text-muted-foreground" />
                   <p className="text-[10px] text-muted-foreground">
-                    No appointments match your search.
+                    {t("pages.patient.rev_no_appt_match")}
                   </p>
                 </div>
               ) : (
@@ -487,8 +484,9 @@ function AppointmentSearchSelect({
             {/* Footer */}
             <div className="px-2.5 py-1.5 border-t border-border bg-muted/30">
               <p className="text-[9px] text-muted-foreground text-center">
-                {filteredAppointments.length} of {appointments.length} appointment
-                {appointments.length !== 1 ? "s" : ""} available
+                {appointments.length !== 1
+                  ? t("pages.patient.rev_appt_available_plural", { shown: filteredAppointments.length, total: appointments.length })
+                  : t("pages.patient.rev_appt_available_singular", { shown: filteredAppointments.length, total: appointments.length })}
               </p>
             </div>
           </div>,
@@ -525,7 +523,7 @@ function AppointmentSearchSelect({
             </div>
           ) : (
             <span className="text-xs text-muted-foreground flex-1">
-              Search and select an appointment…
+              {t("pages.patient.rev_search_select_placeholder")}
             </span>
           )}
           <ChevronDown
@@ -546,7 +544,7 @@ function AppointmentSearchSelect({
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by doctor, specialization, or clinic…"
+              placeholder={t("pages.patient.rev_search_appt_placeholder")}
               className="pl-7 h-7 text-xs rounded-[6px] border-border focus-visible:ring-primary"
               onClick={(e) => e.stopPropagation()}
             />
@@ -559,7 +557,7 @@ function AppointmentSearchSelect({
             <div className="flex flex-col items-center justify-center py-4 gap-1.5 text-center">
               <Search className="h-4 w-4 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">
-                No appointments match your search.
+                {t("pages.patient.rev_no_appt_match")}
               </p>
             </div>
           ) : (
@@ -613,7 +611,9 @@ function AppointmentSearchSelect({
         {/* Footer count */}
         <div className="px-2.5 py-1.5 border-t border-border bg-muted/30">
           <p className="text-xs text-muted-foreground text-center">
-            {filteredAppointments.length} of {appointments.length} appointment{appointments.length !== 1 ? "s" : ""} available
+            {appointments.length !== 1
+              ? t("pages.patient.rev_appt_available_plural", { shown: filteredAppointments.length, total: appointments.length })
+              : t("pages.patient.rev_appt_available_singular", { shown: filteredAppointments.length, total: appointments.length })}
           </p>
         </div>
       </PopoverContent>
@@ -632,6 +632,7 @@ function SubmitReviewPanel({
   onBack: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { data: apptData, isLoading: apptLoading } =
     useGetPatientAppointments({ status: "completed" });
 
@@ -668,7 +669,7 @@ function SubmitReviewPanel({
         }, 1800);
       },
       onError: (err) => {
-        setError(err.message ?? "Something went wrong. Please try again.");
+        setError(err.message ?? t("fitness.pp_generic_error"));
       },
     });
   };
@@ -691,12 +692,12 @@ function SubmitReviewPanel({
           onClick={onBack}
           className="h-6 text-xs rounded-[6px] border-border gap-1 shrink-0 px-2"
         >
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("common.back")}
         </Button>
         <div>
-          <p className="text-xs font-semibold text-foreground">Write a Review</p>
+          <p className="text-xs font-semibold text-foreground">{t("pages.patient.rev_write_review")}</p>
           <p className="text-xs text-muted-foreground hidden sm:block">
-            Share your experience with a completed appointment
+            {t("pages.patient.rev_write_review_sub")}
           </p>
         </div>
       </div>
@@ -709,7 +710,7 @@ function SubmitReviewPanel({
             <div className="flex items-center gap-2 p-2.5 rounded-[6px] border border-emerald-400/30 bg-emerald-500/10">
               <Check className="h-4 w-4 text-emerald-600 shrink-0" />
               <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                {doneMessage || "Review submitted! It will appear after approval."}
+                {doneMessage || t("pages.patient.rev_submit_success_fallback")}
               </p>
             </div>
           )}
@@ -721,7 +722,7 @@ function SubmitReviewPanel({
             </div>
           )}
 
-          <SectionCard icon={CalendarDays} title="Select Appointment">
+          <SectionCard icon={CalendarDays} title={t("pages.patient.rev_select_appointment")}>
             <div className="space-y-2">
               <AppointmentSearchSelect
                 appointments={eligibleAppointments}
@@ -736,14 +737,14 @@ function SubmitReviewPanel({
                   onClick={handleClearSelection}
                   className="h-5 text-xs text-muted-foreground hover:text-destructive gap-1 px-1"
                 >
-                  <X className="h-4 w-4" /> Clear selection
+                  <X className="h-4 w-4" /> {t("pages.patient.rev_clear_selection")}
                 </Button>
               )}
             </div>
           </SectionCard>
 
           {selectedAppt && (
-            <SectionCard icon={Star} title="Your Rating">
+            <SectionCard icon={Star} title={t("pages.patient.rev_your_rating")}>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 p-2 rounded-[6px] border border-primary/20 bg-primary/5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center text-[8px] font-bold text-primary-foreground bg-primary border border-primary/20 shrink-0">
@@ -761,7 +762,7 @@ function SubmitReviewPanel({
 
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Rating <span className="text-destructive">*</span>
+                    {t("pages.patient.rev_rating_label")} <span className="text-destructive">*</span>
                   </span>
                   <div className="flex items-center gap-2">
                     <StarRating rating={rating} size="lg" interactive onChange={setRating} />
@@ -773,20 +774,20 @@ function SubmitReviewPanel({
                   </div>
                   {rating === 0 && (
                     <p className="text-xs text-muted-foreground">
-                    Click a star to rate
+                    {t("pages.patient.rev_click_star")}
                   </p>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Comment (optional)
+                    {t("pages.patient.rev_comment_optional")}
                   </span>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     rows={3}
-                    placeholder="Share your experience…"
+                    placeholder={t("pages.patient.rev_comment_placeholder")}
                     className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                   />
                 </div>
@@ -803,7 +804,7 @@ function SubmitReviewPanel({
                     htmlFor="anon-submit"
                     className="text-xs text-muted-foreground cursor-pointer select-none"
                   >
-                    Submit anonymously
+                    {t("pages.patient.rev_submit_anonymously")}
                   </label>
                 </div>
 
@@ -815,15 +816,15 @@ function SubmitReviewPanel({
                 >
                   {done ? (
                     <>
-                      <Check className="h-4 w-4" /> Submitted
+                      <Check className="h-4 w-4" /> {t("pages.patient.rev_submitted")}
                     </>
                   ) : submitMut.isPending ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Submitting…
+                      <Loader2 className="h-4 w-4 animate-spin" /> {t("pages.patient.rev_submitting")}
                     </>
                   ) : (
                     <>
-                      <Star className="h-4 w-4" /> Submit Review
+                      <Star className="h-4 w-4" /> {t("pages.patient.rev_submit_review")}
                     </>
                   )}
                 </Button>
@@ -849,6 +850,7 @@ function ReviewCard({
   onOpen: () => void;
   compact?: boolean;
 }) {
+  const { t } = useTranslation();
   const meta = STATUS_DISPLAY[review.status];
 
   const StatusIcon =
@@ -884,12 +886,12 @@ function ReviewCard({
             )}
           >
             <StatusIcon className="h-2 w-2" />
-            {meta.label}
+            {getReviewStatusLabel(t, review.status)}
           </Badge>
           {review.is_anonymous && (
             <Badge className="text-xs font-medium rounded-[4px] px-1.5 py-0 border h-4 bg-secondary text-muted-foreground border-border flex items-center gap-0.5">
               <EyeOff className="h-2 w-2" />
-              Anon
+              {t("pages.patient.rev_anon")}
             </Badge>
           )}
         </div>
@@ -930,6 +932,7 @@ function ReviewDetail({
   onBack: () => void;
   onDeleted: () => void;
 }) {
+  const { t } = useTranslation();
   const meta = STATUS_DISPLAY[review.status];
   const isPending = review.status === "pending";
 
@@ -969,7 +972,7 @@ function ReviewDetail({
       {
         onSuccess: ({ message }) => {
           setSaved(true);
-          setSavedMessage(message || "Review updated.");
+          setSavedMessage(message || t("pages.patient.rev_updated_fallback"));
           setEditing(false);
           setTimeout(() => setSaved(false), 3000);
         },
@@ -986,7 +989,7 @@ function ReviewDetail({
     deleteMut.mutate(review.id, {
       onSuccess: onDeleted,
       onError: (err) => {
-        setDeleteError(err.message ?? "Failed to delete review.");
+        setDeleteError(err.message ?? t("pages.patient.rev_delete_failed"));
         setConfirmDelete(false);
       },
     });
@@ -1003,7 +1006,7 @@ function ReviewDetail({
             onClick={onBack}
             className="h-6 text-xs rounded-[6px] border-border gap-1 shrink-0 px-2"
           >
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="h-4 w-4" /> {t("common.back")}
           </Button>
           <div className="flex-1 min-w-0 sm:flex-none">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1020,7 +1023,7 @@ function ReviewDetail({
                 )}
               >
                 <StatusIcon className="h-2 w-2" />
-                {meta.label}
+                {getReviewStatusLabel(t, review.status)}
               </Badge>
             </div>
           </div>
@@ -1039,7 +1042,7 @@ function ReviewDetail({
               disabled={updateMut.isPending || deleteMut.isPending}
             >
               <Pencil className="h-4 w-4" />
-              {editing ? "Cancel" : "Edit"}
+              {editing ? t("common.cancel") : t("common.edit")}
             </Button>
             <Button
               variant="outline"
@@ -1058,7 +1061,7 @@ function ReviewDetail({
               ) : (
                 <Trash2 className="h-4 w-4" />
               )}
-              {confirmDelete ? "Confirm" : "Delete"}
+              {confirmDelete ? t("common.confirm") : t("common.delete")}
             </Button>
             {confirmDelete && (
               <Button
@@ -1067,7 +1070,7 @@ function ReviewDetail({
                 className="h-6 text-xs rounded-[6px] border-border gap-1 px-2"
                 onClick={() => setConfirmDelete(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             )}
           </div>
@@ -1097,13 +1100,13 @@ function ReviewDetail({
           <div className="flex items-start gap-2 p-2.5 rounded-[6px] border border-destructive/30 bg-destructive/10">
             <XCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
             <p className="text-xs text-destructive">
-              <strong>Rejection reason: </strong>
+              <strong>{t("pages.patient.rev_rejection_reason")}</strong>
               {review.rejection_reason}
             </p>
           </div>
         )}
 
-        <SectionCard icon={Stethoscope} title="Doctor">
+        <SectionCard icon={Stethoscope} title={t("pages.patient.th_doctor")}>
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
               {getInitials(review.doctor.name)}
@@ -1124,17 +1127,17 @@ function ReviewDetail({
           </div>
         </SectionCard>
 
-        <SectionCard icon={CalendarDays} title="Review Details">
+        <SectionCard icon={CalendarDays} title={t("pages.patient.rev_details_section")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-            <InfoRow label="Appointment ID" value={`#${review.appointment_id}`} />
-            <InfoRow label="Submitted" value={fmtDateTime(review.created_at)} />
-            <InfoRow label="Last updated" value={fmtDateTime(review.updated_at)} />
+            <InfoRow label={t("pages.patient.rev_appointment_id")} value={`#${review.appointment_id}`} />
+            <InfoRow label={t("fitness.submitted_label")} value={fmtDateTime(review.created_at)} />
+            <InfoRow label={t("fitness.last_updated_label")} value={fmtDateTime(review.updated_at)} />
             <InfoRow
-              label="Anonymous"
+              label={t("pages.patient.rev_anonymous_label")}
               value={
                 <StatusChip
                   ok={review.is_anonymous}
-                  label={review.is_anonymous ? "Yes" : "No"}
+                  label={review.is_anonymous ? t("fitness.yes") : t("fitness.no")}
                 />
               }
             />
@@ -1143,13 +1146,13 @@ function ReviewDetail({
 
         <SectionCard
           icon={editing ? Pencil : MessageSquare}
-          title={editing ? "Edit your review" : "Your review"}
+          title={editing ? t("pages.patient.rev_edit_your_review") : t("pages.patient.rev_your_review")}
         >
           {editing ? (
             <div className="space-y-3">
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Rating <span className="text-destructive">*</span>
+                  {t("pages.patient.rev_rating_label")} <span className="text-destructive">*</span>
                 </span>
                 <div className="flex items-center gap-2">
                   <StarRating
@@ -1166,13 +1169,13 @@ function ReviewDetail({
 
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Comment (optional)
+                  {t("pages.patient.rev_comment_optional")}
                 </span>
                 <textarea
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={3}
-                  placeholder="Share your experience…"
+                  placeholder={t("pages.patient.rev_comment_placeholder")}
                   className="w-full rounded-[6px] border border-border bg-background px-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                 />
               </div>
@@ -1189,7 +1192,7 @@ function ReviewDetail({
                   htmlFor="anon-edit"
                   className="text-xs text-muted-foreground cursor-pointer select-none"
                 >
-                  Submit anonymously
+                  {t("pages.patient.rev_submit_anonymously")}
                 </label>
               </div>
 
@@ -1206,15 +1209,15 @@ function ReviewDetail({
               >
                 {saved ? (
                   <>
-                    <Check className="h-4 w-4" /> Saved
+                    <Check className="h-4 w-4" /> {t("pages.patient.rev_saved")}
                   </>
                 ) : updateMut.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+                    <Loader2 className="h-4 w-4 animate-spin" /> {t("pages.patient.rev_saving")}
                   </>
                 ) : (
                   <>
-                    <Pencil className="h-4 w-4" /> Save changes
+                    <Pencil className="h-4 w-4" /> {t("pages.patient.rev_save_changes")}
                   </>
                 )}
               </Button>
@@ -1233,23 +1236,23 @@ function ReviewDetail({
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground italic">
-                  No comment provided.
+                  {t("pages.patient.rev_no_comment")}
                 </p>
               )}
               {review.is_anonymous && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <EyeOff className="h-4 w-4" />
-                  Submitted anonymously
+                  {t("pages.patient.rev_submitted_anon")}
                 </div>
               )}
             </div>
           )}
         </SectionCard>
 
-        <SectionCard icon={Eye} title="Visibility">
+        <SectionCard icon={Eye} title={t("pages.patient.rev_visibility")}>
           <div className="space-y-1.5">
             <InfoRow
-              label="Status"
+              label={t("pages.patient.appt_filter_status_label")}
               value={
                 <Badge
                   className={cn(
@@ -1258,16 +1261,16 @@ function ReviewDetail({
                   )}
                 >
                   <StatusIcon className="h-2 w-2" />
-                  {meta.label}
+                  {getReviewStatusLabel(t, review.status)}
                 </Badge>
               }
             />
             <p className="text-xs text-muted-foreground leading-relaxed">
               {review.status === "pending"
-                ? "Your review is awaiting moderation. It will appear publicly once approved."
+                ? t("pages.patient.rev_status_pending_desc")
                 : review.status === "approved"
-                  ? "Your review is live and visible to other patients."
-                  : "Your review was not approved. See the rejection reason above."}
+                  ? t("pages.patient.rev_status_approved_desc")
+                  : t("pages.patient.rev_status_rejected_desc")}
             </p>
           </div>
         </SectionCard>
@@ -1312,8 +1315,11 @@ function PatientReviews() {
     return matchFilter && matchSearch;
   });
 
+  const tabLabel = (id: ReviewStatus | "all") =>
+    id === "all" ? t("pages.patient.all") : getReviewStatusLabel(t, id);
+
   const counts = Object.fromEntries(
-    FILTER_TABS.map(({ id }) => [
+    FILTER_TAB_IDS.map((id) => [
       id,
       id === "all"
         ? reviews.length
@@ -1332,11 +1338,8 @@ function PatientReviews() {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.reviews_title", "My Reviews")}
-          subtitle={t(
-            "pages.patient.reviews_sub",
-            "Manage your feedback for past consultations",
-          )}
+          title={t("pages.patient.rev_title")}
+          subtitle={t("pages.patient.rev_sub")}
         />
 
         <div className="px-3 py-4 sm:px-5 sm:py-6">
@@ -1354,7 +1357,7 @@ function PatientReviews() {
               {/* Filter tabs + Write Review button */}
               <div className="flex items-center border-b border-border bg-muted/30 px-2 overflow-x-auto gap-1">
                 <div className="flex items-center flex-1 overflow-x-auto">
-                  {FILTER_TABS.map(({ id, label }) => (
+                  {FILTER_TAB_IDS.map((id) => (
                     <button
                       key={id}
                       onClick={() => setActiveFilter(id)}
@@ -1365,7 +1368,7 @@ function PatientReviews() {
                           : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
                       )}
                     >
-                      {label}
+                      {tabLabel(id)}
                       <span
                         className={cn(
                           "text-xs font-semibold rounded-full px-1 py-0 min-w-[16px] text-center leading-4",
@@ -1387,7 +1390,7 @@ function PatientReviews() {
                     onClick={() => setPanel({ mode: "submit" })}
                   >
                     <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Review</span>
+                    <span className="hidden sm:inline">{t("pages.patient.rev_review_btn")}</span>
                     <span className="sm:hidden">+</span>
                   </Button>
                 )}
@@ -1400,7 +1403,7 @@ function PatientReviews() {
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search doctor or comment…"
+                    placeholder={t("pages.patient.rev_search_placeholder")}
                     className="pl-7 h-7 text-xs rounded-[6px] border-border focus-visible:ring-primary"
                   />
                 </div>
@@ -1414,7 +1417,9 @@ function PatientReviews() {
                 >
                   <Star className="h-4 w-4 text-primary shrink-0" />
                   <p className="text-xs text-primary font-medium">
-                    {reviewableCount} appointment{reviewableCount !== 1 ? "s" : ""} awaiting review
+                    {reviewableCount !== 1
+                      ? t("pages.patient.rev_awaiting_plural", { count: reviewableCount })
+                      : t("pages.patient.rev_awaiting_singular", { count: reviewableCount })}
                   </p>
                   <ChevronRight className="h-4 w-4 text-primary ml-auto shrink-0" />
                 </div>
@@ -1433,8 +1438,8 @@ function PatientReviews() {
                     <ClipboardList className="h-5 w-5 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground text-center">
                       {search || activeFilter !== "all"
-                        ? "No reviews match your filter."
-                        : "No reviews yet."}
+                        ? t("pages.patient.rev_no_match")
+                        : t("pages.patient.rev_none")}
                     </p>
                   </div>
                 ) : (
@@ -1474,10 +1479,10 @@ function PatientReviews() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-foreground">
-                      Select a review
+                      {t("pages.patient.rev_select_review")}
                     </p>
                     <p className="text-xs text-muted-foreground max-w-[200px]">
-                      Click any review to see details, edit, or delete it.
+                      {t("pages.patient.rev_select_hint")}
                     </p>
                   </div>
                   {reviewableCount > 0 && (
@@ -1488,7 +1493,7 @@ function PatientReviews() {
                       onClick={() => setPanel({ mode: "submit" })}
                     >
                       <Plus className="h-4 w-4" />
-                      Write a review
+                      {t("pages.patient.rev_write_a_review")}
                     </Button>
                   )}
                 </div>

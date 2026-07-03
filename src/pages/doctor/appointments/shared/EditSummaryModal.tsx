@@ -2,6 +2,7 @@
 // Seeded from the summary; saves all SOAP sections in one update.
 
 import { useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X, Loader2, AlertTriangle, Stethoscope, ClipboardList,
   Activity, ShieldAlert, Pill, Plus,
@@ -71,6 +72,7 @@ function SectionHeader({ icon, title, hint }: { icon: ReactNode; title: string; 
 }
 
 export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
+  const { t } = useTranslation();
   const cc = summary.chief_complaint ?? {};
   const hpi = summary.history_of_present_illness ?? {};
   const ca = summary.clinical_assessment ?? {};
@@ -135,7 +137,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
     setRedFlags((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const allSystems: Array<{ key: string; label: string; preset: string[] }> = [
-    ...SYSTEMS.map((s) => ({ key: s.key, label: s.label, preset: s.symptoms })),
+    ...SYSTEMS.map((s) => ({ key: s.key, label: t(s.labelKey), preset: s.symptoms })),
     ...customSystems.map((s) => ({ key: s.key, label: s.label, preset: [] as string[] })),
   ];
 
@@ -163,7 +165,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
 
   const handleSave = () => {
     if (!hasRichTextContent(mainComplaint)) {
-      toast.error("Chief complaint can't be empty.");
+      toast.error(t("pages.doctor.chief_complaint_required"));
       return;
     }
 
@@ -199,11 +201,11 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
       { id: summary.id, payload },
       {
         onSuccess: () => {
-          toast.success("Summary updated.");
+          toast.success(t("pages.doctor.summary_updated"));
           onSaved?.();
           onClose();
         },
-        onError: (err) => toast.error(getErrMsg(err, "Failed to update the summary.")),
+        onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.summary_update_failed"))),
       },
     );
   };
@@ -222,13 +224,13 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
               <ClipboardList className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold text-foreground">Edit consultation summary</h2>
-              <p className="text-[10px] text-muted-foreground truncate">Summary #{summary.id}</p>
+              <h2 className="text-[13px] font-semibold text-foreground">{t("pages.doctor.edit_consultation_summary")}</h2>
+              <p className="text-[10px] text-muted-foreground truncate">{t("pages.doctor.summary_number", { id: summary.id })}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("pages.doctor.close")}
             className="h-7 w-7 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
           >
             <X className="h-4 w-4" />
@@ -239,20 +241,20 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
           {/* Chief complaint */}
           <section className="space-y-3">
-            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title="Chief complaint" hint="Required" />
+            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title={t("pages.doctor.chief_complaint")} hint={t("pages.doctor.required")} />
             <div className="space-y-1.5">
-              <label className={labelCls}>Main complaint *</label>
+              <label className={labelCls}>{t("pages.doctor.main_complaint_required")}</label>
               <RichTextarea
                 value={mainComplaint}
                 onChange={setMainComplaint}
-                placeholder="e.g. Fever and cough for 3 days"
+                placeholder={t("pages.doctor.main_complaint_placeholder")}
                 minHeight={80}
                 editorClassName="text-[12px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className={labelCls}>Duration</label>
+                <label className={labelCls}>{t("pages.doctor.duration")}</label>
                 <input
                   type="number"
                   min={0}
@@ -263,14 +265,14 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className={labelCls}>Unit</label>
+                <label className={labelCls}>{t("pages.doctor.unit")}</label>
                 <select
                   value={durationUnit}
                   onChange={(e) => setDurationUnit(e.target.value)}
                   className={cn(inputCls, "appearance-none")}
                 >
                   {DURATION_UNITS.map((u) => (
-                    <option key={u} value={u}>{u}</option>
+                    <option key={u} value={u}>{t(`pages.doctor.duration_unit_${u}`)}</option>
                   ))}
                 </select>
               </div>
@@ -279,33 +281,33 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
 
           {/* HPI */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title="History of present illness" />
+            <SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title={t("pages.doctor.history_present_illness")} />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className={labelCls}>Onset</label>
+                <label className={labelCls}>{t("pages.doctor.onset")}</label>
                 <select
                   value={onset}
                   onChange={(e) => setOnset(e.target.value)}
                   className={cn(inputCls, "appearance-none")}
                 >
                   <option value="">—</option>
-                  <option value="sudden">Sudden</option>
-                  <option value="gradual">Gradual</option>
+                  <option value="sudden">{t("pages.doctor.sudden")}</option>
+                  <option value="gradual">{t("pages.doctor.gradual")}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className={labelCls}>Location</label>
+                <label className={labelCls}>{t("pages.doctor.location")}</label>
                 <input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. chest"
+                  placeholder={t("pages.doctor.location_placeholder")}
                   className={inputCls}
                 />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className={labelCls}>
-                Severity {severity > 0 ? `· ${severity}/10` : "· not set"}
+                {t("pages.doctor.severity")} {severity > 0 ? `- ${severity}/10` : `- ${t("pages.doctor.not_set")}`}
               </label>
               <input
                 type="range"
@@ -320,7 +322,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
 
           {/* ROS */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<ClipboardList className="h-3.5 w-3.5" />} title="Review of systems" hint="Tick reported symptoms — add your own with +" />
+            <SectionHeader icon={<ClipboardList className="h-3.5 w-3.5" />} title={t("pages.doctor.review_of_systems")} hint={t("pages.doctor.review_systems_hint")} />
             <div className="space-y-3">
               {allSystems.map((sys) => {
                 const symptoms = uniq([...sys.preset, ...(ros[sys.key] ?? [])]);
@@ -342,7 +344,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                                 : "border-border text-muted-foreground hover:bg-muted/50",
                             )}
                           >
-                            {pretty(sym)}
+                            {t(`pages.doctor.symptom_${sym}`)}
                           </button>
                         );
                       })}
@@ -356,13 +358,13 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                               addCustomSymptom(sys.key);
                             }
                           }}
-                          placeholder="Add symptom"
+                          placeholder={t("pages.doctor.add_symptom")}
                           className="h-7 w-28 px-2 rounded-full border border-dashed border-border bg-background text-[11px] text-foreground outline-none focus:border-primary/50"
                         />
                         <button
                           type="button"
                           onClick={() => addCustomSymptom(sys.key)}
-                          aria-label={`Add symptom to ${sys.label}`}
+                          aria-label={t("pages.doctor.add_symptom_to", { system: sys.label })}
                           className="h-6 w-6 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                         >
                           <Plus className="h-3 w-3" />
@@ -383,7 +385,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                     addCustomSystem();
                   }
                 }}
-                placeholder="Add a system (e.g. Musculoskeletal)"
+                placeholder={t("pages.doctor.add_system_placeholder")}
                 className={cn(inputCls, "h-8")}
               />
               <button
@@ -391,14 +393,14 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                 onClick={addCustomSystem}
                 className="h-8 px-3 rounded-[5px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1 shrink-0"
               >
-                <Plus className="h-3.5 w-3.5" /> System
+                <Plus className="h-3.5 w-3.5" /> {t("pages.doctor.system")}
               </button>
             </div>
           </section>
 
           {/* Red flags */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<ShieldAlert className="h-3.5 w-3.5" />} title="Red-flag screening" />
+            <SectionHeader icon={<ShieldAlert className="h-3.5 w-3.5" />} title={t("pages.doctor.red_flag_screening")} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {RED_FLAGS.map((f) => (
                 <label
@@ -414,54 +416,54 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
                     onChange={() => toggleFlag(f.key)}
                     className="h-3.5 w-3.5 accent-destructive"
                   />
-                  <span className="text-[11px] font-medium text-foreground">{f.label}</span>
+                  <span className="text-[11px] font-medium text-foreground">{t(f.labelKey)}</span>
                 </label>
               ))}
             </div>
             {alertTriggered && (
               <div className="flex items-center gap-2 rounded-[5px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-[11px] font-medium text-destructive">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                Red flag present — escalation / in-person care may be required.
+                {t("pages.doctor.red_flag_present_desc")}
               </div>
             )}
           </section>
 
           {/* Assessment */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title="Clinical assessment" />
+            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title={t("pages.doctor.clinical_assessment")} />
             <div className="space-y-1.5">
-              <label className={labelCls}>Primary diagnosis</label>
+              <label className={labelCls}>{t("pages.doctor.primary_diagnosis")}</label>
               <input
                 value={primaryDiagnosis}
                 onChange={(e) => setPrimaryDiagnosis(e.target.value)}
-                placeholder="e.g. Community-acquired pneumonia"
+                placeholder={t("pages.doctor.primary_diagnosis_placeholder")}
                 className={inputCls}
               />
             </div>
             <div className="space-y-1.5">
-              <label className={labelCls}>Severity classification</label>
+              <label className={labelCls}>{t("pages.doctor.severity_classification")}</label>
               <select
                 value={severityClass}
                 onChange={(e) => setSeverityClass(e.target.value)}
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">—</option>
-                <option value="mild">Mild</option>
-                <option value="moderate">Moderate</option>
-                <option value="severe">Severe</option>
+                <option value="mild">{t("pages.doctor.mild")}</option>
+                <option value="moderate">{t("pages.doctor.moderate")}</option>
+                <option value="severe">{t("pages.doctor.severe")}</option>
               </select>
             </div>
           </section>
 
           {/* Management plan */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<Pill className="h-3.5 w-3.5" />} title="Management plan" hint="Medications are managed via prescriptions" />
+            <SectionHeader icon={<Pill className="h-3.5 w-3.5" />} title={t("pages.doctor.management_plan")} hint={t("pages.doctor.medications_managed_prescriptions")} />
             <div className="space-y-1.5">
-              <label className={labelCls}>Follow-up plan</label>
+              <label className={labelCls}>{t("pages.doctor.follow_up_plan")}</label>
               <RichTextarea
                 value={followup}
                 onChange={setFollowup}
-                placeholder="e.g. Review in 5 days; return earlier if breathing worsens"
+                placeholder={t("pages.doctor.follow_up_placeholder")}
                 minHeight={80}
                 editorClassName="text-[12px]"
               />
@@ -475,7 +477,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
             onClick={onClose}
             className="h-9 px-4 rounded-[5px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSave}
@@ -483,7 +485,7 @@ export function EditSummaryModal({ summary, onClose, onSaved }: Props) {
             className="h-9 px-4 rounded-[5px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Save changes
+            {t("pages.doctor.save_changes")}
           </button>
         </div>
       </div>

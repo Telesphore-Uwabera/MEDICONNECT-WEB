@@ -1,5 +1,7 @@
 // components/PaymentPanel.tsx
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ShieldCheck,
   RefreshCw,
@@ -101,7 +103,7 @@ function isInvoiceExpiredError(err: unknown): boolean {
   return false;
 }
 
-function getErrorMessage(err: unknown): string {
+function getErrorMessage(err: unknown, t: TFunction): string {
   if (err && typeof err === "object") {
     const apiErr = err as ApiError;
     // Use first error detail if available
@@ -109,23 +111,27 @@ function getErrorMessage(err: unknown): string {
     if (apiErr.message) return apiErr.message;
   }
   if (err instanceof Error) return err.message;
-  return "Something went wrong. Please try again.";
+  return t("fitness.pp_generic_error");
 }
 
 // ─── PaymentPanel ─────────────────────────────────────────────────────────────
 
 export default function PaymentPanel({
-  title = "Complete payment to submit",
-  description = "Pay the submission fee to send your request to a doctor for review.",
+  title,
+  description,
   paymentInfo,
   onPaymentConfirmed,
   onCancel,
-  cancelLabel = "Back",
+  cancelLabel,
   onRefreshInvoice,
   isRefreshingInvoice = false,
   onPayInitiate,
   onVerifyPayment,
 }: PaymentPanelProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t("fitness.payment_title");
+  const resolvedDescription = description ?? t("fitness.payment_description");
+  const resolvedCancelLabel = cancelLabel ?? t("fitness.pp_back");
   const [phase, setPhase] = useState<
     "idle" | "loading" | "initiating" | "verifying" | "done" | "error"
   >("idle");
@@ -151,10 +157,11 @@ export default function PaymentPanel({
       // Parent should update the paymentInfo prop with the new invoice
     } catch (err) {
       setError({
-        message: getErrorMessage(err),
+        message: getErrorMessage(err, t),
         isExpired: isInvoiceExpiredError(err),
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onRefreshInvoice]);
 
   // ─── REAL payment flow — mirrors ConnectDialog exactly ───────────────────────
@@ -181,7 +188,7 @@ export default function PaymentPanel({
       }
 
       if (!publicKey || !invoiceNumber) {
-        throw new Error("Payment could not be initialized.");
+        throw new Error(t("fitness.pp_payment_could_not_initialize"));
       }
 
       setPhase("initiating");
@@ -201,8 +208,8 @@ export default function PaymentPanel({
             const expired = isInvoiceExpiredError(err);
             setError({
               message: expired
-                ? getErrorMessage(err)
-                : "Payment was not completed. Please try again.",
+                ? getErrorMessage(err, t)
+                : t("fitness.pp_payment_not_completed"),
               isExpired: expired,
             });
             setPhase("idle");
@@ -220,7 +227,7 @@ export default function PaymentPanel({
                   onPaymentConfirmed();
                 } else {
                   setError({
-                    message: "Payment verification failed. Please try again.",
+                    message: t("fitness.pp_verification_failed"),
                     isExpired: false,
                   });
                   setPhase("idle");
@@ -229,7 +236,7 @@ export default function PaymentPanel({
               .catch((verifyErr) => {
                 const expired = isInvoiceExpiredError(verifyErr);
                 setError({
-                  message: getErrorMessage(verifyErr),
+                  message: getErrorMessage(verifyErr, t),
                   isExpired: expired,
                 });
                 setPhase("idle");
@@ -243,11 +250,12 @@ export default function PaymentPanel({
     } catch (err: unknown) {
       const expired = isInvoiceExpiredError(err);
       setError({
-        message: getErrorMessage(err),
+        message: getErrorMessage(err, t),
         isExpired: expired,
       });
       setPhase("idle");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentInfo, onPayInitiate, onVerifyPayment, onPaymentConfirmed]);
 
   // ─── Verifying state ─────────────────────────────────────────────────────────
@@ -258,10 +266,10 @@ export default function PaymentPanel({
         <div className="flex flex-col items-center gap-2 py-6 text-center">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
           <p className="text-xs font-bold text-foreground">
-            Confirming your payment…
+            {t("fitness.pp_confirming_payment")}
           </p>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            This usually takes a few seconds. Please don't close this window.
+            {t("fitness.pp_confirming_hint")}
           </p>
         </div>
       </div>
@@ -277,9 +285,9 @@ export default function PaymentPanel({
           <div className="flex h-12 w-12 items-center justify-center rounded-[5px] border border-success/35 bg-success/15">
             <Check className="h-5 w-5 text-success" strokeWidth={2.5} />
           </div>
-          <p className="text-sm font-bold tracking-tight text-foreground">Payment confirmed!</p>
+          <p className="text-sm font-bold tracking-tight text-foreground">{t("fitness.pp_payment_confirmed")}</p>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Your request has been sent to a doctor for review.
+            {t("fitness.pp_payment_confirmed_desc")}
           </p>
         </div>
       </div>
@@ -293,12 +301,12 @@ export default function PaymentPanel({
   return (
     <div className="flex flex-col gap-4 rounded-[5px] border border-border bg-card p-5 pt-6 text-card-foreground max-w-[400px] w-full">
       {/* Header */}
-      {title && (
+      {resolvedTitle && (
         <div>
-          <p className="text-sm font-bold tracking-tight text-foreground">{title}</p>
-          {description && (
+          <p className="text-sm font-bold tracking-tight text-foreground">{resolvedTitle}</p>
+          {resolvedDescription && (
             <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              {description}
+              {resolvedDescription}
             </p>
           )}
         </div>
@@ -307,14 +315,14 @@ export default function PaymentPanel({
       {/* Invoice summary */}
       <div className="overflow-hidden rounded-[5px] border border-border bg-muted/50">
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-[11px] text-muted-foreground">Invoice</span>
+          <span className="text-[11px] text-muted-foreground">{t("fitness.pp_invoice_label")}</span>
           <span className="font-mono text-[11px] tracking-wide text-foreground/75">
             {paymentInfo.invoice_number}
           </span>
         </div>
         <div className="h-px bg-border" />
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-xs font-semibold text-foreground">Amount due</span>
+          <span className="text-xs font-semibold text-foreground">{t("fitness.pp_amount_due_label")}</span>
           <span className="text-sm font-bold text-success">
             {paymentInfo.currency}{" "}
             {Number(paymentInfo.amount).toLocaleString()}
@@ -348,7 +356,7 @@ export default function PaymentPanel({
                 isExpiredError ? "text-warning" : "text-destructive"
               }`}
             >
-              {isExpiredError ? "Invoice expired" : "Payment failed"}
+              {isExpiredError ? t("fitness.pp_invoice_expired_title") : t("fitness.pp_payment_failed_title")}
             </p>
             <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
               {error.message}
@@ -364,12 +372,12 @@ export default function PaymentPanel({
                 {isRefreshingInvoice ? (
                   <>
                     <Loader2 size={13} className="animate-spin" />
-                    Getting new invoice…
+                    {t("fitness.pp_getting_new_invoice")}
                   </>
                 ) : (
                   <>
                     <RefreshCw size={13} strokeWidth={2.5} />
-                    Get new invoice
+                    {t("fitness.pp_get_new_invoice")}
                   </>
                 )}
               </button>
@@ -392,10 +400,10 @@ export default function PaymentPanel({
               <ShieldCheck size={16} strokeWidth={2} />
             )}
             {phase === "loading"
-              ? "Loading payment…"
+              ? t("fitness.pp_loading_payment")
               : phase === "initiating"
-              ? "Opening payment…"
-              : "Pay now"}
+              ? t("fitness.pp_opening_payment")
+              : t("fitness.pp_pay_now")}
           </button>
 
           {onCancel && (
@@ -404,8 +412,8 @@ export default function PaymentPanel({
               disabled={isLoading}
               className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[5px] border border-border bg-muted/50 text-[12px] font-medium text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
-           
-              {cancelLabel}
+
+              {resolvedCancelLabel}
             </button>
           )}
         </div>
@@ -418,15 +426,15 @@ export default function PaymentPanel({
           disabled={isRefreshingInvoice}
           className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[5px] border border-border bg-muted/50 text-[12px] font-medium text-muted-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-       
-          {cancelLabel}
+
+          {resolvedCancelLabel}
         </button>
       )}
 
       {/* Footer */}
       <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/60">
         <ShieldCheck size={11} strokeWidth={1.5} />
-        Secured by IremboPay · End-to-end encrypted
+        {t("fitness.pp_secured_footer")}
       </div>
     </div>
   );

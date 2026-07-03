@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, ChevronRight, ChevronLeft, Plus, Trash2, Pill,
@@ -44,11 +45,11 @@ type Step = "appointment" | "details" | "medications" | "review";
 
 const STEPS: Step[] = ["appointment", "details", "medications", "review"];
 
-const STEP_META: Record<Step, { label: string; icon: React.ReactNode }> = {
-  appointment: { label: "Appointment", icon: <Calendar className="h-3.5 w-3.5" /> },
-  details: { label: "Rx Details", icon: <FileText className="h-3.5 w-3.5" /> },
-  medications: { label: "Medications", icon: <Pill className="h-3.5 w-3.5" /> },
-  review: { label: "Review", icon: <ClipboardList className="h-3.5 w-3.5" /> },
+const STEP_META: Record<Step, { labelKey: string; icon: React.ReactNode }> = {
+  appointment: { labelKey: "pages.doctor.appointment", icon: <Calendar className="h-3.5 w-3.5" /> },
+  details: { labelKey: "pages.doctor.rx_details", icon: <FileText className="h-3.5 w-3.5" /> },
+  medications: { labelKey: "pages.doctor.medications", icon: <Pill className="h-3.5 w-3.5" /> },
+  review: { labelKey: "pages.doctor.review", icon: <ClipboardList className="h-3.5 w-3.5" /> },
 };
 
 /* ─────────────────────────────────────────────
@@ -96,6 +97,7 @@ function AppointmentStep({
   selected: Appointment | null;
   onSelect: (a: Appointment) => void;
 }) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -138,16 +140,16 @@ function AppointmentStep({
   };
 
   const statusLabel: Record<string, string> = {
-    pending: "Pending",
-    confirmed: "Confirmed",
-    in_progress: "In progress",
-    completed: "Completed",
+    pending: t("pages.doctor.status_pending"),
+    confirmed: t("pages.doctor.status_confirmed"),
+    in_progress: t("pages.doctor.status_in_progress"),
+    completed: t("pages.doctor.status_completed"),
   };
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Select the appointment this prescription is linked to.
+        {t("pages.doctor.rx_select_appointment_desc")}
       </p>
 
       <div className="relative">
@@ -156,7 +158,7 @@ function AppointmentStep({
           ref={inputRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by patient name or date…"
+          placeholder={t("pages.doctor.rx_search_appointment_placeholder")}
           className={cn(inputCls, "pl-9")}
         />
       </div>
@@ -172,14 +174,14 @@ function AppointmentStep({
         {!loading && isError && (
           <div className="flex flex-col items-center py-10 gap-3 text-center">
             <AlertCircle className="h-8 w-8 text-red-400" />
-            <p className="text-sm text-muted-foreground">Failed to load appointments</p>
+            <p className="text-sm text-muted-foreground">{t("pages.doctor.failed_load_appointments")}</p>
           </div>
         )}
 
         {!loading && !isError && filtered.length === 0 && (
           <div className="flex flex-col items-center py-10 gap-3 text-center">
             <Calendar className="h-8 w-8 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">No eligible appointments found</p>
+            <p className="text-sm text-muted-foreground">{t("pages.doctor.rx_no_eligible_appointments")}</p>
           </div>
         )}
 
@@ -210,7 +212,7 @@ function AppointmentStep({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-foreground">
-                    {a.patient?.name ?? "Patient"}
+                    {a.patient?.name ?? t("pages.doctor.patient")}
                   </span>
                   <span className={cn(
                     "inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full",
@@ -233,7 +235,7 @@ function AppointmentStep({
                     {a.type === "online"
                       ? <Video className="h-3.5 w-3.5 text-sky-500" />
                       : <MapPin className="h-3.5 w-3.5 text-amber-500" />}
-                    {a.type === "online" ? "Online" : "In-person"}
+                    {a.type === "online" ? t("pages.doctor.online") : t("pages.doctor.in_person")}
                   </span>
                 </div>
               </div>
@@ -271,6 +273,7 @@ function DetailsStep({
   values: RxDetails;
   onChange: (v: Partial<RxDetails>) => void;
 }) {
+  const { t } = useTranslation();
   // Default valid_until to 30 days from today
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 30);
@@ -279,29 +282,29 @@ function DetailsStep({
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Enter the clinical details for this prescription.
+        {t("pages.doctor.rx_details_desc")}
       </p>
 
-      <Field label="Diagnosis" required>
+      <Field label={t("pages.doctor.diagnosis")} required>
         <input
           value={values.diagnosis}
           onChange={(e) => onChange({ diagnosis: e.target.value })}
-          placeholder="e.g. Upper respiratory tract infection"
+          placeholder={t("pages.doctor.rx_diagnosis_placeholder")}
           className={inputCls}
         />
       </Field>
 
-      <Field label="Clinical notes">
+      <Field label={t("pages.doctor.clinical_notes")}>
         <RichTextarea
           value={values.notes}
           onChange={(value) => onChange({ notes: value })}
-          placeholder="e.g. Take plenty of fluids and rest"
+          placeholder={t("pages.doctor.rx_notes_placeholder")}
           minHeight={120}
           editorClassName="text-sm"
         />
       </Field>
 
-      <Field label="Valid until">
+      <Field label={t("pages.doctor.valid_until")}>
         <input
           type="date"
           value={values.valid_until || defaultDateStr}
@@ -345,6 +348,7 @@ function MedicationRow({
   onRemove: (i: number) => void;
   canRemove: boolean;
 }) {
+  const { t } = useTranslation();
   const set = (field: keyof PrescriptionItem) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       onChange(index, field, e.target.value);
@@ -364,7 +368,7 @@ function MedicationRow({
             <Pill className="h-3.5 w-3.5 text-primary" />
           </div>
           <span className="text-xs font-semibold text-foreground">
-            Medication {index + 1}
+            {t("pages.doctor.medication_number", { number: index + 1 })}
           </span>
         </div>
         {canRemove && (
@@ -379,19 +383,19 @@ function MedicationRow({
 
       {/* Name + dosage */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Medicine name" required>
+        <Field label={t("pages.doctor.medicine_name")} required>
           <input
             value={item.medicine_name}
             onChange={set("medicine_name")}
-            placeholder="e.g. Amoxicillin"
+            placeholder={t("pages.doctor.rx_medicine_placeholder")}
             className={inputCls}
           />
         </Field>
-        <Field label="Dosage" required>
+        <Field label={t("pages.doctor.dosage")} required>
           <input
             value={item.dosage}
             onChange={set("dosage")}
-            placeholder="e.g. 500mg"
+            placeholder={t("pages.doctor.rx_dosage_placeholder")}
             className={inputCls}
           />
         </Field>
@@ -399,7 +403,7 @@ function MedicationRow({
 
       {/* Frequency + duration */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Frequency" required>
+        <Field label={t("pages.doctor.frequency")} required>
           <select
             value={FREQUENCY_PRESETS.includes(item.frequency) ? item.frequency : "__custom"}
             onChange={(e) => {
@@ -407,22 +411,22 @@ function MedicationRow({
             }}
             className={inputCls}
           >
-            <option value="" disabled>Select…</option>
+            <option value="" disabled>{t("pages.doctor.select")}</option>
             {FREQUENCY_PRESETS.map((f) => (
-              <option key={f} value={f}>{f}</option>
+              <option key={f} value={f}>{t(`pages.doctor.rx_frequency_${FREQUENCY_PRESETS.indexOf(f)}`)}</option>
             ))}
-            <option value="__custom">Custom…</option>
+            <option value="__custom">{t("pages.doctor.custom")}</option>
           </select>
           {(!FREQUENCY_PRESETS.includes(item.frequency) || item.frequency === "") && (
             <input
               value={item.frequency}
               onChange={set("frequency")}
-              placeholder="e.g. Every 8 hours"
+              placeholder={t("pages.doctor.rx_frequency_placeholder")}
               className={cn(inputCls, "mt-1.5")}
             />
           )}
         </Field>
-        <Field label="Duration" required>
+        <Field label={t("pages.doctor.duration")} required>
           <select
             value={DURATION_PRESETS.includes(item.duration) ? item.duration : "__custom"}
             onChange={(e) => {
@@ -430,17 +434,17 @@ function MedicationRow({
             }}
             className={inputCls}
           >
-            <option value="" disabled>Select…</option>
+            <option value="" disabled>{t("pages.doctor.select")}</option>
             {DURATION_PRESETS.map((d) => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d} value={d}>{t(`pages.doctor.rx_duration_${DURATION_PRESETS.indexOf(d)}`)}</option>
             ))}
-            <option value="__custom">Custom…</option>
+            <option value="__custom">{t("pages.doctor.custom")}</option>
           </select>
           {(!DURATION_PRESETS.includes(item.duration) || item.duration === "") && (
             <input
               value={item.duration}
               onChange={set("duration")}
-              placeholder="e.g. 7 days"
+              placeholder={t("pages.doctor.rx_duration_placeholder")}
               className={cn(inputCls, "mt-1.5")}
             />
           )}
@@ -449,7 +453,7 @@ function MedicationRow({
 
       {/* Quantity + instructions */}
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Quantity" required>
+        <Field label={t("pages.doctor.quantity")} required>
           <input
             type="number"
             min={1}
@@ -458,11 +462,11 @@ function MedicationRow({
             className={inputCls}
           />
         </Field>
-        <Field label="Instructions">
+        <Field label={t("pages.doctor.instructions")}>
           <input
             value={item.instructions}
             onChange={set("instructions")}
-            placeholder="e.g. Take after meals"
+            placeholder={t("pages.doctor.rx_instructions_placeholder")}
             className={inputCls}
           />
         </Field>
@@ -482,13 +486,14 @@ function MedicationsStep({
   onChange: (i: number, field: keyof PrescriptionItem, value: string | number) => void;
   onRemove: (i: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Add one or more medications to this prescription.
+          {t("pages.doctor.rx_medications_desc")}
         </p>
-        <span className="text-xs font-medium text-primary">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+        <span className="text-xs font-medium text-primary">{t("pages.doctor.items_count", { count: items.length })}</span>
       </div>
 
       <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
@@ -511,7 +516,7 @@ function MedicationsStep({
         className="w-full h-10 flex items-center justify-center gap-2 border border-dashed border-primary/40 text-primary text-sm font-medium rounded-[6px] hover:bg-primary/5 hover:border-primary/60 transition-all duration-200"
       >
         <Plus className="h-4 w-4" />
-        Add another medication
+        {t("pages.doctor.add_another_medication")}
       </button>
     </div>
   );
@@ -530,26 +535,27 @@ function ReviewStep({
   details: RxDetails;
   items: PrescriptionItem[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground">
-        Review everything before submitting.
+        {t("pages.doctor.rx_review_desc")}
       </p>
 
       {/* Appointment */}
       <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <User className="h-4 w-4" /> Patient & appointment
+          <User className="h-4 w-4" /> {t("pages.doctor.patient_appointment")}
         </p>
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/10">
             {(appointment.patient?.name ?? "PT").slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">{appointment.patient?.name ?? "Patient"}</p>
+            <p className="text-sm font-semibold text-foreground">{appointment.patient?.name ?? t("pages.doctor.patient")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {appointment.appointment_date} · {appointment.appointment_time} ·{" "}
-              {appointment.type === "online" ? "Online" : "In-person"}
+              {appointment.type === "online" ? t("pages.doctor.online") : t("pages.doctor.in_person")}
             </p>
           </div>
         </div>
@@ -558,7 +564,7 @@ function ReviewStep({
       {/* Diagnosis */}
       <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <Stethoscope className="h-4 w-4" /> Diagnosis & notes
+          <Stethoscope className="h-4 w-4" /> {t("pages.doctor.diagnosis_notes")}
         </p>
         <p className="text-sm font-semibold text-foreground">{details.diagnosis}</p>
         {details.notes && (
@@ -566,7 +572,7 @@ function ReviewStep({
         )}
         {details.valid_until && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Calendar className="h-4 w-4" /> Valid until {details.valid_until}
+            <Calendar className="h-4 w-4" /> {t("pages.doctor.valid_until_value", { date: details.valid_until })}
           </p>
         )}
       </section>
@@ -574,7 +580,7 @@ function ReviewStep({
       {/* Medications */}
       <section className="border border-border/60 rounded-[6px] p-4 space-y-3 bg-secondary/20">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-1.5">
-          <Pill className="h-4 w-4" /> Medications ({items.length})
+          <Pill className="h-4 w-4" /> {t("pages.doctor.medications_count", { count: items.length })}
         </p>
         {items.map((m, i) => (
           <div key={i} className="flex items-start gap-3 border-t border-border/40 pt-3 first:border-t-0 first:pt-0">
@@ -584,7 +590,7 @@ function ReviewStep({
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">{m.medicine_name}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {m.dosage} · {m.frequency} · {m.duration} · Qty: {m.quantity}
+                {t("pages.doctor.rx_item_summary", { dosage: m.dosage, frequency: m.frequency, duration: m.duration, quantity: m.quantity })}
               </p>
               {m.instructions && (
                 <RichTextRenderer
@@ -607,6 +613,7 @@ function ReviewStep({
 export function PrescriptionWizard({
   open, onOpenChange, doctorName,
 }: PrescriptionWizardProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("appointment");
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [details, setDetails] = useState<RxDetails>({
@@ -652,7 +659,7 @@ export function PrescriptionWizard({
   // ── Navigation ────────────────────────────────────────────────────────────
   const goNext = () => {
     if (!canAdvance()) {
-      toast.error("Please fill in all required fields before continuing.");
+      toast.error(t("pages.doctor.fill_required_fields"));
       return;
     }
     const next = STEPS[stepIndex + 1];
@@ -696,12 +703,12 @@ export function PrescriptionWizard({
     createPrescription.mutate(payload, {
       onSuccess: (res) => {
         toast.success(
-          (res as any)?.message ?? "Prescription created successfully",
+          (res as any)?.message ?? t("pages.doctor.rx_created_success"),
         );
         onOpenChange(false);
       },
       onError: (err: any) => {
-        toast.error(err?.message ?? "Failed to create prescription");
+        toast.error(err?.message ?? t("pages.doctor.rx_create_failed"));
       },
     });
   };
@@ -733,7 +740,7 @@ export function PrescriptionWizard({
                 <FileText className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-base font-semibold text-foreground">New Prescription</p>
+                <p className="text-base font-semibold text-foreground">{t("pages.doctor.new_rx_full")}</p>
                 {doctorName && (
                   <p className="text-xs text-muted-foreground">{doctorName}</p>
                 )}
@@ -767,7 +774,7 @@ export function PrescriptionWizard({
                       "text-xs font-medium hidden sm:inline",
                       isCurrent ? "text-foreground" : isDone ? "text-primary" : "text-muted-foreground/50",
                     )}>
-                      {STEP_META[s].label}
+                      {t(STEP_META[s].labelKey)}
                     </span>
                   </div>
                   {i < STEPS.length - 1 && (
@@ -835,7 +842,7 @@ export function PrescriptionWizard({
               )}
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t("pages.doctor.back")}
             </button>
 
             <div className="flex items-center gap-2">
@@ -865,7 +872,7 @@ export function PrescriptionWizard({
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                {createPrescription.isPending ? "Creating…" : "Create Prescription"}
+                {createPrescription.isPending ? t("pages.doctor.creating") : t("pages.doctor.create_prescription")}
               </button>
             ) : (
               <button
@@ -873,7 +880,7 @@ export function PrescriptionWizard({
                 disabled={!canAdvance()}
                 className="flex items-center gap-2 px-5 py-2 rounded-[6px] text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
-                Continue
+                {t("pages.doctor.continue")}
                 <ChevronRight className="h-4 w-4" />
               </button>
             )}

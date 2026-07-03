@@ -33,7 +33,7 @@ import {
   FormField,
 } from "./components/FitnessComponents";
 
-import { FORM_STEPS, SYMPTOM_FIELDS, HISTORY_FIELDS } from "./components/FitnessConstants";
+import { getFormSteps, getSymptomFields, getHistoryFields } from "./components/FitnessConstants";
 import PaymentPanel from "./components/Paymentpanel";
 import CertificateCard from "./components/CertificateCard";
 
@@ -44,6 +44,8 @@ import CertificateCard from "./components/CertificateCard";
 type RequestPhase = "form" | "payment" | "submitted";
 
 function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
+  const { t } = useTranslation();
+  const FORM_STEPS = getFormSteps(t);
   const [currentStep, setCurrentStep] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set([0]));
   const [isSaving, setIsSaving] = useState(false);
@@ -94,7 +96,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               setTimeout(() => onDone(), 1200);
             }
           },
-          onError: (err) => toast.error(err.message || "Submission failed"),
+          onError: (err) => toast.error(err.message || t("fitness.submission_failed")),
         });
       } else {
         goTo(currentStep + 1);
@@ -170,15 +172,15 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
         <div className="w-full max-w-sm rounded-[6px] border border-border bg-card shadow-sm overflow-hidden">
           <PaymentPanel
-            title="Complete payment to submit"
-            description="Your request is ready. Pay the submission fee to send it to a doctor for review."
+            title={t("fitness.payment_title")}
+            description={t("fitness.payment_description")}
             paymentInfo={pendingPayment}
             onPaymentConfirmed={handlePaymentConfirmed}
             onRefreshInvoice={handleRefreshInvoice}
             isRefreshingInvoice={isRefreshingInvoice}
             onPayInitiate={handlePayInitiate}
             onCancel={() => setRequestPhase("form")}
-            cancelLabel="← Back to form"
+            cancelLabel={t("fitness.back_to_form")}
           />
         </div>
       </div>
@@ -193,8 +195,8 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
           <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto">
             <Check className="h-7 w-7 text-emerald-500" />
           </div>
-          <p className="text-sm font-semibold text-foreground">Request submitted!</p>
-          <p className="text-xs text-muted-foreground">A doctor will review your request shortly.</p>
+          <p className="text-sm font-semibold text-foreground">{t("fitness.submitted_title")}</p>
+          <p className="text-xs text-muted-foreground">{t("fitness.submitted_desc")}</p>
         </div>
       </div>
     );
@@ -252,10 +254,10 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             initialAnswers={savedAnswerMap}
             headerNote={
               <p className="text-xs text-muted-foreground mb-3">
-                Answer honestly about symptoms in the <strong>past 72 hours</strong>.
+                {t("fitness.symptoms_note_pre")} <strong>{t("fitness.symptoms_note_bold")}</strong>{t("fitness.symptoms_note_post")}
               </p>
             }
-            fields={SYMPTOM_FIELDS}
+            fields={getSymptomFields(t)}
             onSaved={handleStepSaved}
           />
         );
@@ -266,32 +268,32 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             key={currentStep}
             apiStep={3}
             initialAnswers={savedAnswerMap}
-            fields={HISTORY_FIELDS}
+            fields={getHistoryFields(t)}
             extraFields={(answers, setAnswer, register) => (
               <div className="mt-3 space-y-3">
                 {answers["chronic_illness"] === "Yes" && (
-                  <FormField label="Please specify condition(s)">
+                  <FormField label={t("fitness.chronic_illness_detail_label")}>
                     <Input
                       {...register("chronic_illness_detail")}
-                      placeholder="e.g. Hypertension, Diabetes Type 2"
+                      placeholder={t("fitness.chronic_illness_detail_placeholder")}
                       className="border-border focus-visible:ring-primary text-xs h-9"
                     />
                   </FormField>
                 )}
                 {answers["chronic_medication"] === "Yes" && (
-                  <FormField label="Please list medications">
+                  <FormField label={t("fitness.medication_detail_label")}>
                     <Input
                       {...register("medication_detail")}
-                      placeholder="e.g. Metformin 500mg, Amlodipine 5mg"
+                      placeholder={t("fitness.medication_detail_placeholder")}
                       className="border-border focus-visible:ring-primary text-xs h-9"
                     />
                   </FormField>
                 )}
                 {answers["allergies"] === "Yes" && (
-                  <FormField label="Please specify allergies">
+                  <FormField label={t("fitness.allergy_detail_label")}>
                     <Input
                       {...register("allergy_detail")}
-                      placeholder="e.g. Penicillin, Peanuts"
+                      placeholder={t("fitness.allergy_detail_placeholder")}
                       className="border-border focus-visible:ring-primary text-xs h-9"
                     />
                   </FormField>
@@ -339,12 +341,12 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               className="ml-1 text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary"
             >
               {requestData.certificate.status === "draft"
-                ? "Draft saved"
-                : `Updating ${requestData.certificate.certificate_number}`}
+                ? t("fitness.draft_saved_badge")
+                : t("fitness.updating_badge", { number: requestData.certificate.certificate_number })}
             </Badge>
           )}
           <span className="ml-auto text-[10px] text-muted-foreground">
-            Step {currentStep + 1} of {FORM_STEPS.length}
+            {t("fitness.step_of", { current: currentStep + 1, total: FORM_STEPS.length })}
           </span>
         </div>
 
@@ -357,16 +359,15 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
               <div className="flex items-start gap-2 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] text-muted-foreground">
                 <FilePlus2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                 <p>
-                  You're continuing your{" "}
+                  {t("fitness.continuing_pre")}{" "}
                   <span className="font-semibold text-foreground">
                     {requestData.certificate.status}
                   </span>{" "}
-                  request{" "}
+                  {t("fitness.continuing_request_word")}{" "}
                   <span className="font-semibold text-foreground">
                     {requestData.certificate.certificate_number}
                   </span>
-                  . Your saved answers are pre-filled — saving updates this request
-                  instead of creating a new one.
+                  . {t("fitness.continuing_post")}
                 </p>
               </div>
             )}
@@ -380,10 +381,10 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             disabled={currentStep === 0}
             className="border-border/60 text-xs font-bold h-8 px-3 rounded-[6px] hover:bg-muted/50"
           >
-            ← Back
+            {t("fitness.back_button")}
           </Button>
           <span className="text-xs font-medium text-muted-foreground/80">
-            Step {currentStep + 1} of {FORM_STEPS.length}
+            {t("fitness.step_of", { current: currentStep + 1, total: FORM_STEPS.length })}
           </span>
           <Button
             onClick={handleNext}
@@ -393,7 +394,7 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             {(isSaving || submitMutation.isPending) && (
               <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
             )}
-            {isLast ? "Submit request" : "Save & Next →"}
+            {isLast ? t("fitness.submit_request") : t("fitness.save_and_next")}
           </Button>
         </div>
       </div>
@@ -406,17 +407,18 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function SentCertificates() {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetPatientCertificates();
   const withdrawMutation = useWithdrawCertificate();
 
-  const certs = data?.certificates ?? [];
+  const certs = data?.certificates ?? []; 
   const hasDraftOrPending = certs.some((c) => c.status === "draft" || c.status === "pending");
 
   const handleWithdraw = () => {
-    if (!confirm("Withdraw your current request? This cannot be undone.")) return;
+    if (!confirm(t("fitness.withdraw_confirm"))) return;
     withdrawMutation.mutate(undefined, {
-      onSuccess: () => toast.success("Request withdrawn."),
-      onError: (err) => toast.error(err.message || "Could not withdraw request."),
+      onSuccess: () => toast.success(t("fitness.withdraw_success")),
+      onError: (err) => toast.error(err.message || t("fitness.withdraw_failed")),
     });
   };
 
@@ -446,9 +448,9 @@ function SentCertificates() {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center px-4">
         <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
-        <p className="text-[13px] font-medium text-foreground/70">No certificates yet</p>
+        <p className="text-[13px] font-medium text-foreground/70">{t("fitness.no_certificates_title")}</p>
         <p className="text-[11px] text-muted-foreground max-w-[260px]">
-          Submit a request and a doctor will review it shortly.
+          {t("fitness.no_certificates_desc")}
         </p>
       </div>
     );
@@ -458,7 +460,7 @@ function SentCertificates() {
     <div className="flex flex-col flex-1 min-h-0 p-4 sm:p-5 space-y-3">
       {hasDraftOrPending && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-[6px] border border-amber-500/30 bg-amber-500/10 text-xs font-medium">
-          <p className="text-amber-700 dark:text-amber-400">You have an active request in progress.</p>
+          <p className="text-amber-700 dark:text-amber-400">{t("fitness.active_request_notice")}</p>
           <Button
             size="sm"
             variant="outline"
@@ -471,7 +473,7 @@ function SentCertificates() {
             ) : (
               <XCircle className="h-3.5 w-3.5" />
             )}
-            Withdraw
+            {t("fitness.withdraw_action")}
           </Button>
         </div>
       )}
@@ -499,19 +501,16 @@ const PatientFitnessCertificates = () => {
   const certCount = certsData?.certificates?.length ?? 0;
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
-    { id: "request", label: "New Request", icon: FilePlus2 },
-    { id: "certificates", label: "My Certificates", icon: ClipboardList, badge: certCount },
+    { id: "request", label: t("fitness.tab_new_request"), icon: FilePlus2 },
+    { id: "certificates", label: t("fitness.tab_my_certificates"), icon: ClipboardList, badge: certCount },
   ];
 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.fitness_certificates.title", "Fitness Certificates")}
-          subtitle={t(
-            "pages.patient.fitness_certificates.subtitle",
-            "Request and manage your medical fitness certificates",
-          )}
+          title={t("fitness.page_title")}
+          subtitle={t("fitness.page_subtitle")}
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
@@ -534,7 +533,7 @@ const PatientFitnessCertificates = () => {
                     <Icon className="h-3.5 w-3.5 shrink-0" />
                     <span className="hidden sm:inline">{tab.label}</span>
                     <span className="sm:hidden">
-                      {tab.id === "request" ? "Request" : "Certificates"}
+                      {tab.id === "request" ? t("fitness.tab_request_short") : t("fitness.tab_certificates_short")}
                     </span>
                     {tab.badge !== undefined && tab.badge > 0 && (
                       <span

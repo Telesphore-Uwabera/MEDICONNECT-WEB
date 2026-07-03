@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
-
-const slides = [
-  { dynamic: "in expert hands" },
-  { dynamic: "on your screen" },
-  { dynamic: "at your pharmacy" },
-  { dynamic: "one click away" },
-  { dynamic: "certified" },
-  { dynamic: "there for you" },
-];
+import { useTranslation } from "react-i18next";
 
 export function HeroHeadline() {
+  const { t } = useTranslation();
+  const slides = [
+    t("pages.landing.hero_dynamic_1"),
+    t("pages.landing.hero_dynamic_2"),
+    t("pages.landing.hero_dynamic_3"),
+    t("pages.landing.hero_dynamic_4"),
+    t("pages.landing.hero_dynamic_5"),
+    t("pages.landing.hero_dynamic_6"),
+  ];
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(false);
 
@@ -75,9 +76,9 @@ export function HeroHeadline() {
       `}</style>
 
       <h1 className="hero-headline">
-        Your health —
+        {t("pages.landing.hero_prefix")}
         <span className="hero-line2">
-          <span className="hero-static">always</span>
+          <span className="hero-static">{t("pages.landing.hero_static")}</span>
           <span
             className="hero-dynamic"
             style={{
@@ -86,7 +87,7 @@ export function HeroHeadline() {
               transition: "opacity 0.35s ease, transform 0.35s ease",
             }}
           >
-            {slides[current].dynamic}
+            {slides[current]}
           </span>
         </span>
       </h1>

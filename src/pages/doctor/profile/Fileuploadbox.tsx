@@ -2,6 +2,7 @@
 // FileUploadBox
 // ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Upload } from "lucide-react";
 
 interface FileUploadBoxProps {
@@ -17,6 +18,7 @@ export const FileUploadBox = React.memo(function FileUploadBox({
   file,
   onChange,
 }: FileUploadBoxProps) {
+  const { t } = useTranslation();
   return (
     <label className="flex flex-col items-center justify-center gap-2 rounded-[6px] border-2 border-dashed border-border bg-muted/50 hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer px-4 py-6 text-center">
       <input
@@ -30,7 +32,7 @@ export const FileUploadBox = React.memo(function FileUploadBox({
           <Check className="h-5 w-5 text-primary" />
           <p className="text-xs font-medium text-primary">{file.name}</p>
           <p className="text-[10px] text-muted-foreground">
-            {(file.size / 1024).toFixed(1)} KB · click to replace
+            {(file.size / 1024).toFixed(1)} KB · {t("doctorProfile.click_to_replace")}
           </p>
         </>
       ) : (
@@ -38,7 +40,7 @@ export const FileUploadBox = React.memo(function FileUploadBox({
           <Upload className="h-5 w-5 text-muted-foreground" />
           <p className="text-xs font-medium text-foreground">{label}</p>
           <p className="text-[10px] text-muted-foreground">
-            JPEG, PNG, WebP · max 2 MB
+            {t("doctorProfile.file_hint_image")}
           </p>
         </>
       )}

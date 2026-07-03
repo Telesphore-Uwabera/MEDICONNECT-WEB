@@ -64,6 +64,7 @@ import {
 import { toast } from "sonner";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { t } from "i18next";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -267,7 +268,7 @@ function BoolRow({
         ) : (
           <Check className="h-3 w-3 text-emerald-500" />
         )}
-        {value ? "Yes" : "No"}
+        {value ? t("pages.doctor.yes") : t("pages.doctor.no")}
       </div>
     </div>
   );
@@ -338,7 +339,7 @@ function RequestCard({
             )}
           >
             <StatusIcon className="h-2.5 w-2.5" />
-            {meta.label}
+            {t(`pages.doctor.cert_status_${cert.status}`)}
           </Badge>
         </div>
 
@@ -347,13 +348,13 @@ function RequestCard({
             {redFlags.length > 0 && (
               <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-4 bg-destructive/15 text-destructive border-destructive/25 flex items-center gap-1">
                 <AlertTriangle className="h-2.5 w-2.5" />
-                {redFlags.length} red flag{redFlags.length > 1 ? "s" : ""}
+                {t("pages.doctor.red_flags_count", { count: redFlags.length })}
               </Badge>
             )}
             {highRisk && (
               <Badge className="text-[10px] font-medium rounded-full px-2 py-0 border h-4 bg-amber-500/15 text-amber-600 border-amber-400/30 flex items-center gap-1">
                 <AlertTriangle className="h-2.5 w-2.5" />
-                High-risk
+                {t("pages.doctor.high_risk")}
               </Badge>
             )}
           </div>
@@ -364,7 +365,7 @@ function RequestCard({
             {cert.certificate_number}
           </span>
           <span className="text-[10px] text-muted-foreground hidden sm:inline">
-            · {PURPOSE_LABELS[cert.purpose] ?? cert.purpose}
+            · {PURPOSE_LABELS[cert.purpose] ? t(PURPOSE_LABELS[cert.purpose]) : cert.purpose}
           </span>
         </div>
 
@@ -427,15 +428,15 @@ function CertStepper({ cert }: { cert: Certificate }) {
   const issued = cert.is_signed || cert.status === "issued";
 
   const steps = [
-    { label: "Request", anchor: "cert-sec-patient", done: true, hint: "Review the request" },
+    { label: t("pages.doctor.step_request"), anchor: "cert-sec-patient", done: true, hint: t("pages.doctor.step_hint_review_request") },
     {
-      label: "Identity",
+      label: t("pages.doctor.step_identity"),
       anchor: "cert-sec-identity",
       done: cert.identity_verified_via_video,
-      hint: "Verify identity via video",
+      hint: t("pages.doctor.step_hint_verify_identity"),
     },
-    { label: "Decision", anchor: "cert-sec-decision", done: !!cert.decision, hint: "Record your decision" },
-    { label: "Sign & issue", anchor: "cert-sec-decision", done: issued, hint: "Sign & issue the certificate" },
+    { label: t("pages.doctor.step_decision"), anchor: "cert-sec-decision", done: !!cert.decision, hint: t("pages.doctor.step_hint_record_decision") },
+    { label: t("pages.doctor.step_sign_issue"), anchor: "cert-sec-decision", done: issued, hint: t("pages.doctor.step_hint_sign_issue") },
   ];
   const activeIndex = terminal || issued ? -1 : steps.findIndex((s) => !s.done);
 
@@ -450,7 +451,7 @@ function CertStepper({ cert }: { cert: Certificate }) {
                 type="button"
                 onClick={() => scrollToAnchor(s.anchor)}
                 className="flex flex-col items-center gap-1 shrink-0"
-                title={`Go to: ${s.label}`}
+                title={t("pages.doctor.go_to_step", { step: s.label })}
               >
                 <span
                   className={cn(
@@ -488,11 +489,11 @@ function CertStepper({ cert }: { cert: Certificate }) {
 
       {terminal ? (
         <p className="mt-2.5 text-[11px] font-medium text-destructive capitalize">
-          This request was {cert.status}.
+          {t("pages.doctor.request_was_status", { status: t(`pages.doctor.cert_status_${cert.status}`) })}
         </p>
       ) : activeIndex >= 0 ? (
         <p className="mt-2.5 text-[11px] text-muted-foreground">
-          Next:{" "}
+          {t("pages.doctor.next")}: {" "}
           <button
             type="button"
             onClick={() => scrollToAnchor(steps[activeIndex].anchor)}
@@ -518,7 +519,7 @@ function RequestDetail({
   onBack: () => void;
 }) {
   const { data: cert, isLoading, isError } = useGetCertificate(certId);
-
+console.log(cert);
   const updateMut = useUpdateCertificate(certId);
   const rejectMut = useRejectCertificate(certId);
   const revokeMut = useRevokeCertificate(certId);
@@ -545,20 +546,20 @@ function RequestDetail({
         } else if (res.room_url) {
           window.open(res.room_url, "_blank", "noopener,noreferrer");
         } else {
-          toast.error("Could not open the verification session.");
+          toast.error(t("pages.doctor.verification_session_open_failed"));
         }
       },
       onError: (err) =>
-        toast.error((err as Error)?.message || "Could not start verification session."),
+        toast.error((err as Error)?.message || t("pages.doctor.verification_session_start_failed")),
     });
   };
 
   const handleConfirmIdentity = () => {
     confirmIdentityMut.mutate(undefined, {
       onSuccess: () =>
-        toast.success("Identity confirmed. You can now sign the certificate."),
+        toast.success(t("pages.doctor.identity_confirmed_can_sign")),
       onError: (err) =>
-        toast.error((err as Error)?.message || "Could not confirm identity."),
+        toast.error((err as Error)?.message || t("pages.doctor.identity_confirm_failed")),
     });
   };
 
@@ -595,10 +596,10 @@ function RequestDetail({
       <div className="flex flex-1 items-center justify-center p-8 text-center">
         <div>
           <p className="text-sm font-medium text-foreground">
-            Failed to load certificate
+            {t("pages.doctor.certificate_load_failed")}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Please try again.
+            {t("pages.doctor.please_try_again")}
           </p>
         </div>
       </div>
@@ -641,14 +642,14 @@ function RequestDetail({
           // Surface what the backend flagged so the doctor knows why signing may
           // be blocked (these gate the sign step per the API rules).
           if (red_flags_found && red_flags_found.length > 0) {
-            toast.warning(`Red flags found: ${red_flags_found.join(", ")}`);
+            toast.warning(t("pages.doctor.red_flags_found", { flags: red_flags_found.join(", ") }));
           } else if (requires_inperson) {
             toast.warning("This case requires an in-person examination — it can't be signed online.");
           } else {
-            toast.success("Decision saved.");
+            toast.success(t("pages.doctor.decision_saved"));
           }
         },
-        onError: (err) => toast.error((err as Error)?.message || "Could not save the decision."),
+        onError: (err) => toast.error((err as Error)?.message || t("pages.doctor.decision_save_failed")),
       },
     );
   };
@@ -680,7 +681,7 @@ function RequestDetail({
             onClick={onBack}
             className="h-7 text-xs border-border gap-1.5 shrink-0"
           >
-            <ArrowLeft className="h-3 w-3" /> Back
+            <ArrowLeft className="h-3 w-3" /> {t("common.back")}
           </Button>
           <div className="flex-1 min-w-0 sm:flex-none">
             <div className="flex items-center gap-2 flex-wrap">
@@ -697,7 +698,7 @@ function RequestDetail({
                 )}
               >
                 <StatusIcon className="h-2.5 w-2.5" />
-                {meta.label}
+                {t(`pages.doctor.cert_status_${cert.status}`)}
               </Badge>
             </div>
           </div>
@@ -718,7 +719,7 @@ function RequestDetail({
                 ) : (
                   <Download className="h-3 w-3" />
                 )}
-                Download
+                {t("pages.doctor.download")}
               </Button>
               {cert.qr_code && (
                 <Button
@@ -727,7 +728,7 @@ function RequestDetail({
                   className="h-7 text-xs border-border gap-1.5"
                   onClick={() => window.open(cert.qr_code!, "_blank")}
                 >
-                  <QrCode className="h-3 w-3" /> QR Code
+                  <QrCode className="h-3 w-3" /> {t("pages.doctor.qr_code")}
                 </Button>
               )}
               <Button
@@ -736,7 +737,7 @@ function RequestDetail({
                 className="h-7 text-xs border-destructive/40 text-destructive hover:bg-destructive/10 gap-1.5"
                 onClick={() => setShowRevoke(true)}
               >
-                <Ban className="h-3 w-3" /> Revoke
+                <Ban className="h-3 w-3" /> {t("pages.doctor.revoke")}
               </Button>
             </>
           )}
@@ -754,11 +755,11 @@ function RequestDetail({
           <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-blue-400/30 bg-blue-500/10">
             <AlertTriangle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700 dark:text-blue-400">
-              <strong>Cannot sign yet. </strong>
+              <strong>{t("pages.doctor.cannot_sign_yet")} </strong>
               {!cert.identity_verified_via_video &&
-                "Identity not yet verified via video. "}
-              {cert.has_red_flags && "Active red flags must be resolved. "}
-              {cert.requires_inperson && "In-person examination required."}
+                t("pages.doctor.identity_not_verified_video")}
+              {cert.has_red_flags && t("pages.doctor.active_red_flags_must_resolve")}
+              {cert.requires_inperson && t("pages.doctor.inperson_exam_required")}
             </p>
           </div>
         )}
@@ -788,7 +789,7 @@ function RequestDetail({
         )}
 
         {/* ── 1. Patient Information ── */}
-        <SectionCard id="cert-sec-patient" icon={User} title="Patient Information">
+        <SectionCard id="cert-sec-patient" icon={User} title={t("pages.doctor.patient_information")}>
           <div className="flex items-center gap-3 mb-1 pb-3 border-b border-border">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
               {getInitials(cert.patient_full_name)}
@@ -798,13 +799,13 @@ function RequestDetail({
                 {cert.patient_full_name}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                Internal ID: {cert.patient_id}
+                {t("pages.doctor.internal_id", { id: cert.patient_id })}
               </p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
-              label="National ID"
+              label={t("pages.doctor.national_id")}
               value={
                 cert.patient_national_id
                   ? formatId(cert.patient_national_id)
@@ -812,18 +813,18 @@ function RequestDetail({
               }
               mono
             />
-            <InfoRow label="Contact" value={cert.patient_contact} />
+            <InfoRow label={t("pages.doctor.contact")} value={cert.patient_contact} />
             <InfoRow
-              label="Consent given"
+              label={t("pages.doctor.consent_given")}
               value={
                 <StatusChip
                   ok={cert.consent_given}
-                  label={cert.consent_given ? "Consent given" : "No consent"}
+                  label={cert.consent_given ? t("pages.doctor.consent_given") : t("pages.doctor.no_consent")}
                 />
               }
             />
             <InfoRow
-              label="Identity verified via video"
+              label={t("pages.doctor.identity_verified_via_video")}
               value={
                 <StatusChip
                   ok={cert.identity_verified_via_video}
@@ -839,15 +840,15 @@ function RequestDetail({
         </SectionCard>
 
         {/* ── 2. Certificate Details ── */}
-        <SectionCard icon={CalendarDays} title="Certificate Details">
+        <SectionCard icon={CalendarDays} title={t("pages.doctor.certificate_details")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
-              label="Certificate #"
+              label={t("pages.doctor.certificate_number")}
               value={cert.certificate_number}
               mono
             />
             <InfoRow
-              label="Status"
+              label={t("pages.doctor.status")}
               value={
                 <Badge
                   className={cn(
@@ -856,54 +857,54 @@ function RequestDetail({
                   )}
                 >
                   <StatusIcon className="h-2.5 w-2.5" />
-                  {meta.label}
+                  {t(`pages.doctor.cert_status_${cert.status}`)}
                 </Badge>
               }
             />
             <InfoRow
-              label="Purpose"
+              label={t("pages.doctor.purpose")}
               value={PURPOSE_LABELS[cert.purpose] ?? cert.purpose}
             />
             {cert.purpose_other && (
-              <InfoRow label="Purpose details" value={cert.purpose_other} />
+              <InfoRow label={t("pages.doctor.purpose_details")} value={cert.purpose_other} />
             )}
-            <InfoRow label="Current step" value={String(cert.current_step)} />
+            <InfoRow label={t("pages.doctor.current_step")} value={String(cert.current_step)} />
             <InfoRow
-              label="Appointment ID"
+              label={t("pages.doctor.appointment_id")}
               value={String(cert.appointment_id)}
             />
             <InfoRow
-              label="Requires in-person"
+              label={t("pages.doctor.requires_inperson")}
               value={
                 <StatusChip
                   ok={!cert.requires_inperson}
-                  label={cert.requires_inperson ? "Required" : "Not required"}
+                  label={cert.requires_inperson ? t("pages.doctor.required") : t("pages.doctor.not_required")}
                 />
               }
             />
             <InfoRow
-              label="Signed"
+              label={t("pages.doctor.signed")}
               value={
                 <StatusChip
                   ok={cert.is_signed}
-                  label={cert.is_signed ? "Signed" : "Not signed"}
+                  label={cert.is_signed ? t("pages.doctor.signed") : t("pages.doctor.not_signed")}
                 />
               }
             />
             {cert.signed_at && (
-              <InfoRow label="Signed at" value={fmtDateTime(cert.signed_at)} />
+              <InfoRow label={t("pages.doctor.signed_at")} value={fmtDateTime(cert.signed_at)} />
             )}
             {cert.valid_until && (
-              <InfoRow label="Valid until" value={fmtDate(cert.valid_until)} />
+              <InfoRow label={t("pages.doctor.valid_until")} value={fmtDate(cert.valid_until)} />
             )}
-            <InfoRow label="Created" value={fmtDateTime(cert.created_at)} />
+            <InfoRow label={t("pages.doctor.created")} value={fmtDateTime(cert.created_at)} />
             <InfoRow
-              label="Last updated"
+              label={t("pages.doctor.last_updated")}
               value={fmtDateTime(cert.updated_at)}
             />
             {cert.reviewed_at && (
               <InfoRow
-                label="Reviewed at"
+                label={t("pages.doctor.reviewed_at")}
                 value={fmtDateTime(cert.reviewed_at)}
               />
             )}
@@ -911,26 +912,26 @@ function RequestDetail({
         </SectionCard>
 
         {/* ── 3. Fees ── */}
-        <SectionCard icon={CreditCard} title="Fees">
+        <SectionCard icon={CreditCard} title={t("pages.doctor.fees")}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <VitalChip
-              label="Initial fee paid"
+              label={t("pages.doctor.initial_fee_paid")}
               value={String(cert.initial_fee_paid)}
             />
             <VitalChip
-              label="Actual fee paid"
+              label={t("pages.doctor.actual_fee_paid")}
               value={String(cert.actual_fee_paid)}
             />
           </div>
         </SectionCard>
 
         {/* ── 4. Job Type ── */}
-        <SectionCard icon={Briefcase} title="Job Type">
+        <SectionCard icon={Briefcase} title={t("pages.doctor.job_type")}>
           <div>
-            {JOB_FLAGS.map(({ key, label }) => (
+            {JOB_FLAGS.map(({ key, labelKey }) => (
               <BoolRow
                 key={key}
-                label={label}
+                label={t(labelKey)}
                 value={
                   (cert as unknown as Record<string, boolean>)[key] ?? false
                 }
@@ -940,17 +941,17 @@ function RequestDetail({
         </SectionCard>
 
         {/* ── 5. Vitals ── */}
-        <SectionCard icon={HeartPulse} title="Reported Vitals">
+        <SectionCard icon={HeartPulse} title={t("pages.doctor.reported_vitals")}>
           {cert.vitals_available ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {cert.temperature && (
                 <VitalChip label="Temp (°C)" value={cert.temperature} />
               )}
               {cert.blood_pressure && (
-                <VitalChip label="Blood pressure" value={cert.blood_pressure} />
+                <VitalChip label={t("pages.doctor.blood_pressure")} value={cert.blood_pressure} />
               )}
               {cert.pulse && (
-                <VitalChip label="Pulse (bpm)" value={cert.pulse} />
+                <VitalChip label={t("pages.doctor.pulse_bpm")} value={cert.pulse} />
               )}
               {cert.oxygen_saturation && (
                 <VitalChip label="O₂ sat (%)" value={cert.oxygen_saturation} />
@@ -958,26 +959,26 @@ function RequestDetail({
             </div>
           ) : (
             <p className="text-xs text-muted-foreground italic">
-              No vitals reported by patient.
+              {t("pages.doctor.no_vitals_reported")}
             </p>
           )}
         </SectionCard>
 
         {/* ── 6. Red Flag Assessment ── */}
-        <SectionCard icon={Activity} title="Red Flag Assessment">
+        <SectionCard icon={Activity} title={t("pages.doctor.red_flag_assessment")}>
           <div className="mb-3">
             <StatusChip
               ok={!cert.has_red_flags}
               label={
-                cert.has_red_flags ? "Red flags present" : "No red flags found"
+                cert.has_red_flags ? t("pages.doctor.red_flags_present") : t("pages.doctor.no_red_flags_found")
               }
             />
           </div>
           <div>
-            {RED_FLAG_ROWS.map(({ key, label }) => (
+            {RED_FLAG_ROWS.map(({ key, labelKey }) => (
               <BoolRow
                 key={key}
-                label={label}
+                label={t(labelKey)}
                 value={
                   (cert as unknown as Record<string, boolean>)[key] ?? false
                 }
@@ -988,20 +989,20 @@ function RequestDetail({
         </SectionCard>
 
         {/* ── 7. Video Confirmation ── */}
-        <SectionCard id="cert-sec-identity" icon={Video} title="Video Confirmation">
+        <SectionCard id="cert-sec-identity" icon={Video} title={t("pages.doctor.video_confirmation")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
-              label="Confirmation session"
+              label={t("pages.doctor.confirmation_session")}
               value={
                 cert.confirmation_session ? (
                   <span className="text-emerald-600 font-medium text-xs">
-                    Active
+                    {t("pages.doctor.active")}
                   </span>
                 ) : null
               }
             />
             <InfoRow
-              label="Confirmation requested at"
+              label={t("pages.doctor.confirmation_requested_at")}
               value={
                 cert.confirmation_requested_at
                   ? fmtDateTime(cert.confirmation_requested_at)
@@ -1025,7 +1026,7 @@ function RequestDetail({
                 ) : (
                   <Video className="h-3.5 w-3.5" />
                 )}
-                {cert.confirmation_session ? "Rejoin verification call" : "Start video verification"}
+                {cert.confirmation_session ? t("pages.doctor.rejoin_verification_call") : t("pages.doctor.start_video_verification")}
               </Button>
 
               <Button
@@ -1041,17 +1042,17 @@ function RequestDetail({
                 ) : (
                   <ShieldCheck className="h-3.5 w-3.5" />
                 )}
-                {cert.identity_verified_via_video ? "Identity verified" : "Confirm identity"}
+                {cert.identity_verified_via_video ? t("pages.doctor.identity_verified") : t("pages.doctor.confirm_identity")}
               </Button>
             </div>
           )}
         </SectionCard>
 
         {/* ── 8. Documents ── */}
-        <SectionCard icon={FileText} title="Documents">
+        <SectionCard icon={FileText} title={t("pages.doctor.documents")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
-              label="QR code"
+              label={t("pages.doctor.qr_code")}
               value={
                 cert.qr_code ? (
                   <a
@@ -1060,7 +1061,7 @@ function RequestDetail({
                     rel="noreferrer"
                     className="text-primary underline underline-offset-2 text-xs"
                   >
-                    View QR code
+                    {t("pages.doctor.view_qr_code")}
                   </a>
                 ) : null
               }
@@ -1075,7 +1076,7 @@ function RequestDetail({
                     rel="noreferrer"
                     className="text-primary underline underline-offset-2 text-xs"
                   >
-                    View PDF
+                    {t("pages.doctor.view_pdf")}
                   </a>
                 ) : null
               }
@@ -1085,7 +1086,7 @@ function RequestDetail({
 
         {/* ── 9. Patient notes ── */}
         {cert.patient_notes && (
-          <SectionCard icon={BookOpen} title="Patient Notes">
+          <SectionCard icon={BookOpen} title={t("pages.doctor.patient_notes")}>
             <RichTextRenderer value={cert.patient_notes} className="text-xs text-foreground" />
           </SectionCard>
         )}
@@ -1094,16 +1095,16 @@ function RequestDetail({
         <SectionCard
           id="cert-sec-decision"
           icon={Stethoscope}
-          title={decidable ? "Doctor's Decision" : "Review Summary"}
+          title={decidable ? t("pages.doctor.doctors_decision") : t("pages.doctor.review_summary")}
         >
           {decidable ? (
             <div className="space-y-4">
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Decision
+                  {t("pages.doctor.decision")}
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {DECISION_OPTIONS.map(({ value, label }) => (
+                  {DECISION_OPTIONS.map(({ value, labelKey }) => (
                     <button
                       key={value}
                       type="button"
@@ -1119,7 +1120,7 @@ function RequestDetail({
                           : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
                       )}
                     >
-                      {label}
+                      {t(labelKey)}
                     </button>
                   ))}
                 </div>
@@ -1127,7 +1128,7 @@ function RequestDetail({
 
               <div className="flex flex-col gap-1.5">
                 <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Doctor's notes (optional)
+                  {t("pages.doctor.doctors_notes_optional")}
                 </Label>
                 <RichTextarea
                   value={doctorNotes}
@@ -1141,7 +1142,7 @@ function RequestDetail({
               {decision === "fit" && (
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Valid until
+                    {t("pages.doctor.valid_until")}
                   </Label>
                   <Input
                     type="date"
@@ -1166,7 +1167,7 @@ function RequestDetail({
                 >
                   {saved ? (
                     <>
-                      <Check className="h-3.5 w-3.5" /> Saved
+                      <Check className="h-3.5 w-3.5" /> {t("pages.doctor.saved")}
                     </>
                   ) : updateMut.isPending ? (
                     <>
@@ -1174,7 +1175,7 @@ function RequestDetail({
                     </>
                   ) : (
                     <>
-                      <Pencil className="h-3.5 w-3.5" /> Save decision
+                      <Pencil className="h-3.5 w-3.5" /> {t("pages.doctor.save_decision")}
                     </>
                   )}
                 </Button>
@@ -1184,11 +1185,11 @@ function RequestDetail({
                     onClick={() =>
                       signMut.mutate(undefined, {
                         onSuccess: () =>
-                          toast.success("Certificate signed and issued."),
+                          toast.success(t("pages.doctor.certificate_signed_issued")),
                         onError: (err) =>
                           toast.error(
                             (err as Error)?.message ||
-                            "Could not sign the certificate.",
+                            t("pages.doctor.certificate_sign_failed"),
                           ),
                       })
                     }
@@ -1200,7 +1201,7 @@ function RequestDetail({
                     ) : (
                       <ShieldCheck className="h-3.5 w-3.5" />
                     )}
-                    Sign & issue certificate
+                    {t("pages.doctor.sign_issue_certificate")}
                   </Button>
                 )}
               </div>
@@ -1209,7 +1210,7 @@ function RequestDetail({
             <div className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Decision:
+                  {t("pages.doctor.decision")}:
                 </span>
                 <Badge
                   className={cn(
@@ -1222,8 +1223,8 @@ function RequestDetail({
                   )}
                 >
                   {cert.decision
-                    ? DECISION_LABELS[cert.decision]
-                    : "No decision"}
+                    ? t(`pages.doctor.cert_decision_${cert.decision}`)
+                    : t("pages.doctor.no_decision")}
                 </Badge>
               </div>
               {cert.doctor_notes && (
@@ -1231,7 +1232,7 @@ function RequestDetail({
               )}
               {cert.reviewed_at && (
                 <p className="text-[10px] text-muted-foreground">
-                  Reviewed on {fmtDateTime(cert.reviewed_at)}
+                  {t("pages.doctor.reviewed_on", { date: fmtDateTime(cert.reviewed_at) })}
                 </p>
               )}
             </div>
@@ -1240,7 +1241,7 @@ function RequestDetail({
 
         {/* ── Reject form ── */}
         {showReject && (
-          <SectionCard icon={XCircle} title="Reject Certificate">
+          <SectionCard icon={XCircle} title={t("pages.doctor.reject_certificate")}>
             <div className="space-y-3">
               <textarea
                 value={rejectReason}
@@ -1262,7 +1263,7 @@ function RequestDetail({
                   {rejectMut.isPending && (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   )}
-                  Confirm rejection
+                  {t("pages.doctor.confirm_rejection")}
                 </Button>
                 <Button
                   size="sm"
@@ -1270,7 +1271,7 @@ function RequestDetail({
                   className="text-xs"
                   onClick={() => setShowReject(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -1279,7 +1280,7 @@ function RequestDetail({
 
         {/* ── Revoke form ── */}
         {showRevoke && (
-          <SectionCard icon={Ban} title="Revoke Certificate">
+          <SectionCard icon={Ban} title={t("pages.doctor.revoke_certificate")}>
             <div className="space-y-3">
               <textarea
                 value={revokeReason}
@@ -1301,7 +1302,7 @@ function RequestDetail({
                   {revokeMut.isPending && (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   )}
-                  Confirm revocation
+                  {t("pages.doctor.confirm_revocation")}
                 </Button>
                 <Button
                   size="sm"
@@ -1377,11 +1378,11 @@ function DoctorFitnessCertificates() {
     icon: React.ElementType;
     tone: string;
   }[] = [
-    { key: "all", label: "Total", value: certificates.length, icon: ClipboardList, tone: "text-primary bg-primary/10 border-primary/15" },
-    { key: "action", label: "Needs action", value: certificates.filter(isAction).length, icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
-    { key: "issued", label: "Issued", value: certificates.filter((c) => c.status === "issued").length, icon: ShieldCheck, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
-    { key: "declined", label: "Declined", value: certificates.filter(isDeclined).length, icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
-    { key: "high_risk", label: "High-risk", value: certificates.filter(isHighRisk).length, icon: AlertTriangle, tone: "text-orange-600 bg-orange-500/10 border-orange-400/20" },
+    { key: "all", label: t("pages.doctor.total"), value: certificates.length, icon: ClipboardList, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "action", label: t("pages.doctor.needs_action"), value: certificates.filter(isAction).length, icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "issued", label: t("pages.doctor.cert_status_issued"), value: certificates.filter((c) => c.status === "issued").length, icon: ShieldCheck, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "declined", label: t("pages.doctor.declined"), value: certificates.filter(isDeclined).length, icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+    { key: "high_risk", label: t("pages.doctor.high_risk"), value: certificates.filter(isHighRisk).length, icon: AlertTriangle, tone: "text-orange-600 bg-orange-500/10 border-orange-400/20" },
   ];
 
   return (
@@ -1389,11 +1390,11 @@ function DoctorFitnessCertificates() {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t(
-            "pages.doctor.fitness_certificates.title",
+            "pages.doctor.fitness_certificates_title",
             "Fitness Certificates",
           )}
           subtitle={t(
-            "pages.doctor.fitness_certificates.subtitle",
+            "pages.doctor.fitness_certificates_subtitle",
             "Review and manage patient certificate requests",
           )}
         />
@@ -1436,7 +1437,7 @@ function DoctorFitnessCertificates() {
             >
               {/* Filter tabs */}
               <div className="flex items-center border-b border-border/60 bg-muted/20 px-2 sm:px-3 overflow-x-auto">
-                {FILTER_TABS.map(({ id, label }) => (
+                {FILTER_TABS.map(({ id, labelKey }) => (
                   <button
                     key={id}
                     onClick={() => setActiveFilter(id)}
@@ -1447,7 +1448,7 @@ function DoctorFitnessCertificates() {
                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60",
                     )}
                   >
-                    {label}
+                    {t(labelKey)}
                     <span
                       className={cn(
                         "text-[10px] font-semibold rounded-full px-1.5 py-0 min-w-[18px] text-center leading-5",
@@ -1469,7 +1470,7 @@ function DoctorFitnessCertificates() {
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search by name, cert # or purpose…"
+                    placeholder={t("pages.doctor.search_certificates_placeholder")}
                     className="pl-8 h-8 text-xs border-border focus-visible:ring-primary"
                   />
                 </div>
@@ -1485,7 +1486,7 @@ function DoctorFitnessCertificates() {
                   <div className="flex flex-col items-center justify-center h-32 gap-2">
                     <ClipboardList className="h-6 w-6 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">
-                      No requests found.
+                      {t("pages.doctor.no_requests_found")}
                     </p>
                   </div>
                 ) : (
@@ -1516,7 +1517,7 @@ function DoctorFitnessCertificates() {
                     <Stethoscope className="h-6 w-6 text-primary" />
                   </div>
                   <p className="text-sm font-medium text-foreground">
-                    Select a request
+                    {t("pages.doctor.select_request")}
                   </p>
                   <p className="text-xs text-muted-foreground max-w-xs">
                     Click any request on the left to review it and issue a

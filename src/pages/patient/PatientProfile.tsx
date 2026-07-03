@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
+import i18n from "@/lib/i18n";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -200,7 +201,7 @@ const formatAge = (d?: string | null) => {
 };
 
 const formatGender = (gender?: string | null) =>
-  gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : EMPTY_VALUE;
+  gender ? i18n.t(`profile.gender.${gender}`, gender.charAt(0).toUpperCase() + gender.slice(1)) : EMPTY_VALUE;
 
 const getInitials = (name: string) =>
   (name ?? "")
@@ -256,14 +257,14 @@ const getProfileCompletion = (profile: TPatientProfile) => {
   const total = PROFILE_STEPS.reduce((sum, step) => sum + step.fields.length, 0);
   const filled = PROFILE_STEPS.reduce((sum, step) => sum + sections[step.id].filled, 0);
   const completedSections = PROFILE_STEPS.filter((step) => sections[step.id].complete).length;
-  const missingSections = PROFILE_STEPS.filter((step) => !sections[step.id].complete).map((step) => step.label);
+  const missingSectionIds = PROFILE_STEPS.filter((step) => !sections[step.id].complete).map((step) => step.id);
 
   return {
     sections,
     total,
     filled,
     completedSections,
-    missingSections,
+    missingSectionIds,
     percent: total ? Math.round((filled / total) * 100) : 0,
   };
 };
@@ -349,8 +350,9 @@ function TagList({
   items: string[];
   color?: "red" | "blue" | "yellow" | "green" | "default";
 }) {
+  const { t } = useTranslation();
   if (!items?.length)
-    return <span className="text-[11px] text-muted-foreground/50 italic">None recorded</span>;
+    return <span className="text-[11px] text-muted-foreground/50 italic">{t("profile.none_recorded")}</span>;
   const colorMap = {
     red: "bg-destructive/10 text-destructive border-destructive/25",
     blue: "bg-blue-500/10 text-blue-600 border-blue-500/25",
@@ -452,10 +454,11 @@ function TabBar({
   onChange: (t: MainTab) => void;
   hasProfile: boolean;
 }) {
+  const { t } = useTranslation();
   const tabs: { id: MainTab; label: string; icon: React.ElementType }[] = [
-    { id: "profile", label: "Patient Profile", icon: User },
-    { id: "medical", label: "Medical Info", icon: Stethoscope },
-    { id: "insurance", label: "My Insurance", icon: Shield },
+    { id: "profile", label: t("profile.tab.profile"), icon: User },
+    { id: "medical", label: t("profile.tab.medical"), icon: Stethoscope },
+    { id: "insurance", label: t("profile.tab.insurance"), icon: Shield },
   ];
 
   return (
@@ -502,6 +505,7 @@ function ProfileSidebar({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const isForm = mode === "create" || mode === "edit";
   const completion = profile ? getProfileCompletion(profile) : null;
   const visitedCount = isForm ? visited.size : completion?.completedSections ?? 0;
@@ -516,7 +520,7 @@ function ProfileSidebar({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Profile setup
+                {t("profile.setup")}
               </span>
               <span className="text-[11px] font-bold tabular-nums text-primary">{pct}%</span>
             </div>
@@ -527,7 +531,7 @@ function ProfileSidebar({
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              {visitedCount} of {PROFILE_STEPS.length} sections visited
+              {t("profile.sections_visited", { count: visitedCount, total: PROFILE_STEPS.length })}
             </p>
           </div>
         ) : profile ? (
@@ -556,11 +560,11 @@ function ProfileSidebar({
             <div className="space-y-1">
               {[
                 {
-                  label: "Age",
+                  label: t("common.age", "Age"),
                   value: formatAge(profile.date_of_birth),
                 },
-                { label: "Blood type", value: profile.blood_type ?? EMPTY_VALUE },
-                { label: "City", value: profile.city ?? EMPTY_VALUE },
+                { label: t("profile.field.blood_type"), value: profile.blood_type ?? EMPTY_VALUE },
+                { label: t("profile.field.city"), value: profile.city ?? EMPTY_VALUE },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-[10px] text-muted-foreground">{label}</span>
@@ -572,7 +576,7 @@ function ProfileSidebar({
               <div className="space-y-1.5 rounded-[6px] border border-border bg-background/60 p-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Profile filled
+                    {t("profile.profile_filled")}
                   </span>
                   <span className="text-[10px] font-bold text-primary">{completion.percent}%</span>
                 </div>
@@ -586,7 +590,7 @@ function ProfileSidebar({
                   />
                 </div>
                 <p className="text-[10px] text-muted-foreground">
-                  {completion.filled} of {completion.total} required fields filled
+                  {t("profile.fields_filled", { filled: completion.filled, total: completion.total })}
                 </p>
               </div>
             )}
@@ -641,31 +645,31 @@ function ProfileSidebar({
               <div className="flex-1 min-w-0 hidden sm:block">
                 <div className="flex items-center justify-between gap-1">
                   <span className={cn("text-xs font-medium leading-tight truncate", isActive ? "text-primary" : "")}>
-                    {step.label}
+                    {t(`profile.step.${step.id}`)}
                   </span>
                   {isActive && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
-                      editing
+                      {t("profile.editing")}
                     </span>
                   )}
                   {isDone && isForm && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
-                      done
+                      {t("profile.done")}
                     </span>
                   )}
                   {isDone && !isForm && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
-                      filled
+                      {t("profile.filled")}
                     </span>
                   )}
                   {isMissing && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-yellow-600 shrink-0">
-                      missing
+                      {t("profile.missing")}
                     </span>
                   )}
                 </div>
                 <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
-                  {step.description}
+                  {t(`profile.step.${step.id}_desc`)}
                 </p>
                 {isForm && (
                   <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
@@ -690,7 +694,7 @@ function ProfileSidebar({
             className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
             <Pencil size={12} />
-            Edit profile
+            {t("profile.edit_profile")}
           </Button>
           <Button
             variant="outline"
@@ -698,15 +702,15 @@ function ProfileSidebar({
             className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
             <Trash2 size={12} />
-            Delete
+            {t("profile.delete")}
           </Button>
         </div>
       ) : isForm ? (
         <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
-              ? "Click any section to jump directly"
-              : "Jump between sections freely — no order needed"}
+              ? t("profile.jump_edit_hint")
+              : t("profile.jump_create_hint")}
           </p>
         </div>
       ) : null}
@@ -779,10 +783,10 @@ function ProfileForm({
       <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {step.sectionTitle}
+          {t(`profile.section.${step.id}`)}
         </span>
         <span className="ml-auto text-[10px] text-muted-foreground">
-          Step {currentStep + 1} of {PROFILE_STEPS.length}
+          {t("profile.step_of", { current: currentStep + 1, total: PROFILE_STEPS.length })}
         </span>
       </div>
 
@@ -793,8 +797,8 @@ function ProfileForm({
               <Input
                 type="date"
                 {...register("date_of_birth", {
-                  required: "Required",
-                  validate: (value) => Boolean(parseProfileDate(value)) || "Enter a valid date of birth",
+                  required: t("profile.required"),
+                  validate: (value) => Boolean(parseProfileDate(value)) || t("profile.invalid_dob"),
                 })}
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -802,12 +806,12 @@ function ProfileForm({
             <FormField label={t("profile.field.gender", "Gender")} error={errors.gender?.message}>
               <Select defaultValue={defaultValues?.gender} onValueChange={(v) => setValue("gender", v)}>
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue placeholder="Select gender" />
+                  <SelectValue placeholder={t("profile.select_gender")} />
                 </SelectTrigger>
                 <SelectContent>
                   {GENDERS.map((g) => (
                     <SelectItem key={g} value={g}>
-                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                      {t(`profile.gender.${g}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -820,10 +824,10 @@ function ProfileForm({
             >
               <Input
                 {...register("national_id", {
-                  required: "Required",
-                  minLength: { value: 16, message: "Must be 16 digits" },
-                  maxLength: { value: 16, message: "Must be 16 digits" },
-                  pattern: { value: /^\d+$/, message: "Digits only" },
+                  required: t("profile.required"),
+                  minLength: { value: 16, message: t("profile.national_id_length") },
+                  maxLength: { value: 16, message: t("profile.national_id_length") },
+                  pattern: { value: /^\d+$/, message: t("profile.digits_only") },
                 })}
                 placeholder="1199580012345678"
                 maxLength={16}
@@ -838,7 +842,7 @@ function ProfileForm({
             <FormField label={t("profile.field.blood_type", "Blood type")} error={errors.blood_type?.message}>
               <Select defaultValue={defaultValues?.blood_type} onValueChange={(v) => setValue("blood_type", v)}>
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue placeholder="Select blood type" />
+                  <SelectValue placeholder={t("profile.select_blood_type")} />
                 </SelectTrigger>
                 <SelectContent>
                   {BLOODS.map((b) => (
@@ -848,7 +852,7 @@ function ProfileForm({
               </Select>
             </FormField>
             <p className="col-span-1 sm:col-span-2 text-xs text-muted-foreground mt-1">
-              Only blood type is recorded here. Detailed medical info can be managed from the Medical Info tab.
+              {t("profile.only_blood_type_note")}
             </p>
           </div>
         )}
@@ -861,21 +865,21 @@ function ProfileForm({
               className="col-span-1 sm:col-span-2"
             >
               <Input
-                {...register("address", { required: "Required" })}
+                {...register("address", { required: t("profile.required") })}
                 placeholder="KG 123 St"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
             <FormField label={t("profile.field.city", "City")} error={errors.city?.message}>
               <Input
-                {...register("city", { required: "Required" })}
+                {...register("city", { required: t("profile.required") })}
                 placeholder="Kigali"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
             <FormField label={t("profile.field.province", "Province")} error={errors.province?.message}>
               <Input
-                {...register("province", { required: "Required" })}
+                {...register("province", { required: t("profile.required") })}
                 placeholder="Kigali City"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -886,7 +890,7 @@ function ProfileForm({
               className="col-span-1 sm:col-span-2"
             >
               <Input
-                {...register("country", { required: "Required" })}
+                {...register("country", { required: t("profile.required") })}
                 placeholder="Rwanda"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -901,7 +905,7 @@ function ProfileForm({
               error={errors.emergency_contact_name?.message}
             >
               <Input
-                {...register("emergency_contact_name", { required: "Required" })}
+                {...register("emergency_contact_name", { required: t("profile.required") })}
                 placeholder="Jane Doe"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -915,11 +919,11 @@ function ProfileForm({
                 onValueChange={(v) => setValue("emergency_contact_relation", v)}
               >
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue placeholder="Relation" />
+                  <SelectValue placeholder={t("profile.field.contact_relation")} />
                 </SelectTrigger>
                 <SelectContent>
                   {RELATIONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                    <SelectItem key={r} value={r}>{t(`profile.relation.${r.toLowerCase()}`)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -931,7 +935,7 @@ function ProfileForm({
             >
               <Input
                 type="tel"
-                {...register("emergency_contact_phone", { required: "Required" })}
+                {...register("emergency_contact_phone", { required: t("profile.required") })}
                 placeholder="0789999999"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -942,10 +946,10 @@ function ProfileForm({
 
       <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-muted/50 border-t border-border">
         <Button variant="outline" onClick={goBack} className="border-border text-xs">
-          {currentStep === 0 ? "Cancel" : "← Back"}
+          {currentStep === 0 ? t("profile.cancel") : t("profile.back")}
         </Button>
         <span className="text-[11px] text-muted-foreground">
-          Step {currentStep + 1} of {PROFILE_STEPS.length}
+          {t("profile.step_of", { current: currentStep + 1, total: PROFILE_STEPS.length })}
         </span>
         <Button
           onClick={goNext}
@@ -953,7 +957,7 @@ function ProfileForm({
           className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 gap-1.5"
         >
           {isSaving && isLast && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {isLast ? (isEdit ? "Save changes" : "Create profile") : "Next →"}
+          {isLast ? (isEdit ? t("profile.save_changes") : t("profile.create_profile")) : t("profile.next")}
         </Button>
       </div>
     </div>
@@ -988,14 +992,14 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
           <p className="text-[10px] mt-0.5 text-muted-foreground">{profile.user?.email}</p>
           <div className="flex gap-1.5 mt-2 flex-wrap">
             <Badge className="text-[11px] font-medium rounded-full px-3 bg-primary/15 text-primary border border-primary/30">
-              Active
+              {t("profile.active")}
             </Badge>
             <Badge className="text-[11px] font-medium rounded-full px-3 bg-muted text-muted-foreground border border-border">
               {formatGender(profile.gender)} · {formatAge(profile.date_of_birth)}
             </Badge>
             {profile.blood_type && (
               <Badge className="text-[11px] font-medium rounded-full px-3 bg-destructive/15 text-destructive border border-destructive/25">
-                {profile.blood_type} Blood
+                {t("profile.blood_badge", { type: profile.blood_type })}
               </Badge>
             )}
           </div>
@@ -1021,19 +1025,21 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
           </div>
           <div>
             <p className="text-xs font-semibold text-foreground">
-              {isComplete ? "Profile information complete" : "Complete your profile information"}
+              {isComplete ? t("profile.profile_complete") : t("profile.profile_incomplete")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              {completion.filled} of {completion.total} required fields are filled
-              {!isComplete && completion.missingSections.length > 0
-                ? `. Missing: ${completion.missingSections.join(", ")}.`
+              {t("profile.fields_are_filled", { filled: completion.filled, total: completion.total })}
+              {!isComplete && completion.missingSectionIds.length > 0
+                ? t("profile.missing_sections", {
+                  sections: completion.missingSectionIds.map((id) => t(`profile.step.${id}`)).join(", "),
+                })
                 : "."}
             </p>
           </div>
         </div>
         {!isComplete && (
           <Button onClick={onEdit} size="sm" className="h-8 text-xs text-primary-foreground">
-            Complete profile
+            {t("profile.complete_profile")}
           </Button>
         )}
       </div>
@@ -1061,14 +1067,14 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
               {profile.blood_type ?? "?"}
             </div>
             <div>
-              <p className="text-[11px] font-medium text-foreground">Blood type {profile.blood_type ?? "—"}</p>
+              <p className="text-[11px] font-medium text-foreground">{t("profile.blood_type_label", { type: profile.blood_type ?? "—" })}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {profile.insurance
-                  ? `${profile.insurance.name} · ${parseFloat(profile.insurance.coverage_percentage)}% coverage`
-                  : "No insurance linked"}
+                  ? t("profile.insurance_linked", { name: profile.insurance.name, coverage: parseFloat(profile.insurance.coverage_percentage) })
+                  : t("profile.no_insurance_linked")}
               </p>
               {profile.medical_info && (
-                <p className="text-[10px] text-primary mt-1">Medical info on file</p>
+                <p className="text-[10px] text-primary mt-1">{t("profile.medical_info_on_file")}</p>
               )}
             </div>
           </div>
@@ -1109,7 +1115,7 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No emergency contact recorded. Edit your profile to add one.
+              {t("profile.no_emergency_contact")}
             </p>
           )}
         </SectionCard>
@@ -1122,6 +1128,7 @@ function ProfileView({ profile, onEdit }: { profile: TPatientProfile; onEdit: ()
 // Medical Info Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function MedicalInfoTab() {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetMedicalInfo();
   const saveMedical = useSaveMedicalInfo();
   const [isEditing, setIsEditing] = useState(false);
@@ -1160,12 +1167,12 @@ function MedicalInfoTab() {
   const handleSave = () => {
     saveMedical.mutate(form, {
       onSuccess: () => {
-        toast.success("Medical information saved.");
+        toast.success(t("profile.medical_info_saved"));
         setIsEditing(false);
       },
       onError: (err: unknown) => {
         const { message } = toMutationError(err);
-        toast.error(message ?? "Failed to save medical info.");
+        toast.error(message ?? t("profile.medical_info_save_failed"));
       },
     });
   };
@@ -1186,10 +1193,10 @@ function MedicalInfoTab() {
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between px-4 sm:px-5 pt-4 pb-3 border-b border-border">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Edit medical information
+            {t("profile.edit_medical_info")}
           </span>
           <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="h-7 text-xs text-muted-foreground">
-            Cancel
+            {t("profile.cancel")}
           </Button>
         </div>
 
@@ -1197,11 +1204,11 @@ function MedicalInfoTab() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(
               [
-                { key: "allergies", label: "Allergies", placeholder: "e.g. Penicillin" },
-                { key: "chronic_conditions", label: "Chronic conditions", placeholder: "e.g. Diabetes" },
-                { key: "current_medications", label: "Current medications", placeholder: "e.g. Metformin 500mg" },
-                { key: "previous_surgeries", label: "Previous surgeries", placeholder: "e.g. Appendectomy 2018" },
-                { key: "family_history", label: "Family history", placeholder: "e.g. Heart disease" },
+                { key: "allergies", label: t("profile.allergies"), placeholder: t("profile.allergies_placeholder") },
+                { key: "chronic_conditions", label: t("profile.chronic_conditions"), placeholder: t("profile.chronic_conditions_placeholder") },
+                { key: "current_medications", label: t("profile.current_medications"), placeholder: t("profile.current_medications_placeholder") },
+                { key: "previous_surgeries", label: t("profile.previous_surgeries"), placeholder: t("profile.previous_surgeries_placeholder") },
+                { key: "family_history", label: t("profile.family_history"), placeholder: t("profile.family_history_placeholder") },
               ] as { key: keyof Pick<UpdateMedicalPayload, "allergies" | "chronic_conditions" | "current_medications" | "previous_surgeries" | "family_history">; label: string; placeholder: string }[]
             ).map(({ key, label, placeholder }) => (
               <div key={key}>
@@ -1216,27 +1223,27 @@ function MedicalInfoTab() {
 
             <div className="space-y-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground mb-1.5 block">Smoking status</Label>
+                <Label className="text-[10px] text-muted-foreground mb-1.5 block">{t("profile.smoking_status")}</Label>
                 <Select value={form.smoking_status ?? ""} onValueChange={(v) => setForm((f) => ({ ...f, smoking_status: v }))}>
                   <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={t("profile.select")} />
                   </SelectTrigger>
                   <SelectContent>
                     {SMOKING.map((s) => (
-                      <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      <SelectItem key={s} value={s}>{t(`profile.smoking.${s}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground mb-1.5 block">Alcohol use</Label>
+                <Label className="text-[10px] text-muted-foreground mb-1.5 block">{t("profile.alcohol_use")}</Label>
                 <Select value={form.alcohol_use ?? ""} onValueChange={(v) => setForm((f) => ({ ...f, alcohol_use: v }))}>
                   <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={t("profile.select")} />
                   </SelectTrigger>
                   <SelectContent>
                     {ALCOHOL.map((a) => (
-                      <SelectItem key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</SelectItem>
+                      <SelectItem key={a} value={a}>{t(`profile.alcohol.${a}`)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1244,11 +1251,11 @@ function MedicalInfoTab() {
             </div>
 
             <div className="col-span-1 sm:col-span-2">
-              <Label className="text-[10px] text-muted-foreground mb-1.5 block">Additional notes</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1.5 block">{t("profile.additional_notes")}</Label>
               <Textarea
                 value={form.notes ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                placeholder="Any other relevant notes..."
+                placeholder={t("profile.notes_placeholder")}
                 className="border-border focus-visible:ring-primary text-xs resize-none"
                 rows={3}
               />
@@ -1258,7 +1265,7 @@ function MedicalInfoTab() {
 
         <div className="flex justify-end gap-2 px-4 sm:px-5 py-3 bg-muted/50 border-t border-border">
           <Button variant="outline" onClick={() => setIsEditing(false)} className="border-border text-xs">
-            Cancel
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleSave}
@@ -1266,7 +1273,7 @@ function MedicalInfoTab() {
             className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 gap-1.5"
           >
             {saveMedical.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            Save medical info
+            {t("profile.save_medical_info")}
           </Button>
         </div>
       </div>
@@ -1277,7 +1284,7 @@ function MedicalInfoTab() {
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Medical Information</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t("profile.medical_information")}</h3>
           {patient && (
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {patient.user?.name} · {formatAge(patient.date_of_birth)}
@@ -1286,7 +1293,7 @@ function MedicalInfoTab() {
         </div>
         <Button onClick={startEdit} variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-border">
           <Pencil size={12} />
-          {medical ? "Edit" : "Add info"}
+          {medical ? t("profile.edit") : t("profile.add_info")}
         </Button>
       </div>
 
@@ -1296,37 +1303,37 @@ function MedicalInfoTab() {
             <Stethoscope size={20} className="text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">No medical info yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Add your allergies, conditions, medications and more.</p>
+            <p className="text-sm font-medium text-foreground">{t("profile.no_medical_info")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("profile.no_medical_info_desc")}</p>
           </div>
           <Button onClick={startEdit} size="sm" className="text-xs gap-1.5 mt-1">
             <Plus size={12} />
-            Add medical info
+            {t("profile.add_medical_info")}
           </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SectionCard icon={AlertTriangle} title="Allergies">
+          <SectionCard icon={AlertTriangle} title={t("profile.allergies")}>
             <TagList items={medical.allergies ?? []} color="red" />
           </SectionCard>
-          <SectionCard icon={Activity} title="Chronic Conditions">
+          <SectionCard icon={Activity} title={t("profile.chronic_conditions")}>
             <TagList items={medical.chronic_conditions ?? []} color="yellow" />
           </SectionCard>
-          <SectionCard icon={Pill} title="Current Medications">
+          <SectionCard icon={Pill} title={t("profile.current_medications")}>
             <TagList items={medical.current_medications ?? []} color="blue" />
           </SectionCard>
-          <SectionCard icon={FlaskConical} title="Previous Surgeries">
+          <SectionCard icon={FlaskConical} title={t("profile.previous_surgeries")}>
             <TagList items={medical.previous_surgeries ?? []} color="default" />
           </SectionCard>
-          <SectionCard icon={HeartPulse} title="Family History">
+          <SectionCard icon={HeartPulse} title={t("profile.family_history")}>
             <TagList items={medical.family_history ?? []} color="green" />
           </SectionCard>
-          <SectionCard icon={User} title="Lifestyle">
+          <SectionCard icon={User} title={t("profile.lifestyle")}>
             <div className="space-y-2.5">
               {[
-                { label: "Smoking", value: medical.smoking_status },
-                { label: "Alcohol", value: medical.alcohol_use },
-              ].map(({ label, value }) => (
+                { label: t("profile.smoking_label"), ns: "smoking", value: medical.smoking_status },
+                { label: t("profile.alcohol_label"), ns: "alcohol", value: medical.alcohol_use },
+              ].map(({ label, ns, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {label}
@@ -1341,14 +1348,14 @@ function MedicalInfoTab() {
                           : "bg-yellow-500/10 text-yellow-700 border-yellow-500/25"
                     )}
                   >
-                    {value ? value.charAt(0).toUpperCase() + value.slice(1) : "—"}
+                    {value ? t(`profile.${ns}.${value}`) : "—"}
                   </Badge>
                 </div>
               ))}
               {medical.notes && (
                 <div>
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                    Notes
+                    {t("profile.notes")}
                   </span>
                   <p className="text-[11px] text-foreground leading-relaxed">{medical.notes}</p>
                 </div>
@@ -1369,6 +1376,7 @@ function InsuranceTab({
 }: {
   profileInsurance?: Insurance | null;
 }) {
+  const { t } = useTranslation();
   const { data: insurance, isLoading } = useGetInsurance();
   const { data: publicInsurances = [], isLoading: isLoadingPublic } = useGetPublicInsurances();
   const updateInsurance = useUpdateInsurance();
@@ -1392,11 +1400,11 @@ function InsuranceTab({
 
   const handleSave = () => {
     if (!selectedId) {
-      toast.error("Please select an insurance provider.");
+      toast.error(t("profile.select_provider_error"));
       return;
     }
     if (!insuranceNumber.trim()) {
-      toast.error("Insurance number is required.");
+      toast.error(t("profile.insurance_number_required"));
       return;
     }
     updateInsurance.mutate(
@@ -1406,12 +1414,12 @@ function InsuranceTab({
       },
       {
         onSuccess: () => {
-          toast.success("Insurance updated successfully.");
+          toast.success(t("profile.insurance_updated"));
           setIsEditing(false);
         },
         onError: (err: unknown) => {
           const { message } = toMutationError(err);
-          toast.error(message ?? "Failed to update insurance.");
+          toast.error(message ?? t("profile.insurance_update_failed"));
         },
       }
     );
@@ -1430,13 +1438,13 @@ function InsuranceTab({
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">My Insurance</h3>
-          <p className="text-[10px] text-muted-foreground mt-0.5">Health insurance linked to your profile</p>
+          <h3 className="text-sm font-semibold text-foreground">{t("profile.my_insurance")}</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{t("profile.insurance_sub")}</p>
         </div>
         {active && !isEditing && (
           <Button onClick={startEdit} variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-border">
             <RefreshCw size={12} />
-            Update
+            {t("profile.update")}
           </Button>
         )}
       </div>
@@ -1447,12 +1455,12 @@ function InsuranceTab({
             <Shield size={20} className="text-muted-foreground" />
           </div>
           <div>
-            <p className="text-sm font-medium text-foreground">No insurance linked</p>
-            <p className="text-xs text-muted-foreground mt-1">Link your health insurance to access coverage benefits.</p>
+            <p className="text-sm font-medium text-foreground">{t("profile.no_insurance_linked")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("profile.link_insurance_desc")}</p>
           </div>
           <Button onClick={startEdit} size="sm" className="text-xs gap-1.5 mt-1">
             <Plus size={12} />
-            Link insurance
+            {t("profile.link_insurance")}
           </Button>
         </div>
       ) : isEditing ? (
@@ -1462,12 +1470,12 @@ function InsuranceTab({
               <Shield size={14} className="text-primary" />
             </div>
             <h3 className="text-xs font-semibold text-foreground">
-              {active ? "Update insurance" : "Link insurance"}
+              {active ? t("profile.update_insurance") : t("profile.link_insurance")}
             </h3>
           </div>
           <div className="p-4 space-y-4">
             {/* Insurance provider select */}
-            <FormField label="Insurance provider">
+            <FormField label={t("profile.insurance_provider")}>
               <Select
                 value={selectedId}
                 onValueChange={setSelectedId}
@@ -1477,10 +1485,10 @@ function InsuranceTab({
                   {isLoadingPublic ? (
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 size={12} className="animate-spin" />
-                      Loading providers…
+                      {t("profile.loading_providers")}
                     </span>
                   ) : (
-                    <SelectValue placeholder="Select a provider" />
+                    <SelectValue placeholder={t("profile.select_provider")} />
                   )}
                 </SelectTrigger>
                 <SelectContent>
@@ -1498,7 +1506,7 @@ function InsuranceTab({
                         )}
                         <span>{ins.name}</span>
                         <span className="text-muted-foreground text-[10px]">
-                          · {parseFloat(ins.coverage_percentage)}% coverage
+                          · {parseFloat(ins.coverage_percentage)}% {t("profile.coverage")}
                         </span>
                       </div>
                     </SelectItem>
@@ -1531,17 +1539,17 @@ function InsuranceTab({
                   )}
                 </div>
                 <Badge className="ml-auto text-[11px] rounded-full px-2.5 bg-green-500/10 text-green-700 border border-green-500/25 shrink-0">
-                  {parseFloat(selectedPublicInsurance.coverage_percentage)}% coverage
+                  {parseFloat(selectedPublicInsurance.coverage_percentage)}% {t("profile.coverage")}
                 </Badge>
               </div>
             )}
 
             {/* Insurance number input */}
-            <FormField label="Insurance number">
+            <FormField label={t("profile.insurance_number")}>
               <Input
                 value={insuranceNumber}
                 onChange={(e) => setInsuranceNumber(e.target.value)}
-                placeholder="e.g. RSSB-123456"
+                placeholder={t("profile.insurance_number_placeholder")}
                 className="border-border focus-visible:ring-primary font-mono text-xs h-9"
               />
             </FormField>
@@ -1552,7 +1560,7 @@ function InsuranceTab({
                 onClick={() => setIsEditing(false)}
                 className="border-border text-xs"
               >
-                Cancel
+                {t("profile.cancel")}
               </Button>
               <Button
                 onClick={handleSave}
@@ -1560,7 +1568,7 @@ function InsuranceTab({
                 className="text-primary-foreground text-xs bg-primary hover:bg-primary/90 gap-1.5"
               >
                 {updateInsurance.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Save
+                {t("profile.save")}
               </Button>
             </div>
           </div>
@@ -1581,13 +1589,13 @@ function InsuranceTab({
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-sm font-semibold text-foreground">{active.name}</h4>
                   <Badge className="text-[10px] font-medium rounded-full px-2.5 bg-primary/15 text-primary border border-primary/30">
-                    Active
+                    {t("profile.active")}
                   </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5">{active.code}</p>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex-1">
-                    <p className="text-[10px] text-muted-foreground mb-1">Coverage</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">{t("profile.coverage_label")}</p>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                       <div
                         className="h-full rounded-full bg-primary transition-all duration-700"
@@ -1595,7 +1603,7 @@ function InsuranceTab({
                       />
                     </div>
                     <p className="text-[10px] font-semibold text-primary mt-1">
-                      {parseFloat(active.coverage_percentage)}% covered
+                      {parseFloat(active.coverage_percentage)}% {t("profile.coverage")}
                     </p>
                   </div>
                 </div>
@@ -1603,13 +1611,13 @@ function InsuranceTab({
             </div>
           </div>
 
-          <SectionCard icon={CreditCard} title="Coverage Details">
+          <SectionCard icon={CreditCard} title={t("profile.coverage_details")}>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Provider" value={active.name} />
-              <Field label="Code" value={active.code} />
-              <Field label="Coverage" value={`${parseFloat(active.coverage_percentage)}%`} />
+              <Field label={t("profile.provider")} value={active.name} />
+              <Field label={t("profile.code")} value={active.code} />
+              <Field label={t("profile.coverage_label")} value={`${parseFloat(active.coverage_percentage)}%`} />
               {active.insurance_number && (
-                <Field label="Insurance number" value={active.insurance_number} mono />
+                <Field label={t("profile.insurance_number")} value={active.insurance_number} mono />
               )}
             </div>
           </SectionCard>
@@ -1653,12 +1661,12 @@ const PatientProfile = () => {
   const handleSubmit = (data: ProfileFormData) => {
     upsert.mutate(data, {
       onSuccess: () => {
-        toast.success(resolvedMode === "edit" ? "Profile updated successfully." : "Profile created successfully.");
+        toast.success(resolvedMode === "edit" ? t("profile.profile_updated") : t("profile.profile_created"));
         setProfileMode("view");
       },
       onError: (err: unknown) => {
         const { message } = toMutationError(err);
-        toast.error(message ?? "Something went wrong.");
+        toast.error(message ?? t("profile.profile_error"));
       },
     });
   };
@@ -1673,15 +1681,15 @@ const PatientProfile = () => {
     setProfileMode("create");
     setCurrentStep(0);
     setVisited(new Set([0]));
-    toast.info("Profile cleared. Fill the form to create a new one.");
+    toast.info(t("profile.profile_cleared"));
   };
 
   const pageSubtitle = (() => {
     if (mainTab !== "profile") return undefined;
     if (isForm)
       return resolvedMode === "edit"
-        ? "Update your personal and medical information"
-        : "Fill in the details below to get started";
+        ? t("profile.update_info")
+        : t("profile.fill_details");
     return t("pages.patient.profile_sub", "Manage your profile, medical details and insurance");
   })();
 

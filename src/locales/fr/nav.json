@@ -6,9 +6,11 @@
   "pharmacy": "Pharmacie",
   "forYou": "Pour vous",
   "team": "Équipe",
+  "closeMenu": "Fermer le menu",
+  "openMenu": "Ouvrir le menu",
   "topnav": {
   "email": "admin@mediconnect.rw",
   "phone": "+250 782 168 650",
-  "support": "Assistance"
+  "help": "Assistance"
 }
 }

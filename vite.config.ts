@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    watch: {
+      usePolling: process.env.CHOKIDAR_USEPOLLING === "true",
+    },
   },
 
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),

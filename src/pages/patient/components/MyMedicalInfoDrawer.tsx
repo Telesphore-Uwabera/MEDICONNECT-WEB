@@ -46,7 +46,7 @@ export function MyMedicalInfoDrawer({ open, onClose }: { open: boolean; onClose:
           </div>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("consult.connect.close")}
             className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
           >
             <X className="h-4 w-4" />

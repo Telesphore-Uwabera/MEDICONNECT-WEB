@@ -120,16 +120,6 @@ const DAY_ORDER = [
   "sunday",
 ];
 
-const DAY_SHORT: Record<string, string> = {
-  monday: "Mon",
-  tuesday: "Tue",
-  wednesday: "Wed",
-  thursday: "Thu",
-  friday: "Fri",
-  saturday: "Sat",
-  sunday: "Sun",
-};
-
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -182,6 +172,7 @@ function InfoRow({
 // Working Hours Grid
 // ─────────────────────────────────────────────────────────────────────────────
 function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
+  const { t } = useTranslation();
   const sorted = useMemo(
     () =>
       [...workingHours].sort(
@@ -206,7 +197,7 @@ function WorkingHoursGrid({ workingHours }: { workingHours: WorkingHour[] }) {
             )}
           >
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {DAY_SHORT[wh.day_of_week]}
+              {t(`pages.cards.day_${wh.day_of_week}_short`)}
             </span>
             <div className="mt-1.5">
               {isOpen ? (
@@ -265,7 +256,7 @@ function ScheduleSection({
         <div className="h-10 w-10 rounded-[6px] bg-muted/50 border border-border flex items-center justify-center">
           <CalendarDays className="h-4 w-4 text-muted-foreground/40" />
         </div>
-        <p className="text-[13px] font-semibold text-foreground">No schedule yet</p>
+        <p className="text-[13px] font-semibold text-foreground">{t("pages.cards.no_schedule_heading")}</p>
         <p className="text-[12px] text-muted-foreground">
           {t("pages.cards.no_published")}
         </p>
@@ -285,7 +276,7 @@ function ScheduleSection({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-            <Activity className="h-2.5 w-2.5" /> Open days this week
+            <Activity className="h-2.5 w-2.5" /> {t("pages.cards.open_days_this_week")}
           </span>
           <span className="text-[12px] font-semibold tabular-nums text-foreground">
             {activeDays.length} / {sorted.length}
@@ -301,7 +292,7 @@ function ScheduleSection({
         </div>
         {totalCapacity > 0 && (
           <p className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-            {totalCapacity} total patient slots / week
+            {t("pages.cards.total_slots_week", { count: totalCapacity })}
           </p>
         )}
       </div>
@@ -309,13 +300,13 @@ function ScheduleSection({
       {/* Header row */}
       <div className="flex items-center gap-3 pb-1.5 border-b border-border/60">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex-1">
-          Day
+          {t("pages.cards.day_col")}
         </span>
         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-24 text-center">
-          Hours
+          {t("pages.cards.hours_col")}
         </span>
         <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-20 text-right">
-          Status
+          {t("pages.cards.status_col")}
         </span>
       </div>
 
@@ -334,12 +325,12 @@ function ScheduleSection({
             >
               {/* Day name */}
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-foreground leading-tight capitalize">
-                  {wh.day_of_week}
+                <p className="text-[13px] font-semibold text-foreground leading-tight">
+                  {t(`pages.cards.day_${wh.day_of_week}`)}
                 </p>
                 {isOpen && wh.max_patients && (
                   <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
-                    max {wh.max_patients} patients
+                    {t("pages.cards.max_patients", { count: wh.max_patients })}
                   </p>
                 )}
               </div>
@@ -352,7 +343,7 @@ function ScheduleSection({
                       {wh.open_time!.slice(0, 5)} – {wh.close_time!.slice(0, 5)}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-muted-foreground">All day</span>
+                    <span className="text-[11px] text-muted-foreground">{t("pages.cards.all_day")}</span>
                   )
                 ) : (
                   <span className="text-[11px] text-muted-foreground">—</span>
@@ -363,7 +354,7 @@ function ScheduleSection({
               <div className="w-20 text-right">
                 {isOpen ? (
                   <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                    Open
+                    {t("pages.landing.open")}
                   </span>
                 ) : (
                   <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -422,7 +413,7 @@ function HospitalViewDrawer({
   const [tab, setTab] = useState<"overview" | "schedule">("overview");
 
   const hoursLabel = hospital.is_open_24h
-    ? "Open 24 hours"
+    ? t("pages.cards.open_24h")
     : hospital.opens_at && hospital.closes_at
       ? `${hospital.opens_at.slice(0, 5)} – ${hospital.closes_at.slice(0, 5)}`
       : null;
@@ -433,7 +424,7 @@ function HospitalViewDrawer({
     hospital.is_accepting_bookings === 1;
 
   const verifiedDate = hospital.verified_at
-    ? new Date(hospital.verified_at).toLocaleDateString("en-GB", {
+    ? new Date(hospital.verified_at).toLocaleDateString(i18n.language, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -477,7 +468,7 @@ function HospitalViewDrawer({
                   {hospital.name_en}
                 </SheetTitle>
                 {verifiedDate && (
-                  <span title={`Verified ${verifiedDate}`} className="shrink-0">
+                  <span title={t("pages.cards.verified_title", { date: verifiedDate })} className="shrink-0">
                     <BadgeCheck className="h-3.5 w-3.5 text-primary" />
                   </span>
                 )}
@@ -489,7 +480,7 @@ function HospitalViewDrawer({
               )}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
-                  {hospital.type ?? "Hospital"}
+                  {hospital.type ?? t("pages.cards.hospital_type_fallback")}
                 </span>
                 <span
                   className={cn(
@@ -499,7 +490,7 @@ function HospitalViewDrawer({
                       : "bg-muted text-muted-foreground border-border/60"
                   )}
                 >
-                  {hospital.status ?? "unknown"}
+                  {hospital.status ?? t("common.unknown")}
                 </span>
                 <span
                   className={cn(
@@ -509,7 +500,7 @@ function HospitalViewDrawer({
                       : "bg-muted text-muted-foreground border-border/60"
                   )}
                 >
-                  {isAccepting ? "Accepting Bookings" : "Closed Bookings"}
+                  {isAccepting ? t("pages.cards.accepting_bookings") : t("pages.cards.closed_bookings")}
                 </span>
               </div>
             </div>
@@ -519,10 +510,10 @@ function HospitalViewDrawer({
         {/* ── Tabs ── */}
         <div className="flex items-center gap-1 px-4 py-2 bg-muted/20 border-b border-border shrink-0">
           <TabBtn active={tab === "overview"} onClick={() => setTab("overview")}>
-            Overview
+            {t("pages.cards.overview_tab")}
           </TabBtn>
           <TabBtn active={tab === "schedule"} onClick={() => setTab("schedule")}>
-            Schedule
+            {t("pages.cards.schedule_tab")}
           </TabBtn>
         </div>
 
@@ -538,19 +529,19 @@ function HospitalViewDrawer({
                 {[
                   {
                     icon: <Users className="h-2.5 w-2.5 text-muted-foreground" />,
-                    label: "Doctors",
+                    label: t("pages.cards.stat_doctors"),
                     value: hospital.doctors_count ?? 0,
                   },
                   {
                     icon: <Layers className="h-2.5 w-2.5 text-muted-foreground" />,
-                    label: "Depts",
+                    label: t("pages.cards.stat_depts"),
                     value: hospital.departments_count ?? 0,
                   },
                   {
                     icon: (
                       <Stethoscope className="h-2.5 w-2.5 text-muted-foreground" />
                     ),
-                    label: "Services",
+                    label: t("pages.cards.stat_services"),
                     value: hospital.services_count ?? 0,
                   },
                 ].map(({ icon, label, value }) => (
@@ -574,12 +565,12 @@ function HospitalViewDrawer({
               {/* Location */}
               <div>
                 <SectionLabel>
-                  <MapPin className="h-2.5 w-2.5" /> Location
+                  <MapPin className="h-2.5 w-2.5" /> {t("pages.cards.location")}
                 </SectionLabel>
                 <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                   <InfoRow
                     icon={<MapPin className="h-3 w-3" />}
-                    label="Address"
+                    label={t("pages.cards.address_label")}
                     value={[
                       hospital.address,
                       hospital.city,
@@ -600,18 +591,18 @@ function HospitalViewDrawer({
               {/* Contact */}
               <div>
                 <SectionLabel>
-                  <Phone className="h-2.5 w-2.5" /> Contact
+                  <Phone className="h-2.5 w-2.5" /> {t("pages.cards.contact")}
                 </SectionLabel>
                 <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                   <InfoRow
                     icon={<Phone className="h-3 w-3" />}
-                    label="Phone"
+                    label={t("pages.cards.phone_label")}
                     value={hospital.phone}
                     href={hospital.phone ? `tel:${hospital.phone}` : undefined}
                   />
                   <InfoRow
                     icon={<Mail className="h-3 w-3" />}
-                    label="Email"
+                    label={t("pages.cards.email_label")}
                     value={hospital.email}
                     href={
                       hospital.email ? `mailto:${hospital.email}` : undefined
@@ -619,7 +610,7 @@ function HospitalViewDrawer({
                   />
                   <InfoRow
                     icon={<Globe className="h-3 w-3" />}
-                    label="Website"
+                    label={t("pages.cards.website_label")}
                     value={hospital.website}
                     href={hospital.website ?? undefined}
                   />
@@ -629,7 +620,7 @@ function HospitalViewDrawer({
               {/* Hours */}
               <div>
                 <SectionLabel>
-                  <Clock className="h-2.5 w-2.5" /> Opening Hours
+                  <Clock className="h-2.5 w-2.5" /> {t("pages.cards.opening_hours")}
                 </SectionLabel>
                 {hoursLabel && (
                   <p className="text-[12px] text-foreground font-medium mb-2">
@@ -645,7 +636,7 @@ function HospitalViewDrawer({
               {hospital.departments && hospital.departments.length > 0 && (
                 <div>
                   <SectionLabel>
-                    <Layers className="h-2.5 w-2.5" /> Departments
+                    <Layers className="h-2.5 w-2.5" /> {t("pages.cards.departments_section")}
                   </SectionLabel>
                   <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {hospital.departments.map((dept) => (
@@ -665,7 +656,7 @@ function HospitalViewDrawer({
               {allServices.length > 0 && (
                 <div>
                   <SectionLabel>
-                    <Activity className="h-2.5 w-2.5" /> Services
+                    <Activity className="h-2.5 w-2.5" /> {t("pages.cards.stat_services")}
                   </SectionLabel>
                   <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {allServices.map((svc) => (
@@ -684,7 +675,7 @@ function HospitalViewDrawer({
               {/* Description */}
               {hospital.description_en && (
                 <div>
-                  <SectionLabel>About</SectionLabel>
+                  <SectionLabel>{t("pages.cards.about")}</SectionLabel>
                   <p className="rounded-[6px] border border-border bg-card p-3 text-[13px] text-muted-foreground leading-relaxed">
                     {hospital.description_en}
                   </p>
@@ -695,18 +686,18 @@ function HospitalViewDrawer({
               {(hospital.registration_number || verifiedDate) && (
                 <div>
                   <SectionLabel>
-                    <ShieldCheck className="h-2.5 w-2.5" /> Registration
+                    <ShieldCheck className="h-2.5 w-2.5" /> {t("pages.cards.registration_section")}
                   </SectionLabel>
                   <div className="rounded-[6px] border border-border bg-card px-3 py-2 divide-y divide-border/40">
                     <InfoRow
                       icon={<ShieldCheck className="h-3 w-3" />}
-                      label="Reg. Number"
+                      label={t("pages.cards.reg_number_label")}
                       value={hospital.registration_number}
                     />
                     {verifiedDate && (
                       <InfoRow
                         icon={<BadgeCheck className="h-3 w-3" />}
-                        label="Verified on"
+                        label={t("pages.cards.verified_on_label")}
                         value={verifiedDate}
                       />
                     )}
@@ -717,7 +708,7 @@ function HospitalViewDrawer({
               {/* Insurances */}
               {hospital.insurances && hospital.insurances.length > 0 && (
                 <div>
-                  <SectionLabel>Insurances Accepted</SectionLabel>
+                  <SectionLabel>{t("pages.cards.insurances_section")}</SectionLabel>
                   <div className="rounded-[6px] border border-border bg-card p-3 flex flex-wrap gap-1.5">
                     {hospital.insurances.map((ins, i) => (
                       <span
@@ -759,7 +750,7 @@ function HospitalViewDrawer({
             onClick={() => onOpenChange(false)}
             className="h-7 px-3 text-[12px] font-medium rounded-[6px]"
           >
-            Close
+            {t("common.close")}
           </Button>
         </SheetFooter>
       </SheetContent>

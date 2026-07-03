@@ -2,6 +2,7 @@
 // EducationStep
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus } from "lucide-react";
@@ -19,6 +20,7 @@ export const EducationStep = React.memo(function EducationStep({
   entries,
   onChange,
 }: EducationStepProps) {
+  const { t } = useTranslation();
   const addEntry = useCallback(() => {
     onChange([
       ...entries,
@@ -52,7 +54,7 @@ export const EducationStep = React.memo(function EducationStep({
     <div className="space-y-4">
       {entries.length === 0 && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-[6px] px-4 py-3 border border-dashed border-border">
-          No education entries yet. Click "Add education" below.
+          {t("doctorProfile.no_education_yet")}
         </p>
       )}
 
@@ -64,7 +66,7 @@ export const EducationStep = React.memo(function EducationStep({
             </p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField label="Degree *">
+            <FormField label={`${t("doctorProfile.degree_label")} *`}>
               <Input
                 value={entry.degree}
                 onChange={(e) =>
@@ -75,7 +77,7 @@ export const EducationStep = React.memo(function EducationStep({
               />
             </FormField>
 
-            <FormField label="Institution *">
+            <FormField label={`${t("doctorProfile.institution")} *`}>
               <Input
                 value={entry.institution}
                 onChange={(e) =>
@@ -86,7 +88,7 @@ export const EducationStep = React.memo(function EducationStep({
               />
             </FormField>
 
-            <FormField label="Country *">
+            <FormField label={`${t("doctorProfile.country_label")} *`}>
               <Input
                 value={entry.country}
                 onChange={(e) =>
@@ -98,7 +100,7 @@ export const EducationStep = React.memo(function EducationStep({
             </FormField>
 
             <div className="grid grid-cols-2 gap-2">
-              <FormField label="Start year *">
+              <FormField label={`${t("doctorProfile.start_year")} *`}>
                 <Input
                   type="number"
                   value={entry.start_year}
@@ -110,7 +112,7 @@ export const EducationStep = React.memo(function EducationStep({
                   className="border-border focus-visible:ring-primary text-xs h-9"
                 />
               </FormField>
-              <FormField label="End year">
+              <FormField label={t("doctorProfile.end_year")}>
                 <Input
                   type="number"
                   value={entry.end_year}
@@ -133,7 +135,7 @@ export const EducationStep = React.memo(function EducationStep({
         onClick={addEntry}
         className="w-full border-dashed border-border text-xs text-muted-foreground hover:text-primary hover:border-primary"
       >
-        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add education
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> {t("doctorProfile.add_education")}
       </Button>
     </div>
   );

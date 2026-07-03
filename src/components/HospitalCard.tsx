@@ -47,7 +47,7 @@ export const HospitalCard = ({ hospital }) => {
         {/* ── Top strip ── */}
         <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
           <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            {hospital.type ?? "Hospital"}
+            {hospital.type ?? t("pages.cards.hospital_type_fallback")}
           </span>
           <span
             className={cn(
@@ -93,14 +93,14 @@ export const HospitalCard = ({ hospital }) => {
               <span className="text-xs font-semibold text-foreground">
                 {hospital.doctors_count ?? 0}
               </span>
-              <span className="text-[10px] text-muted-foreground">doctors</span>
+              <span className="text-[10px] text-muted-foreground">{t("pages.cards.doctors_label")}</span>
             </div>
             <div className="flex items-center justify-center gap-1.5 py-1.5 bg-muted/20">
               <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs font-semibold text-foreground">
                 {stats.activeDays}
               </span>
-              <span className="text-[10px] text-muted-foreground">open days</span>
+              <span className="text-[10px] text-muted-foreground">{t("pages.cards.open_days_label")}</span>
             </div>
           </div>
 
@@ -117,7 +117,7 @@ export const HospitalCard = ({ hospital }) => {
               ))}
               {extraDepartments > 0 && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-secondary text-muted-foreground border border-border/60">
-                  +{extraDepartments} more
+                  {t("pages.cards.more_count", { count: extraDepartments })}
                 </span>
               )}
             </div>
@@ -126,8 +126,8 @@ export const HospitalCard = ({ hospital }) => {
           {/* Insurances count — replaces old services count */}
           <p className="mt-2 text-sm text-muted-foreground">
             {hospital.insurances?.length > 0
-              ? `${hospital.insurances.length} insurance${hospital.insurances.length !== 1 ? "s" : ""} accepted`
-              : "No insurances listed"}
+              ? t("pages.cards.insurances_accepted", { count: hospital.insurances.length })
+              : t("pages.cards.no_insurances")}
           </p>
 
           {/* Actions */}

@@ -267,11 +267,11 @@ export function InstantConsultTab() {
         writeSummaryToWindow(win, summary, false);
       } else {
         win?.close();
-        toast.error("No consultation summary was recorded for this consultation.");
+        toast.error(t("pages.doctor.no_consultation_summary"));
       }
     } catch (err: unknown) {
       win?.close();
-      toast.error(getErrMsg(err, "Could not load the consultation summary."));
+      toast.error(getErrMsg(err, t("pages.doctor.could_not_load_summary")));
     }
   };
 

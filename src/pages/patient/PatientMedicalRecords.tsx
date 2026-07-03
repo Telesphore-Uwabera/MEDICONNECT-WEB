@@ -8,6 +8,7 @@ import { RecordRows, VisitCards, FileRows, PanelLoading } from "@/pages/doctor/a
 // ─── Medical Info Content ────────────────────────────────────────────────────
 
 function MedicalInfoContent() {
+  const { t } = useTranslation();
   const record = useMyMedicalRecord();
   const visits = useMyVisits();
   const files = useMyFiles();
@@ -20,22 +21,22 @@ function MedicalInfoContent() {
         <div className="space-y-4">
           <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
-              <HeartPulse className="h-4 w-4 text-primary" /> My Medical Record
+              <HeartPulse className="h-4 w-4 text-primary" /> {t("pages.patient.mr_my_record")}
             </h3>
             {record.isLoading ? (
-              <PanelLoading label="Loading record..." />
+              <PanelLoading label={t("consult.record.loading_record")} />
             ) : !record.data ? (
-              <p className="text-xs text-muted-foreground">No medical record data found.</p>
+              <p className="text-xs text-muted-foreground">{t("pages.patient.mr_no_record")}</p>
             ) : (
               <RecordRows record={record.data} />
             )}
           </div>
           <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
-              <FileText className="h-4 w-4 text-primary" /> Files & Documents
+              <FileText className="h-4 w-4 text-primary" /> {t("pages.patient.mr_files_docs")}
             </h3>
             {files.isLoading ? (
-              <PanelLoading label="Loading files..." />
+              <PanelLoading label={t("consult.files.loading")} />
             ) : (
               <FileRows files={files.data ?? []} />
             )}
@@ -46,10 +47,10 @@ function MedicalInfoContent() {
         <div className="space-y-6">
           <div className="bg-card border border-border/60 rounded-[6px] p-5 shadow-sm">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2 text-foreground">
-              <Calendar className="h-4 w-4 text-primary" /> Past Visits
+              <Calendar className="h-4 w-4 text-primary" /> {t("pages.patient.mr_past_visits")}
             </h3>
             {visits.isLoading ? (
-              <PanelLoading label="Loading visits..." />
+              <PanelLoading label={t("consult.visits.loading")} />
             ) : (
               <VisitCards visits={visits.data ?? []} />
             )}
@@ -70,8 +71,8 @@ export default function PatientMedicalRecords() {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full w-full">
         <PageHeader
-          title="Medical Records"
-          subtitle="View your clinical notes, diagnoses, and attached reports."
+          title={t("pages.patient.mr_title")}
+          subtitle={t("pages.patient.mr_sub")}
         />
 
         <div className="flex-1 p-4 md:p-6 overflow-y-auto">

@@ -18,5 +18,19 @@
   "language": "Langue",
   "loading": "Chargement…",
   "optional": "facultatif",
-  "required": "requis"
+  "required": "requis",
+  "unknown": "inconnu",
+  "age": "Âge",
+  "specSelect": {
+    "anySpecializationPlaceholder": "Toute spécialisation…",
+    "searchSpecializationsPlaceholder": "Rechercher des spécialisations…",
+    "searchSubSpecializationsPlaceholder": "Rechercher des sous-spécialisations…",
+    "anySpecialization": "Toute spécialisation",
+    "failedToLoad": "Échec du chargement",
+    "noResultsFor": "Aucun résultat pour « {{query}} »",
+    "noSubSpecializations": "Aucune sous-spécialisation disponible",
+    "selectSubSpecialization": "Choisir une sous-spécialisation",
+    "onlineFee": "En ligne : {{amount}} {{currency}}",
+    "inPersonFee": "En personne : {{amount}} {{currency}}"
+  }
 }

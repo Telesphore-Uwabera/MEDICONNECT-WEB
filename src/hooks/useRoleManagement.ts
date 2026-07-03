@@ -16,7 +16,12 @@ const ROLE_HOME: Record<string, string> = {
   doctor: "/doctor",
   hospital: "/hospital",
   pharmacy: "/pharmacy/overview",
+  admin: "/admin",
 };
+
+/** Roles go() can switch to. Admin is switchable only when the backend flags
+ *  the account with can_be_admin — it can never be self-added. */
+export type GoRole = SwitchableRole | "admin";
 
 export interface AddRoleResponse {
   message: string;
@@ -45,7 +50,7 @@ export function useAddRole() {
 /** POST /auth/switch-role — pure mutation; the caller decides what to do with
  *  the new token (the old one is revoked on success). */
 export function useSwitchRole() {
-  return useMutation<SwitchRoleResponse, ApiError, SwitchableRole>({
+  return useMutation<SwitchRoleResponse, ApiError, GoRole>({
     mutationFn: (role) =>
       apiFetch<SwitchRoleResponse>("/auth/switch-role", { method: "POST", body: { role } }),
   });
@@ -69,11 +74,13 @@ export function useGoToRole() {
   const addRole = useAddRole();
   const switchRole = useSwitchRole();
 
-  const go = async (role: SwitchableRole, opts?: GoToRoleOptions) => {
+  const go = async (role: GoRole, opts?: GoToRoleOptions) => {
     try {
       const available = user?.available_roles ?? (user?.role ? [user.role] : []);
 
-      if (!available.includes(role)) {
+      // Admin can't be self-added — the backend flags eligibility via
+      // can_be_admin, so go straight to the switch.
+      if (role !== "admin" && !available.includes(role)) {
         try {
           await addRole.mutateAsync(role);
         } catch (e) {

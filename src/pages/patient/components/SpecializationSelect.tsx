@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { X, Search, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ export function SpecializationSelect({
   onChange: (v: SpecializationValue) => void;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +146,7 @@ export function SpecializationSelect({
           className
         )}
       >
-        <span className="truncate">{triggerLabel ?? "Any specialization…"}</span>
+        <span className="truncate">{triggerLabel ?? t("common.specSelect.anySpecializationPlaceholder")}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
           {triggerLabel && (
             <span
@@ -184,7 +186,7 @@ export function SpecializationSelect({
                 {value.specialization?.name}
               </span>
               <span className="text-xs text-muted-foreground/60 ml-auto">
-                Select sub-specialization
+                {t("common.specSelect.selectSubSpecialization")}
               </span>
             </div>
           )}
@@ -197,8 +199,8 @@ export function SpecializationSelect({
               type="text"
               placeholder={
                 step === "specialization"
-                  ? "Search specializations…"
-                  : "Search sub-specializations…"
+                  ? t("common.specSelect.searchSpecializationsPlaceholder")
+                  : t("common.specSelect.searchSubSpecializationsPlaceholder")
               }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -228,21 +230,21 @@ export function SpecializationSelect({
                         : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
                     )}
                   >
-                    Any specialization
+                    {t("common.specSelect.anySpecialization")}
                   </button>
                 )}
 
                 {loadingSpecializations ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground/60">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+                    <Loader2 className="w-3 h-3 animate-spin" /> {t("common.loading")}
                   </div>
                 ) : errorSpecializations ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-destructive/70">
-                    <AlertCircle className="w-3 h-3" /> Failed to load
+                    <AlertCircle className="w-3 h-3" /> {t("common.specSelect.failedToLoad")}
                   </div>
                 ) : specializations.length === 0 ? (
                   <p className="px-2.5 py-4 text-xs text-muted-foreground/60 text-center">
-                    No results for "{query}"
+                    {t("common.specSelect.noResultsFor", { query })}
                   </p>
                 ) : (
                   specializations.map((spec) => (
@@ -266,15 +268,15 @@ export function SpecializationSelect({
               <>
                 {loadingFees ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-muted-foreground/60">
-                    <Loader2 className="w-3 h-3 animate-spin" /> Loading…
+                    <Loader2 className="w-3 h-3 animate-spin" /> {t("common.loading")}
                   </div>
                 ) : errorFees ? (
                   <div className="flex items-center justify-center gap-1.5 py-6 text-xs text-destructive/70">
-                    <AlertCircle className="w-3 h-3" /> Failed to load
+                    <AlertCircle className="w-3 h-3" /> {t("common.specSelect.failedToLoad")}
                   </div>
                 ) : fees.length === 0 ? (
                   <p className="px-2.5 py-4 text-xs text-muted-foreground/60 text-center">
-                    {query ? `No results for "${query}"` : "No sub-specializations available"}
+                    {query ? t("common.specSelect.noResultsFor", { query }) : t("common.specSelect.noSubSpecializations")}
                   </p>
                 ) : (
                   fees.map((fee) => (
@@ -297,8 +299,8 @@ export function SpecializationSelect({
                         </span>
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground/60">
-                        <span>Online: {Number(fee.online_fee).toLocaleString()} {fee.currency}</span>
-                        <span>In-person: {Number(fee.in_person_fee).toLocaleString()} {fee.currency}</span>
+                        <span>{t("common.specSelect.onlineFee", { amount: Number(fee.online_fee).toLocaleString(), currency: fee.currency })}</span>
+                        <span>{t("common.specSelect.inPersonFee", { amount: Number(fee.in_person_fee).toLocaleString(), currency: fee.currency })}</span>
                       </div>
                     </button>
                   ))

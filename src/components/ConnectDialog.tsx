@@ -1,6 +1,7 @@
 
 // components/ConnectDialog.tsx
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import {
@@ -125,16 +126,17 @@ const SignalBars = ({ strength }: { strength: number }) => (
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const StatusBadge = ({ phase }: { phase: CallPhase }) => {
+  const { t } = useTranslation();
   const map: Record<string, { icon: React.ReactNode; text: string; cls: string }> = {
-    requesting: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Requesting…", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
-    payment_verifying: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Verifying payment…", cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
-    polling: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: "Waiting for doctor…", cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
-    accepted: { icon: <Phone className="h-4 w-4 animate-pulse" />, text: "Doctor ready", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    in_progress: { icon: <Activity className="h-4 w-4 animate-pulse" />, text: "In progress", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    connected: { icon: <CheckCircle2 className="h-4 w-4" />, text: "Connected", cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
-    rejected: { icon: <AlertCircle className="h-4 w-4" />, text: "Declined", cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    failed: { icon: <AlertCircle className="h-4 w-4" />, text: "Failed", cls: "bg-destructive/10 text-destructive border-destructive/25" },
-    ended: { icon: <PhoneOff className="h-4 w-4" />, text: "Ended", cls: "bg-muted text-muted-foreground border-border" },
+    requesting: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: t("consult.connect.status_requesting"), cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/25" },
+    payment_verifying: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: t("consult.connect.status_payment_verifying"), cls: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25" },
+    polling: { icon: <Loader2 className="h-4 w-4 animate-spin" />, text: t("consult.connect.status_polling"), cls: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25" },
+    accepted: { icon: <Phone className="h-4 w-4 animate-pulse" />, text: t("consult.connect.status_accepted"), cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    in_progress: { icon: <Activity className="h-4 w-4 animate-pulse" />, text: t("consult.connect.status_in_progress"), cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    connected: { icon: <CheckCircle2 className="h-4 w-4" />, text: t("consult.connect.status_connected"), cls: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25" },
+    rejected: { icon: <AlertCircle className="h-4 w-4" />, text: t("consult.connect.status_rejected"), cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    failed: { icon: <AlertCircle className="h-4 w-4" />, text: t("consult.connect.status_failed"), cls: "bg-destructive/10 text-destructive border-destructive/25" },
+    ended: { icon: <PhoneOff className="h-4 w-4" />, text: t("consult.connect.status_ended"), cls: "bg-muted text-muted-foreground border-border" },
   };
   const c = map[phase];
   if (!c) return null;
@@ -151,55 +153,59 @@ const ResumeSessionBanner = ({
   savedAt, onResume, onDiscard, isResuming,
 }: {
   savedAt: number; onResume: () => void; onDiscard: () => void; isResuming: boolean;
-}) => (
-  <div className={cn(
-    "rounded-[6px] border p-3.5 space-y-2.5",
-    "bg-violet-500/5 border-violet-500/20",
-    "animate-in fade-in slide-in-from-top-2 duration-300",
-  )}>
-    <div className="flex items-start gap-2.5">
-      <div className="h-8 w-8 rounded-[6px] bg-violet-500/15 flex items-center justify-center shrink-0">
-        <RotateCcw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className={cn(
+      "rounded-[6px] border p-3.5 space-y-2.5",
+      "bg-violet-500/5 border-violet-500/20",
+      "animate-in fade-in slide-in-from-top-2 duration-300",
+    )}>
+      <div className="flex items-start gap-2.5">
+        <div className="h-8 w-8 rounded-[6px] bg-violet-500/15 flex items-center justify-center shrink-0">
+          <RotateCcw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground leading-tight">{t("consult.connect.resume_title")}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+            <Clock className="h-4 w-4 shrink-0" />{t("consult.connect.resume_saved_at", { time: timeAgo(savedAt) })}
+          </p>
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground leading-tight">Resume your session?</p>
-        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-          <Clock className="h-4 w-4 shrink-0" />Session saved {timeAgo(savedAt)}
-        </p>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {t("consult.connect.resume_body_pre")}{" "}
+        <strong className="text-foreground font-medium">{t("consult.connect.resume_word")}</strong> {t("consult.connect.resume_body_post")}
+      </p>
+      <div className="flex gap-2 pt-0.5">
+        <Button size="sm" onClick={onResume} disabled={isResuming}
+          className="flex-1 h-8 text-sm font-semibold gap-1.5 rounded-[6px] bg-violet-600 hover:bg-violet-700 text-white">
+          {isResuming
+            ? <><Loader2 className="h-4 w-4 animate-spin" />{t("consult.connect.resuming")}</>
+            : <><RotateCcw className="h-4 w-4" />{t("consult.connect.resume_button")}</>}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onDiscard} disabled={isResuming}
+          className="flex-1 h-8 text-sm rounded-[6px]">
+          {t("consult.connect.start_fresh")}
+        </Button>
       </div>
     </div>
-    <p className="text-sm text-muted-foreground leading-relaxed">
-      You were waiting in queue. Your position may still be held — tap{" "}
-      <strong className="text-foreground font-medium">Resume</strong> to continue where you left off.
-    </p>
-    <div className="flex gap-2 pt-0.5">
-      <Button size="sm" onClick={onResume} disabled={isResuming}
-        className="flex-1 h-8 text-sm font-semibold gap-1.5 rounded-[6px] bg-violet-600 hover:bg-violet-700 text-white">
-        {isResuming
-          ? <><Loader2 className="h-4 w-4 animate-spin" />Resuming…</>
-          : <><RotateCcw className="h-4 w-4" />Resume session</>}
-      </Button>
-      <Button size="sm" variant="outline" onClick={onDiscard} disabled={isResuming}
-        className="flex-1 h-8 text-sm rounded-[6px]">
-        Start fresh
-      </Button>
-    </div>
-  </div>
-);
+  );
+};
 
 // ─── Device Toggles ───────────────────────────────────────────────────────────
 
 const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
   const call = useCallStore();
+  const { t } = useTranslation();
 
   if (compact) {
     return (
       <div className="flex gap-2">
         {([
-          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, onLabel: "Camera on", offLabel: "Camera off" },
-          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, onLabel: "Mic on", offLabel: "Mic off" },
-        ] as const).map(({ on, toggle, OnIcon, OffIcon, onLabel, offLabel }) => (
-          <button key={onLabel} onClick={toggle}
+          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, onLabel: t("consult.connect.camera_on"), offLabel: t("consult.connect.camera_off"), key: "camera" },
+          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, onLabel: t("consult.connect.mic_on"), offLabel: t("consult.connect.mic_off"), key: "mic" },
+        ] as const).map(({ on, toggle, OnIcon, OffIcon, onLabel, offLabel, key }) => (
+          <button key={key} onClick={toggle}
             className={cn(
               "flex items-center gap-2 flex-1 justify-center px-3 py-2 rounded-[6px] text-sm font-medium border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25"
@@ -217,10 +223,10 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
     <>
       <div className="flex gap-2">
         {([
-          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, label: "Camera", onSub: "On", offSub: "Off" },
-          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, label: "Microphone", onSub: "On", offSub: "Off" },
-        ] as const).map(({ on, toggle, OnIcon, OffIcon, label, onSub, offSub }) => (
-          <button key={label} onClick={toggle}
+          { on: call.videoEnabled, toggle: call.toggleVideo, OnIcon: Video, OffIcon: VideoOff, label: t("consult.connect.camera_label"), onSub: t("consult.connect.on_label"), offSub: t("consult.connect.off_label"), key: "camera" },
+          { on: call.audioEnabled, toggle: call.toggleAudio, OnIcon: Mic, OffIcon: MicOff, label: t("consult.connect.microphone_label"), onSub: t("consult.connect.on_label"), offSub: t("consult.connect.off_label"), key: "microphone" },
+        ] as const).map(({ on, toggle, OnIcon, OffIcon, label, onSub, offSub, key }) => (
+          <button key={key} onClick={toggle}
             className={cn(
               "flex-1 flex flex-col items-center gap-2.5 px-3 py-4 rounded-[6px] border transition-all duration-150",
               on ? "bg-primary/10 text-primary border-primary/25 ring-1 ring-primary/20"
@@ -241,12 +247,12 @@ const DeviceToggles = ({ compact = false }: { compact?: boolean }) => {
       </div>
       <p className="text-xs text-muted-foreground/60 text-center">
         {!call.videoEnabled && !call.audioEnabled
-          ? "⚠ Camera and mic are both off"
+          ? t("consult.connect.both_off_warning")
           : !call.videoEnabled
-            ? "Camera off · Mic on"
+            ? t("consult.connect.camera_off_mic_on")
             : !call.audioEnabled
-              ? "Camera on · Mic off — others won't hear you"
-              : "Camera and mic are ready"}
+              ? t("consult.connect.camera_on_mic_off")
+              : t("consult.connect.devices_ready")}
       </p>
     </>
   );
@@ -312,6 +318,7 @@ const setGuestChatAuth = (token: string | null) => {
 export const ConnectDialogContent = ({
   doctor: initialDoctor, onMinimize, onCloseCompletely, onRegisterCancel,
 }: ConnectDialogContentProps) => {
+  const { t } = useTranslation();
   const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | undefined>(undefined);
   const doctor = initialDoctor || (selectedDoctor as unknown as Doctor);
 
@@ -633,12 +640,13 @@ export const ConnectDialogContent = ({
         window.open(detail.daily_room_url, "_blank", "noopener,noreferrer");
         return;
       }
-      toast.error("Could not open your active consultation.");
+      toast.error(t("consult.connect.err_could_not_open_active"));
     } catch (err) {
-      toast.error((err as Error)?.message || "Could not join your active consultation.");
+      toast.error((err as Error)?.message || t("consult.connect.err_could_not_join_active"));
     } finally {
       setJoiningActive(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInstant, onCloseCompletely, startCall]);
 
   const handleRequest = useCallback(async (override?: { name: string; phone: string; email?: string; password?: string }) => {
@@ -750,11 +758,11 @@ export const ConnectDialogContent = ({
     } catch (err: unknown) {
       // Wrong-role rejection → offer a one-click switch to patient.
       if ((err as { status?: number })?.status === 403) {
-        setSwitchPromptRole((me?.active_role ?? me?.role ?? "another role") as string);
+        setSwitchPromptRole((me?.active_role ?? me?.role ?? t("consult.connect.unknown_role_fallback")) as string);
         setPhase("idle");
         return;
       }
-      setErrorMsg(err instanceof Error ? err.message : "Request failed. Please try again.");
+      setErrorMsg(err instanceof Error ? err.message : t("consult.connect.err_request_failed"));
       // If the backend blocked this because a consultation is already active,
       // surface a one-click rejoin to that session.
       setActiveRejoin(isActiveSessionError(err) ? await resolveRejoinTarget(err) : null);
@@ -791,7 +799,7 @@ export const ConnectDialogContent = ({
         callback: (err: Error | null) => {
           window.IremboPay.closeModal?.();
           if (err) {
-            setErrorMsg("Payment could not be processed. Please try again.");
+            setErrorMsg(t("consult.connect.err_payment_processing_failed"));
             setPhase("payment");
             return;
           }
@@ -811,9 +819,9 @@ export const ConnectDialogContent = ({
         },
       });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Payment could not be initiated.";
+      const msg = err instanceof Error ? err.message : t("consult.connect.err_payment_initiate_failed");
       console.error("[Pay] error:", msg);
-      setErrorMsg(`${msg} Please try again.`);
+      setErrorMsg(`${msg} ${t("consult.connect.please_try_again_suffix")}`);
       setPhase("payment");
     } finally {
       setPaymentLoading(false);
@@ -824,11 +832,11 @@ export const ConnectDialogContent = ({
   // ── Guest form submit ─────────────────────────────────────────────────────
   const handleGuestSubmit = () => {
     const name = joinName(guestFirstName, guestLastName);
-    if (!guestFirstName.trim()) { setGuestError("Please enter your first name."); return; }
-    if (!guestLastName.trim()) { setGuestError("Please enter your last name."); return; }
-    if (!guestPhone.trim()) { setGuestError("Please enter your phone number."); return; }
-    if (!isLoggedIn && !guestPassword.trim()) { setGuestError("Please enter your password."); return; }
-    if (!isLoggedIn && guestPassword.length < 6) { setGuestError("Please enter a password of at least 6 characters."); return; }
+    if (!guestFirstName.trim()) { setGuestError(t("consult.connect.err_first_name_required")); return; }
+    if (!guestLastName.trim()) { setGuestError(t("consult.connect.err_last_name_required")); return; }
+    if (!guestPhone.trim()) { setGuestError(t("consult.connect.err_phone_required")); return; }
+    if (!isLoggedIn && !guestPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
+    if (!isLoggedIn && guestPassword.length < 6) { setGuestError(t("consult.connect.err_password_min_length")); return; }
 
     setGuestError(null);
     setGuestName(name);
@@ -842,8 +850,8 @@ export const ConnectDialogContent = ({
 
   const handleLoginSubmit = async () => {
     const identifier = loginIdentifier.trim();
-    if (!identifier) { setGuestError("Please enter your email or phone number."); return; }
-    if (!loginPassword.trim()) { setGuestError("Please enter your password."); return; }
+    if (!identifier) { setGuestError(t("consult.connect.err_identifier_required")); return; }
+    if (!loginPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
 
     setGuestError(null);
     try {
@@ -870,7 +878,7 @@ export const ConnectDialogContent = ({
         email: data.user.email,
       });
     } catch (err: any) {
-      setGuestError(err?.message || "Login failed. Please check your details and try again.");
+      setGuestError(err?.message || t("consult.connect.err_login_failed"));
     }
   };
 
@@ -956,25 +964,25 @@ export const ConnectDialogContent = ({
   };
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const doctorName = doctor?.user.name ?? "Mediconnect Specialist";
-  const doctorInitial = doctor ? nameInitial(doctorName) : "MS";
+  const doctorName = doctor?.user.name ?? t("consult.connect.fallback_specialist_name");
+  const doctorInitial = nameInitial(doctorName);
 
   const titleText = (): string => {
-    if (savedSession && !isResuming) return "Resume your session";
-    if (isResuming) return "Reconnecting…";
-    if (phase === "idle") return "Instant consult";
-    if (phase === "guest_form") return "Your details";
-    if (phase === "requesting") return "Sending request…";
-    if (phase === "payment") return "Complete payment";
-    if (phase === "payment_verifying") return "Verifying payment…";
-    if (phase === "polling") return "Waiting for doctor";
-    if (phase === "accepted") return "Doctor is ready";
-    if (phase === "in_progress") return "Doctor is in call";
-    if (phase === "connected") return "In consultation";
-    if (phase === "rejected") return "Request declined";
-    if (phase === "failed") return "Connection failed";
-    if (phase === "ended") return "Call ended";
-    return "Instant consult";
+    if (savedSession && !isResuming) return t("consult.connect.title_resume");
+    if (isResuming) return t("consult.connect.title_reconnecting");
+    if (phase === "idle") return t("consult.connect.title_idle");
+    if (phase === "guest_form") return t("consult.connect.title_guest_form");
+    if (phase === "requesting") return t("consult.connect.title_requesting");
+    if (phase === "payment") return t("consult.connect.title_payment");
+    if (phase === "payment_verifying") return t("consult.connect.title_payment_verifying");
+    if (phase === "polling") return t("consult.connect.title_polling");
+    if (phase === "accepted") return t("consult.connect.title_accepted");
+    if (phase === "in_progress") return t("consult.connect.title_in_progress");
+    if (phase === "connected") return t("consult.connect.title_connected");
+    if (phase === "rejected") return t("consult.connect.title_rejected");
+    if (phase === "failed") return t("consult.connect.title_failed");
+    if (phase === "ended") return t("consult.connect.title_ended");
+    return t("consult.connect.title_idle");
   };
 
   const progressValue = (): number => {
@@ -1017,7 +1025,7 @@ export const ConnectDialogContent = ({
             <iframe src={iframeSrc}
               allow="camera; microphone; fullscreen; speaker; display-capture; autoplay"
               allowFullScreen className="absolute inset-0 w-full h-full border-0"
-              title={`Consultation with ${doctorName}`} />
+              title={t("consult.connect.consultation_with", { name: doctorName })} />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center space-y-3">
@@ -1027,7 +1035,7 @@ export const ConnectDialogContent = ({
                     {doctorInitial}
                   </div>
                 </div>
-                <p className="text-base text-white/50">Connecting to room…</p>
+                <p className="text-base text-white/50">{t("consult.connect.connecting_to_room")}</p>
               </div>
             </div>
           )}
@@ -1036,19 +1044,19 @@ export const ConnectDialogContent = ({
           <div className="absolute top-0 inset-x-0 flex items-center justify-between px-3 py-2.5 z-20 pointer-events-none bg-gradient-to-b from-black/60 to-transparent">
             <div className="flex items-center gap-2 pointer-events-none">
               <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-xs text-white/70 font-mono tracking-wide">LIVE · {fmt(call.elapsed)}</span>
+              <span className="text-xs text-white/70 font-mono tracking-wide">{t("consult.connect.live_label")} · {fmt(call.elapsed)}</span>
             </div>
             <div className="flex items-center gap-1 pointer-events-auto">
               <SignalBars strength={call.signalStrength} />
-              <button onClick={onMinimize} title="Minimize"
+              <button onClick={onMinimize} title={t("consult.connect.minimize")}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
                 <Minus className="h-4 w-4" />
               </button>
-              <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+              <button onClick={() => setFullscreen(!fullscreen)} title={fullscreen ? t("consult.connect.exit_fullscreen") : t("consult.connect.fullscreen_action")}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors">
                 {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
-              <button onClick={onCloseCompletely} title="End and close"
+              <button onClick={onCloseCompletely} title={t("consult.connect.end_and_close")}
                 className="h-7 w-7 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors">
                 <X className="h-4 w-4" />
               </button>
@@ -1100,9 +1108,9 @@ export const ConnectDialogContent = ({
         <div className="rounded-[6px] border border-amber-400/30 bg-amber-500/10 p-3 flex items-start gap-2.5">
           <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-foreground">Switch to your patient role</p>
+            <p className="text-[12px] font-semibold text-foreground">{t("consult.connect.switch_role_title")}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              You're signed in as {switchPromptRole}. Switch to patient to start an instant consult.
+              {t("consult.connect.switch_role_body", { role: switchPromptRole })}
             </p>
           </div>
           <button
@@ -1117,7 +1125,7 @@ export const ConnectDialogContent = ({
             }
             className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
           >
-            Switch to patient
+            {t("consult.connect.switch_role_button")}
           </button>
         </div>
       )}
@@ -1142,8 +1150,8 @@ export const ConnectDialogContent = ({
       {isResuming && (
         <div className="flex flex-col items-center gap-3 py-6">
           <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
-          <p className="text-sm font-medium text-foreground">Reconnecting to your session…</p>
-          <p className="text-xs text-muted-foreground">Picking up where you left off</p>
+          <p className="text-sm font-medium text-foreground">{t("consult.connect.reconnecting_message")}</p>
+          <p className="text-xs text-muted-foreground">{t("consult.connect.reconnecting_sub")}</p>
         </div>
       )}
 
@@ -1168,7 +1176,10 @@ export const ConnectDialogContent = ({
             )}
             {queueInfo && phase === "polling" && (
               <p className="text-sm text-muted-foreground mt-0.5">
-                Position {queueInfo.position} · {queueInfo.ahead === 0 ? "You're next" : `${queueInfo.ahead} ahead`}
+                {t("consult.connect.queue_position", { position: queueInfo.position })} ·{" "}
+                {queueInfo.ahead === 0
+                  ? t("consult.connect.queue_next")
+                  : t("consult.connect.queue_ahead", { count: queueInfo.ahead })}
               </p>
             )}
           </div>
@@ -1182,11 +1193,11 @@ export const ConnectDialogContent = ({
           <Progress value={progressValue()}
             className="h-[3px] bg-muted [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700" />
           <p className="text-xs text-muted-foreground text-center">
-            {phase === "requesting" && "Sending consultation request…"}
-            {phase === "payment_verifying" && "Confirming your payment with provider…"}
-            {phase === "polling" && "Waiting for doctor to accept…"}
-            {phase === "accepted" && "Doctor is ready — join when you are!"}
-            {phase === "in_progress" && "Doctor is in the call — join when ready!"}
+            {phase === "requesting" && t("consult.connect.progress_requesting")}
+            {phase === "payment_verifying" && t("consult.connect.progress_payment_verifying")}
+            {phase === "polling" && t("consult.connect.progress_polling")}
+            {phase === "accepted" && t("consult.connect.progress_accepted")}
+            {phase === "in_progress" && t("consult.connect.progress_in_progress")}
           </p>
         </div>
       )}
@@ -1200,8 +1211,8 @@ export const ConnectDialogContent = ({
               <div className=" flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm text-muted-foreground">
-                  {isLoggedIn ? "Please confirm your contact details to continue."
-                    : "Sign in or create an account to continue with your instant consultation."}
+                  {isLoggedIn ? t("consult.connect.confirm_details")
+                    : t("consult.connect.signin_or_create")}
                 </p>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-[6px] border border-border bg-muted/30">
@@ -1233,7 +1244,7 @@ export const ConnectDialogContent = ({
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      {mode === "register" ? "Create account" : "Sign in"}
+                      {mode === "register" ? t("consult.connect.create_account") : t("consult.connect.sign_in")}
                     </button>
                   ))}
                 </div>
@@ -1244,9 +1255,9 @@ export const ConnectDialogContent = ({
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="space-y-1.5">
-                        <Label className="text-sm font-medium">First name</Label>
+                        <Label className="text-sm font-medium">{t("consult.connect.first_name")}</Label>
                         <Input
-                          placeholder="e.g. Alain"
+                          placeholder={t("consult.connect.first_name_placeholder")}
                           value={guestFirstName}
                           onChange={(e) => setGuestFirstName(e.target.value)}
                           className="h-9 text-sm"
@@ -1254,9 +1265,9 @@ export const ConnectDialogContent = ({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-sm font-medium">Last name</Label>
+                        <Label className="text-sm font-medium">{t("consult.connect.last_name")}</Label>
                         <Input
-                          placeholder="e.g. Honore"
+                          placeholder={t("consult.connect.last_name_placeholder")}
                           value={guestLastName}
                           onChange={(e) => setGuestLastName(e.target.value)}
                           className="h-9 text-sm"
@@ -1265,10 +1276,10 @@ export const ConnectDialogContent = ({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Email address</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.email_address")}</Label>
                       <Input
                         type="email"
-                        placeholder="e.g. alain@example.com"
+                        placeholder={t("consult.connect.email_placeholder")}
                         value={guestEmail}
                         onChange={(e) => setGuestEmail(e.target.value)}
                         className="h-9 text-sm"
@@ -1276,9 +1287,9 @@ export const ConnectDialogContent = ({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Phone number</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.phone_number")}</Label>
                       <Input
-                        placeholder="e.g. 0733334512"
+                        placeholder={t("consult.connect.phone_placeholder")}
                         value={guestPhone}
                         onChange={(e) => setGuestPhone(e.target.value)}
                         className="h-9 text-sm"
@@ -1287,9 +1298,9 @@ export const ConnectDialogContent = ({
                     </div>
                     {!isLoggedIn && (
                       <div className="space-y-1.5">
-                        <Label className="text-sm font-medium">Password</Label>
+                        <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
                         <Input
-                          placeholder="**********"
+                          placeholder={t("consult.connect.password_placeholder")}
                           type="password"
                           value={guestPassword}
                           onChange={(e) => setGuestPassword(e.target.value)}
@@ -1302,9 +1313,9 @@ export const ConnectDialogContent = ({
                 ) : (
                   <>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Email or phone</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
                       <Input
-                        placeholder="email@example.com or 0733334512"
+                        placeholder={t("consult.connect.email_or_phone_placeholder")}
                         value={loginIdentifier}
                         onChange={(e) => setLoginIdentifier(e.target.value)}
                         className="h-9 text-sm"
@@ -1312,9 +1323,9 @@ export const ConnectDialogContent = ({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Password</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
                       <Input
-                        placeholder="**********"
+                        placeholder={t("consult.connect.password_placeholder")}
                         type="password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
@@ -1326,9 +1337,9 @@ export const ConnectDialogContent = ({
                 )}
                 {isGeneral && (
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
+                    <Label className="text-sm font-medium">{t("consult.connect.symptoms_label")}</Label>
                     <textarea
-                      placeholder="e.g. I have a headache"
+                      placeholder={t("consult.connect.symptoms_placeholder")}
                       value={guestDescription}
                       onChange={(e) => setGuestDescription(e.target.value)}
                       className="flex min-h-[60px] w-full rounded-[6px] border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -1352,11 +1363,11 @@ export const ConnectDialogContent = ({
                   ) : (
                     <Wifi className="h-4 w-4" />
                   )}
-                  {authMode === "login" && !isLoggedIn ? "Sign in and request consultation" : "Request consultation"}
+                  {authMode === "login" && !isLoggedIn ? t("consult.connect.sign_in_and_request") : t("consult.connect.request_consultation")}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
-                  Minimize
+                  {t("consult.connect.minimize")}
                 </Button>
               </div>
             </div>
@@ -1365,11 +1376,11 @@ export const ConnectDialogContent = ({
           {phase === "search" && (
             <div className="space-y-4 pt-1 pb-2">
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Search for a doctor</Label>
+                <Label className="text-sm font-medium">{t("consult.connect.search_label")}</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by name or specialty..."
+                    placeholder={t("consult.connect.search_placeholder")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 h-10 bg-muted/30"
@@ -1408,7 +1419,7 @@ export const ConnectDialogContent = ({
                   ))
                 ) : (
                   <div className="text-center py-6 text-sm text-muted-foreground">
-                    No available doctors found.
+                    {t("consult.connect.no_doctors_found")}
                   </div>
                 )}
               </div>
@@ -1423,7 +1434,7 @@ export const ConnectDialogContent = ({
                 <>
                   <div className="flex items-center gap-2 p-3 rounded-[6px] bg-yellow-500/10 border border-yellow-500/20 text-[12px] text-yellow-700 dark:text-yellow-400">
                     <Activity className="h-4 w-4 shrink-0" />
-                    You already have an active consultation{doctor ? " with this doctor" : ""}.
+                    {doctor ? t("consult.connect.already_active_with_doctor") : t("consult.connect.already_active_general")}
                   </div>
                   <Button
                     onClick={handleJoinActiveInstant}
@@ -1431,19 +1442,19 @@ export const ConnectDialogContent = ({
                     className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px] bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     {joiningActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
-                    Join your consultation<ArrowRight className="h-4 w-4" />
+                    {t("consult.connect.join_your_consultation")}<ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
-                    Minimize
+                    {t("consult.connect.minimize")}
                   </Button>
                 </>
               ) : (
                 <>
                   {isGeneral && (
                     <div className="space-y-1.5 mb-2">
-                      <Label className="text-sm font-medium">Symptoms / Issue (Optional)</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.symptoms_label")}</Label>
                       <textarea
-                        placeholder="e.g. I have a headache"
+                        placeholder={t("consult.connect.symptoms_placeholder")}
                         value={guestDescription}
                         onChange={(e) => setGuestDescription(e.target.value)}
                         className="flex min-h-[60px] w-full rounded-[6px] border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -1452,7 +1463,7 @@ export const ConnectDialogContent = ({
                   )}
                   <DeviceToggles compact={false} />
                   <Button onClick={() => handleRequest()} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
-                    <Wifi className="h-4 w-4" />Start instant consultation<ArrowRight className="h-4 w-4" />
+                    <Wifi className="h-4 w-4" />{t("consult.connect.start_instant")}<ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                     Minimize
@@ -1466,7 +1477,7 @@ export const ConnectDialogContent = ({
           {phase === "requesting" && (
             <div className="flex flex-col items-center gap-3 py-4">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Connecting you to the doctor…</p>
+              <p className="text-sm text-muted-foreground">{t("consult.connect.requesting_message")}</p>
             </div>
           )}
 
@@ -1476,7 +1487,7 @@ export const ConnectDialogContent = ({
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
-                  Close — your place is saved
+                  {t("consult.connect.close_place_saved")}
                 </Button>
               </div>
             </div>
@@ -1486,23 +1497,23 @@ export const ConnectDialogContent = ({
           {phase === "payment" && (
             <div className="space-y-4">
               <div className="p-4 rounded-[6px] border border-border bg-muted/40 space-y-3">
-                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">Payment summary</p>
+                <p className="text-sm text-muted-foreground font-medium uppercase tracking-wide">{t("consult.connect.payment_summary_title")}</p>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Patient</span>
+                  <span className="text-muted-foreground">{t("consult.connect.payment_patient_label")}</span>
                   <span className="font-medium text-foreground">{guestName || me?.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Phone</span>
+                  <span className="text-muted-foreground">{t("consult.connect.payment_phone_label")}</span>
                   <span className="font-medium text-foreground">{guestPhone || me?.phone}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Doctor</span>
+                  <span className="text-muted-foreground">{t("consult.connect.payment_doctor_label")}</span>
                   <span className="font-medium text-foreground">{doctorName}</span>
                 </div>
                 <div className="border-t border-border pt-2 flex justify-between text-base">
-                  <span className="font-semibold text-foreground">Amount</span>
+                  <span className="font-semibold text-foreground">{t("consult.connect.payment_amount_label")}</span>
                   <span className="font-bold text-primary">
-                    {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : "Loading…"}
+                    {paymentInfo ? `${paymentInfo.currency} ${paymentInfo.amount.toLocaleString()}` : t("consult.connect.payment_loading")}
                   </span>
                 </div>
               </div>
@@ -1514,9 +1525,9 @@ export const ConnectDialogContent = ({
               <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
                 className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
                 {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                {paymentLoading ? "Initiating…" : "Pay now"}
+                {paymentLoading ? t("consult.connect.payment_initiating") : t("consult.connect.pay_now")}
               </Button>
-              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">Minimize</Button>
+              <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">{t("consult.connect.minimize")}</Button>
             </div>
           )}
 
@@ -1525,13 +1536,13 @@ export const ConnectDialogContent = ({
             <div className="space-y-3">
               <div className="flex flex-col items-center gap-3 py-6 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm font-medium text-foreground">Confirming your payment…</p>
+                <p className="text-sm font-medium text-foreground">{t("consult.connect.confirming_payment")}</p>
                 <p className="text-sm text-muted-foreground max-w-[280px]">
-                  This usually takes a few seconds. Please don't close this window.
+                  {t("consult.connect.confirming_payment_hint")}
                 </p>
               </div>
               <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
-                Minimize — verification continues in background
+                {t("consult.connect.minimize_verification_bg")}
               </Button>
             </div>
           )}
@@ -1543,10 +1554,10 @@ export const ConnectDialogContent = ({
               <div className="space-y-2 pt-1">
                 <Button onClick={handleJoin}
                   className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px] bg-emerald-500 hover:bg-emerald-600 text-white">
-                  <Phone className="h-4 w-4" />Join call<ArrowRight className="h-4 w-4" />
+                  <Phone className="h-4 w-4" />{t("consult.connect.join_call")}<ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
-                  Minimize — I'll join later
+                  {t("consult.connect.minimize_join_later")}
                 </Button>
               </div>
             </div>
@@ -1562,19 +1573,19 @@ export const ConnectDialogContent = ({
               )}
               {phase === "rejected" && (
                 <div className="p-3 rounded-[6px] bg-muted border border-border text-center text-sm text-muted-foreground">
-                  The doctor is currently unavailable. Please try again later or book an appointment.
+                  {t("consult.connect.doctor_unavailable")}
                 </div>
               )}
               <div className="space-y-2 pt-1">
                 {activeRejoin && (
                   <Button onClick={handleRejoinActive} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
-                    <Phone className="h-4 w-4" />Rejoin active consultation
+                    <Phone className="h-4 w-4" />{t("consult.connect.rejoin_active")}
                   </Button>
                 )}
                 <Button onClick={handleRetry} variant={activeRejoin ? "outline" : "default"} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
-                  <Phone className="h-4 w-4" />Try again
+                  <Phone className="h-4 w-4" />{t("consult.connect.try_again")}
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">{t("consult.connect.close")}</Button>
               </div>
             </div>
           )}
@@ -1583,14 +1594,14 @@ export const ConnectDialogContent = ({
           {phase === "ended" && (
             <div className="space-y-3">
               <div className="rounded-[6px] bg-muted border border-border px-4 py-3 text-center space-y-1">
-                <p className="text-sm font-medium text-foreground/60">Your consultation has ended</p>
-                <p className="text-xs text-muted-foreground">Duration: session complete</p>
+                <p className="text-sm font-medium text-foreground/60">{t("consult.connect.ended_title")}</p>
+                <p className="text-xs text-muted-foreground">{t("consult.connect.ended_duration")}</p>
               </div>
               <div className="space-y-2">
                 <Button onClick={handleRetry} className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
-                  <Phone className="h-4 w-4" />Reconnect with {doctorName}
+                  <Phone className="h-4 w-4" />{t("consult.connect.reconnect_with", { name: doctorName })}
                 </Button>
-                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">Close</Button>
+                <Button variant="outline" onClick={onCloseCompletely} className="w-full h-9 text-sm rounded-[6px]">{t("consult.connect.close")}</Button>
               </div>
             </div>
           )}
@@ -1600,14 +1611,14 @@ export const ConnectDialogContent = ({
       {/* Trust footer */}
       {["idle", "guest_form", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase) && (
         <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground/50 pt-1">
-          <ShieldCheck className="h-4 w-4" />HIPAA compliant · End-to-end encrypted
+          <ShieldCheck className="h-4 w-4" />{t("consult.connect.hipaa_footer")}
         </div>
       )}
 
       {/* In-flight hint */}
       {isInFlight && (
         <p className="text-center text-sm text-muted-foreground/40">
-          Minimizing this dialog won't cancel your request
+          {t("consult.connect.inflight_hint")}
         </p>
       )}
     </div>

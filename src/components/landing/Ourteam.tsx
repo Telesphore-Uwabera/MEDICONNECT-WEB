@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { ApiTeamMember, useGetOurTeam } from "@/hooks/use-our-team";
 import { createPortal } from "react-dom";
@@ -43,6 +44,7 @@ function MemberModal({
   member: ApiTeamMember;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const yrs = getYearsExperience(member.joined_at);
   const joinYear = new Date(member.joined_at).getFullYear();
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -71,7 +73,7 @@ function MemberModal({
         <button
           onClick={onClose}
           className="absolute right-3 top-3 z-10 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <X className="w-3.5 h-3.5" />
         </button>
@@ -126,7 +128,7 @@ function MemberModal({
             </p>
           ) : (
             <p className="text-[13px] text-muted-foreground/40 italic">
-              No description provided.
+              {t("pages.landing.team_no_description")}
             </p>
           )}
 
@@ -134,21 +136,21 @@ function MemberModal({
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                Joined
+                {t("pages.landing.team_joined")}
               </p>
               <p className="text-base font-medium text-foreground">{joinYear}</p>
               <p className="text-[11px] text-muted-foreground">
-                {yrs} year{yrs !== 1 ? "s" : ""} ago
+                {t("pages.landing.team_years_ago", { count: yrs })}
               </p>
             </div>
             <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                Experience
+                {t("pages.landing.team_experience")}
               </p>
               <p className="text-base font-medium text-foreground">
-                {yrs} yr{yrs !== 1 ? "s" : ""}
+                {t("pages.landing.team_yrs", { count: yrs })}
               </p>
-              <p className="text-[11px] text-muted-foreground">at MediConnect</p>
+              <p className="text-[11px] text-muted-foreground">{t("pages.landing.team_at_mediconnect")}</p>
             </div>
           </div>
         </div>
@@ -168,6 +170,7 @@ function MemberModal({
 // ── Member card ──────────────────────────────────────────────
 
 function MemberCard({ member }: { member: ApiTeamMember }) {
+  const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   const yrs = getYearsExperience(member.joined_at);
   const joinYear = new Date(member.joined_at).getFullYear();
@@ -180,7 +183,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && setModalOpen(true)}
-        aria-label={`View ${member.name}'s profile`}
+        aria-label={t("pages.landing.team_view_profile", { name: member.name })}
       >
         {/* Photo taking full card height */}
         <div className="absolute inset-0 bg-muted z-0">
@@ -213,9 +216,9 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
             {member.name}
           </h3>
           <p className="text-[12px] text-white/70 mt-1.5 font-medium flex items-center gap-2">
-            <span>Since {joinYear}</span>
+            <span>{t("pages.landing.team_since", { year: joinYear })}</span>
             <span className="h-1 w-1 rounded-full bg-white/40" />
-            <span>{yrs} yr{yrs !== 1 ? "s" : ""} exp</span>
+            <span>{t("pages.landing.team_yrs_exp", { count: yrs })}</span>
           </p>
         </div>
       </div>
@@ -230,6 +233,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
 // ── Main component ───────────────────────────────────────────
 
 function OurTeam() {
+  const { t } = useTranslation();
   const { data, isLoading, isError, refetch } = useGetOurTeam();
   const members: ApiTeamMember[] = data?.data ?? [];
 
@@ -238,7 +242,7 @@ function OurTeam() {
       {/* Header */}
       <div className="mb-8 text-center sm:text-left">
         <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary mb-2">
-          Meet our Team
+          {t("pages.landing.team_title")}
         </p>
       </div>
 
@@ -246,13 +250,13 @@ function OurTeam() {
       {isError && (
         <div className="rounded-[6px] border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
           <p className="text-sm text-destructive font-medium">
-            Failed to load team members.
+            {t("pages.landing.team_load_error")}
           </p>
           <button
             onClick={() => refetch()}
             className="mt-2 text-xs text-destructive/70 underline underline-offset-2 hover:text-destructive transition-colors"
           >
-            Try again
+            {t("pages.landing.try_again")}
           </button>
         </div>
       )}
@@ -267,7 +271,7 @@ function OurTeam() {
             : members.length === 0
               ? (
                 <p className="col-span-full text-sm text-muted-foreground text-center py-12">
-                  No team members found.
+                  {t("pages.landing.team_empty")}
                 </p>
               )
               : members.map((m) => <MemberCard key={m.id} member={m} />)}

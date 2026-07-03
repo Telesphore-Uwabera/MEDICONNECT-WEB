@@ -1,4 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import i18n from "@/lib/i18n";
 import { toast as sonnerToast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -47,12 +50,15 @@ const ALL_STATUSES: OrderStatus[] = [
   "cancelled",
 ];
 
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  draft: "Draft",
-  pending: "Pending",
-  accepted: "Accepted",
-  completed: "Completed",
-  cancelled: "Cancelled",
+const getOrderStatusLabel = (t: TFunction, status: OrderStatus): string => {
+  const map: Record<OrderStatus, string> = {
+    draft: t("pages.patient.ord_status_draft"),
+    pending: t("pages.patient.status_pending"),
+    accepted: t("pages.patient.ord_status_accepted"),
+    completed: t("pages.patient.status_completed"),
+    cancelled: t("pages.patient.status_cancelled"),
+  };
+  return map[status];
 };
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
@@ -106,8 +112,8 @@ function resolveOrderReceiptUrl(order: PharmacyOrder): string | null {
 function openOrderReceipt(order: PharmacyOrder) {
   const url = resolveOrderReceiptUrl(order);
   if (!url) {
-    sonnerToast.error("Receipt is not available yet.", {
-      description: "The pharmacy order does not include a receipt link from the API.",
+    sonnerToast.error(i18n.t("pages.patient.ord_receipt_unavailable"), {
+      description: i18n.t("pages.patient.ord_receipt_unavailable_desc"),
     });
     return;
   }
@@ -117,6 +123,7 @@ function openOrderReceipt(order: PharmacyOrder) {
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: OrderStatus }) {
+  const { t } = useTranslation();
   return (
     <span
       className={cn(
@@ -124,18 +131,19 @@ function StatusBadge({ status }: { status: OrderStatus }) {
         STATUS_STYLES[status],
       )}
     >
-      {STATUS_LABEL[status]}
+      {getOrderStatusLabel(t, status)}
     </span>
   );
 }
 
 function DeliveryBadge({ type }: { type: "pickup" | "home_delivery" }) {
+  const { t } = useTranslation();
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/60">
       {type === "home_delivery" ? (
-        <><Truck className="w-4 h-4" />Home delivery</>
+        <><Truck className="w-4 h-4" />{t("pages.patient.ord_home_delivery")}</>
       ) : (
-        <><Store className="w-4 h-4" />Pickup</>
+        <><Store className="w-4 h-4" />{t("pages.patient.pickup_badge")}</>
       )}
     </span>
   );
@@ -184,10 +192,11 @@ function DateRangeInput({
 }: {
   from: string; to: string; onFrom: (v: string) => void; onTo: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-4">
-        <span className="text-xs text-muted-foreground/50 w-5">From</span>
+        <span className="text-xs text-muted-foreground/50 w-5">{t("pages.patient.date_from_label")}</span>
         <input
           type="date"
           value={from}
@@ -196,7 +205,7 @@ function DateRangeInput({
         />
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground/50 w-5">To</span>
+        <span className="text-xs text-muted-foreground/50 w-5">{t("pages.patient.date_to_label")}</span>
         <input
           type="date"
           value={to}
@@ -242,6 +251,7 @@ function OrderCard({
   onCancel: (o: PharmacyOrder) => void;
   onViewDetails: (o: PharmacyOrder) => void;
 }) {
+  const { t } = useTranslation();
   const canCancel = order.status === "draft" || order.status === "pending";
   return (
     <div
@@ -269,11 +279,11 @@ function OrderCard({
         {order.items.slice(0, 2).map((item) => (
           <span key={item.id} className="text-xs text-muted-foreground/70">
             <span className="font-medium text-foreground/80">{item.medicine_name}</span>
-            <span className="text-muted-foreground/45"> · qty {item.quantity}</span>
+            <span className="text-muted-foreground/45"> · {t("pages.patient.qty", { count: item.quantity })}</span>
           </span>
         ))}
         {order.items.length > 2 && (
-          <span className="text-xs text-muted-foreground/40">+{order.items.length - 2} more</span>
+          <span className="text-xs text-muted-foreground/40">{t("pages.cards.more_count", { count: order.items.length - 2 })}</span>
         )}
       </div>
 
@@ -292,7 +302,7 @@ function OrderCard({
               className="h-6 px-2 text-xs rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 gap-1"
               onClick={() => onCancel(order)}
             >
-              <X className="h-2 w-2" />Cancel
+              <X className="h-2 w-2" />{t("common.cancel")}
             </Button>
           )}
         </div>
@@ -312,6 +322,7 @@ function OrderDrawer({
   onClose: () => void;
   onCancel: (o: PharmacyOrder) => void;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!order) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -342,7 +353,7 @@ function OrderDrawer({
           <>
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
               <div>
-                <p className="text-xs font-semibold text-foreground">Order #{order.id}</p>
+                <p className="text-xs font-semibold text-foreground">{t("pages.patient.ord_order_number", { id: order.id })}</p>
                 <p className="text-xs text-muted-foreground/60">{order.pharmacy.name}</p>
               </div>
               <button onClick={onClose} className="p-1.5 rounded-[6px] hover:bg-secondary/50 text-muted-foreground transition-colors">
@@ -359,7 +370,7 @@ function OrderDrawer({
 
               {/* Pharmacy */}
               <div className="rounded-[6px] border border-border/50 bg-secondary/10 p-2.5 space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Pharmacy</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">{t("pages.patient.pharmacy_label")}</p>
                 <p className="text-xs font-semibold text-foreground">{order.pharmacy.name}</p>
                 {order.pharmacy.address && (
                   <p className="text-xs text-muted-foreground/60 flex items-center gap-1">
@@ -374,7 +385,7 @@ function OrderDrawer({
               {/* Items */}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">
-                  Items ({order.items.length})
+                  {t("pages.patient.ord_items_count", { count: order.items.length })}
                 </p>
                 <div className="space-y-1.5">
                   {order.items.map((item) => (
@@ -392,7 +403,7 @@ function OrderDrawer({
               {/* Delivery address */}
               {order.delivery_address && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Delivery address</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">{t("pages.patient.delivery_address_label")}</p>
                   <p className="text-xs text-foreground/80">{order.delivery_address}</p>
                 </div>
               )}
@@ -400,7 +411,7 @@ function OrderDrawer({
               {/* Notes */}
               {order.notes && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Notes</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">{t("consult.booking.notes")}</p>
                   <p className="text-xs text-foreground/80">{order.notes}</p>
                 </div>
               )}
@@ -408,13 +419,13 @@ function OrderDrawer({
               {/* Dates */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
-                  <p className="text-xs text-muted-foreground/50">Placed</p>
+                  <p className="text-xs text-muted-foreground/50">{t("pages.patient.ord_placed")}</p>
                   <p className="text-xs font-medium text-foreground">
                     {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
                 </div>
                 <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
-                  <p className="text-xs text-muted-foreground/50">Updated</p>
+                  <p className="text-xs text-muted-foreground/50">{t("pages.patient.ord_updated")}</p>
                   <p className="text-xs font-medium text-foreground">
                     {new Date(order.updated_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
@@ -430,7 +441,7 @@ function OrderDrawer({
                     onClick={() => openOrderReceipt(order)}
                   >
                     <Download className="h-4 w-4" />
-                    View receipt
+                    {t("pages.patient.ord_view_receipt")}
                   </Button>
                 )}
                 {canCancel && (
@@ -439,7 +450,7 @@ function OrderDrawer({
                   onClick={() => onCancel(order)}
                 >
                   <X className="h-4 w-4" />
-                  {order.status === "draft" ? "Delete draft" : "Cancel order"}
+                  {order.status === "draft" ? t("pages.patient.ord_delete_draft") : t("pages.patient.ord_cancel_order")}
                 </Button>
                 )}
               </div>
@@ -464,6 +475,7 @@ function CancelConfirmModal({
   onClose: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   if (!order) return null;
   return (
     <>
@@ -476,12 +488,12 @@ function CancelConfirmModal({
             </div>
             <div>
               <p className="text-xs font-semibold text-foreground">
-                {order.status === "draft" ? "Delete this draft?" : "Cancel this order?"}
+                {order.status === "draft" ? t("pages.patient.ord_confirm_delete_draft") : t("pages.patient.ord_confirm_cancel")}
               </p>
               <p className="text-xs text-muted-foreground/60 mt-0.5">
                 {order.status === "draft"
-                  ? "This draft will be permanently removed."
-                  : `Order #${order.id} at ${order.pharmacy.name} will be cancelled.`}
+                  ? t("pages.patient.ord_draft_remove_warning")
+                  : t("pages.patient.ord_cancel_warning", { id: order.id, name: order.pharmacy.name })}
               </p>
             </div>
           </div>
@@ -492,7 +504,7 @@ function CancelConfirmModal({
               onClick={onClose}
               disabled={isPending}
             >
-              Keep it
+              {t("pages.patient.ord_keep_it")}
             </Button>
             <Button
               className="flex-1 h-7 text-xs rounded-[6px] bg-red-600 hover:bg-red-700 text-white gap-1"
@@ -500,7 +512,7 @@ function CancelConfirmModal({
               disabled={isPending}
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-              {order.status === "draft" ? "Delete" : "Cancel"}
+              {order.status === "draft" ? t("common.delete") : t("common.cancel")}
             </Button>
           </div>
         </div>
@@ -512,6 +524,7 @@ function CancelConfirmModal({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 const Orders = () => {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -584,22 +597,31 @@ const Orders = () => {
   const handleViewDetails = useCallback((o: PharmacyOrder) => setSelectedOrder(o), []);
   const closeDrawer = useCallback(() => setSelectedOrder(null), []);
 
+  const tableHeaders = [
+    t("pages.patient.pharmacy_label"),
+    t("pages.patient.ord_th_items"),
+    t("pages.patient.delivery_stat_label"),
+    t("pages.patient.date_label"),
+    t("pages.patient.appt_filter_status_label"),
+    "",
+  ];
+
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.patient.appt_filter_status_label"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        ...ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] })),
+        { value: "all", label: t("pages.patient.appt_filter_all_statuses") },
+        ...ALL_STATUSES.map((s) => ({ value: s, label: getOrderStatusLabel(t, s) })),
       ],
       onChange: (v: string) => set("status", v as any)
     },
     {
       type: "custom" as const,
       key: "date_range",
-      label: "Date range",
+      label: t("pages.patient.appt_filter_date_range"),
       render: () => (
         <DateRangeInput
           from={filters.from}
@@ -612,12 +634,12 @@ const Orders = () => {
     {
       type: "search" as const,
       key: "search",
-      label: "Search",
+      label: t("pages.patient.search_label"),
       value: filters.search,
-      placeholder: "Pharmacy or medicine...",
+      placeholder: t("pages.patient.ord_search_placeholder"),
       onChange: (v: string) => set("search", v)
     }
-  ], [filters, set]);
+  ], [filters, set, t]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -625,8 +647,8 @@ const Orders = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title="My Orders"
-          subtitle="Track and manage your pharmacy orders"
+          title={t("pages.patient.ord_title")}
+          subtitle={t("pages.patient.ord_sub")}
         />
 
         {/* Quick access to the patient's own medical record */}
@@ -638,7 +660,7 @@ const Orders = () => {
             className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
           >
             <HeartPulse className="h-3.5 w-3.5 text-primary" />
-            My medical info
+            {t("consult.medical_info.my_info")}
           </Button>
         </div>
 
@@ -654,10 +676,10 @@ const Orders = () => {
         <main className="flex-1 overflow-y-auto flex flex-col">
           {/* Stats */}
           <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Pending" value={pendingCount} icon={Clock} accent="warning" />
-            <StatCard label="Accepted" value={acceptedCount} icon={PackageCheck} accent="primary" />
-            <StatCard label="Completed" value={completedCount} icon={CheckCircle2} accent="success" />
-            <StatCard label="Cancelled" value={cancelledCount} icon={XCircle} accent="primary" />
+            <StatCard label={t("pages.patient.status_pending")} value={pendingCount} icon={Clock} accent="warning" />
+            <StatCard label={t("pages.patient.ord_status_accepted")} value={acceptedCount} icon={PackageCheck} accent="primary" />
+            <StatCard label={t("pages.patient.status_completed")} value={completedCount} icon={CheckCircle2} accent="success" />
+            <StatCard label={t("pages.patient.status_cancelled")} value={cancelledCount} icon={XCircle} accent="primary" />
           </div>
 
           {/* Toolbar */}
@@ -665,22 +687,22 @@ const Orders = () => {
             <div className="flex items-center gap-2">
               <p className="text-xs text-muted-foreground">
                 {isLoading ? (
-                  <span className="text-muted-foreground/40">Loading…</span>
+                  <span className="text-muted-foreground/40">{t("consult.booking.loading")}</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{orders.length}</span>{" "}
-                    {orders.length === 1 ? "order" : "orders"}
+                    {orders.length === 1 ? t("pages.patient.ord_count_singular") : t("pages.patient.ord_count_plural")}
                   </>
                 )}
                 {hasActiveFilters && !isLoading && (
                   <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-xs font-medium">
-                    Reset filters
+                    {t("pages.patient.reset_filters")}
                   </button>
                 )}
               </p>
               {isFetching && !isLoading && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
-                  <Loader2 className="w-4 h-4 animate-spin" />Refreshing
+                  <Loader2 className="w-4 h-4 animate-spin" />{t("pages.patient.refreshing_label")}
                 </span>
               )}
             </div>
@@ -691,8 +713,8 @@ const Orders = () => {
                 onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
                 className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
-                <option value="date-desc">Newest first</option>
-                <option value="date-asc">Oldest first</option>
+                <option value="date-desc">{t("pages.patient.sort_newest_first")}</option>
+                <option value="date-asc">{t("pages.patient.sort_oldest_first")}</option>
               </select>
 
               <FilterToggleButton
@@ -732,11 +754,11 @@ const Orders = () => {
                   <AlertCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground">Failed to load orders</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
+                  <p className="text-xs font-semibold text-foreground">{t("pages.patient.ord_error_title")}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">{t("pages.patient.error_check_connection")}</p>
                 </div>
                 <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-primary hover:text-primary/70 font-semibold">
-                  <RefreshCw className="w-4 h-4" />Retry
+                  <RefreshCw className="w-4 h-4" />{t("pages.patient.retry_link")}
                 </button>
               </div>
             )}
@@ -747,8 +769,8 @@ const Orders = () => {
                   <table className="w-full text-xs">
                     <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                       <tr>
-                        {["Pharmacy", "Items", "Delivery", "Date", "Status", ""].map((h) => (
-                          <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
+                        {tableHeaders.map((h, i) => (
+                          <th key={i} className="text-left px-3 py-2.5 font-semibold">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -771,15 +793,15 @@ const Orders = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">
-                    {hasActiveFilters ? "No orders match your filters" : "No orders yet"}
+                    {hasActiveFilters ? t("pages.patient.ord_empty_no_match") : t("pages.patient.ord_empty_none")}
                   </p>
                   <p className="text-xs text-muted-foreground/60 mt-1">
-                    {hasActiveFilters ? "Try widening your search criteria" : "Orders sent to a pharmacy will appear here"}
+                    {hasActiveFilters ? t("pages.patient.try_widening_search_sub") : t("pages.patient.ord_empty_hint")}
                   </p>
                 </div>
                 {hasActiveFilters && (
                   <button onClick={clearAll} className="text-xs text-primary hover:text-primary/70 font-semibold hover:underline">
-                    Clear all filters
+                    {t("pages.patient.clear_all_filters_link")}
                   </button>
                 )}
               </div>
@@ -791,8 +813,8 @@ const Orders = () => {
                 <table className="w-full text-xs">
                   <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                     <tr>
-                      {["Pharmacy", "Items", "Delivery", "Date", "Status", ""].map((h) => (
-                        <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
+                      {tableHeaders.map((h, i) => (
+                        <th key={i} className="text-left px-3 py-2.5 font-semibold">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -827,7 +849,7 @@ const Orders = () => {
                                 </span>
                               ))}
                               {order.items.length > 2 && (
-                                <span className="text-xs text-muted-foreground/40">+{order.items.length - 2} more</span>
+                                <span className="text-xs text-muted-foreground/40">{t("pages.cards.more_count", { count: order.items.length - 2 })}</span>
                               )}
                             </div>
                           </td>
@@ -851,7 +873,7 @@ const Orders = () => {
                                 className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30"
                                 onClick={() => handleViewDetails(order)}
                               >
-                                Details
+                                {t("pages.patient.details")}
                               </Button>
                               {canCancel && (
                                 <Button
@@ -861,7 +883,7 @@ const Orders = () => {
                                   onClick={() => handleCancel(order)}
                                 >
                                   <X className="h-2 w-2" />
-                                  {order.status === "draft" ? "Delete" : "Cancel"}
+                                  {order.status === "draft" ? t("common.delete") : t("common.cancel")}
                                 </Button>
                               )}
                             </div>

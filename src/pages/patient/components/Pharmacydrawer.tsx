@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,21 +40,17 @@ interface PharmacyDrawerProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAY_LABELS: Record<string, string> = {
-  monday: "Mon", tuesday: "Tue", wednesday: "Wed",
-  thursday: "Thu", friday: "Fri", saturday: "Sat", sunday: "Sun",
-};
-
 const TODAY = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"][new Date().getDay()];
 const CATEGORIES = ["All", "Antibiotics", "Antihypertensives", "Analgesics", "Vitamins", "Antidiabetics", "Other"];
 
 // ─── StockBadge ───────────────────────────────────────────────────────────────
 
 const StockBadge = ({ quantity, isAvailable }: { quantity: number; isAvailable: boolean }) => {
+  const { t } = useTranslation();
   if (!isAvailable || quantity === 0)
     return (
       <span className="inline-flex items-center gap-1 text-[9px] font-medium text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-[6px] whitespace-nowrap">
-        <XCircle className="h-2.5 w-2.5" /> Out
+        <XCircle className="h-2.5 w-2.5" /> {t("pages.patient.stock_out")}
       </span>
     );
   if (quantity < 30)
@@ -64,7 +61,7 @@ const StockBadge = ({ quantity, isAvailable }: { quantity: number; isAvailable: 
     );
   return (
     <span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-[6px] whitespace-nowrap">
-      <CheckCircle2 className="h-2.5 w-2.5" /> In
+      <CheckCircle2 className="h-2.5 w-2.5" /> {t("pages.patient.stock_in")}
     </span>
   );
 };
@@ -96,6 +93,7 @@ interface MedicineModalProps {
 const MedicineModal = ({
   medicine: med, open, onClose, cartItem, orderId, pharmacyId, onAdd,
 }: MedicineModalProps) => {
+  const { t } = useTranslation();
   const update = useUpdateOrderItem();
   const remove = useRemoveOrderItem();
 
@@ -140,11 +138,11 @@ const MedicineModal = ({
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
               {med.requires_prescription ? (
                 <Badge variant="secondary" className="rounded-[4px] text-[9px] px-2 py-0.5 h-auto gap-1">
-                  <ShieldCheck className="h-2.5 w-2.5" /> Rx
+                  <ShieldCheck className="h-2.5 w-2.5" /> {t("pages.patient.rx_badge")}
                 </Badge>
               ) : (
                 <Badge className="rounded-[4px] bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-emerald-500/20 text-[9px] px-2 py-0.5 h-auto">
-                  OTC
+                  {t("pages.patient.otc_badge")}
                 </Badge>
               )}
               {med.rating != null && (
@@ -166,31 +164,31 @@ const MedicineModal = ({
         {/* Details */}
         <div className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <DetailRow icon={<Tag className="h-3 w-3" />} label="Category" value={med.category ?? "—"} />
-            <DetailRow icon={<FlaskConical className="h-3 w-3" />} label="Generic" value={med.generic_name ?? "—"} />
-            <DetailRow icon={<Layers className="h-3 w-3" />} label="Unit" value={med.unit ?? "—"} />
-            <DetailRow icon={<Package className="h-3 w-3" />} label="Availability"
+            <DetailRow icon={<Tag className="h-3 w-3" />} label={t("pages.patient.detail_category_label")} value={med.category ?? "—"} />
+            <DetailRow icon={<FlaskConical className="h-3 w-3" />} label={t("pages.patient.detail_generic_label")} value={med.generic_name ?? "—"} />
+            <DetailRow icon={<Layers className="h-3 w-3" />} label={t("pages.patient.detail_unit_label")} value={med.unit ?? "—"} />
+            <DetailRow icon={<Package className="h-3 w-3" />} label={t("pages.patient.detail_availability_label")}
               value={<StockBadge quantity={med.quantity} isAvailable={med.is_available} />}
             />
-            <DetailRow icon={<Package className="h-3 w-3" />} label="Stock" value={med.quantity.toLocaleString()} />
+            <DetailRow icon={<Package className="h-3 w-3" />} label={t("pages.patient.detail_stock_label")} value={med.quantity.toLocaleString()} />
             {med.source && (
-              <DetailRow icon={<Package className="h-3 w-3" />} label="Source" value={med.source} />
+              <DetailRow icon={<Package className="h-3 w-3" />} label={t("pages.patient.detail_source_label")} value={med.source} />
             )}
           </div>
 
           {/* Price + CTA */}
           <div className="rounded-[6px] bg-primary/5 border border-primary/15 px-4 py-2.5 flex items-center justify-between">
             <div>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Unit Price</p>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">{t("pages.patient.unit_price_label")}</p>
               <p className="text-lg font-bold text-foreground tabular-nums mt-0.5">
                 {parseFloat(med.price).toLocaleString()}
                 <span className="text-[10px] font-normal text-muted-foreground ml-1">{med.currency ?? "RWF"}</span>
               </p>
-              {med.unit && <p className="text-[9px] text-muted-foreground">per {med.unit}</p>}
+              {med.unit && <p className="text-[9px] text-muted-foreground">{t("pages.patient.per_unit", { unit: med.unit })}</p>}
             </div>
             {outOfStock ? (
               <div className="h-8 px-3 flex items-center justify-center rounded-[6px] bg-muted text-[11px] text-muted-foreground font-medium">
-                Unavailable
+                {t("pages.patient.unavailable_label")}
               </div>
             ) : cartQty === 0 ? (
               <Button
@@ -198,7 +196,7 @@ const MedicineModal = ({
                 onClick={onAdd}
                 className="h-8 text-[11px] rounded-[6px] px-3 bg-gradient-primary hover:opacity-90 gap-1"
               >
-                <Plus className="h-3 w-3" /> Add
+                <Plus className="h-3 w-3" /> {t("pages.patient.add_action")}
               </Button>
             ) : (
               <div className="flex items-center gap-1.5 h-8 rounded-[6px] border border-primary/30 bg-primary/5 px-2">
@@ -237,6 +235,25 @@ const MedicineModal = ({
 // ─── PharmacyDrawer ───────────────────────────────────────────────────────────
 
 export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerProps) => {
+  const { t } = useTranslation();
+  const CATEGORY_LABEL: Record<string, string> = {
+    All: t("pages.patient.category_all"),
+    Antibiotics: t("pages.patient.category_antibiotics"),
+    Antihypertensives: t("pages.patient.category_antihypertensives"),
+    Analgesics: t("pages.patient.category_analgesics"),
+    Vitamins: t("pages.patient.category_vitamins"),
+    Antidiabetics: t("pages.patient.category_antidiabetics"),
+    Other: t("pages.patient.category_other"),
+  };
+  const DAY_LABEL_SHORT: Record<string, string> = {
+    monday: t("pages.cards.day_monday_short"),
+    tuesday: t("pages.cards.day_tuesday_short"),
+    wednesday: t("pages.cards.day_wednesday_short"),
+    thursday: t("pages.cards.day_thursday_short"),
+    friday: t("pages.cards.day_friday_short"),
+    saturday: t("pages.cards.day_saturday_short"),
+    sunday: t("pages.cards.day_sunday_short"),
+  };
   const [medSearch, setMedSearch] = useState("");
   const debouncedMedSearch = useDebounce(medSearch, 300);
   const [showFilters, setShowFilters] = useState(false);
@@ -314,8 +331,8 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
           delivery_type: deliveryType,
         },
         {
-          onSuccess: () => toast.success(`${med.name} added to cart`),
-          onError: (e) => toast.error(e.message ?? "Failed to add item"),
+          onSuccess: () => toast.success(t("pages.patient.added_to_cart", { name: med.name })),
+          onError: (e) => toast.error(e.message ?? t("pages.patient.failed_to_add_item")),
         },
       );
     },
@@ -360,21 +377,21 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                     isOpenNow ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive",
                   )}>
                     <span className={cn("h-1.5 w-1.5 rounded-full", isOpenNow ? "bg-emerald-500" : "bg-destructive")} />
-                    {ph.is_open_24h ? "24h" : isClosedToday ? "Closed" : "Open"}
+                    {ph.is_open_24h ? t("pages.patient.hours_24_short") : isClosedToday ? t("pages.patient.closed_word") : t("pages.patient.open_short")}
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{ph.address}</p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {ph.offers_delivery && (
                     <Badge className="rounded-[6px] bg-primary/10 text-primary hover:bg-primary/10 border-primary/20 text-[9px] px-1.5 py-0.5 h-auto gap-1">
-                      <Truck className="h-2.5 w-2.5" /> Delivery
+                      <Truck className="h-2.5 w-2.5" /> {t("pages.patient.delivery_word")}
                     </Badge>
                   )}
                   {ph.offers_pickup && (
-                    <Badge variant="secondary" className="rounded-[6px] text-[9px] px-1.5 py-0.5 h-auto">Pickup</Badge>
+                    <Badge variant="secondary" className="rounded-[6px] text-[9px] px-1.5 py-0.5 h-auto">{t("pages.patient.pickup_badge")}</Badge>
                   )}
                   {ph.is_open_24h && (
-                    <Badge className="rounded-[6px] bg-primary/10 text-primary hover:bg-primary/10 border-primary/20 text-[9px] px-1.5 py-0.5 h-auto">24h</Badge>
+                    <Badge className="rounded-[6px] bg-primary/10 text-primary hover:bg-primary/10 border-primary/20 text-[9px] px-1.5 py-0.5 h-auto">{t("pages.patient.hours_24_short")}</Badge>
                   )}
                 </div>
               </div>
@@ -383,7 +400,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                 className="absolute right-4 top-4 h-7 w-7 rounded-[6px] flex items-center justify-center bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
                 <X className="h-3.5 w-3.5" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{t("consult.connect.close")}</span>
               </button>
             </div>
 
@@ -392,7 +409,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               {ph.phone && <MetaItem icon={<Phone className="h-3 w-3" />}>{ph.phone}</MetaItem>}
               {ph.email && <MetaItem icon={<Mail className="h-3 w-3" />}>{ph.email}</MetaItem>}
               {deliveryMins != null && (
-                <MetaItem icon={<Truck className="h-3 w-3" />}>~{deliveryMins} min</MetaItem>
+                <MetaItem icon={<Truck className="h-3 w-3" />}>{t("pages.patient.delivery_time_approx", { mins: deliveryMins })}</MetaItem>
               )}
               {ph.delivery_fee && ph.offers_delivery && (
                 <MetaItem icon={<Truck className="h-3 w-3" />}>
@@ -401,7 +418,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               )}
               {todayHours && !isClosedToday && (
                 <MetaItem icon={<Clock className="h-3 w-3" />}>
-                  Today: {todayHours.open_time?.slice(0, 5)} – {todayHours.close_time?.slice(0, 5)}
+                  {t("pages.patient.today_hours", { open: todayHours.open_time?.slice(0, 5), close: todayHours.close_time?.slice(0, 5) })}
                 </MetaItem>
               )}
             </div>
@@ -415,16 +432,16 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
           {ph.working_hours?.length > 0 && (
             <div className="px-4 py-3 sm:px-5 border-b border-border shrink-0 bg-muted/20">
               <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
-                Working Hours
+                {t("pages.patient.working_hours_title")}
               </p>
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {ph.working_hours.map((h) => (
                   <div key={h.id} className="flex items-center justify-between rounded-[6px] border border-border/60 bg-card px-2 py-1 text-[10px]">
                     <span className={cn("font-semibold w-6", h.day_of_week === TODAY ? "text-primary" : "text-muted-foreground")}>
-                      {DAY_LABELS[h.day_of_week]}
+                      {DAY_LABEL_SHORT[h.day_of_week]}
                     </span>
                     {h.is_closed ? (
-                      <span className="text-destructive text-[9px]">Closed</span>
+                      <span className="text-destructive text-[9px]">{t("pages.patient.closed_word")}</span>
                     ) : (
                       <span className="tabular-nums text-foreground text-[9px]">
                         {h.open_time?.slice(0, 5)}–{h.close_time?.slice(0, 5)}
@@ -441,11 +458,13 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
             <div className="px-4 pt-3 pb-2.5 sm:px-5 shrink-0 space-y-2.5 border-b border-border bg-card/95 backdrop-blur">
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Medicines
+                  {t("pages.patient.medicines_section_title")}
                 </p>
                 {!isLoading && filtered.length > 0 && (
                   <span className="text-[10px] text-muted-foreground">
-                    {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+                    {filtered.length !== 1
+                      ? t("pages.patient.results_count_plural", { count: filtered.length })
+                      : t("pages.patient.results_count_singular", { count: filtered.length })}
                   </span>
                 )}
               </div>
@@ -455,7 +474,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                   <Input
                     value={medSearch}
                     onChange={(e) => setMedSearch(e.target.value)}
-                    placeholder="Search medicines…"
+                    placeholder={t("pages.patient.search_medicines_placeholder")}
                     className="pl-8 h-8 text-[11px] rounded-[6px]"
                   />
                   {medSearch && (
@@ -474,7 +493,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                   onClick={() => setShowFilters((v) => !v)}
                 >
                   <SlidersHorizontal className="h-3 w-3" />
-                  Filters
+                  {t("pages.patient.filters_action")}
                   {activeFilters > 0 && (
                     <span className="h-3.5 w-3.5 rounded-full bg-primary-foreground text-primary text-[8px] font-bold flex items-center justify-center">
                       {activeFilters}
@@ -486,7 +505,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
               {showFilters && (
                 <div className="rounded-[6px] border border-border bg-muted/40 p-2.5 space-y-2.5">
                   <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Category</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">{t("pages.patient.detail_category_label")}</p>
                     <div className="flex flex-wrap gap-1">
                       {CATEGORIES.map((cat) => (
                         <button
@@ -499,16 +518,16 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                               : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
                           )}
                         >
-                          {cat}
+                          {CATEGORY_LABEL[cat] ?? cat}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {[
-                      { label: "In stock", value: onlyInStock, set: setOnlyInStock },
-                      { label: "OTC only", value: onlyOTC, set: setOnlyOTC },
-                      { label: "Rx only", value: onlyRx, set: setOnlyRx },
+                      { label: t("pages.patient.checkbox_in_stock"), value: onlyInStock, set: setOnlyInStock },
+                      { label: t("pages.patient.checkbox_otc_only"), value: onlyOTC, set: setOnlyOTC },
+                      { label: t("pages.patient.checkbox_rx_only"), value: onlyRx, set: setOnlyRx },
                     ].map(({ label, value, set }) => (
                       <label key={label} className="flex items-center gap-1.5 cursor-pointer select-none">
                         <Checkbox checked={value} onCheckedChange={(v) => set(!!v)} className="h-3.5 w-3.5 rounded-[3px]" />
@@ -521,7 +540,7 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                       onClick={() => { setSelectedCategory("All"); setOnlyInStock(false); setOnlyOTC(false); setOnlyRx(false); }}
                       className="text-[10px] text-primary hover:underline"
                     >
-                      Clear all
+                      {t("pages.patient.clear_all_action")}
                     </button>
                   )}
                 </div>
@@ -556,18 +575,18 @@ export const PharmacyDrawer = ({ pharmacy: ph, open, onClose }: PharmacyDrawerPr
                   <div className="h-12 w-12 rounded-[6px] bg-muted flex items-center justify-center mb-2">
                     <Pill className="h-6 w-6 text-muted-foreground/40" />
                   </div>
-                  <p className="text-[11px] font-medium text-foreground mb-0.5">No medicines found</p>
+                  <p className="text-[11px] font-medium text-foreground mb-0.5">{t("pages.patient.no_medicines_found_title")}</p>
                   <p className="text-[10px] text-muted-foreground max-w-[180px]">
                     {medSearch || activeFilters > 0
-                      ? "Try adjusting your search or filters."
-                      : "No medicines listed for this pharmacy."}
+                      ? t("pages.patient.try_adjusting_search")
+                      : t("pages.patient.no_medicines_listed")}
                   </p>
                   {(medSearch || activeFilters > 0) && (
                     <button
                       onClick={() => { setMedSearch(""); setSelectedCategory("All"); setOnlyInStock(false); setOnlyOTC(false); setOnlyRx(false); }}
                       className="text-[10px] text-primary hover:underline mt-2"
                     >
-                      Clear search & filters
+                      {t("pages.patient.clear_search_filters")}
                     </button>
                   )}
                 </div>
@@ -648,6 +667,7 @@ const MedicineCard = ({
   medicine: med, cartQty, outOfStock, isAdding, onView, onAdd,
   orderId, pharmacyId, cartItem,
 }: MedicineCardProps) => {
+  const { t } = useTranslation();
   const update = useUpdateOrderItem();
   const remove = useRemoveOrderItem();
 
@@ -678,7 +698,7 @@ const MedicineCard = ({
           <button
             onClick={onView}
             className="h-6 w-6 rounded-[6px] flex items-center justify-center bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground transition-colors shrink-0"
-            title="View details"
+            title={t("pages.patient.view_details_title")}
           >
             <Eye className="h-3 w-3" />
           </button>
@@ -688,11 +708,11 @@ const MedicineCard = ({
         <div className="flex items-center gap-1 flex-wrap">
           {med.requires_prescription ? (
             <Badge variant="secondary" className="rounded-[4px] text-[9px] px-1 py-0.5 h-auto gap-0.5">
-              <ShieldCheck className="h-2 w-2" /> Rx
+              <ShieldCheck className="h-2 w-2" /> {t("pages.patient.rx_badge")}
             </Badge>
           ) : (
             <Badge className="rounded-[4px] bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-emerald-500/20 text-[9px] px-1 py-0.5 h-auto">
-              OTC
+              {t("pages.patient.otc_badge")}
             </Badge>
           )}
           {med.unit && (
@@ -721,14 +741,14 @@ const MedicineCard = ({
         {med.quantity > 0 && (
           <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
             <Package className="h-2.5 w-2.5" />
-            <span>{med.quantity.toLocaleString()} avail</span>
+            <span>{t("pages.patient.avail_suffix", { count: med.quantity.toLocaleString() })}</span>
           </div>
         )}
 
         {/* CTA */}
         {outOfStock ? (
           <div className="h-7 flex items-center justify-center rounded-[6px] bg-muted text-[10px] text-muted-foreground font-medium">
-            Unavailable
+            {t("pages.patient.unavailable_label")}
           </div>
         ) : cartQty === 0 ? (
           <Button
@@ -738,7 +758,7 @@ const MedicineCard = ({
             className="h-7 text-[10px] rounded-[6px] w-full bg-gradient-primary hover:opacity-90 gap-1"
           >
             {isAdding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-            Add
+            {t("pages.patient.add_action")}
           </Button>
         ) : (
           <div className={cn(

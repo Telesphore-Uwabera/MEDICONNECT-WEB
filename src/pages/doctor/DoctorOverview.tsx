@@ -63,11 +63,11 @@ import {
 
 // ─── Period picker options ────────────────────────────────────────────────────
 
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "week", label: "This Week" },
-  { value: "month", label: "This Month" },
-  { value: "year", label: "This Year" },
+const PERIOD_OPTIONS: { value: Period; labelKey: string }[] = [
+  { value: "today", labelKey: "pages.doctor.period_today" },
+  { value: "week", labelKey: "pages.doctor.period_week" },
+  { value: "month", labelKey: "pages.doctor.period_month" },
+  { value: "year", labelKey: "pages.doctor.period_year" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -336,12 +336,20 @@ const DoctorOverview = () => {
   const earningsAverage = earningsSummary?.average_per_appointment ?? revenue?.avg_per_appointment ?? 0;
   const earningsAppointments = earningsSummary?.total_appointments ?? 0;
 
+  const translatePayoutValue = (prefix: string, value: unknown) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) return "-";
+    const normalized = raw.toLowerCase().replace(/_/g, " ");
+    const key = normalized.replace(/\s+/g, "_");
+    return t(`pages.doctor.${prefix}.${key}`, { defaultValue: normalized });
+  };
+
   const handleWithdrawalSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const amount = Number(withdrawalForm.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Enter a valid withdrawal amount.");
+      toast.error(t("pages.doctor.withdrawal_invalid_amount"));
       return;
     }
 
@@ -374,11 +382,11 @@ const DoctorOverview = () => {
             },
             ...prev,
           ]);
-          toast.success("Withdrawal request sent.");
+          toast.success(t("pages.doctor.withdrawal_sent"));
           setWithdrawalForm((prev) => ({ ...prev, amount: "", note: "" }));
           setWithdrawalOpen(false);
         },
-        onError: (err) => toast.error(getErrMsg(err, "Could not request withdrawal.")),
+        onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.withdrawal_request_failed"))),
       },
     );
   };
@@ -392,27 +400,27 @@ const DoctorOverview = () => {
         setLocalPayoutRequests((prev) =>
           prev.filter((withdrawal) => String(getPayoutId(withdrawal)) !== String(withdrawalId)),
         );
-        toast.success("Withdrawal request cancelled.");
+        toast.success(t("pages.doctor.withdrawal_cancelled"));
       },
-      onError: (err) => toast.error(getErrMsg(err, "Could not cancel withdrawal.")),
+      onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.withdrawal_cancel_failed"))),
     });
   };
 
   const quickStats = [
     {
-      label: "Completed",
+      label: t("pages.doctor.completed"),
       value: today?.completed ?? 0,
       icon: CheckCircle2,
       color: "text-success bg-success/10",
     },
     {
-      label: "Pending",
+      label: t("pages.doctor.pending"),
       value: (today?.pending ?? 0) + (today?.confirmed ?? 0),
       icon: Clock,
       color: "text-warning bg-warning/10",
     },
     {
-      label: "Cancelled",
+      label: t("pages.doctor.cancelled"),
       value: today?.cancelled ?? 0,
       icon: XCircle,
       color: "text-destructive bg-destructive/10",
@@ -451,7 +459,7 @@ const DoctorOverview = () => {
                       : "bg-card border-border/60 text-muted-foreground hover:border-primary/50",
                   )}
                 >
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </button>
               ))}
 
@@ -496,39 +504,39 @@ const DoctorOverview = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               {[
                 {
-                  label: "Today",
-                  value: `${todayPending} waiting`,
-                  sub: `${todayCompleted} completed today`,
+                  label: t("pages.doctor.stat_today"),
+                  value: t("pages.doctor.waiting_count", { count: todayPending }),
+                  sub: t("pages.doctor.completed_today_count", { count: todayCompleted }),
                   icon: Calendar,
                   tone: "text-primary bg-primary/10 border-primary/20",
-                  action: "Open schedule",
+                  action: t("pages.doctor.open_schedule"),
                   to: "/doctor/appointments",
                 },
                 {
-                  label: "Instant queue",
+                  label: t("pages.doctor.instant_queue"),
                   value: String(instantQueue),
-                  sub: toggleState.instant_consultation ? "Visible to patients" : "Hidden from patients",
+                  sub: toggleState.instant_consultation ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden_from_patients"),
                   icon: Zap,
                   tone: "text-violet-500 bg-violet-500/10 border-violet-500/20",
-                  action: "Manage queue",
+                  action: t("pages.doctor.manage_queue"),
                   to: "/doctor/appointments",
                 },
                 {
-                  label: "Wallet",
-                  value: walletLoading ? "Loading..." : formatMoney(walletBalance, walletCurrency),
-                  sub: "Available balance",
+                  label: t("pages.doctor.wallet"),
+                  value: walletLoading ? t("pages.doctor.loading") : formatMoney(walletBalance, walletCurrency),
+                  sub: t("pages.doctor.available_balance"),
                   icon: Wallet,
                   tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-                  action: "Financials",
+                  action: t("pages.doctor.financials"),
                   tab: "financial" as const,
                 },
                 {
-                  label: "Prescriptions",
+                  label: t("pages.doctor.stat_rx"),
                   value: String(prescriptions?.draft ?? 0),
-                  sub: `${prescriptions?.issued ?? 0} issued`,
+                  sub: t("pages.doctor.issued_count", { count: prescriptions?.issued ?? 0 }),
                   icon: FileText,
                   tone: "text-sky-500 bg-sky-500/10 border-sky-500/20",
-                  action: "Open drafts",
+                  action: t("pages.doctor.open_drafts"),
                   to: "/doctor/prescriptions",
                 },
               ].map((item) => {
@@ -605,7 +613,7 @@ const DoctorOverview = () => {
                     activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Today
+                  {t("pages.doctor.tab_today")}
                 </button>
                 <button
                   onClick={() => setActiveTab("clinical")}
@@ -614,7 +622,7 @@ const DoctorOverview = () => {
                     activeTab === "clinical" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Clinical Records
+                  {t("pages.doctor.tab_clinical")}
                 </button>
                 <button
                   onClick={() => setActiveTab("financial")}
@@ -623,7 +631,7 @@ const DoctorOverview = () => {
                     activeTab === "financial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Financials
+                  {t("pages.doctor.financials")}
                 </button>
                 <button
                   onClick={() => setActiveTab("analytics")}
@@ -632,7 +640,7 @@ const DoctorOverview = () => {
                     activeTab === "analytics" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Analytics
+                  {t("pages.doctor.analytics")}
                 </button>
                 <button
                   onClick={() => setActiveTab("reviews")}
@@ -641,7 +649,7 @@ const DoctorOverview = () => {
                     activeTab === "reviews" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Reviews
+                  {t("pages.doctor.reviews")}
                 </button>
               </div>
 
@@ -669,28 +677,28 @@ const DoctorOverview = () => {
                         <div className="flex items-start justify-between gap-4 mb-4">
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-                              Today's Workbench
+                              {t("pages.doctor.workbench_label")}
                             </p>
                             <h3 className="text-lg font-bold text-foreground mt-1">
-                              Prioritize the next patient action
+                              {t("pages.doctor.workbench_title")}
                             </h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Start with pending appointments, active instant consults, then clinical follow-up.
+                              {t("pages.doctor.workbench_sub")}
                             </p>
                           </div>
                           <Link
                             to="/doctor/appointments"
                             className="hidden sm:inline-flex h-8 items-center rounded-[6px] bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                           >
-                            Open appointments
+                            {t("pages.doctor.open_appointments")}
                           </Link>
                         </div>
 
                         <div className="grid sm:grid-cols-3 gap-3">
                           {[
-                            { label: "Waiting", value: todayPending, hint: "Pending or confirmed", icon: Clock, tone: "text-warning bg-warning/10" },
-                            { label: "Completed", value: todayCompleted, hint: "Done today", icon: CheckCircle2, tone: "text-success bg-success/10" },
-                            { label: "Instant queue", value: instantQueue, hint: "Current queue", icon: Zap, tone: "text-violet-500 bg-violet-500/10" },
+                            { label: t("pages.doctor.waiting"), value: todayPending, hint: t("pages.doctor.pending_or_confirmed"), icon: Clock, tone: "text-warning bg-warning/10" },
+                            { label: t("pages.doctor.completed"), value: todayCompleted, hint: t("pages.doctor.done_today"), icon: CheckCircle2, tone: "text-success bg-success/10" },
+                            { label: t("pages.doctor.instant_queue"), value: instantQueue, hint: t("pages.doctor.current_queue"), icon: Zap, tone: "text-violet-500 bg-violet-500/10" },
                           ].map((item) => {
                             const Icon = item.icon;
                             return (
@@ -717,10 +725,10 @@ const DoctorOverview = () => {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-                              Wallet
+                              {t("pages.doctor.wallet")}
                             </p>
                             <h3 className="text-sm font-semibold text-foreground mt-1">
-                              Available balance
+                              {t("pages.doctor.available_balance")}
                             </h3>
                           </div>
                           <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center">
@@ -728,7 +736,7 @@ const DoctorOverview = () => {
                           </span>
                         </div>
                         <p className={cn(" leading-none font-bold text-foreground text-sm tabular-nums", walletLoading && "opacity-40")}>
-                          {walletLoading ? "Loading..." : formatMoney(walletBalance, walletCurrency)}
+                          {walletLoading ? t("pages.doctor.loading") : formatMoney(walletBalance, walletCurrency)}
                         </p>
                         <div className="space-y-2">
                           <div className="rounded-[6px] border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
@@ -758,7 +766,7 @@ const DoctorOverview = () => {
                           <div className="rounded-[6px] border border-border/60 bg-card/70 p-3 flex items-center justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-foreground">
-                                Pause bookings
+                                {t("pages.doctor.pause_bookings")}
                               </p>
                               <p
                                 className={cn(
@@ -766,7 +774,7 @@ const DoctorOverview = () => {
                                   toggleState.bookings_paused ? "text-warning" : "text-muted-foreground",
                                 )}
                               >
-                                {toggleState.bookings_paused ? "No new bookings allowed" : "Accepting bookings"}
+                                {toggleState.bookings_paused ? t("pages.doctor.no_new_bookings_allowed") : t("pages.doctor.accepting_bookings")}
                               </p>
                             </div>
                             <Switch
@@ -781,7 +789,7 @@ const DoctorOverview = () => {
                           onClick={() => setActiveTab("financial")}
                           className="mt-auto h-9 rounded-[6px] border border-primary/30 bg-card/70 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                         >
-                          View financials
+                          {t("pages.doctor.view_financials")}
                         </button>
                       </div>
                     </div>
@@ -839,7 +847,7 @@ const DoctorOverview = () => {
                           </div>
                         </div>
 
-                        {/* Pause Bookings toggle */}
+                        {/* {t("pages.doctor.pause_bookings")} toggle */}
                         <div
                           className={cn(
                             "rounded-[6px] border p-4 shadow-soft flex flex-col justify-between gap-4",
@@ -915,7 +923,7 @@ const DoctorOverview = () => {
                                   {s.value}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  Today · {s.label}
+                                  {t("pages.doctor.today_stat_label", { label: s.label })}
                                 </p>
                               </div>
                             </div>
@@ -932,10 +940,10 @@ const DoctorOverview = () => {
                     <div className="flex items-center justify-between pt-2">
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Analytics
+                          {t("pages.doctor.analytics")}
                         </p>
                         <h3 className="text-sm font-semibold text-foreground mt-1">
-                          Patient flow and period summary
+                          {t("pages.doctor.analytics_sub")}
                         </h3>
                       </div>
                     </div>
@@ -951,11 +959,11 @@ const DoctorOverview = () => {
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" />
-                              Patients
+                              {t("pages.doctor.patients")}
                             </span>
                             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                               <span className="w-2.5 h-2.5 rounded-full bg-info inline-block" />
-                              Consults
+                              {t("pages.doctor.consults")}
                             </span>
                           </div>
                         </div>
@@ -965,7 +973,7 @@ const DoctorOverview = () => {
                           </div>
                         ) : patientFlowData.length === 0 ? (
                           <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">
-                            No data for this period
+                            {t("pages.doctor.no_data_period")}
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height={200}>
@@ -1022,18 +1030,18 @@ const DoctorOverview = () => {
                       {/* Period summary card */}
                       <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-3">
                         <h3 className="text-sm font-semibold text-foreground mb-1">
-                          Period Summary
+                          {t("pages.doctor.period_summary")}
                         </h3>
 
                         {[
                           {
-                            label: "Total Appointments",
+                            label: t("pages.doctor.total_appointments"),
                             value: period?.total_appointments ?? 0,
                           },
-                          { label: "Completed", value: period?.completed ?? 0 },
-                          { label: "Pending", value: period?.pending ?? 0 },
-                          { label: "Cancelled", value: period?.cancelled ?? 0 },
-                          { label: "Online", value: period?.online_count ?? 0 },
+                          { label: t("pages.doctor.completed"), value: period?.completed ?? 0 },
+                          { label: t("pages.doctor.pending"), value: period?.pending ?? 0 },
+                          { label: t("pages.doctor.cancelled"), value: period?.cancelled ?? 0 },
+                          { label: t("pages.doctor.online"), value: period?.online_count ?? 0 },
 
                         ].map((row) => (
                           <div
@@ -1058,13 +1066,13 @@ const DoctorOverview = () => {
                         {instantStats && (
                           <div className="mt-2 pt-3 border-t border-border/40">
                             <p className="text-sm font-semibold text-foreground mb-3">
-                              Instant Consultations
+                              {t("pages.doctor.instant_consultations")}
                             </p>
                             <div className="grid grid-cols-3 gap-2">
                               {[
-                                { label: "Total", value: instantStats.total },
-                                { label: "Done", value: instantStats.completed },
-                                { label: "Queue", value: instantStats.current_queue },
+                                { label: t("pages.doctor.total"), value: instantStats.total },
+                                { label: t("pages.doctor.done"), value: instantStats.completed },
+                                { label: t("pages.doctor.queue"), value: instantStats.current_queue },
                               ].map((s) => (
                                 <div
                                   key={s.label}
@@ -1106,19 +1114,19 @@ const DoctorOverview = () => {
                     accent="primary"
                   />
                   <StatCard
-                    label="Unique Patients"
+                    label={t("pages.doctor.unique_patients")}
                     value={period?.unique_patients ?? 0}
                     icon={Users}
                     accent="info"
                   />
                   <StatCard
-                    label="Prescriptions"
+                    label={t("pages.doctor.stat_rx")}
                     value={prescriptions?.issued ?? 0}
                     icon={FileText}
                     accent="success"
                   />
                   <StatCard
-                    label="Instant Queue"
+                    label={t("pages.doctor.instant_queue")}
                     value={instantStats?.current_queue ?? 0}
                     icon={Activity}
                     accent="warning"
@@ -1130,7 +1138,7 @@ const DoctorOverview = () => {
                   <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Appointment Completion
+                        {t("pages.doctor.appointment_completion")}
                       </h3>
                       {completionData.length > 0 &&
                         (() => {
@@ -1139,13 +1147,13 @@ const DoctorOverview = () => {
                             completionData.length;
                           return (
                             <span className="text-xs font-semibold text-muted-foreground">
-                              avg {avg.toFixed(0)}%
+                              {t("pages.doctor.avg_percent", { value: avg.toFixed(0) })}
                             </span>
                           );
                         })()}
                     </div>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Completion rate · {filters.period}
+                      {t("pages.doctor.completion_rate_period", { period: t(`pages.doctor.period_${filters.period}`) })}
                     </p>
                     {loading ? (
                       <div className="h-[110px] flex items-center justify-center">
@@ -1153,7 +1161,7 @@ const DoctorOverview = () => {
                       </div>
                     ) : completionData.length === 0 ? (
                       <div className="h-[110px] flex items-center justify-center text-sm text-muted-foreground">
-                        No data
+                        {t("pages.doctor.no_data")}
                       </div>
                     ) : (
                       <ResponsiveContainer width="100%" height={110}>
@@ -1173,7 +1181,7 @@ const DoctorOverview = () => {
                               fontSize: 10,
                               padding: "4px 8px",
                             }}
-                            formatter={(v: number) => [`${v}%`, "Rate"]}
+                            formatter={(v: number) => [`${v}%`, t("pages.doctor.rate")]}
                           />
                           {completionData.map((entry, i) => (
                             <Bar key={i} dataKey="rate" radius={[3, 3, 0, 0]}>
@@ -1206,7 +1214,7 @@ const DoctorOverview = () => {
                   <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Recent Reviews
+                        {t("pages.doctor.recent_reviews")}
                       </h3>
                       {reviews?.all_time_avg != null && (
                         <div className="flex items-center gap-1.5 bg-warning/10 px-2.5 py-1 rounded-[6px]">
@@ -1270,11 +1278,11 @@ const DoctorOverview = () => {
                       <div className="flex flex-col items-center justify-center h-[100px] gap-2">
                         <Star className="h-6 w-6 text-border" />
                         <p className="text-sm text-muted-foreground">
-                          No reviews yet
+                          {t("pages.doctor.no_reviews_yet")}
                         </p>
                         {reviews?.period.avg_rating != null && (
                           <p className="text-xs text-muted-foreground">
-                            Period avg: {reviews.period.avg_rating.toFixed(1)}★
+                            {t("pages.doctor.period_avg_rating", { rating: reviews.period.avg_rating.toFixed(1) })}
                           </p>
                         )}
                       </div>
@@ -1321,7 +1329,7 @@ const DoctorOverview = () => {
                   <div className="rounded-[6px] border border-border/70 bg-card  shadow-soft  p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Wallet Balance
+                        {t("pages.doctor.wallet_balance")}
                       </h3>
                       <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center">
                         <Wallet className="h-4 w-4" />
@@ -1335,17 +1343,17 @@ const DoctorOverview = () => {
                           walletLoading && "opacity-40",
                         )}
                       >
-                        {walletLoading ? "Loading..." : formatMoney(walletBalance, walletCurrency)}
+                        {walletLoading ? t("pages.doctor.loading") : formatMoney(walletBalance, walletCurrency)}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Available for withdrawal
+                        {t("pages.doctor.available_for_withdrawal")}
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 mt-auto">
                       <div className="rounded-[6px] bg-card/70 border border-border/60 px-3 py-2">
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                          Pending requests
+                          {t("pages.doctor.pending_requests")}
                         </p>
                         <p className="text-sm font-bold text-foreground mt-1">
                           {withdrawalsLoading ? "..." : pendingPayoutCount}
@@ -1353,7 +1361,7 @@ const DoctorOverview = () => {
                       </div>
                       <div className="rounded-[6px] bg-card/70 border border-border/60 px-3 py-2">
                         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                          Last withdrawn
+                          {t("pages.doctor.last_withdrawn")}
                         </p>
                         <p className="text-sm font-bold text-foreground mt-1">
                           {formatPayoutDate(wallet?.last_withdrawn)}
@@ -1363,7 +1371,7 @@ const DoctorOverview = () => {
 
                     {walletError && (
                       <p className="text-xs text-destructive">
-                        Could not load wallet balance.
+                        {t("pages.doctor.wallet_load_error")}
                       </p>
                     )}
                   </div>
@@ -1402,7 +1410,7 @@ const DoctorOverview = () => {
                       </p>
                       {earningsSummary?.last_appointment_at ? (
                         <p className="text-xs text-muted-foreground mt-2">
-                          Last appointment {formatPayoutDate(earningsSummary.last_appointment_at)}
+                          {t("pages.doctor.last_appointment", { date: formatPayoutDate(earningsSummary.last_appointment_at) })}
                         </p>
                       ) : revenue && revenue.previous_period_total > 0 ? (
                         <p className="text-xs text-muted-foreground mt-2">
@@ -1415,15 +1423,15 @@ const DoctorOverview = () => {
                     <div className="space-y-3 mt-auto">
                       {[
                         {
-                          label: "Completed appointments",
+                          label: t("pages.doctor.completed_appointments"),
                           value: formatMoney(earningsTotal, walletCurrency),
                           count: String(earningsAppointments),
                           pct: onlinePct,
                         },
                         {
-                          label: "Wallet balance",
+                          label: t("pages.doctor.wallet_balance"),
                           value: formatMoney(walletBalance, walletCurrency),
-                          count: "available",
+                          count: t("pages.doctor.available"),
                           pct: inPersonPct,
                         },
                       ].map((row) => (
@@ -1451,7 +1459,7 @@ const DoctorOverview = () => {
 
                     <div className="pt-3 border-t border-border/50 flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">
-                        Avg per consultation
+                        {t("pages.doctor.avg_per_consultation")}
                       </span>
                       <span
                         className={cn(
@@ -1468,10 +1476,10 @@ const DoctorOverview = () => {
                     <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
                       <div>
                         <h3 className="text-sm font-semibold text-foreground">
-                          Request Payout
+                          {t("pages.doctor.request_payout")}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Send available wallet funds to your bank or mobile money account.
+                          {t("pages.doctor.request_payout_desc")}
                         </p>
                       </div>
 
@@ -1505,15 +1513,15 @@ const DoctorOverview = () => {
                               }
                               className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
                             >
-                              <option value="bank_transfer">Bank transfer</option>
-                              <option value="mobile_money">Mobile money</option>
+                              <option value="bank_transfer">{t("pages.doctor.payout_method.bank_transfer")}</option>
+                              <option value="mobile_money">{t("pages.doctor.payout_method.mobile_money")}</option>
                             </select>
                           </label>
                         </div>
 
                         <label className="space-y-1.5 block">
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            Account name
+                            {t("pages.doctor.account_name")}
                           </span>
                           <input
                             value={withdrawalForm.account_name}
@@ -1527,7 +1535,7 @@ const DoctorOverview = () => {
 
                         <label className="space-y-1.5 block">
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            Account number
+                            {t("pages.doctor.account_number")}
                           </span>
                           <input
                             value={withdrawalForm.account_number}
@@ -1541,7 +1549,7 @@ const DoctorOverview = () => {
 
                         <label className="space-y-1.5 block">
                           <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                            Note
+                            {t("pages.doctor.note")}
                           </span>
                           <textarea
                             value={withdrawalForm.note}
@@ -1564,21 +1572,21 @@ const DoctorOverview = () => {
                           }
                           className="h-9 w-full rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {requestWithdrawal.isPending ? "Requesting..." : "Request payout"}
+                          {requestWithdrawal.isPending ? t("pages.doctor.requesting") : t("pages.doctor.request_payout")}
                         </button>
                       </form>
 
                       <div className="border-t border-border/50 pt-3">
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                          Pending requests
+                          {t("pages.doctor.pending_requests")}
                         </p>
                         {withdrawalsLoading ? (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Loading payout requests...
+                            {t("pages.doctor.loading_payout_requests")}
                           </p>
                         ) : payoutRequests.length === 0 ? (
                           <p className="text-xs text-muted-foreground mt-2">
-                            No pending payout requests.
+                            {t("pages.doctor.no_pending_payout_requests")}
                           </p>
                         ) : (
                           <div className="space-y-2 mt-2">
@@ -1592,8 +1600,8 @@ const DoctorOverview = () => {
                                     {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
                                   </p>
                                   <p className="text-[11px] text-muted-foreground truncate">
-                                    {getPayoutMethod(withdrawal)}
-                                    {withdrawal.status ? ` · ${String(withdrawal.status)}` : ""}
+                                    {translatePayoutValue("payout_method", getPayoutMethod(withdrawal))}
+                                    {withdrawal.status ? ` - ${translatePayoutValue("payout_status", withdrawal.status)}` : ""}
                                   </p>
                                 </div>
                                 {Number.isFinite(Number(getPayoutId(withdrawal))) && (
@@ -1603,7 +1611,7 @@ const DoctorOverview = () => {
                                     disabled={cancelWithdrawal.isPending}
                                     className="h-7 rounded-[6px] border border-destructive/30 px-2 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
                                   >
-                                    Cancel
+                                    {t("common.cancel")}
                                   </button>
                                 )}
                               </div>
@@ -1618,10 +1626,10 @@ const DoctorOverview = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-sm font-semibold text-foreground">
-                          Payouts
+                          {t("pages.doctor.payouts")}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Move available wallet funds to a bank or mobile money account.
+                          {t("pages.doctor.payouts_desc")}
                         </p>
                       </div>
                       <span className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center shrink-0">
@@ -1643,7 +1651,7 @@ const DoctorOverview = () => {
                       onClick={() => setWithdrawalOpen(true)}
                       className="mt-auto h-10 rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                     >
-                      Request payout
+                      {t("pages.doctor.request_payout")}
                     </button>
                   </div>
                 </div>
@@ -1652,10 +1660,10 @@ const DoctorOverview = () => {
                   <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">
-                        Recent payout requests
+                        {t("pages.doctor.recent_payout_requests")}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Track submitted withdrawals and cancel pending requests when needed.
+                        {t("pages.doctor.recent_payout_requests_desc")}
                       </p>
                     </div>
                     <button
@@ -1663,14 +1671,14 @@ const DoctorOverview = () => {
                       onClick={() => setWithdrawalOpen(true)}
                       className="hidden sm:inline-flex h-8 items-center rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
                     >
-                      New payout
+                      {t("pages.doctor.new_payout")}
                     </button>
                   </div>
 
                   {withdrawalsLoading && !hasPayoutRows ? (
                     <div className="px-5 py-10 text-center">
                       <p className="text-sm font-semibold text-foreground">
-                        Loading payout requests...
+                        {t("pages.doctor.loading_payout_requests")}
                       </p>
                     </div>
                   ) : hasPayoutRows ? (
@@ -1678,7 +1686,7 @@ const DoctorOverview = () => {
                       <table className="w-full min-w-[680px] text-left">
                         <thead className="bg-secondary/30">
                           <tr>
-                            {["Amount", "Method", "Account", "Status", "Date", "Action"].map((head) => (
+                            {[t("pages.doctor.amount"), t("pages.doctor.method"), t("pages.doctor.account"), t("pages.doctor.status"), t("pages.doctor.date"), t("pages.doctor.action")].map((head) => (
                               <th
                                 key={head}
                                 className="px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
@@ -1725,7 +1733,7 @@ const DoctorOverview = () => {
                                           : "bg-warning/10 text-warning",
                                     )}
                                   >
-                                    {status.replace(/_/g, " ")}
+                                    {translatePayoutValue("payout_status", status)}
                                   </span>
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
@@ -1739,8 +1747,8 @@ const DoctorOverview = () => {
                                       disabled={cancelWithdrawal.isPending}
                                       className="h-7 rounded-[6px] border border-destructive/30 px-2.5 text-[11px] font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50"
                                     >
-                                      Cancel
-                                    </button>
+                                    {t("common.cancel")}
+                                  </button>
                                   ) : (
                                     <span className="text-xs text-muted-foreground">-</span>
                                   )}
@@ -1754,10 +1762,10 @@ const DoctorOverview = () => {
                   ) : (
                     <div className="px-5 py-10 text-center">
                       <p className="text-sm font-semibold text-foreground">
-                        No payout requests yet
+                        {t("pages.doctor.no_payout_requests_yet")}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Your withdrawal requests will appear here after submission.
+                        {t("pages.doctor.payout_requests_empty_desc")}
                       </p>
                     </div>
                   )}
@@ -1771,15 +1779,15 @@ const DoctorOverview = () => {
       <Dialog open={withdrawalOpen} onOpenChange={setWithdrawalOpen}>
         <DialogContent className="sm:max-w-[520px] bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Request payout</DialogTitle>
+            <DialogTitle>{t("pages.doctor.request_payout")}</DialogTitle>
             <DialogDescription>
-              Submit a withdrawal from your available wallet balance.
+              {t("pages.doctor.request_payout_dialog_desc")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleWithdrawalSubmit} className="space-y-4">
             <div className="rounded-[6px] border border-border/60 bg-secondary/20 px-4 py-3 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Available balance</span>
+              <span className="text-xs text-muted-foreground">{t("pages.doctor.available_balance")}</span>
               <span className="text-sm font-bold text-foreground">
                 {formatMoney(walletBalance, walletCurrency)}
               </span>
@@ -1814,15 +1822,15 @@ const DoctorOverview = () => {
                   }
                   className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
                 >
-                  <option value="bank_transfer">Bank transfer</option>
-                  <option value="mobile_money">Mobile money</option>
+                  <option value="bank_transfer">{t("pages.doctor.payout_method.bank_transfer")}</option>
+                  <option value="mobile_money">{t("pages.doctor.payout_method.mobile_money")}</option>
                 </select>
               </label>
             </div>
 
             <label className="space-y-1.5 block">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Account name
+                {t("pages.doctor.account_name")}
               </span>
               <input
                 value={withdrawalForm.account_name}
@@ -1836,7 +1844,7 @@ const DoctorOverview = () => {
 
             <label className="space-y-1.5 block">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Account number
+                {t("pages.doctor.account_number")}
               </span>
               <input
                 value={withdrawalForm.account_number}
@@ -1869,8 +1877,8 @@ const DoctorOverview = () => {
                 onClick={() => setWithdrawalOpen(false)}
                 className="h-9 rounded-[6px] border border-border px-4 text-xs font-semibold text-muted-foreground hover:bg-secondary"
               >
-                Cancel
-              </button>
+                                    {t("common.cancel")}
+                                  </button>
               <button
                 type="submit"
                 disabled={
@@ -1881,7 +1889,7 @@ const DoctorOverview = () => {
                 }
                 className="h-9 rounded-[6px] bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {requestWithdrawal.isPending ? "Requesting..." : "Request payout"}
+                {requestWithdrawal.isPending ? t("pages.doctor.requesting") : t("pages.doctor.request_payout")}
               </button>
             </div>
           </form>

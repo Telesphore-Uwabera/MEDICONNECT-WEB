@@ -201,6 +201,7 @@ function CancelConfirmDialog({
   onClose: () => void;
   isLoading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -215,11 +216,11 @@ function CancelConfirmDialog({
             <AlertCircle className="h-4 w-4 text-destructive" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">Cancel referral?</p>
+            <p className="text-sm font-semibold text-foreground">{t("pages.doctor.cancel_referral_title")}</p>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              This will cancel the referral for{" "}
+              {t("pages.doctor.cancel_referral_desc_start")} {" "}
               <span className="font-medium text-foreground">{referral.patient.name}</span>.
-              This action cannot be undone.
+              {" "}{t("pages.doctor.action_cannot_be_undone")}
             </p>
           </div>
         </div>
@@ -230,7 +231,7 @@ function CancelConfirmDialog({
             disabled={isLoading}
             className="text-xs border-border"
           >
-            Keep it
+            {t("pages.doctor.keep_it")}
           </Button>
           <Button
             onClick={onConfirm}
@@ -238,9 +239,9 @@ function CancelConfirmDialog({
             className="text-xs bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-1.5"
           >
             {isLoading ? (
-              <><Loader2 className="h-3 w-3 animate-spin" />Cancelling…</>
+              <><Loader2 className="h-3 w-3 animate-spin" />{t("pages.doctor.cancelling")}</>
             ) : (
-              <><Trash2 className="h-3 w-3" />Yes, cancel</>
+              <><Trash2 className="h-3 w-3" />{t("pages.doctor.yes_cancel")}</>
             )}
           </Button>
         </div>
@@ -262,6 +263,7 @@ function ReferralDetailDrawer({
   onClose: () => void;
   onCancelRequest: (r: Referral) => void;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useGetReferral(referralId);
   const referral = data?.referral;
 
@@ -282,7 +284,7 @@ function ReferralDetailDrawer({
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card/80 backdrop-blur shrink-0">
           <div className="flex items-center gap-2">
             <Stethoscope className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Referral details</span>
+            <span className="text-sm font-semibold text-foreground">{t("pages.doctor.referral_details")}</span>
             {referral && (
               <span className="text-[10px] font-mono text-muted-foreground">#{referral.id}</span>
             )}
@@ -300,14 +302,14 @@ function ReferralDetailDrawer({
           {isLoading && (
             <div className="flex items-center justify-center h-40 gap-3 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm">Loading…</span>
+              <span className="text-sm">{t("pages.doctor.loading")}</span>
             </div>
           )}
 
           {isError && (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted-foreground">
               <AlertCircle className="h-6 w-6 text-destructive" />
-              <p className="text-sm">Failed to load referral details.</p>
+              <p className="text-sm">{t("pages.doctor.referral_details_load_failed")}</p>
             </div>
           )}
 
@@ -320,7 +322,7 @@ function ReferralDetailDrawer({
               </div>
 
               {/* Patient */}
-              <Section title="Patient" icon={User}>
+              <Section title={t("pages.doctor.patient")} icon={User}>
                 <div className="flex items-center gap-3">
                   <Avatar name={referral.patient.name} src={referral.patient.avatar} size="lg" />
                   <div>
@@ -338,11 +340,11 @@ function ReferralDetailDrawer({
               </Section>
 
               {/* Referral reason */}
-              <Section title="Reason for referral" icon={Stethoscope}>
+              <Section title={t("pages.doctor.reason_for_referral")} icon={Stethoscope}>
                 <p className="text-xs text-foreground leading-relaxed">{referral.reason}</p>
                 {referral.notes && (
                   <div className="mt-2 rounded-[6px] bg-muted/60 border border-border px-3 py-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Notes</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{t("pages.doctor.notes")}</p>
                     <p className="text-xs text-foreground leading-relaxed">{referral.notes}</p>
                   </div>
                 )}
@@ -350,27 +352,27 @@ function ReferralDetailDrawer({
 
               {/* Doctors */}
               {(referral.referring_doctor || referral.referred_to_doctor) && (
-                <Section title="Doctors" icon={Stethoscope}>
+                <Section title={t("pages.doctor.doctors")} icon={Stethoscope}>
                   <div className="space-y-2">
                     {referral.referring_doctor && (
-                      <DoctorRow label="Referring" doctor={referral.referring_doctor} />
+                      <DoctorRow label={t("pages.doctor.referring")} doctor={referral.referring_doctor} />
                     )}
                     {referral.referred_to_doctor && (
-                      <DoctorRow label="Referred to" doctor={referral.referred_to_doctor} />
+                      <DoctorRow label={t("pages.doctor.referred_to")} doctor={referral.referred_to_doctor} />
                     )}
                   </div>
                 </Section>
               )}
 
               {/* Timeline */}
-              <Section title="Timeline" icon={Calendar}>
+              <Section title={t("pages.doctor.timeline")} icon={Calendar}>
                 <div className="space-y-1.5">
-                  <InfoRow label="Referred on" value={formatDateTime(referral.referred_at)} />
+                  <InfoRow label={t("pages.doctor.referred_on")} value={formatDateTime(referral.referred_at)} />
                   {referral.updated_at && (
-                    <InfoRow label="Last updated" value={formatDateTime(referral.updated_at)} />
+                    <InfoRow label={t("pages.doctor.last_updated")} value={formatDateTime(referral.updated_at)} />
                   )}
                   {referral.appointment_id && (
-                    <InfoRow label="Appointment ID" value={`#${referral.appointment_id}`} mono />
+                    <InfoRow label={t("pages.doctor.appointment_id")} value={`#${referral.appointment_id}`} mono />
                   )}
                 </div>
               </Section>
@@ -387,7 +389,7 @@ function ReferralDetailDrawer({
               className="w-full text-xs text-destructive border-destructive/30 hover:bg-destructive/10 gap-1.5"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Cancel this referral
+              {t("pages.doctor.cancel_this_referral")}
             </Button>
           </div>
         )}
@@ -473,6 +475,7 @@ function ReferralCard({
   referral: Referral;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
@@ -511,7 +514,7 @@ function ReferralCard({
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <Stethoscope className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-[11px] text-muted-foreground truncate">
-                To: <span className="text-foreground font-medium">{referral.referred_to_doctor.name}</span>
+                {t("pages.doctor.to")}: <span className="text-foreground font-medium">{referral.referred_to_doctor.name}</span>
                 {referral.referred_to_doctor.specialization && (
                   <> · {referral.referred_to_doctor.specialization}</>
                 )}
@@ -571,17 +574,18 @@ function SkeletonReferralCard() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function EmptyState({ status }: { status: TabStatus }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
       <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
         <ArrowUpRight className="h-6 w-6 text-muted-foreground" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-foreground">No referrals found</p>
+        <p className="text-sm font-semibold text-foreground">{t("pages.doctor.no_referrals_found")}</p>
         <p className="text-xs text-muted-foreground mt-1">
           {status === "all"
-            ? "You have no referrals yet."
-            : `No ${status} referrals at the moment.`}
+            ? t("pages.doctor.no_referrals_yet")
+            : t("pages.doctor.no_status_referrals", { status: t(`pages.doctor.referral_status_${status}`) })}
         </p>
       </div>
     </div>
@@ -621,11 +625,11 @@ function MyReferrals() {
     icon: React.ElementType;
     tone: string;
   }[] = [
-    { key: "all", label: "Total", value: allReferrals.length, icon: ArrowUpRight, tone: "text-primary bg-primary/10 border-primary/15" },
-    { key: "pending", label: "Pending", value: countBy("pending"), icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
-    { key: "accepted", label: "Accepted", value: countBy("accepted"), icon: CheckCircle2, tone: "text-primary bg-primary/10 border-primary/15" },
-    { key: "completed", label: "Completed", value: countBy("completed"), icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
-    { key: "rejected", label: "Rejected", value: countBy("rejected"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+    { key: "all", label: t("pages.doctor.total"), value: allReferrals.length, icon: ArrowUpRight, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "pending", label: t("pages.doctor.referral_status_pending"), value: countBy("pending"), icon: Clock, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "accepted", label: t("pages.doctor.referral_status_accepted"), value: countBy("accepted"), icon: CheckCircle2, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "completed", label: t("pages.doctor.referral_status_completed"), value: countBy("completed"), icon: CheckCircle2, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "rejected", label: t("pages.doctor.referral_status_rejected"), value: countBy("rejected"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
   ];
 
   const handleCancelConfirm = async () => {
@@ -686,7 +690,7 @@ function MyReferrals() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {tab.label}
+                  {t(`pages.doctor.referral_status_${tab.id}`)}
                 </button>
               ))}
             </div>
@@ -700,7 +704,7 @@ function MyReferrals() {
               className="text-xs border-border gap-1.5 h-8 shrink-0"
             >
               <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-              {isFetching ? "Refreshing…" : "Refresh"}
+              {isFetching ? t("pages.doctor.refreshing") : t("pages.doctor.refresh")}
             </Button>
           </div>
 
@@ -721,10 +725,10 @@ function MyReferrals() {
               <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
                 <AlertCircle className="h-5 w-5 text-destructive" />
               </div>
-              <p className="text-sm font-semibold text-foreground">Failed to load referrals</p>
-              <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+              <p className="text-sm font-semibold text-foreground">{t("pages.doctor.referrals_load_failed")}</p>
+              <p className="text-xs text-muted-foreground">{t("pages.doctor.check_connection_try_again")}</p>
               <Button variant="outline" size="sm" onClick={() => refetch()} className="text-xs mt-1">
-                Try again
+                {t("pages.doctor.try_again")}
               </Button>
             </div>
           ) : referrals.length === 0 ? (

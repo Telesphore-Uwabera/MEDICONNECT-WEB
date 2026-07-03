@@ -177,6 +177,16 @@ export interface ReadyNextResponse {
     } | null;
 }
 
+export interface ReschedulePayload {
+    appointment_date: string;
+    appointment_time: string;
+}
+
+export interface RescheduleResponse {
+    message: string;
+    appointment: Appointment;
+}
+
 /* ─────────────────────────────────────────────
    Query key factory
 ───────────────────────────────────────────── */
@@ -364,6 +374,25 @@ export function useReadyNext() {
             apiFetch<ReadyNextResponse>(`${BASE}/${id}/ready-next`, { method: "POST" }),
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+        },
+    });
+}
+
+/* ─────────────────────────────────────────────
+   9.10  useRescheduleAppointment  →  POST /appointments/:id/reschedule
+───────────────────────────────────────────── */
+
+export function useRescheduleAppointment() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: number; payload: ReschedulePayload }) =>
+            apiFetch<RescheduleResponse>(`${BASE}/${id}/reschedule`, {
+                method: "POST",
+                body: payload,
+            }),
+        onSuccess: (_data, { id }) => {
+            qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+            qc.invalidateQueries({ queryKey: appointmentKeys.detail(id) });
         },
     });
 }

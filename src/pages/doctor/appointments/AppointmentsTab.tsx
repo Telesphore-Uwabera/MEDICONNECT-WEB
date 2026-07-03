@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
   FileText, AlertCircle, Loader2, Eye, Timer,
-  ChevronRight, CheckCheck, LayoutGrid, List
+  ChevronRight, CheckCheck, LayoutGrid, List, CalendarClock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import { doctors } from "@/lib/mock-data";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { AppointmentCard } from "./shared/AppointmentCard";
 import { RunningLateModal } from "./shared/RunningLateModal";
+import { RescheduleModal } from "./shared/RescheduleModal";
 import { AppointmentDetailDrawer } from "./shared/AppointmentDetailDrawer";
 import { ScheduledCallView } from "./shared/ScheduledCallView";
 import {
@@ -105,6 +106,7 @@ export function AppointmentsTab() {
   const [scheduledCallActive, setScheduledCallActive] = useState(false);
   const [detailAppt, setDetailAppt] = useState<Appointment | null>(null);
   const [runningLateAppt, setRunningLateAppt] = useState<Appointment | null>(null);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
 
   const hasActiveFilters = useMemo(
     () => JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS), [filters]
@@ -195,11 +197,11 @@ export function AppointmentsTab() {
     (appt: Appointment, isRejoin = false) => {
       const apptCtx: AppointmentContext = {
         id: String(appt.id),
-        patientLabel: appt.patient?.name ?? "Patient",
+        patientLabel: appt.patient?.name ?? t("pages.doctor.patient"),
         specialty: apptSpecialty(appt),
         date: appt.appointment_date,
         time: appt.appointment_time,
-        type: appt.type === "online" ? "video" : "in-person",
+        type: appt.type === "online" ? t("pages.doctor.video") : t("pages.doctor.in_person"),
       };
 
       // Open the in-app ConsultationRoom (same call + chat as instant consults)
@@ -223,7 +225,7 @@ export function AppointmentsTab() {
         joinSession.mutate(appt.id, {
           onSuccess: (res) => openCall(res),
           onError: (err: unknown) => {
-            toast.error(getErrMsg(err, isRejoin ? "Failed to rejoin session" : "Failed to join session"));
+            toast.error(getErrMsg(err, isRejoin ? t("pages.doctor.failed_rejoin_session") : t("pages.doctor.failed_join_session")));
           },
         });
 
@@ -232,14 +234,14 @@ export function AppointmentsTab() {
         acceptQuick.mutate(appt.id, {
           onSuccess: () => join(),
           onError: (err: unknown) => {
-            toast.error(getErrMsg(err, "Failed to accept appointment"));
+            toast.error(getErrMsg(err, t("pages.doctor.failed_accept_appointment")));
           },
         });
       } else {
         join();
       }
     },
-    [call, acceptQuick, joinSession, startCall]
+    [call, acceptQuick, joinSession, startCall, t]
   );
 
   const handleStart = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
@@ -251,14 +253,14 @@ export function AppointmentsTab() {
         if (res.next_appointment) {
           toast.success(`${res.next_appointment.patient.name} `);
         } else {
-          toast.success(res.message ?? "Next patient notified.");
+          toast.success(res.message ?? t("pages.doctor.next_patient_notified"));
         }
       },
       onError: (err: unknown) => {
-        toast.error(getErrMsg(err, "No next appointment found."));
+        toast.error(getErrMsg(err, t("pages.doctor.no_next_appointment")));
       },
     });
-  }, [readyNext]);
+  }, [readyNext, t]);
 
   const handleExit = useCallback(() => {
     call.endCall();
@@ -279,42 +281,42 @@ export function AppointmentsTab() {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.doctor.status"),
       value: filters.status,
       options: [
-        { value: "All", label: "All statuses" },
-        { value: "pending", label: "Pending" },
-        { value: "confirmed", label: "Confirmed" },
-        { value: "in_progress", label: "In progress" },
-        { value: "completed", label: "Completed" },
+        { value: "All", label: t("pages.doctor.all_statuses") },
+        { value: "pending", label: t("pages.doctor.status_pending") },
+        { value: "confirmed", label: t("pages.doctor.status_confirmed") },
+        { value: "in_progress", label: t("pages.doctor.status_in_progress") },
+        { value: "completed", label: t("pages.doctor.status_completed") },
       ],
       onChange: (v: string) => setFilters((f) => ({ ...f, status: v as any }))
     },
     {
       type: "select" as const,
       key: "type",
-      label: "Type",
+      label: t("pages.doctor.type"),
       value: filters.type,
       options: [
-        { value: "All", label: "All types" },
-        { value: "online", label: "Video consult" },
-        { value: "in_person", label: "In-person visit" },
+        { value: "All", label: t("pages.doctor.all_types") },
+        { value: "online", label: t("pages.doctor.video_consult") },
+        { value: "in_person", label: t("pages.doctor.in_person_visit") },
       ],
       onChange: (v: string) => setFilters((f) => ({ ...f, type: v as any }))
     },
     {
       type: "custom" as const,
       key: "when",
-      label: "When",
+      label: t("pages.doctor.when"),
       render: () => {
         const activePreset = !filters.date && (filters.today ? "today" : filters.upcoming ? "upcoming" : "all");
         return (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-1">
               {[
-                { label: "All dates", val: "all", today: false, upcoming: false },
-                { label: "Today", val: "today", today: true, upcoming: false },
-                { label: "Upcoming", val: "upcoming", today: false, upcoming: true },
+                { label: t("pages.doctor.all_dates"), val: "all", today: false, upcoming: false },
+                { label: t("pages.doctor.today"), val: "today", today: true, upcoming: false },
+                { label: t("pages.doctor.upcoming"), val: "upcoming", today: false, upcoming: true },
               ].map((opt) => (
                 <button
                   key={opt.val}
@@ -331,7 +333,7 @@ export function AppointmentsTab() {
               ))}
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">Specific date</p>
+              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.specific_date")}</p>
               <div className="relative">
                 <input
                   type="date"
@@ -356,12 +358,12 @@ export function AppointmentsTab() {
     {
       type: "search" as const,
       key: "search",
-      label: "Search",
+      label: t("pages.doctor.search"),
       value: filters.search,
-      placeholder: "Search patient…",
+      placeholder: t("pages.doctor.search_patient"),
       onChange: (v: string) => setFilters((f) => ({ ...f, search: v }))
     }
-  ], [filters, setFilters]);
+  ], [filters, setFilters, t]);
 
   const isJoining = acceptQuick.isPending || joinSession.isPending;
 
@@ -378,6 +380,7 @@ export function AppointmentsTab() {
           onRejoin={(a) => { handleRejoin(a); setDetailAppt(null); }}
           onRunningLate={(a) => { setRunningLateAppt(a); setDetailAppt(null); }}
           onReadyNext={(a) => handleReadyNext(a)}
+          onReschedule={(a) => { setRescheduleAppt(a); setDetailAppt(null); }}
           isReadyNextPending={readyNext.isPending}
           isJoining={isJoining}
         />
@@ -388,24 +391,21 @@ export function AppointmentsTab() {
         <RunningLateModal appt={runningLateAppt} onClose={() => setRunningLateAppt(null)} />
       )}
 
-      <FilterBar
-        open={filterOpen}
-        onToggle={() => setFilterOpen(!filterOpen)}
-        hasActiveFilters={hasActiveFilters}
-        onClearAll={clearAllFilters}
-        fields={filterFields}
-        cols={{ default: 1, sm: 2, lg: 4 }}
-      />
+      {/* Reschedule modal */}
+      {rescheduleAppt && (
+        <RescheduleModal appt={rescheduleAppt} onClose={() => setRescheduleAppt(null)} />
+      )}
 
+  
       {/* Main content */}
       <main className="flex-1 overflow-y-auto flex flex-col">
         <div className="grid grid-cols-2 xl:grid-cols-5 gap-3 p-5 pb-0">
           {[
-            { label: "Total bookings", value: appointmentStats.total, sub: "All scheduled", icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60" },
-            { label: "Confirmed", value: appointmentStats.confirmed, sub: "Ready to join", icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
-            { label: "In progress", value: appointmentStats.in_progress, sub: "Live now", icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
-            { label: "Pending", value: appointmentStats.pending, sub: "Awaiting confirmation", icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
-            { label: "Today", value: appointmentStats.today, sub: "On schedule", icon: Clock, tone: "text-primary bg-primary/10 border-primary/20" },
+            { label: t("pages.doctor.total_bookings"), value: appointmentStats.total, sub: t("pages.doctor.all_scheduled"), icon: Calendar, tone: "text-foreground bg-muted/50 border-border/60" },
+            { label: t("pages.doctor.status_confirmed"), value: appointmentStats.confirmed, sub: t("pages.doctor.ready_to_join"), icon: CheckCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-500/20" },
+            { label: t("pages.doctor.status_in_progress"), value: appointmentStats.in_progress, sub: t("pages.doctor.live_now"), icon: Video, tone: "text-violet-600 bg-violet-500/10 border-violet-500/20" },
+            { label: t("pages.doctor.status_pending"), value: appointmentStats.pending, sub: t("pages.doctor.awaiting_confirmation"), icon: AlertCircle, tone: "text-amber-600 bg-amber-500/10 border-amber-500/20" },
+            { label: t("pages.doctor.today"), value: appointmentStats.today, sub: t("pages.doctor.on_schedule"), icon: Clock, tone: "text-primary bg-primary/10 border-primary/20" },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -477,9 +477,9 @@ export function AppointmentsTab() {
               onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as any }))}
               className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
             >
-              <option value="date-asc">Oldest first</option>
-              <option value="date-desc">Latest first</option>
-              <option value="name">Patient name A-Z</option>
+              <option value="date-asc">{t("pages.doctor.oldest_first")}</option>
+              <option value="date-desc">{t("pages.doctor.latest_first")}</option>
+              <option value="name">{t("pages.doctor.patient_name_az")}</option>
             </select>
 
             <FilterToggleButton
@@ -510,6 +510,14 @@ export function AppointmentsTab() {
             </div>
           </div>
         </div>
+        <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAllFilters}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 4 }}
+          />
 
         {/* ── Content ── */}
         <div className="p-5">
@@ -605,7 +613,7 @@ export function AppointmentsTab() {
                               {a.type === "online"
                                 ? <Video className="h-4 w-4 text-sky-500" />
                                 : <MapPin className="h-4 w-4 text-amber-500" />}
-                              <span>{a.type === "online" ? "Video" : "In-person"}</span>
+                              <span>{a.type === "online" ? t("pages.doctor.video") : t("pages.doctor.in_person")}</span>
                             </span>
                           </td>
 
@@ -613,7 +621,7 @@ export function AppointmentsTab() {
                           <td className="px-5 py-4">
                             <Badge variant="outline" className={cn("border text-xs px-2.5 py-0.5 font-medium", STATUS_STYLES[status])}>
                               <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[status])} />
-                              {statusLabel(status)}
+                              {statusLabel(status, t)}
                             </Badge>
                           </td>
 
@@ -630,18 +638,30 @@ export function AppointmentsTab() {
                               <button
                                 onClick={() => setDetailAppt(a)}
                                 className="h-9 px-3 rounded-[6px] border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors flex items-center gap-1.5"
-                                title="View details"
+                                title={t("pages.doctor.view_details")}
                               >
                                 <Eye className="h-4 w-4" />
                                 <span className="hidden xl:inline">{t("consult.booking.details")}</span>
                               </button>
+
+                              {/* Reschedule — pending / confirmed */}
+                              {(status === "pending" || status === "confirmed") && (
+                                <button
+                                  onClick={() => setRescheduleAppt(a)}
+                                  className="h-9 px-3 rounded-[6px] border border-sky-200 dark:border-sky-900 text-xs text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors flex items-center gap-1.5"
+                                  title={t("pages.doctor.reschedule")}
+                                >
+                                  <CalendarClock className="h-4 w-4" />
+                                  <span className="hidden xl:inline">{t("pages.doctor.reschedule")}</span>
+                                </button>
+                              )}
 
                               {/* Running late */}
                               {isInProgress && (
                                 <button
                                   onClick={() => setRunningLateAppt(a)}
                                   className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors flex items-center gap-1.5"
-                                  title="Running late"
+                                  title={t("pages.doctor.running_late")}
                                 >
                                   <Timer className="h-4 w-4" />
                                   <span className="hidden xl:inline">{t("consult.booking.late")}</span>
@@ -654,7 +674,7 @@ export function AppointmentsTab() {
                                   onClick={() => handleReadyNext(a)}
                                   disabled={readyNext.isPending}
                                   className="h-9 px-3 rounded-[6px] border border-emerald-200 dark:border-emerald-900 text-xs text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                                  title="Ready for next patient"
+                                  title={t("pages.doctor.ready_for_next_patient")}
                                 >
                                   {readyNext.isPending
                                     ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -672,7 +692,7 @@ export function AppointmentsTab() {
                                   onClick={() => handleRejoin(a)}
                                   disabled={isJoining}
                                   className="h-9 px-4 text-xs font-semibold rounded-[6px] bg-emerald-600 hover:bg-emerald-500 text-white border-0 shadow-sm flex items-center gap-1.5"
-                                  title="Rejoin session"
+                                  title={t("pages.doctor.rejoin_session")}
                                 >
                                   {isJoining
                                     ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -698,7 +718,7 @@ export function AppointmentsTab() {
                               {/* Notes — completed */}
                               {status === "pending" && (
                                 <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-                                  Awaiting confirmation
+                                  {t("pages.doctor.awaiting_confirmation")}
                                 </span>
                               )}
 

@@ -274,21 +274,32 @@ export function useDeleteReview() {
 
 export const STATUS_DISPLAY: Record<
   ReviewStatus,
-  { label: string; colorClass: string; dotClass: string }
+  { colorClass: string; dotClass: string }
 > = {
   pending: {
-    label: "Pending",
     colorClass: "bg-amber-500/15 text-amber-700 border-amber-400/30",
     dotClass: "bg-amber-500",
   },
   approved: {
-    label: "Approved",
     colorClass: "bg-emerald-500/15 text-emerald-700 border-emerald-400/30",
     dotClass: "bg-emerald-500",
   },
   rejected: {
-    label: "Rejected",
     colorClass: "bg-destructive/15 text-destructive border-destructive/25",
     dotClass: "bg-destructive",
   },
+};
+
+// Translated status label — pass the active `t` from useTranslation so labels
+// follow language switches (never bake t() into module constants).
+export const getReviewStatusLabel = (
+  t: (key: string) => string,
+  status: ReviewStatus,
+): string => {
+  const map: Record<ReviewStatus, string> = {
+    pending: t("pages.patient.status_pending"),
+    approved: t("pages.patient.rev_approved"),
+    rejected: t("pages.patient.rev_rejected"),
+  };
+  return map[status];
 };

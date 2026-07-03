@@ -2,6 +2,7 @@
 // SocialLinksStep
 // ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Link2 } from "lucide-react";
 import { FormField } from "./UiPrimitives";
@@ -17,10 +18,11 @@ export const SocialLinksStep = React.memo(function SocialLinksStep({
   data,
   onChange,
 }: SocialLinksStepProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <p className="text-[11px] text-muted-foreground -mt-1 mb-2">
-        All fields are optional.
+        {t("doctorProfile.social_optional")}
       </p>
 
       <div className="grid grid-cols-1 gap-3">

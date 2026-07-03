@@ -22,6 +22,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 
 // ── Extracted step components & shared modules ───────────────────────────────
 import {
@@ -70,7 +71,7 @@ const formatFee = (fee: number | string, currency: string) =>
 
 const formatDateDisplay = (d: string) =>
   d
-    ? new Date(d).toLocaleDateString("en-US", {
+    ? new Date(d).toLocaleDateString(i18n.language, {
       year: "numeric",
       month: "short",
     })
@@ -87,7 +88,7 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
 const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
 
 const getStepLabel = (stepId: string) =>
-  STEPS.find((step) => step.id === stepId)?.label ?? "section";
+  i18n.t(`doctorProfile.steps.${stepId}.label`, i18n.t("doctorProfile.section_fallback"));
 
 const flattenValidationErrors = (errors: unknown): string => {
   if (!errors || typeof errors !== "object") return "";
@@ -112,7 +113,7 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
     return `${baseMessage} · ${validationMessage}`;
   }
 
-  return baseMessage || validationMessage || "Please check the form and try again.";
+  return baseMessage || validationMessage || i18n.t("doctorProfile.check_form_error");
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -457,6 +458,7 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
   label: string;
   onFill: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center justify-center py-12 px-6 text-center gap-4 border border-dashed border-border rounded-[6px] bg-muted/30">
       <div className="rounded-full bg-muted p-3">
@@ -464,10 +466,10 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
       </div>
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">
-          No {label.toLowerCase()} added yet
+          {t("doctorProfile.no_x_added_yet", { label: label.toLowerCase() })}
         </p>
         <p className="text-[12px] text-muted-foreground">
-          Fill in this section to complete your profile.
+          {t("doctorProfile.fill_section_prompt")}
         </p>
       </div>
       <Button
@@ -475,7 +477,7 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
         size="sm"
         className="text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
       >
-        <Pencil className="h-3 w-3" /> Add {label}
+        <Pencil className="h-3 w-3" /> {t("doctorProfile.add_x", { label })}
       </Button>
     </div>
   );
@@ -489,32 +491,32 @@ const ViewPersonal = React.memo(function ViewPersonal({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   const p = data.personal;
   const languageLabel = useMemo(
     () =>
-      LANGUAGES.find((l) => l.value === p.preferred_language)?.label ??
-      p.preferred_language,
-    [p.preferred_language],
+      t(`pages.landing.lang_${p.preferred_language === "kiny" ? "rw" : p.preferred_language}`, p.preferred_language),
+    [p.preferred_language, t],
   );
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-        <ViewField label="Doctor degree" value={p.doctor_degree} />
-        <ViewField label="Medical license" value={p.medical_license} mono />
-        <ViewField label="Designation" value={p.designations} />
-        <ViewField label="Preferred language" value={languageLabel} />
+        <ViewField label={t("doctorProfile.doctor_degree")} value={p.doctor_degree} />
+        <ViewField label={t("doctorProfile.medical_license")} value={p.medical_license} mono />
+        <ViewField label={t("doctorProfile.designation")} value={p.designations} />
+        <ViewField label={t("doctorProfile.preferred_language")} value={languageLabel} />
       </div>
       {[
-        { lang: "English", value: p.bio_en },
-        { lang: "French", value: p.bio_fr },
-        { lang: "Kinyarwanda", value: p.bio_kiny },
+        { lang: t("pages.landing.lang_en"), value: p.bio_en },
+        { lang: t("pages.landing.lang_fr"), value: p.bio_fr },
+        { lang: t("pages.landing.lang_rw"), value: p.bio_kiny },
       ]
         .filter((b) => b.value)
         .map(({ lang, value }) => (
           <div key={lang} className="border-t border-border pt-5">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              Bio ({lang})
+              {t("doctorProfile.bio_label", { lang })}
             </p>
             <RichTextRenderer value={value} className="text-[13px] text-foreground" />
           </div>
@@ -528,6 +530,7 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   const s = data.specializations;
   if (!s.primary) return null;
 
@@ -535,28 +538,28 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
 
   return (
     <div className="space-y-5">
-      <ViewField label="Primary specialization" value={s.primary} />
+      <ViewField label={t("doctorProfile.primary_specialization")} value={s.primary} />
 
       {s.years_of_experience > 0 && (
         <ViewField
-          label="Years of experience"
-          value={`${s.years_of_experience} years`}
+          label={t("doctorProfile.years_of_experience")}
+          value={t("doctorProfile.years_suffix", { count: s.years_of_experience })}
         />
       )}
 
       {s.specialization_fee_id && s.fee_name && (
         <div className="rounded-[6px] border border-primary/20 bg-primary/5 p-4 space-y-3">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-            Selected sub-specialization
+            {t("doctorProfile.selected_subspecialization")}
           </span>
-          <ViewField label="Sub-specialization" value={s.fee_name} />
+          <ViewField label={t("doctorProfile.sub_specialization_label")} value={s.fee_name} />
         </div>
       )}
 
       {subNames.length > 0 && (
         <div className="rounded-[6px] border border-border bg-card p-4 space-y-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Sub-specialties
+            {t("doctorProfile.sub_specialties_header")}
           </span>
           <div className="flex flex-wrap gap-2">
             {subNames.map((name, i) => (
@@ -573,7 +576,7 @@ const ViewSpecializations = React.memo(function ViewSpecializations({
 
       {s.specialization_fee_id && !s.fee_name && (
         <ViewField
-          label="Sub-specialization ID"
+          label={t("doctorProfile.sub_specialization_id")}
           value={s.specialization_fee_id}
         />
       )}
@@ -586,6 +589,7 @@ const ViewEducation = React.memo(function ViewEducation({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   if (data.education.length === 0) return null;
   return (
     <div className="space-y-3">
@@ -598,10 +602,10 @@ const ViewEducation = React.memo(function ViewEducation({
             {edu.degree}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
-            <ViewField label="Institution" value={edu.institution} />
-            <ViewField label="Country" value={edu.country} />
+            <ViewField label={t("doctorProfile.institution")} value={edu.institution} />
+            <ViewField label={t("doctorProfile.country_label")} value={edu.country} />
             <ViewField
-              label="Period"
+              label={t("doctorProfile.period_label")}
               value={`${edu.start_year} – ${edu.end_year}`}
             />
           </div>
@@ -616,6 +620,7 @@ const ViewExperience = React.memo(function ViewExperience({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   if (data.experience.length === 0) return null;
   return (
     <div className="space-y-3">
@@ -630,18 +635,18 @@ const ViewExperience = React.memo(function ViewExperience({
             </p>
             {exp.is_current && (
               <span className="text-[10px] font-medium rounded-full px-2 py-0.5 bg-primary/15 text-primary">
-                Current
+                {t("doctorProfile.current_badge")}
               </span>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
-            <ViewField label="Workplace" value={exp.workplace} />
-            <ViewField label="Country" value={exp.country} />
+            <ViewField label={t("doctorProfile.workplace")} value={exp.workplace} />
+            <ViewField label={t("doctorProfile.country_label")} value={exp.country} />
             <ViewField
-              label="Period"
+              label={t("doctorProfile.period_label")}
               value={
                 exp.is_current
-                  ? `From ${formatDateDisplay(exp.start_date)}`
+                  ? t("doctorProfile.from_date", { date: formatDateDisplay(exp.start_date) })
                   : `${formatDateDisplay(exp.start_date)} – ${formatDateDisplay(exp.end_date ?? "")}`
               }
             />
@@ -663,6 +668,7 @@ const ViewQualifications = React.memo(function ViewQualifications({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   if (data.qualifications.length === 0) return null;
   const now = new Date();
   return (
@@ -683,15 +689,15 @@ const ViewQualifications = React.memo(function ViewQualifications({
               {q.title}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
-              <ViewField label="Issuing body" value={q.issuing_body} />
+              <ViewField label={t("doctorProfile.issuing_body")} value={q.issuing_body} />
               <ViewField
-                label="Issued"
+                label={t("doctorProfile.issued_view")}
                 value={formatDateDisplay(q.issued_at)}
               />
               {q.expires_at && (
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">
-                    Expires
+                    {t("doctorProfile.expires_view")}
                   </span>
                   <span
                     className={cn(
@@ -699,7 +705,7 @@ const ViewQualifications = React.memo(function ViewQualifications({
                       isExpired ? "text-destructive" : "text-primary",
                     )}
                   >
-                    {isExpired ? "Expired · " : ""}
+                    {isExpired ? t("doctorProfile.expired_prefix") : ""}
                     {formatDateDisplay(q.expires_at)}
                   </span>
                 </div>
@@ -720,18 +726,19 @@ const ViewDocuments = React.memo(function ViewDocuments({
 }: {
   data: DoctorProfileData;
 }) {
+  const { t } = useTranslation();
   // Newly selected (unsaved) files
   const newFiles = useMemo<[string, File][]>(
     () =>
       (
         [
-          ["Profile photo", data.documents.profile_image],
-          ["Degree document", data.documents.degree_document],
-          ["Medical license scan", data.documents.license_document],
-          ["National ID", data.documents.national_id_document],
+          [t("doctorProfile.profile_photo"), data.documents.profile_image],
+          [t("doctorProfile.degree_document"), data.documents.degree_document],
+          [t("doctorProfile.license_scan"), data.documents.license_document],
+          [t("doctorProfile.national_id"), data.documents.national_id_document],
         ] as [string, File | null | undefined][]
       ).filter((entry): entry is [string, File] => !!entry[1]),
-    [data.documents],
+    [data.documents, t],
   );
 
   // Already-uploaded files/images from the API
@@ -740,13 +747,13 @@ const ViewDocuments = React.memo(function ViewDocuments({
     if (!ex) return [];
     return (
       [
-        ["Profile photo", ex.profile_image_url],
-        ["Degree document", ex.degree_document_url],
-        ["Medical license scan", ex.medical_license_document_url],
-        ["National ID", ex.national_id_document_url],
+        [t("doctorProfile.profile_photo"), ex.profile_image_url],
+        [t("doctorProfile.degree_document"), ex.degree_document_url],
+        [t("doctorProfile.license_scan"), ex.medical_license_document_url],
+        [t("doctorProfile.national_id"), ex.national_id_document_url],
       ] as [string, string | null][]
     ).filter((entry): entry is [string, string] => !!entry[1]);
-  }, [data.documents.existing]);
+  }, [data.documents.existing, t]);
 
   if (newFiles.length === 0 && existingFiles.length === 0) return null;
 
@@ -772,7 +779,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
 
       {/* Existing uploaded files from API */}
       {existingFiles.map(([label, url]) =>
-        label === "Profile photo" ? (
+        label === t("doctorProfile.profile_photo") ? (
           // ── Profile image: show as avatar thumbnail ──────────────────────
           <div
             key="existing-profile-photo"
@@ -780,15 +787,15 @@ const ViewDocuments = React.memo(function ViewDocuments({
           >
             <img
               src={url}
-              alt="Profile photo"
+              alt={t("doctorProfile.profile_photo")}
               className="h-10 w-10 rounded-full object-cover shrink-0 border border-border"
             />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                Profile photo
+                {t("doctorProfile.profile_photo")}
               </p>
               <p className="text-[13px] font-medium text-foreground">
-                Uploaded
+                {t("doctorProfile.uploaded_label")}
               </p>
             </div>
           </div>
@@ -807,7 +814,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
                 {label}
               </p>
               <p className="text-[13px] font-medium text-primary truncate group-hover:underline">
-                View uploaded file
+                {t("doctorProfile.view_uploaded_file")}
               </p>
             </div>
           </a>
@@ -862,8 +869,9 @@ function SectionViewPanel({
   data: DoctorProfileData;
   onFill: () => void;
 }) {
+  const { t } = useTranslation();
   const hasData = stepHasData(stepId, data);
-  const stepLabel = STEPS.find((s) => s.id === stepId)?.label ?? stepId;
+  const stepLabel = t(`doctorProfile.steps.${stepId}.label`, stepId);
   if (!hasData) return <EmptyStepPrompt label={stepLabel} onFill={onFill} />;
 
   switch (stepId) {
@@ -906,6 +914,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
   onDelete: () => void;
   stepSaveStates: StepSaveStates;
 }) {
+  const { t } = useTranslation();
   const isForm = mode === "create" || mode === "edit";
 
   const { savedCount, pct } = useMemo(() => {
@@ -941,7 +950,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Profile setup
+                {t("profile.setup")}
               </span>
               <span className="text-[11px] font-bold text-primary tabular-nums">
                 {pct}%
@@ -954,7 +963,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              {savedCount} of {STEPS.length} sections saved
+              {t("doctorProfile.sections_saved", { count: savedCount, total: STEPS.length })}
             </p>
           </div>
         ) : profileSummary ? (
@@ -974,8 +983,8 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
             </div>
             <div className="space-y-1">
               {[
-                { label: "Degree", value: profileSummary.degree },
-                { label: "Fee", value: profileSummary.fee },
+                { label: t("doctorProfile.degree_label"), value: profileSummary.degree },
+                { label: t("doctorProfile.fee_label"), value: profileSummary.fee },
               ].map(({ label, value }) => (
                 <div
                   key={label}
@@ -1049,7 +1058,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
                           : "",
                     )}
                   >
-                    {step.label}
+                    {t(`doctorProfile.steps.${step.id}.label`)}
                   </span>
                   {isForm ? (
                     <StepSaveStatusBadge
@@ -1057,12 +1066,12 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
                     />
                   ) : isEmpty ? (
                     <span className="text-[9px] text-muted-foreground/40 shrink-0">
-                      Empty
+                      {t("doctorProfile.empty_badge")}
                     </span>
                   ) : null}
                 </div>
                 <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
-                  {step.description}
+                  {t(`doctorProfile.steps.${step.id}.desc`)}
                 </p>
               </div>
             </button>
@@ -1077,14 +1086,14 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
             onClick={onEdit}
             className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
-            <Pencil size={12} /> Edit profile
+            <Pencil size={12} /> {t("profile.edit_profile")}
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
             className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
-            <Trash2 size={12} /> Delete
+            <Trash2 size={12} /> {t("profile.delete")}
           </Button>
         </div>
       )}
@@ -1092,7 +1101,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
       {isForm && (
         <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Click any section to jump to it. Save each section independently.
+            {t("doctorProfile.jump_hint")}
           </p>
         </div>
       )}
@@ -1438,7 +1447,7 @@ const DoctorProfile = () => {
         setStepState(stepId, "saved");
       } catch (err) {
         console.error(`Failed to save step "${stepId}":`, err);
-        toast.error(`Could not save ${getStepLabel(stepId)}`, {
+        toast.error(t("doctorProfile.could_not_save", { step: getStepLabel(stepId) }), {
           description: getProfileSaveErrorMessage(err),
         });
         setStepState(stepId, "error");
@@ -1454,6 +1463,7 @@ const DoctorProfile = () => {
       syncEducation,
       syncExperience,
       syncQualifications,
+      t,
     ],
   );
 
@@ -1484,7 +1494,7 @@ const DoctorProfile = () => {
       <DashboardLayout role="doctor">
         <PageHeader
           title={t("pages.doctor.profile_title", "Doctor Profile")}
-          subtitle="Loading your profile…"
+          subtitle={t("hospital.loading_profile")}
         />
         <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
           <StatsSkeleton />
@@ -1507,8 +1517,8 @@ const DoctorProfile = () => {
         subtitle={
           isForm
             ? mode === "edit"
-              ? "Update your professional information"
-              : "Fill in the details below to get started"
+              ? t("doctorProfile.update_professional_info")
+              : t("profile.fill_details")
             : t(
               "pages.doctor.profile_sub",
               "Manage your professional information",
@@ -1529,22 +1539,22 @@ const DoctorProfile = () => {
                   isFetchingProfile && "opacity-60",
                 )}
               >
-                <StatCard label="Degree" value={stats.degree} />
-                <StatCard label="License" value={stats.license} />
+                <StatCard label={t("doctorProfile.degree_label")} value={stats.degree} />
+                <StatCard label={t("doctorProfile.license_label")} value={stats.license} />
                 <StatCard
-                  label="Education"
+                  label={t("doctorProfile.steps.education.label")}
                   value={stats.education}
-                  sub="entries"
+                  sub={t("doctorProfile.entries_sub")}
                 />
                 <StatCard
-                  label="Experience"
+                  label={t("doctorProfile.steps.experience.label")}
                   value={stats.experience}
-                  sub="positions"
+                  sub={t("doctorProfile.positions_sub")}
                 />
                 <StatCard
-                  label="Qualifications"
+                  label={t("doctorProfile.steps.qualifications.label")}
                   value={stats.qualifications}
-                  sub="certs"
+                  sub={t("doctorProfile.certs_sub")}
                 />
               </div>
               {isFetchingProfile && (
@@ -1595,13 +1605,13 @@ const DoctorProfile = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    {activeStep.sectionTitle}
+                    {t(`doctorProfile.steps.${activeStep.id}.title`)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {isFetchingProfile && (
                     <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <Loader2 className="h-2.5 w-2.5 animate-spin" /> Syncing…
+                      <Loader2 className="h-2.5 w-2.5 animate-spin" /> {t("doctorProfile.syncing")}
                     </span>
                   )}
                   {stepHasData(activeStep.id, profileData) && (
@@ -1611,7 +1621,7 @@ const DoctorProfile = () => {
                       onClick={openEdit}
                       className="h-7 text-[11px] gap-1.5 border-border text-muted-foreground hover:text-primary hover:border-primary"
                     >
-                      <Pencil size={11} /> Edit
+                      <Pencil size={11} /> {t("profile.edit")}
                     </Button>
                   )}
                 </div>

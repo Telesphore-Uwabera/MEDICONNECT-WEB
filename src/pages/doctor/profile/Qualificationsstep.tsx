@@ -2,6 +2,7 @@
 // QualificationsStep
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Plus, Upload } from "lucide-react";
@@ -19,6 +20,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
   entries,
   onChange,
 }: QualificationsStepProps) {
+  const { t } = useTranslation();
   const addEntry = useCallback(() => {
     onChange([
       ...entries,
@@ -52,7 +54,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
     <div className="space-y-4">
       {entries.length === 0 && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-[6px] px-4 py-3 border border-dashed border-border">
-          No qualifications yet. Click "Add qualification" below.
+          {t("doctorProfile.no_qualifications_yet")}
         </p>
       )}
 
@@ -65,7 +67,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
-              label="Certification title *"
+              label={`${t("doctorProfile.certification_title")} *`}
               className="col-span-1 sm:col-span-2"
             >
               <Input
@@ -79,7 +81,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
             </FormField>
 
             <FormField
-              label="Issuing body *"
+              label={`${t("doctorProfile.issuing_body")} *`}
               className="col-span-1 sm:col-span-2"
             >
               <Input
@@ -92,7 +94,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
               />
             </FormField>
 
-            <FormField label="Issued date *">
+            <FormField label={`${t("doctorProfile.issued_date")} *`}>
               <Input
                 type="date"
                 value={entry.issued_at}
@@ -103,7 +105,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
               />
             </FormField>
 
-            <FormField label="Expiry date">
+            <FormField label={t("doctorProfile.expiry_date")}>
               <Input
                 type="date"
                 value={entry.expires_at}
@@ -115,7 +117,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
             </FormField>
 
             <FormField
-              label="Certificate file (optional)"
+              label={t("doctorProfile.certificate_file_optional")}
               className="col-span-1 sm:col-span-2"
             >
               <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-[6px] px-3 py-2 hover:border-primary hover:bg-primary/5 transition-colors">
@@ -140,7 +142,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
                   <>
                     <Upload className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <span className="text-[11px] text-muted-foreground">
-                      Upload certificate (PDF, JPG, PNG · max 4 MB)
+                      {t("doctorProfile.upload_certificate_hint")}
                     </span>
                   </>
                 )}
@@ -156,7 +158,7 @@ export const QualificationsStep = React.memo(function QualificationsStep({
         onClick={addEntry}
         className="w-full border-dashed border-border text-xs text-muted-foreground hover:text-primary hover:border-primary"
       >
-        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add qualification
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> {t("doctorProfile.add_qualification")}
       </Button>
     </div>
   );

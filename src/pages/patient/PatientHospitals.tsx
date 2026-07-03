@@ -49,27 +49,6 @@ const INITIAL_FILTERS: FilterState = {
   sort: "name",
 };
 
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "name", label: "Name (A–Z)" },
-  { value: "doctors-desc", label: "Most doctors" },
-  { value: "departments-desc", label: "Most departments" },
-];
-
-const TYPE_OPTIONS: Array<{ value: HospitalType; label: string; icon?: React.ElementType }> = [
-  { value: "all", label: "All types", icon: Building2 },
-  { value: "hospital", label: "Hospital", icon: Building2 },
-  { value: "clinic", label: "Clinic", icon: Stethoscope },
-  { value: "health_center", label: "Health Center", icon: Shield },
-  { value: "pharmacy_clinic", label: "Pharmacy Clinic", icon: Shield },
-];
-
-const TYPE_LABEL: Record<ApiHospital["type"], string> = {
-  hospital: "Hospital",
-  clinic: "Clinic",
-  health_center: "Health Center",
-  pharmacy_clinic: "Pharmacy Clinic",
-};
-
 const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
   hospital: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
   clinic: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
@@ -286,11 +265,12 @@ function SearchStats({
   open24h: number;
   cities: number;
 }) {
+  const { t } = useTranslation();
   const cards = [
-    { label: "Matching facilities", value: total, icon: Building2, tone: "text-primary bg-primary/10 border-primary/20" },
-    { label: "Shown now", value: shown, icon: Stethoscope, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
-    { label: "Open 24h", value: open24h, icon: Clock, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-    { label: "Cities", value: cities, icon: MapPin, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+    { label: t("pages.patient.matching_facilities_stat"), value: total, icon: Building2, tone: "text-primary bg-primary/10 border-primary/20" },
+    { label: t("pages.patient.shown_now_stat"), value: shown, icon: Stethoscope, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+    { label: t("pages.patient.open_24h_stat"), value: open24h, icon: Clock, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+    { label: t("pages.patient.cities_stat"), value: cities, icon: MapPin, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
   ];
 
   return (
@@ -334,6 +314,7 @@ function PaginationV2({
   itemLabel: string;
   onPageChange: (p: number) => void;
 }) {
+  const { t } = useTranslation();
   if (total <= 0) return null;
 
   const safeLastPage = Math.max(1, lastPage);
@@ -356,11 +337,10 @@ function PaginationV2({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[13px] font-semibold text-foreground">
-            Page {safeCurrentPage} of {safeLastPage}
+            {t("pages.patient.page_of", { current: safeCurrentPage, last: safeLastPage })}
           </p>
           <p className="text-[12px] text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
-            <span className="font-semibold text-foreground">{total}</span> {itemLabel}
+            {t("pages.patient.showing_range_generic", { from, to, total, item: itemLabel })}
           </p>
         </div>
 
@@ -371,7 +351,7 @@ function PaginationV2({
             className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            Prev
+            {t("pages.patient.prev_link")}
           </button>
 
           {pageNumbers.map((pageNumber, index) => {
@@ -402,7 +382,7 @@ function PaginationV2({
             disabled={safeCurrentPage >= safeLastPage}
             className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            Next
+            {t("common.next")}
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -415,6 +395,20 @@ function PaginationV2({
 
 const PatientHospitals = () => {
   const { t, i18n } = useTranslation();
+
+  const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
+    { value: "name", label: t("pages.patient.sort_name_az") },
+    { value: "doctors-desc", label: t("pages.patient.sort_most_doctors") },
+    { value: "departments-desc", label: t("pages.patient.sort_most_departments") },
+  ];
+
+  const TYPE_OPTIONS: Array<{ value: HospitalType; label: string; icon?: React.ElementType }> = [
+    { value: "all", label: t("pages.patient.facility_type_all"), icon: Building2 },
+    { value: "hospital", label: t("pages.patient.facility_type_hospital"), icon: Building2 },
+    { value: "clinic", label: t("pages.patient.facility_type_clinic"), icon: Stethoscope },
+    { value: "health_center", label: t("pages.patient.facility_type_health_center"), icon: Shield },
+    { value: "pharmacy_clinic", label: t("pages.patient.facility_type_pharmacy_clinic"), icon: Shield },
+  ];
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -494,55 +488,12 @@ const PatientHospitals = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.overview_title")}
-          subtitle={t("pages.patient.overview_sub")}
+          title={t("pages.patient.hospitals_title")}
+          subtitle={t("pages.patient.hospitals_sub", { count: data?.total ?? 0 })}
         />
 
         <div className="flex flex-col flex-1 min-h-0">
-          {/* ── FilterBar ── */}
-          <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen((p) => !p)}
-            hasActiveFilters={hasActiveFilters}
-            onClearAll={clearAll}
-            fields={[
-              {
-                type: "search",
-                key: "q",
-                label: "Search",
-                placeholder: "Name, city, or address…",
-                value: filters.q,
-                onChange: (v) => set("q", v),
-              },
-              {
-                type: "search",
-                key: "city",
-                label: "City",
-                placeholder: "e.g. Kigali…",
-                value: filters.city,
-                onChange: (v) => set("city", v),
-              },
-              {
-                type: "select",
-                key: "type",
-                label: "Facility Type",
-                value: filters.type,
-                options: TYPE_OPTIONS,
-                onChange: (v) => set("type", v as HospitalType),
-              },
-              {
-                type: "select",
-                key: "availability",
-                label: "Availability",
-                value: filters.open_now ? "open" : "all",
-                options: [
-                  { value: "all", label: "Any availability" },
-                  { value: "open", label: "Open now" },
-                ],
-                onChange: (v) => set("open_now", v === "open"),
-              },
-            ]}
-          />
+         
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col" data-hospital-results>
@@ -563,12 +514,13 @@ const PatientHospitals = () => {
                   ) : (
                     <>
                       <span className="font-bold text-foreground">{data?.total ?? 0}</span>{" "}
-                      {(data?.total ?? 0) === 1 ? "hospital" : "hospitals"} across{" "}
+                      {(data?.total ?? 0) === 1 ? t("pages.patient.hospital_word_singular") : t("pages.patient.hospital_word_plural")}{" "}
+                      across{" "}
                       <span className="font-medium text-foreground">{cityCount}</span>{" "}
-                      {cityCount === 1 ? "city" : "cities"}
+                      {cityCount === 1 ? t("pages.patient.city_word_singular") : t("pages.patient.city_word_plural")}
                       {hasActiveFilters && (
                         <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/80 hover:underline text-[12px] font-medium transition-colors">
-                          Reset
+                          {t("pages.patient.reset_link")}
                         </button>
                       )}
                     </>
@@ -579,7 +531,7 @@ const PatientHospitals = () => {
                 {!isLoading && open24hCount > 0 && (
                   <span className="hidden lg:flex items-center gap-1 text-[12px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
                     <Clock className="w-2.5 h-2.5" />
-                    {open24hCount} open 24h
+                    {t("pages.patient.open_24h_count", { count: open24hCount })}
                   </span>
                 )}
               </div>
@@ -608,7 +560,7 @@ const PatientHospitals = () => {
                     <button
                       key={v}
                       onClick={() => setView(v)}
-                      aria-label={`${v} view`}
+                      aria-label={v === "grid" ? t("pages.patient.grid_view_aria") : t("pages.patient.list_view_aria")}
                       className={cn(
                         "px-2.5 py-1.5 transition-all duration-200",
                         i > 0 && "border-l border-border/60",
@@ -635,6 +587,50 @@ const PatientHospitals = () => {
               </div>
             </div>
 
+ {/* ── FilterBar ── */}
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen((p) => !p)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={[
+              {
+                type: "search",
+                key: "q",
+                label: t("pages.patient.search_label"),
+                placeholder: t("pages.patient.hospitals_search_placeholder"),
+                value: filters.q,
+                onChange: (v) => set("q", v),
+              },
+              {
+                type: "search",
+                key: "city",
+                label: t("pages.patient.city_label"),
+                placeholder: t("pages.patient.city_example_placeholder"),
+                value: filters.city,
+                onChange: (v) => set("city", v),
+              },
+              {
+                type: "select",
+                key: "type",
+                label: t("pages.patient.facility_type_label"),
+                value: filters.type,
+                options: TYPE_OPTIONS,
+                onChange: (v) => set("type", v as HospitalType),
+              },
+              {
+                type: "select",
+                key: "availability",
+                label: t("pages.patient.availability_label"),
+                value: filters.open_now ? "open" : "all",
+                options: [
+                  { value: "all", label: t("pages.patient.availability_any") },
+                  { value: "open", label: t("pages.patient.open_now_label") },
+                ],
+                onChange: (v) => set("open_now", v === "open"),
+              },
+            ]}
+          />
             {/* Content */}
             <div className="p-4 flex-1">
               {isError ? (
@@ -643,15 +639,15 @@ const PatientHospitals = () => {
                     <AlertCircle className="w-6 h-6 text-destructive/60" />
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-foreground">Failed to load hospitals</p>
-                    <p className="text-[13px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                    <p className="text-[14px] font-semibold text-foreground">{t("pages.patient.failed_to_load_hospitals_title")}</p>
+                    <p className="text-[13px] text-muted-foreground/70 mt-1">{t("pages.patient.failed_to_load_generic_sub")}</p>
                   </div>
                   <button
                     onClick={() => refetch()}
                     className="flex items-center gap-1.5 text-[13px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    Retry
+                    {t("pages.patient.retry_link")}
                   </button>
                 </div>
               ) : isLoading ? (
@@ -670,12 +666,12 @@ const PatientHospitals = () => {
                     <Building2 className="w-6 h-6 text-muted-foreground/50" />
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-foreground">No hospitals match your filters</p>
-                    <p className="text-[13px] text-muted-foreground/70 mt-1">Try widening your search criteria</p>
+                    <p className="text-[14px] font-semibold text-foreground">{t("pages.patient.no_hospitals_match_filters_title")}</p>
+                    <p className="text-[13px] text-muted-foreground/70 mt-1">{t("pages.patient.try_widening_search_sub")}</p>
                   </div>
                   {hasActiveFilters && (
                     <button onClick={clearAll} className="text-[13px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1">
-                      Clear all filters
+                      {t("pages.patient.clear_all_filters_link")}
                     </button>
                   )}
                 </div>
@@ -702,7 +698,7 @@ const PatientHospitals = () => {
                 lastPage={lastPage}
                 total={data.total}
                 perPage={data.per_page}
-                itemLabel="facilities"
+                itemLabel={t("pages.patient.facilities_word")}
                 onPageChange={handlePageChange}
               />
             )}

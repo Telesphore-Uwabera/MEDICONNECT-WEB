@@ -339,11 +339,11 @@ function SocialLinksStep({
   data: SocialLinksInfo;
   onChange: (v: SocialLinksInfo) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <p className="text-[11px] text-muted-foreground -mt-1 mb-2">
-        Add your hospital's social media and online profiles. All fields are
-        optional.
+        {t("hospital.social_intro")}
       </p>
       <div className="grid grid-cols-1 gap-3">
         {SOCIAL_PLATFORMS.map(({ key, label, placeholder }) => (
@@ -382,6 +382,7 @@ function GalleryStep({
   onRemoteDelete: (id: number) => void;
   uploading: boolean;
 }) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
@@ -416,8 +417,7 @@ function GalleryStep({
   return (
     <div className="space-y-4">
       <p className="text-[11px] text-muted-foreground -mt-1">
-        Upload up to {MAX_GALLERY_IMAGES} photos of your facility — wards,
-        reception, equipment, etc.
+        {t("hospital.gallery_intro", { count: MAX_GALLERY_IMAGES })}
       </p>
 
       {/* Drop zone */}
@@ -454,11 +454,10 @@ function GalleryStep({
           </div>
           <div className="text-center">
             <p className="text-xs font-medium text-foreground">
-              {dragging ? "Drop images here" : "Click or drag & drop"}
+              {dragging ? t("hospital.drop_images") : t("hospital.click_or_drag")}
             </p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              PNG, JPG, WEBP up to 5 MB each · {totalCount}/{MAX_GALLERY_IMAGES}{" "}
-              uploaded
+              {t("hospital.upload_hint", { count: totalCount, max: MAX_GALLERY_IMAGES })}
             </p>
           </div>
           <input
@@ -497,7 +496,7 @@ function GalleryStep({
                 </button>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="w-full text-left text-[10px] text-white/80 truncate">
-                    {img.caption || "No caption"}
+                    {img.caption || t("hospital.no_caption")}
                   </p>
                 </div>
               </div>
@@ -505,7 +504,7 @@ function GalleryStep({
                 {idx + 1}
               </span>
               <span className="absolute bottom-1 right-1 text-[8px] bg-emerald-500/80 text-white rounded px-1 py-0.5 leading-none">
-                saved
+                {t("hospital.saved_badge")}
               </span>
             </div>
           ))}
@@ -550,7 +549,7 @@ function GalleryStep({
                       onClick={() => setEditingCaption(img.id)}
                       className="w-full text-left text-[10px] text-white/80 truncate hover:text-white transition-colors"
                     >
-                      {img.caption || "Add caption…"}
+                      {img.caption || t("hospital.add_caption")}
                     </button>
                   )}
                 </div>
@@ -559,7 +558,7 @@ function GalleryStep({
                 {remoteImages.length + idx + 1}
               </span>
               <span className="absolute bottom-1 right-1 text-[8px] bg-amber-500/80 text-white rounded px-1 py-0.5 leading-none">
-                pending
+                {t("hospital.pending_badge")}
               </span>
             </div>
           ))}
@@ -570,7 +569,7 @@ function GalleryStep({
         <div className="flex flex-col items-center justify-center py-6 gap-1.5 rounded-[6px] border border-dashed border-border text-center">
           <ImageOff className="h-6 w-6 text-muted-foreground/40" />
           <p className="text-[11px] text-muted-foreground">
-            No images uploaded yet
+            {t("hospital.no_images_yet")}
           </p>
         </div>
       )}
@@ -578,7 +577,7 @@ function GalleryStep({
       {uploading && (
         <div className="flex items-center gap-2 text-[11px] text-primary">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Uploading images…
+          {t("hospital.uploading_images")}
         </div>
       )}
     </div>
@@ -597,6 +596,7 @@ function GalleryLightbox({
   initialIndex: number;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(initialIndex);
 
   const prev = () =>
@@ -665,7 +665,7 @@ function GalleryLightbox({
               <p className="text-sm font-medium text-white">{img.caption}</p>
             )}
             <p className="text-[11px] text-white/50 mt-0.5">
-              Uploaded {img.uploadedAt}
+              {t("hospital.uploaded_on", { date: img.uploadedAt })}
             </p>
           </div>
           <span className="text-[11px] text-white/40 tabular-nums">
@@ -710,6 +710,7 @@ function GalleryView({
   images: GalleryImageDisplay[];
   onEdit?: () => void;
 }) {
+  const { t } = useTranslation();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   return (
@@ -717,10 +718,10 @@ function GalleryView({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Images size={15} className="text-primary" />
-          Photo gallery
+          {t("hospital.photo_gallery")}
           {images.length > 0 && (
             <span className="text-[10px] font-normal text-muted-foreground">
-              ({images.length} photo{images.length !== 1 ? "s" : ""})
+              {t("hospital.photo_count", { count: images.length })}
             </span>
           )}
         </h3>
@@ -729,7 +730,7 @@ function GalleryView({
             onClick={onEdit}
             className="text-[10px] text-primary hover:underline flex items-center gap-1"
           >
-            <Pencil className="h-2.5 w-2.5" /> Manage
+            <Pencil className="h-2.5 w-2.5" /> {t("hospital.manage")}
           </button>
         )}
       </div>
@@ -737,13 +738,13 @@ function GalleryView({
       {images.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-[6px] border border-dashed border-border text-center">
           <ImageOff className="h-6 w-6 text-muted-foreground/30" />
-          <p className="text-xs text-muted-foreground">No photos added yet.</p>
+          <p className="text-xs text-muted-foreground">{t("hospital.no_photos_yet")}</p>
           {onEdit && (
             <button
               onClick={onEdit}
               className="text-[11px] text-primary hover:underline mt-0.5"
             >
-              Add photos
+              {t("hospital.add_photos")}
             </button>
           )}
         </div>
@@ -792,7 +793,7 @@ function GalleryView({
                       <span className="text-lg font-bold text-white tabular-nums">
                         +{images.length - 4}
                       </span>
-                      <span className="text-[10px] text-white/70">more</span>
+                      <span className="text-[10px] text-white/70">{t("hospital.more")}</span>
                     </div>
                   ) : (
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
@@ -809,7 +810,7 @@ function GalleryView({
               onClick={() => setLightboxIndex(0)}
               className="w-full text-[11px] text-primary hover:underline text-center py-1"
             >
-              View all {images.length} photos
+              {t("hospital.view_all_photos", { count: images.length })}
             </button>
           )}
         </>
@@ -852,6 +853,7 @@ function UnifiedSidebar({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const isForm = mode === "create" || mode === "edit";
   const visitedCount = visited.size;
   const pct = Math.round((visitedCount / STEPS.length) * 100);
@@ -863,7 +865,7 @@ function UnifiedSidebar({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Profile setup
+                {t("profile.setup")}
               </span>
               <span className="text-[11px] font-bold text-primary tabular-nums">
                 {pct}%
@@ -876,7 +878,7 @@ function UnifiedSidebar({
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              {visitedCount} of {STEPS.length} sections visited
+              {t("profile.sections_visited", { count: visitedCount, total: STEPS.length })}
             </p>
           </div>
         ) : hospitalName ? (
@@ -896,8 +898,8 @@ function UnifiedSidebar({
             </div>
             <div className="space-y-1">
               {[
-                { label: "Type", value: humanType(hospitalType ?? "") },
-                { label: "City", value: hospitalCity ?? "" },
+                { label: t("hospital.field.type"), value: humanType(hospitalType ?? "") },
+                { label: t("hospital.field.city"), value: hospitalCity ?? "" },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center">
                   <span className="text-[10px] text-muted-foreground">
@@ -958,21 +960,21 @@ function UnifiedSidebar({
                       isActive ? "text-primary" : "",
                     )}
                   >
-                    {step.label}
+                    {t(`hospital.steps.${step.id}.label`)}
                   </span>
                   {isActive && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
-                      editing
+                      {t("profile.editing")}
                     </span>
                   )}
                   {isDone && isForm && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
-                      done
+                      {t("profile.done")}
                     </span>
                   )}
                 </div>
                 <p className="hidden sm:block text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
-                  {step.description}
+                  {t(`hospital.steps.${step.id}.desc`)}
                 </p>
                 {isForm && (
                   <div className="hidden sm:block h-0.5 rounded-full bg-muted overflow-hidden mt-1.5">
@@ -1000,14 +1002,14 @@ function UnifiedSidebar({
             onClick={onEdit}
             className="flex-1 sm:w-full text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-8"
           >
-            <Pencil size={12} /> Edit profile
+            <Pencil size={12} /> {t("profile.edit_profile")}
           </Button>
           <Button
             variant="outline"
             onClick={onDelete}
             className="flex-1 sm:w-full text-destructive border-destructive/30 hover:bg-destructive/10 text-xs gap-1.5 h-8"
           >
-            <Trash2 size={12} /> Delete profile
+            <Trash2 size={12} /> {t("hospital.delete_profile")}
           </Button>
         </div>
       )}
@@ -1016,8 +1018,8 @@ function UnifiedSidebar({
         <div className="hidden sm:block px-3.5 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
             {mode === "edit"
-              ? "Click any section to jump directly"
-              : "Jump between sections freely — no order needed"}
+              ? t("profile.jump_edit_hint")
+              : t("profile.jump_create_hint")}
           </p>
         </div>
       )}
@@ -1112,10 +1114,10 @@ function HospitalForm({
       <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {step.sectionTitle}
+          {t(`hospital.steps.${step.id}.title`)}
         </span>
         <span className="ml-auto text-[10px] text-muted-foreground">
-          Step {currentStep + 1} of {STEPS.length}
+          {t("profile.step_of", { current: currentStep + 1, total: STEPS.length })}
         </span>
       </div>
 
@@ -1185,7 +1187,7 @@ function HospitalForm({
                 onValueChange={(v) => setValue("type", v)}
               >
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t("hospital.select_type")} />
                 </SelectTrigger>
                 <SelectContent>
                   {HOSPITAL_TYPES.map((ht) => (
@@ -1345,7 +1347,7 @@ function HospitalForm({
                   {t("hospital.field.open_24h", "Open 24 hours")}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  Overrides opening & closing times
+                  {t("hospital.open_24h_desc")}
                 </p>
               </div>
               <Switch
@@ -1385,7 +1387,7 @@ function HospitalForm({
               <div className="col-span-1 sm:col-span-2 flex items-center gap-2 rounded-[6px] border border-primary/30 bg-primary/5 px-3 py-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                 <p className="text-[11px] text-primary">
-                  This facility is available around the clock.
+                  {t("hospital.open_24h_notice")}
                 </p>
               </div>
             )}
@@ -1417,10 +1419,10 @@ function HospitalForm({
           disabled={submitting}
           className="border-border text-xs"
         >
-          {currentStep === 0 ? "Cancel" : "← Back"}
+          {currentStep === 0 ? t("profile.cancel") : t("profile.back")}
         </Button>
         <span className="text-[11px] text-muted-foreground">
-          Step {currentStep + 1} of {STEPS.length}
+          {t("profile.step_of", { current: currentStep + 1, total: STEPS.length })}
         </span>
         <Button
           onClick={goNext}
@@ -1430,12 +1432,12 @@ function HospitalForm({
           {submitting ? (
             <>
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              Saving…
+              {t("profile.saving")}
             </>
           ) : isLast ? (
-            isEdit ? "Save changes" : "Create profile"
+            isEdit ? t("profile.save_changes") : t("profile.create_profile")
           ) : (
-            "Next →"
+            t("profile.next")
           )}
         </Button>
       </div>
@@ -1500,13 +1502,14 @@ function TabSectionHeader({
   icon: Icon,
   title,
   onEdit,
-  editLabel = "Edit",
+  editLabel,
 }: {
   icon: React.ElementType;
   title: string;
   onEdit: () => void;
   editLabel?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between mb-4">
       <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -1518,7 +1521,7 @@ function TabSectionHeader({
         className="flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors border border-primary/25 bg-primary/5 hover:bg-primary/10 rounded-[6px] px-2.5 py-1"
       >
         <Pencil className="h-2.5 w-2.5" />
-        {editLabel}
+        {editLabel ?? t("profile.edit")}
       </button>
     </div>
   );
@@ -1585,7 +1588,11 @@ function HospitalProfileView({
               )}
             >
               <Icon className="h-3 w-3 shrink-0" />
-              {tab.label}
+              {tab.id === "social"
+                ? t("hospital.view_tabs.social")
+                : tab.id === "prescriptions"
+                  ? t("hospital.view_tabs.prescriptions")
+                  : t(`hospital.steps.${tab.id}.label`)}
             </button>
           );
         })}
@@ -1599,16 +1606,16 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={Building2}
-              title="Hospital identity"
+              title={t("hospital.steps.identity.title")}
               onEdit={() => onEditStep(0)}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-              <ViewField label="Name (EN)" value={hospital.name_en} />
-              <ViewField label="Name (FR)" value={hospital.name_fr} />
-              <ViewField label="Kinyarwanda" value={hospital.name_kiny} />
-              <ViewField label="Type" value={humanType(hospital.type)} />
+              <ViewField label={t("hospital.name_en_view")} value={hospital.name_en} />
+              <ViewField label={t("hospital.name_fr_view")} value={hospital.name_fr} />
+              <ViewField label={t("hospital.kinyarwanda_view")} value={hospital.name_kiny} />
+              <ViewField label={t("hospital.field.type")} value={humanType(hospital.type)} />
               <ViewField
-                label="Registration"
+                label={t("hospital.registration_view")}
                 value={hospital.registration_number ?? "—"}
                 mono
               />
@@ -1616,7 +1623,7 @@ function HospitalProfileView({
             {hospital.description_en && (
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                  Description
+                  {t("hospital.description_view")}
                 </p>
                 <RichTextRenderer value={hospital.description_en} className="text-[11px] text-foreground leading-relaxed" />
               </div>
@@ -1629,13 +1636,13 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={MapPin}
-              title="Location & address"
+              title={t("hospital.steps.location.title")}
               onEdit={() => onEditStep(1)}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               <div className="col-span-1 sm:col-span-2">
                 <ViewField
-                  label="Full address"
+                  label={t("hospital.full_address")}
                   value={[
                     hospital.address,
                     hospital.city,
@@ -1646,11 +1653,11 @@ function HospitalProfileView({
                     .join(", ")}
                 />
               </div>
-              <ViewField label="City" value={hospital.city} />
-              <ViewField label="Province" value={hospital.province} />
-              <ViewField label="Country" value={hospital.country} />
-              <ViewField label="Latitude" value={String(hospital.latitude ?? "—")} mono />
-              <ViewField label="Longitude" value={String(hospital.longitude ?? "—")} mono />
+              <ViewField label={t("hospital.field.city")} value={hospital.city} />
+              <ViewField label={t("hospital.field.province")} value={hospital.province} />
+              <ViewField label={t("hospital.field.country")} value={hospital.country} />
+              <ViewField label={t("hospital.latitude_view")} value={String(hospital.latitude ?? "—")} mono />
+              <ViewField label={t("hospital.longitude_view")} value={String(hospital.longitude ?? "—")} mono />
             </div>
           </div>
         )}
@@ -1660,7 +1667,7 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={Phone}
-              title="Contact information"
+              title={t("hospital.steps.contact.title")}
               onEdit={() => onEditStep(2)}
             />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1701,7 +1708,7 @@ function HospitalProfileView({
               )}
             </div>
             {!hospital.phone && !hospital.email && !hospital.website && (
-              <p className="text-xs text-muted-foreground">No contact details added.</p>
+              <p className="text-xs text-muted-foreground">{t("hospital.no_contact_details")}</p>
             )}
           </div>
         )}
@@ -1711,7 +1718,7 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={Clock}
-              title="Operating hours"
+              title={t("hospital.steps.hours.title")}
               onEdit={() => onEditStep(3)}
             />
             <div className="flex items-center gap-4 flex-wrap mb-4">
@@ -1721,28 +1728,28 @@ function HospitalProfileView({
                   currentlyOpen ? "bg-primary" : "bg-muted-foreground",
                 )}
               >
-                {currentlyOpen ? "OPEN" : "CLSD"}
+                {currentlyOpen ? t("hospital.open_short") : t("hospital.closed_short")}
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">
                   {hospital.is_open_24h
-                    ? "Open 24 hours"
+                    ? t("hospital.field.open_24h")
                     : `${hospital.opens_at} – ${hospital.closes_at}`}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {currentlyOpen ? "Currently open" : "Currently closed"}
+                  {currentlyOpen ? t("hospital.currently_open") : t("hospital.currently_closed")}
                 </p>
               </div>
               {hospital.is_open_24h && (
                 <span className="text-[11px] font-medium rounded-full px-3 py-1 bg-primary/15 text-primary border border-primary/20">
-                  ✓ Available 24 hours
+                  {t("hospital.available_24h")}
                 </span>
               )}
             </div>
             {!hospital.is_open_24h && (
               <div className="grid grid-cols-2 gap-3 max-w-xs">
-                <ViewField label="Opens at" value={hospital.opens_at || "—"} mono />
-                <ViewField label="Closes at" value={hospital.closes_at || "—"} mono />
+                <ViewField label={t("hospital.opens_at_view")} value={hospital.opens_at || "—"} mono />
+                <ViewField label={t("hospital.closes_at_view")} value={hospital.closes_at || "—"} mono />
               </div>
             )}
           </div>
@@ -1753,18 +1760,18 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={Link2}
-              title="Social & online presence"
+              title={t("hospital.steps.linksSection.title")}
               onEdit={() => onEditStep(4)}
             />
             {socialLinksCount === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 gap-2 rounded-[6px] border border-dashed border-border text-center">
                 <Link2 className="h-6 w-6 text-muted-foreground/30" />
-                <p className="text-xs text-muted-foreground">No social links added yet.</p>
+                <p className="text-xs text-muted-foreground">{t("hospital.no_social_links")}</p>
                 <button
                   onClick={() => onEditStep(4)}
                   className="text-[11px] text-primary hover:underline mt-0.5"
                 >
-                  Add social links
+                  {t("hospital.add_social_links")}
                 </button>
               </div>
             ) : (
@@ -1802,9 +1809,9 @@ function HospitalProfileView({
           <div>
             <TabSectionHeader
               icon={Images}
-              title={`Photo gallery${galleryImages.length > 0 ? ` (${galleryImages.length})` : ""}`}
+              title={`${t("hospital.photo_gallery")}${galleryImages.length > 0 ? ` (${galleryImages.length})` : ""}`}
               onEdit={() => onEditStep(5)}
-              editLabel="Manage photos"
+              editLabel={t("hospital.manage_photos")}
             />
             <GalleryView images={galleryImages} />
           </div>
@@ -1823,7 +1830,7 @@ function HospitalProfileView({
                 className="text-primary-foreground bg-primary hover:bg-primary/90 text-xs gap-1.5 h-7"
                 onClick={onNewRx}
               >
-                <Plus className="h-3.5 w-3.5" /> New
+                <Plus className="h-3.5 w-3.5" /> {t("hospital.new_rx")}
               </Button>
             </div>
 
@@ -1831,7 +1838,7 @@ function HospitalProfileView({
               <div className="flex flex-col items-center justify-center py-8 gap-2 text-center rounded-[6px] border border-dashed border-border">
                 <Pill className="h-7 w-7 text-muted-foreground/40" />
                 <p className="text-xs text-muted-foreground">
-                  No prescriptions issued yet.
+                  {t("hospital.no_prescriptions_yet")}
                 </p>
                 <Button
                   size="sm"
@@ -1839,7 +1846,7 @@ function HospitalProfileView({
                   className="mt-1 text-xs"
                   onClick={onNewRx}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" /> Issue first prescription
+                  <Plus className="h-3.5 w-3.5 mr-1.5" /> {t("hospital.issue_first_rx")}
                 </Button>
               </div>
             ) : (
@@ -2085,15 +2092,15 @@ const HospitalProfile = () => {
       type: humanType(serverHospital.type),
       city: serverHospital.city,
       hours: serverHospital.is_open_24h
-        ? "24 hours"
+        ? t("hospital.hours_24")
         : `${serverHospital.opens_at} – ${serverHospital.closes_at}`,
       status: isOpenNow(
         serverHospital.opens_at,
         serverHospital.closes_at,
         serverHospital.is_open_24h,
       )
-        ? "Open"
-        : "Closed",
+        ? t("hospital.status_open")
+        : t("hospital.status_closed"),
       prescriptions: rxList.length,
       country: serverHospital.country,
       photos: remoteImages.length,
@@ -2107,8 +2114,8 @@ const HospitalProfile = () => {
     return (
       <DashboardLayout role="hospital">
         <PageHeader
-          title={t("pages.hospital.rx_title")}
-          subtitle="Loading your profile…"
+          title={t("hospital.profile_title")}
+          subtitle={t("hospital.loading_profile")}
         />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -2120,18 +2127,13 @@ const HospitalProfile = () => {
   return (
     <DashboardLayout role="hospital">
       <PageHeader
-        title={t("pages.hospital.rx_title")}
+        title={t("hospital.profile_title")}
         subtitle={
           isForm
-            ? t(
-              "hospital.form.subtitle",
-              mode === "edit"
-                ? "Update your hospital information"
-                : "Fill in the details below to register your hospital",
-            )
-            : t("pages.hospital.rx_sub", {
-              name: serverHospital?.name_en ?? HOSPITAL_CONST,
-            })
+            ? mode === "edit"
+              ? t("hospital.form.subtitle_edit")
+              : t("hospital.form.subtitle_create")
+            : t("hospital.profile_sub")
         }
       />
 
@@ -2140,7 +2142,7 @@ const HospitalProfile = () => {
         <div className="mx-3 sm:mx-6 mt-2 rounded-[6px] border border-destructive/30 bg-destructive/10 px-3 py-2 text-[11px] text-destructive">
           {upsertProfile.error?.message ??
             uploadImages.error?.message ??
-            "Something went wrong"}
+            t("profile.profile_error")}
         </div>
       )}
 
@@ -2148,17 +2150,17 @@ const HospitalProfile = () => {
         {/* Stats bar (view mode only) */}
         {stats && !isForm && (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
-            <StatCard label="Type" value={stats.type} />
-            <StatCard label="City" value={stats.city} />
-            <StatCard label="Country" value={stats.country} />
-            <StatCard label="Hours" value={stats.hours} />
-            <StatCard label="Status" value={stats.status} accent />
+            <StatCard label={t("hospital.stat_type")} value={stats.type} />
+            <StatCard label={t("hospital.stat_city")} value={stats.city} />
+            <StatCard label={t("hospital.stat_country")} value={stats.country} />
+            <StatCard label={t("hospital.stat_hours")} value={stats.hours} />
+            <StatCard label={t("hospital.stat_status")} value={stats.status} accent />
             <StatCard
-              label="Prescriptions"
+              label={t("hospital.stat_prescriptions")}
               value={stats.prescriptions}
-              sub="issued"
+              sub={t("hospital.stat_issued")}
             />
-            <StatCard label="Photos" value={stats.photos} sub="in gallery" />
+            <StatCard label={t("hospital.stat_photos")} value={stats.photos} sub={t("hospital.stat_in_gallery")} />
           </div>
         )}
 

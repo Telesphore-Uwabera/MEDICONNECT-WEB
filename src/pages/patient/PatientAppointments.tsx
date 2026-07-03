@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
@@ -82,13 +83,16 @@ const STATUS_DOT: Record<ApiAppointmentStatus, string> = {
   cancelled: "bg-red-500",
 };
 
-const STATUS_LABEL: Record<ApiAppointmentStatus, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  in_progress: "In Progress",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
+function getStatusLabel(t: TFunction, status: ApiAppointmentStatus): string {
+  const map: Record<ApiAppointmentStatus, string> = {
+    pending: t("pages.patient.status_pending"),
+    confirmed: t("pages.patient.appt_status_confirmed"),
+    in_progress: t("pages.patient.appt_status_in_progress"),
+    completed: t("pages.patient.status_completed"),
+    cancelled: t("pages.patient.status_cancelled"),
+  };
+  return map[status];
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -221,6 +225,7 @@ function AppointmentCardItem({
   onDetails: () => void;
   onJoin: () => void;
 }) {
+  const { t } = useTranslation();
   const avatar = getDoctorAvatar(appt);
   const actionable = isActionable(appt.status);
 
@@ -232,10 +237,10 @@ function AppointmentCardItem({
       {/* ── Top strip ── */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Appointment
+          {t("pages.patient.appt_card_badge")}
         </span>
         <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_STYLES[appt.status])}>
-          {STATUS_LABEL[appt.status]}
+          {getStatusLabel(t, appt.status)}
         </span>
       </div>
 
@@ -266,7 +271,7 @@ function AppointmentCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <Calendar className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Date</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.date_label")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {formatDate(appt.appointment_date)}
@@ -275,7 +280,7 @@ function AppointmentCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <Clock className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.appt_time_label")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {formatTime(appt.appointment_time)}
@@ -284,10 +289,10 @@ function AppointmentCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               {appt.type === "online" ? <Video className="h-3.5 w-3.5" /> : <MapPin className="h-3.5 w-3.5" />}
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Type</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("consult.booking.type")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
-              {appt.type === "online" ? "Video" : "In-person"}
+              {appt.type === "online" ? t("pages.patient.appt_video_label") : t("pages.patient.appt_in_person_label")}
             </span>
           </div>
         </div>
@@ -300,7 +305,7 @@ function AppointmentCardItem({
             className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
             onClick={(e) => { e.stopPropagation(); onDetails(); }}
           >
-            Details
+            {t("pages.patient.details")}
           </Button>
           <Button
             size="sm"
@@ -308,7 +313,7 @@ function AppointmentCardItem({
             onClick={(e) => { e.stopPropagation(); onJoin(); }}
             className="h-8 px-3 text-xs font-bold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90 flex-1 shadow-sm"
           >
-            {actionable ? "Join Call" : "Unavailable"}
+            {actionable ? t("pages.patient.appt_join_call") : t("pages.patient.appt_unavailable")}
           </Button>
         </div>
       </div>
@@ -410,34 +415,34 @@ const PatientAppointments = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.patient.appt_filter_status_label"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "pending", label: "Pending" },
-        { value: "confirmed", label: "Confirmed" },
-        { value: "in_progress", label: "In Progress" },
-        { value: "completed", label: "Completed" },
-        { value: "cancelled", label: "Cancelled" },
+        { value: "all", label: t("pages.patient.appt_filter_all_statuses") },
+        { value: "pending", label: t("pages.patient.status_pending") },
+        { value: "confirmed", label: t("pages.patient.appt_status_confirmed") },
+        { value: "in_progress", label: t("pages.patient.appt_status_in_progress") },
+        { value: "completed", label: t("pages.patient.status_completed") },
+        { value: "cancelled", label: t("pages.patient.status_cancelled") },
       ],
       onChange: (v: string) => set("status", v as any)
     },
     {
       type: "select" as const,
       key: "type",
-      label: "Type",
+      label: t("pages.patient.appt_filter_type_label"),
       value: filters.type,
       options: [
-        { value: "all", label: "All types" },
-        { value: "online", label: "Video consult" },
-        { value: "in_person", label: "In-person" },
+        { value: "all", label: t("pages.patient.appt_filter_all_types") },
+        { value: "online", label: t("pages.patient.appt_filter_video_consult") },
+        { value: "in_person", label: t("pages.patient.appt_in_person_label") },
       ],
       onChange: (v: string) => set("type", v as any)
     },
     {
       type: "custom" as const,
       key: "date_range",
-      label: "Date Range",
+      label: t("pages.patient.appt_filter_date_range"),
       render: () => (
         <div className="flex items-center gap-1.5 mt-1">
           <input
@@ -465,7 +470,7 @@ const PatientAppointments = () => {
         </div>
       )
     }
-  ], [filters, set]);
+  ], [filters, set, t]);
 
   const clearAll = useCallback(() => setFilters(INITIAL_FILTERS), []);
 
@@ -489,13 +494,13 @@ const PatientAppointments = () => {
   const statsItems = useMemo<PatientStatItem[]>(() => {
     const active = (counts.confirmed ?? 0) + (counts.in_progress ?? 0);
     return [
-      { label: "Total", value: data?.total ?? appointments.length, helper: "All appointments", icon: Calendar, tone: "primary" },
-      { label: "Ready to join", value: active, helper: "Confirmed or live", icon: Video, tone: "sky" },
-      { label: "Pending", value: counts.pending ?? 0, helper: "Waiting approval", icon: Clock, tone: "amber" },
-      { label: "Completed", value: counts.completed ?? 0, helper: "Finished visits", icon: CheckCircle2, tone: "emerald" },
-      { label: "Cancelled", value: counts.cancelled ?? 0, helper: "Not active", icon: X, tone: "red" },
+      { label: t("pages.patient.kpi_total"), value: data?.total ?? appointments.length, helper: t("pages.patient.appt_stat_total_helper"), icon: Calendar, tone: "primary" },
+      { label: t("pages.patient.appt_stat_ready"), value: active, helper: t("pages.patient.appt_stat_ready_helper"), icon: Video, tone: "sky" },
+      { label: t("pages.patient.status_pending"), value: counts.pending ?? 0, helper: t("pages.patient.appt_stat_pending_helper"), icon: Clock, tone: "amber" },
+      { label: t("pages.patient.status_completed"), value: counts.completed ?? 0, helper: t("pages.patient.appt_stat_completed_helper"), icon: CheckCircle2, tone: "emerald" },
+      { label: t("pages.patient.status_cancelled"), value: counts.cancelled ?? 0, helper: t("pages.patient.appt_stat_cancelled_helper"), icon: X, tone: "red" },
     ];
-  }, [appointments.length, counts, data?.total]);
+  }, [appointments.length, counts, data?.total, t]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -503,17 +508,10 @@ const PatientAppointments = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+          title={t("pages.patient.appts_title")}
+          subtitle={t("pages.patient.appts_sub")}
         />
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
+  
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
@@ -521,8 +519,8 @@ const PatientAppointments = () => {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 flex-wrap">
               <p className="text-xs text-muted-foreground">
-             Manage Appointments 
-              </p> 
+                {t("pages.patient.appt_manage_title")}
+              </p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -532,9 +530,9 @@ const PatientAppointments = () => {
                 onChange={(e) => set("sort", e.target.value as SortOption)}
                 className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
-                <option value="date-asc">Soonest first</option>
-                <option value="date-desc">Latest first</option>
-                <option value="doctor">Doctor (A-Z)</option>
+                <option value="date-asc">{t("pages.patient.appt_sort_soonest")}</option>
+                <option value="date-desc">{t("pages.patient.appt_sort_latest")}</option>
+                <option value="doctor">{t("pages.patient.appt_sort_doctor")}</option>
               </select>
 
               <FilterToggleButton
@@ -547,7 +545,7 @@ const PatientAppointments = () => {
               <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                 <button
                   onClick={() => setView("table")}
-                  aria-label="Table view"
+                  aria-label={t("pages.patient.appt_table_view_aria")}
                   className={cn(
                     "px-2.5 py-1.5 transition-all",
                     view === "table" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
@@ -559,7 +557,7 @@ const PatientAppointments = () => {
                 </button>
                 <button
                   onClick={() => setView("cards")}
-                  aria-label="Card view"
+                  aria-label={t("pages.patient.appt_card_view_aria")}
                   className={cn(
                     "px-2.5 py-1.5 border-l border-border/60 transition-all",
                     view === "cards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
@@ -572,7 +570,14 @@ const PatientAppointments = () => {
               </div>
             </div>
           </div>
-
+      <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
           <div className="p-4 space-y-4">
 
             <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto">
@@ -617,12 +622,12 @@ const PatientAppointments = () => {
                   <Calendar className="w-6 h-6 text-muted-foreground/50" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground">No appointments found</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">Try adjusting your filters</p>
+                  <p className="text-xs font-semibold text-foreground">{t("pages.patient.appt_empty_title")}</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">{t("pages.patient.appt_empty_sub")}</p>
                 </div>
                 {hasActiveFilters && (
                   <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline mt-1">
-                    Clear all filters
+                    {t("pages.patient.clear_all_filters_link")}
                   </button>
                 )}
               </div>
@@ -635,11 +640,11 @@ const PatientAppointments = () => {
                 <table className="w-full text-sm overflow-auto">
                   <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      <th className="text-left px-5 py-4 font-semibold">Doctor / Hospital</th>
-                      <th className="text-left px-5 py-4 font-semibold">Specialty</th>
-                      <th className="text-left px-5 py-4 font-semibold">Date & Time</th>
-                      <th className="text-left px-5 py-4 font-semibold">Type</th>
-                      <th className="text-left px-5 py-4 font-semibold">Status</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_doctor_hospital")}</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_specialty")}</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_th_datetime")}</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_filter_type_label")}</th>
+                      <th className="text-left px-5 py-4 font-semibold">{t("pages.patient.appt_filter_status_label")}</th>
                       <th className="px-5 py-4" />
                     </tr>
                   </thead>
@@ -682,13 +687,13 @@ const PatientAppointments = () => {
                               {a.type === "online"
                                 ? <Video className="h-4 w-4 text-sky-500" />
                                 : <MapPin className="h-4 w-4 text-amber-500" />}
-                              <span className="text-sm">{a.type === "online" ? "Video" : "In-person"}</span>
+                              <span className="text-sm">{a.type === "online" ? t("pages.patient.appt_video_label") : t("pages.patient.appt_in_person_label")}</span>
                             </span>
                           </td>
                           <td className="px-5 py-4">
                             <Badge variant="outline" className={cn("border text-xs px-2 py-0.5 font-medium", STATUS_STYLES[a.status])}>
                               <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[a.status])} />
-                              {STATUS_LABEL[a.status]}
+                              {getStatusLabel(t, a.status)}
                             </Badge>
                           </td>
                           <td className="px-5 py-4 text-right">
@@ -702,7 +707,7 @@ const PatientAppointments = () => {
                                   handleJoin(a);
                                 }}
                               >
-                                {a.status === "in_progress" ? "Rejoin call" : "Join call"}
+                                {a.status === "in_progress" ? t("pages.patient.appt_rejoin_call") : t("pages.patient.appt_join_call")}
                               </Button>
                             ) : (
                               <Button
@@ -714,7 +719,7 @@ const PatientAppointments = () => {
                                   openDetail(a.id);
                                 }}
                               >
-                                Details
+                                {t("pages.patient.details")}
                               </Button>
                             )}
                           </td>
@@ -746,8 +751,7 @@ const PatientAppointments = () => {
             {!isLoading && totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
                 <p className="text-xs text-muted-foreground">
-                  Page <span className="font-semibold text-foreground">{filters.page}</span> of{" "}
-                  <span className="font-semibold text-foreground">{totalPages}</span>
+                  {t("pages.patient.page_of", { current: filters.page, last: totalPages })}
                 </p>
                 <div className="flex items-center gap-1.5">
                   <Button

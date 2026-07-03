@@ -46,12 +46,13 @@ import {
   type RequestPhoneChangePayload,
 } from "@/hooks/admin/use-admin-settings"; 
 import { cn } from "@/lib/utils";
+import i18n from "@/lib/i18n";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return "Something went wrong";
+  return i18n.t("pages.patient.generic_error");
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -106,6 +107,7 @@ function DisplayField({
   value?: string | null;
   badge?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
@@ -113,7 +115,7 @@ function DisplayField({
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <p className="text-[13px] text-foreground font-medium">
-          {value || <span className="text-muted-foreground/40 font-normal italic">Not set</span>}
+          {value || <span className="text-muted-foreground/40 font-normal italic">{t("pages.patient.set_not_set")}</span>}
         </p>
         {badge}
       </div>
@@ -124,18 +126,19 @@ function DisplayField({
 // ─── VerifiedBadge ────────────────────────────────────────────────────────────
 
 function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
+  const { t } = useTranslation();
   if (verified) {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        Verified{date ? ` · ${formatDate(date)}` : ""}
+        {t("pages.cards.verified")}{date ? ` · ${formatDate(date)}` : ""}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
       <Clock className="w-3 h-3" />
-      Unverified
+      {t("pages.patient.set_unverified")}
     </span>
   );
 }
@@ -190,6 +193,7 @@ function SectionCard({
   onEdit?: () => void;
   isEditing?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-border/50 flex items-center gap-3">
@@ -206,7 +210,7 @@ function SectionCard({
             className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-[6px] border border-border/50 transition-all"
           >
             <Pencil className="w-3 h-3" />
-            Edit
+            {t("common.edit")}
           </button>
         )}
       </div>
@@ -228,11 +232,12 @@ function OtpStep({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState("");
   return (
     <div className="mt-4 p-4 rounded-[6px] border border-primary/20 bg-primary/5 space-y-3">
       <p className="text-[11px] text-foreground font-medium">{label}</p>
-      <Field label="OTP code" required>
+      <Field label={t("pages.patient.set_otp_code")} required>
         <input
           type="text"
           inputMode="numeric"
@@ -251,10 +256,10 @@ function OtpStep({
           disabled={isPending || otp.length < 6}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-          Verify
+          {t("pages.patient.set_verify")}
         </Button>
         <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={onCancel} disabled={isPending}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     </div>
@@ -272,12 +277,13 @@ function InfoRow({
   value?: string | null;
   badge?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between py-3 border-b border-border/40 last:border-0 gap-4">
       <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{label}</p>
       <div className="flex items-center gap-2 flex-wrap justify-end">
         <span className="text-[12px] text-foreground font-medium text-right">
-          {value || <span className="text-muted-foreground/40 italic font-normal">Not set</span>}
+          {value || <span className="text-muted-foreground/40 italic font-normal">{t("pages.patient.set_not_set")}</span>}
         </span>
         {badge}
       </div>
@@ -289,11 +295,11 @@ function InfoRow({
 
 type TabKey = "profile" | "security" | "contact" | "danger";
 
-const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "profile", label: "Profile", icon: UserCog },
-  { key: "security", label: "Security", icon: KeyRound },
-  { key: "contact", label: "Contact", icon: Mail },
-  { key: "danger", label: "Danger", icon: ShieldAlert },
+const TAB_DEFS: { key: TabKey; labelKey: string; icon: React.ElementType }[] = [
+  { key: "profile", labelKey: "pages.patient.set_tab_profile", icon: UserCog },
+  { key: "security", labelKey: "pages.patient.set_tab_security", icon: KeyRound },
+  { key: "contact", labelKey: "pages.patient.set_tab_contact", icon: Mail },
+  { key: "danger", labelKey: "pages.patient.set_tab_danger", icon: ShieldAlert },
 ];
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -390,12 +396,12 @@ function PatientSettings() {
 
   const handleProfileSave = async () => {
     if (!profileForm.name.trim()) {
-      sonnerToast.error("Name is required");
+      sonnerToast.error(t("pages.patient.set_name_required"));
       return;
     }
     try {
       await updateProfile.mutateAsync(profileForm);
-      sonnerToast.success("Profile updated.");
+      sonnerToast.success(t("pages.patient.set_profile_updated"));
       setEditingProfile(false);
     } catch (err) {
       sonnerToast.error(getErrorMessage(err));
@@ -406,12 +412,12 @@ function PatientSettings() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      sonnerToast.error("Avatar must be under 2 MB");
+      sonnerToast.error(t("pages.patient.set_avatar_too_big"));
       return;
     }
     try {
       await updateAvatar.mutateAsync(file);
-      sonnerToast.success("Avatar updated.");
+      sonnerToast.success(t("pages.patient.set_avatar_updated"));
       setAvatarError(false);
     } catch (err) {
       sonnerToast.error(getErrorMessage(err));
@@ -422,7 +428,7 @@ function PatientSettings() {
   const handleDeleteAvatar = async () => {
     try {
       await deleteAvatar.mutateAsync();
-      sonnerToast.success("Avatar removed.");
+      sonnerToast.success(t("pages.patient.set_avatar_removed"));
     } catch (err) {
       sonnerToast.error(getErrorMessage(err));
     }
@@ -430,16 +436,16 @@ function PatientSettings() {
 
   const handlePasswordSave = async () => {
     if (!passwordForm.current_password || !passwordForm.password) {
-      sonnerToast.error("All password fields are required");
+      sonnerToast.error(t("pages.patient.set_all_password_required"));
       return;
     }
     if (passwordForm.password !== passwordForm.password_confirmation) {
-      sonnerToast.error("Passwords do not match");
+      sonnerToast.error(t("pages.patient.set_passwords_mismatch"));
       return;
     }
     try {
       await updatePassword.mutateAsync(passwordForm);
-      sonnerToast.success("Password updated. Other sessions have been logged out.");
+      sonnerToast.success(t("pages.patient.set_password_updated"));
       setPasswordForm({ current_password: "", password: "", password_confirmation: "" });
       setEditingPassword(false);
     } catch (err) {
@@ -449,12 +455,12 @@ function PatientSettings() {
 
   const handleRequestEmail = async () => {
     if (!emailForm.email || !emailForm.current_password) {
-      sonnerToast.error("All fields are required");
+      sonnerToast.error(t("pages.patient.set_all_fields_required"));
       return;
     }
     try {
       await requestEmail.mutateAsync(emailForm);
-      sonnerToast.success("OTP sent to your new email.");
+      sonnerToast.success(t("pages.patient.set_otp_sent_email"));
       setEmailOtpStep(true);
     } catch (err) {
       sonnerToast.error(getErrorMessage(err));
@@ -464,7 +470,7 @@ function PatientSettings() {
   const handleVerifyEmail = async (otp: string) => {
     try {
       await verifyEmail.mutateAsync({ otp });
-      sonnerToast.success("Email updated successfully.");
+      sonnerToast.success(t("pages.patient.set_email_updated"));
       setEmailOtpStep(false);
       setEmailForm({ email: "", current_password: "" });
       setEditingEmail(false);
@@ -475,12 +481,12 @@ function PatientSettings() {
 
   const handleRequestPhone = async () => {
     if (!phoneForm.phone || !phoneForm.current_password) {
-      sonnerToast.error("All fields are required");
+      sonnerToast.error(t("pages.patient.set_all_fields_required"));
       return;
     }
     try {
       await requestPhone.mutateAsync(phoneForm);
-      sonnerToast.success("OTP sent to your new phone number.");
+      sonnerToast.success(t("pages.patient.set_otp_sent_phone"));
       setPhoneOtpStep(true);
     } catch (err) {
       sonnerToast.error(getErrorMessage(err));
@@ -490,7 +496,7 @@ function PatientSettings() {
   const handleVerifyPhone = async (otp: string) => {
     try {
       await verifyPhone.mutateAsync({ otp });
-      sonnerToast.success("Phone number updated successfully.");
+      sonnerToast.success(t("pages.patient.set_phone_updated"));
       setPhoneOtpStep(false);
       setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
       setEditingPhone(false);
@@ -501,7 +507,7 @@ function PatientSettings() {
 
   const handleDeleteAccount = async () => {
     if (!deletePassword) {
-      sonnerToast.error("Password is required");
+      sonnerToast.error(t("pages.patient.set_password_required"));
       return;
     }
     try {
@@ -519,7 +525,7 @@ function PatientSettings() {
     return (
       <DashboardLayout role="patient">
         <div className="flex flex-col h-full">
-          <PageHeader title="Settings" subtitle="Manage your account" />
+          <PageHeader title={t("pages.patient.set_title")} subtitle={t("pages.patient.set_loading_sub")} />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
             <div className="h-36 rounded-[6px] border border-border/60 bg-card animate-pulse" />
             {Array.from({ length: 2 }).map((_, i) => (
@@ -535,8 +541,8 @@ function PatientSettings() {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.settings_title", { defaultValue: "Settings" })}
-          subtitle={t("pages.patient.settings_sub", { defaultValue: "Manage your profile, security, and account" })}
+          title={t("pages.patient.set_title")}
+          subtitle={t("pages.patient.set_sub")}
         />
 
         <main className="flex-1 overflow-y-auto">
@@ -565,7 +571,7 @@ function PatientSettings() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={updateAvatar.isPending}
                     className="absolute inset-0 rounded-[6px] bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Change photo"
+                    title={t("pages.patient.set_change_photo")}
                   >
                     {updateAvatar.isPending
                       ? <Loader2 className="w-5 h-5 text-white animate-spin" />
@@ -594,12 +600,12 @@ function PatientSettings() {
                     {settings?.is_verified ? (
                       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <BadgeCheck className="w-3 h-3" />
-                        Verified
+                        {t("pages.cards.verified")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <Clock className="w-3 h-3" />
-                        Unverified
+                        {t("pages.patient.set_unverified")}
                       </span>
                     )}
                     {/* Roles */}
@@ -624,7 +630,7 @@ function PatientSettings() {
                     disabled={updateAvatar.isPending}
                   >
                     <Upload className="w-3 h-3" />
-                    {showAvatar ? "Change photo" : "Upload photo"}
+                    {showAvatar ? t("pages.patient.set_change_photo") : t("pages.patient.set_upload_photo")}
                   </Button>
                   {showAvatar && (
                     <Button
@@ -638,7 +644,7 @@ function PatientSettings() {
                         ? <Loader2 className="w-3 h-3 animate-spin" />
                         : <Trash2 className="w-3 h-3" />
                       }
-                      Remove
+                      {t("pages.patient.set_remove")}
                     </Button>
                   )}
                 </div>
@@ -649,7 +655,7 @@ function PatientSettings() {
           {/* Tabs */}
           <div className="px-3 sm:px-4 mt-3">
             <div className="flex items-center gap-1 p-1 rounded-[6px] bg-secondary/40 border border-border/40">
-              {TABS.map((tab) => {
+              {TAB_DEFS.map((tab) => {
                 const Icon = tab.icon;
                 const active = activeTab === tab.key;
                 return (
@@ -665,7 +671,7 @@ function PatientSettings() {
                     )}
                   >
                     <Icon className={cn("w-3.5 h-3.5", tab.key === "danger" && "text-destructive")} />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="hidden sm:inline">{t(tab.labelKey)}</span>
                   </button>
                 );
               })}
@@ -679,8 +685,8 @@ function PatientSettings() {
             {activeTab === "profile" && (
               <SectionCard
                 icon={UserCog}
-                title="Profile"
-                description="Your account details and preferences"
+                title={t("pages.patient.set_tab_profile")}
+                description={t("pages.patient.set_profile_desc")}
                 onEdit={openProfileEdit}
                 isEditing={editingProfile}
               >
@@ -690,17 +696,17 @@ function PatientSettings() {
                     <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
                       <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36 flex items-center gap-1.5">
                         <Hash className="w-3 h-3 text-muted-foreground/40" />
-                        User ID
+                        {t("pages.patient.set_user_id")}
                       </p>
                       <span className="text-[12px] text-foreground font-medium font-mono">
-                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">Not set</span>}
+                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">{t("pages.patient.set_not_set")}</span>}
                       </span>
                     </div>
 
-                    <InfoRow label="Full name" value={settings?.name} />
+                    <InfoRow label={t("pages.patient.set_full_name")} value={settings?.name} />
 
                     <InfoRow
-                      label="Email address"
+                      label={t("consult.connect.email_address")}
                       value={settings?.email}
                       badge={
                         settings?.email ? (
@@ -710,7 +716,7 @@ function PatientSettings() {
                     />
 
                     <InfoRow
-                      label="Phone number"
+                      label={t("consult.connect.phone_number")}
                       value={
                         settings?.phone
                           ? `${settings?.country_code ?? ""} ${settings?.phone}`.trim()
@@ -724,18 +730,18 @@ function PatientSettings() {
                     />
 
                     <InfoRow
-                      label="Preferred language"
+                      label={t("pages.patient.set_preferred_language")}
                       value={LANGUAGE_LABELS[settings?.preferred_language ?? "en"]}
                     />
 
                     <InfoRow
-                      label="Member since"
+                      label={t("pages.patient.set_member_since")}
                       value={settings?.created_at ? formatDate(settings.created_at) : null}
                     />
                   </div>
                 ) : (
                   <>
-                    <Field label="Full name" required>
+                    <Field label={t("pages.patient.set_full_name")} required>
                       <input
                         type="text"
                         value={profileForm.name}
@@ -745,7 +751,7 @@ function PatientSettings() {
                         autoFocus
                       />
                     </Field>
-                    <Field label="Preferred language" required>
+                    <Field label={t("pages.patient.set_preferred_language")} required>
                       <select
                         value={profileForm.preferred_language}
                         onChange={(e) =>
@@ -772,7 +778,7 @@ function PatientSettings() {
                         ) : (
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         )}
-                        Save changes
+                        {t("pages.patient.set_save_changes")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -781,7 +787,7 @@ function PatientSettings() {
                         disabled={updateProfile.isPending}
                       >
                         <X className="w-3.5 h-3.5 mr-1.5" />
-                        Cancel
+                        {t("common.cancel")}
                       </Button>
                     </div>
                   </>
@@ -793,48 +799,48 @@ function PatientSettings() {
             {activeTab === "security" && (
               <SectionCard
                 icon={Lock}
-                title="Password"
-                description="Min 8 characters, mixed case and numbers. Logs out all other devices."
+                title={t("consult.connect.password")}
+                description={t("pages.patient.set_password_desc")}
                 onEdit={() => setEditingPassword(true)}
                 isEditing={editingPassword}
               >
                 {!editingPassword ? (
                   <div className="-my-1">
                     <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
-                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">Password</p>
+                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{t("consult.connect.password")}</p>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 8 }).map((_, i) => (
                           <span key={i} className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
                         ))}
-                        <span className="ml-2 text-[11px] text-muted-foreground/50">Set</span>
+                        <span className="ml-2 text-[11px] text-muted-foreground/50">{t("pages.patient.set_password_set")}</span>
                       </div>
                     </div>
                     <InfoRow
-                      label="Member since"
+                      label={t("pages.patient.set_member_since")}
                       value={settings?.created_at ? formatDate(settings.created_at) : null}
                     />
                   </div>
                 ) : (
                   <>
-                    <Field label="Current password" required>
+                    <Field label={t("pages.patient.set_current_password")} required>
                       <PasswordInput
                         value={passwordForm.current_password}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, current_password: v }))}
-                        placeholder="Your current password"
+                        placeholder={t("pages.patient.set_current_password_placeholder")}
                       />
                     </Field>
-                    <Field label="New password" required>
+                    <Field label={t("pages.patient.set_new_password")} required>
                       <PasswordInput
                         value={passwordForm.password}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, password: v }))}
-                        placeholder="At least 8 characters"
+                        placeholder={t("pages.patient.set_new_password_placeholder")}
                       />
                     </Field>
-                    <Field label="Confirm new password" required>
+                    <Field label={t("pages.patient.set_confirm_password")} required>
                       <PasswordInput
                         value={passwordForm.password_confirmation}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, password_confirmation: v }))}
-                        placeholder="Repeat new password"
+                        placeholder={t("pages.patient.set_confirm_password_placeholder")}
                       />
                     </Field>
                     <div className="flex gap-2">
@@ -848,7 +854,7 @@ function PatientSettings() {
                         ) : (
                           <KeyRound className="w-3.5 h-3.5" />
                         )}
-                        Update password
+                        {t("pages.patient.set_update_password")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -860,7 +866,7 @@ function PatientSettings() {
                         disabled={updatePassword.isPending}
                       >
                         <X className="w-3.5 h-3.5 mr-1.5" />
-                        Cancel
+                        {t("common.cancel")}
                       </Button>
                     </div>
                   </>
@@ -874,8 +880,8 @@ function PatientSettings() {
                 {/* Email */}
                 <SectionCard
                   icon={Mail}
-                  title="Email address"
-                  description="An OTP will be sent to your new address to confirm the change."
+                  title={t("consult.connect.email_address")}
+                  description={t("pages.patient.set_email_section_desc")}
                   onEdit={() => {
                     setEmailForm({ email: "", current_password: "" });
                     setEmailOtpStep(false);
@@ -886,7 +892,7 @@ function PatientSettings() {
                   {!editingEmail ? (
                     <div className="-my-1">
                       <InfoRow
-                        label="Current email"
+                        label={t("pages.patient.set_current_email")}
                         value={settings?.email}
                         badge={
                           settings?.email ? (
@@ -895,7 +901,7 @@ function PatientSettings() {
                         }
                       />
                       <InfoRow
-                        label="Verified at"
+                        label={t("pages.patient.set_verified_at")}
                         value={settings?.email_verified_at ? formatDate(settings.email_verified_at) : null}
                       />
                     </div>
@@ -903,11 +909,11 @@ function PatientSettings() {
                     <>
                       {settings?.email && (
                         <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">{t("pages.patient.set_changing_from")}</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">{settings.email}</p>
                         </div>
                       )}
-                      <Field label="New email" required>
+                      <Field label={t("pages.patient.set_new_email")} required>
                         <input
                           type="email"
                           value={emailForm.email}
@@ -918,11 +924,11 @@ function PatientSettings() {
                           autoFocus
                         />
                       </Field>
-                      <Field label="Current password" required>
+                      <Field label={t("pages.patient.set_current_password")} required>
                         <PasswordInput
                           value={emailForm.current_password}
                           onChange={(v) => setEmailForm((p) => ({ ...p, current_password: v }))}
-                          placeholder="Confirm your identity"
+                          placeholder={t("pages.patient.set_confirm_identity")}
                         />
                       </Field>
                       {!emailOtpStep ? (
@@ -937,7 +943,7 @@ function PatientSettings() {
                             ) : (
                               <Mail className="w-3.5 h-3.5" />
                             )}
-                            Send OTP
+                            {t("pages.patient.set_send_otp")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -946,12 +952,12 @@ function PatientSettings() {
                             disabled={requestEmail.isPending}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
-                            Cancel
+                            {t("common.cancel")}
                           </Button>
                         </div>
                       ) : (
                         <OtpStep
-                          label="Enter the 6-digit code sent to your new email."
+                          label={t("pages.patient.set_email_otp_label")}
                           onVerify={handleVerifyEmail}
                           onCancel={() => setEmailOtpStep(false)}
                           isPending={verifyEmail.isPending}
@@ -964,8 +970,8 @@ function PatientSettings() {
                 {/* Phone */}
                 <SectionCard
                   icon={Phone}
-                  title="Phone number"
-                  description="An OTP will be sent to your new number to confirm the change."
+                  title={t("consult.connect.phone_number")}
+                  description={t("pages.patient.set_phone_section_desc")}
                   onEdit={() => {
                     setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
                     setPhoneOtpStep(false);
@@ -976,7 +982,7 @@ function PatientSettings() {
                   {!editingPhone ? (
                     <div className="-my-1">
                       <InfoRow
-                        label="Current phone"
+                        label={t("pages.patient.set_current_phone")}
                         value={
                           settings?.phone
                             ? `${settings.country_code ?? ""} ${settings.phone}`.trim()
@@ -988,9 +994,9 @@ function PatientSettings() {
                           ) : undefined
                         }
                       />
-                      <InfoRow label="Country code" value={settings?.country_code} />
+                      <InfoRow label={t("pages.patient.set_country_code")} value={settings?.country_code} />
                       <InfoRow
-                        label="Verified at"
+                        label={t("pages.patient.set_verified_at")}
                         value={settings?.phone_verified_at ? formatDate(settings.phone_verified_at) : null}
                       />
                     </div>
@@ -998,14 +1004,14 @@ function PatientSettings() {
                     <>
                       {settings?.phone && (
                         <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">{t("pages.patient.set_changing_from")}</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">
                             {settings.country_code} {settings.phone}
                           </p>
                         </div>
                       )}
                       <div className="grid grid-cols-[100px_1fr] gap-3">
-                        <Field label="Code" required>
+                        <Field label={t("pages.patient.set_code")} required>
                           <select
                             value={phoneForm.country_code}
                             onChange={(e) => setPhoneForm((p) => ({ ...p, country_code: e.target.value }))}
@@ -1022,7 +1028,7 @@ function PatientSettings() {
                             <option value="+243">+243</option>
                           </select>
                         </Field>
-                        <Field label="Phone number" required>
+                        <Field label={t("consult.connect.phone_number")} required>
                           <input
                             type="tel"
                             value={phoneForm.phone}
@@ -1034,11 +1040,11 @@ function PatientSettings() {
                           />
                         </Field>
                       </div>
-                      <Field label="Current password" required>
+                      <Field label={t("pages.patient.set_current_password")} required>
                         <PasswordInput
                           value={phoneForm.current_password}
                           onChange={(v) => setPhoneForm((p) => ({ ...p, current_password: v }))}
-                          placeholder="Confirm your identity"
+                          placeholder={t("pages.patient.set_confirm_identity")}
                         />
                       </Field>
                       {!phoneOtpStep ? (
@@ -1053,7 +1059,7 @@ function PatientSettings() {
                             ) : (
                               <Phone className="w-3.5 h-3.5" />
                             )}
-                            Send OTP
+                            {t("pages.patient.set_send_otp")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -1062,12 +1068,12 @@ function PatientSettings() {
                             disabled={requestPhone.isPending}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
-                            Cancel
+                            {t("common.cancel")}
                           </Button>
                         </div>
                       ) : (
                         <OtpStep
-                          label="Enter the 6-digit code sent to your new phone number."
+                          label={t("pages.patient.set_phone_otp_label")}
                           onVerify={handleVerifyPhone}
                           onCancel={() => setPhoneOtpStep(false)}
                           isPending={verifyPhone.isPending}
@@ -1089,10 +1095,10 @@ function PatientSettings() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-red-700 dark:text-red-400 leading-tight">
-                      Delete account
+                      {t("pages.patient.set_delete_account")}
                     </p>
                     <p className="text-[10px] text-red-500/70 dark:text-red-500/60 mt-0.5">
-                      Permanently removes your account and revokes all active sessions
+                      {t("pages.patient.set_delete_desc")}
                     </p>
                   </div>
                 </div>
@@ -1100,9 +1106,8 @@ function PatientSettings() {
                   {!showDeleteConfirm ? (
                     <>
                       <p className="text-[12px] text-muted-foreground leading-relaxed">
-                        Once you delete your account, all your data will be permanently erased and a farewell email
-                        will be sent. This action{" "}
-                        <span className="font-semibold text-foreground">cannot be undone</span>.
+                        {t("pages.patient.set_delete_warning_pre")}{" "}
+                        <span className="font-semibold text-foreground">{t("pages.patient.set_delete_warning_bold")}</span>.
                       </p>
                       <Button
                         variant="outline"
@@ -1111,21 +1116,21 @@ function PatientSettings() {
                         onClick={() => setShowDeleteConfirm(true)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Delete my account
+                        {t("pages.patient.set_delete_my_account")}
                       </Button>
                     </>
                   ) : (
                     <>
                       <div className="p-3 rounded-[6px] bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
                         <p className="text-[11px] text-red-700 dark:text-red-400 font-medium">
-                          Enter your password to confirm account deletion.
+                          {t("pages.patient.set_delete_confirm_note")}
                         </p>
                       </div>
-                      <Field label="Password" required>
+                      <Field label={t("consult.connect.password")} required>
                         <PasswordInput
                           value={deletePassword}
                           onChange={setDeletePassword}
-                          placeholder="Your current password"
+                          placeholder={t("pages.patient.set_current_password_placeholder")}
                         />
                       </Field>
                       <div className="flex gap-2">
@@ -1141,7 +1146,7 @@ function PatientSettings() {
                           ) : (
                             <Trash2 className="w-3.5 h-3.5" />
                           )}
-                          Permanently delete
+                          {t("pages.patient.set_permanently_delete")}
                         </Button>
                         <Button
                           variant="ghost"
@@ -1153,7 +1158,7 @@ function PatientSettings() {
                           }}
                           disabled={deleteAccount.isPending}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                       </div>
                     </>

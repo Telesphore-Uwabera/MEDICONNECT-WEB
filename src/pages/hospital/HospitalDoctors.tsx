@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const HospitalDoctors = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   return (
     <DashboardLayout role="hospital">
       <PageHeader title={t("pages.hospital.doctors_title")} subtitle={t("pages.hospital.doctors_sub", { count: doctors.length })} actions={<Button className="bg-gradient-primary hover:opacity-90"><Plus className="h-4 w-4 mr-1.5" />{t("pages.hospital.add_doctor")}</Button>} />

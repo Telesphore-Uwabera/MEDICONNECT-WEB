@@ -50,6 +50,7 @@ import {
 
 type EmergencyFilter = "all" | "emergency" | "regular";
 type SortOption = "sort_order" | "name_en" | "capacity";
+type Translate = ReturnType<typeof useTranslation>["t"];
 
 interface FilterState {
   search: string;
@@ -68,9 +69,9 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "sort_order", label: "Default order" },
-  { value: "name_en", label: "Name (A–Z)" },
-  { value: "capacity", label: "Capacity" },
+  { value: "sort_order", label: "departments_sort_default" },
+  { value: "name_en", label: "departments_sort_name" },
+  { value: "capacity", label: "capacity" },
 ];
 
 // ─── Icon map (API returns icon name as string) ────────────────────────────────
@@ -91,6 +92,7 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
   isLoading,
+  t,
 }: {
   open: boolean;
   title: string;
@@ -98,7 +100,9 @@ function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
+  t: Translate;
 }) {
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -118,7 +122,7 @@ function ConfirmDialog({
             onClick={onCancel}
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={onConfirm}
@@ -126,7 +130,7 @@ function ConfirmDialog({
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            Delete
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -140,17 +144,19 @@ function ServiceRow({
   service,
   onEdit,
   onDelete,
+  t,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
   onDelete: (s: Service) => void;
+  t: Translate;
 }) {
   const priceLabel = useMemo(() => {
-    if (service.price_type === "free") return "Free";
-    if (service.price_type === "negotiable") return "Negotiable";
-    const prefix = service.price_type === "from" ? "From " : "";
+    if (service.price_type === "free") return t("pages.hospital.price_free");
+    if (service.price_type === "negotiable") return t("pages.hospital.price_negotiable");
+    const prefix = service.price_type === "from" ? `${t("pages.hospital.price_from")} ` : "";
     return `${prefix}${Number(service.price).toLocaleString()} ${service.currency}`;
-  }, [service]);
+  }, [service, t]);
 
   const typeColors: Record<string, string> = {
     in_person: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
@@ -175,16 +181,16 @@ function ServiceRow({
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className={cn("text-[9px] font-medium px-1.5 py-0.5 rounded-[6px] border", typeColors[service.type] ?? typeColors["in_person"])}>
-            {service.type === "in_person" ? "In Person" : service.type === "online" ? "Online" : "Both"}
+            {service.type === "in_person" ? t("pages.hospital.service_type_in_person") : service.type === "online" ? t("pages.hospital.service_type_online") : t("pages.hospital.service_type_both")}
           </span>
           {service.insurance_covered && (
             <span className="flex items-center gap-0.5 text-[9px] text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-3 h-3" /> Insurance
+              <ShieldCheck className="w-3 h-3" /> {t("pages.hospital.insurance")}
             </span>
           )}
           {service.duration_minutes && (
             <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground/60">
-              <Clock className="w-3 h-3" /> {service.duration_minutes}min
+              <Clock className="w-3 h-3" /> {t("pages.hospital.minutes_value", { count: service.duration_minutes })}
             </span>
           )}
         </div>
@@ -219,11 +225,13 @@ function DepartmentDrawer({
   onClose,
   onEdit,
   onDelete,
+  t,
 }: {
   department: Department;
   onClose: () => void;
   onEdit: (d: Department) => void;
   onDelete: (d: Department) => void;
+  t: Translate;
 }) {
   const { data: detail, isLoading: detailLoading } = useGetDepartment(department.id);
   const { data: services, isLoading: svcsLoading } = useGetServicesByDepartment(department.id);
@@ -255,7 +263,7 @@ function DepartmentDrawer({
       }
       setSvcModal({ open: false, editing: null });
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -265,7 +273,7 @@ function DepartmentDrawer({
       await deleteService.mutateAsync({ id: deletingSvc.id, departmentId: department.id });
       setDeletingSvc(null);
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -291,12 +299,12 @@ function DepartmentDrawer({
               <h2 className="text-[14px] font-bold text-foreground truncate">{dept.name_en}</h2>
               {dept.is_emergency && (
                 <span className="text-[9px] font-semibold bg-destructive/10 text-destructive border border-destructive/30 px-1.5 py-0.5 rounded-[6px]">
-                  EMERGENCY
+                  {t("pages.hospital.emergency")}
                 </span>
               )}
               {!dept.is_active && (
                 <span className="text-[9px] font-semibold bg-muted text-muted-foreground border border-border/60 px-1.5 py-0.5 rounded-[6px]">
-                  INACTIVE
+                  {t("pages.hospital.inactive")}
                 </span>
               )}
             </div>
@@ -336,25 +344,25 @@ function DepartmentDrawer({
             <>
               {/* Stats row */}
               <div className="grid grid-cols-3 gap-0 border-b border-border/60">
-                <StatCell label="Capacity" value={dept.capacity ?? "—"} icon={<BedDouble className="w-3.5 h-3.5" />} />
-                <StatCell label="Doctors" value={dept.doctors?.length ?? 0} icon={<Users className="w-3.5 h-3.5" />} border />
-                <StatCell label="Services" value={services?.length ?? dept.services?.length ?? 0} icon={<Stethoscope className="w-3.5 h-3.5" />} border />
+                <StatCell label={t("pages.hospital.capacity")} value={dept.capacity ?? "\u2014"} icon={<BedDouble className="w-3.5 h-3.5" />} />
+                <StatCell label={t("pages.hospital.doctors")} value={dept.doctors?.length ?? 0} icon={<Users className="w-3.5 h-3.5" />} border />
+                <StatCell label={t("pages.hospital.services")} value={services?.length ?? dept.services?.length ?? 0} icon={<Stethoscope className="w-3.5 h-3.5" />} border />
               </div>
 
               {/* Info */}
               <div className="px-5 py-4 flex flex-col gap-2.5 border-b border-border/60">
                 {dept.floor && (
-                  <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label="Location">
-                    {dept.floor}{dept.room_number ? ` · Room ${dept.room_number}` : ""}
+                  <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label={t("pages.hospital.location")}>
+                    {dept.floor}{dept.room_number ? ` \u00b7 ${t("pages.hospital.room_value", { room: dept.room_number })}` : ""}
                   </InfoRow>
                 )}
                 {dept.phone && (
-                  <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label="Phone">
+                  <InfoRow icon={<Phone className="w-3.5 h-3.5" />} label={t("pages.hospital.phone")}>
                     <a href={`tel:${dept.phone}`} className="text-primary hover:underline">{dept.phone}</a>
                   </InfoRow>
                 )}
                 {dept.email && (
-                  <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label="Email">
+                  <InfoRow icon={<Mail className="w-3.5 h-3.5" />} label={t("pages.hospital.email")}>
                     <a href={`mailto:${dept.email}`} className="text-primary hover:underline">{dept.email}</a>
                   </InfoRow>
                 )}
@@ -363,7 +371,7 @@ function DepartmentDrawer({
               {/* Services section */}
               <div className="px-5 py-3.5 flex items-center justify-between border-b border-border/60">
                 <p className="text-[11px] font-semibold text-foreground">
-                  Services
+                  {t("pages.hospital.services")}
                   {services && (
                     <span className="ml-1.5 text-muted-foreground font-normal">({services.length})</span>
                   )}
@@ -373,7 +381,7 @@ function DepartmentDrawer({
                   className="flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
-                  Add Service
+                  {t("pages.hospital.add_service")}
                 </button>
               </div>
 
@@ -389,6 +397,7 @@ function DepartmentDrawer({
                       service={svc}
                       onEdit={(s) => { setMutError(null); setSvcModal({ open: true, editing: s }); }}
                       onDelete={setDeletingSvc}
+                      t={t}
                     />
                   ))}
                 </div>
@@ -397,12 +406,12 @@ function DepartmentDrawer({
                   <div className="w-10 h-10 rounded-[6px] bg-muted/50 flex items-center justify-center border border-border/40">
                     <Stethoscope className="w-4 h-4 text-muted-foreground/40" />
                   </div>
-                  <p className="text-[11px] text-muted-foreground">No services yet</p>
+                  <p className="text-[11px] text-muted-foreground">{t("pages.hospital.no_services_yet")}</p>
                   <button
                     onClick={() => setSvcModal({ open: true, editing: null })}
                     className="text-[11px] text-primary hover:underline font-medium"
                   >
-                    Add the first service
+                    {t("pages.hospital.add_first_service")}
                   </button>
                 </div>
               )}
@@ -424,8 +433,9 @@ function DepartmentDrawer({
 
       <ConfirmDialog
         open={deletingSvc !== null}
-        title="Delete Service"
-        description={`Remove "${deletingSvc?.name_en}" from this department? This cannot be undone.`}
+        t={t}
+        title={t("pages.hospital.delete_service")}
+        description={t("pages.hospital.delete_service_desc", { name: deletingSvc?.name_en })}
         onConfirm={handleDeleteSvc}
         onCancel={() => setDeletingSvc(null)}
         isLoading={deleteService.isPending}
@@ -469,11 +479,13 @@ function DepartmentCard({
   onClick,
   onEdit,
   onDelete,
+  t,
 }: {
   dept: Department;
   onClick: () => void;
   onEdit: (d: Department) => void;
   onDelete: (d: Department) => void;
+  t: Translate;
 }) {
   const accentColor = dept.color_code ?? "#6366f1";
 
@@ -486,7 +498,7 @@ function DepartmentCard({
       {dept.is_emergency && (
         <div className="absolute top-2 right-2">
           <span className="text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded-[6px]">
-            EMERGENCY
+            {t("pages.hospital.emergency")}
           </span>
         </div>
       )}
@@ -512,16 +524,16 @@ function DepartmentCard({
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
-        <MiniStat label="Doctors" value={dept.doctors?.length ?? 0} />
-        <MiniStat label="Capacity" value={dept.capacity ?? "—"} />
-        <MiniStat label="Services" value={dept.services?.length ?? 0} />
+        <MiniStat label={t("pages.hospital.doctors")} value={dept.doctors?.length ?? 0} />
+        <MiniStat label={t("pages.hospital.capacity")} value={dept.capacity ?? "\u2014"} />
+        <MiniStat label={t("pages.hospital.services")} value={dept.services?.length ?? 0} />
       </div>
 
       {/* Floor + room */}
       {(dept.floor || dept.room_number) && (
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
           <MapPin className="w-3 h-3" />
-          {[dept.floor, dept.room_number ? `Room ${dept.room_number}` : null]
+          {[dept.floor, dept.room_number ? t("pages.hospital.room_value", { room: dept.room_number }) : null]
             .filter(Boolean)
             .join(" · ")}
         </div>
@@ -530,7 +542,7 @@ function DepartmentCard({
       {/* Footer actions */}
       <div className="flex items-center justify-between pt-0.5 border-t border-border/40">
         <span className="text-[10px] text-primary font-medium flex items-center gap-0.5 group-hover:gap-1 transition-all">
-          View details <ChevronRight className="w-3 h-3" />
+          {t("pages.hospital.view_details")} <ChevronRight className="w-3 h-3" />
         </span>
         <div
           className="flex items-center gap-0.5"
@@ -624,15 +636,15 @@ function PillGroup<T extends string>({
 }
 
 const EMERGENCY_OPTIONS: { value: EmergencyFilter; label: string }[] = [
-  { value: "all", label: "All departments" },
-  { value: "emergency", label: "Emergency only" },
-  { value: "regular", label: "Regular only" },
+  { value: "all", label: "departments_all" },
+  { value: "emergency", label: "departments_emergency_only" },
+  { value: "regular", label: "departments_regular_only" },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const HospitalDepartments = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // ── Filter state (client-side search + emergency + sort) ──────────────────
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -702,7 +714,7 @@ const HospitalDepartments = () => {
       }
       setDeptModal({ open: false, editing: null });
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -713,7 +725,7 @@ const HospitalDepartments = () => {
       setDeletingDept(null);
       if (selectedDept?.id === deletingDept.id) setSelectedDept(null);
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -724,34 +736,34 @@ const HospitalDepartments = () => {
     {
       type: "select" as const,
       key: "emergency",
-      label: "Type",
+      label: t("pages.hospital.type"),
       value: filters.emergency,
-      options: EMERGENCY_OPTIONS,
+      options: EMERGENCY_OPTIONS.map((option) => ({ ...option, label: t(`pages.hospital.${option.label}`) })),
       onChange: (v: string) => set("emergency", v as any)
     },
     {
       type: "select" as const,
       key: "sort",
-      label: "Sort",
+      label: t("pages.hospital.sort"),
       value: filters.sort,
-      options: SORT_OPTIONS,
+      options: SORT_OPTIONS.map((option) => ({ ...option, label: t(`pages.hospital.${option.label}`) })),
       onChange: (v: string) => set("sort", v as any)
     },
     {
       type: "select" as const,
       key: "sort_dir",
-      label: "Order",
+      label: t("pages.hospital.order"),
       value: filters.sort_dir,
       options: [
-        { value: "asc", label: "Ascending" },
-        { value: "desc", label: "Descending" },
+        { value: "asc", label: t("pages.hospital.ascending") },
+        { value: "desc", label: t("pages.hospital.descending") },
       ],
       onChange: (v: string) => set("sort_dir", v as any)
     },
     {
       type: "custom" as const,
       key: "active_only",
-      label: "Status",
+      label: t("pages.hospital.status"),
       render: () => (
         <label className="flex items-center gap-2 h-[26px] cursor-pointer select-none">
           <input
@@ -760,11 +772,11 @@ const HospitalDepartments = () => {
             onChange={(e) => set("active_only", e.target.checked)}
             className="w-3.5 h-3.5 rounded-[6px] accent-primary"
           />
-          <span className="text-[11px] text-foreground">Active only</span>
+          <span className="text-[11px] text-foreground">{t("pages.hospital.active_only")}</span>
         </label>
       )
     }
-  ], [filters.emergency, filters.sort, filters.sort_dir, filters.active_only, set]);
+  ], [filters.emergency, filters.sort, filters.sort_dir, filters.active_only, set, t]);
 
   return (
     <DashboardLayout role="hospital">
@@ -780,18 +792,18 @@ const HospitalDepartments = () => {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <p className="text-[11px] text-muted-foreground">
               {isLoading ? (
-                <span className="text-muted-foreground/50">Loading…</span>
+                <span className="text-muted-foreground/50">{t("common.loading")}</span>
               ) : (
                 <>
                   <span className="font-bold text-foreground">{filtered.length}</span>
                   {" "}
-                  {filtered.length === 1 ? "department" : "departments"}
+                  {t(filtered.length === 1 ? "pages.hospital.department_singular" : "pages.hospital.department_plural")}
                   {hasActiveFilters && (
                     <button
                       onClick={clearAll}
                       className="ml-2 text-primary hover:underline text-[10px] font-medium"
                     >
-                      Reset
+                      {t("pages.hospital.reset")}
                     </button>
                   )}
                 </>
@@ -806,7 +818,7 @@ const HospitalDepartments = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search departments…"
+                  placeholder={t("pages.hospital.search_departments")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -816,7 +828,7 @@ const HospitalDepartments = () => {
                 onClick={() => refetch()}
                 disabled={isLoading}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 disabled:opacity-50 transition-colors"
-                title="Refresh"
+                title={t("pages.hospital.refresh")}
               >
                 <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
               </button>
@@ -833,7 +845,7 @@ const HospitalDepartments = () => {
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-[6px] hover:bg-primary/90 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">New Department</span>
+                <span className="hidden sm:inline">{t("pages.hospital.new_department")}</span>
               </button>
             </div>
           </div>
@@ -856,16 +868,16 @@ const HospitalDepartments = () => {
                   <AlertCircle className="w-6 h-6 text-destructive/60" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">Failed to load departments</p>
+                  <p className="text-[12px] font-semibold text-foreground">{t("pages.hospital.departments_load_failed")}</p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {error instanceof Error ? error.message : "Unknown error"}
+                    {error instanceof Error ? error.message : t("pages.hospital.unknown_error")}
                   </p>
                 </div>
                 <button
                   onClick={() => refetch()}
                   className="text-[11px] text-primary hover:underline font-semibold"
                 >
-                  Try again
+                  {t("pages.hospital.try_again")}
                 </button>
               </div>
             ) : isLoading ? (
@@ -879,15 +891,15 @@ const HospitalDepartments = () => {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {hasActiveFilters ? "No departments match your filters" : "No departments yet"}
+                    {hasActiveFilters ? t("pages.hospital.no_departments_match") : t("pages.hospital.no_departments_yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {hasActiveFilters ? "Try widening your search criteria" : "Create your first department to get started"}
+                    {hasActiveFilters ? t("pages.hospital.try_widen_search") : t("pages.hospital.create_first_department_hint")}
                   </p>
                 </div>
                 {hasActiveFilters ? (
                   <button onClick={clearAll} className="text-[11px] text-primary hover:underline font-semibold">
-                    Clear filters
+                    {t("pages.hospital.clear_filters")}
                   </button>
                 ) : (
                   <button
@@ -895,7 +907,7 @@ const HospitalDepartments = () => {
                     className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium bg-primary text-primary-foreground rounded-[6px] hover:bg-primary/90"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    New Department
+                    {t("pages.hospital.new_department")}
                   </button>
                 )}
               </div>
@@ -905,6 +917,7 @@ const HospitalDepartments = () => {
                   <DepartmentCard
                     key={d.id}
                     dept={d}
+                    t={t}
                     onClick={() => setSelectedDept(d)}
                     onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
                     onDelete={setDeletingDept}
@@ -920,6 +933,7 @@ const HospitalDepartments = () => {
       {selectedDept && (
         <DepartmentDrawer
           department={selectedDept}
+          t={t}
           onClose={() => setSelectedDept(null)}
           onEdit={(dep) => { setMutError(null); setDeptModal({ open: true, editing: dep }); }}
           onDelete={(dep) => { setSelectedDept(null); setDeletingDept(dep); }}
@@ -939,8 +953,9 @@ const HospitalDepartments = () => {
       {/* ── Delete department confirm ── */}
       <ConfirmDialog
         open={deletingDept !== null}
-        title="Delete Department"
-        description={`Remove "${deletingDept?.name_en}"? All associated data will be lost.`}
+        t={t}
+        title={t("pages.hospital.delete_department")}
+        description={t("pages.hospital.delete_department_desc", { name: deletingDept?.name_en })}
         onConfirm={handleDeleteDept}
         onCancel={() => setDeletingDept(null)}
         isLoading={deleteDept.isPending}

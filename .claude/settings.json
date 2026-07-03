@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(MSYS_NO_PATHCONV=1 docker compose exec app node /app/.tmp-i18n-check.mjs)"
+    ]
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Download,
   Pill,
@@ -38,7 +39,7 @@ import {
   BASE_URL,
   STATUS_STYLES,
   STATUS_DOT,
-  STATUS_LABEL,
+  getPrescriptionStatusLabel,
   ALL_STATUSES,
   FilterState,
   INITIAL_FILTERS,
@@ -52,6 +53,7 @@ import {
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 export function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   return (
     <Badge
       variant="outline"
@@ -66,7 +68,7 @@ export function StatusBadge({ status }: { status: string }) {
           STATUS_DOT[status] ?? "bg-muted-foreground",
         )}
       />
-      {STATUS_LABEL[status] ?? status}
+      {getPrescriptionStatusLabel(t, status)}
     </Badge>
   );
 }
@@ -183,10 +185,11 @@ export function DateRangeInput({
   onFrom: (v: string) => void;
   onTo: (v: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1">
       <div>
-        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">From</label>
+        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">{t("pages.patient.date_from_label")}</label>
         <input
           type="date"
           value={from}
@@ -195,7 +198,7 @@ export function DateRangeInput({
         />
       </div>
       <div>
-        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">To</label>
+        <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">{t("pages.patient.date_to_label")}</label>
         <input
           type="date"
           value={to}
@@ -259,6 +262,7 @@ export function PrescriptionDrawer({
   onClose: () => void;
   onAction: (p: Prescription, action: "pdf" | "send") => void;
 }) {
+  const { t } = useTranslation();
   const drawerRef = useRef<HTMLDivElement>(null);
   const p = prescription;
 
@@ -293,7 +297,7 @@ export function PrescriptionDrawer({
               <FileText className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground leading-none">Prescription details</p>
+              <p className="text-xs font-semibold text-foreground leading-none">{t("pages.patient.rxp_drawer_title")}</p>
               <p className="text-xs text-muted-foreground/60 mt-0.5 font-mono">{p.prescription_number}</p>
             </div>
           </div>
@@ -326,12 +330,12 @@ export function PrescriptionDrawer({
               )}
             >
               <span className={cn("w-1 h-1 rounded-full", STATUS_DOT[p.status] ?? "bg-muted-foreground")} />
-              {STATUS_LABEL[p.status] ?? p.status}
+              {getPrescriptionStatusLabel(t, p.status)}
             </Badge>
             {p.is_signed && (
               <span className="flex items-center gap-0.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                 <BadgeCheck className="w-4 h-4" />
-                Doctor signed
+                {t("pages.patient.rxp_doctor_signed")}
               </span>
             )}
           </div>
@@ -346,8 +350,8 @@ export function PrescriptionDrawer({
             )}
           >
             <CalendarRange className="h-4 w-4" />
-            {expired ? "Expired" : "Valid until"} {formatDate(p.valid_until)}
-            {expiring && " · Expiring soon"}
+            {expired ? t("pages.patient.rxp_expired") : t("pages.patient.rxp_valid_until_word")} {formatDate(p.valid_until)}
+            {expiring && ` · ${t("pages.patient.rxp_expiring_soon")}`}
           </span>
         </div>
 
@@ -355,13 +359,13 @@ export function PrescriptionDrawer({
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
             {p.diagnosis && (
-              <DrawerSection icon={<Stethoscope className="w-4 h-4" />} title="Diagnosis">
+              <DrawerSection icon={<Stethoscope className="w-4 h-4" />} title={t("pages.patient.rxp_diagnosis")}>
                 <p className="text-xs font-medium text-foreground">{p.diagnosis}</p>
                 {p.notes && <p className="text-xs text-muted-foreground/70 mt-1 italic">{p.notes}</p>}
               </DrawerSection>
             )}
 
-            <DrawerSection icon={<Pill className="w-4 h-4" />} title="Medications">
+            <DrawerSection icon={<Pill className="w-4 h-4" />} title={t("pages.patient.medications")}>
               <div className="space-y-2">
                 {p.items.map((item, idx) => (
                   <div key={item.id} className="rounded-[6px] border border-border/40 bg-secondary/20 overflow-hidden">
@@ -377,9 +381,9 @@ export function PrescriptionDrawer({
                       </span>
                     </div>
                     <div className="px-3 py-2 grid grid-cols-3 gap-2">
-                      <MedDetail label="Frequency" value={item.frequency} />
-                      <MedDetail label="Duration" value={item.duration} />
-                      <MedDetail label="Quantity" value={String(item.quantity)} />
+                      <MedDetail label={t("pages.patient.rxp_frequency")} value={item.frequency} />
+                      <MedDetail label={t("pages.patient.rxp_duration")} value={item.duration} />
+                      <MedDetail label={t("pages.patient.rxp_quantity")} value={String(item.quantity)} />
                     </div>
                     {item.instructions && (
                       <div className="px-3 pb-2 flex items-start gap-1.5">
@@ -392,7 +396,7 @@ export function PrescriptionDrawer({
               </div>
             </DrawerSection>
 
-            <DrawerSection icon={<User className="w-4 h-4" />} title="Prescribing doctor">
+            <DrawerSection icon={<User className="w-4 h-4" />} title={t("pages.patient.rxp_prescribing_doctor")}>
               <div className="flex items-start gap-3 p-3 rounded-[6px] bg-secondary/20 border border-border/40">
                 <div className="w-9 h-9 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 overflow-hidden">
                   {p.doctor.image ? (
@@ -430,28 +434,28 @@ export function PrescriptionDrawer({
               </div>
             </DrawerSection>
 
-            <DrawerSection icon={<ClipboardList className="w-4 h-4" />} title="Appointment">
+            <DrawerSection icon={<ClipboardList className="w-4 h-4" />} title={t("pages.patient.appt_card_badge")}>
               <div className="rounded-[6px] border border-border/40 bg-secondary/20 overflow-hidden">
                 <div className="grid grid-cols-2 divide-x divide-border/30">
                   <AppointmentDetail
-                    label="Type"
-                    value={p.appointment.type === "online" ? "Online" : "In-person"}
+                    label={t("pages.patient.appt_filter_type_label")}
+                    value={p.appointment.type === "online" ? t("pages.patient.rxp_online") : t("pages.patient.appt_in_person_label")}
                     icon={<Building2 className="w-4 h-4" />}
                   />
                   <AppointmentDetail
-                    label="Status"
+                    label={t("pages.patient.appt_filter_status_label")}
                     value={p.appointment.status.replace(/_/g, " ")}
                     icon={<Clock className="w-4 h-4" />}
                   />
                 </div>
                 <div className="border-t border-border/30 grid grid-cols-2 divide-x divide-border/30">
                   <AppointmentDetail
-                    label="Date"
+                    label={t("pages.patient.date_label")}
                     value={formatDate(p.appointment.appointment_date)}
                     icon={<CalendarRange className="w-4 h-4" />}
                   />
                   <AppointmentDetail
-                    label="Issued at"
+                    label={t("pages.patient.rxp_issued_at")}
                     value={formatDate(p.created_at)}
                     icon={<FileText className="w-4 h-4" />}
                   />
@@ -463,7 +467,7 @@ export function PrescriptionDrawer({
               <div className="flex items-center gap-2 px-3 py-2 rounded-[6px] bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/60">
                 <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                  Digitally signed by doctor on {formatDateTime(p.signed_at)}
+                  {t("pages.patient.rxp_signed_on", { date: formatDateTime(p.signed_at) })}
                 </p>
               </div>
             )}
@@ -479,7 +483,7 @@ export function PrescriptionDrawer({
             onClick={() => onAction(p, "pdf")}
           >
             <Download className="h-4 w-4 mr-1.5" />
-            Download PDF
+            {t("fitness.download_pdf_action")}
           </Button>
           {/* {p.qr_code && (
             <Button
@@ -499,7 +503,7 @@ export function PrescriptionDrawer({
               onClick={() => onAction(p, "send")}
             >
               <Send className="h-4 w-4 mr-1.5" />
-              Send to pharmacy
+              {t("pages.patient.rxp_send_to_pharmacy")}
             </Button>
           )}
         </div>
@@ -519,6 +523,7 @@ export function PrescriptionCard({
   onAction: (p: Prescription, action: "pdf" | "send") => void;
   onViewDetails: (p: Prescription) => void;
 }) {
+  const { t } = useTranslation();
   const expiring = isExpiringSoon(p.valid_until);
   const expired = isExpired(p.valid_until);
 
@@ -564,7 +569,7 @@ export function PrescriptionCard({
             <StatusBadge status={p.status} />
             {p.is_signed && (
               <span className="flex items-center gap-0.5 text-xs text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />Signed
+                <CheckCircle2 className="w-4 h-4" />{t("pages.patient.rxp_signed")}
               </span>
             )}
           </div>
@@ -572,7 +577,7 @@ export function PrescriptionCard({
 
         {p.diagnosis && (
           <div className="mb-2 px-2 py-1 rounded-[6px] bg-secondary/30 border border-border/25">
-            <p className="text-xs text-muted-foreground/50 uppercase tracking-wide">Diagnosis</p>
+            <p className="text-xs text-muted-foreground/50 uppercase tracking-wide">{t("pages.patient.rxp_diagnosis")}</p>
             <p className="text-xs font-medium text-foreground mt-0.5">{p.diagnosis}</p>
           </div>
         )}
@@ -589,7 +594,9 @@ export function PrescriptionCard({
           ))}
           {p.items.length > 2 && (
             <p className="text-xs text-muted-foreground/50 pl-4">
-              +{p.items.length - 2} more medication{p.items.length - 2 > 1 ? "s" : ""}
+              {p.items.length - 2 > 1
+                ? t("pages.patient.rxp_more_meds_plural", { count: p.items.length - 2 })
+                : t("pages.patient.rxp_more_meds_singular", { count: p.items.length - 2 })}
             </p>
           )}
         </div>
@@ -604,8 +611,8 @@ export function PrescriptionCard({
             )}
           >
             <CalendarRange className="h-4 w-4" />
-            {expired ? "Expired" : "Valid until"} {formatDate(p.valid_until)}
-            {expiring && <span className="font-semibold">· Expiring soon</span>}
+            {expired ? t("pages.patient.rxp_expired") : t("pages.patient.rxp_valid_until_word")} {formatDate(p.valid_until)}
+            {expiring && <span className="font-semibold">· {t("pages.patient.rxp_expiring_soon")}</span>}
           </span>
           <span className="text-xs text-muted-foreground/40 font-mono">{formatDate(p.created_at)}</span>
         </div>
@@ -617,7 +624,7 @@ export function PrescriptionCard({
             className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30 transition-all gap-1"
             onClick={() => onViewDetails(p)}
           >
-            <Eye className="h-4 w-4" />Details
+            <Eye className="h-4 w-4" />{t("pages.patient.details")}
           </Button>
           <Button
             size="sm"
@@ -633,7 +640,7 @@ export function PrescriptionCard({
               className="h-6 px-2 text-xs flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm gap-1"
               onClick={() => onAction(p, "send")}
             >
-              <Send className="h-4 w-4" />Send to pharmacy
+              <Send className="h-4 w-4" />{t("pages.patient.rxp_send_to_pharmacy")}
             </Button>
           )}
         </div>
@@ -659,6 +666,7 @@ export function PharmacySelectionModal({
   onSelect: (pharmacyId: number, deliveryType: "pickup" | "home_delivery", deliveryAddress?: string, notes?: string) => void;
   isSending: boolean;
 }) {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPharmacy, setSelectedPharmacy] = useState<Pharmacy | null>(null);
   const [deliveryType, setDeliveryType] = useState<"pickup" | "home_delivery" | null>(null);
@@ -746,7 +754,7 @@ export function PharmacySelectionModal({
                 <ChevronDown className="w-4 h-4 rotate-90" />
               </button>
               <div>
-                <p className="text-xs font-semibold text-foreground leading-none">Delivery options</p>
+                <p className="text-xs font-semibold text-foreground leading-none">{t("pages.patient.rxp_delivery_options")}</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5 truncate max-w-[220px]">{selectedPharmacy.name}</p>
               </div>
             </div>
@@ -762,20 +770,20 @@ export function PharmacySelectionModal({
                 <div className="w-4 h-4 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center">
                   <Check className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-xs text-muted-foreground/60">Pharmacy</span>
+                <span className="text-xs text-muted-foreground/60">{t("pages.patient.rxp_step_pharmacy")}</span>
               </div>
               <div className="flex-1 h-px bg-border/50" />
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                   <span className="text-[8px] font-bold text-primary-foreground">2</span>
                 </div>
-                <span className="text-xs font-medium text-foreground">Delivery</span>
+                <span className="text-xs font-medium text-foreground">{t("pages.patient.rxp_step_delivery")}</span>
               </div>
             </div>
 
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
-                How would you like to receive it?
+                {t("pages.patient.rxp_how_receive")}
               </p>
               <div className="space-y-2">
                 {canPickup && (
@@ -792,7 +800,7 @@ export function PharmacySelectionModal({
                           <Package className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-foreground">Pick up in store</p>
+                          <p className="text-xs font-semibold text-foreground">{t("pages.patient.rxp_pickup_store")}</p>
                           <p className="text-xs text-muted-foreground/60 mt-0.5">{selectedPharmacy.address}, {selectedPharmacy.city}</p>
                         </div>
                       </div>
@@ -817,7 +825,7 @@ export function PharmacySelectionModal({
                           <Truck className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-foreground">Home delivery</p>
+                          <p className="text-xs font-semibold text-foreground">{t("pages.patient.rxp_home_delivery")}</p>
                           <p className="text-xs text-muted-foreground/60 mt-0.5">
                             {selectedPharmacy.delivery_fee} {selectedPharmacy.delivery_currency}
                             {selectedPharmacy.estimated_delivery_minutes ? ` · ~${selectedPharmacy.estimated_delivery_minutes} min` : ""}
@@ -833,7 +841,7 @@ export function PharmacySelectionModal({
 
                 {!canDeliver && !canPickup && (
                   <p className="text-xs text-muted-foreground/60 text-center py-6">
-                    This pharmacy has no available fulfillment options.
+                    {t("pages.patient.rxp_no_fulfillment")}
                   </p>
                 )}
               </div>
@@ -843,20 +851,20 @@ export function PharmacySelectionModal({
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
                   <Navigation className="w-4 h-4" />
-                  Delivery address
+                  {t("pages.patient.delivery_address_label")}
                   <span className="text-red-500 ml-0.5">*</span>
                 </label>
                 <textarea
                   value={deliveryAddress}
                   onChange={(e) => setDeliveryAddress(e.target.value)}
-                  placeholder="Enter your full delivery address…"
+                  placeholder={t("pages.patient.rxp_delivery_address_placeholder")}
                   rows={3}
                   className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
                 />
                 {deliveryAddress.trim().length === 0 && (
                   <p className="text-xs text-red-500/70 flex items-center gap-1">
                     <AlertCircle className="w-4 h-4" />
-                    Address is required for home delivery
+                    {t("pages.patient.rxp_address_required")}
                   </p>
                 )}
               </div>
@@ -865,13 +873,13 @@ export function PharmacySelectionModal({
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-1">
                 <FileText className="w-4 h-4" />
-                Notes
-                <span className="text-muted-foreground/40 font-normal ml-1">(optional)</span>
+                {t("consult.booking.notes")}
+                <span className="text-muted-foreground/40 font-normal ml-1">({t("common.optional")})</span>
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any special instructions for the pharmacy…"
+                placeholder={t("pages.patient.rxp_notes_placeholder")}
                 rows={2}
                 className="w-full px-2.5 py-2 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all resize-none"
               />
@@ -880,7 +888,7 @@ export function PharmacySelectionModal({
 
           <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex gap-2">
             <Button size="sm" variant="outline" className="h-8 px-3 text-xs rounded-[6px] border-border/60" onClick={resetDelivery}>
-              Back
+              {t("common.back")}
             </Button>
             <Button
               size="sm"
@@ -898,9 +906,9 @@ export function PharmacySelectionModal({
               }}
             >
               {isSending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" />Sending…</>
+                <><Loader2 className="h-4 w-4 animate-spin" />{t("pages.patient.rxp_sending")}</>
               ) : (
-                <><Send className="h-4 w-4" />Confirm & send</>
+                <><Send className="h-4 w-4" />{t("pages.patient.rxp_confirm_send")}</>
               )}
             </Button>
           </div>
@@ -923,8 +931,8 @@ export function PharmacySelectionModal({
               <Store className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-foreground leading-none">Select Pharmacy</p>
-              <p className="text-xs text-muted-foreground/60 mt-0.5">Choose where to send your prescription</p>
+              <p className="text-xs font-semibold text-foreground leading-none">{t("pages.patient.rxp_select_pharmacy")}</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">{t("pages.patient.rxp_select_pharmacy_sub")}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors">
@@ -939,7 +947,7 @@ export function PharmacySelectionModal({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, city, or address…"
+              placeholder={t("pages.patient.rxp_search_pharmacy_placeholder")}
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/35 transition-all"
             />
           </div>
@@ -962,7 +970,7 @@ export function PharmacySelectionModal({
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
               <Store className="w-8 h-8 text-muted-foreground/25" />
               <p className="text-xs font-medium text-muted-foreground/60">
-                {searchTerm ? "No pharmacies match your search" : "No pharmacies available"}
+                {searchTerm ? t("pages.patient.rxp_no_pharmacy_match") : t("pages.patient.rxp_no_pharmacies")}
               </p>
             </div>
           ) : (
@@ -995,17 +1003,17 @@ export function PharmacySelectionModal({
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                         {pharmacy.offers_delivery && (
                           <span className="inline-flex items-center gap-0.5 text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded-[6px]">
-                            <Truck className="w-4 h-4" />Delivery
+                            <Truck className="w-4 h-4" />{t("pages.patient.delivery_word")}
                           </span>
                         )}
                         {pharmacy.offers_pickup && (
                           <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground bg-secondary/40 px-1.5 py-0.5 rounded-[6px]">
-                            <Package className="w-4 h-4" />Pickup
+                            <Package className="w-4 h-4" />{t("pages.patient.pickup_badge")}
                           </span>
                         )}
                         {pharmacy.is_open_24h && (
                           <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-[6px]">
-                            <Clock className="w-4 h-4" />24h
+                            <Clock className="w-4 h-4" />{t("pages.patient.hours_24_short")}
                           </span>
                         )}
                         {pharmacy.estimated_delivery_minutes && (
@@ -1024,9 +1032,9 @@ export function PharmacySelectionModal({
         </div>
 
         <div className="flex-shrink-0 border-t border-border/60 px-4 py-3 bg-card/60 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground/50">{filteredPharmacies.length} pharmacies available</p>
+          <p className="text-xs text-muted-foreground/50">{t("pages.patient.rxp_pharmacies_available", { count: filteredPharmacies.length })}</p>
           <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground font-medium px-3 py-1.5 rounded-[6px] hover:bg-secondary/40 transition-colors">
-            Cancel
+            {t("common.cancel")}
           </button>
         </div>
       </div>
