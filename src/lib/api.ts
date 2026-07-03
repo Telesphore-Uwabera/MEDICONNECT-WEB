@@ -58,14 +58,31 @@ export async function apiFetch<T>(
           : JSON.stringify(body),
   });
 
+  // if (res.status === 401) {
+  //   const hadToken = !!token;
+  //   localStorage.removeItem("auth_token");
+  //   emitLoginPrompt(
+  //     hadToken
+  //       ? "Your session expired. Sign in again to continue."
+  //       : "Please sign in to continue.",
+  //   );
+
+  //   const error: ApiError = new Error("Please sign in to continue.");
+  //   error.status = 401;
+  //   throw error;
+  // }
+
   if (res.status === 401) {
     const hadToken = !!token;
     localStorage.removeItem("auth_token");
-    emitLoginPrompt(
-      hadToken
-        ? "Your session expired. Sign in again to continue."
-        : "Please sign in to continue.",
-    );
+
+    // Only show the global modal when a real session expired.
+    // Anonymous 401s (no token) happen naturally on public pages
+    // when a component calls an authenticated endpoint — don't
+    // interrupt guests with a login prompt for that.
+    if (hadToken) {
+      emitLoginPrompt("Your session expired. Sign in again to continue.");
+    }
 
     const error: ApiError = new Error("Please sign in to continue.");
     error.status = 401;
