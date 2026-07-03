@@ -255,7 +255,7 @@ function Specialities() {
               return (
                 <Link
                   key={item.id}
-                  to={`/patient/search-doctors?type=booking&specialization_fee_id=${item.id}`}
+                  to={`/patient/search-doctors?type=booking&specialization=Specialist&specialization_fee_id=${item.id}`}
                   title={label}
                   className="group flex h-[172px] w-[130px] flex-shrink-0 flex-col items-center justify-center gap-2.5 rounded-sm border border-border bg-card px-2.5 py-4 text-center shadow-none transition-all duration-200 hover:-translate-y-px hover:border-primary/40 hover:shadow-md"
                 >
