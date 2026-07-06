@@ -143,7 +143,7 @@ export function HeroHeader({
 
         {/* Logo */} 
         <div className="flex items-center gap-2 lg:shrink-0">
-          <Link to="/">
+          <Link to="/#landing-page" className="flex items-center gap-2">
             <img src={logo} alt={appName} className="lg:h-12 lg:w-auto w-[50%]" />
           </Link>
         </div>
