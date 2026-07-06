@@ -47,6 +47,10 @@ import {
   UserPlus,
   BriefcaseBusiness,
   Shield,
+  KeyRound,
+  LogOut,
+  Copy,
+  Check,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import {
@@ -65,6 +69,10 @@ import {
   useAdminPermissions,
   useRolePermissions,
   useReplaceRolePermissions,
+  useResetUserPassword,
+  useRevokeUserSessions,
+  useResendVerification,
+  useResetStaffPassword,
   type ApiUser,
   type StaffUser,
   type CreateStaffPayload,
@@ -488,6 +496,73 @@ function UserPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const open = !!user;
 
+  // ── Credentials & sessions ──
+  const resetPassword = useResetUserPassword();
+  const revokeSessions = useRevokeUserSessions();
+  const resendVerification = useResendVerification();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [tempCopied, setTempCopied] = useState(false);
+
+  // Clear transient credential state when switching users / closing.
+  useEffect(() => {
+    setConfirmReset(false);
+    setConfirmRevoke(false);
+    setTempPassword(null);
+    setTempCopied(false);
+  }, [user?.id]);
+
+  const handleResetPassword = () => {
+    if (!user) return;
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    setConfirmReset(false);
+    resetPassword.mutate(user.id, {
+      onSuccess: (res) => {
+        setTempPassword(res.temporary_password ?? null);
+        sonnerToast.success(res.message ?? "Password reset initiated.");
+      },
+      onError: (error: unknown) =>
+        sonnerToast.error("Could not reset password.", { description: getErrorMessage(error) }),
+    });
+  };
+
+  const handleRevokeSessions = () => {
+    if (!user) return;
+    if (!confirmRevoke) {
+      setConfirmRevoke(true);
+      return;
+    }
+    setConfirmRevoke(false);
+    revokeSessions.mutate(user.id, {
+      onSuccess: (res) => sonnerToast.success(res.message ?? "All sessions revoked."),
+      onError: (error: unknown) =>
+        sonnerToast.error("Could not revoke sessions.", { description: getErrorMessage(error) }),
+    });
+  };
+
+  const handleResend = (channel: "email" | "phone") => {
+    if (!user) return;
+    resendVerification.mutate(
+      { id: user.id, channel },
+      {
+        onSuccess: (res) => sonnerToast.success(res.message ?? "Verification sent."),
+        onError: (error: unknown) =>
+          sonnerToast.error("Could not resend verification.", { description: getErrorMessage(error) }),
+      },
+    );
+  };
+
+  const copyTempPassword = () => {
+    if (!tempPassword) return;
+    navigator.clipboard.writeText(tempPassword);
+    setTempCopied(true);
+    setTimeout(() => setTempCopied(false), 2000);
+  };
+
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -669,36 +744,121 @@ function UserPanel({
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Phone verified
                     </span>
-                    <span
-                      className={cn(
-                        "text-[11px] font-medium",
-                        user.phone_verified_at
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground/50",
-                      )}
-                    >
-                      {user.phone_verified_at
-                        ? new Date(user.phone_verified_at).toLocaleDateString()
-                        : "Not verified"}
-                    </span>
+                    {user.phone_verified_at ? (
+                      <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                        {new Date(user.phone_verified_at).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-muted-foreground/50">Not verified</span>
+                        <button
+                          onClick={() => handleResend("phone")}
+                          disabled={resendVerification.isPending}
+                          className="text-[10px] font-semibold text-primary hover:underline disabled:opacity-50"
+                        >
+                          Resend
+                        </button>
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Email verified
                     </span>
-                    <span
-                      className={cn(
-                        "text-[11px] font-medium",
-                        user.email_verified_at
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-muted-foreground/50",
-                      )}
-                    >
-                      {user.email_verified_at
-                        ? new Date(user.email_verified_at).toLocaleDateString()
-                        : "Not verified"}
+                    {user.email_verified_at ? (
+                      <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                        {new Date(user.email_verified_at).toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium text-muted-foreground/50">Not verified</span>
+                        <button
+                          onClick={() => handleResend("email")}
+                          disabled={resendVerification.isPending}
+                          className="text-[10px] font-semibold text-primary hover:underline disabled:opacity-50"
+                        >
+                          Resend
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Security & credentials ── */}
+                <div className="rounded-[6px] border border-border/60 bg-secondary/20 divide-y divide-border/40">
+                  <div className="flex items-center justify-between px-4 py-3 gap-3">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <KeyRound className="w-3.5 h-3.5" />
+                      Password
                     </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "h-7 px-2.5 text-[10px] rounded-[6px] gap-1.5",
+                        confirmReset &&
+                          "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
+                      )}
+                      disabled={resetPassword.isPending}
+                      onClick={handleResetPassword}
+                    >
+                      {resetPassword.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3 w-3" />
+                      )}
+                      {confirmReset ? "Confirm reset?" : "Reset password"}
+                    </Button>
+                  </div>
+
+                  {tempPassword && (
+                    <div className="px-4 py-3 space-y-1.5">
+                      <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                        Temporary password — shown once, share it securely:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 px-2.5 py-1.5 rounded-[6px] bg-background border border-border font-mono text-[12px] text-foreground select-all">
+                          {tempPassword}
+                        </code>
+                        <button
+                          onClick={copyTempPassword}
+                          title="Copy"
+                          className="h-8 w-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                        >
+                          {tempCopied ? (
+                            <Check className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between px-4 py-3 gap-3">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-2">
+                      <LogOut className="w-3.5 h-3.5" />
+                      Active sessions
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        "h-7 px-2.5 text-[10px] rounded-[6px] gap-1.5",
+                        confirmRevoke &&
+                          "border-red-400 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400",
+                      )}
+                      disabled={revokeSessions.isPending}
+                      onClick={handleRevokeSessions}
+                    >
+                      {revokeSessions.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <LogOut className="h-3 w-3" />
+                      )}
+                      {confirmRevoke ? "Confirm logout?" : "Force logout"}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -932,8 +1092,94 @@ function CreateUserModal({
   );
 }
 
+function StaffPasswordModal({
+  staff,
+  onClose,
+}: {
+  staff: StaffUser | null;
+  onClose: () => void;
+}) {
+  const resetPassword = useResetStaffPassword();
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+
+  useEffect(() => {
+    setPassword("");
+    setConfirmation("");
+  }, [staff?.id]);
+
+  if (!staff) return null;
+
+  const save = async () => {
+    if (password.length < 8) {
+      sonnerToast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirmation) {
+      sonnerToast.error("Passwords do not match.");
+      return;
+    }
+    try {
+      const res = await resetPassword.mutateAsync({
+        id: staff.id,
+        password,
+        password_confirmation: confirmation,
+      });
+      sonnerToast.success(res.message ?? "Staff password updated.");
+      onClose();
+    } catch (error: unknown) {
+      sonnerToast.error("Could not reset password.", { description: getErrorMessage(error) });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[75] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
+      <div className="w-full max-w-sm overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+              <KeyRound className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[14px] font-semibold text-foreground">Reset staff password</p>
+              <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">
+                {staff.name} · {staff.email}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="rounded-[6px] border border-border p-2 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="grid grid-cols-1 gap-3 p-4">
+          <FormInput label="New password" type="password" value={password} onChange={setPassword} />
+          <FormInput label="Confirm password" type="password" value={confirmation} onChange={setConfirmation} />
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3">
+          <Button variant="outline" className="h-9 rounded-[6px] text-[12px]" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            className="h-9 rounded-[6px] text-[12px]"
+            onClick={save}
+            disabled={resetPassword.isPending || !password || !confirmation}
+          >
+            {resetPassword.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <KeyRound className="mr-2 h-4 w-4" />
+            )}
+            Set password
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StaffManagementPanel({ search }: { search: string }) {
   const [role, setRole] = useState("all");
+  const [passwordTarget, setPasswordTarget] = useState<StaffUser | null>(null);
   const { data, isLoading, isError } = useGetAdminStaff({
     role: role !== "all" ? role : undefined,
     search: search || undefined,
@@ -998,6 +1244,10 @@ function StaffManagementPanel({ search }: { search: string }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1.5">
+                        <Button variant="outline" size="sm" className="h-7 rounded-[6px] text-[10px] gap-1" onClick={() => setPasswordTarget(member)}>
+                          <KeyRound className="h-3 w-3" />
+                          Password
+                        </Button>
                         <Button variant="outline" size="sm" className="h-7 rounded-[6px] text-[10px]" onClick={() => action(suspended ? activate.mutateAsync(member.id) : suspend.mutateAsync(member.id), suspended ? "Staff activated." : "Staff suspended.")}>{suspended ? "Activate" : "Suspend"}</Button>
                         <Button variant="outline" size="sm" className="h-7 rounded-[6px] border-red-900/40 text-[10px] text-red-500" onClick={() => action(remove.mutateAsync(member.id), "Staff deleted.")}>Delete</Button>
                       </div>
@@ -1009,6 +1259,8 @@ function StaffManagementPanel({ search }: { search: string }) {
           </tbody>
         </table>
       </div>
+
+      <StaffPasswordModal staff={passwordTarget} onClose={() => setPasswordTarget(null)} />
     </div>
   );
 }

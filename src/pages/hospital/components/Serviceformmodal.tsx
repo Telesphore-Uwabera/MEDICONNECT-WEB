@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Service, ServicePayload } from "@/types/Hospital";
+import { t } from "i18next";
 
 interface ServiceFormModalProps {
   open: boolean;
@@ -100,7 +102,7 @@ export function ServiceFormModal({
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border/60 px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-[13px] font-semibold text-foreground">
-            {initial ? "Edit Service" : "New Service"}
+            {initial ? t("pages.hospital.edit_service") : t("pages.hospital.new_service")}
           </h2>
           <button
             onClick={onClose}
@@ -121,37 +123,37 @@ export function ServiceFormModal({
 
           {/* Names */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="Name (EN) *">
-              <Input value={form.name_en} onChange={(v) => set("name_en", v)} placeholder="e.g. ECG" />
+            <Field label={t("pages.hospital.name_en_required")}>
+              <Input value={form.name_en} onChange={(v) => set("name_en", v)} placeholder={t("pages.hospital.service_name_placeholder")} />
             </Field>
-            <Field label="Name (FR)">
-              <Input value={form.name_fr ?? ""} onChange={(v) => set("name_fr", v)} placeholder="French name" />
+            <Field label={t("pages.hospital.name_fr")}>
+              <Input value={form.name_fr ?? ""} onChange={(v) => set("name_fr", v)} placeholder={t("pages.hospital.french_name_placeholder")} />
             </Field>
-            <Field label="Name (Kiny)">
-              <Input value={form.name_kiny ?? ""} onChange={(v) => set("name_kiny", v)} placeholder="Kinyarwanda" />
+            <Field label={t("pages.hospital.name_kiny")}>
+              <Input value={form.name_kiny ?? ""} onChange={(v) => set("name_kiny", v)} placeholder={t("pages.hospital.kinyarwanda_placeholder")} />
             </Field>
           </div>
 
           {/* Code */}
-          <Field label="Service Code">
-            <Input value={form.code ?? ""} onChange={(v) => set("code", v)} placeholder="e.g. ECG-001" />
+          <Field label={t("pages.hospital.service_code")}>
+            <Input value={form.code ?? ""} onChange={(v) => set("code", v)} placeholder={t("pages.hospital.service_code_placeholder")} />
           </Field>
 
           {/* Price section */}
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Price Type *">
+            <Field label={t("pages.hospital.price_type_required")}>
               <select
                 value={form.price_type}
                 onChange={(e) => set("price_type", e.target.value as ServicePayload["price_type"])}
                 className={selectCls}
               >
-                <option value="fixed">Fixed</option>
-                <option value="from">From</option>
-                <option value="negotiable">Negotiable</option>
-                <option value="free">Free</option>
+                <option value="fixed">{t("pages.hospital.price_fixed")}</option>
+                <option value="from">{t("pages.hospital.price_from")}</option>
+                <option value="negotiable">{t("pages.hospital.price_negotiable")}</option>
+                <option value="free">{t("pages.hospital.price_free")}</option>
               </select>
             </Field>
-            <Field label="Price (RWF)">
+            <Field label={t("pages.hospital.price_rwf")}>
               <Input
                 type="number"
                 value={form.price !== undefined ? String(form.price) : ""}
@@ -159,25 +161,25 @@ export function ServiceFormModal({
                 placeholder="5000"
               />
             </Field>
-            <Field label="Currency">
+            <Field label={t("pages.hospital.currency")}>
               <Input value={form.currency ?? "RWF"} onChange={(v) => set("currency", v)} placeholder="RWF" />
             </Field>
           </div>
 
           {/* Type + Duration */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Service Type *">
+            <Field label={t("pages.hospital.service_type_required")}>
               <select
                 value={form.type}
                 onChange={(e) => set("type", e.target.value as ServicePayload["type"])}
                 className={selectCls}
               >
-                <option value="in_person">In Person</option>
-                <option value="online">Online</option>
-                <option value="both">Both</option>
+                <option value="in_person">{t("pages.hospital.service_type_in_person")}</option>
+                <option value="online">{t("pages.hospital.service_type_online")}</option>
+                <option value="both">{t("pages.hospital.service_type_both")}</option>
               </select>
             </Field>
-            <Field label="Duration (min)">
+            <Field label={t("pages.hospital.duration_min")}>
               <Input
                 type="number"
                 value={form.duration_minutes !== undefined ? String(form.duration_minutes) : ""}
@@ -188,7 +190,7 @@ export function ServiceFormModal({
           </div>
 
           {/* Max bookings */}
-          <Field label="Max Bookings / Day">
+          <Field label={t("pages.hospital.max_bookings_day")}>
             <Input
               type="number"
               value={form.max_bookings_per_day !== undefined ? String(form.max_bookings_per_day) : ""}
@@ -198,11 +200,11 @@ export function ServiceFormModal({
           </Field>
 
           {/* Preparation instructions */}
-          <Field label="Preparation Instructions">
+          <Field label={t("pages.hospital.preparation_instructions")}>
             <textarea
               value={form.preparation_instructions ?? ""}
               onChange={(e) => set("preparation_instructions", e.target.value)}
-              placeholder="e.g. No food 2 hours before"
+              placeholder={t("pages.hospital.preparation_placeholder")}
               rows={2}
               className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all resize-none"
             />
@@ -211,22 +213,22 @@ export function ServiceFormModal({
           {/* Toggles */}
           <div className="grid grid-cols-2 gap-3">
             <Toggle
-              label="Insurance Covered"
+              label={t("pages.hospital.insurance_covered")}
               value={form.insurance_covered ?? false}
               onChange={(v) => set("insurance_covered", v)}
             />
             <Toggle
-              label="Requires Appointment"
+              label={t("pages.hospital.requires_appointment")}
               value={form.requires_appointment ?? false}
               onChange={(v) => set("requires_appointment", v)}
             />
             <Toggle
-              label="Requires Referral"
+              label={t("pages.hospital.requires_referral")}
               value={form.requires_referral ?? false}
               onChange={(v) => set("requires_referral", v)}
             />
             <Toggle
-              label="Available"
+              label={t("pages.hospital.available")}
               value={form.is_available ?? true}
               onChange={(v) => set("is_available", v)}
               activeColor="bg-emerald-500 border-emerald-500"
@@ -240,7 +242,7 @@ export function ServiceFormModal({
             onClick={onClose}
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -248,7 +250,7 @@ export function ServiceFormModal({
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            {initial ? "Save Changes" : "Create Service"}
+            {initial ? t("pages.hospital.save_changes") : t("pages.hospital.create_service")}
           </button>
         </div>
       </div>

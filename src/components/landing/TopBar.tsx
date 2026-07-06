@@ -99,10 +99,10 @@ const TopBar = ({ settings }: TopBarProps) => {
           <span className="text-white/30">|</span>
 
           <Link
-            to="/support"
+            to="/help"
             className="text-white/90 hover:text-white font-medium transition-colors"
           >
-            {t("nav.topnav.support")}
+            {t("nav.topnav.help")}
           </Link>
         </div>
       </div>

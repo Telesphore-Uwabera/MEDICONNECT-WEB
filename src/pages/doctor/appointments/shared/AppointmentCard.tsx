@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
 import { fmtDate, fmtTime, apptLabel, statusLabel } from "./helpers";
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   appt: Appointment;
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: Props) {
+  const { t } = useTranslation();
   const status = appt.status as UIStatus;
   const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
@@ -31,7 +32,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           <span className="text-sm font-semibold text-foreground">{apptLabel(appt)}</span>
           <Badge variant="outline" className={cn("text-xs px-2.5 py-0.5 font-medium border", STATUS_STYLES[status])}>
             <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[status])} />
-            {statusLabel(status)}
+            {statusLabel(status, t)}
           </Badge>
           {hasNotes && (
             <span className="text-xs text-emerald-600 dark:text-emerald-500 flex items-center gap-1">
@@ -43,7 +44,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
           {appt.type === "online"
             ? <Video className="h-4 w-4 text-sky-500" />
             : <MapPin className="h-4 w-4 text-amber-500" />}
-          {appt.type === "online" ? "Video consult" : "In-person"}
+          {appt.type === "online" ? t("pages.doctor.video_consult") : t("pages.doctor.in_person")}
         </span>
       </div>
 
@@ -62,7 +63,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
         <button
           onClick={() => onView(appt)}
           className="h-9 w-9 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-secondary/30 transition-colors"
-          title="View details"
+          title={t("pages.doctor.view_details")}
         >
           <Eye className="h-4 w-4" />
         </button>
@@ -93,7 +94,7 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
         {/* Notes — completed */}
         {status === "pending" && (
           <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-            Awaiting confirmation
+            {t("pages.doctor.awaiting_confirmation")}
           </span>
         )}
 

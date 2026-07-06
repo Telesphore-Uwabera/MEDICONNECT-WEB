@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm, UseFormRegister, FieldValues } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,15 +34,14 @@ import {
   type StepAnswersPayload,
 } from "@/hooks/patient/use-patient-certificates";
 import {
-  PURPOSES,
-  JOB_TYPES,
+  JOB_TYPE_NONE,
   YES_NO,
-  FORM_STEPS,
-  VITALS_FIELDS,
-  FUNCTIONAL_FIELDS,
-  STATUS_META,
-  purposeLabel,
-  fmtDate,
+  getPurposes,
+  getJobTypes,
+  getYesNoLabel,
+  getFormSteps,
+  getVitalsFields,
+  getFunctionalFields,
 } from "./FitnessConstants";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,6 +84,7 @@ export function YesNoField({
   onChange: (v: string) => void;
   warning?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0 gap-3">
       <span className="text-xs text-foreground leading-snug">{label}</span>
@@ -104,7 +105,7 @@ export function YesNoField({
                 : "bg-transparent text-muted-foreground border-border hover:bg-muted/60",
             )}
           >
-            {opt}
+            {getYesNoLabel(t, opt)}
           </button>
         ))}
       </div>
@@ -127,6 +128,8 @@ export function FormSidebar({
   visited: Set<number>;
   onSelect: (i: number) => void;
 }) {
+  const { t } = useTranslation();
+  const FORM_STEPS = getFormSteps(t);
   const pct = Math.round((visited.size / FORM_STEPS.length) * 100);
 
   return (
@@ -135,7 +138,7 @@ export function FormSidebar({
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Certificate request
+              {t("fitness.sidebar_title")}
             </span>
             <span className="text-[11px] font-bold tabular-nums text-primary">{pct}%</span>
           </div>
@@ -146,7 +149,7 @@ export function FormSidebar({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {visited.size} of {FORM_STEPS.length} sections visited
+            {t("fitness.sidebar_sections_visited", { count: visited.size, total: FORM_STEPS.length })}
           </p>
         </div>
       </div>
@@ -188,12 +191,12 @@ export function FormSidebar({
                   </span>
                   {isActive && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary shrink-0">
-                      editing
+                      {t("fitness.sidebar_editing")}
                     </span>
                   )}
                   {isDone && (
                     <span className="hidden sm:inline text-[9px] font-semibold uppercase tracking-wide text-primary/60 shrink-0">
-                      done
+                      {t("fitness.sidebar_done")}
                     </span>
                   )}
                 </div>
@@ -216,7 +219,7 @@ export function FormSidebar({
 
       <div className="hidden sm:block px-3.5 py-3 border-t border-border">
         <p className="text-[10px] text-muted-foreground leading-relaxed">
-          Jump between sections freely — no order needed.
+          {t("fitness.sidebar_hint")}
         </p>
       </div>
     </div>
@@ -240,6 +243,9 @@ export function StepPurpose({
   initialData?: Partial<Step1Fields>;
   onSaved: (nextStep: number) => void;
 }) {
+  const { t } = useTranslation();
+  const PURPOSES = getPurposes(t);
+  const JOB_TYPES = getJobTypes(t);
   const saveStep = useSaveStep();
   const { register, handleSubmit, setValue, watch, formState: { errors } } =
     useForm<Step1Fields>({
@@ -251,13 +257,14 @@ export function StepPurpose({
     });
 
   useEffect(() => {
-    register("purpose", { required: "Purpose is required" });
-    register("job_type", { required: "Job type is required" });
+    register("purpose", { required: t("fitness.purpose_required") });
+    register("job_type", { required: t("fitness.job_type_required") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [register]);
 
   const watchedPurpose = watch("purpose");
   const watchedJobType = watch("job_type");
-  const highRiskJob = watchedJobType && watchedJobType !== "None of the above";
+  const highRiskJob = watchedJobType && watchedJobType !== JOB_TYPE_NONE;
 
   const onSubmit = (data: Step1Fields) => {
     const payload: Step1Payload = {
@@ -268,18 +275,18 @@ export function StepPurpose({
     saveStep.mutate(
       { step: 1, payload },
       {
-        onSuccess: () => { toast.success("Step 1 saved"); onSaved(1); },
-        onError: (err) => toast.error(err.message || "Failed to save step 1"),
+        onSuccess: () => { toast.success(t("fitness.step1_saved")); onSaved(1); },
+        onError: (err) => toast.error(err.message || t("fitness.step1_save_failed")),
       },
     );
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <FormField label="Certificate purpose" error={errors.purpose?.message}>
+      <FormField label={t("fitness.purpose_select_label")} error={errors.purpose?.message}>
         <Select defaultValue={initialData?.purpose} onValueChange={(v) => setValue("purpose", v, { shouldValidate: true })}>
           <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-            <SelectValue placeholder="Select purpose" />
+            <SelectValue placeholder={t("fitness.purpose_select_placeholder")} />
           </SelectTrigger>
           <SelectContent>
             {PURPOSES.map((p) => (
@@ -290,23 +297,23 @@ export function StepPurpose({
       </FormField>
 
       {watchedPurpose === "other" && (
-        <FormField label="Please specify" error={errors.purpose_other?.message}>
+        <FormField label={t("fitness.purpose_specify_label")} error={errors.purpose_other?.message}>
           <Input
-            {...register("purpose_other", { required: "Required" })}
-            placeholder="Describe the purpose"
+            {...register("purpose_other", { required: t("fitness.purpose_other_required") })}
+            placeholder={t("fitness.purpose_specify_placeholder")}
             className="border-border focus-visible:ring-primary text-xs h-9"
           />
         </FormField>
       )}
 
-      <FormField label="Job / activity type" error={errors.job_type?.message}>
+      <FormField label={t("fitness.job_type_label")} error={errors.job_type?.message}>
         <Select defaultValue={initialData?.job_type} onValueChange={(v) => setValue("job_type", v, { shouldValidate: true })}>
           <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
-            <SelectValue placeholder="Select job type" />
+            <SelectValue placeholder={t("fitness.job_type_placeholder")} />
           </SelectTrigger>
           <SelectContent>
             {JOB_TYPES.map((j) => (
-              <SelectItem key={j} value={j}>{j}</SelectItem>
+              <SelectItem key={j.value} value={j.value}>{j.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -316,7 +323,7 @@ export function StepPurpose({
         <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-amber-400/40 bg-amber-500/10">
           <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 dark:text-amber-400">
-            This job type typically requires an <strong>in-person physical examination</strong>. Your request will be reviewed and you may be referred.
+            {t("fitness.high_risk_job_pre")} <strong>{t("fitness.high_risk_job_bold")}</strong>. {t("fitness.high_risk_job_post")}
           </p>
         </div>
       )}
@@ -344,6 +351,7 @@ interface YesNoStepProps {
 }
 
 export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, extraFields, onSaved }: YesNoStepProps) {
+  const { t } = useTranslation();
   const saveStep = useSaveStep();
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
   const { register } = useForm();
@@ -360,8 +368,8 @@ export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, ex
     saveStep.mutate(
       { step: apiStep, payload },
       {
-        onSuccess: () => { toast.success(`Step ${apiStep} saved`); onSaved(apiStep); },
-        onError: (err) => toast.error(err.message || `Failed to save step ${apiStep}`),
+        onSuccess: () => { toast.success(t("fitness.step_n_saved", { step: apiStep })); onSaved(apiStep); },
+        onError: (err) => toast.error(err.message || t("fitness.step_n_save_failed", { step: apiStep })),
       },
     );
   };
@@ -376,7 +384,7 @@ export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, ex
         <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-destructive/30 bg-destructive/10 mt-3">
           <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
           <p className="text-xs text-destructive">
-            You have reported a <strong>red flag symptom</strong>. A physical examination may be required. You can still submit and a doctor will decide.
+            {t("fitness.red_flag_pre")} <strong>{t("fitness.red_flag_bold")}</strong>. {t("fitness.red_flag_post")}
           </p>
         </div>
       )}
@@ -409,6 +417,9 @@ export function StepFunctional({
   initialNotes?: string;
   onSaved: (nextStep: number) => void;
 }) {
+  const { t } = useTranslation();
+  const FUNCTIONAL_FIELDS = getFunctionalFields(t);
+  const VITALS_FIELDS = getVitalsFields(t);
   const saveStep = useSaveStep();
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
   const { register, handleSubmit } = useForm<Step4Fields>({
@@ -421,8 +432,8 @@ export function StepFunctional({
     saveStep.mutate(
       { step: 4, payload },
       {
-        onSuccess: () => { toast.success("Step 4 saved"); onSaved(4); },
-        onError: (err) => toast.error(err.message || "Failed to save step 4"),
+        onSuccess: () => { toast.success(t("fitness.step4_saved")); onSaved(4); },
+        onError: (err) => toast.error(err.message || t("fitness.step4_save_failed")),
       },
     );
   };
@@ -431,7 +442,7 @@ export function StepFunctional({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-          Daily functional ability
+          {t("fitness.functional_ability_title")}
         </p>
         {FUNCTIONAL_FIELDS.map(({ label, field }) => (
           <YesNoField key={field} label={label} value={answers[field] ?? ""} onChange={(v) => setAnswer(field, v)} />
@@ -440,10 +451,10 @@ export function StepFunctional({
 
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-          Vitals (optional — if home devices available)
+          {t("fitness.vitals_title")}
         </p>
         <p className="text-[10px] text-muted-foreground mb-3">
-          If you have a thermometer, BP cuff, or pulse oximeter, enter readings below.
+          {t("fitness.vitals_hint")}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {VITALS_FIELDS.map(({ label, field, placeholder }) => (
@@ -458,11 +469,11 @@ export function StepFunctional({
         </div>
       </div>
 
-      <FormField label="Additional notes for the doctor (optional)">
+      <FormField label={t("fitness.notes_label")}>
         <textarea
           {...register("notes")}
           rows={3}
-          placeholder="Any other relevant information.."
+          placeholder={t("fitness.notes_placeholder")}
           className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
         />
       </FormField>

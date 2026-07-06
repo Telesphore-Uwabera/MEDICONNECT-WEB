@@ -1,128 +1,143 @@
 import { FileText, Activity, ClipboardList, User } from "lucide-react";
 import type { CertStatus } from "@/hooks/patient/use-patient-certificates";
 import { Clock, Eye, ShieldCheck, XCircle } from "lucide-react";
+import type { TFunction } from "i18next";
 
-export const PURPOSES = [
-  { value: "general_fitness", label: "General fitness" },
-  { value: "school_work", label: "School/work fitness" },
-  { value: "return_to_work", label: "Return to work after illness" },
-  { value: "fitness_for_travel", label: "Fitness for travel" },
-  { value: "other", label: "Other" },
-];
-
-export const JOB_TYPES = [
-  "None of the above",
+// Canonical (untranslated) values — these are sent to the API and used for
+// internal comparisons. Never localize these; only the labels shown alongside
+// them via the getters below.
+export const JOB_TYPE_NONE = "None of the above";
+export const JOB_TYPE_VALUES = [
+  JOB_TYPE_NONE,
   "Heavy physical labor",
   "Driving/operating machinery",
   "Armed forces/security",
   "Mining/construction",
   "Work requiring chest X-ray",
 ];
+export const YES_NO = ["Yes", "No"] as const;
 
-export const YES_NO = ["Yes", "No"];
+export const getPurposes = (t: TFunction) => [
+  { value: "general_fitness", label: t("fitness.purpose_general_fitness") },
+  { value: "school_work", label: t("fitness.purpose_school_work") },
+  { value: "return_to_work", label: t("fitness.purpose_return_to_work") },
+  { value: "fitness_for_travel", label: t("fitness.purpose_fitness_for_travel") },
+  { value: "other", label: t("fitness.purpose_other_option") },
+];
 
-export const FORM_STEPS = [
+export const getJobTypes = (t: TFunction) => [
+  { value: JOB_TYPE_NONE, label: JOB_TYPE_NONE },
+  { value: "Heavy physical labor", label: t("fitness.job_heavy_labor") },
+  { value: "Driving/operating machinery", label: t("fitness.job_driving") },
+  { value: "Armed forces/security", label: t("fitness.job_armed_forces") },
+  { value: "Mining/construction", label: t("fitness.job_mining") },
+  { value: "Work requiring chest X-ray", label: t("fitness.job_xray") },
+];
+
+export const getYesNoLabel = (t: TFunction, value: string) =>
+  value === "Yes" ? t("fitness.yes") : value === "No" ? t("fitness.no") : value;
+
+export const getFormSteps = (t: TFunction) => [
   {
     id: "purpose",
-    label: "Purpose",
+    label: t("fitness.step_purpose_label"),
     icon: FileText,
-    description: "Certificate type & job",
+    description: t("fitness.step_purpose_desc"),
     apiStep: 1,
   },
   {
     id: "symptoms",
-    label: "Symptoms",
+    label: t("fitness.step_symptoms_label"),
     icon: Activity,
-    description: "Current health symptoms",
+    description: t("fitness.step_symptoms_desc"),
     apiStep: 2,
   },
   {
     id: "history",
-    label: "Medical History",
+    label: t("fitness.step_history_label"),
     icon: ClipboardList,
-    description: "Past illnesses & conditions",
+    description: t("fitness.step_history_desc"),
     apiStep: 3,
   },
   {
     id: "functional",
-    label: "Functional",
+    label: t("fitness.step_functional_label"),
     icon: User,
-    description: "Daily ability & vitals",
+    description: t("fitness.step_functional_desc"),
     apiStep: 4,
   },
 ];
 
-export const SYMPTOM_FIELDS = [
-  { label: "Any fever in the past 72 hours?", field: "fever_72h" },
-  { label: "Any current headache or dizziness?", field: "headache_dizziness" },
-  { label: "Any shortness of breath?", field: "shortness_breath", warning: true },
-  { label: "Any chest pain?", field: "chest_pain", warning: true },
-  { label: "Any palpitations?", field: "palpitations" },
-  { label: "Any cough?", field: "cough" },
-  { label: "Any vomiting or diarrhea?", field: "vomiting" },
-  { label: "Any body weakness or fatigue?", field: "fatigue" },
-  { label: "Any visual disturbances?", field: "visual_disturbances" },
-  { label: "Any recent fainting episodes?", field: "fainting", warning: true },
+export const getSymptomFields = (t: TFunction) => [
+  { label: t("fitness.sf_fever"), field: "fever_72h" },
+  { label: t("fitness.sf_headache"), field: "headache_dizziness" },
+  { label: t("fitness.sf_breath"), field: "shortness_breath", warning: true },
+  { label: t("fitness.sf_chest_pain"), field: "chest_pain", warning: true },
+  { label: t("fitness.sf_palpitations"), field: "palpitations" },
+  { label: t("fitness.sf_cough"), field: "cough" },
+  { label: t("fitness.sf_vomiting"), field: "vomiting" },
+  { label: t("fitness.sf_fatigue"), field: "fatigue" },
+  { label: t("fitness.sf_visual"), field: "visual_disturbances" },
+  { label: t("fitness.sf_fainting"), field: "fainting", warning: true },
 ];
 
-export const HISTORY_FIELDS = [
-  { label: "Any chronic illnesses? (HTN, diabetes, asthma, epilepsy, heart disease)", field: "chronic_illness" },
-  { label: "Any hospitalization in the last 3 months?", field: "recent_hospitalization" },
-  { label: "Any surgery in the last 6 months?", field: "recent_surgery" },
-  { label: "Any psychiatric conditions?", field: "psychiatric" },
-  { label: "Any known allergies (drug/food)?", field: "allergies" },
-  { label: "Any chronic medication currently used?", field: "chronic_medication" },
-  { label: "Any disability or mobility limitations?", field: "disability" },
+export const getHistoryFields = (t: TFunction) => [
+  { label: t("fitness.hf_chronic_illness"), field: "chronic_illness" },
+  { label: t("fitness.hf_hospitalization"), field: "recent_hospitalization" },
+  { label: t("fitness.hf_surgery"), field: "recent_surgery" },
+  { label: t("fitness.hf_psychiatric"), field: "psychiatric" },
+  { label: t("fitness.hf_allergies"), field: "allergies" },
+  { label: t("fitness.hf_medication"), field: "chronic_medication" },
+  { label: t("fitness.hf_disability"), field: "disability" },
 ];
 
-export const FUNCTIONAL_FIELDS = [
-  { label: "Can you walk without difficulty?", field: "walk_ok" },
-  { label: "Can you climb stairs?", field: "climb_ok" },
-  { label: "Can you lift light objects without pain?", field: "lift_ok" },
-  { label: "Do you sleep well?", field: "sleep_ok" },
-  { label: "Do you have a normal appetite?", field: "appetite_ok" },
+export const getFunctionalFields = (t: TFunction) => [
+  { label: t("fitness.ff_walk"), field: "walk_ok" },
+  { label: t("fitness.ff_climb"), field: "climb_ok" },
+  { label: t("fitness.ff_lift"), field: "lift_ok" },
+  { label: t("fitness.ff_sleep"), field: "sleep_ok" },
+  { label: t("fitness.ff_appetite"), field: "appetite_ok" },
 ];
 
-export const VITALS_FIELDS = [
-  { label: "Temperature (°C)", field: "temperature", placeholder: "e.g. 36.6" },
-  { label: "Blood pressure", field: "blood_pressure", placeholder: "e.g. 120/80" },
-  { label: "Pulse (bpm)", field: "pulse", placeholder: "e.g. 72" },
-  { label: "O₂ saturation (%)", field: "oxygen_saturation", placeholder: "e.g. 98" },
+export const getVitalsFields = (t: TFunction) => [
+  { label: t("fitness.vf_temperature"), field: "temperature", placeholder: t("fitness.vf_temperature_placeholder") },
+  { label: t("fitness.vf_bp"), field: "blood_pressure", placeholder: t("fitness.vf_bp_placeholder") },
+  { label: t("fitness.vf_pulse"), field: "pulse", placeholder: t("fitness.vf_pulse_placeholder") },
+  { label: t("fitness.vf_o2"), field: "oxygen_saturation", placeholder: t("fitness.vf_o2_placeholder") },
 ];
 
-export const STATUS_META: Record<
-  CertStatus,
-  { label: string; color: string; icon: React.ElementType }
-> = {
+export const getStatusMeta = (
+  t: TFunction,
+): Record<CertStatus, { label: string; color: string; icon: React.ElementType }> => ({
   draft: {
-    label: "Draft",
+    label: t("fitness.status_draft"),
     color: "bg-muted text-muted-foreground border-border",
     icon: FileText,
   },
   pending: {
-    label: "Pending",
+    label: t("fitness.status_pending"),
     color: "bg-amber-500/15 text-amber-600 border-amber-400/30",
     icon: Clock,
   },
   in_review: {
-    label: "In Review",
+    label: t("fitness.status_in_review"),
     color: "bg-blue-500/15 text-blue-600 border-blue-400/30",
     icon: Eye,
   },
   approved: {
-    label: "Approved",
+    label: t("fitness.status_approved"),
     color: "bg-emerald-500/15 text-emerald-600 border-emerald-400/30",
     icon: ShieldCheck,
   },
   rejected: {
-    label: "Rejected",
+    label: t("fitness.status_rejected"),
     color: "bg-destructive/15 text-destructive border-destructive/25",
     icon: XCircle,
   },
-};
+});
 
-export const purposeLabel = (value: string) =>
-  PURPOSES.find((p) => p.value === value)?.label ?? value;
+export const getPurposeLabel = (t: TFunction, value: string) =>
+  getPurposes(t).find((p) => p.value === value)?.label ?? value;
 
 export const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-US", {

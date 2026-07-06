@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -114,22 +115,23 @@ function DeliveryToggle({
   value: "delivery" | "pickup";
   onChange: (v: "delivery" | "pickup") => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex rounded-[5px] border border-border overflow-hidden text-[11px] font-medium">
-      {(["pickup", "delivery"] as const).map((t) => (
+      {(["pickup", "delivery"] as const).map((opt) => (
         <button
-          key={t}
-          onClick={() => onChange(t)}
+          key={opt}
+          onClick={() => onChange(opt)}
           className={cn(
             "flex-1 flex items-center justify-center gap-1.5 py-1.5 transition-all",
-            t === "delivery" && "border-l border-border",
-            value === t
+            opt === "delivery" && "border-l border-border",
+            value === opt
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:bg-muted/50",
           )}
         >
-          {t === "pickup" ? <MapPin className="h-3 w-3" /> : <Truck className="h-3 w-3" />}
-          {t.charAt(0).toUpperCase() + t.slice(1)}
+          {opt === "pickup" ? <MapPin className="h-3 w-3" /> : <Truck className="h-3 w-3" />}
+          {opt === "pickup" ? t("pages.patient.pickup_badge") : t("pages.patient.delivery_word")}
         </button>
       ))}
     </div>
@@ -139,6 +141,7 @@ function DeliveryToggle({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: PharmacyCartProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
 
@@ -155,7 +158,7 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
   const handlePlaceOrder = () => {
     if (!order) return;
     if (deliveryType === "delivery" && !deliveryAddress.trim()) {
-      toast.error("Please enter a delivery address.");
+      toast.error(t("pages.patient.please_enter_delivery_address"));
       return;
     }
     placeOrder.mutate(
@@ -167,12 +170,12 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
       },
       {
         onSuccess: (res) => {
-          toast.success(res.message ?? "Order placed successfully!");
+          toast.success(res.message ?? t("pages.patient.order_placed_success"));
           setOpen(false);
           setDeliveryAddress("");
         },
         onError: (err) => {
-          toast.error(err.message ?? "Failed to place order.");
+          toast.error(err.message ?? t("pages.patient.failed_to_place_order"));
         },
       },
     );
@@ -189,7 +192,7 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
         onClick={() => setOpen(true)}
       >
         <ShoppingCart className="h-3.5 w-3.5" />
-        Cart
+        {t("pages.patient.cart")}
         {count > 0 && (
           <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
             {count}
@@ -202,7 +205,7 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
         className="w-full flex items-center gap-2 px-4 py-2.5 bg-gradient-primary text-primary-foreground rounded-[5px] text-xs font-semibold hover:opacity-90 transition-opacity"
       >
         <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-        <span>View Cart</span>
+        <span>{t("pages.patient.view_cart_action")}</span>
         {count > 0 && (
           <span className="h-4 min-w-4 px-1 rounded-full bg-white/20 text-[9px] font-bold flex items-center justify-center">
             {count}
@@ -225,10 +228,12 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
           {/* Header */}
           <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-sm font-semibold">Your Cart</SheetTitle>
+              <SheetTitle className="text-sm font-semibold">{t("pages.patient.your_cart")}</SheetTitle>
               {count > 0 && (
                 <Badge variant="secondary" className="rounded-[3px] text-[10px]">
-                  {count} item{count !== 1 ? "s" : ""}
+                  {count !== 1
+                    ? t("pages.patient.items_count_plural", { count })
+                    : t("pages.patient.items_count_singular", { count })}
                 </Badge>
               )}
             </div>
@@ -245,9 +250,9 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                   <ShoppingCart className="h-5 w-5 text-muted-foreground/40" />
                 </div>
-                <p className="text-xs font-medium text-foreground">Your cart is empty</p>
+                <p className="text-xs font-medium text-foreground">{t("pages.patient.cart_empty")}</p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Add medicines from this pharmacy to get started.
+                  {t("pages.patient.add_medicines_to_start")}
                 </p>
               </div>
             ) : (
@@ -273,17 +278,17 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
               {deliveryType === "delivery" && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Delivery address
+                    {t("pages.patient.delivery_address_label")}
                   </label>
                   <input
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="e.g. KG 123 St, Kigali"
+                    placeholder={t("pages.patient.delivery_address_placeholder")}
                     className="w-full px-3 py-2 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                   />
                   {deliveryType === "delivery" && !deliveryAddress.trim() && (
                     <p className="flex items-center gap-1 text-[10px] text-amber-600">
-                      <AlertCircle className="h-3 w-3" /> Required for delivery
+                      <AlertCircle className="h-3 w-3" /> {t("pages.patient.required_for_delivery")}
                     </p>
                   )}
                 </div>
@@ -291,7 +296,7 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
 
               {/* Total */}
               <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold">Total</span>
+                <span className="font-semibold">{t("pages.patient.total")}</span>
                 <span className="font-bold tabular-nums text-primary">
                   {total.toLocaleString()} {currency}
                 </span>
@@ -308,7 +313,7 @@ export const PharmacyCart = ({ variant = "trigger", currency = "RWF" }: Pharmacy
                 ) : (
                   <Package className="h-3.5 w-3.5 mr-1.5" />
                 )}
-                {placeOrder.isPending ? "Placing order…" : "Place Order"}
+                {placeOrder.isPending ? t("pages.patient.placing_order") : t("pages.patient.place_order_action")}
               </Button>
             </div>
           )}

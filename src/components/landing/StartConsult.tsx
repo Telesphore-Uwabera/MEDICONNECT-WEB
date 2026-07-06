@@ -150,7 +150,7 @@ const StartConsult = () => {
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none">
-                    Book Appointment
+                    {t("pages.landing.book_appointment")}
                   </p>
                   <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
                     500+ specialists

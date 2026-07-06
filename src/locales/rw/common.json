@@ -18,5 +18,19 @@
   "language": "Ururimi",
   "loading": "Birapakira…",
   "optional": "bidategetswe",
-  "required": "birasabwa"
+  "required": "birasabwa",
+  "unknown": "ntibizwi",
+  "age": "Imyaka",
+  "specSelect": {
+    "anySpecializationPlaceholder": "Ubuhanga ubwo aribwo bwose…",
+    "searchSpecializationsPlaceholder": "Shakisha ubuhanga…",
+    "searchSubSpecializationsPlaceholder": "Shakisha ubuhanga bwihariye…",
+    "anySpecialization": "Ubuhanga ubwo aribwo bwose",
+    "failedToLoad": "Kwakira byanze",
+    "noResultsFor": "Nta bisubizo bya \"{{query}}\"",
+    "noSubSpecializations": "Nta buhanga bwihariye buhari",
+    "selectSubSpecialization": "Hitamo ubuhanga bwihariye",
+    "onlineFee": "Kuri interineti: {{amount}} {{currency}}",
+    "inPersonFee": "Mu mubiri: {{amount}} {{currency}}"
+  }
 }

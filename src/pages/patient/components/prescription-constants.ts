@@ -1,4 +1,5 @@
 import { type PrescriptionApiStatus } from "@/hooks/patient/use-patient-prescriptions";
+import type { TFunction } from "i18next";
 
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
@@ -48,13 +49,16 @@ export const STATUS_DOT: Record<string, string> = {
   pending: "bg-amber-500",
 };
 
-export const STATUS_LABEL: Record<string, string> = {
-  issued: "Issued",
-  sent_to_pharmacy: "At Pharmacy",
-  dispensed: "Dispensed",
-  cancelled: "Cancelled",
-  expired: "Expired",
-  pending: "Pending",
+export const getPrescriptionStatusLabel = (t: TFunction, status: string): string => {
+  const map: Record<string, string> = {
+    issued: t("pages.patient.rxp_status_issued"),
+    sent_to_pharmacy: t("pages.patient.rxp_status_sent_to_pharmacy"),
+    dispensed: t("pages.patient.rxp_status_dispensed"),
+    cancelled: t("pages.patient.rxp_status_cancelled"),
+    expired: t("pages.patient.rxp_status_expired"),
+    pending: t("pages.patient.rxp_status_pending"),
+  };
+  return map[status] ?? status;
 };
 
 export const ALL_STATUSES: PrescriptionApiStatus[] = [

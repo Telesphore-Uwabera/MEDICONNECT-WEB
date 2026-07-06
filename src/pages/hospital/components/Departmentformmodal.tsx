@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Department, DepartmentPayload } from "@/types/Hospital";
+import { t } from "i18next";
 
 // ─── Icon options supported by the API ────────────────────────────────────────
 const ICON_OPTIONS = [
@@ -102,7 +104,7 @@ export function DepartmentFormModal({
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border/60 px-5 py-3.5 flex items-center justify-between">
           <h2 className="text-[13px] font-semibold text-foreground">
-            {initial ? "Edit Department" : "New Department"}
+            {initial ? t("pages.hospital.edit_department") : t("pages.hospital.new_department")}
           </h2>
           <button
             onClick={onClose}
@@ -124,57 +126,57 @@ export function DepartmentFormModal({
 
           {/* Name row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Field label="Name (EN) *">
+            <Field label={t("pages.hospital.name_en_required")}>
               <Input
                 value={form.name_en}
                 onChange={(v) => set("name_en", v)}
-                placeholder="e.g. Cardiology"
+                placeholder={t("pages.hospital.department_name_placeholder")}
               />
             </Field>
-            <Field label="Name (FR)">
+            <Field label={t("pages.hospital.name_fr")}>
               <Input
                 value={form.name_fr ?? ""}
                 onChange={(v) => set("name_fr", v)}
-                placeholder="e.g. Cardiologie"
+                placeholder={t("pages.hospital.department_name_fr_placeholder")}
               />
             </Field>
-            <Field label="Name (Kiny)">
+            <Field label={t("pages.hospital.name_kiny")}>
               <Input
                 value={form.name_kiny ?? ""}
                 onChange={(v) => set("name_kiny", v)}
-                placeholder="Kinyarwanda"
+                placeholder={t("pages.hospital.kinyarwanda_placeholder")}
               />
             </Field>
           </div>
 
           {/* Location row */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Floor">
+            <Field label={t("pages.hospital.floor")}>
               <Input
                 value={form.floor ?? ""}
                 onChange={(v) => set("floor", v)}
-                placeholder="e.g. 2nd Floor"
+                placeholder={t("pages.hospital.floor_placeholder")}
               />
             </Field>
-            <Field label="Room Number">
+            <Field label={t("pages.hospital.room_number")}>
               <Input
                 value={form.room_number ?? ""}
                 onChange={(v) => set("room_number", v)}
-                placeholder="e.g. 201"
+                placeholder={t("pages.hospital.room_number_placeholder")}
               />
             </Field>
           </div>
 
           {/* Contact row */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Phone">
+            <Field label={t("pages.hospital.phone")}>
               <Input
                 value={form.phone ?? ""}
                 onChange={(v) => set("phone", v)}
                 placeholder="+250788000001"
               />
             </Field>
-            <Field label="Email">
+            <Field label={t("pages.hospital.email")}>
               <Input
                 value={form.email ?? ""}
                 onChange={(v) => set("email", v)}
@@ -185,17 +187,17 @@ export function DepartmentFormModal({
 
           {/* Capacity + Sort */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Capacity">
+            <Field label={t("pages.hospital.capacity")}>
               <Input
                 type="number"
                 value={form.capacity !== undefined ? String(form.capacity) : ""}
                 onChange={(v) =>
                   set("capacity", v ? Number(v) : undefined)
                 }
-                placeholder="e.g. 30"
+                placeholder={t("pages.hospital.capacity_placeholder")}
               />
             </Field>
-            <Field label="Sort Order">
+            <Field label={t("pages.hospital.sort_order")}>
               <Input
                 type="number"
                 value={String(form.sort_order ?? 0)}
@@ -207,7 +209,7 @@ export function DepartmentFormModal({
 
           {/* Icon + Color */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Icon">
+            <Field label={t("pages.hospital.icon")}>
               <select
                 value={form.icon ?? "stethoscope"}
                 onChange={(e) => set("icon", e.target.value)}
@@ -220,7 +222,7 @@ export function DepartmentFormModal({
                 ))}
               </select>
             </Field>
-            <Field label="Color">
+            <Field label={t("pages.hospital.color")}>
               <div className="flex items-center gap-2">
                 <input
                   type="color"
@@ -257,7 +259,7 @@ export function DepartmentFormModal({
               />
             </div>
             <span className="text-[11px] text-foreground font-medium">
-              Emergency Department
+              {t("pages.hospital.emergency_department")}
             </span>
           </label>
         </div>
@@ -268,7 +270,7 @@ export function DepartmentFormModal({
             onClick={onClose}
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSubmit}
@@ -276,7 +278,7 @@ export function DepartmentFormModal({
             className="px-3.5 py-1.5 text-[11px] rounded-[6px] bg-primary text-primary-foreground font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            {initial ? "Save Changes" : "Create Department"}
+            {initial ? t("pages.hospital.save_changes") : t("pages.hospital.create_department")}
           </button>
         </div>
       </div>

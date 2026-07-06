@@ -19,5 +19,19 @@
   "loading": "Loading…",
   "optional": "optional",
   "required": "required",
-  "Register":"Register"
+  "unknown": "unknown",
+  "age": "Age",
+  "Register":"Register",
+  "specSelect": {
+    "anySpecializationPlaceholder": "Any specialization…",
+    "searchSpecializationsPlaceholder": "Search specializations…",
+    "searchSubSpecializationsPlaceholder": "Search sub-specializations…",
+    "anySpecialization": "Any specialization",
+    "failedToLoad": "Failed to load",
+    "noResultsFor": "No results for \"{{query}}\"",
+    "noSubSpecializations": "No sub-specializations available",
+    "selectSubSpecialization": "Select sub-specialization",
+    "onlineFee": "Online: {{amount}} {{currency}}",
+    "inPersonFee": "In-person: {{amount}} {{currency}}"
+  }
 }

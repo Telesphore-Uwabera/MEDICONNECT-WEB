@@ -4,6 +4,7 @@
 // // the parent so the sidebar can also control navigation.
 // // ─────────────────────────────────────────────────────────────────────────────
 import React, { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,7 @@ export function DoctorProfileForm({
   stepSaveStates,
   onSaveStep,
 }: DoctorProfileFormProps) {
+  const { t } = useTranslation();
   const [specializations, setSpecializations] = useState<SpecializationsInfo>(
     defaultData?.specializations ?? DEFAULT_SPECIALIZATIONS,
   );
@@ -129,7 +131,7 @@ export function DoctorProfileForm({
 
   useEffect(() => {
     const requiredRichText = (value?: string) =>
-      hasRichTextContent(value) || "Required";
+      hasRichTextContent(value) || t("profile.required");
 
     register("bio_en", { validate: requiredRichText });
     register("bio_fr", { validate: requiredRichText });
@@ -200,12 +202,12 @@ export function DoctorProfileForm({
       <div className="flex items-center gap-2 px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-border">
         <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {step.sectionTitle}
+          {t(`doctorProfile.steps.${step.id}.title`)}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <StepSaveStatusBadge state={currentSaveState} />
           <span className="text-[10px] text-muted-foreground">
-            Step {currentStep + 1} of {STEPS.length}
+            {t("profile.step_of", { current: currentStep + 1, total: STEPS.length })}
           </span>
         </div>
       </div>
@@ -216,28 +218,28 @@ export function DoctorProfileForm({
         {step.id === "personal" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
-              label="Doctor degree *"
+              label={`${t("doctorProfile.doctor_degree")} *`}
               error={errors.doctor_degree?.message}
             >
               <Input
-                {...register("doctor_degree", { required: "Required" })}
+                {...register("doctor_degree", { required: t("profile.required") })}
                 placeholder="MBBS"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
 
             <FormField
-              label="Medical license *"
+              label={`${t("doctorProfile.medical_license")} *`}
               error={errors.medical_license?.message}
             >
               <Input
-                {...register("medical_license", { required: "Required" })}
+                {...register("medical_license", { required: t("profile.required") })}
                 placeholder="RW-MED-2024-001"
                 className="border-border focus-visible:ring-primary font-mono text-xs h-9"
               />
             </FormField>
 
-            <FormField label="Designations">
+            <FormField label={t("doctorProfile.designations")}>
               <Input
                 {...register("designations")}
                 placeholder="Dr. John Doe"
@@ -245,7 +247,7 @@ export function DoctorProfileForm({
               />
             </FormField>
 
-            <FormField label="Preferred language">
+            <FormField label={t("doctorProfile.preferred_language")}>
               <Select
                 defaultValue={defaultData?.personal?.preferred_language ?? "en"}
                 onValueChange={(v) => setValue("preferred_language", v)}
@@ -256,7 +258,7 @@ export function DoctorProfileForm({
                 <SelectContent>
                   {LANGUAGES.map((l) => (
                     <SelectItem key={l.value} value={l.value}>
-                      {l.label}
+                      {t(`pages.landing.lang_${l.value === "kiny" ? "rw" : l.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -264,7 +266,7 @@ export function DoctorProfileForm({
             </FormField>
 
             <FormField
-              label="Bio (English) *"
+              label={`${t("doctorProfile.bio_label", { lang: t("pages.landing.lang_en") })} *`}
               error={errors.bio_en?.message}
               className="col-span-1 sm:col-span-2"
             >
@@ -280,8 +282,8 @@ export function DoctorProfileForm({
             </FormField>
 
             <FormField
-              label="Bio (French) *" // add *
-              error={errors.bio_fr?.message} // add error
+              label={`${t("doctorProfile.bio_label", { lang: t("pages.landing.lang_fr") })} *`}
+              error={errors.bio_fr?.message}
               className="col-span-1 sm:col-span-2"
             >
               <RichTextarea
@@ -296,8 +298,8 @@ export function DoctorProfileForm({
             </FormField>
 
             <FormField
-              label="Bio (Kinyarwanda) *" // add *
-              error={errors.bio_kiny?.message} // add error
+              label={`${t("doctorProfile.bio_label", { lang: t("pages.landing.lang_rw") })} *`}
+              error={errors.bio_kiny?.message}
               className="col-span-1 sm:col-span-2"
             >
               <RichTextarea
@@ -343,29 +345,28 @@ export function DoctorProfileForm({
         {step.id === "documents" && (
           <div className="grid grid-cols-1 gap-4">
             <p className="text-[11px] text-muted-foreground -mt-2 mb-1">
-              Upload your profile photo, degree certificate, medical license,
-              and national ID. JPEG, PNG, PDF · max 4 MB each.
+              {t("doctorProfile.documents_intro")}
             </p>
             <FileUploadBox
-              label="Profile photo"
+              label={t("doctorProfile.profile_photo")}
               accept="image/jpeg,image/png,image/webp"
               file={documents.profile_image}
               onChange={handleProfileImageChange}
             />
             <FileUploadBox
-              label="Degree document"
+              label={t("doctorProfile.degree_document")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.degree_document}
               onChange={handleDegreeDocChange}
             />
             <FileUploadBox
-              label="Medical license scan"
+              label={t("doctorProfile.license_scan")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.license_document}
               onChange={handleLicenseDocChange}
             />
             <FileUploadBox
-              label="National ID"
+              label={t("doctorProfile.national_id")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.national_id_document}
               onChange={handleNationalIdChange}
@@ -388,7 +389,7 @@ export function DoctorProfileForm({
             disabled={isSaving}
             className="border-border text-xs"
           >
-            Cancel
+            {t("profile.cancel")}
           </Button>
           {currentStep > 0 && (
             <Button
@@ -397,13 +398,13 @@ export function DoctorProfileForm({
               disabled={isSaving}
               className="text-xs text-muted-foreground"
             >
-              ← Back
+              {t("profile.back")}
             </Button>
           )}
         </div>
 
         <span className="text-[11px] text-muted-foreground hidden sm:block">
-          Step {currentStep + 1} of {STEPS.length}
+          {t("profile.step_of", { current: currentStep + 1, total: STEPS.length })}
         </span>
 
         <div className="flex items-center gap-2">
@@ -415,17 +416,17 @@ export function DoctorProfileForm({
             {isSaving ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Saving…
+                {t("profile.saving")}
               </>
             ) : currentSaveState === "saved" ? (
               <>
                 <Check className="h-3 w-3" />
-                Saved
+                {t("doctorProfile.saved")}
               </>
             ) : (
               <>
                 <Save className="h-3 w-3" />
-                Save section
+                {t("doctorProfile.save_section")}
               </>
             )}
           </Button>
@@ -437,7 +438,7 @@ export function DoctorProfileForm({
               disabled={isSaving}
               className="text-xs border-border"
             >
-              Next →
+              {t("profile.next")}
             </Button>
           )}
 
@@ -448,7 +449,7 @@ export function DoctorProfileForm({
               disabled={isSaving}
               className="text-xs border-border"
             >
-              Done
+              {t("doctorProfile.done")}
             </Button>
           )}
         </div>

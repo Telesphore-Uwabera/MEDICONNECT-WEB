@@ -223,6 +223,7 @@ function PrescriptionCard({
   onIssue: (p: Prescription) => void;
   isIssuing: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-card border border-border/70 rounded-[6px] p-3.5 hover:border-primary/30 hover:shadow-sm transition-all duration-200 group">
       <div className="flex items-start justify-between gap-3">
@@ -232,7 +233,7 @@ function PrescriptionCard({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground truncate">
-              {p.patient?.name ?? "Patient"}
+              {p.patient?.name ?? t("pages.doctor.patient")}
             </p>
             <p className="text-xs text-muted-foreground/70 flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-3.5 h-3.5" />
@@ -294,7 +295,7 @@ function PrescriptionCard({
             onClick={() => onIssue(p)}
             className="h-9 px-4 text-sm flex-1 rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
           >
-            {isIssuing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Issue"}
+            {isIssuing ? <Loader2 className="h-4 w-4 animate-spin" /> : t("pages.doctor.rx_issue")}
           </Button>
         )}
         <Button
@@ -303,7 +304,7 @@ function PrescriptionCard({
           className="h-9 px-4 text-sm flex-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all duration-200"
           onClick={() => onViewDetails(p)}
         >
-          View Details
+          {t("pages.doctor.view_details")}
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
@@ -379,11 +380,11 @@ const DoctorPrescriptions = () => {
     icon: LucideIcon;
     tone: string;
   }[] = [
-    { key: "All", label: "Total", value: statsData?.total ?? statsList.length, icon: FileText, tone: "text-primary bg-primary/10 border-primary/15" },
-    { key: "issued", label: "Issued", value: countByStatus("issued"), icon: ShieldCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-400/20" },
-    { key: "sent_to_pharmacy", label: "At pharmacy", value: countByStatus("sent_to_pharmacy"), icon: Building2, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
-    { key: "dispensed", label: "Dispensed", value: countByStatus("dispensed"), icon: Send, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
-    { key: "cancelled", label: "Cancelled", value: countByStatus("cancelled"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
+    { key: "All", label: t("pages.doctor.total"), value: statsData?.total ?? statsList.length, icon: FileText, tone: "text-primary bg-primary/10 border-primary/15" },
+    { key: "issued", label: t("pages.doctor.rx_status_issued"), value: countByStatus("issued"), icon: ShieldCheck, tone: "text-sky-600 bg-sky-500/10 border-sky-400/20" },
+    { key: "sent_to_pharmacy", label: t("pages.doctor.rx_at_pharmacy"), value: countByStatus("sent_to_pharmacy"), icon: Building2, tone: "text-amber-600 bg-amber-500/10 border-amber-400/20" },
+    { key: "dispensed", label: t("pages.doctor.rx_status_dispensed"), value: countByStatus("dispensed"), icon: Send, tone: "text-emerald-600 bg-emerald-500/10 border-emerald-400/20" },
+    { key: "cancelled", label: t("pages.doctor.rx_status_cancelled"), value: countByStatus("cancelled"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
   ];
 
   // ── Filter helpers ───────────────────────────────────────────────────────
@@ -419,13 +420,13 @@ const DoctorPrescriptions = () => {
     ),
     filled: t("pages.doctor.rx_status_filled", "Filled"),
     cancelled: t("pages.doctor.rx_status_cancelled", "Cancelled"),
-    active: "Active",
-    pending: "Pending",
-    dispensed: "Dispensed",
-    expired: "Expired",
-    completed: "Completed",
-    rejected: "Rejected",
-    returned: "Returned",
+    active: t("pages.doctor.rx_status_active"),
+    pending: t("pages.doctor.rx_status_pending"),
+    dispensed: t("pages.doctor.rx_status_dispensed"),
+    expired: t("pages.doctor.rx_status_expired"),
+    completed: t("pages.doctor.rx_status_completed"),
+    rejected: t("pages.doctor.rx_status_rejected"),
+    returned: t("pages.doctor.rx_status_returned"),
   };
 
   // ── Unique statuses from current result set ──────────────────────────────
@@ -461,11 +462,11 @@ const DoctorPrescriptions = () => {
     (p: Prescription) => {
       issueMutation.mutate(p.id, {
         onSuccess: (res) => {
-          toast.success(res.message ?? "Prescription issued successfully");
+          toast.success(res.message ?? t("pages.doctor.rx_issued_success"));
         },
         onError: (err: unknown) => {
           const message =
-            err instanceof Error ? err.message : "Failed to issue prescription";
+            err instanceof Error ? err.message : t("pages.doctor.rx_issue_failed");
           toast.error(message);
         },
       });
@@ -478,10 +479,10 @@ const DoctorPrescriptions = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.doctor.status"),
       value: filters.status,
       options: [
-        { value: "All", label: "All statuses" },
+        { value: "All", label: t("pages.doctor.all_statuses") },
         ...availableStatuses.map((s) => ({
           value: s,
           label: localStatusLabel[s] ?? s,
@@ -492,36 +493,36 @@ const DoctorPrescriptions = () => {
     {
       type: "select" as const,
       key: "is_signed",
-      label: "Signature",
+      label: t("pages.doctor.rx_signature"),
       value: filters.is_signed,
       options: [
-        { value: "all", label: "All" },
-        { value: "signed", label: "Signed" },
-        { value: "unsigned", label: "Unsigned" },
+        { value: "all", label: t("pages.doctor.all") },
+        { value: "signed", label: t("pages.doctor.rx_signed") },
+        { value: "unsigned", label: t("pages.doctor.rx_unsigned") },
       ],
       onChange: (v: string) => set("is_signed", v as any),
     },
     {
       type: "select" as const,
       key: "validity",
-      label: "Validity",
+      label: t("pages.doctor.rx_validity"),
       value: filters.validity,
       options: [
-        { value: "all", label: "All" },
-        { value: "valid_only", label: "Valid only" },
-        { value: "expired_only", label: "Expired only" },
+        { value: "all", label: t("pages.doctor.all") },
+        { value: "valid_only", label: t("pages.doctor.rx_valid_only") },
+        { value: "expired_only", label: t("pages.doctor.rx_expired_only") },
       ],
       onChange: (v: string) => set("validity", v as any),
     },
     {
       type: "custom" as const,
       key: "date_range",
-      label: "Date range",
+      label: t("pages.doctor.date_range"),
       render: () => (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">From</p>
+              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.from")}</p>
               <input
                 type="date"
                 value={filters.date_from}
@@ -530,7 +531,7 @@ const DoctorPrescriptions = () => {
               />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">To</p>
+              <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.to")}</p>
               <input
                 type="date"
                 value={filters.date_to}
@@ -547,7 +548,7 @@ const DoctorPrescriptions = () => {
               }}
               className="text-[10px] text-primary hover:text-primary/80 font-medium"
             >
-              Clear dates
+              {t("pages.doctor.clear_dates")}
             </button>
           )}
         </div>
@@ -556,19 +557,19 @@ const DoctorPrescriptions = () => {
     {
       type: "search" as const,
       key: "search",
-      label: "Search",
+      label: t("pages.doctor.search"),
       value: filters.search,
-      placeholder: "Patient, diagnosis, Rx#…",
+      placeholder: t("pages.doctor.rx_search_placeholder"),
       onChange: (v: string) => set("search", v),
     }
-  ], [filters, availableStatuses, localStatusLabel, set]);
+  ], [filters, availableStatuses, localStatusLabel, set, t]);
 
   return (
     <DashboardLayout role="doctor">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+          title={t("pages.doctor.rx_title")}
+          subtitle={t("pages.doctor.rx_subtitle", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
         {/* ── Stats cards (also quick filters) ── */}
@@ -599,15 +600,7 @@ const DoctorPrescriptions = () => {
         </div>
 
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen(!filterOpen)}
-            hasActiveFilters={hasActiveFilters}
-            onClearAll={clearAll}
-            fields={filterFields}
-            cols={{ default: 1, sm: 2, lg: 5 }}
-          />
-
+         
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto">
             {/* Meta bar */}
@@ -617,7 +610,7 @@ const DoctorPrescriptions = () => {
                   {isLoading ? (
                     <span className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading…
+                      {t("pages.doctor.loading")}
                     </span>
                   ) : (
                     <>
@@ -625,14 +618,14 @@ const DoctorPrescriptions = () => {
                         {data?.total ?? allList.length}
                       </span>{" "}
                       {(data?.total ?? allList.length) === 1
-                        ? "prescription"
-                        : "prescriptions"}
+                        ? t("pages.doctor.rx_prescription")
+                        : t("pages.doctor.rx_prescriptions")}
                       {hasActiveFilters && (
                         <button
                           onClick={clearAll}
                           className="ml-3 text-primary hover:text-primary/80 hover:underline text-xs font-medium transition-colors"
                         >
-                          Reset filters
+                          {t("pages.doctor.reset_filters")}
                         </button>
                       )}
                     </>
@@ -650,10 +643,10 @@ const DoctorPrescriptions = () => {
                   }}
                   className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
                 >
-                  <option value="created_at|desc">Latest first</option>
-                  <option value="created_at|asc">Oldest first</option>
-                  <option value="valid_until|asc">Expiring soon</option>
-                  <option value="status|asc">Status A-Z</option>
+                  <option value="created_at|desc">{t("pages.doctor.latest_first")}</option>
+                  <option value="created_at|asc">{t("pages.doctor.oldest_first")}</option>
+                  <option value="valid_until|asc">{t("pages.doctor.rx_expiring_soon")}</option>
+                  <option value="status|asc">{t("pages.doctor.rx_status_az")}</option>
                 </select>
 
                 <FilterToggleButton
@@ -666,7 +659,7 @@ const DoctorPrescriptions = () => {
                 <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                   <button
                     onClick={() => setView("table")}
-                    aria-label="Table view"
+                    aria-label={t("pages.doctor.table_view")}
                     className={cn(
                       "px-3 py-2 transition-all duration-200",
                       view === "table"
@@ -687,7 +680,7 @@ const DoctorPrescriptions = () => {
                   </button>
                   <button
                     onClick={() => setView("cards")}
-                    aria-label="Card view"
+                    aria-label={t("pages.doctor.card_view")}
                     className={cn(
                       "px-3 py-2 border-l border-border/60 transition-all duration-200",
                       view === "cards"
@@ -722,6 +715,15 @@ const DoctorPrescriptions = () => {
                 </Button>
               </div>
             </div>
+             <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen(!filterOpen)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={filterFields}
+            cols={{ default: 1, sm: 2, lg: 5 }}
+          />
+
 
             {/* Content */}
             <div className="p-5">
@@ -732,12 +734,12 @@ const DoctorPrescriptions = () => {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Failed to load prescriptions
+                      {t("pages.doctor.rx_load_failed")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-1">
                       {error instanceof Error
                         ? error.message
-                        : "Something went wrong"}
+                        : t("pages.doctor.something_went_wrong")}
                     </p>
                   </div>
                 </div>
@@ -748,10 +750,10 @@ const DoctorPrescriptions = () => {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      No prescriptions match your filters
+                      {t("pages.doctor.rx_no_match")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
+                      {t("pages.doctor.try_widening_search")}
                     </p>
                   </div>
                   {hasActiveFilters && (
@@ -759,7 +761,7 @@ const DoctorPrescriptions = () => {
                       onClick={clearAll}
                       className="text-sm text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-2"
                     >
-                      Clear all filters
+                      {t("pages.doctor.clear_all_filters")}
                     </button>
                   )}
                 </div>
@@ -769,19 +771,19 @@ const DoctorPrescriptions = () => {
                     <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-5 py-4 font-semibold">
-                          Patient
+                          {t("pages.doctor.patient")}
                         </th>
                         <th className="text-left px-5 py-4 font-semibold">
-                          Medications
+                          {t("pages.doctor.medications")}
                         </th>
                         <th className="text-left px-5 py-4 font-semibold">
-                          Issued
+                          {t("pages.doctor.rx_issued")}
                         </th>
                         <th className="text-left px-5 py-4 font-semibold">
-                          Pharmacy
+                          {t("pages.doctor.pharmacy")}
                         </th>
                         <th className="text-left px-5 py-4 font-semibold">
-                          Status
+                          {t("pages.doctor.status")}
                         </th>
                         <th className="px-5 py-4" />
                       </tr>
@@ -804,7 +806,7 @@ const DoctorPrescriptions = () => {
                                 </div>
                                 <div>
                                   <p className="font-semibold text-sm text-foreground">
-                                    {p.patient?.name ?? "Patient"}
+                                    {p.patient?.name ?? t("pages.doctor.patient")}
                                   </p>
                                   {p.diagnosis && (
                                     <p className="text-xs text-muted-foreground/70 truncate max-w-[150px]">
@@ -834,7 +836,7 @@ const DoctorPrescriptions = () => {
                                 ))}
                                 {p.items.length > 2 && (
                                   <span className="text-xs text-muted-foreground/50 pl-6">
-                                    +{p.items.length - 2} more
+                                    {t("pages.doctor.more_count", { count: p.items.length - 2 })}
                                   </span>
                                 )}
                               </div>
@@ -900,7 +902,7 @@ const DoctorPrescriptions = () => {
                                       issueMutation.variables === p.id ? (
                                       <Loader2 className="h-3 w-3 animate-spin" />
                                     ) : (
-                                      "Issue"
+                                      t("pages.doctor.rx_issue")
                                     )}
                                   </Button>
                                 )}
@@ -910,7 +912,7 @@ const DoctorPrescriptions = () => {
                                   onClick={() => handleViewDetails(p)}
                                   className="h-7 px-2.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px] transition-all duration-200"
                                 >
-                                  Details
+                                  {t("pages.doctor.details")}
                                   <ChevronRight className="h-3 w-3 ml-0.5" />
                                 </Button>
                               </div>

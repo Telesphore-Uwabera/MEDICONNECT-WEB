@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Building2, Stethoscope, CalendarClock, User, Phone, Loader2, CalendarX2, X, FileText,
   MapPin, ChevronRight, Clock, Calendar, HeartPulse, ClipboardList,
@@ -17,15 +18,15 @@ import {
 } from "@/hooks/doctor/use-doctor-service-booking";
 import type { ApiError } from "@/lib/Api";
 import { MedicalRecordView, PatientFilesPanel, PatientVisitsList } from "./shared/PatientMedicalPanels";
-import { t } from "i18next";
 
-const STATUS_FILTERS: Array<{ value: ServiceBookingStatus | "all"; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "accepted", label: "Accepted" },
-  { value: "completed", label: "Completed" },
-  { value: "rejected", label: "Rejected" },
-  { value: "cancelled", label: "Cancelled" },
+
+const STATUS_FILTERS: Array<{ value: ServiceBookingStatus | "all"; labelKey: string }> = [
+  { value: "all", labelKey: "pages.doctor.all" },
+  { value: "pending", labelKey: "pages.doctor.status_pending" },
+  { value: "accepted", labelKey: "pages.doctor.status_accepted" },
+  { value: "completed", labelKey: "pages.doctor.status_completed" },
+  { value: "rejected", labelKey: "pages.doctor.status_rejected" },
+  { value: "cancelled", labelKey: "pages.doctor.status_cancelled" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -103,14 +104,15 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 type DrawerTab = "details" | "record" | "visits" | "files";
-const DRAWER_TABS: Array<{ id: DrawerTab; label: string; icon: ReactNode }> = [
-  { id: "details", label: "Details", icon: <Calendar className="h-4 w-4" /> },
-  { id: "record", label: "Record", icon: <HeartPulse className="h-4 w-4" /> },
-  { id: "visits", label: "Visits", icon: <Stethoscope className="h-4 w-4" /> },
-  { id: "files", label: "Files", icon: <ClipboardList className="h-4 w-4" /> },
+const DRAWER_TABS: Array<{ id: DrawerTab; labelKey: string; icon: ReactNode }> = [
+  { id: "details", labelKey: "pages.doctor.details", icon: <Calendar className="h-4 w-4" /> },
+  { id: "record", labelKey: "pages.doctor.record", icon: <HeartPulse className="h-4 w-4" /> },
+  { id: "visits", labelKey: "pages.doctor.visits", icon: <Stethoscope className="h-4 w-4" /> },
+  { id: "files", labelKey: "pages.doctor.files", icon: <ClipboardList className="h-4 w-4" /> },
 ];
 
 export function ServiceBookingsTab() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<ServiceBookingStatus | "all">("all");
   const [selected, setSelected] = useState<ServiceBooking | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -172,7 +174,7 @@ export function ServiceBookingsTab() {
                 : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
             )}
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
       </div>
@@ -258,19 +260,19 @@ export function ServiceBookingsTab() {
 
             {/* Tabs */}
             <div className="flex items-center gap-1 px-3 border-b border-border/60 bg-card shrink-0">
-              {DRAWER_TABS.map((t) => (
+              {DRAWER_TABS.map((tabItem) => (
                 <button
-                  key={t.id}
-                  onClick={() => setDrawerTab(t.id)}
+                  key={tabItem.id}
+                  onClick={() => setDrawerTab(tabItem.id)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    drawerTab === t.id
+                    drawerTab === tabItem.id
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {t.icon}
-                  {t.label}
+                  {tabItem.icon}
+                  {t(tabItem.labelKey)}
                 </button>
               ))}
             </div>
@@ -290,28 +292,28 @@ export function ServiceBookingsTab() {
                   )}
 
                   <Section title={t("consult.bookings.schedule")} icon={<Calendar className="h-4 w-4" />}>
-                    <DetailRow label="Date" value={fmtDate(detail.preferred_date)} icon={<Calendar className="h-4 w-4" />} />
-                    <DetailRow label="Time" value={fmtTime(detail.preferred_time)} icon={<Clock className="h-4 w-4" />} />
+                    <DetailRow label={t("pages.doctor.date")} value={fmtDate(detail.preferred_date)} icon={<Calendar className="h-4 w-4" />} />
+                    <DetailRow label={t("pages.doctor.time")} value={fmtTime(detail.preferred_time)} icon={<Clock className="h-4 w-4" />} />
                   </Section>
 
                   <Section title={t("consult.booking.hospital")} icon={<Building2 className="h-4 w-4" />}>
-                    <DetailRow label="Name" value={hospitalName(detail)} />
+                    <DetailRow label={t("pages.doctor.name")} value={hospitalName(detail)} />
                     {hospitalCity(detail) && (
-                      <DetailRow label="City" value={
+                      <DetailRow label={t("pages.doctor.city")} value={
                         <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 text-muted-foreground/60" />{hospitalCity(detail)}</span>
                       } />
                     )}
                   </Section>
 
                   <Section title={t("consult.booking.service")} icon={<Stethoscope className="h-4 w-4" />}>
-                    <DetailRow label="Name" value={serviceName(detail)} />
-                    {deptName(detail) && <DetailRow label="Department" value={deptName(detail)} />}
+                    <DetailRow label={t("pages.doctor.name")} value={serviceName(detail)} />
+                    {deptName(detail) && <DetailRow label={t("pages.doctor.department")} value={deptName(detail)} />}
                   </Section>
 
                   <Section title={t("consult.bookings.patient")} icon={<User className="h-4 w-4" />}>
-                    <DetailRow label="Name" value={patientName(detail)} />
+                    <DetailRow label={t("pages.doctor.name")} value={patientName(detail)} />
                     {patientPhone(detail) && (
-                      <DetailRow label="Phone" value={
+                      <DetailRow label={t("pages.doctor.phone")} value={
                         <span className="inline-flex items-center gap-1.5"><Phone className="h-4 w-4 text-muted-foreground/60" />{patientPhone(detail)}</span>
                       } />
                     )}

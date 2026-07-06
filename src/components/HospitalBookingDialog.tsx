@@ -30,7 +30,9 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMe } from "@/hooks/useAuth";
@@ -76,6 +78,9 @@ export const HospitalBookingDialog = ({
   open: boolean;
   onOpenChange: (o: boolean) => void;
 }) => {
+  const { t, i18n } = useTranslation();
+  const dateFnsLocale = i18n.language === "fr" ? fr : undefined;
+
   const { data: detail, isLoading } = useHospitalDetail(
     open ? hospital.slug : undefined
   );
@@ -190,8 +195,8 @@ export const HospitalBookingDialog = ({
     const token = localStorage.getItem("auth_token");
     if (!token) {
       // Not signed in → send to login instead of failing with "not authenticated".
-      toast.message("Please sign in to book", {
-        description: "You need a patient account to book a hospital spot.",
+      toast.message(t("booking.doctorAppointment.signInToBook"), {
+        description: t("booking.hospitalAppointment.signInDesc"),
       });
       onOpenChange(false);
       navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
@@ -220,8 +225,13 @@ export const HospitalBookingDialog = ({
           serviceName: chosenService.name_en,
           departmentName: chosenDepartment.name_en,
         });
-        toast.success("Booking confirmed!", {
-          description: `${hospital.name_en} · ${chosenService.name_en} · ${selectedDate} at ${selectedTime}`,
+        toast.success(t("booking.hospitalAppointment.bookingConfirmed"), {
+          description: t("booking.hospitalAppointment.bookingConfirmedDesc", {
+            hospital: hospital.name_en,
+            service: chosenService.name_en,
+            date: selectedDate,
+            time: selectedTime,
+          }),
         });
       },
       onError: (err: Error) => {
@@ -230,8 +240,8 @@ export const HospitalBookingDialog = ({
 
         // Session expired / not authenticated → go to login.
         if (status === 401 || /unauthor|not authenticated/i.test(msg)) {
-          toast.message("Please sign in to book", {
-            description: "Your session has expired or you're not signed in.",
+          toast.message(t("booking.doctorAppointment.signInToBook"), {
+            description: t("booking.doctorAppointment.sessionExpiredDesc"),
           });
           onOpenChange(false);
           navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
@@ -244,7 +254,7 @@ export const HospitalBookingDialog = ({
           return;
         }
 
-        toast.error("Booking failed", { description: msg || "Please try again." });
+        toast.error(t("booking.doctorAppointment.bookingFailed"), { description: msg || t("booking.doctorAppointment.tryAgain") });
       },
     });
   };
@@ -289,7 +299,7 @@ export const HospitalBookingDialog = ({
             </div>
             <div className="min-w-0 flex-1">
               <SheetTitle className="text-[13px] font-semibold text-foreground leading-tight">
-                Book a hospital spot
+                {t("booking.title")}
               </SheetTitle>
               <SheetDescription className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                 <MapPin className="h-2.5 w-2.5 shrink-0" />
@@ -307,7 +317,7 @@ export const HospitalBookingDialog = ({
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <p className="text-[11px]">Loading hospital details…</p>
+              <p className="text-[11px]">{t("booking.hospitalAppointment.loadingDetails")}</p>
             </div>
           )}
 
@@ -319,13 +329,15 @@ export const HospitalBookingDialog = ({
               </div>
               <div>
                 <p className="text-[13px] font-semibold text-foreground">
-                  Spot reserved
+                  {t("booking.spotReserved")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
                   {hospital.name_en}
                   <br />
-                  {format(parseISO(confirmed.date), "EEEE, MMMM d, yyyy")} at{" "}
-                  {confirmed.time}
+                  {t("booking.doctorAppointment.confirmedDateTime", {
+                    date: format(parseISO(confirmed.date), "EEEE, MMMM d, yyyy", { locale: dateFnsLocale }),
+                    time: confirmed.time,
+                  })}
                   <br />
                   <span className="inline-flex items-center gap-1 mt-1 text-muted-foreground">
                     <Building2 className="h-3 w-3" />
@@ -343,7 +355,7 @@ export const HospitalBookingDialog = ({
                 onClick={() => onOpenChange(false)}
                 className="h-8 px-5 text-[11px] font-semibold rounded-[6px] mt-2"
               >
-                Done
+                {t("booking.doctorAppointment.done")}
               </Button>
             </div>
           )}
@@ -355,7 +367,7 @@ export const HospitalBookingDialog = ({
               {/* ── Weekly schedule overview ── */}
               <div>
                 <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                  <CalendarDays className="h-2.5 w-2.5" /> Working days
+                  <CalendarDays className="h-2.5 w-2.5" /> {t("booking.hospitalAppointment.workingDays")}
                 </p>
 
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
@@ -389,7 +401,7 @@ export const HospitalBookingDialog = ({
                               : "text-muted-foreground/50"
                           )}
                         >
-                          {isOpen ? "Open" : "Closed"}
+                          {isOpen ? t("pages.landing.open") : t("pages.cards.closed")}
                         </span>
                         {isOpen && day.openTime && day.closeTime && (
                           <span className="mt-0.5 text-[7px] text-muted-foreground leading-tight">
@@ -403,7 +415,7 @@ export const HospitalBookingDialog = ({
 
                 {!hasAnyOpenDay && (
                   <p className="mt-2 text-[10px] text-muted-foreground text-center py-1">
-                    This hospital has no open days configured yet.
+                    {t("booking.hospitalAppointment.noOpenDays")}
                   </p>
                 )}
               </div>
@@ -412,14 +424,14 @@ export const HospitalBookingDialog = ({
               {hasAnyOpenDay && (
                 <div>
                   <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-2.5 flex items-center gap-1.5">
-                    <Clock className="h-2.5 w-2.5" /> Select a date
+                    <Clock className="h-2.5 w-2.5" /> {t("booking.hospitalAppointment.selectADate")}
                   </p>
 
                   {dateSlots.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-6 text-center gap-2 border border-dashed border-border rounded-[6px]">
                       <CalendarDays className="h-5 w-5 text-muted-foreground/30" />
                       <p className="text-[10px] text-muted-foreground">
-                        No open dates in the next 14 days.
+                        {t("booking.hospitalAppointment.noOpenDatesSoon")}
                       </p>
                     </div>
                   ) : (
@@ -439,12 +451,12 @@ export const HospitalBookingDialog = ({
                           )}
                         >
                           <div className="text-[8px] uppercase font-semibold tracking-wider text-muted-foreground">
-                            {format(slot.displayDate, "EEE")}
+                            {format(slot.displayDate, "EEE", { locale: dateFnsLocale })}
                           </div>
                           <div className="text-[12px] font-bold text-foreground leading-tight mt-0.5">
                             {format(slot.displayDate, "d")}
                             <span className="text-[9px] font-medium text-muted-foreground ml-0.5">
-                              {format(slot.displayDate, "MMM")}
+                              {format(slot.displayDate, "MMM", { locale: dateFnsLocale })}
                             </span>
                           </div>
                           <div className="mt-1.5 flex items-center gap-0.5 text-[9px] text-muted-foreground">
@@ -462,7 +474,7 @@ export const HospitalBookingDialog = ({
               {selectedDate && timeSlots.length > 0 && (
                 <div className="space-y-1.5">
                   <Label className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                    Preferred time{" "}
+                    {t("booking.hospitalAppointment.preferredTime")}{" "}
                     <span className="text-destructive">*</span>
                   </Label>
                   <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
@@ -491,11 +503,11 @@ export const HospitalBookingDialog = ({
                   className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"
                 >
                   <Building2 className="h-2.5 w-2.5" />
-                  Department <span className="text-destructive">*</span>
+                  {t("booking.hospitalAppointment.department")} <span className="text-destructive">*</span>
                 </Label>
                 {departments.length === 0 ? (
                   <p className="text-[10px] text-muted-foreground py-1">
-                    No departments listed for this hospital.
+                    {t("booking.hospitalAppointment.noDepartments")}
                   </p>
                 ) : (
                   <Select
@@ -506,7 +518,7 @@ export const HospitalBookingDialog = ({
                       id="department"
                       className="h-8 text-[11px] rounded-[6px] border-border bg-background focus:ring-1 focus:ring-primary/30"
                     >
-                      <SelectValue placeholder="Select a department" />
+                      <SelectValue placeholder={t("booking.hospitalAppointment.selectDepartmentPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent className="text-[11px]">
                       {departments.map((d) => (
@@ -535,16 +547,16 @@ export const HospitalBookingDialog = ({
                   className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5"
                 >
                   <Stethoscope className="h-2.5 w-2.5" />
-                  Service <span className="text-destructive">*</span>
+                  {t("booking.hospitalAppointment.service")} <span className="text-destructive">*</span>
                 </Label>
 
                 {!selectedDepartment ? (
                   <p className="text-[10px] text-muted-foreground/60 py-1 italic">
-                    Select a department first.
+                    {t("booking.hospitalAppointment.selectDepartmentFirst")}
                   </p>
                 ) : filteredServices.length === 0 ? (
                   <p className="text-[10px] text-muted-foreground py-1">
-                    No services available for this department.
+                    {t("booking.hospitalAppointment.noServicesForDept")}
                   </p>
                 ) : (
                   <Select
@@ -555,7 +567,7 @@ export const HospitalBookingDialog = ({
                       id="service"
                       className="h-8 text-[11px] rounded-[6px] border-border bg-background focus:ring-1 focus:ring-primary/30"
                     >
-                      <SelectValue placeholder="Select a service" />
+                      <SelectValue placeholder={t("booking.hospitalAppointment.selectServicePlaceholder")} />
                     </SelectTrigger>
                     <SelectContent className="text-[11px]">
                       {filteredServices.map((s) => (
@@ -584,16 +596,16 @@ export const HospitalBookingDialog = ({
                   htmlFor="notes"
                   className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground"
                 >
-                  Notes
+                  {t("booking.hospitalAppointment.notes")}
                   <span className="normal-case tracking-normal font-normal ml-1 text-muted-foreground/60">
-                    (optional)
+                    ({t("common.optional")})
                   </span>
                 </Label>
                 <Input
                   id="notes"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g. I prefer morning sessions"
+                  placeholder={t("booking.hospitalAppointment.notesPlaceholder")}
                   className="h-8 text-[11px] rounded-[6px] border-border bg-background placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
@@ -614,8 +626,10 @@ export const HospitalBookingDialog = ({
                         {chosenDepartment.name_en}
                       </span>
                       {" · "}
-                      {format(parseISO(selectedDate), "EEEE, MMMM d, yyyy")} at{" "}
-                      {selectedTime}
+                      {t("booking.doctorAppointment.confirmedDateTime", {
+                        date: format(parseISO(selectedDate), "EEEE, MMMM d, yyyy", { locale: dateFnsLocale }),
+                        time: selectedTime,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -631,10 +645,10 @@ export const HospitalBookingDialog = ({
               <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-foreground">
-                  Switch to your patient role to book
+                  {t("booking.doctorAppointment.switchToPatientTitle")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  You're signed in as {switchPrompt}. Switch to patient to book a hospital spot.
+                  {t("booking.hospitalAppointment.switchToPatientDesc", { role: switchPrompt })}
                 </p>
               </div>
               <button
@@ -649,7 +663,7 @@ export const HospitalBookingDialog = ({
                 }
                 className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
               >
-                Switch to patient
+                {t("booking.doctorAppointment.switchToPatient")}
               </button>
             </div>
           </div>
@@ -664,7 +678,7 @@ export const HospitalBookingDialog = ({
               onClick={() => onOpenChange(false)}
               className="h-8 px-4 text-[10px] font-medium rounded-[6px]"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               size="sm"
@@ -675,7 +689,7 @@ export const HospitalBookingDialog = ({
               {createBooking.isPending && (
                 <Loader2 className="h-3 w-3 animate-spin" />
               )}
-              Confirm booking
+              {t("booking.confirmBooking")}
             </Button>
           </SheetFooter>
         )}

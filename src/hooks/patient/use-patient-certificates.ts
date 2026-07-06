@@ -7,7 +7,7 @@ const BASE = "/patient/certificates";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type CertStatus = "draft" | "pending" | "in_review" | "approved" | "rejected";
+export type CertStatus = "draft" | "pending" | "in_review" | "approved" | "rejected" | "issued" | "withdrawn" | "expired";
 
 export interface Doctor {
   id: number;

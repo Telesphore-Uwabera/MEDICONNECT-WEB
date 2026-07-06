@@ -32,11 +32,11 @@ const INITIAL_FILTERS: FilterState = {
   sort: "name",
 };
 
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "name", label: "Name (A–Z)" },
-  { value: "age-asc", label: "Age: Youngest first" },
-  { value: "age-desc", label: "Age: Oldest first" },
-  { value: "last", label: "Last visit: Recent first" },
+const SORT_OPTIONS: Array<{ value: SortOption; labelKey: string }> = [
+  { value: "name", labelKey: "pages.doctor.sort_name_az" },
+  { value: "age-asc", labelKey: "pages.doctor.sort_age_youngest" },
+  { value: "age-desc", labelKey: "pages.doctor.sort_age_oldest" },
+  { value: "last", labelKey: "pages.doctor.sort_last_visit_recent" },
 ];
 
 const RISK_STYLES: Record<RiskLevel, string> = {
@@ -52,7 +52,7 @@ const PATIENTS: Patient[] = [
     age: 54,
     last: "Apr 25",
     rawLast: "2026-04-25",
-    condition: "Hypertension",
+    conditionKey: "pages.doctor.condition_hypertension",
     risk: "Medium",
   },
   {
@@ -61,7 +61,7 @@ const PATIENTS: Patient[] = [
     age: 32,
     last: "Apr 22",
     rawLast: "2026-04-22",
-    condition: "Bronchitis",
+    conditionKey: "pages.doctor.condition_bronchitis",
     risk: "Low",
   },
   {
@@ -70,7 +70,7 @@ const PATIENTS: Patient[] = [
     age: 41,
     last: "Apr 27",
     rawLast: "2026-04-27",
-    condition: "Eczema",
+    conditionKey: "pages.doctor.condition_eczema",
     risk: "Low",
   },
   {
@@ -79,7 +79,7 @@ const PATIENTS: Patient[] = [
     age: 8,
     last: "Apr 18",
     rawLast: "2026-04-18",
-    condition: "Routine checkup",
+    conditionKey: "pages.doctor.condition_routine_checkup",
     risk: "Low",
   },
   {
@@ -88,7 +88,7 @@ const PATIENTS: Patient[] = [
     age: 67,
     last: "Apr 20",
     rawLast: "2026-04-20",
-    condition: "Post-op cardiac",
+    conditionKey: "pages.doctor.condition_post_op_cardiac",
     risk: "High",
   },
 ];
@@ -166,6 +166,7 @@ function PatientCard({
   p: Patient;
   onAction: (p: Patient) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-card border border-border rounded-[6px] p-4 flex items-center gap-4 hover:border-teal-300 dark:hover:border-teal-600 transition-colors">
       <Avatar name={p.name} />
@@ -181,17 +182,17 @@ function PatientCard({
               RISK_STYLES[p.risk],
             )}
           >
-            {p.risk}
+            {t(`pages.doctor.risk_${p.risk.toLowerCase()}`)}
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">
-          {p.condition} · Age {p.age}
+          {t(p.conditionKey)} - {t("pages.doctor.age_value", { age: p.age })}
         </p>
       </div>
 
       <div className="flex items-center gap-4 flex-shrink-0">
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-muted-foreground">Last visit</p>
+          <p className="text-xs text-muted-foreground">{t("pages.doctor.last_visit")}</p>
           <p className="text-sm font-medium text-foreground">{p.last}</p>
         </div>
         <Button
@@ -200,7 +201,7 @@ function PatientCard({
           className="h-9 px-4 text-sm"
           onClick={() => onAction(p)}
         >
-          View
+          {t("pages.doctor.view")}
         </Button>
       </div>
     </div>
@@ -210,7 +211,7 @@ function PatientCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const DoctorPatients = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
@@ -236,7 +237,7 @@ const DoctorPatients = () => {
       if (
         q &&
         !p.name.toLowerCase().includes(q) &&
-        !p.condition.toLowerCase().includes(q)
+        !t(p.conditionKey).toLowerCase().includes(q)
       )
         return false;
       return true;
@@ -252,7 +253,7 @@ const DoctorPatients = () => {
           return a.name.localeCompare(b.name);
       }
     });
-  }, [filters]);
+  }, [filters, t]);
 
   const highRiskCount = filtered.filter((p) => p.risk === "High").length;
 
@@ -290,7 +291,7 @@ const DoctorPatients = () => {
               type="text"
               value={filters.search}
               onChange={(e) => set("search", e.target.value)}
-              placeholder="Search name or condition…"
+              placeholder={t("pages.doctor.search_name_condition")}
               className="w-full h-10 pl-10 pr-4 text-sm bg-background border border-border rounded-[6px] outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
             />
           </div>
@@ -302,7 +303,7 @@ const DoctorPatients = () => {
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(o.labelKey)}
                 </option>
               ))}
             </select>
@@ -343,7 +344,7 @@ const DoctorPatients = () => {
                 />
               </svg>
               <span className="text-sm font-semibold text-foreground">
-                Filters
+                {t("pages.doctor.filters")}
               </span>
             </div>
             {hasActiveFilters && (
@@ -351,21 +352,21 @@ const DoctorPatients = () => {
                 onClick={clearAll}
                 className="text-sm text-teal-600 hover:underline"
               >
-                Reset all
+                {t("pages.doctor.reset_all")}
               </button>
             )}
           </div>
 
           <div className="px-4">
-            <FilterSection title="Risk Level">
+            <FilterSection title={t("pages.doctor.risk_level")}>
               <PillGroup<RiskLevel | "All">
                 value={filters.risk}
                 onChange={(v) => set("risk", v)}
                 options={[
-                  { value: "All", label: "All levels" },
-                  { value: "High", label: "High risk" },
-                  { value: "Medium", label: "Medium risk" },
-                  { value: "Low", label: "Low risk" },
+                  { value: "All", label: t("pages.doctor.all_levels") },
+                  { value: "High", label: t("pages.doctor.high_risk") },
+                  { value: "Medium", label: t("pages.doctor.medium_risk") },
+                  { value: "Low", label: t("pages.doctor.low_risk") },
                 ]}
               />
             </FilterSection>
@@ -380,13 +381,13 @@ const DoctorPatients = () => {
               <span className="font-semibold text-foreground">
                 {filtered.length}
               </span>{" "}
-              {filtered.length === 1 ? "patient" : "patients"}
+              {filtered.length === 1 ? t("pages.doctor.patient") : t("pages.doctor.patients")}
               {hasActiveFilters && (
                 <button
                   onClick={clearAll}
                   className="ml-3 text-teal-600 hover:underline text-sm"
                 >
-                  Reset filters
+                  {t("pages.doctor.reset_filters")}
                 </button>
               )}
             </p>
@@ -395,7 +396,7 @@ const DoctorPatients = () => {
               {highRiskCount > 0 && (
                 <span className="hidden sm:flex items-center gap-2 text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-full">
                   <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
-                  {highRiskCount} high risk
+                  {t("pages.doctor.high_risk_count", { count: highRiskCount })}
                 </span>
               )}
 
@@ -403,7 +404,7 @@ const DoctorPatients = () => {
               <div className="flex rounded-[6px] border border-border overflow-hidden bg-card">
                 <button
                   onClick={() => setView("table")}
-                  aria-label="Table view"
+                  aria-label={t("pages.doctor.table_view")}
                   className={cn(
                     "px-3 py-2 transition-colors",
                     view === "table"
@@ -424,7 +425,7 @@ const DoctorPatients = () => {
                 </button>
                 <button
                   onClick={() => setView("cards")}
-                  aria-label="Card view"
+                  aria-label={t("pages.doctor.card_view")}
                   className={cn(
                     "px-3 py-2 border-l border-border transition-colors",
                     view === "cards"
@@ -469,17 +470,17 @@ const DoctorPatients = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    No patients match your filters
+                    {t("pages.doctor.no_patients_match")}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Try widening your search criteria
+                    {t("pages.doctor.try_widening_search")}
                   </p>
                 </div>
                 <button
                   onClick={clearAll}
                   className="text-xs text-teal-600 hover:underline"
                 >
-                  Clear all filters
+                  {t("pages.doctor.clear_all_filters")}
                 </button>
               </div>
             ) : view === "table" ? (
@@ -525,7 +526,7 @@ const DoctorPatients = () => {
                         <td className="px-5 py-4 text-muted-foreground">
                           {p.last}
                         </td>
-                        <td className="px-5 py-4">{p.condition}</td>
+                        <td className="px-5 py-4">{t(p.conditionKey)}</td>
                         <td className="px-5 py-4">
                           <span
                             className={cn(
@@ -533,7 +534,7 @@ const DoctorPatients = () => {
                               RISK_STYLES[p.risk],
                             )}
                           >
-                            {p.risk}
+                            {t(`pages.doctor.risk_${p.risk.toLowerCase()}`)}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
@@ -542,7 +543,7 @@ const DoctorPatients = () => {
                             variant="ghost"
                             onClick={() => handleAction(p)}
                           >
-                            View
+                            {t("pages.doctor.view")}
                           </Button>
                         </td>
                       </tr>

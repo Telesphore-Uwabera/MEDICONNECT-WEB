@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Info, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function RunningLateModal({ appt, onClose }: Props) {
+  const { t } = useTranslation();
   const [delay, setDelay] = useState<number>(15);
   const runningLate = useRunningLate();
 
@@ -23,15 +25,15 @@ export function RunningLateModal({ appt, onClose }: Props) {
         onSuccess: (res) => {
           if (res.next_appointment) {
             toast.success(
-              `Patients notified of ${res.delay_minutes}min delay. Next: ${res.next_appointment.patient.name} at ${fmtTime(res.next_appointment.appointment_time)}`
+              t("pages.doctor.patients_notified_delay_next", { delay: res.delay_minutes, patient: res.next_appointment.patient.name, time: fmtTime(res.next_appointment.appointment_time) })
             );
           } else {
-            toast.success(`Patients notified of ${res.delay_minutes}min delay.`);
+            toast.success(t("pages.doctor.patients_notified_delay", { delay: res.delay_minutes }));
           }
           onClose();
         },
         onError: (err: unknown) => {
-          toast.error(getErrMsg(err, "Failed to notify patients"));
+          toast.error(getErrMsg(err, t("pages.doctor.failed_notify_patients")));
         },
       }
     );
@@ -46,9 +48,9 @@ export function RunningLateModal({ appt, onClose }: Props) {
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h3 className="text-[13px] font-semibold text-foreground">Running Late</h3>
+            <h3 className="text-[13px] font-semibold text-foreground">{t("pages.doctor.running_late")}</h3>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Notify {appt.patient?.name ?? "the patient"} and upcoming patients of a delay.
+              {t("pages.doctor.running_late_desc", { patient: appt.patient?.name ?? t("pages.doctor.the_patient") })}
             </p>
           </div>
           <button onClick={onClose} className="ml-auto h-6 w-6 flex items-center justify-center rounded-[6px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
@@ -57,7 +59,7 @@ export function RunningLateModal({ appt, onClose }: Props) {
         </div>
 
         <div className="mb-4">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">Delay duration</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2.5">{t("pages.doctor.delay_duration")}</p>
           <div className="flex flex-wrap gap-1.5">
             {DELAY_OPTIONS.map((d) => (
               <button
@@ -79,14 +81,13 @@ export function RunningLateModal({ appt, onClose }: Props) {
         <div className="flex items-center gap-2 p-3 rounded-[6px] bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 mb-4">
           <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed">
-            All confirmed patients scheduled after this appointment will be notified of the{" "}
-            <strong>{delay} minute</strong> delay.
+            {t("pages.doctor.delay_notice", { delay })}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1 h-8 text-[11px] font-medium">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             size="sm"
@@ -97,7 +98,7 @@ export function RunningLateModal({ appt, onClose }: Props) {
             {runningLate.isPending ? (
               <><Loader2 className="h-3 w-3 animate-spin mr-1" />Notifying…</>
             ) : (
-              `Notify — ${delay}m delay`
+              t("pages.doctor.notify_delay", { delay })
             )}
           </Button>
         </div>

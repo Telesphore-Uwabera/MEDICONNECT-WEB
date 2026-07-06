@@ -254,7 +254,7 @@ export function HeroHeader({
           <LanguageSwitcher />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={mobileMenuOpen}
             className="ml-1 w-9 h-9 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
           >

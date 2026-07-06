@@ -4,6 +4,7 @@
 // Inline summary chip with animated selection confirmation
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
@@ -46,6 +47,7 @@ function SelectionChip({
   fee: SpecializationFee;
   onClear: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="group relative overflow-hidden rounded-[6px] border border-primary/20 bg-primary/[0.03] p-3 animate-in slide-in-from-top-2 fade-in duration-300">
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -64,7 +66,7 @@ function SelectionChip({
 
           {fee.id === OTHER_FEE_ID && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Other specialization — fees will be set by the admin.
+              {t("doctorProfile.other_fee_note")}
             </p>
           )}
         </div>
@@ -73,7 +75,7 @@ function SelectionChip({
           type="button"
           onClick={onClear}
           className="shrink-0 rounded-[6px] p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          aria-label="Clear selection"
+          aria-label={t("doctorProfile.clear_selection")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -92,6 +94,7 @@ function SubTypePicker({
   selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useGetSpecializationSubTypes(slug);
   const subTypes = data?.sub_types ?? [];
 
@@ -103,20 +106,20 @@ function SubTypePicker({
       className="mt-2 rounded-[6px] border border-border/60 bg-muted/20 p-2"
     >
       <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Sub-specialties · pick one or more
+        {t("doctorProfile.sub_specialties_pick")}
       </p>
 
       {isLoading ? (
         <div className="flex items-center gap-2 px-1 py-2 text-[11px] text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("doctorProfile.loading")}
         </div>
       ) : isError ? (
         <div className="flex items-center gap-2 px-1 py-2 text-[11px] text-destructive">
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Couldn’t load sub-specialties.
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" /> {t("doctorProfile.couldnt_load_subspecialties")}
         </div>
       ) : subTypes.length === 0 ? (
         <p className="px-1 py-2 text-[11px] text-muted-foreground">
-          No sub-specialties available for this one.
+          {t("doctorProfile.no_subspecialties_available")}
         </p>
       ) : (
         <div className="space-y-0.5">
@@ -141,7 +144,7 @@ function SubTypePicker({
                 </span>
                 {st.requires_approval && (
                   <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400">
-                    needs approval
+                    {t("doctorProfile.needs_approval")}
                   </span>
                 )}
               </label>
@@ -157,6 +160,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
   data,
   onChange,
 }: SpecializationsStepProps) {
+  const { t } = useTranslation();
   const [specQuery, setSpecQuery] = useState("");
   const [feeQuery, setFeeQuery] = useState("");
   const [highlightedSpec, setHighlightedSpec] = useState<number>(-1);
@@ -191,7 +195,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
   const otherFee: SpecializationFee = {
     id: OTHER_FEE_ID,
     specialization_id: value.specialization?.id ?? 0,
-    sub_specialization: "Other",
+    sub_specialization: t("doctorProfile.other_label"),
     sub_specialization_fr: "Autre",
     sub_specialization_kiny: null,
     tier_name: "Custom",
@@ -398,12 +402,12 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
       <Search className="h-8 w-8 text-muted-foreground/30 mb-2" />
       <p className="text-xs text-muted-foreground">
         {query
-          ? `No ${type === "spec" ? "specializations" : "sub-specializations"} match "${query}"`
+          ? t(type === "spec" ? "doctorProfile.no_match_specializations" : "doctorProfile.no_match_subspecializations", { query })
           : type === "spec"
-            ? "Start typing to search specializations"
+            ? t("doctorProfile.start_typing_search")
             : value.specialization
-              ? "No sub-specializations available"
-              : "Select a specialization first"}
+              ? t("doctorProfile.no_subspecializations_available")
+              : t("doctorProfile.select_specialization_first")}
       </p>
     </div>
   );
@@ -411,14 +415,14 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
   const renderError = () => (
     <div className="flex items-center gap-2 px-3 py-4 text-xs text-destructive">
       <AlertCircle className="h-4 w-4 shrink-0" />
-      Failed to load. Please try again.
+      {t("doctorProfile.failed_to_load_retry")}
     </div>
   );
 
   const renderLoading = () => (
     <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Loading...
+      {t("doctorProfile.loading")}
     </div>
   );
 
@@ -428,14 +432,14 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
     <div className="space-y-6">
 
       {/* ── Split-Panel Selection ─────────────────────────────────────────── */}
-      <FormField label="Specialization & Sub-specialization *">
+      <FormField label={`${t("doctorProfile.spec_sub_label")} *`}>
         <div className="rounded-[6px] border border-border bg-card shadow-sm overflow-hidden">
 
           {/* Panel Header */}
           <div className="flex items-center gap-3 border-b border-border bg-muted/30 px-4 py-2.5">
             <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <Stethoscope className="h-3.5 w-3.5" />
-              <span>Step 1: Specialization</span>
+              <span>{t("doctorProfile.step1_specialization")}</span>
             </div>
             <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
             <div className={cn(
@@ -443,7 +447,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
               value.specialization ? "text-primary" : "text-muted-foreground/50"
             )}>
               <Layers className="h-3.5 w-3.5" />
-              <span>Step 2: Sub-specialization</span>
+              <span>{t("doctorProfile.step2_subspecialization")}</span>
             </div>
           </div>
 
@@ -464,7 +468,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                       setHighlightedSpec(-1);
                     }}
                     onKeyDown={handleSpecKeyDown}
-                    placeholder="Search specializations..."
+                    placeholder={t("doctorProfile.search_specializations_placeholder")}
                     className="w-full h-8 rounded-[6px] border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
                     disabled={loadingSpecializations}
                   />
@@ -528,8 +532,8 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                     }}
                     onKeyDown={handleFeeKeyDown}
                     placeholder={value.specialization
-                      ? `Search in ${value.specialization.name}...`
-                      : "Select specialization first..."}
+                      ? t("doctorProfile.search_in", { name: value.specialization.name })
+                      : t("doctorProfile.select_specialization_first_placeholder")}
                     className="w-full h-8 rounded-[6px] border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!value.specialization || loadingFees}
                   />
@@ -549,7 +553,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                 {!value.specialization ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
                     <Layers className="h-8 w-8 opacity-20 mb-2" />
-                    <p className="text-xs">Select a specialization to see options</p>
+                    <p className="text-xs">{t("doctorProfile.select_specialization_to_see_options")}</p>
                   </div>
                 ) : loadingFees ? renderLoading() :
                     filteredFees.length === 0 ? (
@@ -557,7 +561,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                         renderEmpty(feeQuery, "fee")
                       ) : (
                         <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
-                          No preset sub-specializations here. Choose “Other” below.
+                          {t("doctorProfile.no_preset_subspecializations")}
                         </div>
                       )
                     ) : (
@@ -622,9 +626,9 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
                   )}
                 >
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground">Other</p>
+                    <p className="text-xs font-semibold text-foreground">{t("doctorProfile.other_label")}</p>
                     <p className="text-[10px] text-muted-foreground">
-                      Not listed above · fees set by the admin
+                      {t("doctorProfile.not_listed_note")}
                     </p>
                   </div>
                   {value.fee?.id === OTHER_FEE_ID ? (
@@ -650,13 +654,13 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
         ) : value.specialization && !value.fee ? (
           <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
             <ChevronRight className="h-3 w-3 shrink-0" />
-            <span className="font-medium">Almost there!</span> Pick a sub-specialization to complete your selection.
+            <span className="font-medium">{t("doctorProfile.almost_there")}</span> {t("doctorProfile.pick_subspecialization_note")}
           </p>
         ) : null}
       </FormField>
 
       {/* ── Years of experience ─────────────────────────────────────────────── */}
-      <FormField label="Years of experience">
+      <FormField label={t("doctorProfile.years_of_experience")}>
         <div className="relative max-w-[160px]">
           <Input
             type="number"
@@ -670,7 +674,7 @@ export const SpecializationsStep = React.memo(function SpecializationsStep({
             className="border-border focus-visible:ring-primary text-xs h-9 pl-3 pr-8"
           />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">
-            yrs
+            {t("doctorProfile.yrs_suffix")}
           </span>
         </div>
       </FormField>

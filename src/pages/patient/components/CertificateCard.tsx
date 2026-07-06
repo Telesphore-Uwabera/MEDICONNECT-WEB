@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -43,50 +45,54 @@ import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { Video } from "lucide-react";
 
 import PaymentPanel from "./Paymentpanel";
+import { getPurposeLabel, getYesNoLabel, getJobTypes, JOB_TYPE_NONE } from "./FitnessConstants";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status config
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
+function getStatusConfig(t: TFunction): Record<
   string,
   { label: string; badgeCls: string; icon: React.ElementType; dotCls: string }
-> = {
-  draft: {
-    label: "Draft",
-    badgeCls: "bg-muted/60 text-muted-foreground border-border",
-    icon: Clock,
-    dotCls: "bg-muted-foreground",
-  },
-  pending: {
-    label: "Pending Review",
-    badgeCls: "bg-amber-500/10 text-amber-600 border-amber-500/25",
-    icon: Clock,
-    dotCls: "bg-amber-500",
-  },
-  in_review: {
-    label: "In Review",
-    badgeCls: "bg-blue-500/10 text-blue-600 border-blue-500/25",
-    icon: Eye,
-    dotCls: "bg-blue-500",
-  },
-  approved: {
-    label: "Approved",
-    badgeCls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/25",
-    icon: CheckCircle2,
-    dotCls: "bg-emerald-500",
-  },
-  rejected: {
-    label: "Rejected",
-    badgeCls: "bg-destructive/10 text-destructive border-destructive/25",
-    icon: XCircle,
-    dotCls: "bg-destructive",
-  },
-};
+> {
+  return {
+    draft: {
+      label: t("fitness.status_draft"),
+      badgeCls: "bg-muted/60 text-muted-foreground border-border",
+      icon: Clock,
+      dotCls: "bg-muted-foreground",
+    },
+    pending: {
+      label: t("fitness.status_pending_review"),
+      badgeCls: "bg-amber-500/10 text-amber-600 border-amber-500/25",
+      icon: Clock,
+      dotCls: "bg-amber-500",
+    },
+    in_review: {
+      label: t("fitness.status_in_review"),
+      badgeCls: "bg-blue-500/10 text-blue-600 border-blue-500/25",
+      icon: Eye,
+      dotCls: "bg-blue-500",
+    },
+    approved: {
+      label: t("fitness.status_approved"),
+      badgeCls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/25",
+      icon: CheckCircle2,
+      dotCls: "bg-emerald-500",
+    },
+    rejected: {
+      label: t("fitness.status_rejected"),
+      badgeCls: "bg-destructive/10 text-destructive border-destructive/25",
+      icon: XCircle,
+      dotCls: "bg-destructive",
+    },
+  };
+}
 
 function CertStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const cfg =
-    STATUS_CONFIG[status] ?? {
+    getStatusConfig(t)[status] ?? {
       label: status,
       badgeCls: "bg-muted/20 text-muted-foreground border-border",
       icon: Clock,
@@ -116,10 +122,6 @@ function fmt(date: string) {
     month: "short",
     year: "numeric",
   });
-}
-
-function purposeLabel(purpose: string) {
-  return purpose.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,6 +173,7 @@ function RedFlagRow({ label, triggered }: { label: string; triggered?: boolean }
 }
 
 function AnswerItem({ answer }: { answer: CertificateAnswer }) {
+  const { t } = useTranslation();
   const q = answer.question?.question_en ?? answer.question_key ?? answer.field ?? "";
   const a = answer.answer ?? (answer.boolean_answer ? "Yes" : "No");
   const isYes = a === "Yes" || answer.boolean_answer;
@@ -189,7 +192,7 @@ function AnswerItem({ answer }: { answer: CertificateAnswer }) {
               : "bg-muted text-muted-foreground",
         )}
       >
-        {a}
+        {getYesNoLabel(t, a)}
       </span>
     </div>
   );
@@ -204,30 +207,31 @@ function CertificateDrawer({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const step2Answers = cert.answers?.filter((a) => a.step === 2) ?? [];
   const step3Answers = cert.answers?.filter((a) => a.step === 3) ?? [];
 
   const redFlags = [
-    { key: "red_flag_chest_pain", label: "Chest pain" },
-    { key: "red_flag_shortness_of_breath", label: "Shortness of breath" },
-    { key: "red_flag_syncope", label: "Syncope / fainting" },
-    { key: "red_flag_severe_headache", label: "Severe headache" },
-    { key: "red_flag_neurological", label: "Neurological symptoms" },
-    { key: "red_flag_weight_loss", label: "Unexplained weight loss" },
-    { key: "red_flag_cardiac_history", label: "Cardiac history" },
-    { key: "red_flag_recent_surgery", label: "Recent surgery" },
-    { key: "red_flag_seizure", label: "Seizure" },
-    { key: "red_flag_pregnancy_complications", label: "Pregnancy complications" },
+    { key: "red_flag_chest_pain", label: t("fitness.rf_chest_pain") },
+    { key: "red_flag_shortness_of_breath", label: t("fitness.rf_breath") },
+    { key: "red_flag_syncope", label: t("fitness.rf_syncope") },
+    { key: "red_flag_severe_headache", label: t("fitness.rf_headache") },
+    { key: "red_flag_neurological", label: t("fitness.rf_neurological") },
+    { key: "red_flag_weight_loss", label: t("fitness.rf_weight_loss") },
+    { key: "red_flag_cardiac_history", label: t("fitness.rf_cardiac_history") },
+    { key: "red_flag_recent_surgery", label: t("fitness.rf_recent_surgery") },
+    { key: "red_flag_seizure", label: t("fitness.rf_seizure") },
+    { key: "red_flag_pregnancy_complications", label: t("fitness.rf_pregnancy") },
   ] as const;
 
   const activeRedFlags = redFlags.filter((f) => cert[f.key]);
 
   const jobFlags = [
-    { key: "job_heavy_labor", label: "Heavy labor" },
-    { key: "job_driving_machinery", label: "Driving / machinery" },
-    { key: "job_armed_forces", label: "Armed forces" },
-    { key: "job_mining_construction", label: "Mining / construction" },
-    { key: "job_requires_xray", label: "Requires X-ray" },
+    { key: "job_heavy_labor", label: t("fitness.jf_heavy_labor") },
+    { key: "job_driving_machinery", label: t("fitness.jf_driving") },
+    { key: "job_armed_forces", label: t("fitness.jf_armed_forces") },
+    { key: "job_mining_construction", label: t("fitness.jf_mining") },
+    { key: "job_requires_xray", label: t("fitness.jf_xray") },
   ] as const;
 
   const activeJobFlags = jobFlags.filter((f) => cert[f.key]);
@@ -260,8 +264,8 @@ function CertificateDrawer({
               <CertStatusBadge status={cert.status} />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Issued {fmt(cert.created_at)}
-              {cert.valid_until && ` · Valid until ${fmt(cert.valid_until)}`}
+              {t("fitness.issued_on", { date: fmt(cert.created_at) })}
+              {cert.valid_until && ` · ${t("fitness.valid_until", { date: fmt(cert.valid_until) })}`}
             </p>
           </div>
           <button
@@ -285,7 +289,7 @@ function CertificateDrawer({
               )}
             >
               <Shield className="h-4 w-4 flex-shrink-0" />
-              Medical decision:{" "}
+              {t("fitness.medical_decision")}{" "}
               <strong className="capitalize">{cert.decision.replace(/_/g, " ")}</strong>
             </div>
           )}
@@ -296,7 +300,7 @@ function CertificateDrawer({
               "{cert.doctor_notes}"
               {cert.doctor && (
                 <span className="block mt-1 not-italic font-medium text-foreground/70">
-                  — Dr. {cert.doctor.name}
+                  — {t("fitness.doctor_prefix", { name: cert.doctor.name })}
                 </span>
               )}
             </div>
@@ -307,7 +311,7 @@ function CertificateDrawer({
             <div className="px-3.5 py-3 rounded-[6px] border border-amber-500/25 bg-amber-500/5 space-y-1.5">
               <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600 mb-2">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Red flags detected
+                {t("fitness.red_flags_detected")}
               </div>
               {activeRedFlags.map((f) => (
                 <RedFlagRow key={f.key} label={f.label} triggered />
@@ -316,20 +320,20 @@ function CertificateDrawer({
           )}
 
           {/* Request details */}
-          <DrawerSection icon={FileText} title="Request details">
-            <DataRow label="Purpose" value={purposeLabel(cert.purpose)} />
-            {cert.purpose_other && <DataRow label="Other" value={cert.purpose_other} />}
+          <DrawerSection icon={FileText} title={t("fitness.request_details_title")}>
+            <DataRow label={t("fitness.purpose_label")} value={getPurposeLabel(t, cert.purpose)} />
+            {cert.purpose_other && <DataRow label={t("fitness.other_label")} value={cert.purpose_other} />}
             <DataRow
-              label="In-person required"
-              value={cert.requires_inperson ? "Yes" : "No"}
+              label={t("fitness.inperson_required_label")}
+              value={cert.requires_inperson ? t("fitness.yes") : t("fitness.no")}
             />
-            <DataRow label="Submitted" value={fmt(cert.created_at)} />
-            {cert.updated_at && <DataRow label="Last updated" value={fmt(cert.updated_at)} />}
+            <DataRow label={t("fitness.submitted_label")} value={fmt(cert.created_at)} />
+            {cert.updated_at && <DataRow label={t("fitness.last_updated_label")} value={fmt(cert.updated_at)} />}
           </DrawerSection>
 
           {/* Job context */}
           {activeJobFlags.length > 0 && (
-            <DrawerSection icon={Briefcase} title="Job context">
+            <DrawerSection icon={Briefcase} title={t("fitness.job_context_title")}>
               <div className="flex flex-wrap gap-1.5">
                 {activeJobFlags.map((f) => (
                   <span
@@ -345,13 +349,13 @@ function CertificateDrawer({
 
           {/* Vitals */}
           {cert.vitals_available && (
-            <DrawerSection icon={Activity} title="Vitals">
+            <DrawerSection icon={Activity} title={t("fitness.vitals_section_title")}>
               <div className="grid grid-cols-2 gap-2">
                 {cert.temperature && (
                   <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Thermometer className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Temp</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{t("fitness.temp_label")}</p>
                       <p className="text-[12px] font-semibold text-foreground">{cert.temperature}°C</p>
                     </div>
                   </div>
@@ -360,7 +364,7 @@ function CertificateDrawer({
                   <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Heart className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">BP</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{t("fitness.bp_label")}</p>
                       <p className="text-[12px] font-semibold text-foreground">{cert.blood_pressure}</p>
                     </div>
                   </div>
@@ -369,7 +373,7 @@ function CertificateDrawer({
                   <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Zap className="h-3.5 w-3.5 text-yellow-500 flex-shrink-0" />
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Pulse</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{t("fitness.pulse_label")}</p>
                       <p className="text-[12px] font-semibold text-foreground">{cert.pulse} bpm</p>
                     </div>
                   </div>
@@ -389,7 +393,7 @@ function CertificateDrawer({
 
           {/* Reviewing doctor */}
           {cert.doctor && (
-            <DrawerSection icon={User} title="Reviewing doctor">
+            <DrawerSection icon={User} title={t("fitness.reviewing_doctor_title")}>
               <div className="flex items-center gap-2.5">
                 {cert.doctor.avatar ? (
                   <img
@@ -411,7 +415,7 @@ function CertificateDrawer({
 
           {/* Symptom answers */}
           {step2Answers.length > 0 && (
-            <DrawerSection icon={Stethoscope} title="Symptoms screening">
+            <DrawerSection icon={Stethoscope} title={t("fitness.symptoms_screening_title")}>
               <div className="rounded-[6px] border border-border overflow-hidden bg-muted/20">
                 <div className="divide-y divide-border/50 px-3">
                   {step2Answers.map((a) => (
@@ -424,7 +428,7 @@ function CertificateDrawer({
 
           {/* Medical history answers */}
           {step3Answers.length > 0 && (
-            <DrawerSection icon={ClipboardCheck} title="Medical history">
+            <DrawerSection icon={ClipboardCheck} title={t("fitness.medical_history_title")}>
               <div className="rounded-[6px] border border-border overflow-hidden bg-muted/20">
                 <div className="divide-y divide-border/50 px-3">
                   {step3Answers.map((a) => (
@@ -437,7 +441,7 @@ function CertificateDrawer({
 
           {/* Patient notes */}
           {cert.patient_notes && (
-            <DrawerSection icon={FileText} title="Patient notes">
+            <DrawerSection icon={FileText} title={t("fitness.patient_notes_title")}>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {cert.patient_notes}
               </p>
@@ -454,6 +458,8 @@ function CertificateDrawer({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function CertificateCard({ cert }: { cert: Certificate }) {
+  console.log("CertificateCard cert: ", cert);
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [downloadPhase, setDownloadPhase] = useState<
     "idle" | "loading" | "payment" | "verifying"
@@ -463,7 +469,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
   const [isRefreshingDownloadInvoice, setIsRefreshingDownloadInvoice] = useState(false);
 
   const downloadMutation = useDownloadCertificate();
-  const isApproved = cert.status === "approved";
+  const isApproved = cert.status === "issued";
 
   // ── Video identity verification (join the doctor's session) ────────────────
   const { startCall } = useCallContext();
@@ -484,15 +490,15 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
           { isOwner: false },
         );
         if (started) {
-          toast.success("Joining the verification call…");
+          toast.success(t("fitness.joining_verification_call"));
           return;
         }
         const url = res.join_url || res.room_url;
         if (url) window.open(url, "_blank", "noopener,noreferrer");
-        else toast.error("The verification call isn't ready yet. Please wait for your doctor to start it.");
+        else toast.error(t("fitness.verification_call_not_ready"));
       },
       onError: (err) =>
-        toast.error((err as Error)?.message || "Could not join the verification call."),
+        toast.error((err as Error)?.message || t("fitness.could_not_join_verification")),
     });
   };
 
@@ -509,7 +515,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
         setDownloadPhase("payment");
       }
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Download failed. Please try again.");
+      setErrorMsg(err instanceof Error ? err.message : t("fitness.download_failed_retry"));
       setDownloadPhase("idle");
     }
   };
@@ -522,13 +528,14 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
       if (isDownloadReady(res)) {
         window.open(res.url, "_blank");
       } else {
-        toast.error("Download not ready yet. Please try again in a moment.");
+        toast.error(t("fitness.download_not_ready"));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Download failed.");
+      toast.error(err instanceof Error ? err.message : t("fitness.download_failed"));
     } finally {
       setDownloadPhase("idle");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cert.id, downloadMutation]);
 
   const handleRefreshDownloadInvoice = useCallback(async () => {
@@ -610,12 +617,14 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-base font-bold text-foreground tracking-tight truncate">
-                    {cert.certificate_number || `Certificate #${cert.id}`}
+                    {cert.certificate_number || t("fitness.cert_number_fallback", { id: cert.id })}
                   </p>
                   <p className="text-xs font-medium text-primary/80 capitalize mt-0.5 truncate">
-                    {purposeLabel(cert.purpose)}
-                    {cert.job_type && cert.job_type !== "None of the above" && (
-                      <span className="text-muted-foreground/60"> · {cert.job_type}</span>
+                    {getPurposeLabel(t, cert.purpose)}
+                    {cert.job_type && cert.job_type !== JOB_TYPE_NONE && (
+                      <span className="text-muted-foreground/60">
+                        {" "}· {getJobTypes(t).find((j) => j.value === cert.job_type)?.label ?? cert.job_type}
+                      </span>
                     )}
                   </p>
                 </div>
@@ -631,13 +640,13 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 {cert.valid_until && (
                   <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-[4px]">
                     <Shield className="h-3 w-3" />
-                    Valid until {fmt(cert.valid_until)}
+                    {t("fitness.valid_until", { date: fmt(cert.valid_until) })}
                   </span>
                 )}
                 {cert.has_red_flags && (
                   <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded-[4px]">
                     <AlertTriangle className="h-3 w-3" />
-                    Red flags
+                    {t("fitness.red_flags_badge")}
                   </span>
                 )}
                 {cert.doctor && (
@@ -667,7 +676,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               className="h-8 text-xs font-bold gap-1.5 text-muted-foreground hover:text-foreground px-3 rounded-[6px] hover:bg-muted/50"
             >
               <Eye className="h-4 w-4" />
-              View details
+              {t("fitness.view_details_action")}
               <ChevronRight className="h-3.5 w-3.5 opacity-50" />
             </Button>
 
@@ -699,13 +708,13 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                 className="h-8 text-xs font-bold gap-1.5 border-border/60 hover:bg-muted/50 rounded-[6px]"
               >
                 <Download className="h-4 w-4 text-primary" />
-                Download PDF
+                {t("fitness.download_pdf_action")}
               </Button>
             )}
             {isApproved && downloadPhase === "loading" && (
               <Button size="sm" variant="outline" disabled className="h-8 text-xs font-bold gap-1.5 rounded-[6px]">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading…
+                {t("fitness.loading_ellipsis")}
               </Button>
             )}
           </div>
@@ -730,10 +739,10 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
           <div className="border-t border-border bg-muted/20">
             <div className="px-4 pt-3 pb-0 flex items-center gap-1.5">
               <Download className="h-3.5 w-3.5 text-primary" />
-              <p className="text-[11px] font-medium text-foreground">Download fee required</p>
+              <p className="text-[11px] font-medium text-foreground">{t("fitness.download_fee_required_title")}</p>
             </div>
             <span className="px-4  p text-[10px] text-muted-foreground">
-              A one-time fee applies to download your certificate PDF
+              {t("fitness.download_fee_required_desc")}
             </span>
 
             <div className="m-4" >
@@ -748,7 +757,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
                   setDownloadPayment(null);
                   setDownloadPhase("idle");
                 }}
-                cancelLabel="Cancel download"
+                cancelLabel={t("fitness.cancel_download")}
               />
             </div>
           </div>
@@ -757,7 +766,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
         {downloadPhase === "verifying" && (
           <div className="border-t border-border bg-muted/30 px-4 py-3 flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <p className="text-[11px] text-muted-foreground">Preparing your download…</p>
+            <p className="text-[11px] text-muted-foreground">{t("fitness.preparing_download")}</p>
           </div>
         )}
       </div>

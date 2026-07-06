@@ -90,7 +90,7 @@ const GROUPS: GroupConfig[] = [
     icon: Globe,
     fields: [
       { key: "app_name", label: "App name", kind: "text", placeholder: "MediConnect" },
-      { key: "app_tagline", label: "App tagline", kind: "text", placeholder: "Healthcare made easy" },
+      { key: "app_tagline", label: "App tagline", kind: "text", placeholder: "Bringing care to your fingertips" },
       { key: "contact_email", label: "Contact email", kind: "email", placeholder: "info@mediconnect.rw" },
       { key: "contact_phone", label: "Contact phone", kind: "tel", placeholder: "+250788000000" },
       { key: "contact_address", label: "Contact address", kind: "text", placeholder: "Kigali, Rwanda" },

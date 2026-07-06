@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   Search,
@@ -78,6 +79,7 @@ function DatePicker({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
@@ -98,10 +100,8 @@ function DatePicker({
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
+  const monthNames = t("pages.landing.months", { returnObjects: true }) as string[];
+  const dayAbbrevs = t("pages.landing.days_short", { returnObjects: true }) as string[];
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
@@ -120,7 +120,7 @@ function DatePicker({
   };
 
   const displayValue = value
-    ? new Date(value + "T00:00:00").toLocaleDateString("en-US", {
+    ? new Date(value + "T00:00:00").toLocaleDateString(i18n.language, {
       year: "numeric", month: "short", day: "numeric",
     })
     : "";
@@ -135,7 +135,7 @@ function DatePicker({
       >
         <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
         <span className={`text-sm flex-1 ${value ? "text-foreground" : "text-muted-foreground"}`}>
-          {displayValue || "Select date"}
+          {displayValue || t("pages.landing.date_select")}
         </span>
         {value && (
           <button onClick={clear} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -174,8 +174,8 @@ function DatePicker({
             </button>
           </div>
           <div className="grid grid-cols-7 mb-1">
-            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-              <div key={d} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>
+            {dayAbbrevs.map((d, i) => (
+              <div key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-0.5">
@@ -211,7 +211,7 @@ function DatePicker({
               onClick={() => selectDay(today.getDate())}
               className="w-full text-xs text-primary font-medium hover:underline"
             >
-              Today
+              {t("pages.landing.date_today")}
             </button>
           </div>
         </div>
@@ -300,6 +300,7 @@ function MeetOurDoctorsSlider({
 // ─── HeroSection ──────────────────────────────────────────────────────────────
 
 export default function HeroSection() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -430,7 +431,7 @@ export default function HeroSection() {
           <div className="relative z-10 order-2 lg:order-1">
           <HeroHeadline />
             <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
-              Begin your healing journey with MEDICONNECT — quality care, on your terms.
+              {t("pages.landing.hero_intro")}
             </p>
             {/* Decorative medical illustration — tablet+ only */}
             <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
@@ -487,7 +488,7 @@ export default function HeroSection() {
                     onChange={(e) => setSearchValue(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     className="bg-transparent outline-none text-xs sm:text-sm w-full placeholder:text-muted-foreground text-foreground min-w-0"
-                    placeholder="Search doctors…"
+                    placeholder={t("pages.landing.search_doctors_placeholder")}
                   />
                 </div>
 
@@ -500,7 +501,7 @@ export default function HeroSection() {
                     onClick={handleSearch}
                     className="w-full sm:w-auto text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-5 py-2 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace-nowrap"
                   >
-                    Search
+                    {t("pages.landing.search_action")}
                   </button>
                 </div>
               </div>
@@ -561,7 +562,7 @@ export default function HeroSection() {
                 ) : (
                   <img
                     src={doctorPlaceholder}
-                    alt="No doctors available"
+                    alt={t("pages.landing.no_doctors_available")}
                     className="w-full h-full object-contain object-bottom opacity-60"
                   />
                 )}
@@ -626,11 +627,11 @@ export default function HeroSection() {
                     )}
                   >
                     {isMinimized ? (
-                      <><Maximize2 className="h-2.5 w-2.5" />Resume</>
+                      <><Maximize2 className="h-2.5 w-2.5" />{t("pages.landing.resume")}</>
                     ) : isCallInProgress ? (
-                      <><Wifi className="h-2.5 w-2.5" />Open</>
+                      <><Wifi className="h-2.5 w-2.5" />{t("pages.landing.open")}</>
                     ) : (
-                      <><Wifi className="h-2.5 w-2.5" />Connect</>
+                      <><Wifi className="h-2.5 w-2.5" />{t("pages.landing.connect")}</>
                     )}
                   </button>
                 </div>

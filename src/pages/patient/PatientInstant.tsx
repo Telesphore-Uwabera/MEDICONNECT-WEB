@@ -608,15 +608,7 @@ const PatientInstant = () => {
           title={t("pages.patient.instant_title") || "My Requests"}
           subtitle={t("pages.patient.instant_sub") || "Manage your instant consultations"}
         />
-        <FilterBar
-          open={filterOpen}
-          onToggle={() => setFilterOpen(!filterOpen)}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={clearAll}
-          fields={filterFields}
-          cols={{ default: 1, sm: 2, lg: 3 }}
-        />
-
+    
         <main className="flex-1 overflow-y-auto flex flex-col">
 
           {/* Meta bar */}
@@ -684,6 +676,15 @@ const PatientInstant = () => {
               </div>
             </div>
           </div>
+
+        <FilterBar
+          open={filterOpen}
+          onToggle={() => setFilterOpen(!filterOpen)}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAll}
+          fields={filterFields}
+          cols={{ default: 1, sm: 2, lg: 3 }}
+        />
 
           <div className="p-4 space-y-4">
 

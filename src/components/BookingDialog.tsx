@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import "moment/locale/fr";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +80,12 @@ function MiniCalendar({
   onSelect: (d: Date) => void;
   allowedDates: Set<string>;
 }) {
+  const { t, i18n } = useTranslation();
   const [cursor, setCursor] = useState(() => selected ?? new Date());
+
+  useEffect(() => {
+    moment.locale(i18n.language);
+  }, [i18n.language]);
 
   const weeks = useMemo(() => {
     const start = moment(cursor).startOf("month").startOf("isoWeek");
@@ -94,7 +101,7 @@ function MiniCalendar({
     return rows;
   }, [cursor]);
 
-  const DOW = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const DOW = t("booking.doctorAppointment.days_mon", { returnObjects: true }) as string[];
 
   return (
     <div className="select-none">
@@ -173,6 +180,7 @@ function TimeSlotGrid({
   selected: string | null;
   onSelect: (t: string) => void;
 }) {
+  const { t } = useTranslation();
   const periods = useMemo(() => {
     const morning: MappedSlot[] = [];
     const afternoon: MappedSlot[] = [];
@@ -184,17 +192,17 @@ function TimeSlotGrid({
       else evening.push(s);
     });
     return [
-      { label: "Morning", icon: "🌤", items: morning },
-      { label: "Afternoon", icon: "☀️", items: afternoon },
-      { label: "Evening", icon: "🌙", items: evening },
+      { label: t("booking.doctorAppointment.morning"), icon: "🌤", items: morning },
+      { label: t("booking.doctorAppointment.afternoon"), icon: "☀️", items: afternoon },
+      { label: t("booking.doctorAppointment.evening"), icon: "🌙", items: evening },
     ].filter((p) => p.items.length > 0);
-  }, [slots]);
+  }, [slots, t]);
 
   if (slots.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-center py-6">
         <CalendarDays className="h-7 w-7 text-muted-foreground/30" />
-        <p className="text-sm text-muted-foreground">Select a date to see available slots</p>
+        <p className="text-sm text-muted-foreground">{t("booking.doctorAppointment.selectSlotsPrompt")}</p>
       </div>
     );
   }
@@ -206,7 +214,7 @@ function TimeSlotGrid({
       <div className="flex items-center gap-1.5">
         <Clock className="h-4 w-4 text-muted-foreground/60" />
         <span className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{available}</span> of {slots.length} slots open
+          {t("booking.doctorAppointment.slotsOpen", { available, total: slots.length })}
         </span>
       </div>
 
@@ -255,6 +263,7 @@ export const BookingDialog = ({
   onOpenChange: (o: boolean) => void;
   onConfirmed?: (updatedDoctor: Doctor) => void;
 }) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -378,8 +387,8 @@ export const BookingDialog = ({
     const token = localStorage.getItem("auth_token");
     if (!token) {
       // Not signed in → send them to login rather than failing with "Unauthorized".
-      toast.message("Please sign in to book", {
-        description: "You need a patient account to book a consultation.",
+      toast.message(t("booking.doctorAppointment.signInToBook"), {
+        description: t("booking.doctorAppointment.signInDesc"),
       });
       onOpenChange(false);
       navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
@@ -417,8 +426,12 @@ export const BookingDialog = ({
       setShouldRefetchDoctor(true);
 
       setConfirmed({ date: dateKey, time });
-      toast.success("Appointment booked", {
-        description: `${doctorName} · ${moment(dateKey).format("ddd MMM D")} at ${time}`,
+      toast.success(t("booking.doctorAppointment.appointmentBooked"), {
+        description: t("booking.doctorAppointment.appointmentBookedDesc", {
+          name: doctorName,
+          date: moment(dateKey).format("ddd MMM D"),
+          time,
+        }),
       });
 
       // Initiate payment if fee > 0
@@ -428,7 +441,7 @@ export const BookingDialog = ({
 
         if (!appointmentId) {
           console.error("Booking succeeded but appointment ID is missing from response:", res);
-          toast.error("Payment could not be initiated", { description: "We couldn't find the appointment ID. Please pay from your dashboard." });
+          toast.error(t("booking.doctorAppointment.paymentNotInitiated"), { description: t("booking.doctorAppointment.paymentIdMissingDesc") });
           return;
         }
 
@@ -441,14 +454,14 @@ export const BookingDialog = ({
             callback: (err: Error | null) => {
               (window as any).IremboPay?.closeModal?.();
               if (err) {
-                toast.error("Payment failed", { description: "You can pay later from your dashboard." });
+                toast.error(t("booking.doctorAppointment.paymentFailed"), { description: t("booking.doctorAppointment.payLaterDesc") });
               } else {
                 setVerifyingPayment(true);
                 invoicePoller.start(
                   payRes.invoice_number,
                   () => {
                     setVerifyingPayment(false);
-                    toast.success("Payment successful", { description: "Your appointment is confirmed and paid." });
+                    toast.success(t("booking.doctorAppointment.paymentSuccessful"), { description: t("booking.doctorAppointment.paymentSuccessfulDesc") });
                     // Invalidate appointments to refresh the UI
                     queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
                     // Send the patient to their appointments list to see / join it.
@@ -457,7 +470,7 @@ export const BookingDialog = ({
                   },
                   (msg) => {
                     setVerifyingPayment(false);
-                    toast.error("Payment verification failed", { description: msg });
+                    toast.error(t("booking.doctorAppointment.paymentVerificationFailed"), { description: msg });
                   }
                 );
               }
@@ -465,7 +478,7 @@ export const BookingDialog = ({
           });
         } catch (payErr) {
           console.error("Payment initiation failed:", payErr);
-          toast.error("Payment could not be initiated", { description: "You can pay later from your dashboard." });
+          toast.error(t("booking.doctorAppointment.paymentNotInitiated"), { description: t("booking.doctorAppointment.payLaterDesc") });
         }
       }
 
@@ -475,8 +488,8 @@ export const BookingDialog = ({
 
       // Session expired / not authenticated → go to login.
       if (status === 401 || /unauthor/i.test(msg)) {
-        toast.message("Please sign in to book", {
-          description: "Your session has expired or you're not signed in.",
+        toast.message(t("booking.doctorAppointment.signInToBook"), {
+          description: t("booking.doctorAppointment.sessionExpiredDesc"),
         });
         onOpenChange(false);
         navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
@@ -489,8 +502,8 @@ export const BookingDialog = ({
         return;
       }
 
-      toast.error("Booking failed", {
-        description: msg || "Please try again.",
+      toast.error(t("booking.doctorAppointment.bookingFailed"), {
+        description: msg || t("booking.doctorAppointment.tryAgain"),
       });
     }
   };
@@ -504,7 +517,7 @@ export const BookingDialog = ({
   };
 
   // ── Derived display values ─────────────────────────────────────────────────
-  const doctorName = doctor.user?.name ?? "Unknown Doctor";
+  const doctorName = doctor.user?.name ?? t("booking.doctorAppointment.unknownDoctor");
   const doctorAvatar = doctor.user?.avatar ?? doctor.image ?? null;
   const doctorInitial = doctorName.charAt(0);
 
@@ -548,14 +561,14 @@ export const BookingDialog = ({
                     <span className="text-border">·</span>
                     <span className="font-semibold text-foreground">
                       {Number(doctor.consultation_fee) === 0
-                        ? "Free"
+                        ? t("pages.cards.free")
                         : `${doctor.consultation_fee} ${doctor.currency ?? "RWF"}`}
                     </span>
                   </>
                 )}
                 <span className="text-border">·</span>
                 <span className="flex items-center gap-1">
-                  <Video className="h-4 w-4" /> Video consult
+                  <Video className="h-4 w-4" /> {t("booking.doctorAppointment.videoConsult")}
                 </span>
               </DialogDescription>
             </div>
@@ -566,7 +579,7 @@ export const BookingDialog = ({
         {showLoading && (
           <div className="min-h-0 flex-1 overflow-y-auto flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
             <Loader2 className="h-6 w-6 animate-spin" />
-            <p className="text-sm">Loading available slots…</p>
+            <p className="text-sm">{t("booking.doctorAppointment.loadingSlots")}</p>
           </div>
         )}
 
@@ -574,7 +587,7 @@ export const BookingDialog = ({
         {showError && (
           <div className="min-h-0 flex-1 overflow-y-auto flex flex-col items-center justify-center py-12 gap-2 text-destructive">
             <AlertTriangle className="h-6 w-6" />
-            <p className="text-sm">Could not load availability. Please try again.</p>
+            <p className="text-sm">{t("booking.doctorAppointment.loadError")}</p>
           </div>
         )}
 
@@ -585,20 +598,23 @@ export const BookingDialog = ({
               <Check className="h-7 w-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-[15px] font-semibold">Appointment confirmed</h3>
+              <h3 className="text-[15px] font-semibold">{t("booking.doctorAppointment.appointmentConfirmed")}</h3>
               <p className="text-sm text-muted-foreground">
-                {moment(confirmed.date).format("dddd, MMMM D, YYYY")} at {confirmed.time}
+                {t("booking.doctorAppointment.confirmedDateTime", {
+                  date: moment(confirmed.date).format("dddd, MMMM D, YYYY"),
+                  time: confirmed.time,
+                })}
               </p>
               <p className="text-sm text-muted-foreground/70 mt-2 inline-flex items-center gap-1.5 border border-border/60 rounded-full px-3 py-1">
                 <Video className="h-4 w-4" />
-                Video link will be sent before the session
+                {t("booking.doctorAppointment.videoLinkNotice")}
               </p>
 
               {/* NEW: subtle "syncing" badge while fresh doctor data loads */}
               {shouldRefetchDoctor && !freshDoctorData && !verifyingPayment && (
                 <p className="text-xs text-muted-foreground/50 mt-1 flex items-center justify-center gap-1">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Syncing availability…
+                  {t("booking.doctorAppointment.syncingAvailability")}
                 </p>
               )}
 
@@ -606,12 +622,12 @@ export const BookingDialog = ({
               {verifyingPayment && (
                 <p className="text-sm text-primary mt-2 flex items-center justify-center gap-1.5 font-medium">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Verifying payment status…
+                  {t("booking.doctorAppointment.verifyingPayment")}
                 </p>
               )}
             </div>
             <Button onClick={() => onOpenChange(false)} className="px-8">
-              Done
+              {t("booking.doctorAppointment.done")}
             </Button>
           </div>
         )}
@@ -624,7 +640,7 @@ export const BookingDialog = ({
               {/* Left — calendar */}
               <div className="px-5 py-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
-                  Select date
+                  {t("booking.doctorAppointment.selectDate")}
                 </p>
                 <MiniCalendar
                   selected={date}
@@ -639,7 +655,7 @@ export const BookingDialog = ({
                     <CalendarDays className="h-4 w-4 shrink-0" />
                     <span className="font-medium text-foreground">{moment(date).format("ddd, MMM D")}</span>
                     <span className="text-muted-foreground/50">·</span>
-                    <span>{slotsData.dates.length} day{slotsData.dates.length !== 1 ? "s" : ""} avail.</span>
+                    <span>{t("booking.doctorAppointment.daysAvail", { count: slotsData.dates.length })}</span>
                   </div>
                 )}
               </div>
@@ -650,20 +666,20 @@ export const BookingDialog = ({
               {/* Right — time slots */}
               <div className="px-5 py-5 sm:max-h-[380px] sm:overflow-y-auto">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
-                  Select time · {daySlots[0]?.duration ?? 30} min
+                  {t("booking.doctorAppointment.selectTimeDuration", { count: daySlots[0]?.duration ?? 30 })}
                 </p>
 
                 {dayLoading && dateKey && (
                   <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-muted-foreground">
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    <p className="text-sm">Loading slots…</p>
+                    <p className="text-sm">{t("booking.doctorAppointment.loadingSlotsShort")}</p>
                   </div>
                 )}
 
                 {dayError && !dayLoading && (
                   <div className="flex flex-col items-center justify-center h-full gap-2 py-10 text-destructive">
                     <AlertTriangle className="h-5 w-5" />
-                    <p className="text-sm">Could not load slots for this date.</p>
+                    <p className="text-sm">{t("booking.doctorAppointment.slotsLoadError")}</p>
                   </div>
                 )}
 
@@ -684,10 +700,10 @@ export const BookingDialog = ({
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-foreground">
-                    Switch to your patient role to book
+                    {t("booking.doctorAppointment.switchToPatientTitle")}
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    You're signed in as {switchPrompt}. Switch to patient to book a consultation.
+                    {t("booking.doctorAppointment.switchToPatientDesc", { role: switchPrompt })}
                   </p>
                 </div>
                 <button
@@ -702,7 +718,7 @@ export const BookingDialog = ({
                   }
                   className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
                 >
-                  Switch to patient
+                  {t("booking.doctorAppointment.switchToPatient")}
                 </button>
               </div>
             )}
@@ -716,7 +732,7 @@ export const BookingDialog = ({
                   </span>
                 ) : (
                   <span className="text-muted-foreground/50">
-                    {!date ? "Pick a date" : "Pick a time slot"}
+                    {!date ? t("booking.doctorAppointment.pickDate") : t("booking.doctorAppointment.pickTime")}
                   </span>
                 )}
               </div>
@@ -727,7 +743,7 @@ export const BookingDialog = ({
                   className="h-8 px-4 text-sm rounded-[6px]"
                   onClick={() => onOpenChange(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   size="sm"
@@ -736,8 +752,8 @@ export const BookingDialog = ({
                   className="h-8 px-5 text-sm rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 >
                   {bookAppointment.isPending
-                    ? <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Booking…</>
-                    : "Confirm appointment"}
+                    ? <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> {t("booking.doctorAppointment.booking")}</>
+                    : t("booking.doctorAppointment.confirmAppointment")}
                 </Button>
               </div>
             </div>

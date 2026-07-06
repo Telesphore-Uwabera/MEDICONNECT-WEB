@@ -91,19 +91,20 @@ function DoctorAvatar({
 // Unchanged — shared with UnifiedModal, out of scope for this pass.
 
 function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
+  const { t } = useTranslation();
   const map = {
     online: {
-      label: "Online",
+      label: t("pages.cards.online"),
       icon: Video,
       cls: "text-sky-700 bg-sky-500/15 border-sky-500/30 dark:text-sky-400",
     },
     in_person: {
-      label: "In-Person",
+      label: t("pages.cards.in_person"),
       icon: Building2,
       cls: "text-violet-700 bg-violet-500/15 border-violet-500/30 dark:text-violet-400",
     },
     both: {
-      label: "Online & In-Person",
+      label: t("pages.cards.both"),
       icon: Globe,
       cls: "text-teal-700 bg-teal-500/15 border-teal-500/30 dark:text-teal-400",
     },
@@ -205,12 +206,13 @@ function ResumePill({
   onResume: () => void;
   onEndCompletely: () => void;
 }) {
+  const { t } = useTranslation();
   const isLive = phase === "connected";
   return createPortal(
     <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
       <button
         onClick={onEndCompletely}
-        title="End call completely"
+        title={t("pages.cards.end_call")}
         className="h-8 w-8 rounded-full bg-destructive/90 hover:bg-destructive text-white flex items-center justify-center shadow-lg transition-all hover:scale-105 active:scale-95"
       >
         <X className="h-4 w-4" />
@@ -228,7 +230,7 @@ function ResumePill({
           <span className="h-2 w-2 rounded-full bg-white animate-pulse shrink-0" />
         )}
         <span className="text-sm font-semibold leading-none truncate max-w-[120px]">
-          {isLive ? "Live · " : ""}
+          {isLive ? `${t("pages.landing.live")} · ` : ""}
           {doctorName}
         </span>
         <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
@@ -250,11 +252,12 @@ function SavedSessionPill({
   onResume: () => void;
   onDismiss: () => void;
 }) {
+  const { t } = useTranslation();
   return createPortal(
     <div className="fixed bottom-5 right-5 z-[60] flex items-center gap-2 animate-in slide-in-from-bottom-3 fade-in duration-300">
       <button
         onClick={onDismiss}
-        title="Dismiss"
+        title={t("pages.cards.dismiss")}
         className="h-8 w-8 rounded-full bg-muted hover:bg-muted/80 border border-border text-muted-foreground flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95"
       >
         <X className="h-4 w-4" />
@@ -265,7 +268,7 @@ function SavedSessionPill({
       >
         <RotateCcw className="h-4 w-4 shrink-0" />
         <span className="text-sm font-semibold leading-none truncate max-w-[130px]">
-          Resume · {doctorName}
+          {t("pages.landing.resume")} · {doctorName}
         </span>
         <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
       </button>
@@ -300,6 +303,7 @@ export function UnifiedModal({
   canBook,
   canConnect,
 }: UnifiedModalProps) {
+  const { t, i18n } = useTranslation();
   const [mode, setMode] = useState<ModalMode>(initialMode);
   const [cancelFn, setCancelFn] = useState<(() => void) | null>(null);
 
@@ -317,10 +321,10 @@ export function UnifiedModal({
 
   if (!open) return null;
 
-const fee = parseFloat(doctor.consultation_fee);
-const rating = parseFloat(doctor.rating_avg);
-const feeLabel =
-  !fee || fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
+  const fee = parseFloat(doctor.consultation_fee);
+  const rating = parseFloat(doctor.rating_avg);
+  const feeLabel =
+    fee === 0 ? t("pages.cards.free") : `${fee.toLocaleString()} ${doctor.currency}`;
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
@@ -333,30 +337,30 @@ const feeLabel =
     online: {
       dot: "bg-emerald-500",
       pulse: "animate-pulse",
-      label: "Available",
+      label: t("pages.cards.available"),
       text: "text-emerald-600",
       bg: "bg-emerald-500/10 border-emerald-500/20",
     },
     busy: {
       dot: "bg-amber-500",
       pulse: "",
-      label: "Paused",
+      label: t("pages.cards.paused"),
       text: "text-amber-600",
       bg: "bg-amber-500/10 border-amber-500/20",
     },
     offline: {
       dot: "bg-zinc-400",
       pulse: "",
-      label: "Unavailable",
+      label: t("pages.cards.unavailable"),
       text: "text-muted-foreground",
       bg: "bg-muted border-border",
     },
   };
   const s = statusStyles[status];
   const langMap: Record<string, string> = {
-    en: "English",
-    fr: "French",
-    kiny: "Kinyarwanda",
+    en: t("pages.landing.lang_en"),
+    fr: t("pages.landing.lang_fr"),
+    kiny: t("pages.landing.lang_rw"),
   };
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
   const bio = doctor.bio_en || doctor.bio_fr || doctor.bio_kiny || null;
@@ -385,13 +389,13 @@ const feeLabel =
                 <button
                   onClick={() => setMode("details")}
                   className="h-6 w-6 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all shrink-0"
-                  title="Back to details"
+                  title={t("pages.cards.back_to_details")}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
               )}
               <span className="text-sm font-semibold text-foreground/70 truncate">
-                {mode === "details" ? doctor.user.name : "Instant consultation"}
+                {mode === "details" ? doctor.user.name : t("pages.cards.instant_consultation")}
               </span>
             </div>
 
@@ -399,16 +403,16 @@ const feeLabel =
               {mode === "connect" && cancelFn && (
                 <button
                   onClick={cancelFn}
-                  title="Cancel request completely"
+                  title={t("pages.cards.cancel_request")}
                   className="h-7 px-2 rounded-[6px] flex items-center gap-1 text-xs font-medium text-destructive/70 hover:text-destructive hover:bg-destructive/10 transition-all"
                 >
                   <Ban className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cancel</span>
+                  <span className="hidden sm:inline">{t("common.cancel")}</span>
                 </button>
               )}
               <button
                 onClick={onMinimize}
-                title="Minimize (keep session alive)"
+                title={t("pages.cards.minimize")}
                 className="h-7 w-7 rounded-[6px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
               >
                 <Minus className="h-4 w-4" />
@@ -416,7 +420,7 @@ const feeLabel =
               <button
                 onClick={mode === "connect" ? onMinimize : onCloseCompletely}
                 title={
-                  mode === "connect" ? "Minimize (keep session alive)" : "Close"
+                  mode === "connect" ? t("pages.cards.minimize") : t("common.close")
                 }
                 className={cn(
                   "h-7 w-7 rounded-[6px] flex items-center justify-center transition-all",
@@ -449,7 +453,7 @@ const feeLabel =
                     </div>
                     {doctor.is_featured && (
                       <span className="mt-1 px-1.5 py-px text-[10px] font-semibold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-                        Featured
+                        {t("pages.cards.featured")}
                       </span>
                     )}
                     <p className="text-xs text-primary font-medium mt-1">
@@ -482,7 +486,7 @@ const feeLabel =
                       {doctor.instant_consultation && (
                         <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                           <Zap className="h-3 w-3" />
-                          Instant
+                          {t("pages.cards.instant")}
                         </span>
                       )}
                     </div>
@@ -502,24 +506,24 @@ const feeLabel =
                             )}
                           />
                         }
-                        top={rating > 0 ? rating.toFixed(1) : "New"}
-                        bot="Rating"
+                        top={rating > 0 ? rating.toFixed(1) : t("pages.cards.new")}
+                        bot={t("pages.cards.rating")}
                       />
                       <QuickStat
                         icon={
                           <Clock className="h-4 w-4 text-muted-foreground" />
                         }
                         top={feeLabel}
-                        bot="Per visit"
+                        bot={t("pages.cards.per_visit")}
                       />
                       <QuickStat
                         icon={
                           <CalendarCheck className="h-4 w-4 text-muted-foreground" />
                         }
                         top={
-                          doctor.instant_consultation ? "Instant" : "Scheduled"
+                          doctor.instant_consultation ? t("pages.cards.instant") : t("pages.cards.scheduled")
                         }
-                        bot="Consult"
+                        bot={t("pages.cards.consult")}
                       />
                     </div>
                   </div>
@@ -529,7 +533,7 @@ const feeLabel =
                   {bio && (
                     <div className="mb-4 p-3 rounded-[6px] bg-muted/30 border border-border/40">
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">
-                        About
+                        {t("pages.cards.about")}
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         <RichTextRenderer value={bio} className="text-xs text-foreground" />
@@ -542,14 +546,14 @@ const feeLabel =
                     {locationLabel && (
                       <DetailRow
                         icon={MapPin}
-                        label="Location"
+                        label={t("pages.cards.location")}
                         value={locationLabel}
                       />
                     )}
                     {doctor.medical_license && (
                       <DetailRow
                         icon={ShieldCheck}
-                        label="Medical License"
+                        label={t("pages.cards.medical_license")}
                         value={doctor.medical_license}
                         accent
                       />
@@ -557,7 +561,7 @@ const feeLabel =
                     {doctor.preferred_language && (
                       <DetailRow
                         icon={Languages}
-                        label="Language"
+                        label={t("pages.cards.language")}
                         value={
                           langMap[doctor.preferred_language] ??
                           doctor.preferred_language
@@ -566,7 +570,7 @@ const feeLabel =
                     )}
                     <DetailRow
                       icon={FileText}
-                      label="Agreement Status"
+                      label={t("pages.cards.agreement_status")}
                       value={
                         <span
                           className={cn(
@@ -582,7 +586,7 @@ const feeLabel =
                     />
                     <DetailRow
                       icon={User}
-                      label="Profile Status"
+                      label={t("pages.cards.profile_status")}
                       value={
                         <span
                           className={cn(
@@ -592,17 +596,17 @@ const feeLabel =
                               : "text-zinc-500 bg-muted border-border",
                           )}
                         >
-                          {doctor.is_active ? "Active" : "Inactive"}
+                          {doctor.is_active ? t("pages.cards.active") : t("pages.cards.inactive")}
                         </span>
                       }
                     />
                     {doctor.verified_at && (
                       <DetailRow
                         icon={BadgeCheck}
-                        label="Verified"
+                        label={t("pages.cards.verified")}
                         accent
                         value={new Date(doctor.verified_at).toLocaleDateString(
-                          "en-US",
+                          i18n.language,
                           { year: "numeric", month: "short", day: "numeric" },
                         )}
                       />
@@ -612,7 +616,7 @@ const feeLabel =
                   {doctor.hospitals && doctor.hospitals.length > 0 && (
                     <div className="mt-4">
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                        Hospitals
+                        {t("pages.cards.hospitals")}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {doctor.hospitals.map(
@@ -636,7 +640,7 @@ const feeLabel =
                     doctor.specializations.length > 0 && (
                       <div className="mt-4">
                         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                          Specializations
+                          {t("pages.cards.specializations")}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {doctor.specializations.map(
@@ -667,7 +671,7 @@ const feeLabel =
                   className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px]"
                 >
                   <CalendarCheck className="h-4 w-4 mr-1.5" />
-                  Book Appointment
+                  {t("pages.landing.book_appointment")}
                 </Button>
                 {canConnect && (
                   <Button
@@ -676,7 +680,7 @@ const feeLabel =
                     className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Wifi className="h-4 w-4 mr-1.5" />
-                    Connect Now
+                    {t("pages.cards.connect_now")}
                   </Button>
                 )}
               </div>
@@ -748,7 +752,7 @@ export const DoctorCard = ({
   const fee = parseFloat(doctor.consultation_fee);
   const rating = parseFloat(doctor.rating_avg);
   const feeLabel =
-    fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`;
+    fee === 0 ? t("pages.cards.free") : `${fee.toLocaleString()} ${doctor.currency}`;
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
@@ -761,21 +765,21 @@ export const DoctorCard = ({
     online: {
       dot: "bg-emerald-500",
       pulse: "animate-pulse",
-      label: "Available",
+      label: t("pages.cards.available"),
       text: "text-emerald-600",
       bg: "bg-emerald-500/10 border-emerald-500/20",
     },
     busy: {
       dot: "bg-amber-500",
       pulse: "",
-      label: "Paused",
+      label: t("pages.cards.paused"),
       text: "text-amber-600",
       bg: "bg-amber-500/10 border-amber-500/20",
     },
     offline: {
       dot: "bg-zinc-400",
       pulse: "",
-      label: "Unavailable",
+      label: t("pages.cards.unavailable"),
       text: "text-muted-foreground",
       bg: "bg-muted border-border",
     },
@@ -868,7 +872,7 @@ export const DoctorCard = ({
               </h3>
               <p className="text-xs text-primary font-medium mt-0.5 truncate">
 
-                {doctor.medical_license && (<> License : {doctor.medical_license ? `  ${doctor.medical_license}` : ""}</>)}
+                {doctor.medical_license && (<> {t("pages.cards.license")} : {doctor.medical_license ? `  ${doctor.medical_license}` : ""}</>)}
               </p>
               {doctor.specialization && (
                 <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">
@@ -883,7 +887,7 @@ export const DoctorCard = ({
             <div className="mt-3 flex  items-center justify-between">
               <ConsultBadge type={doctor.consultation_type} />
               <span className="flex cursor-pointer  items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
-                View details <ChevronRight className="h-3.5 w-3.5" />
+                {t("pages.cards.view_details")} <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </div>
           )}
@@ -901,27 +905,27 @@ export const DoctorCard = ({
                 <>
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    Call in progress
+                    {t("pages.cards.call_in_progress")}
                   </span>
                 </>
               ) : isCallInProgress ? (
                 <>
                   <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
                   <span className="text-xs font-semibold text-sky-600 dark:text-sky-400">
-                    Connecting…
+                    {t("pages.cards.connecting")}
                   </span>
                 </>
               ) : hasSavedSession ? (
                 <>
                   <RotateCcw className="h-3.5 w-3.5 text-violet-500 shrink-0" />
                   <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
-                    Queue session saved
+                    {t("pages.cards.queue_saved")}
                   </span>
                 </>
               ) : (
                 <><Zap className={cn("h-4 w-4 shrink-0", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground/50")} />
                   <span className={cn("text-[10px] font-bold tracking-tight", doctor.instant_consultation ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70")}>
-                    {doctor.instant_consultation ? "Usually replies in 2 min" : "Replies within 24h"}
+                    {doctor.instant_consultation ? t("pages.cards.instant_reply") : t("pages.cards.scheduled_reply")}
                   </span></>
               )}
             </div>
@@ -944,7 +948,7 @@ export const DoctorCard = ({
               {hasSavedSession && !isCallInProgress ? (
                 <Button size="sm" onClick={openResume}
                   className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
-                  <Wifi className="h-3.5 w-3.5 mr-1.5" />Join
+                  <Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.join")}
                 </Button>
               ) : canConnect ? (
                 <Button
@@ -964,7 +968,7 @@ export const DoctorCard = ({
                       : "bg-primary hover:bg-primary/90 text-primary-foreground",
                   )}>
                   {isConnected || isCallInProgress
-                    ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />Join</>
+                    ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.join")}</>
                     : <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.connect")}</>}
                 </Button>
               ) : (

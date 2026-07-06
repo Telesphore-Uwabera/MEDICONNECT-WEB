@@ -65,31 +65,6 @@ const INITIAL_FILTERS: FilterState = {
 
 const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 
-const CONSULTATION_OPTIONS = [
-  { value: "all" as const, label: "All types", icon: Globe },
-  { value: "booking" as const, label: "Booking", icon: Video },
-  { value: "instant" as const, label: "Instant", icon: Zap },
-];
-
-const GENDER_OPTIONS = [
-  { value: "all" as const, label: "Any gender" },
-  { value: "male" as const, label: "Male" },
-  { value: "female" as const, label: "Female" },
-];
-
-const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
-  { value: "rating", label: "Best Rating" },
-  { value: "fee-asc", label: "Fee: Low → High" },
-  { value: "fee-desc", label: "Fee: High → Low" },
-];
-
-const LANGUAGE_OPTIONS = [
-  { value: "", label: "Any language" },
-  { value: "en", label: "English" },
-  { value: "fr", label: "French" },
-  { value: "kiny", label: "Kinyarwanda" },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildApiParams(
@@ -331,17 +306,17 @@ function ConsultationTypeBadge({
 }) {
   const configs = {
     instant: {
-      label: "Instant",
+      label: t("pages.cards.instant"),
       className:
         "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
     },
     booking: {
-      label: "Booking",
+      label: t("pages.patient.consultation_type_booking"),
       className:
         "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900",
     },
     both: {
-      label: "Online & In-Person",
+      label: t("pages.cards.both"),
       className:
         "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-400 dark:border-teal-900",
     },
@@ -387,14 +362,14 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
                 {doctor.user.name}
               </span>
               {doctor.instant_consultation && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
+                <span className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                   <Zap className="w-3 h-3" />
-                  INSTANT
+                  {t("pages.cards.instant")}
                 </span>
               )}
               {doctor.is_featured && (
                 <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-                  Featured
+                  {t("pages.cards.featured")}
                 </span>
               )}
             </div>
@@ -415,7 +390,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
               )}
             />
             <span className="font-bold text-foreground">
-              {rating > 0 ? rating.toFixed(1) : "New"}
+              {rating > 0 ? rating.toFixed(1) : t("pages.cards.new")}
             </span>
           </span>
           <ConsultationTypeBadge type={doctor.consultation_type} />
@@ -424,9 +399,9 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
         <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/40" onClick={(e) => e.stopPropagation()}>
           <div className="text-left sm:text-right">
             <p className="text-sm font-bold text-foreground">
-              {fee === 0 ? "Free" : `${fee.toLocaleString()} ${doctor.currency}`}
+              {fee === 0 ? t("pages.cards.free") : `${fee.toLocaleString()} ${doctor.currency}`}
             </p>
-            <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">per visit</p>
+            <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">{t("pages.cards.per_visit")}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -441,7 +416,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
                   : "bg-muted text-muted-foreground cursor-not-allowed border border-border/40",
               )}
             >
-              {canBook ? "Book" : doctor.bookings_paused ? "Paused" : "Unavailable"}
+              {canBook ? t("pages.cards.book") : doctor.bookings_paused ? t("pages.cards.paused") : t("pages.cards.unavailable")}
             </button>
 
             {/* Connect — only for instant-consult doctors (opens the connect modal) */}
@@ -458,7 +433,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
                 )}
               >
                 <Zap className="w-3.5 h-3.5" />
-                {a.isConnected || a.isCallInProgress ? "Join" : "Connect"}
+                {a.isConnected || a.isCallInProgress ? t("pages.cards.join") : t("pages.cards.connect")}
               </button>
             )}
           </div>
@@ -513,10 +488,10 @@ function SearchStats({
   available: number;
 }) {
   const cards = [
-    { label: "Matching doctors", value: total, icon: User, tone: "text-primary bg-primary/10 border-primary/20" },
-    { label: "Shown now", value: shown, icon: Globe, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
-    { label: "Instant consult", value: instant, icon: Zap, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
-    { label: "Available", value: available, icon: Video, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+    { label: t("pages.patient.matching_doctors_stat"), value: total, icon: User, tone: "text-primary bg-primary/10 border-primary/20" },
+    { label: t("pages.patient.shown_now_stat"), value: shown, icon: Globe, tone: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
+    { label: t("pages.patient.instant_consult_stat"), value: instant, icon: Zap, tone: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+    { label: t("pages.patient.available_stat"), value: available, icon: Video, tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
   ];
 
   return (
@@ -645,11 +620,10 @@ function PaginationV2({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold text-foreground">
-            Page {safeCurrentPage} of {safeLastPage}
+            {t("pages.patient.page_of", { current: safeCurrentPage, last: safeLastPage })}
           </p>
           <p className="text-[10px] text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{from}-{to}</span> of{" "}
-            <span className="font-semibold text-foreground">{total}</span> doctors
+            {t("pages.patient.showing_range", { from, to, total })}
           </p>
         </div>
 
@@ -660,7 +634,7 @@ function PaginationV2({
             className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            Prev
+            {t("pages.patient.prev_link")}
           </button>
 
           {pageNumbers.map((pageNumber, index) => {
@@ -691,7 +665,7 @@ function PaginationV2({
             disabled={safeCurrentPage >= safeLastPage}
             className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            Next
+            {t("common.next")}
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -721,6 +695,31 @@ const PatientDoctors = () => {
   const { data: insurance } = useGetPublicInsurances();
 
   const [filters, setFilters] = useState<FilterState>(() => readInitialFilters(searchParams));
+
+  const CONSULTATION_OPTIONS = [
+    { value: "all" as const, label: t("pages.patient.consultation_type_all"), icon: Globe },
+    { value: "booking" as const, label: t("pages.patient.consultation_type_booking"), icon: Video },
+    { value: "instant" as const, label: t("pages.patient.consultation_type_instant"), icon: Zap },
+  ];
+
+  const GENDER_OPTIONS = [
+    { value: "all" as const, label: t("pages.patient.gender_any") },
+    { value: "male" as const, label: t("pages.patient.gender_male") },
+    { value: "female" as const, label: t("pages.patient.gender_female") },
+  ];
+
+  const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
+    { value: "rating", label: t("pages.patient.sort_best_rating") },
+    { value: "fee-asc", label: t("pages.patient.sort_fee_asc") },
+    { value: "fee-desc", label: t("pages.patient.sort_fee_desc") },
+  ];
+
+  const LANGUAGE_OPTIONS = [
+    { value: "", label: t("pages.patient.language_any") },
+    { value: "en", label: t("pages.patient.language_english") },
+    { value: "fr", label: t("pages.patient.language_french") },
+    { value: "kiny", label: t("pages.patient.language_kinyarwanda") },
+  ];
 
   useEffect(() => {
     setDebouncedQ(filters.q);
@@ -840,127 +839,7 @@ const PatientDoctors = () => {
         />
 
         <div className="flex flex-col flex-1 min-h-0">
-          {/* ── FilterBar ── */}
-          <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen((p) => !p)}
-            hasActiveFilters={hasActiveFilters}
-            onClearAll={clearAll}
-            fields={[
-              {
-                type: "search",
-                key: "q",
-                label: "Search",
-                placeholder: "Name or specialization…",
-                value: filters.q,
-                onChange: (v) => set("q", v),
-              },
-              {
-                type: "select",
-                key: "type",
-                label: "Consultation Type",
-                value: filters.type,
-                options: CONSULTATION_OPTIONS,
-                onChange: (v) => set("type", v as ConsultationType),
-              },
-              {
-                type: "select",
-                key: "availability",
-                label: "Availability",
-                value:
-                  filters.available_today && filters.instant
-                    ? "both"
-                    : filters.available_today
-                      ? "available"
-                      : filters.instant
-                        ? "instant"
-                        : "all",
-                options: [
-                  { value: "all", label: "Any availability" },
-                  { value: "available", label: "Available today" },
-                  { value: "instant", label: "Instant consult only" },
-                  { value: "both", label: "Available today + Instant" },
-                ],
-                onChange: (v) => {
-                  set("available_today", v === "available" || v === "both");
-                  set("instant", v === "instant" || v === "both");
-                },
-              },
-              {
-                type: "select",
-                key: "gender",
-                label: "Gender",
-                value: filters.gender,
-                options: GENDER_OPTIONS,
-                onChange: (v) => set("gender", v as "all" | "male" | "female"),
-              },
-              {
-                type: "select",
-                key: "language",
-                label: "Language",
-                value: filters.language,
-                options: LANGUAGE_OPTIONS,
-                onChange: (v) => set("language", v),
-              },
-              {
-                type: "search",
-                key: "city",
-                label: "City",
-                placeholder: "City...",
-                value: filters.city,
-                onChange: (v) => set("city", v),
-              },
-              {
-                type: "select",
-                key: "insurance",
-                label: "Insurance",
-                value: filters.insurance_id,
-                options: [
-                  { value: "", label: "Any insurance" },
-                  ...(insurance ?? []).map((item) => ({
-                    value: String(item.id),
-                    label: item.name,
-                  })),
-                ],
-                onChange: (v) => set("insurance_id", v),
-              },
-              {
-                type: "custom",
-                key: "date",
-                label: "Date",
-                render: () => (
-                  <input
-                    type="date"
-                    value={filters.date}
-                    onChange={(e) => set("date", e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                  />
-                ),
-              },
-            ]}
-            extraSlot={
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">Specialization</p>
-                <SpecializationSelect value={spec} onChange={setSpec} />
-                {spec.specialization && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
-                      {spec.specialization.name}
-                      {spec.fee && (
-                        <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
-                      )}
-                      <button
-                        onClick={() => setSpec(INITIAL_SPEC)}
-                        className="ml-0.5 hover:text-destructive transition-colors"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
-                    </span>
-                  </div>
-                )}
-              </div>
-            }
-          />
+         
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col" data-doctor-results>
@@ -982,13 +861,15 @@ const PatientDoctors = () => {
                       <span className="font-bold text-foreground">
                         {data?.total ?? 0}
                       </span>{" "}
-                      {(data?.total ?? 0) === 1 ? "doctor" : "doctors"} found
+                      {(data?.total ?? 0) === 1
+                        ? t("pages.patient.doctor_found_singular")
+                        : t("pages.patient.doctor_found_plural")}
                       {hasActiveFilters && (
                         <button
                           onClick={clearAll}
                           className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                         >
-                          Reset
+                          {t("pages.patient.reset_link")}
                         </button>
                       )}
                     </>
@@ -1022,7 +903,7 @@ const PatientDoctors = () => {
                     <button
                       key={v}
                       onClick={() => setView(v)}
-                      aria-label={`${v} view`}
+                      aria-label={v === "grid" ? t("pages.patient.grid_view_aria") : t("pages.patient.list_view_aria")}
                       className={cn(
                         "px-2.5 py-1.5 transition-all duration-200",
                         i > 0 && "border-l border-border/60",
@@ -1063,6 +944,127 @@ const PatientDoctors = () => {
               </div>
             </div>
 
+ {/* ── FilterBar ── */}
+          <FilterBar
+            open={filterOpen}
+            onToggle={() => setFilterOpen((p) => !p)}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={clearAll}
+            fields={[
+              {
+                type: "search",
+                key: "q",
+                label: t("pages.patient.search_label"),
+                placeholder: t("pages.patient.doctors_search_placeholder"),
+                value: filters.q,
+                onChange: (v) => set("q", v),
+              },
+              {
+                type: "select",
+                key: "type",
+                label: t("pages.patient.consultation_type_label"),
+                value: filters.type,
+                options: CONSULTATION_OPTIONS,
+                onChange: (v) => set("type", v as ConsultationType),
+              },
+              {
+                type: "select",
+                key: "availability",
+                label: t("pages.patient.availability_label"),
+                value:
+                  filters.available_today && filters.instant
+                    ? "both"
+                    : filters.available_today
+                      ? "available"
+                      : filters.instant
+                        ? "instant"
+                        : "all",
+                options: [
+                  { value: "all", label: t("pages.patient.availability_any") },
+                  { value: "available", label: t("pages.patient.availability_today") },
+                  { value: "instant", label: t("pages.patient.availability_instant_only") },
+                  { value: "both", label: t("pages.patient.availability_today_instant") },
+                ],
+                onChange: (v) => {
+                  set("available_today", v === "available" || v === "both");
+                  set("instant", v === "instant" || v === "both");
+                },
+              },
+              {
+                type: "select",
+                key: "gender",
+                label: t("pages.patient.gender_label"),
+                value: filters.gender,
+                options: GENDER_OPTIONS,
+                onChange: (v) => set("gender", v as "all" | "male" | "female"),
+              },
+              {
+                type: "select",
+                key: "language",
+                label: t("common.language"),
+                value: filters.language,
+                options: LANGUAGE_OPTIONS,
+                onChange: (v) => set("language", v),
+              },
+              {
+                type: "search",
+                key: "city",
+                label: t("pages.patient.city_label"),
+                placeholder: t("pages.patient.city_placeholder"),
+                value: filters.city,
+                onChange: (v) => set("city", v),
+              },
+              {
+                type: "select",
+                key: "insurance",
+                label: t("pages.patient.insurance_label"),
+                value: filters.insurance_id,
+                options: [
+                  { value: "", label: t("pages.patient.insurance_any") },
+                  ...(insurance ?? []).map((item) => ({
+                    value: String(item.id),
+                    label: item.name,
+                  })),
+                ],
+                onChange: (v) => set("insurance_id", v),
+              },
+              {
+                type: "custom",
+                key: "date",
+                label: t("pages.patient.date_label"),
+                render: () => (
+                  <input
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => set("date", e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                  />
+                ),
+              },
+            ]}
+            extraSlot={
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">{t("pages.patient.specialization_label")}</p>
+                <SpecializationSelect value={spec} onChange={setSpec} />
+                {spec.specialization && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
+                      {spec.specialization.name}
+                      {spec.fee && (
+                        <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
+                      )}
+                      <button
+                        onClick={() => setSpec(INITIAL_SPEC)}
+                        className="ml-0.5 hover:text-destructive transition-colors"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </span>
+                  </div>
+                )}
+              </div>
+            }
+          />
             {/* Content */}
             <div className="p-4 flex-1">
               {isError ? (
@@ -1072,10 +1074,10 @@ const PatientDoctors = () => {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground">
-                      Failed to load doctors
+                      {t("pages.patient.failed_to_load_doctors_title")}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Something went wrong. Please try again.
+                      {t("pages.patient.failed_to_load_generic_sub")}
                     </p>
                   </div>
                   <button
@@ -1083,7 +1085,7 @@ const PatientDoctors = () => {
                     className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    Retry
+                    {t("pages.patient.retry_link")}
                   </button>
                 </div>
               ) : isLoading ? (
@@ -1105,10 +1107,10 @@ const PatientDoctors = () => {
                   </div>
                   <div>
                     <p className="text-[12px] font-semibold text-foreground">
-                      No doctors match your filters
+                      {t("pages.patient.no_doctors_match_filters_title")}
                     </p>
                     <p className="text-[11px] text-muted-foreground/70 mt-1">
-                      Try widening your search criteria
+                      {t("pages.patient.try_widening_search_sub")}
                     </p>
                   </div>
                   {hasActiveFilters && (
@@ -1116,7 +1118,7 @@ const PatientDoctors = () => {
                       onClick={clearAll}
                       className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                     >
-                      Clear all filters
+                      {t("pages.patient.clear_all_filters_link")}
                     </button>
                   )}
                 </div>

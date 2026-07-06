@@ -6,9 +6,11 @@
   "pharmacy": "Farumasi",
   "forYou": "Kuri Wowe",
   "team": "Komite",
+  "closeMenu": "Funga urutonde",
+  "openMenu": "Fungura urutonde",
   "topnav": {
     "email": "admin@mediconnect.rw",
     "phone": "+250 782 168 650",
-    "support": "Ubufasha"
+    "help": "Ubufasha"
   }
 }

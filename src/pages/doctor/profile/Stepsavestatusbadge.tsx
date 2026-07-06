@@ -2,6 +2,7 @@
 // StepSaveStatusBadge
 // ─────────────────────────────────────────────────────────────────────────────
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 import type { StepSaveState } from "./Types";
@@ -13,6 +14,7 @@ interface StepSaveStatusBadgeProps {
 export const StepSaveStatusBadge = React.memo(function StepSaveStatusBadge({
   state,
 }: StepSaveStatusBadgeProps) {
+  const { t } = useTranslation();
   if (state === "idle") return null;
 
   return (
@@ -30,12 +32,12 @@ export const StepSaveStatusBadge = React.memo(function StepSaveStatusBadge({
       {state === "error"  && <AlertCircle className="h-2.5 w-2.5" />}
       {state === "dirty"  && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
       {state === "saving"
-        ? "Saving…"
+        ? t("profile.saving")
         : state === "saved"
-        ? "Saved"
+        ? t("doctorProfile.saved")
         : state === "error"
-        ? "Error"
-        : "Unsaved"}
+        ? t("doctorProfile.badge_error")
+        : t("doctorProfile.badge_unsaved")}
     </span>
   );
 });

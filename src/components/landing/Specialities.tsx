@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Heart,
   Stethoscope,
@@ -112,6 +113,7 @@ function useLandingSpecializationFees() {
 }
 
 function Specialities() {
+  const { t } = useTranslation();
   const { data = [], isLoading, isError, refetch, isFetching } =
     useLandingSpecializationFees();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -153,10 +155,10 @@ function Specialities() {
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Browse by specialty
+            {t('pages.landing.spec_eyebrow')}
           </p>
           <h2 className="mt-1 text-xl font-medium tracking-tight text-foreground">
-            Specialities
+            {t('pages.landing.spec_title')}
           </h2>
         </div>
 
@@ -165,7 +167,7 @@ function Specialities() {
             type="button"
             onClick={() => scroll('left')}
             disabled={!canScrollLeft}
-            aria-label="Scroll specialities left"
+            aria-label={t('pages.landing.spec_scroll_left')}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[var(--radius)] border border-border bg-card text-muted-foreground transition-colors enabled:hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronLeft size={15} />
@@ -174,7 +176,7 @@ function Specialities() {
             type="button"
             onClick={() => scroll('right')}
             disabled={!canScrollRight}
-            aria-label="Scroll specialities right"
+            aria-label={t('pages.landing.spec_scroll_right')}
             className="flex h-[30px] w-[30px] items-center justify-center rounded-[var(--radius)] border border-border bg-card text-muted-foreground transition-colors enabled:hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30"
           >
             <ChevronRight size={15} />
@@ -200,7 +202,7 @@ function Specialities() {
       {isError && !isLoading && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            Couldn&apos;t load specialities right now.
+            {t('pages.landing.spec_load_error')}
           </p>
           <button
             type="button"
@@ -208,7 +210,7 @@ function Specialities() {
             disabled={isFetching}
             className="rounded-[var(--radius)] bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground transition-opacity disabled:opacity-60"
           >
-            {isFetching ? 'Retrying…' : 'Try again'}
+            {isFetching ? t('pages.landing.spec_retrying') : t('pages.landing.try_again')}
           </button>
         </div>
       )}
@@ -216,7 +218,7 @@ function Specialities() {
       {/* Empty state */}
       {!isLoading && !isError && data.length === 0 && (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          No specialities available yet.
+          {t('pages.landing.spec_empty')}
         </p>
       )}
 
@@ -238,7 +240,7 @@ function Specialities() {
             }}
             tabIndex={0}
             role="region"
-            aria-label="Specialities carousel"
+            aria-label={t('pages.landing.spec_carousel_label')}
             className="flex gap-3 overflow-x-auto pb-1 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-none"
           >
             {data.map((item) => {
@@ -247,7 +249,7 @@ function Specialities() {
                 item.sub_specialization_en ??
                 item.name ??
                 item.specialization ??
-                'Specialist';
+                t('pages.landing.spec_fallback_label');
               const slug = item.slug || slugify(label);
               const Icon = SPECIALTY_ICONS[slug] ?? Stethoscope;
               const doctorCount = item.doctorCount ?? item.doctors_count;
@@ -272,7 +274,7 @@ function Specialities() {
                   {/* Doctor count */}
                   {typeof doctorCount === 'number' && (
                     <span className="text-[11px] text-muted-foreground">
-                      {doctorCount} doctors
+                      {t('pages.landing.spec_doctors_count', { count: doctorCount })}
                     </span>
                   )}
                 </Link>

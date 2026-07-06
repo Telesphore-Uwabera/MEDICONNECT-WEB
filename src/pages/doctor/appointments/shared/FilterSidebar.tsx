@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { X, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppointmentApiStatus, AppointmentApiType } from "@/hooks/doctor/use-doctor-appointment";
@@ -53,6 +54,7 @@ interface Props {
 }
 
 export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllFilters }: Props) {
+  const { t } = useTranslation();
   const set = <K extends keyof FilterState>(key: K, value: FilterState[K]) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
@@ -63,51 +65,51 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
           <div className="w-8 h-8 rounded-[6px] bg-primary/10 flex items-center justify-center">
             <SlidersHorizontal className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-sm font-semibold text-foreground">Filters</span>
+          <span className="text-sm font-semibold text-foreground">{t("pages.doctor.filters")}</span>
         </div>
         {hasActiveFilters && (
           <button
             onClick={clearAllFilters}
             className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 transition-colors"
           >
-            <X className="w-3.5 h-3.5" />Reset all
+            <X className="w-3.5 h-3.5" />{t("pages.doctor.reset_all")}
           </button>
         )}
       </div>
 
       <div className="px-3.5">
-        <FilterSection title="Status">
+        <FilterSection title={t("pages.doctor.status")}>
           <PillGroup<AppointmentApiStatus | "All">
             value={filters.status}
             onChange={(v) => set("status", v)}
             options={[
-              { value: "All", label: "All statuses" },
-              { value: "pending", label: "Pending" },
-              { value: "confirmed", label: "Confirmed" },
-              { value: "in_progress", label: "In progress" },
-              { value: "completed", label: "Completed" },
+              { value: "All", label: t("pages.doctor.all_statuses") },
+              { value: "pending", label: t("pages.doctor.status_pending") },
+              { value: "confirmed", label: t("pages.doctor.status_confirmed") },
+              { value: "in_progress", label: t("pages.doctor.status_in_progress") },
+              { value: "completed", label: t("pages.doctor.status_completed") },
             ]}
           />
         </FilterSection>
 
-        <FilterSection title="Type">
+        <FilterSection title={t("pages.doctor.type")}>
           <PillGroup<AppointmentApiType | "All">
             value={filters.type}
             onChange={(v) => set("type", v)}
             options={[
-              { value: "All", label: "All types" },
-              { value: "online", label: "Video consult" },
-              { value: "in_person", label: "In-person visit" },
+              { value: "All", label: t("pages.doctor.all_types") },
+              { value: "online", label: t("pages.doctor.video_consult") },
+              { value: "in_person", label: t("pages.doctor.in_person_visit") },
             ]}
           />
         </FilterSection>
 
-        <FilterSection title="When">
+        <FilterSection title={t("pages.doctor.when")}>
           <div className="flex flex-col gap-1 mb-2">
             {[
-              { label: "All dates", today: false, upcoming: false },
-              { label: "Today", today: true, upcoming: false },
-              { label: "Upcoming", today: false, upcoming: true },
+              { label: t("pages.doctor.all_dates"), today: false, upcoming: false },
+              { label: t("pages.doctor.today"), today: true, upcoming: false },
+              { label: t("pages.doctor.upcoming"), today: false, upcoming: true },
             ].map((opt) => {
               const active = filters.today === opt.today && filters.upcoming === opt.upcoming && !filters.date;
               return (
@@ -129,7 +131,7 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
             })}
           </div>
           <div>
-            <p className="text-xs text-muted-foreground/70 mb-2 font-medium">Specific date</p>
+            <p className="text-xs text-muted-foreground/70 mb-2 font-medium">{t("pages.doctor.specific_date")}</p>
             <input
               type="date"
               value={filters.date}
@@ -144,17 +146,17 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
                 onClick={() => set("date", "")}
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors mt-2"
               >
-                Clear date
+                {t("pages.doctor.clear_date")}
               </button>
             )}
           </div>
         </FilterSection>
 
-        <FilterSection title="Sort">
+        <FilterSection title={t("pages.doctor.sort")}>
           <PillGroup<SortOption>
             value={filters.sort}
             onChange={(v) => set("sort", v)}
-            options={SORT_OPTIONS}
+            options={SORT_OPTIONS.map((o) => ({ ...o, label: t(`pages.doctor.sort_${o.value.replace(/-/g, "_")}`) }))}
           />
         </FilterSection>
       </div>

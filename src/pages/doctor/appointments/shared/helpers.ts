@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import type { Appointment } from "@/hooks/doctor/use-doctor-appointment";
+import type { TFunction } from "i18next";
 
 dayjs.extend(relativeTime);
 
@@ -49,13 +50,27 @@ export const fmtRelative = (iso: string | null | undefined): string => {
 export const apptLabel     = (a: Appointment) => a.patient?.name ?? "Patient";
 export const apptSpecialty = (_a: Appointment) => "General";
 
-export const statusLabel = (status: string): string =>
-  ({
-    pending:     "Pending",
-    confirmed:   "Confirmed",
+export const statusLabel = (status: string, t?: TFunction): string => {
+  const keys: Record<string, string> = {
+    pending: "pages.doctor.status_pending",
+    confirmed: "pages.doctor.status_confirmed",
+    in_progress: "pages.doctor.status_in_progress",
+    completed: "pages.doctor.status_completed",
+    accepted: "pages.doctor.status_accepted",
+    rejected: "pages.doctor.status_rejected",
+    cancelled: "pages.doctor.status_cancelled",
+  };
+  const fallback: Record<string, string> = {
+    pending: "Pending",
+    confirmed: "Confirmed",
     in_progress: "In progress",
-    completed:   "Completed",
-  }[status] ?? status);
+    completed: "Completed",
+    accepted: "Accepted",
+    rejected: "Rejected",
+    cancelled: "Cancelled",
+  };
+  return keys[status] && t ? t(keys[status]) : (fallback[status] ?? status);
+};
 
 // ─── API error helper ─────────────────────────────────────────────────────────
 

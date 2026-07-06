@@ -38,7 +38,7 @@ import { useSearchPharmacies } from "@/hooks/patient/use-patient-search-pharmacy
 
 import {
   ALL_STATUSES,
-  STATUS_LABEL,
+  getPrescriptionStatusLabel,
   INITIAL_FILTERS,
   type FilterState,
   type ViewMode,
@@ -158,34 +158,43 @@ const PatientPrescriptions = () => {
   const handleViewDetails = useCallback((p: Prescription) => setSelectedPrescription(p), []);
   const closeDrawer = useCallback(() => setSelectedPrescription(null), []);
 
+  const tableHeaders = [
+    t("pages.patient.th_doctor"),
+    t("pages.patient.medications"),
+    t("pages.patient.rxp_status_issued"),
+    t("pages.patient.rxp_th_valid_until"),
+    t("pages.patient.appt_filter_status_label"),
+    "",
+  ];
+
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.patient.appt_filter_status_label"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        ...ALL_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] ?? s })),
+        { value: "all", label: t("pages.patient.appt_filter_all_statuses") },
+        ...ALL_STATUSES.map((s) => ({ value: s, label: getPrescriptionStatusLabel(t, s) })),
       ],
       onChange: (v: string) => set("status", v as any)
     },
     {
       type: "select" as const,
       key: "is_signed",
-      label: "Signature",
+      label: t("pages.patient.rxp_filter_signature"),
       value: String(filters.is_signed),
       options: [
-        { value: "all", label: "All" },
-        { value: "true", label: "Signed" },
-        { value: "false", label: "Unsigned" },
+        { value: "all", label: t("pages.patient.all") },
+        { value: "true", label: t("pages.patient.rxp_signed") },
+        { value: "false", label: t("pages.patient.rxp_unsigned") },
       ],
       onChange: (v: string) => set("is_signed", v === "all" ? "all" : v === "true")
     },
     {
       type: "custom" as const,
       key: "date_range",
-      label: "Date range",
+      label: t("pages.patient.appt_filter_date_range"),
       render: () => (
         <DateRangeInput
           from={filters.from}
@@ -198,12 +207,12 @@ const PatientPrescriptions = () => {
     {
       type: "search" as const,
       key: "search",
-      label: "Search",
+      label: t("pages.patient.search_label"),
       value: filters.search,
-      placeholder: "Prescription...",
+      placeholder: t("pages.patient.rxp_search_placeholder"),
       onChange: (v: string) => set("search", v)
     }
-  ], [filters, set]);
+  ], [filters, set, t]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -211,8 +220,8 @@ const PatientPrescriptions = () => {
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.patient.prescriptions_title", { defaultValue: "My Prescriptions" })}
-          subtitle={t("pages.patient.prescriptions_sub", { defaultValue: "View and manage your prescriptions" })}
+          title={t("pages.patient.rx_title")}
+          subtitle={t("pages.patient.rx_sub")}
         />
 
         {/* Quick access to the patient's own medical record */}
@@ -224,7 +233,7 @@ const PatientPrescriptions = () => {
             className="h-8 px-3 text-[11px] font-medium rounded-[6px] gap-1.5"
           >
             <HeartPulse className="h-3.5 w-3.5 text-primary" />
-            My medical info
+            {t("consult.medical_info.my_info")}
           </Button>
         </div>
 
@@ -240,10 +249,10 @@ const PatientPrescriptions = () => {
         <main className="flex-1 overflow-y-auto flex flex-col">
           {/* Stats */}
           <div className="px-4 pt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <StatCard label="Issued" value={issuedCount} icon={FileText} accent="primary" />
-            <StatCard label="At pharmacy" value={sentToPharmacyCount} icon={MapPin} accent="warning" />
-            <StatCard label="Dispensed" value={dispensedCount} icon={Send} accent="success" />
-            <StatCard label="Cancelled" value={cancelledCount} icon={X} accent="primary" />
+            <StatCard label={t("pages.patient.rxp_status_issued")} value={issuedCount} icon={FileText} accent="primary" />
+            <StatCard label={t("pages.patient.rxp_status_sent_to_pharmacy")} value={sentToPharmacyCount} icon={MapPin} accent="warning" />
+            <StatCard label={t("pages.patient.rxp_status_dispensed")} value={dispensedCount} icon={Send} accent="success" />
+            <StatCard label={t("pages.patient.status_cancelled")} value={cancelledCount} icon={X} accent="primary" />
           </div>
 
           {/* Expiring soon banner */}
@@ -251,7 +260,9 @@ const PatientPrescriptions = () => {
             <div className="mx-4 mt-3 px-3 py-2 rounded-[6px] bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-900 flex items-center gap-2">
               <CalendarRange className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                {expiringSoonCount} prescription{expiringSoonCount > 1 ? "s" : ""} expiring within 3 days — collect soon.
+                {expiringSoonCount > 1
+                  ? t("pages.patient.rxp_expiring_plural", { count: expiringSoonCount })
+                  : t("pages.patient.rxp_expiring_singular", { count: expiringSoonCount })}
               </p>
             </div>
           )}
@@ -261,22 +272,22 @@ const PatientPrescriptions = () => {
             <div className="flex items-center gap-2">
               <p className="text-xs text-muted-foreground">
                 {isLoading ? (
-                  <span className="text-muted-foreground/40">Loading…</span>
+                  <span className="text-muted-foreground/40">{t("consult.booking.loading")}</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{prescriptions.length}</span>{" "}
-                    {prescriptions.length === 1 ? "prescription" : "prescriptions"}
+                    {prescriptions.length === 1 ? t("pages.patient.rxp_count_singular") : t("pages.patient.rxp_count_plural")}
                   </>
                 )}
                 {hasActiveFilters && !isLoading && (
                   <button onClick={clearAll} className="ml-2 text-primary hover:text-primary/70 hover:underline text-xs font-medium">
-                    Reset filters
+                    {t("pages.patient.reset_filters")}
                   </button>
                 )}
               </p>
               {isFetching && !isLoading && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground/50">
-                  <Loader2 className="w-4 h-4 animate-spin" />Refreshing
+                  <Loader2 className="w-4 h-4 animate-spin" />{t("pages.patient.refreshing_label")}
                 </span>
               )}
             </div>
@@ -287,8 +298,8 @@ const PatientPrescriptions = () => {
                 onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
                 className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
-                <option value="date-desc">Newest first</option>
-                <option value="date-asc">Oldest first</option>
+                <option value="date-desc">{t("pages.patient.sort_newest_first")}</option>
+                <option value="date-asc">{t("pages.patient.sort_oldest_first")}</option>
               </select>
 
               <FilterToggleButton
@@ -328,11 +339,11 @@ const PatientPrescriptions = () => {
                   <AlertCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-foreground">Failed to load prescriptions</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">Please check your connection and try again.</p>
+                  <p className="text-xs font-semibold text-foreground">{t("pages.patient.rxp_error_title")}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">{t("pages.patient.error_check_connection")}</p>
                 </div>
                 <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-primary hover:text-primary/70 font-semibold">
-                  <RefreshCw className="w-4 h-4" />Retry
+                  <RefreshCw className="w-4 h-4" />{t("pages.patient.retry_link")}
                 </button>
               </div>
             )}
@@ -343,8 +354,8 @@ const PatientPrescriptions = () => {
                   <table className="w-full text-xs">
                     <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                       <tr>
-                        {["Doctor", "Medications", "Issued", "Valid Until", "Status", ""].map((h) => (
-                          <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
+                        {tableHeaders.map((h, i) => (
+                          <th key={i} className="text-left px-3 py-2.5 font-semibold">{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -367,15 +378,15 @@ const PatientPrescriptions = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">
-                    {hasActiveFilters ? "No prescriptions match your filters" : "No prescriptions yet"}
+                    {hasActiveFilters ? t("pages.patient.rxp_empty_no_match") : t("pages.patient.rxp_empty_none")}
                   </p>
                   <p className="text-xs text-muted-foreground/60 mt-1">
-                    {hasActiveFilters ? "Try widening your search criteria" : "Prescriptions issued by your doctor will appear here"}
+                    {hasActiveFilters ? t("pages.patient.try_widening_search_sub") : t("pages.patient.rxp_empty_hint")}
                   </p>
                 </div>
                 {hasActiveFilters && (
                   <button onClick={clearAll} className="text-xs text-primary hover:text-primary/70 font-semibold hover:underline">
-                    Clear all filters
+                    {t("pages.patient.clear_all_filters_link")}
                   </button>
                 )}
               </div>
@@ -387,8 +398,8 @@ const PatientPrescriptions = () => {
                 <table className="w-full text-xs">
                   <thead className="bg-secondary/30 text-xs uppercase tracking-wider text-muted-foreground/60 border-b border-border/50">
                     <tr>
-                      {["Doctor", "Medications", "Issued", "Valid until", "Status", ""].map((h) => (
-                        <th key={h} className="text-left px-3 py-2.5 font-semibold">{h}</th>
+                      {tableHeaders.map((h, i) => (
+                        <th key={i} className="text-left px-3 py-2.5 font-semibold">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -422,7 +433,7 @@ const PatientPrescriptions = () => {
                                 <p className="text-xs text-muted-foreground/60">{p.doctor.specialization}</p>
                                 {p.is_signed && (
                                   <span className="flex items-center gap-0.5 mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
-                                    <CheckCircle2 className="w-2 h-2" />Signed
+                                    <CheckCircle2 className="w-2 h-2" />{t("pages.patient.rxp_signed")}
                                   </span>
                                 )}
                               </div>
@@ -438,7 +449,7 @@ const PatientPrescriptions = () => {
                                 </span>
                               ))}
                               {p.items.length > 2 && (
-                                <span className="text-xs text-muted-foreground/40 pl-3">+{p.items.length - 2} more</span>
+                                <span className="text-xs text-muted-foreground/40 pl-3">{t("pages.cards.more_count", { count: p.items.length - 2 })}</span>
                               )}
                             </div>
                           </td>
@@ -462,7 +473,7 @@ const PatientPrescriptions = () => {
                                 className="h-6 px-2 text-xs rounded-[6px] border-border/50 hover:border-primary/30 hover:bg-secondary/30 gap-1"
                                 onClick={() => handleViewDetails(p)}
                               >
-                                Details
+                                {t("pages.patient.details")}
                               </Button>
                               <Button
                                 size="sm"
@@ -478,7 +489,7 @@ const PatientPrescriptions = () => {
                                   className="h-6 px-2 text-xs bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] gap-1"
                                   onClick={() => handleAction(p, "send")}
                                 >
-                                  <Send className="h-4 w-4" />Send
+                                  <Send className="h-4 w-4" />{t("pages.patient.rxp_send")}
                                 </Button>
                               )}
                             </div>

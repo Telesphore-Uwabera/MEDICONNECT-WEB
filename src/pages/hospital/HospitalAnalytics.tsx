@@ -402,51 +402,51 @@ const HospitalAnalytics = () => {
       {
         type: "select",
         key: "period",
-        label: "Period",
+        label: t("pages.hospital.filter_period"),
         value: filters.period ?? "month",
         options: [
-          { value: "today", label: "Today" },
-          { value: "week", label: "This week" },
-          { value: "month", label: "This month" },
-          { value: "year", label: "This year" },
-          { value: "custom", label: "Custom range" },
+          { value: "today", label: t("pages.hospital.period_today") },
+          { value: "week", label: t("pages.hospital.period_week") },
+          { value: "month", label: t("pages.hospital.period_month") },
+          { value: "year", label: t("pages.hospital.period_year") },
+          { value: "custom", label: t("pages.hospital.period_custom") },
         ],
         onChange: (value) => setFilters((prev) => ({ ...prev, period: value as DashboardPeriod })),
       },
       {
         type: "select",
         key: "chart_group",
-        label: "Chart group",
+        label: t("pages.hospital.filter_chart_group"),
         value: filters.chart_group ?? "day",
         options: [
-          { value: "day", label: "Group by day" },
-          { value: "week", label: "Group by week" },
-          { value: "month", label: "Group by month" },
+          { value: "day", label: t("pages.hospital.group_day") },
+          { value: "week", label: t("pages.hospital.group_week") },
+          { value: "month", label: t("pages.hospital.group_month") },
         ],
         onChange: (value) => setFilters((prev) => ({ ...prev, chart_group: value as ChartGroup })),
       },
       {
         type: "select",
         key: "status",
-        label: "Status",
+        label: t("pages.hospital.status"),
         value: filters.status ?? "all",
         options: [
-          { value: "all", label: "All statuses" },
-          { value: "pending", label: "Pending" },
-          { value: "accepted", label: "Accepted" },
-          { value: "completed", label: "Completed" },
-          { value: "rejected", label: "Rejected" },
-          { value: "cancelled", label: "Cancelled" },
+          { value: "all", label: t("pages.hospital.all_statuses") },
+          { value: "pending", label: t("pages.hospital.status_pending") },
+          { value: "accepted", label: t("pages.hospital.status_accepted") },
+          { value: "completed", label: t("pages.hospital.status_completed") },
+          { value: "rejected", label: t("pages.hospital.status_rejected") },
+          { value: "cancelled", label: t("pages.hospital.status_cancelled") },
         ],
         onChange: (value) => setFilters((prev) => ({ ...prev, status: value as BookingStatus })),
       },
       {
         type: "select",
         key: "department_id",
-        label: "Department",
+        label: t("pages.hospital.department"),
         value: filters.department_id ? String(filters.department_id) : "",
         options: [
-          { value: "", label: "All departments" },
+          { value: "", label: t("pages.hospital.all_departments") },
           ...departmentOptions.map((department) => ({
             value: String(department.id),
             label:
@@ -454,7 +454,7 @@ const HospitalAnalytics = () => {
               department.name_fr ??
               department.name_kiny ??
               department.name ??
-              `Department ${department.id}`,
+              t("pages.hospital.department_fallback", { id: department.id }),
           })),
         ],
         onChange: (value) =>
@@ -463,13 +463,13 @@ const HospitalAnalytics = () => {
       {
         type: "search",
         key: "search",
-        label: "Search",
+        label: t("pages.hospital.search"),
         value: filters.search ?? "",
-        placeholder: "Search patient, service, doctor...",
+        placeholder: t("pages.hospital.analytics_search_placeholder"),
         onChange: (value) => setFilters((prev) => ({ ...prev, search: value.slice(0, 100) })),
       },
     ],
-    [departmentOptions, filters.chart_group, filters.department_id, filters.period, filters.search, filters.status],
+    [departmentOptions, filters.chart_group, filters.department_id, filters.period, filters.search, filters.status, t],
   );
 
   useEffect(() => {
@@ -520,27 +520,27 @@ const HospitalAnalytics = () => {
   const bookingStatusData: StatusSlice[] = periodSB
     ? [
       {
-        name: "Completed",
+        name: t("pages.hospital.status_completed"),
         value: periodSB.completed,
         fill: STATUS_COLORS.completed,
       },
       {
-        name: "Pending",
+        name: t("pages.hospital.status_pending"),
         value: periodSB.pending,
         fill: STATUS_COLORS.pending,
       },
       {
-        name: "Accepted",
+        name: t("pages.hospital.status_accepted"),
         value: periodSB.accepted,
         fill: STATUS_COLORS.accepted,
       },
       {
-        name: "Rejected",
+        name: t("pages.hospital.status_rejected"),
         value: periodSB.rejected,
         fill: STATUS_COLORS.rejected,
       },
       {
-        name: "Cancelled",
+        name: t("pages.hospital.status_cancelled"),
         value: periodSB.cancelled,
         fill: STATUS_COLORS.cancelled,
       },
@@ -574,9 +574,9 @@ const HospitalAnalytics = () => {
                     <SlidersHorizontal className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Analytics filters</p>
+                    <p className="text-[13px] font-semibold text-foreground">{t("pages.hospital.analytics_filters")}</p>
                     <p className="truncate text-[10px] text-muted-foreground">
-                      Narrow dashboard metrics by period, status, department, or search.
+                      {t("pages.hospital.analytics_filters_sub")}
                     </p>
                   </div>
                 </div>
@@ -584,7 +584,7 @@ const HospitalAnalytics = () => {
                   {isFetching && !isLoading && (
                     <span className="inline-flex items-center gap-1.5 rounded-[6px] border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
                       <Activity className="h-3 w-3 animate-pulse" />
-                      Updating
+                      {t("pages.hospital.updating")}
                     </span>
                   )}
                   <FilterToggleButton
@@ -606,7 +606,7 @@ const HospitalAnalytics = () => {
                     <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-2">
                       <label className="space-y-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                          Start date
+                          {t("pages.hospital.start_date")}
                         </span>
                         <input
                           type="date"
@@ -626,7 +626,7 @@ const HospitalAnalytics = () => {
                       </label>
                       <label className="space-y-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                          End date
+                          {t("pages.hospital.end_date")}
                         </span>
                         <input
                           type="date"
@@ -766,31 +766,31 @@ const HospitalAnalytics = () => {
                     ) : (
                       <div className="space-y-1.5">
                         <StatusRow
-                          label="Total"
+                          label={t("pages.hospital.total")}
                           value={today?.service_bookings?.total ?? 0}
                         />
                         <StatusRow
-                          label="Pending"
+                          label={t("pages.hospital.status_pending")}
                           value={today?.service_bookings?.pending ?? 0}
                           color={STATUS_COLORS.pending}
                         />
                         <StatusRow
-                          label="Accepted"
+                          label={t("pages.hospital.status_accepted")}
                           value={today?.service_bookings?.accepted ?? 0}
                           color={STATUS_COLORS.accepted}
                         />
                         <StatusRow
-                          label="Completed"
+                          label={t("pages.hospital.status_completed")}
                           value={today?.service_bookings?.completed ?? 0}
                           color={STATUS_COLORS.completed}
                         />
                         <StatusRow
-                          label="Rejected"
+                          label={t("pages.hospital.status_rejected")}
                           value={today?.service_bookings?.rejected ?? 0}
                           color={STATUS_COLORS.rejected}
                         />
                         <StatusRow
-                          label="Cancelled"
+                          label={t("pages.hospital.status_cancelled")}
                           value={today?.service_bookings?.cancelled ?? 0}
                           color={STATUS_COLORS.cancelled}
                         />
@@ -807,26 +807,26 @@ const HospitalAnalytics = () => {
                     ) : (
                       <div className="space-y-1.5">
                         <StatusRow
-                          label="Total"
+                          label={t("pages.hospital.total")}
                           value={today?.appointments?.total ?? 0}
                         />
                         <StatusRow
-                          label="Completed"
+                          label={t("pages.hospital.status_completed")}
                           value={today?.appointments?.completed ?? 0}
                           color={STATUS_COLORS.completed}
                         />
                         <StatusRow
-                          label="Confirmed"
+                          label={t("pages.hospital.status_confirmed")}
                           value={today?.appointments?.confirmed ?? 0}
                           color={STATUS_COLORS.accepted}
                         />
                         <StatusRow
-                          label="Pending"
+                          label={t("pages.hospital.status_pending")}
                           value={today?.appointments?.pending ?? 0}
                           color={STATUS_COLORS.pending}
                         />
                         <StatusRow
-                          label="Cancelled"
+                          label={t("pages.hospital.status_cancelled")}
                           value={today?.appointments?.cancelled ?? 0}
                           color={STATUS_COLORS.cancelled}
                         />
@@ -845,7 +845,7 @@ const HospitalAnalytics = () => {
                     <>
                       <Card className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Total Bookings
+                          {t("pages.hospital.total_bookings")}
                         </span>
                         <span className="text-2xl font-bold tabular-nums text-foreground">
                           {(periodSB?.total ?? 0).toLocaleString()}
@@ -857,7 +857,7 @@ const HospitalAnalytics = () => {
                       </Card>
                       <Card className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Appointments
+                          {t("pages.hospital.appointments")}
                         </span>
                         <span className="text-2xl font-bold tabular-nums text-foreground">
                           {(periodAppts?.total ?? 0).toLocaleString()}
@@ -869,11 +869,11 @@ const HospitalAnalytics = () => {
                       </Card>
                       <Card className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Avg Duration
+                          {t("pages.hospital.avg_duration")}
                         </span>
                         <span className="text-2xl font-bold tabular-nums text-foreground">
                           {periodAppts?.avg_duration_minutes ?? 0}
-                          <span className="text-sm font-normal ml-1">min</span>
+                          <span className="text-sm font-normal ml-1">{t("pages.hospital.minutes_short")}</span>
                         </span>
                         <span className="text-[10px] text-muted-foreground">
                           {periodAppts?.unique_doctors ?? 0} doctors ·{" "}
@@ -882,13 +882,13 @@ const HospitalAnalytics = () => {
                       </Card>
                       <Card className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Avg Booking Value
+                          {t("pages.hospital.avg_booking_value")}
                         </span>
                         <span className="text-xl font-bold tabular-nums text-foreground">
                           RWF {(revenue?.avg_booking_value ?? 0).toLocaleString()}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {revenue?.booking_count ?? 0} paid bookings
+                          {t("pages.hospital.paid_bookings_count", { count: revenue?.booking_count ?? 0 })}
                         </span>
                       </Card>
                     </>
@@ -936,19 +936,19 @@ const HospitalAnalytics = () => {
                           />
                           <Bar
                             dataKey="total"
-                            name="Total"
+                            name={t("pages.hospital.total")}
                             fill="hsl(var(--primary))"
                             radius={[4, 4, 0, 0]}
                           />
                           <Bar
                             dataKey="completed"
-                            name="Completed"
+                            name={t("pages.hospital.status_completed")}
                             fill={STATUS_COLORS.completed}
                             radius={[4, 4, 0, 0]}
                           />
                           <Bar
                             dataKey="pending"
-                            name="Pending"
+                            name={t("pages.hospital.status_pending")}
                             fill={STATUS_COLORS.pending}
                             radius={[4, 4, 0, 0]}
                           />
@@ -1027,7 +1027,7 @@ const HospitalAnalytics = () => {
 
                 {/* ── BOOKING STATUS BREAKDOWN ── */}
                 <Card>
-                  <SectionTitle>Booking Status Breakdown (Period)</SectionTitle>
+                  <SectionTitle>{t("pages.hospital.booking_status_breakdown")}</SectionTitle>
                   {isLoading ? (
                     <Skeleton className="h-[160px]" />
                   ) : (
@@ -1094,7 +1094,7 @@ const HospitalAnalytics = () => {
                 {/* ── REVENUE ── */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
-                    <SectionTitle>Revenue</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.revenue")}</SectionTitle>
                     {changePercent != null && !isLoading && (
                       <span className="text-[11px] text-muted-foreground">
                         {changePercent >= 0 ? "▲" : "▼"}{" "}
@@ -1105,7 +1105,7 @@ const HospitalAnalytics = () => {
                         >
                           {Math.abs(changePercent).toFixed(1)}%
                         </span>{" "}
-                        vs prev period
+                        {t("pages.hospital.vs_prev_period")}
                       </span>
                     )}
                   </div>
@@ -1116,13 +1116,13 @@ const HospitalAnalytics = () => {
                       <div className="grid grid-cols-3 gap-2 mb-4">
                         {(
                           [
-                            { label: "Gross", value: revenue?.gross ?? 0 },
+                            { label: t("pages.hospital.gross"), value: revenue?.gross ?? 0 },
                             {
-                              label: "Insurance Covered",
+                              label: t("pages.hospital.insurance_covered"),
                               value: revenue?.insurance_covered ?? 0,
                             },
                             {
-                              label: "Patient Paid",
+                              label: t("pages.hospital.patient_paid"),
                               value: revenue?.patient_paid ?? 0,
                             },
                           ] as const
@@ -1189,7 +1189,7 @@ const HospitalAnalytics = () => {
                           <Area
                             type="monotone"
                             dataKey="revenue"
-                            name="Revenue"
+                            name={t("pages.hospital.revenue")}
                             stroke="hsl(var(--success))"
                             strokeWidth={2}
                             fill="url(#rev)"
@@ -1209,7 +1209,7 @@ const HospitalAnalytics = () => {
                 {/* ── APPOINTMENTS DAILY + UPCOMING ── */}
                 <div className="grid lg:grid-cols-3 gap-4">
                   <Card className="lg:col-span-2">
-                    <SectionTitle>Daily Appointments</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.daily_appointments")}</SectionTitle>
                     {isLoading ? (
                       <Skeleton className="h-[200px]" />
                     ) : dailyAppts.length === 0 ? (
@@ -1272,7 +1272,7 @@ const HospitalAnalytics = () => {
                           <Area
                             type="monotone"
                             dataKey="total"
-                            name="Total"
+                            name={t("pages.hospital.total")}
                             stroke="hsl(var(--info))"
                             strokeWidth={2}
                             fill="url(#appt)"
@@ -1280,7 +1280,7 @@ const HospitalAnalytics = () => {
                           <Area
                             type="monotone"
                             dataKey="completed"
-                            name="Completed"
+                            name={t("pages.hospital.status_completed")}
                             stroke={STATUS_COLORS.completed}
                             strokeWidth={1.5}
                             fill="none"
@@ -1291,7 +1291,7 @@ const HospitalAnalytics = () => {
                   </Card>
 
                   <Card>
-                    <SectionTitle>Upcoming Appointments</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.upcoming_appointments")}</SectionTitle>
                     {isLoading ? (
                       <div className="space-y-2">
                         {Array.from({ length: 3 }).map((_, i) => (
@@ -1337,7 +1337,7 @@ const HospitalAnalytics = () => {
                 {/* ── SERVICES + DOCTORS ── */}
                 <div className="grid lg:grid-cols-2 gap-4">
                   <Card>
-                    <SectionTitle>Services</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.services")}</SectionTitle>
                     {isLoading ? (
                       <Skeleton className="h-28" />
                     ) : (
@@ -1345,10 +1345,10 @@ const HospitalAnalytics = () => {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {(
                             [
-                              { label: "Total", value: services?.total ?? 0 },
-                              { label: "Active", value: services?.active ?? 0 },
+                              { label: t("pages.hospital.total"), value: services?.total ?? 0 },
+                              { label: t("pages.hospital.active"), value: services?.active ?? 0 },
                               {
-                                label: "Inactive",
+                                label: t("pages.hospital.inactive"),
                                 value: services?.inactive ?? 0,
                               },
                             ] as const
@@ -1368,21 +1368,21 @@ const HospitalAnalytics = () => {
                         </div>
                         <div className="space-y-1.5 text-[11px]">
                           <StatusRow
-                            label="Available"
+                            label={t("pages.hospital.available")}
                             value={services?.available ?? 0}
                           />
                           <StatusRow
-                            label="Insurance Covered"
+                            label={t("pages.hospital.insurance_covered")}
                             value={services?.insurance_covered ?? 0}
                             color="hsl(var(--success))"
                           />
                           <StatusRow
-                            label="Requires Appointment"
+                            label={t("pages.hospital.requires_appointment")}
                             value={services?.requires_appointment ?? 0}
                             color="hsl(var(--info))"
                           />
                           <StatusRow
-                            label="Requires Referral"
+                            label={t("pages.hospital.requires_referral")}
                             value={services?.requires_referral ?? 0}
                             color="hsl(var(--warning))"
                           />
@@ -1390,7 +1390,7 @@ const HospitalAnalytics = () => {
                         {(services?.top_services ?? []).length > 0 && (
                           <>
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-3 mb-2">
-                              Top Services
+                              {t("pages.hospital.top_services")}
                             </p>
                             <div className="space-y-1.5">
                               {services!.top_services.map((s) => (
@@ -1403,7 +1403,7 @@ const HospitalAnalytics = () => {
                                   </span>
                                   <span className="flex gap-2 shrink-0">
                                     <span className="tabular-nums font-semibold text-foreground">
-                                      {s.booking_count} bk
+                                      {t("pages.hospital.booking_count_short", { count: s.booking_count })}
                                     </span>
                                     <span className="tabular-nums text-success font-mono">
                                     {(s.revenue / 1000).toFixed(0)}
@@ -1419,7 +1419,7 @@ const HospitalAnalytics = () => {
                   </Card>
 
                   <Card>
-                    <SectionTitle>Doctors</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.doctors")}</SectionTitle>
                     {isLoading ? (
                       <Skeleton className="h-28" />
                     ) : (
@@ -1427,10 +1427,10 @@ const HospitalAnalytics = () => {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {(
                             [
-                              { label: "Total", value: doctors?.total ?? 0 },
-                              { label: "Active", value: doctors?.active ?? 0 },
+                              { label: t("pages.hospital.total"), value: doctors?.total ?? 0 },
+                              { label: t("pages.hospital.active"), value: doctors?.active ?? 0 },
                               {
-                                label: "Inactive",
+                                label: t("pages.hospital.inactive"),
                                 value: doctors?.inactive ?? 0,
                               },
                             ] as const
@@ -1451,7 +1451,7 @@ const HospitalAnalytics = () => {
                         {(doctors?.top_doctors ?? []).length > 0 ? (
                           <>
                             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                              Top Doctors
+                              {t("pages.hospital.top_doctors")}
                             </p>
                             <div className="space-y-1.5">
                               {doctors!.top_doctors.map((d) => (
@@ -1464,10 +1464,10 @@ const HospitalAnalytics = () => {
                                   </span>
                                   <span className="flex gap-2 shrink-0">
                                     <span className="tabular-nums font-semibold text-foreground">
-                                      {d.appointment_count} appts
+                                      {t("pages.hospital.appointments_count_short", { count: d.appointment_count })}
                                     </span>
                                     <span className="tabular-nums text-muted-foreground">
-                                      {d.avg_duration_min}min avg
+                                      {t("pages.hospital.avg_minutes", { count: d.avg_duration_min })}
                                     </span>
                                   </span>
                                 </div>
@@ -1493,13 +1493,13 @@ const HospitalAnalytics = () => {
                 {/* ── REVIEWS ── */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
-                    <SectionTitle>Reviews</SectionTitle>
+                    <SectionTitle>{t("pages.hospital.reviews")}</SectionTitle>
                     {avgRating != null && !isLoading && (
                       <span className="flex items-center gap-1 text-[11px] text-warning font-semibold">
                         <Star className="w-3 h-3 fill-warning text-warning" />
                         {avgRating.toFixed(1)}
                         <span className="text-muted-foreground font-normal">
-                          / 5 ({reviews?.total ?? 0} total)
+                          {t("pages.hospital.rating_total", { total: reviews?.total ?? 0 })}
                         </span>
                       </span>
                     )}
@@ -1513,17 +1513,17 @@ const HospitalAnalytics = () => {
                           {(
                             [
                               {
-                                label: "Approved",
+                                label: t("pages.hospital.status_approved"),
                                 value: reviews?.approved ?? 0,
                                 color: "text-success",
                               },
                               {
-                                label: "Pending",
+                                label: t("pages.hospital.status_pending"),
                                 value: reviews?.pending ?? 0,
                                 color: "text-warning",
                               },
                               {
-                                label: "Rejected",
+                                label: t("pages.hospital.status_rejected"),
                                 value: reviews?.rejected ?? 0,
                                 color: "text-destructive",
                               },

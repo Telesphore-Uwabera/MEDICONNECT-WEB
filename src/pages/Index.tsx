@@ -404,7 +404,7 @@ const Index = () => {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    All
+                    {t("pages.landing.filter_all")}
                   </button>
                   <button
                     onClick={() => setDoctorFilter("instant")}
@@ -416,7 +416,7 @@ const Index = () => {
                     )}
                   >
                     <Zap className="w-3.5 h-3.5" />
-                    Instant only
+                    {t("pages.landing.filter_instant_only")}
                   </button>
                 </div>
 
@@ -441,10 +441,10 @@ const Index = () => {
                         : "border-border/60 text-muted-foreground hover:border-primary/40",
                     )}
                   >
-                    <option value="all">Any language</option>
-                    <option value="en">English</option>
-                    <option value="fr">French</option>
-                    <option value="rw">Kinyarwanda</option>
+                    <option value="all">{t("pages.landing.filter_any_language")}</option>
+                    <option value="en">{t("pages.landing.lang_en")}</option>
+                    <option value="fr">{t("pages.landing.lang_fr")}</option>
+                    <option value="rw">{t("pages.landing.lang_rw")}</option>
                   </select>
                   <ChevronRight className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground/50 pointer-events-none" />
                 </div>
@@ -456,7 +456,7 @@ const Index = () => {
                     className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
                   >
                     <X className="w-3 h-3" />
-                    Clear
+                    {t("pages.landing.filter_clear")}
                   </button>
                 )}
               </div>
@@ -568,12 +568,12 @@ const Index = () => {
           {!doctorsLoading && allDoctors.length === 0 && (
             <div className="text-center py-12">
               <p className="text-sm text-muted-foreground">
-                No doctors match your filters.{" "}
+                {t("pages.landing.no_doctors_match")}{" "}
                 <button
                   onClick={clearFilters}
                   className="text-primary hover:underline"
                 >
-                  Reset filters
+                  {t("pages.landing.reset_filters")}
                 </button>
               </p>
             </div>
@@ -716,7 +716,7 @@ const Index = () => {
 
           {!hospitalsLoading && allHospitals.length === 0 && (
             <div className="text-center py-12 text-sm text-muted-foreground">
-              No health facilities found.
+              {t("pages.landing.no_hospitals_found")}
             </div>
           )}
         </div>
@@ -757,7 +757,7 @@ const Index = () => {
         <div className="container">
           <div className="max-w-2xl">
             <h2 className={SECTION_TITLE}>
-              Meet the minds behind MEDICONNECT
+              {t("pages.landing.team_heading")}
             </h2>
           </div>
           <div className="">

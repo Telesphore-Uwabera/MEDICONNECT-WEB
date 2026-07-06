@@ -18,6 +18,9 @@ export interface User {
   /** Active role + the roles this account has access to (role switching). */
   active_role?: string;
   available_roles?: string[];
+  /** True when this account holds the admin role and may switch (back) to it,
+   *  even while another role is active. Admin is never in available_roles. */
+  can_be_admin?: boolean;
 }
 
 // ── Register ──────────────────────────────────────────

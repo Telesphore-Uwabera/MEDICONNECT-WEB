@@ -152,6 +152,70 @@ export function useDeleteUser() {
   });
 }
 
+// ─── Credential & session management ─────────────────────────────────────────
+// Backend contract (agreed frontend-first; implement these routes to match):
+//   POST /admin/users/{id}/reset-password      → { message, temporary_password? }
+//        If the backend generates a temporary password it returns it ONCE here;
+//        otherwise it emails the user a reset link/OTP and returns { message }.
+//   POST /admin/users/{id}/revoke-sessions     → { message }
+//        Revokes every active token for the user (they must sign in again).
+//   POST /admin/users/{id}/resend-verification → { message }
+//        body: { channel: "email" | "phone" } — re-sends the verification.
+//   PUT  /admin/staff/{id}/password            → { message }
+//        body: { password, password_confirmation } — admin sets a new staff
+//        password directly (staff passwords are always admin-managed).
+
+export interface ResetPasswordResponse {
+  message: string;
+  /** Present when the backend generates a temporary password instead of
+   *  emailing a reset link — display it once to the admin. */
+  temporary_password?: string;
+}
+
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<ResetPasswordResponse>(`${BASE}/${id}/reset-password`, { method: "POST" }),
+  });
+}
+
+export function useRevokeUserSessions() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<{ message: string }>(`${BASE}/${id}/revoke-sessions`, { method: "POST" }),
+  });
+}
+
+export function useResendVerification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, channel }: { id: number; channel: "email" | "phone" }) =>
+      apiFetch<{ message: string }>(`${BASE}/${id}/resend-verification`, {
+        method: "POST",
+        body: { channel },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+}
+
+export function useResetStaffPassword() {
+  return useMutation({
+    mutationFn: ({
+      id,
+      password,
+      password_confirmation,
+    }: {
+      id: number;
+      password: string;
+      password_confirmation: string;
+    }) =>
+      apiFetch<{ message: string }>(`/admin/staff/${id}/password`, {
+        method: "PUT",
+        body: { password, password_confirmation },
+      }),
+  });
+}
+
 export function useGetAdminStaff(params?: StaffParams) {
   const query = new URLSearchParams();
   if (params?.role) query.set("role", params.role);

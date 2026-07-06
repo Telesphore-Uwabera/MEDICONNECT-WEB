@@ -9,12 +9,10 @@ function HospitalServiceBookings() {
     <DashboardLayout role="hospital">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.doctor.overview_title")}
-          subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
+          title={t("pages.hospital.service_bookings_title")}
+          subtitle={t("pages.hospital.service_bookings_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
-        <div className="flex justify-center items-center pt-20">
-          HospitalServiceBookings
-        </div>
+        <div className="flex justify-center items-center pt-20">{t("pages.hospital.service_bookings_empty")}</div>
       </div>
     </DashboardLayout>
   );

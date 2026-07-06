@@ -108,29 +108,29 @@ const getRangeDayStats = (
 
 const slotConfig: Record<
   SlotStatus,
-  { card: string; label: string; dot: string; canChange: boolean }
+  { card: string; labelKey: string; dot: string; canChange: boolean }
 > = {
   available: {
     card: "bg-card border-border text-foreground hover:border-primary hover:bg-primary/5 hover:text-primary cursor-pointer",
-    label: "Available",
+    labelKey: "pages.doctor.slot_available",
     dot: "bg-emerald-500",
     canChange: true,
   },
   booked: {
     card: "bg-primary border-primary text-primary-foreground  cursor-pointer hover:bg-primary/90",
-    label: "Booked",
+    labelKey: "pages.doctor.slot_booked",
     dot: "bg-primary",
     canChange: false,
   },
   blocked: {
     card: "bg-muted border-border text-muted-foreground line-through cursor-pointer hover:border-primary/30 hover:bg-primary/5",
-    label: "Blocked",
+    labelKey: "pages.doctor.slot_blocked",
     dot: "bg-muted-foreground",
     canChange: true,
   },
   reserved: {
     card: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400 cursor-pointer hover:bg-amber-500/20",
-    label: "Reserved",
+    labelKey: "pages.doctor.slot_reserved",
     dot: "bg-amber-500",
     canChange: true,
   },
@@ -150,6 +150,7 @@ function StatusMenuItem({
   onSelect: () => void;
 }) {
   const cfg = slotConfig[status];
+  const { t } = useTranslation();
   return (
     <button
       onClick={onSelect}
@@ -161,7 +162,7 @@ function StatusMenuItem({
       )}
     >
       <span className={cn("h-2.5 w-2.5 rounded-full flex-shrink-0", cfg.dot)} />
-      {cfg.label}
+      {t(cfg.labelKey)}
       {current && (
         <span className="ml-auto text-primary">
           <CheckCircle2 size={14} />
@@ -187,6 +188,7 @@ function SlotChip({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const cfg = slotConfig[slot.status];
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -207,7 +209,7 @@ function SlotChip({
           if (slot.status !== "booked") setOpen((v) => !v);
         }}
         disabled={isPending}
-        title={`${cfg.label} — click to change`}
+        title={`${t(cfg.labelKey)} - ${t("pages.doctor.click_to_change")}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
@@ -226,11 +228,11 @@ function SlotChip({
       {open && slot.status !== "booked" && (
         <div
           role="listbox"
-          aria-label="Set slot status"
+          aria-label={t("pages.doctor.set_slot_status")}
           className="absolute top-full left-1/2 -translate-x-1/2 mt-1 z-50 w-40 rounded-[6px] border border-border bg-popover overflow-hidden py-1"
         >
           <p className="px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground font-medium border-b border-border mb-1">
-            Set status
+            {t("pages.doctor.set_status")}
           </p>
           {ALL_STATUSES.filter((s) => s !== "booked").map((s) => (
             <StatusMenuItem
@@ -264,6 +266,7 @@ function DayCard({
   isSelected: boolean;
   onSelect: (index: number) => void;
 }) {
+  const { t } = useTranslation();
   const m = moment(day.date);
   const isToday = m.isSame(moment(), "day");
 
@@ -298,7 +301,7 @@ function DayCard({
               : "bg-primary text-primary-foreground",
           )}
         >
-          TODAY
+          {t("pages.doctor.today")}
         </span>
       )}
 
@@ -400,6 +403,7 @@ function MonthSection({
   selectedDay: number;
   onSelectDay: (index: number) => void;
 }) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLButtonElement>(null);
 
@@ -433,7 +437,7 @@ function MonthSection({
           {monthLabel}
         </span>
         <span className="text-xs text-muted-foreground/50">
-          ({days.length} days)
+          {t("pages.doctor.days_count", { count: days.length })}
         </span>
         <div className="flex-1 h-px bg-border/40 ml-2" />
       </div>
@@ -478,6 +482,7 @@ function DayPickerByMonth({
   onSelectDay: (index: number) => void;
   slotsLoading: boolean;
 }) {
+  const { t } = useTranslation();
   const monthGroups = useMemo(() => {
     const groups: {
       monthLabel: string;
@@ -532,11 +537,10 @@ function DayPickerByMonth({
         </div>
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">
-            No schedule generated yet
+            {t("pages.doctor.no_schedule_generated")}
           </p>
           <p className="text-xs text-muted-foreground max-w-[260px]">
-            Select a date range and click "Generate schedule" to create your
-            availability slots
+            {t("pages.doctor.no_schedule_generated_desc")}
           </p>
         </div>
       </div>
@@ -691,11 +695,11 @@ const DoctorAvailability = () => {
 
   const handleGenerate = () => {
     if (!range?.from || !range?.to) {
-      toast.error("Pick a start and end date");
+      toast.error(t("pages.doctor.pick_start_end_date"));
       return;
     }
     if (moment(range.to).isBefore(range.from)) {
-      toast.error("End date must be after start date");
+      toast.error(t("pages.doctor.end_after_start"));
       return;
     }
 
@@ -713,8 +717,8 @@ const DoctorAvailability = () => {
     }
 
     if (generatedDays === 0) {
-      toast.error("No schedulable days in this range", {
-        description: "Include weekends or choose a range containing weekdays.",
+      toast.error(t("pages.doctor.no_schedulable_days"), {
+        description: t("pages.doctor.no_schedulable_days_desc"),
       });
       return;
     }
@@ -739,13 +743,18 @@ const DoctorAvailability = () => {
           );
           const daysCount = res.saved.length;
           toast.success(res.message, {
-            description: `${daysCount} days - ${totalSlots} slots - ${interval}-min intervals - ${
-              includeWeekends ? "weekends included" : "weekends excluded"
-            }`,
+            description: t("pages.doctor.schedule_generated_desc", {
+              days: daysCount,
+              slots: totalSlots,
+              interval,
+              weekends: includeWeekends
+                ? t("pages.doctor.weekends_included")
+                : t("pages.doctor.weekends_excluded"),
+            }),
           });
         },
         onError: (err) => {
-          toast.error(err.message || "Failed to generate schedule");
+          toast.error(err.message || t("pages.doctor.generate_schedule_failed"));
         },
       },
     );
@@ -770,12 +779,12 @@ const DoctorAvailability = () => {
     deleteAllScheduleMutation.mutate(undefined, {
       onSuccess: (res) => {
         setGeneratedRange(null);
-        toast.success(res.message || "Schedule reset", {
-          description: "All availability periods and slots have been removed.",
+        toast.success(res.message || t("pages.doctor.schedule_reset"), {
+          description: t("pages.doctor.schedule_reset_desc"),
         });
       },
       onError: (err) => {
-        toast.error(err.message || "Failed to reset schedule");
+        toast.error(err.message || t("pages.doctor.reset_schedule_failed"));
       },
     });
   };
@@ -788,10 +797,10 @@ const DoctorAvailability = () => {
         { id: slot.id, status: status as Exclude<SlotStatus, "booked"> },
         {
           onSuccess: () => {
-            toast.success(`Slot updated to ${status}`);
+            toast.success(t("pages.doctor.slot_updated_to", { status: t(slotConfig[status].labelKey) }));
           },
           onError: (err) => {
-            toast.error(err.message || "Failed to update slot");
+            toast.error(err.message || t("pages.doctor.update_slot_failed"));
           },
           onSettled: () => {
             setPendingSlotIds((prev) => {
@@ -814,15 +823,15 @@ const DoctorAvailability = () => {
       {
         onSuccess: (res) => {
           const labels: Record<SlotStatus, string> = {
-            available: "All slots opened",
-            blocked: "All slots blocked",
-            booked: "All slots marked as booked",
-            reserved: "All slots reserved",
+            available: t("pages.doctor.all_slots_opened"),
+            blocked: t("pages.doctor.all_slots_blocked"),
+            booked: t("pages.doctor.all_slots_marked_booked"),
+            reserved: t("pages.doctor.all_slots_reserved"),
           };
-          toast.success(`${labels[status]} (${res.updated} slots)`);
+          toast.success(t("pages.doctor.bulk_update_success", { label: labels[status], count: res.updated }));
         },
         onError: (err) => {
-          toast.error(err.message || "Bulk update failed");
+          toast.error(err.message || t("pages.doctor.bulk_update_failed"));
         },
       },
     );
@@ -835,7 +844,7 @@ const DoctorAvailability = () => {
         toast.success(res.message);
       },
       onError: (err) => {
-        toast.error(err.message || "Failed to toggle instant consultation");
+        toast.error(err.message || t("pages.doctor.toggle_instant_failed"));
       },
     });
   };
@@ -845,17 +854,17 @@ const DoctorAvailability = () => {
       onSuccess: (res) => {
         setScheduleDisabled(res.bookings_paused);
         if (res.bookings_paused) {
-          toast.warning("Schedule disabled", {
-            description: "You are now hidden from all patient booking flows",
+          toast.warning(t("pages.doctor.schedule_disabled"), {
+            description: t("pages.doctor.schedule_disabled_desc"),
           });
         } else {
-          toast.success("Schedule enabled", {
-            description: "Patients can book appointments again",
+          toast.success(t("pages.doctor.schedule_enabled"), {
+            description: t("pages.doctor.schedule_enabled_desc"),
           });
         }
       },
       onError: (err) => {
-        toast.error(err.message || "Failed to toggle schedule");
+        toast.error(err.message || t("pages.doctor.toggle_schedule_failed"));
       },
     });
   };
@@ -886,7 +895,7 @@ const DoctorAvailability = () => {
                   className="flex-shrink-0 text-red-500"
                 />
                 <span className="font-medium">
-                  Schedule hidden from patients. New bookings are paused.
+                  {t("pages.doctor.schedule_hidden_banner")}
                 </span>
               </div>
             )}
@@ -908,10 +917,10 @@ const DoctorAvailability = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground leading-tight">
-                      Instant Consultation
+                      {t("pages.doctor.instant_consultation")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      {instant ? "Visible to patients" : "Hidden"}
+                      {instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
                     </p>
                   </div>
                   <Switch
@@ -936,10 +945,10 @@ const DoctorAvailability = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground leading-tight">
-                      Disable Schedule
+                      {t("pages.doctor.disable_schedule")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      {scheduleDisabled ? "Paused" : "Active"}
+                      {scheduleDisabled ? t("pages.doctor.paused") : t("pages.doctor.active")}
                     </p>
                   </div>
                   <Switch
@@ -950,7 +959,7 @@ const DoctorAvailability = () => {
                   />
                 </div>
 
-                {/* ── Reset Schedule ── */}
+                {/* ── {t("pages.doctor.reset_schedule")} ── */}
                 <div className="flex min-w-0 max-w-full items-center gap-3 rounded-[6px] border border-border/50 bg-background/40 p-3">
                   <div
                     className={cn(
@@ -964,10 +973,10 @@ const DoctorAvailability = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground leading-tight">
-                      Reset Schedule
+                      {t("pages.doctor.reset_schedule")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      Remove all slots &amp; periods
+                      {t("pages.doctor.remove_slots_periods")}
                     </p>
                   </div>
                   <button
@@ -986,10 +995,10 @@ const DoctorAvailability = () => {
                       <Trash2 size={14} />
                     )}
                     {isResetting
-                      ? "Resetting…"
+                      ? t("pages.doctor.resetting")
                       : resetConfirming
-                        ? "Confirm reset"
-                        : "Reset"}
+                        ? t("pages.doctor.confirm_reset")
+                        : t("pages.doctor.reset")}
                   </button>
                 </div>
               </div>
@@ -1000,33 +1009,33 @@ const DoctorAvailability = () => {
               <div className="grid min-w-0 grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-5 gap-2">
                 {[
                   {
-                    label: "Total slots",
+                    label: t("pages.doctor.total_slots"),
                     value: stats.total,
-                    sub: `${days.length} days`,
+                    sub: t("pages.doctor.days_count_plain", { count: days.length }),
                     valueClass: "text-foreground",
                   },
                   {
-                    label: "Available",
+                    label: t("pages.doctor.slot_available"),
                     value: stats.available,
-                    sub: "open for booking",
+                    sub: t("pages.doctor.open_for_booking"),
                     valueClass: "text-primary",
                   },
                   {
-                    label: "Booked",
+                    label: t("pages.doctor.slot_booked"),
                     value: stats.booked,
-                    sub: "confirmed",
+                    sub: t("pages.doctor.confirmed_lower"),
                     valueClass: "text-foreground",
                   },
                   {
-                    label: "Blocked",
+                    label: t("pages.doctor.slot_blocked"),
                     value: stats.blocked,
-                    sub: "unavailable",
+                    sub: t("pages.doctor.unavailable"),
                     valueClass: "text-foreground",
                   },
                   {
-                    label: "Reserved",
+                    label: t("pages.doctor.slot_reserved"),
                     value: stats.reserved,
-                    sub: "held",
+                    sub: t("pages.doctor.held"),
                     valueClass: "text-foreground",
                   },
                 ].map((s) => (
@@ -1064,7 +1073,7 @@ const DoctorAvailability = () => {
                 <div className="min-w-0 max-w-full overflow-hidden rounded-[6px] border border-border/70 bg-card p-4 sm:p-5 space-y-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <LayoutGrid size={16} className="text-primary" />
-                    Custom date range
+                    {t("pages.doctor.custom_range")}
                   </h3>
 
                   {/* Date range */}
@@ -1125,12 +1134,12 @@ const DoctorAvailability = () => {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-foreground">
-                          Weekend days
+                          {t("pages.doctor.weekend_days")}
                         </p>
                         <p className="text-xs text-muted-foreground/70 mt-0.5">
                           {includeWeekends
-                            ? "Saturday and Sunday will be generated."
-                            : "Only Monday to Friday will be generated."}
+                            ? t("pages.doctor.weekends_generated")
+                            : t("pages.doctor.weekdays_only_generated")}
                         </p>
                       </div>
                       <div className="flex w-full rounded-[6px] border border-border/60 bg-muted/40 p-1 sm:w-auto">
@@ -1144,7 +1153,7 @@ const DoctorAvailability = () => {
                               : "text-muted-foreground hover:text-foreground",
                           )}
                         >
-                          Exclude
+                          {t("pages.doctor.exclude")}
                         </button>
                         <button
                           type="button"
@@ -1156,17 +1165,16 @@ const DoctorAvailability = () => {
                               : "text-muted-foreground hover:text-foreground",
                           )}
                         >
-                          Include
+                          {t("pages.doctor.include")}
                         </button>
                       </div>
                     </div>
                     {rangeDayStats.total > 0 && (
                       <p className="mt-3 text-[11px] text-muted-foreground">
-                        Schedule will be created for{" "}
-                        <span className="font-semibold text-foreground">
-                          {rangeDayStats.schedulable}
-                        </span>{" "}
-                        of {rangeDayStats.total} selected days.
+                        {t("pages.doctor.schedule_days_preview", {
+                          schedulable: rangeDayStats.schedulable,
+                          total: rangeDayStats.total,
+                        })}
                       </p>
                     )}
                   </div>
@@ -1243,7 +1251,7 @@ const DoctorAvailability = () => {
                       <RefreshCw size={16} />
                     )}
                     {isGenerating
-                      ? "Generating..."
+                      ? t("pages.doctor.generating")
                       : t("pages.doctor.generate")}
                   </Button>
                 </div>
@@ -1268,10 +1276,10 @@ const DoctorAvailability = () => {
                           )}
                         />
                         <span className="text-sm text-foreground capitalize">
-                          {cfg.label}
+                          {t(cfg.labelKey)}
                         </span>
                         <span className="ml-auto text-xs text-muted-foreground/60">
-                          {cfg.canChange ? "click to change" : "locked"}
+                          {cfg.canChange ? t("pages.doctor.click_to_change") : t("pages.doctor.locked")}
                         </span>
                       </div>
                     ))}
@@ -1361,7 +1369,7 @@ const DoctorAvailability = () => {
                             className="text-xs px-2 py-0.5 border-primary/20 bg-primary/5 text-primary gap-1.5"
                           >
                             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            {dayStats.available} avail
+                            {t("pages.doctor.available_short_count", { count: dayStats.available })}
                           </Badge>
                         )}
                         {dayStats.booked > 0 && (
@@ -1369,7 +1377,7 @@ const DoctorAvailability = () => {
                             variant="outline"
                             className="text-xs px-2 py-0.5 border-foreground/20 bg-foreground text-background gap-1.5"
                           >
-                            {dayStats.booked} booked
+                            {t("pages.doctor.booked_count_short", { count: dayStats.booked })}
                           </Badge>
                         )}
                         {dayStats.blocked > 0 && (
@@ -1377,7 +1385,7 @@ const DoctorAvailability = () => {
                             variant="outline"
                             className="text-xs px-2 py-0.5 border-muted bg-muted text-muted-foreground gap-1.5"
                           >
-                            {dayStats.blocked} blocked
+                            {t("pages.doctor.blocked_count_short", { count: dayStats.blocked })}
                           </Badge>
                         )}
                         {dayStats.reserved > 0 && (
@@ -1385,7 +1393,7 @@ const DoctorAvailability = () => {
                             variant="outline"
                             className="text-xs px-2 py-0.5 border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1.5"
                           >
-                            {dayStats.reserved} reserved
+                            {t("pages.doctor.reserved_count_short", { count: dayStats.reserved })}
                           </Badge>
                         )}
                       </div>
@@ -1394,7 +1402,7 @@ const DoctorAvailability = () => {
                     {/* Bulk actions */}
                     <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border/60">
                       <span className="text-xs text-muted-foreground/70 uppercase tracking-wide font-medium mr-2">
-                        Bulk:
+                        {t("pages.doctor.bulk")}
                       </span>
                       <button
                         onClick={() => handleBulkSetDay("available")}
@@ -1402,7 +1410,7 @@ const DoctorAvailability = () => {
                         className="flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-[6px] border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
                         <CheckCircle2 size={14} />
-                        Open
+                        {t("pages.doctor.open")}
                       </button>
                       <button
                         onClick={() => handleBulkSetDay("blocked")}
@@ -1410,7 +1418,7 @@ const DoctorAvailability = () => {
                         className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium px-3 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <Ban size={14} />
-                        Block
+                        {t("pages.doctor.block")}
                       </button>
                       <button
                         onClick={() => handleBulkSetDay("reserved")}
@@ -1418,7 +1426,7 @@ const DoctorAvailability = () => {
                         className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium px-3 py-1.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
                         <BookMarked size={14} />
-                        Reserve
+                        {t("pages.doctor.reserve")}
                       </button>
                       {isBulkUpdating && (
                         <Loader2
@@ -1442,13 +1450,13 @@ const DoctorAvailability = () => {
                       ))}
                     </div>
 
-                    {/* Utilisation bar */}
+                    {/* {t("pages.doctor.utilisation")} bar */}
                     {currentDay.slots.length > 0 && (
                       <div className="mt-5 pt-4 border-t border-border/60">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm text-muted-foreground/70 flex items-center gap-1.5">
                             <TrendingUp size={14} />
-                            Utilisation
+                            {t("pages.doctor.utilisation")}
                           </span>
                           <span className="text-sm font-semibold text-foreground">
                             {Math.round(

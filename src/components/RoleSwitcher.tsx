@@ -5,25 +5,28 @@
 
 import { useEffect, useState } from "react";
 import {
-  X, Check, Loader2, User, Stethoscope, Building2, Pill, ArrowRightLeft, Plus,
+  X, Check, Loader2, User, Stethoscope, Building2, Pill, ArrowRightLeft, Plus, ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useAuth";
-import { useGoToRole } from "@/hooks/useRoleManagement";
-import type { SwitchableRole } from "@/types/auth";
+import { useGoToRole, type GoRole } from "@/hooks/useRoleManagement";
 
-const ROLES: { key: SwitchableRole; label: string; icon: LucideIcon; desc: string }[] = [
+const ROLES: { key: GoRole; label: string; icon: LucideIcon; desc: string }[] = [
   { key: "patient", label: "Patient", icon: User, desc: "Book and attend consultations" },
   { key: "doctor", label: "Doctor", icon: Stethoscope, desc: "See patients and manage care" },
   { key: "hospital", label: "Hospital", icon: Building2, desc: "Manage facility services" },
   { key: "pharmacy", label: "Pharmacy", icon: Pill, desc: "Fulfil prescriptions and orders" },
 ];
 
+const ADMIN_ROLE: { key: GoRole; label: string; icon: LucideIcon; desc: string } = {
+  key: "admin", label: "Admin", icon: ShieldCheck, desc: "Manage the platform",
+};
+
 export function RoleSwitcher({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: user, isLoading } = useMe();
   const { go } = useGoToRole();
-  const [busy, setBusy] = useState<SwitchableRole | null>(null);
+  const [busy, setBusy] = useState<GoRole | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -39,9 +42,14 @@ export function RoleSwitcher({ open, onClose }: { open: boolean; onClose: () => 
   const available = user?.available_roles ?? (user?.role ? [user.role] : []);
   const anyBusy = busy != null;
 
+  // Admin never appears in available_roles — the backend signals it separately
+  // via can_be_admin so admins who switched away can always switch back.
+  const canBeAdmin = !!user?.can_be_admin || active === "admin";
+  const roles = canBeAdmin ? [ADMIN_ROLE, ...ROLES] : ROLES;
+
   // From the sidebar we do a full switch (reload into the role's workspace).
   // go() adds the role first if the account doesn't have it yet.
-  const handleGo = (role: SwitchableRole) => {
+  const handleGo = (role: GoRole) => {
     setBusy(role);
     void go(role).finally(() => setBusy(null));
   };
@@ -84,9 +92,10 @@ export function RoleSwitcher({ open, onClose }: { open: boolean; onClose: () => 
               <Loader2 className="h-4 w-4 animate-spin" /> Loading…
             </div>
           ) : (
-            ROLES.map(({ key, label, icon: Icon, desc }) => {
+            roles.map(({ key, label, icon: Icon, desc }) => {
               const isActive = key === active;
-              const has = available.includes(key);
+              // Admin is switchable (not addable) whenever the account holds it.
+              const has = key === "admin" ? canBeAdmin : available.includes(key);
               const rowBusy = busy === key;
 
               return (

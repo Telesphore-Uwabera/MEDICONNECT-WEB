@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Pill, Calendar, Clock, Video, MapPin, FileText,
@@ -78,20 +79,20 @@ const STATUS_DOT: Partial<Record<PrescriptionStatus, string>> = {
   expired: "bg-orange-500",
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  issued: "Issued",
-  sent_to_pharmacy: "Sent to pharmacy",
-  filled: "Filled",
-  cancelled: "Cancelled",
-  active: "Active",
-  pending: "Pending",
-  dispensed: "Dispensed",
-  expired: "Expired",
-  completed: "Completed",
-  rejected: "Rejected",
-  returned: "Returned",
-};
+const statusLabel = (status: string, t: ReturnType<typeof useTranslation>["t"]): string => ({
+  draft: t("pages.doctor.rx_status_draft"),
+  issued: t("pages.doctor.rx_status_issued"),
+  sent_to_pharmacy: t("pages.doctor.rx_status_sent_pharmacy"),
+  filled: t("pages.doctor.rx_status_filled"),
+  cancelled: t("pages.doctor.rx_status_cancelled"),
+  active: t("pages.doctor.rx_status_active"),
+  pending: t("pages.doctor.rx_status_pending"),
+  dispensed: t("pages.doctor.rx_status_dispensed"),
+  expired: t("pages.doctor.rx_status_expired"),
+  completed: t("pages.doctor.rx_status_completed"),
+  rejected: t("pages.doctor.rx_status_rejected"),
+  returned: t("pages.doctor.rx_status_returned"),
+}[status] ?? status);
 
 /* ─────────────────────────────────────────────
    Section wrapper
@@ -138,6 +139,7 @@ function Row({ label, value, mono }: { label: string; value?: React.ReactNode; m
 ───────────────────────────────────────────── */
 
 function DrawerContent({ prescription }: { prescription: Prescription }) {
+  const { t } = useTranslation();
   const p = prescription;
   const appt = p.appointment;
   const BASE_URL = import.meta.env.VITE_APP_BASE_URL?.replace("/api/v1", "") ?? "";
@@ -154,7 +156,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div>
               <p className="text-base font-semibold text-foreground leading-tight">
-                {p.patient?.name ?? "Patient"}
+                {p.patient?.name ?? t("pages.doctor.patient")}
               </p>
               {p.patient?.email && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
@@ -176,31 +178,31 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
               )}
             >
               <span className={cn("w-1.5 h-1.5 rounded-full mr-1.5", STATUS_DOT[p.status] ?? "bg-muted-foreground/40")} />
-              {STATUS_LABEL[p.status] ?? p.status}
+              {statusLabel(p.status, t)}
             </Badge>
           </div>
         </div>
       </div>
 
       {/* ── Prescription meta ── */}
-      <Section title="Prescription" icon={<FileText className="h-3 w-3" />}>
-        <Row label="Number" value={p.prescription_number} mono />
-        <Row label="Diagnosis" value={<span className="font-medium">{p.diagnosis}</span>} />
-        <Row label="Notes" value={p.notes ? <RichTextRenderer value={p.notes} className="text-sm text-foreground" /> : undefined} />
-        <Row label="Valid until" value={fmtDate(p.valid_until)} />
-        <Row label="Signed" value={
+      <Section title={t("pages.doctor.rx_prescription")} icon={<FileText className="h-3 w-3" />}>
+        <Row label={t("pages.doctor.number")} value={p.prescription_number} mono />
+        <Row label={t("pages.doctor.diagnosis")} value={<span className="font-medium">{p.diagnosis}</span>} />
+        <Row label={t("pages.doctor.notes")} value={p.notes ? <RichTextRenderer value={p.notes} className="text-sm text-foreground" /> : undefined} />
+        <Row label={t("pages.doctor.valid_until")} value={fmtDate(p.valid_until)} />
+        <Row label={t("pages.doctor.rx_signed")} value={
           p.is_signed
             ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-              <CheckCircle2 className="h-3 w-3" /> Yes · {fmtDateTime(p.signed_at)}
+              <CheckCircle2 className="h-3 w-3" /> {t("pages.doctor.yes")} - {fmtDateTime(p.signed_at)}
             </span>
-            : <span className="text-muted-foreground/50">Not signed</span>
+            : <span className="text-muted-foreground/50">{t("pages.doctor.rx_not_signed")}</span>
         } />
-        <Row label="Created" value={fmtDateTime(p.created_at)} />
-        <Row label="Updated" value={fmtDateTime(p.updated_at)} />
+        <Row label={t("pages.doctor.created")} value={fmtDateTime(p.created_at)} />
+        <Row label={t("pages.doctor.updated")} value={fmtDateTime(p.updated_at)} />
       </Section>
 
       {/* ── Medications ── */}
-      <Section title={`Medications (${p.items.length})`} icon={<Pill className="h-3 w-3" />}>
+      <Section title={t("pages.doctor.medications_count", { count: p.items.length })} icon={<Pill className="h-3 w-3" />}>
         <div className="space-y-3">
           {p.items.map((m, i) => (
             <div
@@ -215,10 +217,10 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pl-8">
                 {[
-                  ["Dosage", m.dosage],
-                  ["Frequency", m.frequency],
-                  ["Duration", m.duration],
-                  ["Quantity", String(m.quantity)],
+                  [t("pages.doctor.dosage"), m.dosage],
+                  [t("pages.doctor.frequency"), m.frequency],
+                  [t("pages.doctor.duration"), m.duration],
+                  [t("pages.doctor.quantity"), String(m.quantity)],
                 ].map(([lbl, val]) => val ? (
                   <div key={lbl} className="flex items-center gap-1.5">
                     <span className="text-xs text-muted-foreground/60 w-16 shrink-0">{lbl}</span>
@@ -227,7 +229,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
                 ) : null)}
                 {m.instructions && (
                   <div className="col-span-2 flex items-start gap-1.5 mt-1">
-                    <span className="text-xs text-muted-foreground/60 w-16 shrink-0 pt-px">Instructions</span>
+                    <span className="text-xs text-muted-foreground/60 w-16 shrink-0 pt-px">{t("pages.doctor.instructions")}</span>
                     <RichTextRenderer value={m.instructions} className="text-sm text-muted-foreground italic" />
                   </div>
                 )}
@@ -239,49 +241,49 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
       {/* ── Appointment ── */}
       {appt && (
-        <Section title="Linked Appointment" icon={<Calendar className="h-3 w-3" />}>
-          <Row label="Date" value={fmtDate(appt.appointment_date)} />
-          <Row label="Time" value={fmtTime(appt.appointment_time)} />
-          <Row label="Type" value={
+        <Section title={t("pages.doctor.linked_appointment")} icon={<Calendar className="h-3 w-3" />}>
+          <Row label={t("pages.doctor.date")} value={fmtDate(appt.appointment_date)} />
+          <Row label={t("pages.doctor.time")} value={fmtTime(appt.appointment_time)} />
+          <Row label={t("pages.doctor.type")} value={
             <span className="flex items-center gap-1">
               {appt.type === "online"
-                ? <><Video className="h-3 w-3 text-sky-500" /> Online</>
-                : <><MapPin className="h-3 w-3 text-amber-500" /> In-person</>}
+                ? <><Video className="h-3 w-3 text-sky-500" /> {t("pages.doctor.online")}</>
+                : <><MapPin className="h-3 w-3 text-amber-500" /> {t("pages.doctor.in_person")}</>}
             </span>
           } />
-          <Row label="Status" value={appt.status} />
-          <Row label="Booking" value={appt.booking_type} />
-          <Row label="Duration" value={appt.duration_minutes ? `${appt.duration_minutes} min` : undefined} />
-          <Row label="Fee" value={
+          <Row label={t("pages.doctor.status")} value={appt.status} />
+          <Row label={t("pages.doctor.booking_type")} value={appt.booking_type} />
+          <Row label={t("pages.doctor.duration")} value={appt.duration_minutes ? `${appt.duration_minutes} min` : undefined} />
+          <Row label={t("pages.doctor.fee")} value={
             appt.consultation_fee !== "0.00"
               ? `${appt.currency} ${parseFloat(appt.consultation_fee).toLocaleString()}`
-              : "Free"
+              : t("pages.doctor.free")
           } />
-          <Row label="Payment" value={
+          <Row label={t("pages.doctor.payment")} value={
             appt.payment_status === "paid"
               ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <CheckCircle2 className="h-3 w-3" /> Paid
+                <CheckCircle2 className="h-3 w-3" /> {t("pages.doctor.paid")}
                 {appt.payment_method && ` · ${appt.payment_method.replace(/_/g, " ")}`}
               </span>
               : appt.payment_status
           } />
           {appt.payment_reference && (
-            <Row label="Reference" value={appt.payment_reference} mono />
+            <Row label={t("pages.doctor.reference")} value={appt.payment_reference} mono />
           )}
         </Section>
       )}
 
       {/* ── Pharmacy ── */}
       {p.pharmacy && (
-        <Section title="Pharmacy" icon={<Building2 className="h-3 w-3" />}>
-          <Row label="Name" value={p.pharmacy.name} />
-          <Row label="Address" value={p.pharmacy.address} />
+        <Section title={t("pages.doctor.pharmacy")} icon={<Building2 className="h-3 w-3" />}>
+          <Row label={t("pages.doctor.name")} value={p.pharmacy.name} />
+          <Row label={t("pages.doctor.address")} value={p.pharmacy.address} />
         </Section>
       )}
 
       {/* ── Documents ── */}
       {(
-        <Section title="Documents" icon={<Download className="h-3 w-3" />}>
+        <Section title={t("pages.doctor.documents")} icon={<Download className="h-3 w-3" />}>
           <div className="flex flex-wrap gap-2 pt-0.5">
             <button
               type="button"
@@ -289,7 +291,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
               className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
             >
               <FileText className="h-4 w-4" />
-              View document
+              {t("pages.doctor.view_document")}
             </button>
             <button
               type="button"
@@ -297,7 +299,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
               className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
             >
               <Download className="h-4 w-4" />
-              Download PDF
+              {t("pages.doctor.download_pdf")}
             </button>
             {/* {p.qr_code && (
               <a
@@ -332,6 +334,7 @@ interface PrescriptionDetailDrawerProps {
 export function PrescriptionDetailDrawer({
   prescription, open, onClose,
 }: PrescriptionDetailDrawerProps) {
+  const { t } = useTranslation();
   // Lock body scroll while open
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -385,7 +388,7 @@ export function PrescriptionDetailDrawer({
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div>
-                  <p className="text-base font-semibold text-foreground">Prescription Details</p>
+                  <p className="text-base font-semibold text-foreground">{t("pages.doctor.rx_details_title")}</p>
                   {prescription?.prescription_number && (
                     <p className="text-xs text-muted-foreground font-mono">
                       {prescription.prescription_number}
@@ -406,14 +409,14 @@ export function PrescriptionDetailDrawer({
               {detailQuery.isLoading && !prescription && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">Loading details…</p>
+                  <p className="text-sm text-muted-foreground">{t("pages.doctor.loading_details")}</p>
                 </div>
               )}
 
               {detailQuery.isError && !prescription && (
                 <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
                   <AlertCircle className="h-8 w-8 text-red-400" />
-                  <p className="text-sm text-muted-foreground">Failed to load prescription details</p>
+                  <p className="text-sm text-muted-foreground">{t("pages.doctor.rx_details_load_failed")}</p>
                 </div>
               )}
 
@@ -426,7 +429,7 @@ export function PrescriptionDetailDrawer({
                 onClick={onClose}
                 className="px-5 py-2 rounded-[6px] text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                Close
+                {t("pages.doctor.close")}
               </button>
             </div>
           </motion.div>

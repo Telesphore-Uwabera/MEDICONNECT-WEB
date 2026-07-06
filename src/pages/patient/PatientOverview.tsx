@@ -20,6 +20,7 @@ import { useDoctorActions, DoctorActionModals } from "@/components/useDoctorActi
 import { useGetPatientAppointments } from "@/hooks/patient/use-patient-appointment";
 import { format, parseISO } from "date-fns";
 import moment from "moment";
+import "moment/locale/fr";
 
 /** Statuses that count as "upcoming" for the overview strip */
 const UPCOMING_STATUSES = ["pending", "confirmed", "in_progress"] as const;
@@ -78,7 +79,7 @@ function AvailableNowRow({ doctor: doctorProp }: { doctor: ApiDoctor }) {
           disabled={!a.canConnect}
           className="h-8 px-3 text-xs rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
         >
-          {a.isConnected || a.isCallInProgress ? "Join" : t("pages.patient.go")}
+          {a.isConnected || a.isCallInProgress ? t("pages.patient.join") : t("pages.patient.go")}
         </Button>
       </div>
       <DoctorActionModals a={a} />
@@ -93,6 +94,10 @@ const PatientOverview = () => {
   const [activeTab, setActiveTab] = useState<
     "overview" | "clinical" | "financial" | "activity" | "upcoming" | "available" | "recommended"
   >("overview");
+
+  useEffect(() => {
+    moment.locale(i18n.language);
+  }, [i18n.language]);
 
   // ── Scrollable Tabs State ──
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -167,29 +172,29 @@ const PatientOverview = () => {
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {[
                 {
-                  label: "Book a doctor",
-                  hint: "Find specialists and schedule care",
+                  label: t("pages.patient.quick_book_label"),
+                  hint: t("pages.patient.quick_book_hint"),
                   to: "/patient/search-doctors",
                   icon: Stethoscope,
                   tone: "text-primary bg-primary/10",
                 },
                 {
-                  label: "My appointments",
-                  hint: `${upcomingAppointments.length} upcoming`,
+                  label: t("pages.patient.quick_appointments_label"),
+                  hint: t("pages.patient.quick_appointments_hint", { count: upcomingAppointments.length }),
                   to: "/patient/appointments",
                   icon: Calendar,
                   tone: "text-sky-500 bg-sky-500/10",
                 },
                 {
-                  label: "Instant consult",
-                  hint: `${availableNow.length} doctors available`,
+                  label: t("pages.patient.quick_instant_label"),
+                  hint: t("pages.patient.quick_instant_hint", { count: availableNow.length }),
                   to: "/patient/instant",
                   icon: Activity,
                   tone: "text-violet-500 bg-violet-500/10",
                 },
                 {
-                  label: "Medical info",
-                  hint: "Records, files and visits",
+                  label: t("pages.patient.quick_medical_label"),
+                  hint: t("pages.patient.quick_medical_hint"),
                   to: "/patient/service-bookings",
                   icon: Video,
                   tone: "text-emerald-500 bg-emerald-500/10",
@@ -249,7 +254,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Care Hub
+                  {t("pages.patient.tab_care_hub")}
                 </button>
                 <button
                   onClick={() => setActiveTab("clinical")}
@@ -260,7 +265,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Records
+                  {t("pages.patient.tab_records")}
                 </button>
                 <button
                   onClick={() => setActiveTab("financial")}
@@ -271,7 +276,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Payments
+                  {t("pages.patient.tab_payments")}
                 </button>
                 <button
                   onClick={() => setActiveTab("activity")}
@@ -282,7 +287,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Activity
+                  {t("pages.patient.tab_activity")}
                 </button>
                 <button
                   onClick={() => setActiveTab("upcoming")}
@@ -293,7 +298,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Appointments
+                  {t("pages.patient.tab_appointments")}
                 </button>
                 <button
                   onClick={() => setActiveTab("available")}
@@ -304,7 +309,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Available Now
+                  {t("pages.patient.tab_available_now")}
                 </button>
                 <button
                   onClick={() => setActiveTab("recommended")}
@@ -315,7 +320,7 @@ const PatientOverview = () => {
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Recommended
+                  {t("pages.patient.tab_recommended")}
                 </button>
               </div>
 
@@ -347,7 +352,7 @@ const PatientOverview = () => {
                         {t("pages.patient.upcoming_appointments")}
                       </h2>
                       <p className="text-xs font-medium text-muted-foreground/70 mt-0.5">
-                        {upcomingAppointments.length} scheduled
+                        {t("pages.patient.scheduled_count", { count: upcomingAppointments.length })}
                       </p>
                     </div>
                     <Link to="/patient/appointments">
@@ -386,7 +391,7 @@ const PatientOverview = () => {
                           <Calendar className="w-5 h-5 text-muted-foreground/50" />
                         </div>
                         <p className="text-sm font-medium text-muted-foreground">
-                          No upcoming appointments
+                          {t("pages.patient.no_upcoming_appointments")}
                         </p>
                       </div>
                     ) : (
@@ -436,7 +441,7 @@ const PatientOverview = () => {
                                   {a.status === "in_progress" && (
                                     <Badge className="text-[10px] px-1.5 py-0 rounded-[4px] bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
                                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse mr-1" />
-                                      Live
+                                      {t("pages.patient.live_badge")}
                                     </Badge>
                                   )}
                                 </span>
@@ -513,7 +518,7 @@ const PatientOverview = () => {
                           <Activity className="w-5 h-5 text-muted-foreground/50" />
                         </div>
                         <p className="text-sm font-medium text-muted-foreground">
-                          No doctors available now
+                          {t("pages.patient.no_doctors_available_now")}
                         </p>
                       </div>
                     ) : (
@@ -536,7 +541,7 @@ const PatientOverview = () => {
                       {t("pages.patient.recommended")}
                     </h2>
                     <p className="text-xs font-medium text-muted-foreground/70 mt-0.5">
-                      Top rated specialists for you
+                      {t("pages.patient.recommended_sub")}
                     </p>
                   </div>
                   <Link to="/patient/search-doctors">
@@ -545,7 +550,7 @@ const PatientOverview = () => {
                       size="sm"
                       className="h-8 px-3 rounded-[6px] text-xs font-bold text-primary hover:text-primary/80 hover:bg-primary/5"
                     >
-                      View all
+                      {t("pages.patient.view_all")}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </Link>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Building2, Clock, Shield, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,6 @@ import { useHospitalSchedule } from "@/lib/hospital-store";
 import { HospitalBookingDialog } from "@/components/HospitalBookingDialog";
 import type { ApiHospital } from "@/hooks/patient/use-patient-search-hospital";
 import HospitalViewDrawer from "@/components/hospital/HospitalViewDrawer";
-
-const TYPE_LABEL: Record<ApiHospital["type"], string> = {
-  hospital: "Hospital",
-  clinic: "Clinic",
-  health_center: "Health Center",
-  pharmacy_clinic: "Pharmacy Clinic",
-};
 
 const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
   hospital: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
@@ -22,6 +16,13 @@ const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
 };
 
 function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
+  const { t } = useTranslation();
+  const TYPE_LABEL: Record<ApiHospital["type"], string> = {
+    hospital: t("pages.patient.facility_type_hospital"),
+    clinic: t("pages.patient.facility_type_clinic"),
+    health_center: t("pages.patient.facility_type_health_center"),
+    pharmacy_clinic: t("pages.patient.facility_type_pharmacy_clinic"),
+  };
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
 
@@ -60,12 +61,12 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
             {hospital.is_open_24h && (
               <span className="flex items-center gap-0.5 px-1 py-px text-[9px] font-semibold rounded-[6px] bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                 <Clock className="w-2.5 h-2.5" />
-                24h
+                {t("pages.patient.hours_24_short")}
               </span>
             )}
             {stats.openSpots > 0 && (
               <span className="text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
-                {stats.openSpots} spots
+                {t("pages.patient.spots_available", { count: stats.openSpots })}
               </span>
             )}
           </div>
@@ -80,15 +81,17 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
         {/* Desktop stats */}
         <div className="hidden md:flex items-center gap-4 text-[10px] text-muted-foreground/70 flex-shrink-0">
           <span>
-            <span className="font-semibold text-foreground">{hospital.doctors_count}</span> doctors
+            <span className="font-semibold text-foreground">{hospital.doctors_count}</span> {t("pages.cards.doctors_label")}
           </span>
           <span>
-            <span className="font-semibold text-foreground">{hospital.departments_count}</span> depts
+            <span className="font-semibold text-foreground">{hospital.departments_count}</span> {t("pages.patient.depts_word")}
           </span>
           {hospital.insurances?.length > 0 && (
             <span className="flex items-center gap-1">
               <Shield className="w-3 h-3" />
-              {hospital.insurances.length} insurance{hospital.insurances.length > 1 ? "s" : ""}
+              {hospital.insurances.length > 1
+                ? t("pages.patient.insurance_count_plural", { count: hospital.insurances.length })
+                : t("pages.patient.insurance_count_singular", { count: hospital.insurances.length })}
             </span>
           )}
         </div>
@@ -102,14 +105,14 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
             className="h-7 px-2.5 text-[10px] font-medium rounded-[6px] border-border gap-1.5"
           >
             <CalendarDays className="h-3 w-3" />
-            <span className="hidden sm:inline">Schedule</span>
+            <span className="hidden sm:inline">{t("pages.patient.schedule_action")}</span>
           </Button>
           <Button
             size="sm"
             onClick={() => setBookOpen(true)}
             className="h-7 px-2.5 text-[10px] font-semibold rounded-[6px] bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            Book
+            {t("pages.cards.book")}
           </Button>
         </div>
       </div>
