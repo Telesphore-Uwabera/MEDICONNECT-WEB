@@ -340,9 +340,28 @@ export const BookingDialog = ({
   }, [slotsData]);
 
   // ── Derived: mapped slots for the selected day ─────────────────────────────
+  // const daySlots = useMemo<MappedSlot[]>(() => {
+  //   if (!dateKey || !dayData?.slots[dateKey]) return [];
+  //   return mapSlots(dayData.slots[dateKey]);
+  // }, [dayData, dateKey]);
+
+  // ── Derived: mapped slots for the selected day ─────────────────────────────
   const daySlots = useMemo<MappedSlot[]>(() => {
     if (!dateKey || !dayData?.slots[dateKey]) return [];
-    return mapSlots(dayData.slots[dateKey]);
+    const mapped = mapSlots(dayData.slots[dateKey]);
+
+    // If the selected day is today, drop/disable slots whose start time
+    // has already passed — the backend's "available" status doesn't
+    // account for the current clock time, only the day as a whole.
+    const isToday = moment(dateKey).isSame(moment(), "day");
+    if (!isToday) return mapped;
+
+    const now = moment();
+    return mapped.map((s) =>
+      moment(s.rawTime, "HH:mm:ss").isBefore(now, "minute")
+        ? { ...s, status: "past" }
+        : s
+    );
   }, [dayData, dateKey]);
 
   // ── When fresh doctor data arrives, propagate it to the parent ────────────

@@ -57,6 +57,7 @@ function chips(items: string[]): string {
 }
 
 export function buildSummaryHtml(s: ConsultationSummary): string {
+  console.log("Building summary HTML for summary ID:", s);
   const isInstant = s.instant_consultation_id != null;
   const cc = s.chief_complaint ?? {};
   const hpi = s.history_of_present_illness ?? {};

@@ -87,6 +87,11 @@ export interface Certificate {
   signed_at?: string | null;
   updated_at?: string;
 
+  // Video identity-verification (confirmation) session, set once the doctor
+  // starts it via POST /doctor/certificates/{id}/confirmation-session.
+  confirmation_session?: unknown;
+  confirmation_requested_at?: string | null;
+
   // Job context flags
   job_heavy_labor?: boolean;
   job_driving_machinery?: boolean;
@@ -287,10 +292,14 @@ export function useGetAvailableDoctors() {
 // GET /patient/certificates  (list)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function useGetPatientCertificates(status?: string) {
+export function useGetPatientCertificates(
+  status?: string,
+  options?: { refetchInterval?: number | false },
+) {
   return useQuery<CertificatesListResponse>({
     queryKey: certKeys.list(status),
     queryFn: () => apiFetch(status ? `${BASE}?status=${status}` : BASE),
+    refetchInterval: options?.refetchInterval,
   });
 }
 

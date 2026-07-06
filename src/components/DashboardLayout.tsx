@@ -53,6 +53,7 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useTheme } from "@/context/ThemeContext";
 import { useState, useCallback } from "react";
 import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
+import { PatientCallAlertListener } from "@/components/patient/PatientCallAlertListener";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
@@ -653,6 +654,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           {children}
         </motion.main>
         {role === "doctor" && <InstantPaidAlertListener />}
+        {role === "patient" && <PatientCallAlertListener />}
       </div>
     </div>
   );

@@ -97,25 +97,25 @@ const PURPOSE_LABELS: Record<string, string> = {
 };
 
 const JOB_FLAGS = [
-  { key: "job_heavy_labor", label: "Heavy physical labor" },
-  { key: "job_driving_machinery", label: "Driving / operating machinery" },
-  { key: "job_armed_forces", label: "Armed forces" },
-  { key: "job_mining_construction", label: "Mining / construction" },
-  { key: "job_requires_xray", label: "Requires X-ray clearance" },
-  { key: "job_none_of_above", label: "None of the above" },
+  { key: "job_heavy_labor", labelKey: "pages.doctor.job_heavy_labor" },
+  { key: "job_driving_machinery", labelKey: "pages.doctor.job_driving_machinery" },
+  { key: "job_armed_forces", labelKey: "pages.doctor.job_armed_forces" },
+  { key: "job_mining_construction", labelKey: "pages.doctor.job_mining_construction" },
+  { key: "job_requires_xray", labelKey: "pages.doctor.job_requires_xray" },
+  { key: "job_none_of_above", labelKey: "pages.doctor.job_none_of_above" },
 ] as const;
 
 const RED_FLAG_ROWS = [
-  { key: "red_flag_chest_pain", label: "Chest pain" },
-  { key: "red_flag_shortness_of_breath", label: "Shortness of breath" },
-  { key: "red_flag_syncope", label: "Syncope / fainting" },
-  { key: "red_flag_severe_headache", label: "Severe headache" },
-  { key: "red_flag_neurological", label: "Neurological symptoms" },
-  { key: "red_flag_weight_loss", label: "Unexplained weight loss" },
-  { key: "red_flag_cardiac_history", label: "Cardiac history" },
-  { key: "red_flag_recent_surgery", label: "Recent surgery (6 mo)" },
-  { key: "red_flag_seizure", label: "Seizure" },
-  { key: "red_flag_pregnancy_complications", label: "Pregnancy complications" },
+  { key: "red_flag_chest_pain", labelKey: "pages.doctor.cert_red_flag_chest_pain" },
+  { key: "red_flag_shortness_of_breath", labelKey: "pages.doctor.cert_red_flag_shortness_of_breath" },
+  { key: "red_flag_syncope", labelKey: "pages.doctor.cert_red_flag_syncope" },
+  { key: "red_flag_severe_headache", labelKey: "pages.doctor.cert_red_flag_severe_headache" },
+  { key: "red_flag_neurological", labelKey: "pages.doctor.cert_red_flag_neurological" },
+  { key: "red_flag_weight_loss", labelKey: "pages.doctor.cert_red_flag_weight_loss" },
+  { key: "red_flag_cardiac_history", labelKey: "pages.doctor.cert_red_flag_cardiac_history" },
+  { key: "red_flag_recent_surgery", labelKey: "pages.doctor.cert_red_flag_recent_surgery" },
+  { key: "red_flag_seizure", labelKey: "pages.doctor.cert_red_flag_seizure" },
+  { key: "red_flag_pregnancy_complications", labelKey: "pages.doctor.cert_red_flag_pregnancy_complications" },
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
