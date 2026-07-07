@@ -44,6 +44,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ArrowRightLeft,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -134,6 +135,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
         { to: "/admin/reviews", label: t("sidebar.reviews"), icon: History },
         { to: "/admin/our-team", label: t("sidebar.team"), icon: Wrench },
         { to: "/admin/system-settings", label: t("sidebar.system_settings"), icon: Settings},
+        { to: "/admin/system-communication", label: t("sidebar.system_communication"), icon: Bell},
       ],
     },
     {
@@ -177,7 +179,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
         },
         {
           to: "/doctor/consultation-summaries",
-          label: "Consultation Summaries",
+          label: t("sidebar.consultationSummaries"),
           icon: Stethoscope,
         },
         {
@@ -306,7 +308,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
       items: [
         {
           to: "/patient/medical-records",
-          label: "Medical Records",
+          label: t("sidebar.medicalRecords"),
           icon: FileText,
         },
         {
@@ -617,8 +619,8 @@ export const DashboardLayout = ({ role, children }: Props) => {
         <button
           type="button"
           onClick={() => setSidebarOpen((v) => !v)}
-          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          aria-label={sidebarOpen ? t("sidebar.hideSidebar") : t("sidebar.showSidebar")}
+          title={sidebarOpen ? t("sidebar.hideSidebar") : t("sidebar.showSidebar")}
           className={cn(
             "hidden lg:flex fixed top-0 left-0 z-[99] h-16 w-16 items-center justify-center rounded-full hover:bg-sidebar-accent text-primary",
             sidebarOpen ? "left-[202px]" : "left-0",
@@ -684,7 +686,7 @@ const ActiveRoleBadge = ({
     <button
       type="button"
       onClick={onClick}
-      title="Switch role"
+      title={t("sidebar.switchRole")}
       className="group w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[6px] bg-primary/10 border border-primary/15 hover:bg-primary/15 hover:border-primary/30 transition-colors"
     >
       <span className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-primary/20 text-primary flex-shrink-0">

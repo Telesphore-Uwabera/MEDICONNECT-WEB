@@ -1,12 +1,19 @@
 // Post-call consultation summary (full SOAP note). Required step before a
 // doctor can finalize an appointment OR an instant consultation.
 //
-// Saving does up to two requests:
-//   1. POST  /doctor/consultation-summaries           (intake: complaint, HPI, ROS, red flags)
-//   2. PUT   /doctor/consultation-summaries/{id}       (assessment + management plan, if filled)
+// Before rendering a blank form, we check whether a summary already exists
+// for this appointment/instant-consultation (GET /doctor/consultation-summaries
+// filtered by id, then GET .../{id} for the full record) and pre-fill from it —
+// otherwise reopening this step (or re-triggering the completion flow) would
+// create a duplicate summary instead of continuing the existing one.
+//
+// Saving:
+//   • Existing summary found  → single PUT /doctor/consultation-summaries/{id}
+//   • No existing summary     → POST /doctor/consultation-summaries (intake),
+//                                then PUT .../{id} for assessment + plan, if filled
 // Then onSaved() continues the completion flow (prescription → booking → complete).
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   X, Loader2, AlertTriangle, Stethoscope, ClipboardList,
   Activity, ShieldAlert, Pill, Plus,
@@ -19,9 +26,12 @@ import {
   prepareRichTextForSave,
 } from "@/components/ui/rich-textarea";
 import {
+  useConsultationSummaries,
+  useConsultationSummary,
   useCreateConsultationSummary,
   useUpdateConsultationSummary,
   type CreateSummaryPayload,
+  type UpdateSummaryPayload,
   type ReviewOfSystems,
   type RedFlagScreening,
 } from "@/hooks/doctor/use-consultation-summaries";
@@ -124,6 +134,76 @@ export function ConsultationSummaryModal({
   const updateRx = useUpdateConsultationSummary();
   const saving = createRx.isPending || updateRx.isPending;
 
+  // ── Existing-summary lookup ─────────────────────────────────────────────
+  // A summary may already exist for this appointment/instant-consultation
+  // (doctor closed this step earlier and reopened it, flow re-triggered,
+  // etc). Load it instead of blindly creating a duplicate.
+  const hasConsultationRef = appointmentId != null || instantConsultationId != null;
+  const { data: existingList, isFetching: isLookingUp } = useConsultationSummaries(
+    {
+      appointment_id: appointmentId ?? undefined,
+      instant_consultation_id: instantConsultationId ?? undefined,
+    },
+    { enabled: hasConsultationRef },
+  );
+
+  const existingSummaryId = useMemo(() => {
+    const groups = existingList?.data ?? [];
+    const all = groups.flatMap((g) => g.summaries);
+    const match = all.find(
+      (s) =>
+        (appointmentId != null && s.appointment_id === appointmentId) ||
+        (instantConsultationId != null && s.instant_consultation_id === instantConsultationId),
+    );
+    return match?.id ?? null;
+  }, [existingList, appointmentId, instantConsultationId]);
+
+  const { data: existingDetail, isFetching: isLoadingDetail } = useConsultationSummary(existingSummaryId);
+  const [prefilled, setPrefilled] = useState(false);
+  const isResolvingExisting = hasConsultationRef && (isLookingUp || (existingSummaryId != null && isLoadingDetail && !prefilled));
+
+  // Pre-fill the form once the existing record (if any) has loaded.
+  useEffect(() => {
+    const summary = existingDetail?.summary;
+    if (!summary || prefilled) return;
+
+    setMainComplaint(summary.chief_complaint?.main_complaint ?? "");
+    setDurationValue(
+      summary.chief_complaint?.duration_value != null ? String(summary.chief_complaint.duration_value) : "",
+    );
+    setDurationUnit(summary.chief_complaint?.duration_unit ?? "days");
+
+    setOnset(summary.history_of_present_illness?.onset ?? "");
+    setLocation(summary.history_of_present_illness?.location ?? "");
+    setSeverity(summary.history_of_present_illness?.severity ?? 0);
+
+    const rosData = summary.review_of_systems ?? {};
+    setRos(rosData);
+    // Any system/symptom not in the built-in presets is rendered as a
+    // "custom" chip so previously-saved data still shows up ticked.
+    const extraSystems: Array<{ key: string; label: string }> = [];
+    const extraSymptoms: Record<string, string[]> = {};
+    for (const [sysKey, symptoms] of Object.entries(rosData)) {
+      const preset = SYSTEMS.find((s) => s.key === sysKey);
+      if (!preset) extraSystems.push({ key: sysKey, label: pretty(sysKey) });
+      const presetSymptoms = preset?.symptoms ?? [];
+      const unknown = (symptoms ?? []).filter((sym) => !presetSymptoms.includes(sym));
+      if (unknown.length) extraSymptoms[sysKey] = unknown;
+    }
+    setCustomSystems(extraSystems);
+    setCustomSymptoms(extraSymptoms);
+
+    const flags = { ...(summary.red_flag_screening ?? {}) };
+    delete flags.alert_triggered;
+    setRedFlags(flags as Record<string, boolean>);
+
+    setPrimaryDiagnosis(summary.clinical_assessment?.primary_diagnosis ?? "");
+    setSeverityClass(summary.clinical_assessment?.severity_classification ?? "");
+    setFollowup(summary.management_plan?.followup_plan ?? "");
+
+    setPrefilled(true);
+  }, [existingDetail, prefilled]);
+
   const alertTriggered = useMemo(
     () => RED_FLAGS.some((f) => redFlags[f.key]),
     [redFlags],
@@ -177,7 +257,8 @@ export function ConsultationSummaryModal({
     setNewSystem("");
   };
 
-  const canSave = hasRichTextContent(mainComplaint) && patientId != null && !saving;
+  const canSave =
+    hasRichTextContent(mainComplaint) && patientId != null && !saving && !isResolvingExisting;
 
   const handleSave = () => {
     if (patientId == null) {
@@ -200,30 +281,66 @@ export function ConsultationSummaryModal({
       alert_triggered: alertTriggered,
     };
 
+    const chiefComplaint = {
+      main_complaint: prepareRichTextForSave(mainComplaint),
+      ...(durationValue ? { duration_value: Number(durationValue) } : {}),
+      ...(durationValue ? { duration_unit: durationUnit } : {}),
+    };
+
+    const hpi =
+      onset || location.trim() || severity > 0
+        ? {
+            ...(onset ? { onset } : {}),
+            ...(location.trim() ? { location: location.trim() } : {}),
+            ...(severity > 0 ? { severity } : {}),
+          }
+        : undefined;
+
+    const hasAssessment = primaryDiagnosis.trim() || severityClass;
+    const hasPlan = hasRichTextContent(followup);
+    const clinicalAssessment = hasAssessment
+      ? {
+          ...(primaryDiagnosis.trim() ? { primary_diagnosis: primaryDiagnosis.trim() } : {}),
+          ...(severityClass ? { severity_classification: severityClass } : {}),
+        }
+      : undefined;
+    const managementPlan = hasPlan
+      ? { followup_plan: prepareRichTextForSave(followup) }
+      : undefined;
+
+    // A summary already exists for this consultation — update it in one
+    // request instead of creating a duplicate.
+    if (existingSummaryId != null) {
+      const updatePayload: UpdateSummaryPayload = {
+        chief_complaint: chiefComplaint,
+        ...(hpi ? { history_of_present_illness: hpi } : {}),
+        ...(Object.keys(rosClean).length ? { review_of_systems: rosClean } : {}),
+        red_flag_screening: redFlagPayload,
+        ...(clinicalAssessment ? { clinical_assessment: clinicalAssessment } : {}),
+        ...(managementPlan ? { management_plan: managementPlan } : {}),
+      };
+      updateRx.mutate(
+        { id: existingSummaryId, payload: updatePayload },
+        {
+          onSuccess: () => {
+            toast.success("Consultation summary updated.");
+            onSaved();
+          },
+          onError: (err) => toast.error(getErrMsg(err, "Failed to update the summary.")),
+        },
+      );
+      return;
+    }
+
     const createPayload: CreateSummaryPayload = {
       patient_id: patientId,
       appointment_id: appointmentId ?? null,
       instant_consultation_id: instantConsultationId ?? null,
-      chief_complaint: {
-        main_complaint: prepareRichTextForSave(mainComplaint),
-        ...(durationValue ? { duration_value: Number(durationValue) } : {}),
-        ...(durationValue ? { duration_unit: durationUnit } : {}),
-      },
+      chief_complaint: chiefComplaint,
+      ...(hpi ? { history_of_present_illness: hpi } : {}),
+      ...(Object.keys(rosClean).length ? { review_of_systems: rosClean } : {}),
+      red_flag_screening: redFlagPayload,
     };
-
-    if (onset || location.trim() || severity > 0) {
-      createPayload.history_of_present_illness = {
-        ...(onset ? { onset } : {}),
-        ...(location.trim() ? { location: location.trim() } : {}),
-        ...(severity > 0 ? { severity } : {}),
-      };
-    }
-    if (Object.keys(rosClean).length) createPayload.review_of_systems = rosClean;
-    createPayload.red_flag_screening = redFlagPayload;
-
-    // Assessment + plan go via PUT after create (per the API contract).
-    const hasAssessment = primaryDiagnosis.trim() || severityClass;
-    const hasPlan = hasRichTextContent(followup);
 
     createRx.mutate(createPayload, {
       onSuccess: (res) => {
@@ -233,21 +350,8 @@ export function ConsultationSummaryModal({
             {
               id,
               payload: {
-                ...(hasAssessment
-                  ? {
-                      clinical_assessment: {
-                        ...(primaryDiagnosis.trim() ? { primary_diagnosis: primaryDiagnosis.trim() } : {}),
-                        ...(severityClass ? { severity_classification: severityClass } : {}),
-                      },
-                    }
-                  : {}),
-                ...(hasPlan
-                  ? {
-                      management_plan: {
-                        followup_plan: prepareRichTextForSave(followup),
-                      },
-                    }
-                  : {}),
+                ...(clinicalAssessment ? { clinical_assessment: clinicalAssessment } : {}),
+                ...(managementPlan ? { management_plan: managementPlan } : {}),
               },
             },
             {
@@ -282,7 +386,14 @@ export function ConsultationSummaryModal({
               <ClipboardList className="h-4 w-4 text-primary" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold text-foreground">Consultation summary</h2>
+              <h2 className="text-[13px] font-semibold text-foreground flex items-center gap-2">
+                Consultation summary
+                {existingSummaryId != null && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
+                    Editing existing
+                  </span>
+                )}
+              </h2>
               <p className="text-[10px] text-muted-foreground truncate">
                 {patientName || "Patient"} · required before completing
               </p>
@@ -299,6 +410,12 @@ export function ConsultationSummaryModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+          {isResolvingExisting && (
+            <div className="flex items-center gap-2 rounded-[5px] border border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+              Checking for an existing summary for this consultation…
+            </div>
+          )}
           {/* Chief complaint */}
           <section className="space-y-3">
             <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title="Chief complaint" hint="Required" />
@@ -545,13 +662,15 @@ export function ConsultationSummaryModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-border bg-muted/20 shrink-0">
-          <span className="text-[10px] text-muted-foreground">Saving records this consultation</span>
+          <span className="text-[10px] text-muted-foreground">
+            {existingSummaryId != null ? "Updating this consultation's existing summary" : "Saving records this consultation"}
+          </span>
           <button
             onClick={handleSave}
             disabled={!canSave}
             className="h-9 px-4 rounded-[5px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
-            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {(saving || isResolvingExisting) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Save & continue
           </button>
         </div>

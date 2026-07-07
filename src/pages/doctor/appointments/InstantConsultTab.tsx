@@ -566,17 +566,10 @@ export function InstantConsultTab() {
                   label={t("consult.bookings.completed", { defaultValue: "Completed" })}
                   count={completed.length}
                 />
-                {completed.map((item) => (
+                {completed.map((item) => ( 
                   <div key={item.id} className="space-y-1.5">
                     <IncomingCard item={item} />
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => handleViewSummary(item)}
-                        className="h-7 px-2.5 rounded-[6px] border border-border text-[11px] font-medium text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors flex items-center gap-1.5"
-                      >
-                        <FileText className="h-3 w-3" /> View summary
-                      </button>
-                    </div>
+                 
                   </div>
                 ))}
               </section>

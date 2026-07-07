@@ -32,5 +32,41 @@
     "selectSubSpecialization": "Hitamo ubuhanga bwihariye",
     "onlineFee": "Kuri interineti: {{amount}} {{currency}}",
     "inPersonFee": "Mu mubiri: {{amount}} {{currency}}"
+  },
+  "notifications": {
+    "title": "Imenyesha",
+    "ariaLabel": "Imenyesha",
+    "unreadCount": "{{count}} zitasomwe",
+    "allCaughtUp": "Byose byarangiye",
+    "markAllAsRead": "Shyira byose ko byasomwe",
+    "clearAll": "Siba byose",
+    "close": "Funga",
+    "all": "Byose",
+    "unread": "Zitasomwe",
+    "filter": "Shungura",
+    "allNotifications": "Imenyesha yose",
+    "showMatching": "Erekana imenyesha ahuye",
+    "failedToLoad": "Kwakira byanze",
+    "checkConnection": "Genzura interineti yawe hanyuma ugerageze indi nshuro.",
+    "noUnreadNotifications": "Nta menyesha zitasomwe zihari",
+    "noMatchingNotifications": "Nta menyesha za {{category}} zihari",
+    "switchToAll": "Hindukira kuri 'Byose' kugira urebe amateka yawe.",
+    "newWillAppearHere": "Imenyesha mashya azagaragara hano.",
+    "unreadSection": "Zitasomwe",
+    "readSection": "Zasomwe",
+    "markAsRead": "Shyira ko yasomwe",
+    "delete": "Siba",
+    "today": "Uyu munsi",
+    "yesterday": "Ejo hashize",
+    "earlier": "Hakiri kera",
+    "category": {
+      "consultations": "Inama",
+      "pharmacy": "Farumasi",
+      "hospital": "Ibitaro",
+      "payments": "Kwishyura",
+      "documents": "Inyandiko",
+      "alerts": "Imenyesha y'ihutirwa",
+      "other": "Ibindi"
+    }
   }
 }

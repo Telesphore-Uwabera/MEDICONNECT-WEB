@@ -519,7 +519,7 @@ function RequestDetail({
   onBack: () => void;
 }) {
   const { data: cert, isLoading, isError } = useGetCertificate(certId);
-console.log(cert);
+
   const updateMut = useUpdateCertificate(certId);
   const rejectMut = useRejectCertificate(certId);
   const revokeMut = useRevokeCertificate(certId);
@@ -534,8 +534,7 @@ console.log(cert);
   // shape: doctor_token + ice_servers). The patient is notified by SMS.
   const handleStartVerification = () => {
     sessionMut.mutate(undefined, {
-      onSuccess: (res) => {
-        console.log("[Certificate] confirmation session:", res);
+      onSuccess: (res) => { 
         const started = startInAppCallFromJoin(
           startCall,
           { token: res.doctor_token, room_url: res.room_url },
@@ -1104,23 +1103,24 @@ console.log(cert);
                   {t("pages.doctor.decision")}
                 </Label>
                 <div className="flex flex-wrap gap-2">
-                  {DECISION_OPTIONS.map(({ value, labelKey }) => (
+                  {DECISION_OPTIONS.map(( value ) => (
+                    console.log("Decision option:", value.key),
                     <button
-                      key={value}
+                      key={value.value}
                       type="button"
-                      onClick={() => setDecision(value)}
+                      onClick={() => setDecision(value.value)}
                       className={cn(
                         "px-3 py-1.5 rounded-[6px] text-xs font-medium border transition-all",
-                        decision === value
-                          ? value === "fit"
+                        decision === value.value
+                          ? value.value === "fit"
                             ? "bg-emerald-500 text-white border-emerald-500"
-                            : value === "temporarily_unfit"
+                            : value.value === "temporarily_unfit"
                               ? "bg-amber-500 text-white border-amber-500"
                               : "bg-destructive text-destructive-foreground border-destructive"
                           : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
                       )}
                     >
-                      {t(labelKey)}
+                      {value.label}
                     </button>
                   ))}
                 </div>

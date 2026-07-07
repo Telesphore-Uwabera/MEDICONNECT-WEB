@@ -172,10 +172,38 @@ export interface ResetPasswordResponse {
   temporary_password?: string;
 }
 
+// POST /admin/users/{id}/reset-credentials
+// body: at least one of { email, phone, country_code, password } — password
+// alone, email+phone together, or all four at once are all valid.
+// Response: { message, user: {...}, changes: ("email"|"phone"|"password")[] }
+export interface ResetUserCredentialsPayload {
+  email?: string;
+  phone?: string;
+  country_code?: string;
+  password?: string;
+}
+
+export interface ResetUserCredentialsResponse {
+  message: string;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    country_code?: string;
+  };
+  changes: string[];
+}
+
 export function useResetUserPassword() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch<ResetPasswordResponse>(`${BASE}/${id}/reset-password`, { method: "POST" }),
+    mutationFn: ({ id, payload }: { id: number; payload: ResetUserCredentialsPayload }) =>
+      apiFetch<ResetUserCredentialsResponse>(`${BASE}/${id}/reset-credentials`, {
+        method: "POST",
+        body: payload,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 }
 

@@ -76,7 +76,10 @@ import {
   type ApiUser,
   type StaffUser,
   type CreateStaffPayload,
+  type ResetUserCredentialsPayload,
 } from "@/hooks/admin/use-admin-users";
+import { useCreateManagedUser, type ManagedRole } from "@/hooks/admin/use-admin-manage-users";
+import { ManageProfileModal } from "./components/manage-users/ManageProfileModal";
 import {
   useApproveDoctor,
   useRejectDoctor,
@@ -500,34 +503,55 @@ function UserPanel({
   const resetPassword = useResetUserPassword();
   const revokeSessions = useRevokeUserSessions();
   const resendVerification = useResendVerification();
-  const [confirmReset, setConfirmReset] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
-  const [tempCopied, setTempCopied] = useState(false);
+
+  // ── Reset credentials form (email / phone / password — any combination) ──
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [credPassword, setCredPassword] = useState("");
+  const [credEmail, setCredEmail] = useState("");
+  const [credPhone, setCredPhone] = useState("");
+  const [credCountryCode, setCredCountryCode] = useState("+250");
+  const [lastChanges, setLastChanges] = useState<string[] | null>(null);
 
   // Clear transient credential state when switching users / closing.
   useEffect(() => {
-    setConfirmReset(false);
     setConfirmRevoke(false);
-    setTempPassword(null);
-    setTempCopied(false);
+    setCredentialsOpen(false);
+    setCredPassword("");
+    setCredEmail("");
+    setCredPhone("");
+    setCredCountryCode("+250");
+    setLastChanges(null);
   }, [user?.id]);
 
-  const handleResetPassword = () => {
+  const handleSaveCredentials = () => {
     if (!user) return;
-    if (!confirmReset) {
-      setConfirmReset(true);
+    const payload: ResetUserCredentialsPayload = {};
+    if (credPassword.trim()) payload.password = credPassword.trim();
+    if (credEmail.trim()) payload.email = credEmail.trim();
+    if (credPhone.trim()) {
+      payload.phone = credPhone.trim();
+      payload.country_code = credCountryCode.trim() || undefined;
+    }
+    if (Object.keys(payload).length === 0) {
+      sonnerToast.error("Provide at least one of: email, phone, password.");
       return;
     }
-    setConfirmReset(false);
-    resetPassword.mutate(user.id, {
-      onSuccess: (res) => {
-        setTempPassword(res.temporary_password ?? null);
-        sonnerToast.success(res.message ?? "Password reset initiated.");
+    resetPassword.mutate(
+      { id: user.id, payload },
+      {
+        onSuccess: (res) => {
+          setLastChanges(res.changes ?? []);
+          setCredentialsOpen(false);
+          setCredPassword("");
+          setCredEmail("");
+          setCredPhone("");
+          sonnerToast.success(res.message ?? "Credentials updated.");
+        },
+        onError: (error: unknown) =>
+          sonnerToast.error("Could not update credentials.", { description: getErrorMessage(error) }),
       },
-      onError: (error: unknown) =>
-        sonnerToast.error("Could not reset password.", { description: getErrorMessage(error) }),
-    });
+    );
   };
 
   const handleRevokeSessions = () => {
@@ -556,12 +580,6 @@ function UserPanel({
     );
   };
 
-  const copyTempPassword = () => {
-    if (!tempPassword) return;
-    navigator.clipboard.writeText(tempPassword);
-    setTempCopied(true);
-    setTimeout(() => setTempCopied(false), 2000);
-  };
 
   // Close on Escape
   useEffect(() => {
@@ -790,49 +808,94 @@ function UserPanel({
                   <div className="flex items-center justify-between px-4 py-3 gap-3">
                     <span className="text-[11px] text-muted-foreground flex items-center gap-2">
                       <KeyRound className="w-3.5 h-3.5" />
-                      Password
+                      Credentials
                     </span>
                     <Button
                       size="sm"
                       variant="outline"
-                      className={cn(
-                        "h-7 px-2.5 text-[10px] rounded-[6px] gap-1.5",
-                        confirmReset &&
-                          "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
-                      )}
-                      disabled={resetPassword.isPending}
-                      onClick={handleResetPassword}
+                      className="h-7 px-2.5 text-[10px] rounded-[6px] gap-1.5"
+                      onClick={() => setCredentialsOpen((v) => !v)}
                     >
-                      {resetPassword.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
-                      {confirmReset ? "Confirm reset?" : "Reset password"}
+                      <RefreshCw className="h-3 w-3" />
+                      {credentialsOpen ? "Cancel" : "Reset credentials"}
                     </Button>
                   </div>
 
-                  {tempPassword && (
-                    <div className="px-4 py-3 space-y-1.5">
-                      <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                        Temporary password — shown once, share it securely:
+                  {credentialsOpen && (
+                    <div className="px-4 py-3 space-y-2.5">
+                      <p className="text-[10px] text-muted-foreground/80">
+                        Provide at least one field. Email/phone/password can be changed together or separately.
                       </p>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 px-2.5 py-1.5 rounded-[6px] bg-background border border-border font-mono text-[12px] text-foreground select-all">
-                          {tempPassword}
-                        </code>
-                        <button
-                          onClick={copyTempPassword}
-                          title="Copy"
-                          className="h-8 w-8 rounded-[6px] border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                        >
-                          {tempCopied ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                        </button>
+                      <label className="block space-y-1">
+                        <span className="text-[10px] font-medium text-muted-foreground">New password</span>
+                        <input
+                          type="text"
+                          value={credPassword}
+                          onChange={(e) => setCredPassword(e.target.value)}
+                          placeholder="Min. 8 characters"
+                          className="w-full h-8 rounded-[5px] border border-border bg-background px-2.5 text-[11px] outline-none focus:border-primary/50"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-[10px] font-medium text-muted-foreground">Email</span>
+                        <input
+                          type="email"
+                          value={credEmail}
+                          onChange={(e) => setCredEmail(e.target.value)}
+                          placeholder={user?.email}
+                          className="w-full h-8 rounded-[5px] border border-border bg-background px-2.5 text-[11px] outline-none focus:border-primary/50"
+                        />
+                      </label>
+                      <div className="grid grid-cols-[80px_1fr] gap-2">
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-medium text-muted-foreground">Code</span>
+                          <input
+                            type="text"
+                            value={credCountryCode}
+                            onChange={(e) => setCredCountryCode(e.target.value)}
+                            placeholder="+250"
+                            className="w-full h-8 rounded-[5px] border border-border bg-background px-2.5 text-[11px] outline-none focus:border-primary/50"
+                          />
+                        </label>
+                        <label className="block space-y-1">
+                          <span className="text-[10px] font-medium text-muted-foreground">Phone</span>
+                          <input
+                            type="text"
+                            value={credPhone}
+                            onChange={(e) => setCredPhone(e.target.value)}
+                            placeholder={user?.phone}
+                            className="w-full h-8 rounded-[5px] border border-border bg-background px-2.5 text-[11px] outline-none focus:border-primary/50"
+                          />
+                        </label>
                       </div>
+                      <Button
+                        size="sm"
+                        className="h-8 w-full text-[11px] rounded-[6px] gap-1.5"
+                        disabled={resetPassword.isPending}
+                        onClick={handleSaveCredentials}
+                      >
+                        {resetPassword.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <KeyRound className="h-3 w-3" />
+                        )}
+                        Save credentials
+                      </Button>
+                    </div>
+                  )}
+
+                  {lastChanges && lastChanges.length > 0 && (
+                    <div className="px-4 py-2.5 flex items-center gap-1.5 flex-wrap">
+                      <Check className="h-3 w-3 text-emerald-500 shrink-0" />
+                      <span className="text-[10px] text-muted-foreground">Updated:</span>
+                      {lastChanges.map((c) => (
+                        <span
+                          key={c}
+                          className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 capitalize"
+                        >
+                          {c}
+                        </span>
+                      ))}
                     </div>
                   )}
 
@@ -984,7 +1047,9 @@ function CreateUserModal({
   onCreated: () => void;
 }) {
   const createUser = useCreateAdminUser();
+  const createManagedUser = useCreateManagedUser();
   const createStaff = useCreateStaff();
+  const MANAGED_ROLES: string[] = ["doctor", "patient", "pharmacy", "hospital"];
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -1013,6 +1078,14 @@ function CreateUserModal({
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const save = async () => {
+    if (mode === "user" && MANAGED_ROLES.includes(form.role) && form.password.length < 8) {
+      sonnerToast.error("Password must be at least 8 characters.");
+      return;
+    }
+    if (mode === "user" && MANAGED_ROLES.includes(form.role) && form.password !== form.password_confirmation) {
+      sonnerToast.error("Passwords do not match.");
+      return;
+    }
     try {
       if (mode === "staff") {
         const res = await createStaff.mutateAsync({
@@ -1024,7 +1097,21 @@ function CreateUserModal({
           role: form.role as CreateStaffPayload["role"],
         });
         sonnerToast.success(res.message ?? "Staff user created.");
+      } else if (MANAGED_ROLES.includes(form.role)) {
+        // Doctor/patient/pharmacy/hospital go through the role-specific
+        // create-user endpoint so a matching profile row is set up too.
+        const res = await createManagedUser.mutateAsync({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          country_code: form.country_code.trim() || "250",
+          password: form.password,
+          role: form.role as ManagedRole,
+          gender: form.gender || undefined,
+        });
+        sonnerToast.success(res.message ?? "User created successfully.");
       } else {
+        // Admin accounts have no role-specific profile — keep the generic path.
         const res = await createUser.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
@@ -1044,7 +1131,7 @@ function CreateUserModal({
     }
   };
 
-  const saving = createUser.isPending || createStaff.isPending;
+  const saving = createUser.isPending || createStaff.isPending || createManagedUser.isPending;
   const roles = mode === "staff" ? ["moderator", "finance", "help_desk"] : ["patient", "doctor", "hospital", "pharmacy", "admin"];
 
   return (
@@ -1068,12 +1155,11 @@ function CreateUserModal({
           <FormInput label="Phone" value={form.phone} onChange={(v) => setValue("phone", v)} />
           {mode === "user" && <FormInput label="Country code" value={form.country_code} onChange={(v) => setValue("country_code", v)} />}
           <FormSelect label="Role" value={form.role} options={roles} onChange={(v) => setValue("role", v)} />
-          {mode === "user" ? (
-            <>
-              <FormSelect label="Gender" value={form.gender} options={["", "male", "female", "other"]} onChange={(v) => setValue("gender", v)} />
-              <FormSelect label="Language" value={form.preferred_language} options={["en", "fr", "rw"]} onChange={(v) => setValue("preferred_language", v)} />
-            </>
-          ) : (
+          {mode === "user" && <FormSelect label="Gender" value={form.gender} options={["", "male", "female", "other"]} onChange={(v) => setValue("gender", v)} />}
+          {mode === "user" && MANAGED_ROLES.includes(form.role) ? (
+            <FormSelect label="Language" value={form.preferred_language} options={["en", "fr", "rw"]} onChange={(v) => setValue("preferred_language", v)} />
+          ) : null}
+          {(mode === "staff" || (mode === "user" && MANAGED_ROLES.includes(form.role))) && (
             <>
               <FormInput label="Password" type="password" value={form.password} onChange={(v) => setValue("password", v)} />
               <FormInput label="Confirm password" type="password" value={form.password_confirmation} onChange={(v) => setValue("password_confirmation", v)} />
@@ -2078,24 +2164,16 @@ const AdminUsers = () => {
       />
 
       {/* ── Delete confirm ── */}
-      <AdminUserEditModal
-        user={editingUser}
-        roleData={
-          lookupRole === "doctor" ? (doctorLookup.data ?? null) :
-            lookupRole === "patient" ? (patientLookup.data ?? null) :
-              lookupRole === "hospital" ? (hospitalLookup.data ?? null) :
-                lookupRole === "pharmacy" ? (pharmacyLookup.data ?? null) :
-                  null
+      <ManageProfileModal
+        userId={editingUser?.id ?? null}
+        role={
+          editingUser && ["doctor", "patient", "pharmacy", "hospital"].includes(getRole(editingUser))
+            ? (getRole(editingUser) as ManagedRole)
+            : null
         }
-        loading={
-          lookupRole === "doctor" ? doctorLookup.isLoading :
-            lookupRole === "patient" ? patientLookup.isLoading :
-              lookupRole === "hospital" ? hospitalLookup.isLoading :
-                lookupRole === "pharmacy" ? pharmacyLookup.isLoading :
-                  false
-        }
-        onClose={() => setEditingUser(null)}
-        onSaved={() => {
+        userName={editingUser?.name}
+        onClose={() => {
+          setEditingUser(null);
           refetch();
           doctorLookup.refetch();
           patientLookup.refetch();
