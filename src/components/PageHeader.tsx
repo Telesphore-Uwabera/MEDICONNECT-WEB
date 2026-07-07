@@ -321,13 +321,7 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                         <>
                           <p className="text-[11px] capitalize font-semibold text-foreground leading-tight truncate max-w-[100px]">
                             {firstName}
-                          </p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <RoleIcon className={cn("h-2.5 w-2.5 shrink-0", roleCfg.color)} />
-                            <p className={cn("text-[10px] font-semibold leading-tight capitalize truncate max-w-[80px]", roleCfg.color)}>
-                              {roleCfg.label}
-                            </p>
-                          </div>
+                          </p> 
                         </>
                       )}
                     </div>
@@ -394,17 +388,6 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1 mt-2">
-                              <span
-                                className={cn(
-                                  "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] text-[10px] font-bold capitalize",
-                                  roleCfg.bg,
-                                  roleCfg.color
-                                )}
-                              >
-                                <RoleIcon className="h-2.5 w-2.5" />
-                                {roleCfg.label}
-                              </span>
-
                               {user?.is_verified && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
                                   <BadgeCheck className="h-2.5 w-2.5" />

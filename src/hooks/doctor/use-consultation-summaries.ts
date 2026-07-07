@@ -149,7 +149,10 @@ export const summaryKeys = {
    GET /doctor/consultation-summaries
 ───────────────────────────────────────────── */
 
-export function useConsultationSummaries(params?: SummaryListParams) {
+export function useConsultationSummaries(
+  params?: SummaryListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: summaryKeys.list(params),
     queryFn: () => {
@@ -161,6 +164,7 @@ export function useConsultationSummaries(params?: SummaryListParams) {
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<SummaryListResponse>(url);
     },
+    enabled: options?.enabled,
   });
 }
 

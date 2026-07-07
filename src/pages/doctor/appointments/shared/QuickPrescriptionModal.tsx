@@ -1,4 +1,5 @@
-// Quick post-call prescription step (completion flow: record → THIS → booking).
+﻿import { toLocalDateInputValue } from "@/lib/date";
+// Quick post-call prescription step (completion flow: record â†’ THIS â†’ booking).
 //
 // The doctor fills a diagnosis + medicine items, issues (signs) the prescription
 // in one shot, then optionally sends it to a pharmacy (pickup / home delivery).
@@ -32,7 +33,7 @@ interface Props {
   defaultNotes?: string;
   /** Skip prescriptions entirely and continue the flow. */
   onSkip: () => void;
-  /** Finished (issued, optionally sent) — continue the flow. */
+  /** Finished (issued, optionally sent)  continue the flow. */
   onDone: () => void;
 }
 
@@ -55,7 +56,7 @@ function emptyItem(): PrescriptionItem {
 function defaultValidUntil(): string {
   const d = new Date();
   d.setDate(d.getDate() + 30);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateInputValue(d);
 }
 
 export function QuickPrescriptionModal({
@@ -96,7 +97,7 @@ export function QuickPrescriptionModal({
 
   const canIssue = diagnosis.trim().length > 0 && validItems.length > 0 && !issuing;
 
-  // Create draft → issue (sign) in sequence.
+  // Create draft  issue (sign) in sequence.
   const handleIssue = () => {
     if (!canIssue) {
       toast.error("Add a diagnosis and at least one medicine (name, dosage, frequency).");
@@ -235,9 +236,7 @@ export function QuickPrescriptionModal({
     </div>
   );
 }
-
-/* ── Prescription form ──────────────────────────────────────────────────────── */
-
+ 
 function PrescriptionForm({
   diagnosis, setDiagnosis, notes, setNotes, validUntil, setValidUntil,
   items, setItem, addItem, removeItem,
@@ -334,8 +333,7 @@ function PrescriptionForm({
   );
 }
 
-/* ── Pharmacy step ──────────────────────────────────────────────────────────── */
-
+ 
 function PharmacyStep({
   pdfUrl, sending, onSend,
 }: {
@@ -402,13 +400,13 @@ function PharmacyStep({
               className={cn(inputCls, "pl-8")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search pharmacies…"
+              placeholder="Search pharmacies..."
             />
           </div>
           <div className="max-h-44 overflow-y-auto space-y-1">
             {isFetching && (
               <div className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching...
               </div>
             )}
             {!isFetching && pharmacies.length === 0 && (
@@ -510,3 +508,4 @@ function PharmacyStep({
     </div>
   );
 }
+

@@ -1,8 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+﻿import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X, ChevronRight, ChevronLeft, Plus, Trash2, Pill,
+import { toLocalDateInputValue } from "@/lib/date";
+  import {X, ChevronRight, ChevronLeft, Plus, Trash2, Pill,
   Calendar, Clock, Video, MapPin, Search, Check,
   Loader2, AlertCircle, FileText, Stethoscope, User,
   ClipboardList,
@@ -18,11 +18,7 @@ import { useCreatePrescription } from "@/hooks/doctor/use-doctor-prescriptions";
 import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 // import { useGetAppointments, type Appointment } from "@/hooks/useDoctorAppointments";
 // import { useCreatePrescription } from "@/hooks/useDoctorPrescriptions";
-
-/* ─────────────────────────────────────────────
-   Types
-───────────────────────────────────────────── */
-
+ 
 export interface PrescriptionItem {
   medicine_name: string;
   dosage: string;
@@ -52,10 +48,7 @@ const STEP_META: Record<Step, { labelKey: string; icon: React.ReactNode }> = {
   review: { labelKey: "pages.doctor.review", icon: <ClipboardList className="h-3.5 w-3.5" /> },
 };
 
-/* ─────────────────────────────────────────────
-   Prop types
-───────────────────────────────────────────── */
-
+ 
 interface PrescriptionWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,10 +56,7 @@ interface PrescriptionWizardProps {
   issuer?: string;
 }
 
-/* ─────────────────────────────────────────────
-   Small UI atoms
-───────────────────────────────────────────── */
-
+ 
 const inputCls =
   "w-full h-10 rounded-[6px] border border-border bg-muted/40 text-sm px-3 text-foreground " +
   "placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 " +
@@ -87,10 +77,7 @@ function Field({
   );
 }
 
-/* ─────────────────────────────────────────────
-   Step 1 — Appointment selector
-───────────────────────────────────────────── */
-
+ 
 function AppointmentStep({
   selected, onSelect,
 }: {
@@ -257,10 +244,7 @@ function AppointmentStep({
   );
 }
 
-/* ─────────────────────────────────────────────
-   Step 2 — Rx details
-───────────────────────────────────────────── */
-
+ 
 interface RxDetails {
   diagnosis: string;
   notes: string;
@@ -277,7 +261,7 @@ function DetailsStep({
   // Default valid_until to 30 days from today
   const defaultDate = new Date();
   defaultDate.setDate(defaultDate.getDate() + 30);
-  const defaultDateStr = defaultDate.toISOString().split("T")[0];
+  const defaultDateStr = toLocalDateInputValue(defaultDate);
 
   return (
     <div className="space-y-5">
@@ -308,7 +292,7 @@ function DetailsStep({
         <input
           type="date"
           value={values.valid_until || defaultDateStr}
-          min={new Date().toISOString().split("T")[0]}
+          min={toLocalDateInputValue()}
           onChange={(e) => onChange({ valid_until: e.target.value })}
           className={inputCls}
         />
@@ -316,18 +300,14 @@ function DetailsStep({
     </div>
   );
 }
-
-/* ─────────────────────────────────────────────
-   Step 3 — Medication items
-───────────────────────────────────────────── */
-
+ 
 const FREQUENCY_PRESETS = [
   "Once daily",
   "Twice daily",
   "3 times daily",
   "Every 8 hours",
   "Every 12 hours",
-  "Every 4–6 hours as needed",
+  "Every 4-6 hours as needed",
   "At bedtime",
 ];
 
@@ -522,10 +502,7 @@ function MedicationsStep({
   );
 }
 
-/* ─────────────────────────────────────────────
-   Step 4 — Review
-───────────────────────────────────────────── */
-
+ 
 function ReviewStep({
   appointment,
   details,
@@ -554,7 +531,7 @@ function ReviewStep({
           <div>
             <p className="text-sm font-semibold text-foreground">{appointment.patient?.name ?? t("pages.doctor.patient")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {appointment.appointment_date} · {appointment.appointment_time} ·{" "}
+              {appointment.appointment_date} · {appointment.appointment_time} Â·{" "}
               {appointment.type === "online" ? t("pages.doctor.online") : t("pages.doctor.in_person")}
             </p>
           </div>
@@ -606,10 +583,7 @@ function ReviewStep({
   );
 }
 
-/* ─────────────────────────────────────────────
-   Wizard shell
-───────────────────────────────────────────── */
-
+ 
 export function PrescriptionWizard({
   open, onOpenChange, doctorName,
 }: PrescriptionWizardProps) {
@@ -639,7 +613,7 @@ export function PrescriptionWizard({
 
   const stepIndex = STEPS.indexOf(step);
 
-  // ── Validation per step ───────────────────────────────────────────────────
+   // ── Validation per step ───────────────────────────────────────────────────
   const canAdvance = useCallback((): boolean => {
     if (step === "appointment") return !!appointment;
     if (step === "details") return !!details.diagnosis.trim();
@@ -656,8 +630,8 @@ export function PrescriptionWizard({
     return true;
   }, [step, appointment, details, items]);
 
-  // ── Navigation ────────────────────────────────────────────────────────────
-  const goNext = () => {
+ // ── Navigation ────────────────────────────────────────────────────────────
+   const goNext = () => {
     if (!canAdvance()) {
       toast.error(t("pages.doctor.fill_required_fields"));
       return;
@@ -671,8 +645,8 @@ export function PrescriptionWizard({
     if (prev) setStep(prev);
   };
 
-  // ── Items helpers ─────────────────────────────────────────────────────────
-  const addItem = () => setItems((p) => [...p, { ...EMPTY_ITEM }]);
+// ── Items helpers ─────────────────────────────────────────────────────────
+   const addItem = () => setItems((p) => [...p, { ...EMPTY_ITEM }]);
   const removeItem = (i: number) => setItems((p) => p.filter((_, idx) => idx !== i));
   const changeItem = (
     i: number, field: keyof PrescriptionItem, value: string | number,
@@ -681,8 +655,8 @@ export function PrescriptionWizard({
       p.map((item, idx) => (idx === i ? { ...item, [field]: value } : item)),
     );
 
-  // ── Submit ────────────────────────────────────────────────────────────────
-  const handleSubmit = () => {
+   // ── Submit ────────────────────────────────────────────────────────────────
+ const handleSubmit = () => {
     if (!appointment) return;
 
     const payload = {
@@ -892,3 +866,4 @@ export function PrescriptionWizard({
 }
 
 export default PrescriptionWizard;
+

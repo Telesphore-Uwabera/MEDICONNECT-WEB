@@ -551,7 +551,6 @@ const PatientFitnessCertificates = () => {
                 );
               })}
             </div>
-
             <div className="flex flex-col flex-1 min-h-0">
               {activeTab === "request" ? (
                 <RequestForm onSubmit={() => setActiveTab("certificates")} />

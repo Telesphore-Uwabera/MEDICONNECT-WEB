@@ -1,10 +1,10 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
+import { formatDateOnly } from "@/lib/date";
+  import {Plus,
   Pill,
   Send,
   User,
@@ -41,8 +41,7 @@ import {
 import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 type ViewMode = "table" | "cards";
 type SortBy = "created_at" | "valid_until" | "status" | "patient";
 type SortOrder = "asc" | "desc";
@@ -68,9 +67,7 @@ const INITIAL_FILTERS: FilterState = {
   sort_by: "created_at",
   sort_order: "desc",
 };
-
-// ─── Status config ────────────────────────────────────────────────────────────
-
+ 
 const STATUS_STYLES: Partial<Record<PrescriptionStatus, string>> = {
   draft:
     "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
@@ -119,12 +116,11 @@ const channelIcon: Record<DeliveryChannel, React.ElementType> = {
   sms: Smartphone,
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function fmtDate(raw?: string): string {
-  if (!raw) return "—";
+  if (!raw) return "-";
   try {
-    return new Date(raw).toLocaleDateString("en-US", {
+    return formatDateOnly(raw, "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -142,8 +138,7 @@ function initials(name?: string): string {
     : name.slice(0, 2).toUpperCase();
 }
 
-// ─── Custom debounce hook ─────────────────────────────────────────────────────
-
+ 
 function useDebounced<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -153,8 +148,7 @@ function useDebounced<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonRow() {
   return (
     <tr className="border-t border-border/40 animate-pulse">
@@ -208,8 +202,7 @@ function SkeletonCard() {
   );
 }
 
-// ─── Card view item ───────────────────────────────────────────────────────────
-
+ 
 function PrescriptionCard({
   p,
   statusLabel,
@@ -312,8 +305,7 @@ function PrescriptionCard({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 const DoctorPrescriptions = () => {
   const { t, i18n } = useTranslation();
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -328,7 +320,7 @@ const DoctorPrescriptions = () => {
   // Debounce the search so we don't fire on every keystroke
   const debouncedSearch = useDebounced(filters.search, 400);
 
-  // ── Build API params from filter state ──────────────────────────────────
+  //  Build API params from filter state 
   const apiParams = useMemo<PrescriptionListParams>(() => {
     const p: PrescriptionListParams = {
       sort_by: filters.sort_by,
@@ -354,15 +346,14 @@ const DoctorPrescriptions = () => {
     filters.sort_order,
   ]);
 
-  // ── API ──────────────────────────────────────────────────────────────────
+   
   // FIX: The API returns { status, data: { current_page, data: [], total } }
   // The hook must unwrap res.data so that useGetPrescriptions().data is the
   // PrescriptionsListResponse shape ({ data: Prescription[], total, ... }).
   // allList is then data?.data (the inner array), not data?.data?.data.
   const { data, isLoading, isError, error } = useGetPrescriptions(apiParams);
   const issueMutation = useIssuePrescription();
-
-  // ── FIX: correct unwrap — data is PrescriptionsListResponse after hook fix
+ 
   const allList: Prescription[] = Array.isArray(data?.data) ? data.data : [];
 
   // Aggregate stats over ALL prescriptions (independent of the active filters),
@@ -387,7 +378,7 @@ const DoctorPrescriptions = () => {
     { key: "cancelled", label: t("pages.doctor.rx_status_cancelled"), value: countByStatus("cancelled"), icon: XCircle, tone: "text-destructive bg-destructive/10 border-destructive/20" },
   ];
 
-  // ── Filter helpers ───────────────────────────────────────────────────────
+  
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
@@ -410,7 +401,7 @@ const DoctorPrescriptions = () => {
     };
   }, [filterOpen]);
 
-  // ── Status labels ────────────────────────────────────────────────────────
+ 
   const localStatusLabel: Record<string, string> = {
     draft: t("pages.doctor.rx_status_draft", "Draft"),
     issued: t("pages.doctor.rx_status_sent_patient", "Issued"),
@@ -429,13 +420,13 @@ const DoctorPrescriptions = () => {
     returned: t("pages.doctor.rx_status_returned"),
   };
 
-  // ── Unique statuses from current result set ──────────────────────────────
+ 
   const availableStatuses = useMemo(
     () => Array.from(new Set(allList.map((p) => p.status))),
     [allList],
   );
 
-  // ── Summary counts ───────────────────────────────────────────────────────
+ 
   const pendingCount = allList.filter(
     (p) => p.status === "draft" || p.status === "issued",
   ).length;
@@ -446,7 +437,7 @@ const DoctorPrescriptions = () => {
     (p) => p.status === "cancelled" || p.status === "rejected",
   ).length;
 
-  // ── Actions ──────────────────────────────────────────────────────────────
+ 
   const handleViewDetails = useCallback((p: Prescription) => {
     setSelectedRx(p);
     setDrawerOpen(true);
@@ -474,7 +465,7 @@ const DoctorPrescriptions = () => {
     [issueMutation],
   );
 
-  // ── FilterFields for FilterBar ───────────────────────────────────────────
+ 
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
@@ -572,7 +563,7 @@ const DoctorPrescriptions = () => {
           subtitle={t("pages.doctor.rx_subtitle", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
         />
 
-        {/* ── Stats cards (also quick filters) ── */}
+        {/*   Stats cards (also quick filters)  */}
         <div className="px-3 sm:px-5 pt-4 pb-1 shrink-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
             {stats.map(({ key, label, value, icon: Icon, tone }) => {
@@ -601,7 +592,7 @@ const DoctorPrescriptions = () => {
 
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
          
-          {/* ── Results ── */}
+          {/* Results   */}
           <main className="flex-1 overflow-y-auto">
             {/* Meta bar */}
             <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3 flex items-center justify-between gap-4">
@@ -857,7 +848,7 @@ const DoctorPrescriptions = () => {
                                 </span>
                               ) : (
                                 <span className="text-xs text-muted-foreground/40">
-                                  —
+                                 -
                                 </span>
                               )}
                             </td>
@@ -945,7 +936,7 @@ const DoctorPrescriptions = () => {
           </main>
         </div>
 
-        {/* ── Prescription wizard ── */}
+        {/* Prescription wizard */}
         <PrescriptionWizard
           open={wizardOpen}
           onOpenChange={setWizardOpen}
@@ -953,7 +944,7 @@ const DoctorPrescriptions = () => {
           issuer="doctor"
         />
 
-        {/* ── Detail drawer ── */}
+        {/*   Detail drawer   */}
         <PrescriptionDetailDrawer
           prescription={selectedRx}
           open={drawerOpen}
@@ -968,3 +959,4 @@ export default DoctorPrescriptions;
 
 export { STATUS_STYLES as statusStyle, channelIcon };
 export const HospitalIcon = Building2;
+

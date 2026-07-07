@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
+import { toLocalDateInputValue } from "@/lib/date";
+import{ Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
   FileText, AlertCircle, Loader2, Eye, Timer,
   ChevronRight, CheckCheck, LayoutGrid, List, CalendarClock
 } from "lucide-react";
@@ -39,8 +39,7 @@ import {
 } from "./shared/helpers";
 import { SkeletonRow } from "./shared/Skeletonrow";
 
-// ─── Mock doctor ──────────────────────────────────────────────────────────────
-
+ 
 const MOCK_DOCTOR = doctors?.[0] ?? {
   id: "mock", name: "Dr. (Scheduled)", specialty: "General", hospital: "",
   avatar: "DR", status: "online" as const, rating: 5, reviews: 0,
@@ -54,8 +53,7 @@ const STATUS_ORDER: Record<string, number> = {
   completed: 3,
 };
 
-// ─── Param builder ────────────────────────────────────────────────────────────
-
+ 
 function filtersToParams(filters: FilterState): GetAppointmentsParams {
   const params: GetAppointmentsParams = {};
   if (filters.status !== "All") params.status = filters.status;
@@ -92,9 +90,7 @@ function appointmentDurationMinutes(appt: Appointment): number | null {
   const duration = Number(raw);
   return Number.isFinite(duration) && duration > 0 ? duration : null;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
+ 
 export function AppointmentsTab() {
   const { t, i18n } = useTranslation();
   const call = useCallStore();
@@ -119,13 +115,12 @@ export function AppointmentsTab() {
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  // Sync call phase → view state
+  // Sync call phase  view state
   useEffect(() => {
     if (call.phase === "idle" && scheduledCallActive) setScheduledCallActive(false);
   }, [call.phase, scheduledCallActive]);
 
-  // ── API ────────────────────────────────────────────────────────────────────
-  const queryParams = useMemo(() => filtersToParams(filters), [filters]);
+const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const { data, isLoading, isError, error } = useGetAppointments(queryParams);
 
   const joinSession = useJoinSession();
@@ -135,7 +130,7 @@ export function AppointmentsTab() {
   const appointments: Appointment[] = data?.data ?? [];
 
   const appointmentStats = useMemo(() => {
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const todayKey = toLocalDateInputValue();
     const local = {
       total: appointments.length,
       pending: appointments.filter((a) => a.status === "pending").length,
@@ -190,8 +185,7 @@ export function AppointmentsTab() {
   const inProgressCount = filtered.filter((a) => a.status === "in_progress").length;
   const completedCount = filtered.filter((a) => a.status === "completed").length;
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-
+  
   /** Build an AppointmentContext and start / rejoin a scheduled call. */
   const startOrRejoin = useCallback(
     (appt: Appointment, isRejoin = false) => {
@@ -230,7 +224,7 @@ export function AppointmentsTab() {
         });
 
       if (!isRejoin && appt.booking_type === "quick" && appt.status === "pending") {
-        // Quick appointment that hasn't been accepted yet — accept, then join.
+        // Quick appointment that hasn't been accepted yet   accept, then join.
         acceptQuick.mutate(appt.id, {
           onSuccess: () => join(),
           onError: (err: unknown) => {
@@ -267,7 +261,7 @@ export function AppointmentsTab() {
     setScheduledCallActive(false);
   }, [call]);
 
-  // ── Active call view ───────────────────────────────────────────────────────
+  //  Active call view 
 
   if (
     scheduledCallActive &&
@@ -366,8 +360,7 @@ export function AppointmentsTab() {
   ], [filters, setFilters, t]);
 
   const isJoining = acceptQuick.isPending || joinSession.isPending;
-
-  // ── Render ─────────────────────────────────────────────────────────────────
+ 
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -429,8 +422,7 @@ export function AppointmentsTab() {
               </div>
             );
           })}
-        </div>
-        {/* ── Toolbar ── */}
+        </div> 
         <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-5 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <p className="text-xs text-muted-foreground">
@@ -518,8 +510,7 @@ export function AppointmentsTab() {
             fields={filterFields}
             cols={{ default: 1, sm: 2, lg: 4 }}
           />
-
-        {/* ── Content ── */}
+ 
         <div className="p-5">
           {isError ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
@@ -554,8 +545,7 @@ export function AppointmentsTab() {
               </button>
             </div>
 
-          ) : view === "table" ? (
-            /* ── Table view ── */
+          ) : view === "table" ? ( 
             <div className="rounded-[6px] border border-border/70 bg-card overflow-auto  shadow-sm">
               <table className="w-full text-xs  ">
                 <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
@@ -644,7 +634,7 @@ export function AppointmentsTab() {
                                 <span className="hidden xl:inline">{t("consult.booking.details")}</span>
                               </button>
 
-                              {/* Reschedule — pending / confirmed */}
+                              {/* Reschedule   pending / confirmed */}
                               {(status === "pending" || status === "confirmed") && (
                                 <button
                                   onClick={() => setRescheduleAppt(a)}
@@ -685,7 +675,7 @@ export function AppointmentsTab() {
                                 </button>
                               )}
 
-                              {/* ── REJOIN — in_progress ── */}
+                            
                               {isInProgress && (
                                 <Button
                                   size="sm"
@@ -701,7 +691,7 @@ export function AppointmentsTab() {
                                 </Button>
                               )}
 
-                              {/* Start — pending / confirmed */}
+                              {/* Start  pending / confirmed */}
                               {canStart && (
                                 <Button
                                   size="sm"
@@ -715,7 +705,7 @@ export function AppointmentsTab() {
                                 </Button>
                               )}
 
-                              {/* Notes — completed */}
+                              {/* Notes  completed */}
                               {status === "pending" && (
                                 <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
                                   {t("pages.doctor.awaiting_confirmation")}
@@ -740,8 +730,7 @@ export function AppointmentsTab() {
               </table>
             </div>
 
-          ) : (
-            /* ── Card view ── */
+          ) : ( 
             <div className="flex flex-col gap-2">
               {isLoading
                 ? Array.from({ length: 4 }).map((_, i) => (
@@ -764,3 +753,4 @@ export function AppointmentsTab() {
     </div>
   );
 }
+

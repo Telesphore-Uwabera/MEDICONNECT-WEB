@@ -1,10 +1,10 @@
-import { Stethoscope } from "lucide-react";
+﻿import { Stethoscope } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ApiDoctor } from "@/hooks/admin/use-admin-doctors";
-import {
-  getInitials,
+import { formatDateOnly } from "@/lib/date";
+import{  getInitials,
   statusStyle,
   STATUS_DOT,
   consultationStyle,
@@ -12,8 +12,7 @@ import {
 } from "./Types";
 import { ConsultationIcon } from "./Constants";
 
-// ─── DoctorRow (desktop table row) ───────────────────────────────────────────
-
+ 
 export function DoctorRow({
   d,
   onManage,
@@ -33,14 +32,14 @@ export function DoctorRow({
               {d.user.name}
             </p>
             <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "—"}
+              {d.user.email ?? "â€”"}
             </p>
           </div>
         </div>
       </td>
 
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {d.specialization ?? <span className="text-muted-foreground/40">—</span>}
+        {d.specialization ?? <span className="text-muted-foreground/40">-</span>}
       </td>
 
       <td className="px-4 py-3">
@@ -56,7 +55,7 @@ export function DoctorRow({
             {CONSULTATION_LABELS[d.consultation_type] ?? d.consultation_type}
           </Badge>
         ) : (
-          <span className="text-muted-foreground/40 text-[11px]">—</span>
+          <span className="text-muted-foreground/40 text-[11px]">-</span>
         )}
       </td>
 
@@ -74,7 +73,7 @@ export function DoctorRow({
       </td>
 
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(d.created_at).toLocaleDateString()}
+        {formatDateOnly(d.created_at)}
       </td>
 
       <td className="px-4 py-3 text-right">
@@ -91,8 +90,7 @@ export function DoctorRow({
   );
 }
 
-// ─── DoctorCard (mobile card) ─────────────────────────────────────────────────
-
+ 
 export function DoctorCard({
   d,
   onManage,
@@ -112,7 +110,7 @@ export function DoctorCard({
               {d.user.name}
             </p>
             <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "—"}
+              {d.user.email ?? "-"}
             </p>
           </div>
           <Badge
@@ -146,7 +144,7 @@ export function DoctorCard({
             </Badge>
           )}
           <span className="text-[10px] text-muted-foreground/50">
-            {new Date(d.created_at).toLocaleDateString()}
+            {formatDateOnly(d.created_at)}
           </span>
         </div>
         <Button
@@ -161,3 +159,4 @@ export function DoctorCard({
     </div>
   );
 }
+

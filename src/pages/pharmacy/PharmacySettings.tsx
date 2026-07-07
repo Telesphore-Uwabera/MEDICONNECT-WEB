@@ -1,4 +1,4 @@
-
+﻿
 import { toast as sonnerToast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -64,9 +64,8 @@ import {
   type PharmacyExternalAuthType,
 } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { cn } from "@/lib/utils";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+import { formatDateOnly } from "@/lib/date";
+ 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Something went wrong";
@@ -74,23 +73,20 @@ function getErrorMessage(error: unknown): string {
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-// ─── Shared input styles ──────────────────────────────────────────────────────
-
+ 
 const inputCls =
   "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
   "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
-
-// ─── Field ────────────────────────────────────────────────────────────────────
-
+ 
 function Field({
   label,
   required,
@@ -113,8 +109,7 @@ function Field({
   );
 }
 
-// ─── DisplayField — read-only row ─────────────────────────────────────────────
-
+ 
 function DisplayField({
   label,
   value,
@@ -138,9 +133,7 @@ function DisplayField({
     </div>
   );
 }
-
-// ─── VerifiedBadge ────────────────────────────────────────────────────────────
-
+ 
 function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
   if (verified) {
     return (
@@ -157,9 +150,7 @@ function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | 
     </span>
   );
 }
-
-// ─── PasswordInput ────────────────────────────────────────────────────────────
-
+ 
 function PasswordInput({
   value,
   onChange,
@@ -190,9 +181,7 @@ function PasswordInput({
     </div>
   );
 }
-
-// ─── SectionCard ─────────────────────────────────────────────────────────────
-
+ 
 function SectionCard({
   icon: Icon,
   title,
@@ -232,9 +221,7 @@ function SectionCard({
     </div>
   );
 }
-
-// ─── OtpStep ─────────────────────────────────────────────────────────────────
-
+ 
 function OtpStep({
   label,
   onVerify,
@@ -279,8 +266,7 @@ function OtpStep({
   );
 }
 
-// ─── InfoRow ─────────────────────────────────────────────────────────────────
-
+ 
 function InfoRow({
   label,
   value,
@@ -303,8 +289,7 @@ function InfoRow({
   );
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
+ 
 type TabKey = "profile" | "security" | "contact" | "inventory_mode" | "danger";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
@@ -317,12 +302,11 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
-  fr: "Français",
+  fr: "FranÃ§ais",
   rw: "Kinyarwanda",
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function PharmacySettings() {
   const { t, i18n } = useTranslation(); 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -382,7 +366,6 @@ function PharmacySettings() {
   });
   const [selectedProviderId, setSelectedProviderId] = useState<number | null>(null);
 
-  // ── Queries & mutations ────────────────────────────────────────────────────
   const { data: settingsResponse, isLoading } = useGetMySettings();
   const settings = settingsResponse?.data;
   const {
@@ -456,9 +439,7 @@ function PharmacySettings() {
     });
     setEditingProfile(true);
   };
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
+ 
   const handleProfileSave = async () => {
     if (!profileForm.name.trim()) {
       sonnerToast.error("Name is required");
@@ -582,7 +563,7 @@ function PharmacySettings() {
     }
   };
 
-  // ── Avatar display helper ─────────────────────────────────────────────────
+  //  Avatar display helper
   const handleSwitchInventoryMode = async (mode: PharmacyInventoryMode) => {
     try {
       const response = await switchInventoryMode.mutateAsync(mode);
@@ -689,7 +670,7 @@ function PharmacySettings() {
 
   const showAvatar = settings?.avatar && !avatarError;
 
-  // ── Skeleton ──────────────────────────────────────────────────────────────
+ 
   if (isLoading) {
     return (
       <DashboardLayout role="pharmacy">
@@ -715,13 +696,11 @@ function PharmacySettings() {
         />
 
         <main className="flex-1 overflow-y-auto">
-
-          {/* ── Identity Hero Banner ───────────────────────────────────────── */}
-          <div className="px-3 sm:px-4 mt-3 sm:mt-4">
+           <div className="px-3 sm:px-4 mt-3 sm:mt-4">
             <div className="rounded-[6px] border border-border/60 bg-card shadow-sm overflow-hidden">
               {/* Subtle teal gradient top strip */}
               <div className="px-5 py-4 flex items-center gap-4">
-                {/* Avatar — large, prominent */}
+                {/* Avatar  large, prominent */}
                 <div className="relative shrink-0 group">
                   {showAvatar ? (
                     <img
@@ -759,7 +738,7 @@ function PharmacySettings() {
                 {/* Name + meta */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-semibold text-foreground leading-tight truncate">
-                    {settings?.name ?? "—"}
+                    {settings?.name ?? "-"}
                   </p>
                   <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
                     {settings?.email ?? ""}
@@ -850,7 +829,6 @@ function PharmacySettings() {
           {/* Content */}
           <div className="p-3 sm:p-4 space-y-4 max-w-4xl">
 
-            {/* ── Profile Tab ─────────────────────────────────────────────── */}
             {activeTab === "profile" && (
               <SectionCard
                 icon={UserCog}
@@ -964,8 +942,7 @@ function PharmacySettings() {
               </SectionCard>
             )}
 
-            {/* ── Security Tab ────────────────────────────────────────────── */}
-            {activeTab === "security" && (
+             {activeTab === "security" && (
               <SectionCard
                 icon={Lock}
                 title="Password"
@@ -1043,7 +1020,6 @@ function PharmacySettings() {
               </SectionCard>
             )}
 
-            {/* ── Contact Tab ─────────────────────────────────────────────── */}
             {activeTab === "contact" && (
               <>
                 {/* Email */}
@@ -1254,8 +1230,7 @@ function PharmacySettings() {
               </>
             )}
 
-            {/* ── Danger Tab ──────────────────────────────────────────────── */}
-            {activeTab === "inventory_mode" && (
+              {activeTab === "inventory_mode" && (
               <SectionCard
                 icon={Database}
                 title="Inventory mode"
@@ -1762,3 +1737,4 @@ function PharmacySettings() {
 }
 
 export default PharmacySettings;
+

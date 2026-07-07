@@ -1,12 +1,12 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Drawer,
+import { formatDateOnly } from "@/lib/date";
+import { Drawer,
   DrawerClose,
   DrawerContent,
   DrawerDescription,
@@ -183,7 +183,7 @@ const AdminApprovals = () => {
                   />
                   <Field
                     label={t("admin.users.joined")}
-                    value={new Date(selected.createdAt).toLocaleDateString()}
+                    value={formatDateOnly(selected.createdAt)}
                   />
                   <Field
                     label={t("admin.users.status")}
@@ -280,3 +280,4 @@ const Field = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default AdminApprovals;
+

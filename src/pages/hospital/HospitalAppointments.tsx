@@ -45,6 +45,7 @@ import {
   useGetDepartments,
   useGetServicesByDepartment,
 } from "@/hooks/hospital/use-hospital-departments";
+import { t } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -223,7 +224,7 @@ function BookingDrawer({
               <h2 className="text-xs font-semibold text-foreground tracking-tight">
                 Booking #{bookingId}
               </h2>
-              <p className="text-[10px] text-muted-foreground/60 mt-px">Full details</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-px">{t('pages.hospital.full_details')}</p>
             </div>
           </div>
           <button
@@ -244,9 +245,9 @@ function BookingDrawer({
               <div className="w-10 h-10 rounded-[5px] bg-destructive/10 border border-destructive/20 flex items-center justify-center">
                 <AlertCircle className="w-5 h-5 text-destructive/60" />
               </div>
-              <p className="text-xs font-semibold text-foreground">Failed to load</p>
+              <p className="text-xs font-semibold text-foreground">{t('pages.hospital.failed_loading')}</p>
               <p className="text-[10px] text-muted-foreground/60">
-                Could not fetch booking #{bookingId}
+               {t('pages.hospital.could_not_load')} #{bookingId}
               </p>
             </div>
           ) : (
@@ -301,33 +302,33 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
         {capitalize(booking.status)}
         {booking.accepted_at && booking.status === "accepted" && (
           <span className="ml-auto font-normal text-[10px] opacity-60">
-            Accepted {format(parseISO(booking.accepted_at), "MMM d, HH:mm")}
+            {t('pages.hospital.status_accepted')} {format(parseISO(booking.accepted_at), "MMM d, HH:mm")}
           </span>
         )}
         {booking.completed_at && booking.status === "completed" && (
           <span className="ml-auto font-normal text-[10px] opacity-60">
-            Completed {format(parseISO(booking.completed_at), "MMM d, HH:mm")}
+             {t('pages.hospital.status_completed')} {format(parseISO(booking.completed_at), "MMM d, HH:mm")}
           </span>
         )}
       </div>
 
       {/* Patient */}
-      <SectionLabel>Patient</SectionLabel>
-      <DetailRow icon={User} label="Name" value={booking.patient.name} />
+      <SectionLabel>{t('pages.hospital.patient')}</SectionLabel>
+      <DetailRow icon={User} label={t('pages.hospital.name')} value={booking.patient.name} />
       {booking.patient.phone && (
-        <DetailRow icon={Phone} label="Phone" value={booking.patient.phone} />
+        <DetailRow icon={Phone} label={t('pages.hospital.phone')} value={booking.patient.phone} />
       )}
 
       {/* Appointment */}
-      <SectionLabel className="mt-5">Appointment</SectionLabel>
-      <DetailRow icon={Stethoscope} label="Service" value={booking.service.name_en} />
+      <SectionLabel className="mt-5">{t('pages.hospital.appointments')}</SectionLabel>
+      <DetailRow icon={Stethoscope} label={t('pages.hospital.services')} value={booking.service.name_en} />
       {booking.service.code && (
-        <DetailRow icon={FileText} label="Service code" value={booking.service.code} />
+        <DetailRow icon={FileText} label={t('pages.hospital.service_code')} value={booking.service.code} />
       )}
       {booking.service.duration_minutes && (
         <DetailRow
           icon={Clock}
-          label="Duration"
+          label={t('pages.hospital.service_code')}
           value={`${booking.service.duration_minutes} min`}
         />
       )}
@@ -335,7 +336,7 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
       {booking.department.floor && (
         <DetailRow
           icon={Building2}
-          label="Location"
+          label={t('pages.hospital.location')}
           value={[booking.department.floor, booking.department.room_number]
             .filter(Boolean)
             .join(", ")}
@@ -343,30 +344,31 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
       )}
       <DetailRow
         icon={Calendar}
-        label="Preferred date"
+        label={t('pages.hospital.pref_date')}
         value={fmtPreferredDate(booking.preferred_date)}
       />
       {booking.preferred_time && (
         <DetailRow
           icon={Clock}
-          label="Preferred time"
+          label={t('pages.hospital.pref_time')}
           value={fmtTime(booking.preferred_time) ?? "—"}
         />
       )}
       {booking.notes && (
-        <DetailRow icon={FileText} label="Patient notes" value={booking.notes} />
+        <DetailRow icon={FileText} label={t('pages.doctor.patient_notes')} value={booking.notes} />
       )}
 
       {/* Payment */}
-      <SectionLabel className="mt-5">Payment</SectionLabel>
+      <SectionLabel className="mt-5"> {t('pages.hospital.payment')}</SectionLabel>
       <DetailRow
         icon={CreditCard}
-        label="Service price"
+        
+        label={t('pages.hospital.service_price')}
         value={fmtCurrency(booking.price, booking.currency)}
       />
       <DetailRow
         icon={CreditCard}
-        label="Patient pays"
+        label={t('pages.hospital.patient_pays')}
         value={
           <span
             className={cn(
@@ -384,10 +386,10 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
       {/* Rejection reason */}
       {booking.rejection_reason && (
         <>
-          <SectionLabel className="mt-5">Rejection</SectionLabel>
+          <SectionLabel className="mt-5">  {t('pages.hospital.payment')}</SectionLabel>
           <DetailRow
             icon={Ban}
-            label="Reason"
+            label={t('pages.hospital.reason')}
             value={booking.rejection_reason}
             valueClass="text-destructive/80"
           />
@@ -423,7 +425,7 @@ function DrawerFooter({
             onClick={() => onAccept(booking)}
           >
             <Check className="h-3 w-3" />
-            Accept
+                {t('pages.hospital.accept')}
           </button>
           <button
             disabled={isActing}
@@ -431,8 +433,8 @@ function DrawerFooter({
             className="flex-1 h-8 text-[11px] font-medium border border-border/60 text-muted-foreground hover:border-destructive/40 hover:text-destructive hover:bg-destructive/5 flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
             onClick={() => onReject(booking)}
           >
-            <X className="h-3 w-3" />
-            Reject
+            <X className="h-3 w-3" /> 
+               {t('pages.hospital.reject')}
           </button>
         </>
       )}
@@ -448,8 +450,8 @@ function DrawerFooter({
             <Loader2 className="h-3 w-3 animate-spin" />
           ) : (
             <CheckCircle2 className="h-3 w-3" />
-          )}
-          Mark complete
+          )} 
+          {t('pages.hospital.mark_complete')}
         </button>
       )}
 
@@ -457,7 +459,7 @@ function DrawerFooter({
         booking.status === "rejected" ||
         booking.status === "cancelled") && (
           <p className="text-[10px] text-muted-foreground/40 italic text-center w-full self-center">
-            No further actions available
+           {t('pages.hospital.no_further_actions')}
           </p>
         )}
     </div>
@@ -527,7 +529,7 @@ function RejectModal({
             <XCircle className="w-3.5 h-3.5 text-destructive" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">Reject booking</p>
+            <p className="text-xs font-semibold text-foreground">{t('pages.hospital.reject_booking')}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {booking.service.name_en} · {booking.patient.name}
             </p>
@@ -536,7 +538,7 @@ function RejectModal({
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
-            Reason *
+            {t('pages.hospital.reason')} *
           </label>
           <textarea
             autoFocus
@@ -559,7 +561,7 @@ function RejectModal({
             style={{ borderRadius: "5px" }}
             className="px-3 py-1.5 text-[11px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
           >
-            Cancel
+          {t('pages.hospital.cancel_btn')}
           </button>
           <button
             onClick={handleConfirm}
@@ -568,7 +570,8 @@ function RejectModal({
             className="px-3 py-1.5 text-[11px] bg-destructive text-white font-semibold hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            Reject
+            
+             {t('pages.hospital.reject')}
           </button>
         </div>
       </div>
@@ -611,7 +614,7 @@ function AcceptModal({
             <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-foreground">Accept booking</p>
+            <p className="text-xs font-semibold text-foreground">{t('pages.hospital.accept_booking')}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {booking.service.name_en} · {booking.patient.name}
             </p>
@@ -621,15 +624,15 @@ function AcceptModal({
         <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-[5px] px-3 py-2 text-[10px] text-amber-700 dark:text-amber-400">
           <Receipt className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
-            Patient will be asked to pay{" "}
+            {t('pages.hospital.patient_payment')}{" "}
             <strong>{fmtCurrency(booking.patient_pays, booking.currency)}</strong>{" "}
-            within 24 hours.
+            {t('pages.hospital.waiting_hrs')}
           </span>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
-            Notes for patient{" "}
+            {t('pages.doctor.patient_notes')} {" "}
             <span className="normal-case text-muted-foreground/50 font-normal">(optional)</span>
           </label>
           <textarea
@@ -648,8 +651,8 @@ function AcceptModal({
             disabled={isLoading}
             style={{ borderRadius: "5px" }}
             className="px-3 py-1.5 text-[11px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
-          >
-            Cancel
+          > 
+             {t('pages.doctor.cancel_btn')}
           </button>
           <button
             onClick={() => onConfirm(notes.trim() || undefined)}
@@ -661,8 +664,8 @@ function AcceptModal({
               <Loader2 className="w-3 h-3 animate-spin" />
             ) : (
               <Check className="w-3 h-3" />
-            )}
-            Accept & notify
+            )} 
+             {t('pages.doctor.accept_notify')}
           </button>
         </div>
       </div>
@@ -830,7 +833,7 @@ function AppointmentCard({
           className="flex items-center gap-1 h-7 px-2.5 text-[10px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors font-medium"
         >
           <ChevronRight className="h-3 w-3" />
-          Details
+          {t('pages.hospital.details')}
         </button>
 
         {booking.status === "pending" && (
@@ -842,7 +845,7 @@ function AppointmentCard({
               onClick={() => onAccept(booking)}
             >
               <Check className="h-3 w-3" />
-              Accept
+               {t('pages.hospital.accept')}
             </button>
             <button
               disabled={isActing}
@@ -851,7 +854,8 @@ function AppointmentCard({
               onClick={() => onReject(booking)}
             >
               <X className="h-3 w-3" />
-              Reject
+              
+               {t('pages.hospital.reject')}
             </button>
           </>
         )}
@@ -864,7 +868,8 @@ function AppointmentCard({
             onClick={() => onComplete(booking)}
           >
             <CheckCircle2 className="h-3 w-3" />
-            Complete
+            
+              {t('pages.hospital.complete')}
           </button>
         )}
 
@@ -872,7 +877,7 @@ function AppointmentCard({
           booking.status === "rejected" ||
           booking.status === "cancelled") && (
             <span className="text-[10px] text-muted-foreground/40 italic self-center">
-              No actions
+                {t('pages.hospital.no_actions')}
             </span>
           )}
       </div>
@@ -1119,44 +1124,44 @@ const HospitalAppointments = () => {
     {
       type: "search" as const,
       key: "search",
-      label: "Search",
-      placeholder: "Search patient, service, booking ID...",
+      label:t('pages.hospital.search'),
+      placeholder:t('pages.hospital.search_appts'),
       value: filters.search,
       onChange: (v: string) => set("search", v),
     },
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label:t('pages.hospital.status'),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "pending", label: "Pending" },
-        { value: "accepted", label: "Accepted" },
-        { value: "completed", label: "Completed" },
-        { value: "rejected", label: "Rejected" },
-        { value: "cancelled", label: "Cancelled" },
+        { value: "all", label: t('pages.hospital.all_statuses') },
+        { value: "pending", label:  t('pages.hospital.status_pending')},
+        { value: "accepted", label:  t('pages.hospital.status_accepted') },
+        { value: "completed", label:t('pages.hospital.status_completed') },
+        { value: "rejected", label: t('pages.hospital.status_rejected') },
+        { value: "cancelled", label:t('pages.hospital.status_cancelled')},
       ],
       onChange: (v: string) => set("status", v as FilterState["status"]),
     },
     {
       type: "select" as const,
       key: "paymentStatus",
-      label: "Payment",
+      label:t('pages.hospital.payment'),
       value: filters.paymentStatus,
       options: [
-        { value: "all", label: "All payments" },
-        { value: "paid", label: "Paid" },
-        { value: "unpaid", label: "Unpaid" },
-        { value: "pending", label: "Pending" },
-        { value: "refunded", label: "Refunded" },
+        { value: "all", label:  t('pages.hospital.all_payment') },
+        { value: "paid", label: t('pages.hospital.paid_payment') },
+        { value: "unpaid", label:  t('pages.hospital.unpaid_payment') },
+        { value: "pending", label:  t('pages.hospital.pending_payment') },
+        { value: "refunded", label:  t('pages.hospital.refunded_payment') },
       ],
       onChange: (v: string) => set("paymentStatus", v),
     },
     {
       type: "select" as const,
       key: "departmentId",
-      label: "Department",
+      label: t('pages.hospital.department'),
       value: filters.departmentId,
       options: departmentOptions,
       onChange: (v: string) => {
@@ -1171,7 +1176,7 @@ const HospitalAppointments = () => {
     {
       type: "select" as const,
       key: "serviceId",
-      label: "Service",
+      label: t('pages.hospital.services'),
       value: filters.serviceId,
       options: serviceOptions,
       onChange: (v: string) => set("serviceId", v),
@@ -1179,7 +1184,7 @@ const HospitalAppointments = () => {
     {
       type: "select" as const,
       key: "doctorId",
-      label: "Doctor",
+      label: t('pages.hospital.doctor'),
       value: filters.doctorId,
       options: doctorOptions,
       onChange: (v: string) => set("doctorId", v),
@@ -1187,14 +1192,14 @@ const HospitalAppointments = () => {
     {
       type: "custom" as const,
       key: "patientId",
-      label: "Patient ID",
+      label:  t('pages.hospital.patient_id'),
       render: () => (
         <input
           type="number"
           min="1"
           value={filters.patientId}
           onChange={(e) => set("patientId", e.target.value)}
-          placeholder="Patient ID"
+          placeholder={t('pages.hospital.patient_id')}
           className="w-full h-8 px-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
         />
       ),
@@ -1202,7 +1207,7 @@ const HospitalAppointments = () => {
     {
       type: "custom" as const,
       key: "dateFrom",
-      label: "Date Range",
+      label: t('pages.hospital.date_range'),
       render: () => (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
@@ -1212,7 +1217,9 @@ const HospitalAppointments = () => {
               onChange={(e) => set("dateFrom", e.target.value)}
               className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
             />
-            <span className="text-[11px] text-muted-foreground">to</span>
+            <span className="text-[11px] text-muted-foreground">
+              {t('pages.doctor.to')}
+            </span>
             <input
               type="date"
               value={filters.dateTo}
@@ -1228,8 +1235,8 @@ const HospitalAppointments = () => {
                 set("dateTo", "");
               }}
               className="text-[10px] text-muted-foreground hover:text-foreground underline transition-colors self-start"
-            >
-              Clear dates
+            > 
+               {t('pages.doctor.clear_dates')}
             </button>
           )}
         </div>
@@ -1263,12 +1270,12 @@ const HospitalAppointments = () => {
         <main className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 pt-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-              <StatCard label="Total bookings" value={isLoading ? "..." : stats.total} icon={Receipt} />
-              <StatCard label="Pending" value={isLoading ? "..." : stats.pending} icon={Clock} accent="warning" />
-              <StatCard label="Accepted" value={isLoading ? "..." : stats.accepted} icon={CheckCircle2} accent="info" />
-              <StatCard label="Completed" value={isLoading ? "..." : stats.completed} icon={Check} accent="success" />
-              <StatCard label="Paid" value={isLoading ? "..." : stats.paid} icon={CreditCard} accent="success" />
-              <StatCard label="Unpaid" value={isLoading ? "..." : stats.unpaid} icon={XCircle} accent="warning" />
+              <StatCard label={t("pages.hospital.total_bookings")} value={isLoading ? "..." : stats.total} icon={Receipt} />
+              <StatCard label={t("pages.hospital.status_pending")}  value={isLoading ? "..." : stats.pending} icon={Clock} accent="warning" />
+              <StatCard label={t("pages.hospital.status_accepted")}  value={isLoading ? "..." : stats.accepted} icon={CheckCircle2} accent="info" />
+              <StatCard label={t("pages.hospital.status_completed")}  value={isLoading ? "..." : stats.completed} icon={Check} accent="success" />
+              <StatCard label={t("pages.hospital.total_bookings")}  value={isLoading ? "..." : stats.paid} icon={CreditCard} accent="success" />
+              <StatCard label={t("pages.hospital.total_bookings")}  value={isLoading ? "..." : stats.unpaid} icon={XCircle} accent="warning" />
             </div>
           </div>
 
@@ -1282,7 +1289,7 @@ const HospitalAppointments = () => {
                 {filtered.length === 1 ? "booking" : "bookings"}
                 {!isLoading && data && (
                   <span className="text-muted-foreground/50 ml-1">
-                    / {data.total} total
+                    / {data.total} {t('pages.hospital.total')}
                   </span>
                 )}
                 {hasActiveFilters && (
@@ -1290,7 +1297,7 @@ const HospitalAppointments = () => {
                     onClick={clearAll}
                     className="ml-2 text-primary hover:underline text-[10px] font-medium"
                   >
-                    Reset filters
+                     {t('pages.hospital.reset')}
                   </button>
                 )}
               </p>
@@ -1298,7 +1305,8 @@ const HospitalAppointments = () => {
               {pendingCount > 0 && !isLoading && (
                 <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[4px]">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  {pendingCount} pending
+                  {pendingCount} 
+                     {t('pages.hospital.pending')}
                 </span>
               )}
             </div>
@@ -1311,7 +1319,7 @@ const HospitalAppointments = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search patient, service…"
+                  placeholder={t('pages.hospital.analytics_search_placeholder')}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1354,18 +1362,19 @@ const HospitalAppointments = () => {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    Failed to load bookings
+                  
+                     {t('pages.hospital.something_went_wrong')}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {error instanceof Error ? error.message : "Unknown error"}
+                    {error instanceof Error ? error.message : t('pages.hospital.unknown_error')}
                   </p>
                 </div>
                 <button
                   onClick={() => refetch()}
                   style={{ borderRadius: "5px" }}
                   className="text-[11px] text-primary hover:underline font-semibold"
-                >
-                  Try again
+                > 
+                     {t('pages.hospital.try_again')}
                 </button>
               </div>
             ) : isLoading ? (
@@ -1382,22 +1391,17 @@ const HospitalAppointments = () => {
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
                     {hasActiveFilters
-                      ? "No bookings match your filters"
-                      : "No bookings yet"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {hasActiveFilters
-                      ? "Try widening your search criteria"
-                      : "Bookings will appear here once patients request services"}
-                  </p>
+                      ?   t('pages.hospital.try_widen_search')
+                      : t('pages.hospital.no_bookings')}
+                  </p> 
                 </div>
                 {hasActiveFilters && (
                   <button
                     onClick={clearAll}
                     style={{ borderRadius: "5px" }}
                     className="text-[11px] text-primary hover:underline font-semibold mt-1"
-                  >
-                    Clear all filters
+                  > 
+                    {t('pages.hospital.clear_all')}
                   </button>
                 )}
               </div>

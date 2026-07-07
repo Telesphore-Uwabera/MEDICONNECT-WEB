@@ -1,3 +1,4 @@
+﻿import { formatDateOnly } from "@/lib/date";
 // components/DoctorCard.tsx
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -42,13 +43,9 @@ import { readConsultSession } from "@/hooks/patient/se-consultation-session";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 type ModalMode = "details" | "connect";
-
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-// Unchanged — internal to the modal/card system, out of scope for this pass.
-
+ 
 function DoctorAvatar({
   doctor,
   size = "sm",
@@ -87,8 +84,8 @@ function DoctorAvatar({
   );
 }
 
-// ─── Consultation badge ───────────────────────────────────────────────────────
-// Unchanged — shared with UnifiedModal, out of scope for this pass.
+// â”€â”€â”€ Consultation badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Unchanged â€” shared with UnifiedModal, out of scope for this pass.
 
 function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   const { t } = useTranslation();
@@ -124,9 +121,7 @@ function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   );
 }
 
-// ─── Detail row (compact card variant, used inside a responsive grid) ─────────
-// Unchanged — lives inside UnifiedModal, out of scope for this pass.
-
+ 
 function DetailRow({
   icon: Icon,
   label,
@@ -164,7 +159,6 @@ function DetailRow({
     </div>
   );
 }
-
 // ─── Quick stat (used in the sidebar) ──────────────────────────────────────────
 // Unchanged — lives inside UnifiedModal, out of scope for this pass.
 
@@ -276,6 +270,7 @@ function SavedSessionPill({
     document.body,
   );
 }
+
 
 // ─── Unified Modal ────────────────────────────────────────────────────────────
 // Unchanged — out of scope for this pass (card-only restyle, per your call).
@@ -605,7 +600,7 @@ export function UnifiedModal({
                         icon={BadgeCheck}
                         label={t("pages.cards.verified")}
                         accent
-                        value={new Date(doctor.verified_at).toLocaleDateString(
+                        value={formatDateOnly(doctor.verified_at, 
                           i18n.language,
                           { year: "numeric", month: "short", day: "numeric" },
                         )}
@@ -850,7 +845,7 @@ export const DoctorCard = ({
         className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer"
       >
         <div className="px-3.5 pt-3 pb-3">
-          {/* Top row — avatar enlarged from h-12 to h-20 (h-24 on sm+),
+         {/* Top row — avatar enlarged from h-12 to h-20 (h-24 on sm+),
               same row layout as before, just a bigger image. */}
           <div className="flex items-start gap-3 ">
             <div className="relative shrink-0">
@@ -896,7 +891,7 @@ export const DoctorCard = ({
 
           {/* Bottom actions */}
           <div
-            className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+            className="mt-3 flex flex-col sm:flex-row sm:items-center flex-wrap justify-between gap-2.5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left hint */}
@@ -930,7 +925,7 @@ export const DoctorCard = ({
               )}
             </div>
 
-            {/* Right buttons — rounded-[6px] + h-8 to match the
+            {/* Right buttons - rounded-[6px] + h-8 to match the
                 Book / Connect button sizing used on HospitalCard */}
             <div className="flex items-center gap-2">
               <Button
@@ -986,7 +981,7 @@ export const DoctorCard = ({
         </div>
       </Card>
 
-      {/* ── Live-call resume pill ── (unchanged) */}
+       {/* ── Live-call resume pill ── (unchanged) */}
       {showResumePill && (
         <ResumePill
           doctorName={doctor.user.name}
@@ -999,6 +994,7 @@ export const DoctorCard = ({
         />
       )}
 
+    
       {/* ── Saved-session pill ── (unchanged) */}
       {showSavedSessionPill && (
         <SavedSessionPill
@@ -1008,7 +1004,7 @@ export const DoctorCard = ({
         />
       )}
 
-      {/* ── Unified modal ── (unchanged) */}
+     {/* ── Unified modal ── (unchanged) */}
       <UnifiedModal
         doctor={doctor}
         callDoctor={callDoctor}
@@ -1031,3 +1027,4 @@ export const DoctorCard = ({
     </>
   );
 };
+

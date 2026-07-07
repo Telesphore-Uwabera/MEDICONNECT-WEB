@@ -1,10 +1,11 @@
-import { Badge } from "@/components/ui/badge";
+﻿import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Stethoscope, LayoutGrid } from "lucide-react";
 import type { ApiHospital } from "@/hooks/admin/use-admin-hospitals";
 import { cn } from "@/lib/utils";
 import { getInitials } from "./Utils";
 import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
+import { formatDateOnly } from "@/lib/date";
 
 interface HospitalRowProps {
   h: ApiHospital;
@@ -22,7 +23,7 @@ export function HospitalRow({ h, onManage }: HospitalRowProps) {
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">{h.name_en}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{h.user?.name ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{h.user?.name ?? "-"}</p>
           </div>
         </div>
       </td>
@@ -40,7 +41,7 @@ export function HospitalRow({ h, onManage }: HospitalRowProps) {
             {h.type}
           </Badge>
         ) : (
-          <span className="text-muted-foreground/40 text-[11px]">—</span>
+          <span className="text-muted-foreground/40 text-[11px]">-</span>
         )}
       </td>
 
@@ -71,7 +72,7 @@ export function HospitalRow({ h, onManage }: HospitalRowProps) {
 
       {/* Joined */}
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(h.created_at).toLocaleDateString()}
+        {formatDateOnly(h.created_at)}
       </td>
 
       {/* Action */}
@@ -88,3 +89,4 @@ export function HospitalRow({ h, onManage }: HospitalRowProps) {
     </tr>
   );
 }
+

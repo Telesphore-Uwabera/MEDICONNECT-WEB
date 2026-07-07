@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatDateOnly } from "@/lib/date";
 import {
   X, Pill, Calendar, Clock, Video, MapPin, FileText,
   User, Phone, Mail, QrCode, Download, Send, CheckCircle2,
@@ -13,21 +14,18 @@ import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
 import { openPrescriptionDocument } from "@/lib/prescription-document";
 
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
-
+ 
 function fmtDate(raw?: string | null): string {
-  if (!raw) return "—";
+  if (!raw) return "-";
   try {
-    return new Date(raw).toLocaleDateString("en-US", {
+    return formatDateOnly(raw, "en-US", {
       year: "numeric", month: "short", day: "numeric",
     });
   } catch { return raw; }
 }
 
 function fmtDateTime(raw?: string | null): string {
-  if (!raw) return "—";
+  if (!raw) return "-";
   try {
     return new Date(raw).toLocaleString("en-US", {
       year: "numeric", month: "short", day: "numeric",
@@ -37,7 +35,7 @@ function fmtDateTime(raw?: string | null): string {
 }
 
 function fmtTime(raw?: string | null): string {
-  if (!raw) return "—";
+  if (!raw) return "-";
   try {
     return new Date(raw).toLocaleTimeString("en-US", {
       hour: "2-digit", minute: "2-digit",
@@ -53,10 +51,7 @@ function initials(name?: string): string {
     : name.slice(0, 2).toUpperCase();
 }
 
-/* ─────────────────────────────────────────────
-   Status config
-───────────────────────────────────────────── */
-
+ 
 const STATUS_STYLES: Partial<Record<PrescriptionStatus, string>> = {
   draft: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800",
   issued: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
@@ -93,11 +88,7 @@ const statusLabel = (status: string, t: ReturnType<typeof useTranslation>["t"]):
   rejected: t("pages.doctor.rx_status_rejected"),
   returned: t("pages.doctor.rx_status_returned"),
 }[status] ?? status);
-
-/* ─────────────────────────────────────────────
-   Section wrapper
-───────────────────────────────────────────── */
-
+ 
 function Section({ title, icon, children }: {
   title: string;
   icon: React.ReactNode;
@@ -117,7 +108,7 @@ function Section({ title, icon, children }: {
 }
 
 function Row({ label, value, mono }: { label: string; value?: React.ReactNode; mono?: boolean }) {
-  if (value === undefined || value === null || value === "" || value === "—") {
+  if (value === undefined || value === null || value === "" || value === "-") {
     return null;
   }
   return (
@@ -133,11 +124,7 @@ function Row({ label, value, mono }: { label: string; value?: React.ReactNode; m
   );
 }
 
-/* ─────────────────────────────────────────────
-   Inner content — uses pre-fetched prescription
-   or fetches by id if only id is given
-───────────────────────────────────────────── */
-
+ 
 function DrawerContent({ prescription }: { prescription: Prescription }) {
   const { t } = useTranslation();
   const p = prescription;
@@ -146,8 +133,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
   return (
     <div className="flex flex-col gap-3">
-
-      {/* ── Header card ── */}
+ 
       <div className="flex items-start gap-4 p-4 border border-border/60 rounded-[6px] bg-gradient-to-br from-primary/5 to-transparent">
         <div className="h-12 w-12 rounded-[6px] bg-primary/10 text-primary flex items-center justify-center font-bold text-base border border-primary/15 flex-shrink-0">
           {initials(p.patient?.name)}
@@ -182,9 +168,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
             </Badge>
           </div>
         </div>
-      </div>
-
-      {/* ── Prescription meta ── */}
+      </div> 
       <Section title={t("pages.doctor.rx_prescription")} icon={<FileText className="h-3 w-3" />}>
         <Row label={t("pages.doctor.number")} value={p.prescription_number} mono />
         <Row label={t("pages.doctor.diagnosis")} value={<span className="font-medium">{p.diagnosis}</span>} />
@@ -200,8 +184,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
         <Row label={t("pages.doctor.created")} value={fmtDateTime(p.created_at)} />
         <Row label={t("pages.doctor.updated")} value={fmtDateTime(p.updated_at)} />
       </Section>
-
-      {/* ── Medications ── */}
+ 
       <Section title={t("pages.doctor.medications_count", { count: p.items.length })} icon={<Pill className="h-3 w-3" />}>
         <div className="space-y-3">
           {p.items.map((m, i) => (
@@ -238,8 +221,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
           ))}
         </div>
       </Section>
-
-      {/* ── Appointment ── */}
+ 
       {appt && (
         <Section title={t("pages.doctor.linked_appointment")} icon={<Calendar className="h-3 w-3" />}>
           <Row label={t("pages.doctor.date")} value={fmtDate(appt.appointment_date)} />
@@ -263,7 +245,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
             appt.payment_status === "paid"
               ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                 <CheckCircle2 className="h-3 w-3" /> {t("pages.doctor.paid")}
-                {appt.payment_method && ` · ${appt.payment_method.replace(/_/g, " ")}`}
+                {appt.payment_method && ` Â· ${appt.payment_method.replace(/_/g, " ")}`}
               </span>
               : appt.payment_status
           } />
@@ -272,16 +254,14 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
           )}
         </Section>
       )}
-
-      {/* ── Pharmacy ── */}
+ 
       {p.pharmacy && (
         <Section title={t("pages.doctor.pharmacy")} icon={<Building2 className="h-3 w-3" />}>
           <Row label={t("pages.doctor.name")} value={p.pharmacy.name} />
           <Row label={t("pages.doctor.address")} value={p.pharmacy.address} />
         </Section>
       )}
-
-      {/* ── Documents ── */}
+ 
       {(
         <Section title={t("pages.doctor.documents")} icon={<Download className="h-3 w-3" />}>
           <div className="flex flex-wrap gap-2 pt-0.5">
@@ -323,8 +303,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
 
 /* ─────────────────────────────────────────────
    Public component
-───────────────────────────────────────────── */
-
+───────────────────────────────────────────── */ 
 interface PrescriptionDetailDrawerProps {
   prescription: Prescription | null;   // pass the list-item directly
   open: boolean;
@@ -440,3 +419,4 @@ export function PrescriptionDetailDrawer({
 }
 
 export default PrescriptionDetailDrawer;
+

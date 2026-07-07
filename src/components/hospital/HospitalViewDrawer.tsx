@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  MapPin,
+import { formatDateOnly } from "@/lib/date";
+  import { MapPin,
   CalendarDays,
   Activity,
   Building2,
@@ -340,13 +340,13 @@ function ScheduleSection({
                 {isOpen ? (
                   hasHours ? (
                     <span className="text-[12px] tabular-nums text-foreground font-medium">
-                      {wh.open_time!.slice(0, 5)} – {wh.close_time!.slice(0, 5)}
+                      {wh.open_time!.slice(0, 5)} - {wh.close_time!.slice(0, 5)}
                     </span>
                   ) : (
                     <span className="text-[11px] text-muted-foreground">{t("pages.cards.all_day")}</span>
                   )
                 ) : (
-                  <span className="text-[11px] text-muted-foreground">—</span>
+                  <span className="text-[11px] text-muted-foreground">-</span>
                 )}
               </div>
 
@@ -415,7 +415,7 @@ function HospitalViewDrawer({
   const hoursLabel = hospital.is_open_24h
     ? t("pages.cards.open_24h")
     : hospital.opens_at && hospital.closes_at
-      ? `${hospital.opens_at.slice(0, 5)} – ${hospital.closes_at.slice(0, 5)}`
+      ? `${hospital.opens_at.slice(0, 5)} - ${hospital.closes_at.slice(0, 5)}`
       : null;
 
   const isAccepting =
@@ -424,14 +424,14 @@ function HospitalViewDrawer({
     hospital.is_accepting_bookings === 1;
 
   const verifiedDate = hospital.verified_at
-    ? new Date(hospital.verified_at).toLocaleDateString(i18n.language, {
+    ? formatDateOnly(hospital.verified_at, i18n.language, {
       day: "numeric",
       month: "short",
       year: "numeric",
     })
     : null;
 
-  // ── Flatten services from departments[].services (API shape) ──
+ // ── Flatten services from departments[].services (API shape) ──
   // Falls back to top-level hospital.services if present
   const allServices: DepartmentService[] = useMemo(() => {
     if (hospital.services && hospital.services.length > 0) {
@@ -517,10 +517,10 @@ function HospitalViewDrawer({
           </TabBtn>
         </div>
 
-        {/* ── Body ── */}
+         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto">
 
-          {/* ══ OVERVIEW TAB ══ */}
+           {/* ══ OVERVIEW TAB ══ */}
           {tab === "overview" && (
             <div className="px-4 sm:px-5 py-4 space-y-4">
 
@@ -652,7 +652,7 @@ function HospitalViewDrawer({
                 </div>
               )}
 
-              {/* Services — flattened from departments[].services or top-level services */}
+               {/* Services — flattened from departments[].services or top-level services */}
               {allServices.length > 0 && (
                 <div>
                   <SectionLabel>
@@ -759,3 +759,4 @@ function HospitalViewDrawer({
 }
 
 export default HospitalViewDrawer;
+

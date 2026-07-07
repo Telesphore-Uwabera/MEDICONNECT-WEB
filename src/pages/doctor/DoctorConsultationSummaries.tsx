@@ -234,7 +234,7 @@ function PatientGroupCard({
   const { t } = useTranslation();
 
   return (
-    <div className="rounded-[6px] border border-border bg-card overflow-hidden">
+    <div className="rounded-[6px] border border-border bg-card overflow-hidden hover:bg-muted hover:text-foreground">
       {/* Patient row */}
       <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3 text-left">
         <div className="h-8 w-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 text-primary">
@@ -297,9 +297,9 @@ function SummaryRow({
   );
 
   return (
-    <div className="bg-background/40">
-      <div className="flex items-center gap-2 px-4 py-3">
-        <button onClick={onToggle} className="flex-1 flex items-center gap-2 min-w-0 text-left">
+    <div className="bg-background/40 hover:bg-muted hover:text-foreground">
+      <div className="flex items-center gap-2 px-4 py-3 " >
+        <button onClick={onToggle} className="flex-1 flex items-center hover:bg-muted hover:text-foreground gap-2 min-w-0 text-left">
           <span className={cn(
             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium shrink-0",
             isInstant ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-600",
@@ -312,7 +312,7 @@ function SummaryRow({
               <AlertTriangle className="h-2.5 w-2.5" /> {t("pages.doctor.red_flag")}
             </span>
           )}
-          <p className="text-[12px] text-muted-foreground truncate">
+          <p className="text-[12px] text-muted-foreground truncate mt-4">
             {s.chief_complaint?.main_complaint ? (
               <RichTextRenderer value={s.chief_complaint.main_complaint} className="inline text-[12px] text-muted-foreground" />
             ) : (
@@ -325,7 +325,7 @@ function SummaryRow({
             onClick={() => openSummaryDocument(s)}
             aria-label={t("pages.doctor.view_document")}
             title={t("pages.doctor.view_document")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground  transition-colors"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>

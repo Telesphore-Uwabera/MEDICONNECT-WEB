@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
-import {
-  Search,
+import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
+  import {Search,
   Calendar,
   Check,
   Plus,
@@ -25,8 +25,7 @@ import { ConnectDialog } from "@/components/ConnectDialog";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 interface ApiDoctor {
   id: number;
   specialization: string;
@@ -70,8 +69,7 @@ function toDisplayDoctor(doc: ApiDoctor): DisplayDoctor {
   };
 }
 
-// ─── Date Picker ──────────────────────────────────────────────────────────────
-
+ 
 function DatePicker({
   value,
   onChange,
@@ -114,13 +112,13 @@ function DatePicker({
 
   const selectDay = (day: number) => {
     const d = new Date(viewYear, viewMonth, day);
-    const iso = d.toISOString().split("T")[0];
+    const iso = toLocalDateInputValue(d);
     onChange(iso);
     setOpen(false);
   };
 
   const displayValue = value
-    ? new Date(value + "T00:00:00").toLocaleDateString(i18n.language, {
+    ? formatDateOnly(value + "T00:00:00", i18n.language, {
       year: "numeric", month: "short", day: "numeric",
     })
     : "";
@@ -220,7 +218,7 @@ function DatePicker({
   );
 }
 
-// ─── MeetOurDoctorsSlider ─────────────────────────────────────────────────────
+//   MeetOurDoctorsSlider 
 
 interface SliderProps {
   doctors: DisplayDoctor[];
@@ -297,7 +295,7 @@ function MeetOurDoctorsSlider({
   );
 }
 
-// ─── HeroSection ──────────────────────────────────────────────────────────────
+//  HeroSection 
 
 export default function HeroSection() {
   const { t } = useTranslation();
@@ -424,17 +422,16 @@ export default function HeroSection() {
       />
 
       <div className="relative pt-4 sm:pt-7">
-        {/* ── Hero ── */}
+     
         <section id="landing-page" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-center px-4 py-4 sm:px-6 sm:py-6 md:px-8 lg:p-10 relative">
 
-          {/* ── Left column ── */}
+          
           <div className="relative z-10 order-2 lg:order-1">
           <HeroHeadline />
             <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
               {t("pages.landing.hero_intro")}
             </p>
-            {/* Decorative medical illustration — tablet+ only */}
-            <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
+                        <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
               <svg
                 width="44" height="50" viewBox="0 0 140 160" fill="none"
                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
@@ -477,8 +474,7 @@ export default function HeroSection() {
             </div>
 
             <StartConsult />
-
-            {/* ── Search bar ── */}
+ 
             <div className="mt-5 sm:mt-7 bg-card rounded-[6px] border border-border overflow-visible">
               <div className="flex flex-col sm:flex-row sm:items-center gap-0">
                 <div className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-border">
@@ -507,8 +503,7 @@ export default function HeroSection() {
               </div>
             </div>
           </div>
-
-          {/* ── Right column ── */}
+ 
           <div
             className="order-1 lg:order-2 w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none"
             onMouseEnter={() => setPaused(true)}
@@ -520,7 +515,7 @@ export default function HeroSection() {
             {/* Visual block */}
             <div className="relative h-[320px] xs:h-[360px] sm:h-[400px] md:h-[470px] lg:h-[620px]">
 
-              {/* Floating plus icons — lg only */}
+              {/* Floating plus icons   lg only */}
               <div className="hidden lg:block absolute left-10 top-10 text-primary/80 z-10">
                 <Plus className="w-10 h-10" strokeWidth={3} />
                 <Plus className="w-7 h-7 -mt-2 ml-7" strokeWidth={3} />
@@ -567,8 +562,7 @@ export default function HeroSection() {
                   />
                 )}
               </div>
-
-              {/* ── Regular Check-up badge ── */}
+ 
               {/* <div
                 className="absolute left-0 z-10
                            bg-card rounded-[6px] border border-border shadow-sm
@@ -584,7 +578,7 @@ export default function HeroSection() {
                 </span>
               </div> */}
 
-              {/* ── Active doctor card — always visible ── */}
+           
               {activeDoc && (
                 <div
                   className="absolute z-10
@@ -637,7 +631,7 @@ export default function HeroSection() {
                 </div>
               )}
 
-              {/* Meet Our Doctors — desktop only, floats over circle corner */}
+              {/* Meet Our Doctors  desktop only, floats over circle corner */}
               {/* <MeetOurDoctorsSlider
                 doctors={doctors}
                 totalDoctors={totalDoctors}
@@ -648,7 +642,7 @@ export default function HeroSection() {
               /> */}
             </div>
 
-            {/* Meet Our Doctors — mobile + tablet (below the circle) */}
+            {/* Meet Our Doctors  mobile + tablet (below the circle) */}
             {/* <MeetOurDoctorsSlider
               doctors={doctors}
               totalDoctors={totalDoctors}
@@ -686,3 +680,4 @@ export default function HeroSection() {
     </div>
   );
 }
+

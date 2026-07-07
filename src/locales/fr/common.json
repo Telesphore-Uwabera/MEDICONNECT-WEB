@@ -32,5 +32,41 @@
     "selectSubSpecialization": "Choisir une sous-spécialisation",
     "onlineFee": "En ligne : {{amount}} {{currency}}",
     "inPersonFee": "En personne : {{amount}} {{currency}}"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "ariaLabel": "Notifications",
+    "unreadCount": "{{count}} non lues",
+    "allCaughtUp": "Tout est à jour",
+    "markAllAsRead": "Tout marquer comme lu",
+    "clearAll": "Tout effacer",
+    "close": "Fermer",
+    "all": "Toutes",
+    "unread": "Non lues",
+    "filter": "Filtrer",
+    "allNotifications": "Toutes les notifications",
+    "showMatching": "Afficher les notifications correspondantes",
+    "failedToLoad": "Échec du chargement",
+    "checkConnection": "Vérifiez votre connexion et réessayez.",
+    "noUnreadNotifications": "Aucune notification non lue",
+    "noMatchingNotifications": "Aucune notification {{category}}",
+    "switchToAll": "Passez à « Toutes » pour voir votre historique.",
+    "newWillAppearHere": "Les nouvelles notifications apparaîtront ici.",
+    "unreadSection": "Non lues",
+    "readSection": "Lues",
+    "markAsRead": "Marquer comme lu",
+    "delete": "Supprimer",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "earlier": "Plus tôt",
+    "category": {
+      "consultations": "Consultations",
+      "pharmacy": "Pharmacie",
+      "hospital": "Hôpital",
+      "payments": "Paiements",
+      "documents": "Documents",
+      "alerts": "Alertes",
+      "other": "Autre"
+    }
   }
 }

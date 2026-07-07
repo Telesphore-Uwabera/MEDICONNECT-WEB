@@ -1,12 +1,12 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+﻿import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Shield,
+import { formatDateOnly } from "@/lib/date";
+  import{Shield,
   Plus,
   Search,
   Pencil,
@@ -40,31 +40,25 @@ import {
   useUploadInsuranceLogo,
 } from "@/hooks/hospital/use-hopital-insurances";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-const fmtDate = (s: string) =>
+ const fmtDate = (s: string) =>
   s
-    ? new Date(s).toLocaleDateString("en-RW", {
+    ? formatDateOnly(s, "en-RW", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     })
-    : "—";
+    : "â€”";
 
 const fmtCurrency = (n: number | null, currency = "RWF") =>
   n == null
-    ? "—"
+    ? "-"
     : new Intl.NumberFormat("en-RW", {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
     }).format(n);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Confirm dialog
-// ─────────────────────────────────────────────────────────────────────────────
-function ConfirmDialog({
+ function ConfirmDialog({
   open,
   title,
   description,
@@ -121,10 +115,7 @@ function ConfirmDialog({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Logo uploader (inside modal)
-// ─────────────────────────────────────────────────────────────────────────────
-function LogoUploader({
+ function LogoUploader({
   insuranceId,
   currentLogo,
 }: {
@@ -178,7 +169,7 @@ function LogoUploader({
             ) : (
               <Upload className="w-3 h-3" />
             )}
-            {uploadLogo.isPending ? "Uploading…" : "Upload image"}
+            {uploadLogo.isPending ? "Uploading..." : "Upload image"}
           </button>
           <p className="text-[10px] text-muted-foreground/60">
             JPEG or PNG, max 2MB
@@ -204,10 +195,7 @@ function LogoUploader({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Insurance picker — searchable list of public insurances
-// ─────────────────────────────────────────────────────────────────────────────
-function InsurancePicker({
+ function InsurancePicker({
   value,
   onChange,
   alreadyLinked,
@@ -256,7 +244,7 @@ function InsurancePicker({
             <Building2 className="w-4 h-4 shrink-0 text-muted-foreground/50" />
           )}
           <span className="truncate">
-            {value ? `${value.name} (${value.code})` : "Select an insurance…"}
+            {value ? `${value.name} (${value.code})` : "Select an insurance..."}
           </span>
         </span>
         <ChevronDown
@@ -278,7 +266,7 @@ function InsurancePicker({
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search…"
+                placeholder="Search..."
                 className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40"
               />
             </div>
@@ -289,7 +277,7 @@ function InsurancePicker({
             {isLoading ? (
               <div className="flex items-center justify-center py-6 gap-2 text-[11px] text-muted-foreground">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading…
+                Loading...
               </div>
             ) : options.length === 0 ? (
               <p className="text-center py-6 text-[11px] text-muted-foreground">
@@ -355,11 +343,7 @@ function InsurancePicker({
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Coverage fields (shared between add + edit modal)
-// ─────────────────────────────────────────────────────────────────────────────
-interface CoverageState {
+ interface CoverageState {
   coverage_type: "full" | "partial";
   covered_percent: string;
   max_amount_covered: string;
@@ -402,7 +386,7 @@ function CoverageFields({
         </div>
       </div>
 
-      {/* Covered percent — only relevant for partial */}
+      {/* Covered percent  only relevant for partial */}
       {state.coverage_type === "partial" && (
         <div className="flex flex-col gap-1.5">
           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -479,10 +463,7 @@ function CoverageFields({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Link modal (add)
-// ─────────────────────────────────────────────────────────────────────────────
-function LinkModal({
+ function LinkModal({
   onSave,
   onClose,
   isLoading,
@@ -645,10 +626,8 @@ function LinkModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Edit coverage modal
-// ─────────────────────────────────────────────────────────────────────────────
-function EditCoverageModal({
+ // Edit coverage modal
+ function EditCoverageModal({
   ins,
   onSave,
   onClose,
@@ -763,10 +742,8 @@ function EditCoverageModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Insurance card
-// ─────────────────────────────────────────────────────────────────────────────
-function InsuranceCard({
+ // Insurance card
+ function InsuranceCard({
   ins,
   onEdit,
   onDelete,
@@ -854,10 +831,8 @@ function InsuranceCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton card
-// ─────────────────────────────────────────────────────────────────────────────
-function SkeletonCard() {
+ // Skeleton card
+ function SkeletonCard() {
   return (
     <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 animate-pulse">
       <div className="flex items-center gap-3">
@@ -875,11 +850,7 @@ function SkeletonCard() {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sidebar atoms
-// ─────────────────────────────────────────────────────────────────────────────
-function FilterSection({
+ function FilterSection({
   title,
   children,
 }: {
@@ -894,13 +865,10 @@ function FilterSection({
       {children}
     </div>
   );
-}
+} 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main component
-// ─────────────────────────────────────────────────────────────────────────────
 function HospitalInsurances() {
-  // ── Data ──
+ 
   const {
     data: insurances,
     isLoading,
@@ -908,13 +876,11 @@ function HospitalInsurances() {
     error,
     refetch,
   } = useGetInsurances();
-
-  // ── Mutations ──
+ 
   const linkIns = useLinkInsurance();
   const updateCoverage = useUpdateCoverage();
   const deleteIns = useDeleteInsurance();
-
-  // ── Local state ──
+ 
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [coverageFilter, setCoverageFilter] = useState<
@@ -942,8 +908,7 @@ function HospitalInsurances() {
 
   const hasActiveFilters =
     search !== "" || coverageFilter !== "all" || hasLogo !== "all";
-
-  // ── Derived list ──
+ 
   const filtered = useMemo(() => {
     if (!insurances) return [];
     return insurances.filter((ins) => {
@@ -956,8 +921,7 @@ function HospitalInsurances() {
       return true;
     });
   }, [insurances, search, coverageFilter, hasLogo]);
-
-  // ── Stats ──
+ 
   const stats = useMemo(
     () => ({
       total: insurances?.length ?? 0,
@@ -965,8 +929,7 @@ function HospitalInsurances() {
     }),
     [insurances],
   );
-
-  // ── Handlers ──
+ 
   const handleLink = async (payload: LinkInsurancePayload) => {
     setMutError(null);
     try {
@@ -1032,8 +995,7 @@ function HospitalInsurances() {
           title="Insurance Partners"
           subtitle="Manage insurance providers accepted at your hospital"
         />
-
-        {/* ── Stats bar ── */}
+ 
         <div className="px-6 pt-5 pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-[6px] border border-border bg-card px-4 py-3.5 flex items-start gap-3">
@@ -1045,7 +1007,7 @@ function HospitalInsurances() {
                   Total linked
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-primary mt-0.5">
-                  {isLoading ? "—" : stats.total}
+                  {isLoading ? "-" : stats.total}
                 </p>
               </div>
             </div>
@@ -1059,7 +1021,7 @@ function HospitalInsurances() {
                   Full coverage
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-foreground mt-0.5">
-                  {isLoading ? "—" : stats.fullCoverage}
+                  {isLoading ? "-" : stats.fullCoverage}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   {isLoading || stats.total === 0
@@ -1078,7 +1040,7 @@ function HospitalInsurances() {
                   Showing
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-foreground mt-0.5">
-                  {isLoading ? "—" : filtered.length}
+                  {isLoading ? "-" : filtered.length}
                 </p>
                 {hasActiveFilters && (
                   <p className="text-[10px] text-muted-foreground">filtered</p>
@@ -1094,7 +1056,7 @@ function HospitalInsurances() {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <p className="text-[11px] text-muted-foreground">
               {isLoading ? (
-                <span className="text-muted-foreground/50">Loading…</span>
+                <span className="text-muted-foreground/50">Loading...</span>
               ) : (
                 <>
                   <span className="font-bold text-foreground">
@@ -1120,7 +1082,7 @@ function HospitalInsurances() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search providers…"
+                  placeholder="Search providers..."
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1153,8 +1115,7 @@ function HospitalInsurances() {
                 <span className="hidden sm:inline">Link provider</span>
               </Button>
             </div>
-          </div>
-          {/* ── Body ── */}
+          </div> 
           <FilterBar
             open={filterOpen}
             onToggle={() => setFilterOpen(!filterOpen)}
@@ -1244,8 +1205,7 @@ function HospitalInsurances() {
           </div>
         </main>
       </div>
-
-      {/* ── Link modal ── */}
+ 
       {showLinkModal && (
         <LinkModal
           onSave={handleLink}
@@ -1254,9 +1214,7 @@ function HospitalInsurances() {
           error={mutError}
           alreadyLinked={linkedIds}
         />
-      )}
-
-      {/* ── Edit coverage modal ── */}
+      )} 
       {editingIns && (
         <EditCoverageModal
           ins={editingIns}
@@ -1266,8 +1224,7 @@ function HospitalInsurances() {
           error={mutError}
         />
       )}
-
-      {/* ── Delete confirm ── */}
+ 
       <ConfirmDialog
         open={deletingIns !== null}
         title="Unlink Insurance Provider"
@@ -1281,3 +1238,4 @@ function HospitalInsurances() {
 }
 
 export default HospitalInsurances;
+

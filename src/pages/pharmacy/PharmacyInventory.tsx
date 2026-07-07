@@ -1,12 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
+import { formatDateOnly } from "@/lib/date";
+  import{Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -61,8 +61,7 @@ import {
   type Category,
 } from "@/hooks/pharmacy/use-pharmacy-inventory-categories";
 
-// ─── Visual config ────────────────────────────────────────────────────────────
-
+ 
 type StockStatus = "in-stock" | "low" | "out";
 
 function resolveStockStatus(m: Medicine): StockStatus {
@@ -99,15 +98,14 @@ const UNIT_OPTIONS: MedicineUnit[] = [
 type SortOption = "name" | "stock-asc" | "stock-desc" | "price-asc" | "price-desc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "name", label: "Name (A–Z)" },
+  { value: "name", label: "Name (A-Z)" },
   { value: "stock-desc", label: "Stock: Most first" },
   { value: "stock-asc", label: "Stock: Least first" },
   { value: "price-asc", label: "Price: Low to high" },
   { value: "price-desc", label: "Price: High to low" },
 ];
 
-// ─── Filter state ─────────────────────────────────────────────────────────────
-
+ 
 interface FilterState {
   search: string;
   status: StockStatus | "all";
@@ -123,7 +121,7 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -145,7 +143,7 @@ function formatPrice(price: string, currency: string) {
   return `${Number.isNaN(n) ? price : n.toLocaleString()} ${currency}`;
 }
 
-// ─── Sidebar atoms (identical to PharmacyOrders / RestockRequests) ────────────
+// â”€â”€â”€ Sidebar atoms (identical to PharmacyOrders / RestockRequests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -199,7 +197,7 @@ const inputCls =
   "w-full bg-background border border-border/60 rounded-[6px] px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
-// ─── Add / Edit Medicine Drawer ────────────────────────────────────────────────
+//   Add / Edit Medicine Drawer 
 
 type MedicineFormData = {
   name: string;
@@ -301,7 +299,7 @@ function ImportMedicinesDrawer({
             typeof res.imported === "number" ? `${res.imported} imported` : null,
             typeof res.updated === "number" ? `${res.updated} updated` : null,
             typeof res.skipped === "number" ? `${res.skipped} skipped` : null,
-          ].filter(Boolean).join(" · ") || undefined,
+          ].filter(Boolean).join(" . ") || undefined,
         });
         onClose();
       },
@@ -477,7 +475,7 @@ function MedicineFormDrawer({
               <label className={labelCls}>Category</label>
               <select value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
                 className={inputCls}>
-                <option value="">— None —</option>
+                <option value="">- None -</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -514,7 +512,7 @@ function MedicineFormDrawer({
             <label className={labelCls}>Description</label>
             <textarea rows={2} value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              className={cn(inputCls, "resize-none")} placeholder="Optional description…" />
+              className={cn(inputCls, "resize-none")} placeholder="Optional description..." />
           </div>
 
           {/* Barcode + Prescription */}
@@ -534,7 +532,7 @@ function MedicineFormDrawer({
             </div>
           </div>
 
-          {/* Stock fields — create only */}
+          {/* Stock fields - create only */}
           {!isEdit && (
             <div className="pt-1 border-t border-border/40">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2">
@@ -592,7 +590,7 @@ function MedicineFormDrawer({
   );
 }
 
-// ─── Delete confirm drawer ─────────────────────────────────────────────────────
+//  Delete confirm drawer  
 
 function DeleteConfirmDrawer({
   medicine,
@@ -645,7 +643,7 @@ function DeleteConfirmDrawer({
   );
 }
 
-// ─── View Details Drawer ───────────────────────────────────────────────────────
+// View Details Drawer 
 
 function DetailRow({
   icon: Icon,
@@ -749,7 +747,7 @@ function MedicineDetailsDrawer({
           <div className="grid grid-cols-2 gap-2.5">
             <DetailRow icon={Tag} label="Category" value={medicine.category?.name ?? "Uncategorized"} />
             <DetailRow icon={Package} label="Unit" value={<span className="capitalize">{medicine.unit}</span>} />
-            <DetailRow icon={Barcode} label="Barcode" value={medicine.barcode ?? "—"} />
+            <DetailRow icon={Barcode} label="Barcode" value={medicine.barcode ?? "-"} />
             <DetailRow icon={Hash} label="Medicine ID" value={`#${medicine.id}`} />
           </div>
 
@@ -773,17 +771,17 @@ function MedicineDetailsDrawer({
               <div>
                 <p className="text-[10px] text-muted-foreground/70">Low Stock Threshold</p>
                 <p className="text-[12px] font-mono font-semibold tabular-nums text-foreground">
-                  {medicine.stock?.low_stock_threshold ?? "—"}
+                  {medicine.stock?.low_stock_threshold ?? "-"}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground/70">Batch Number</p>
-                <p className="text-[11px] text-foreground">{medicine.stock?.batch_number ?? "—"}</p>
+                <p className="text-[11px] text-foreground">{medicine.stock?.batch_number ?? "-"}</p>
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground/70">Expiry Date</p>
                 <p className="text-[11px] text-foreground">
-                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "—"}
+                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "â€”"}
                 </p>
               </div>
             </div>
@@ -813,17 +811,16 @@ function MedicineDetailsDrawer({
     </Sheet>
   );
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+ 
 
 const PharmacyInventory = () => {
   const { t } = useTranslation();
 
-  // ── filter state ────────────────────────────────────────────────────────────
+  // filter state  
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // ── modal / drawer state ─────────────────────────────────────────────────────
+  //  modal / drawer state  
   const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Medicine | null>(null);
@@ -847,11 +844,11 @@ const PharmacyInventory = () => {
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  // ── API: categories (for sidebar pills + form select) ───────────────────────
+  //  API: categories (for sidebar pills + form select) 
   const { data: catData } = useGetInventoryCategories();
   const categories: Category[] = catData ?? [];
 
-  // ── API: medicines (server-side category + low_stock filter) ────────────────
+  //  API: medicines (server-side category + low_stock filter)  
   // Search and status are client-side to keep UX snappy.
   const apiParams: ListMedicinesParams = useMemo(
     () => ({
@@ -865,7 +862,7 @@ const PharmacyInventory = () => {
   const { data, isLoading, isError, refetch } = useGetInventoryMedicines(apiParams);
   const medicines: Medicine[] = data?.data ?? [];
 
-  // ── client-side search + status filter + sort ────────────────────────────────
+  //   client-side search + status filter + sort  
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
 
@@ -901,7 +898,7 @@ const PharmacyInventory = () => {
       });
   }, [medicines, filters.search, filters.status, filters.sort]);
 
-  // ── stat counts ──────────────────────────────────────────────────────────────
+  //  stat counts  
   const counts = useMemo(() => {
     const all = medicines;
     return {
@@ -942,8 +939,7 @@ const PharmacyInventory = () => {
       onChange: (v: string) => set("categoryId", v === "all" ? "all" : Number(v))
     }
   ], [filters.status, filters.categoryId, categories, set]);
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
+ 
 
   return (
     <DashboardLayout role="pharmacy">
@@ -960,25 +956,25 @@ const PharmacyInventory = () => {
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
               label="Total Items"
-              value={isLoading ? "—" : counts.total}
+              value={isLoading ? "-" : counts.total}
               icon={Package}
               accent="primary"
             />
             <StatCard
               label="In Stock"
-              value={isLoading ? "—" : counts.inStock}
+              value={isLoading ? "-" : counts.inStock}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
               label="Low Stock"
-              value={isLoading ? "—" : counts.low}
+              value={isLoading ? "-" : counts.low}
               icon={AlertTriangle}
               accent="warning"
             />
             <StatCard
               label="Out of Stock"
-              value={isLoading ? "—" : counts.out}
+              value={isLoading ? "-" : counts.out}
               icon={AlertCircle}
               accent="warning"
             />
@@ -991,7 +987,7 @@ const PharmacyInventory = () => {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading medicines…
+                  Loading medicines...
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -1050,7 +1046,7 @@ const PharmacyInventory = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search medicine or category…"
+                  placeholder="Search medicine or category..."
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1232,7 +1228,7 @@ const PharmacyInventory = () => {
                           {/* Category */}
                           <td className="px-4 py-3 text-muted-foreground/80">
                             {m.category?.name ?? (
-                              <span className="text-muted-foreground/40">—</span>
+                              <span className="text-muted-foreground/40">-</span>
                             )}
                           </td>
 
@@ -1358,3 +1354,4 @@ const PharmacyInventory = () => {
 };
 
 export default PharmacyInventory;
+

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  Building2,
+import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
+  import{Building2,
   MapPin,
   Phone,
   Clock,
@@ -63,9 +63,9 @@ import {
 import EmptyState from "./components/EmptyState";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Types
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface WorkingHoursDay {
   enabled: boolean;
   opens_at: string;
@@ -128,10 +128,7 @@ type SectionId =
   | "working_hours"
   | "social_links";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-const DAYS_OF_WEEK = [
+ const DAYS_OF_WEEK = [
   "monday",
   "tuesday",
   "wednesday",
@@ -243,7 +240,7 @@ const SECTIONS: {
       id: "social_links",
       label: "Social Links",
       icon: Share2,
-      description: "Website, Facebook, Instagram…",
+      description: "Website, Facebook, Instagram...",
     },
   ];
 
@@ -262,7 +259,7 @@ const formatPhone = (p: string) =>
   p?.replace(/(\+\d{3})(\d{3})(\d{3})(\d{3})/, "$1 $2 $3 $4") ?? p;
 
 const formatTime = (t: string) => {
-  if (!t) return "—";
+  if (!t) return "â€”";
   const norm = normalizeTime(t);
   const [h, m] = norm.split(":").map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
@@ -272,7 +269,7 @@ const formatDateDisplay = (d: string): string => {
   const plain = normalizeDate(d);
   if (!plain) return d;
   try {
-    return new Date(plain + "T00:00:00").toLocaleDateString("en-GB", {
+    return formatDateOnly(plain + "T00:00:00", "en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -293,7 +290,7 @@ const formatDeliveryFee = (fee: string | number, currency: string) =>
   `${currency} ${Number(fee).toLocaleString()}`;
 
 // FIX: logo/cover come back from the API as relative storage paths
-// (e.g. "pharmacies/logos/xyz.png"), not full URLs — that's why they were
+// (e.g. "pharmacies/logos/xyz.png"), not full URLs  that's why they were
 // rendering broken before. Resolve them against the backend host. Swap the
 // env var below for whatever your `apiFetch` utility already uses to know
 // the API base URL, so this stays in sync automatically.
@@ -360,7 +357,7 @@ function apiProfileToForm(
     seo_description: (p as any).seo_description ?? "",
     social_links: {
       // FIX: `website` is returned as a top-level profile field, not nested
-      // inside social_links — fall back to it so it isn't lost on reload.
+      // inside social_links  fall back to it so it isn't lost on reload.
       website: (p as any).website ?? links.website ?? "",
       facebook: links.facebook ?? "",
       twitter: links.twitter ?? "",
@@ -369,10 +366,7 @@ function apiProfileToForm(
     },
   };
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared small components
-// ─────────────────────────────────────────────────────────────────────────────
+ // Shared small components
 function FormField({
   label,
   error,
@@ -420,16 +414,14 @@ function ViewRow({
           mono && "font-mono",
         )}
       >
-        {value || "—"}
+        {value || "-"}
       </span>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX: Prominent Edit/Save bar — now uses real Button components so they
+// FIX: Prominent Edit/Save bar  now uses real Button components so they
 // are clearly discoverable rather than tiny text links.
-// ─────────────────────────────────────────────────────────────────────────────
 function SectionEditBar({
   onEdit,
   onCancel,
@@ -531,16 +523,14 @@ function SectionCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // FIX: read-only card surfacing every remaining profile field (slug,
-// verification status, inventory mode, timestamps…) that previously had
+// verification status, inventory mode, timestamps..) that previously had
 // nowhere to display.
-// ─────────────────────────────────────────────────────────────────────────────
 function SystemDetailsCard({ profile }: { profile: PharmacyProfile }) {
   const p = profile as any;
   const rows: { label: string; value: string; mono?: boolean }[] = [
-    { label: "Slug", value: p.slug ?? "—", mono: true },
-    { label: "Inventory mode", value: p.inventory_mode ?? "—" },
+    { label: "Slug", value: p.slug ?? "-", mono: true },
+    { label: "Inventory mode", value: p.inventory_mode ?? "-" },
     { label: "Shown on homepage", value: p.show_homepage ? "Yes" : "No" },
     {
       label: "Registration fee paid",
@@ -555,11 +545,11 @@ function SystemDetailsCard({ profile }: { profile: PharmacyProfile }) {
     },
     {
       label: "Created",
-      value: p.created_at ? formatDateDisplay(p.created_at) : "—",
+      value: p.created_at ? formatDateDisplay(p.created_at) : "-",
     },
     {
       label: "Last updated",
-      value: p.updated_at ? formatDateDisplay(p.updated_at) : "—",
+      value: p.updated_at ? formatDateDisplay(p.updated_at) : "-",
     },
   ];
   return (
@@ -606,11 +596,8 @@ function StatCard({
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX: DateInput — wraps <input type="date"> with a visible calendar icon
+ // FIX: DateInput wraps <input type="date"> with a visible calendar icon
 // that works in dark mode by inverting the native picker indicator.
-// ─────────────────────────────────────────────────────────────────────────────
 function DateInput({
   value,
   onChange,
@@ -645,9 +632,7 @@ function DateInput({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Sidebar
-// ─────────────────────────────────────────────────────────────────────────────
 function Sidebar({
   activeSection,
   onSelect,
@@ -826,7 +811,7 @@ function Sidebar({
       {isSetup && (
         <div className="hidden sm:block px-4 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Jump between sections freely — no order needed
+            Jump between sections freely - no order needed
           </p>
         </div>
       )}
@@ -834,12 +819,10 @@ function Sidebar({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Profile Hero — cover image + overlapping logo. This is the primary visual
+// Profile Hero  cover image + overlapping logo. This is the primary visual
 // identity of the pharmacy, so it now gets a full-width banner at the top
 // of the page instead of being buried as two small thumbnails inside the
 // General tab. Upload buttons live directly on the image they affect.
-// ─────────────────────────────────────────────────────────────────────────────
 function ProfileHero({ profile }: { profile: PharmacyProfile }) {
   const p = profile as any;
   const logoRef = useRef<HTMLInputElement>(null);
@@ -1005,11 +988,8 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Working Hours Grid
 // FIX: All time values pass through normalizeTime so we never send seconds.
-// ─────────────────────────────────────────────────────────────────────────────
 function WorkingHoursGrid({
   value,
   onChange,
@@ -1079,7 +1059,7 @@ function WorkingHoursGrid({
               </span>
               {d.enabled ? (
                 <span className="font-mono text-foreground text-[11px]">
-                  {formatTime(d.opens_at)} – {formatTime(d.closes_at)}
+                  {formatTime(d.opens_at)} - {formatTime(d.closes_at)}
                 </span>
               ) : (
                 <span className="text-muted-foreground italic text-[11px]">
@@ -1159,7 +1139,7 @@ function WorkingHoursGrid({
                 title="Copy to all days"
                 className="text-[10px] font-bold text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors px-1"
               >
-                ↓ All
+                 ↓ All
               </button>
               <Switch
                 checked={d.enabled}
@@ -1185,7 +1165,7 @@ function WorkingHoursGrid({
                     disabled={!d.enabled}
                     className="text-[10px] font-bold text-muted-foreground hover:text-primary disabled:opacity-30"
                   >
-                    ↓ All
+                     ↓ All
                   </button>
                   <Switch
                     checked={d.enabled}
@@ -1235,10 +1215,8 @@ function WorkingHoursGrid({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Closures Manager
+ // Closures Manager
 // FIX: normalizeDate strips ISO timestamps; DateInput shows calendar icon.
-// ─────────────────────────────────────────────────────────────────────────────
 function ClosuresManager() {
   const { data: closures = [], isLoading } = useGetClosures();
   const createClosure = useCreateClosure();
@@ -1254,7 +1232,7 @@ function ClosuresManager() {
     is_closed: boolean;
     reason: string | null;
   } | null>(null);
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateInputValue();
 
   const resetForm = () => {
     setShowForm(false);
@@ -1344,7 +1322,7 @@ function ClosuresManager() {
             {checkResult.is_closed ? (
               <>
                 <CalendarOff size={12} /> Closed
-                {checkResult.reason ? ` — ${checkResult.reason}` : ""}
+                {checkResult.reason ? ` - ${checkResult.reason}` : ""}
               </>
             ) : (
               <>
@@ -1513,11 +1491,8 @@ function ClosuresManager() {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section panels — General, Location, Contact, Hours, Working Hours, Social
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Section panels - General, Location, Contact, Hours, Working Hours, Social
+ 
 function GeneralSection({
   profile,
   onSaved,
@@ -2240,7 +2215,7 @@ function SocialLinksSection({
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
   // FIX: `website` lives on the top-level profile field, the rest live
-  // inside social_links — merge them so neither display nor edit loses it.
+  // inside social_links - merge them so neither display nor edit loses it.
   const links = {
     ...(profile.social_links ?? {}),
     website: p.website ?? profile.social_links?.website ?? "",
@@ -2362,10 +2337,7 @@ function SocialLinksSection({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Section Router
-// ─────────────────────────────────────────────────────────────────────────────
-function SectionRouter({
+ function SectionRouter({
   activeSection,
   profile,
   workingHours,
@@ -2421,10 +2393,8 @@ function SectionRouter({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Setup Wizard (multi-step create form)
 // FIX: All time inputs here also use normalizeTime before sending to API.
-// ─────────────────────────────────────────────────────────────────────────────
 function SetupWizard({
   workingHoursData,
   onSuccess,
@@ -2603,7 +2573,7 @@ function SetupWizard({
               >
                 <Input
                   {...register("description_en")}
-                  placeholder="Your trusted neighborhood pharmacy…"
+                  placeholder="Your trusted neighborhood pharmacy..."
                   className="h-9 text-xs"
                 />
               </FormField>
@@ -2857,10 +2827,7 @@ function SetupWizard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Root Page
-// ─────────────────────────────────────────────────────────────────────────────
-type PageMode = "setup" | "view";
+ type PageMode = "setup" | "view";
 
 const PharmacyProfile = () => {
   const { t, i18n } = useTranslation();
@@ -2897,16 +2864,16 @@ const PharmacyProfile = () => {
         profile.status.charAt(0).toUpperCase() + profile.status.slice(1),
       hours: profile.is_open_24h
         ? "24h"
-        : `${formatTime(profile.opens_at)} – ${formatTime(profile.closes_at)}`,
+        : `${formatTime(profile.opens_at)} - ${formatTime(profile.closes_at)}`,
       delivery: profile.offers_delivery
         ? formatDeliveryFee(profile.delivery_fee, profile.delivery_currency)
         : "None",
       radius: profile.offers_delivery
         ? `${profile.delivery_radius_km} km`
-        : "—",
+        : "-",
       eta: profile.offers_delivery
         ? `${profile.estimated_delivery_minutes} min`
-        : "—",
+        : "-",
     }
     : null;
 
@@ -2922,7 +2889,7 @@ const PharmacyProfile = () => {
       />
 
       <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
-        {/* Profile hero — cover photo + logo, always visible in view mode */}
+        {/* Profile hero - cover photo + logo, always visible in view mode */}
         {profile && pageMode === "view" && <ProfileHero profile={profile} />}
 
         {/* Stats bar */}
@@ -2991,3 +2958,4 @@ const PharmacyProfile = () => {
 };
 
 export default PharmacyProfile;
+

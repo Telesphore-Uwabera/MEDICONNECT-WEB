@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ApiPatient } from "@/hooks/admin/use-admin-patients";
-import {
-  X, ShieldOff, ShieldCheck, Loader2,
+import { formatDateOnly } from "@/lib/date";
+ import {X, ShieldOff, ShieldCheck, Loader2,
   Phone, Calendar, Globe, Hash, Cake,
   UserCircle, CheckCircle2, BadgeCheck,
   User, MapPin, Droplets, CreditCard,
@@ -14,8 +14,7 @@ import {
 import { STATUS_STYLE, STATUS_DOT, formatDob, calcAge } from "./Types";
 import { PatientConsultationsTab } from "./PatientConsultationsTab";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 export interface PatientPanelProps {
   patient: ApiPatient | null;
   onClose: () => void;
@@ -32,8 +31,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "verification", label: "Verification", icon: <BadgeCheck className="w-3 h-3" /> },
 ];
 
-// ─── Primitives (mirroring HospitalPanel style) ───────────────────────────────
-
+ 
 function InfoTile({
   icon, label, value, full = false, mono = false,
 }: {
@@ -106,8 +104,7 @@ function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
+ 
 function OverviewTab({ p }: { p: ApiPatient }) {
   const profile = p.patient;
   return (
@@ -118,7 +115,7 @@ function OverviewTab({ p }: { p: ApiPatient }) {
         <SectionHeading>Account</SectionHeading>
         <div className="grid grid-cols-2 gap-2">
           <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Patient ID" value={`#${p.id}`} mono />
-          <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(p.created_at).toLocaleDateString()} />
+          <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={formatDateOnly(p.created_at)} />
           <InfoTile
             icon={<Phone className="w-2.5 h-2.5" />}
             label="Phone"
@@ -301,7 +298,7 @@ function VerificationTab({ p }: { p: ApiPatient }) {
                 "text-[10.5px] font-medium font-mono",
                 date ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/35",
               )}>
-                {date ? new Date(date).toLocaleDateString() : "Not verified"}
+                {date ? formatDateOnly(date) : "Not verified"}
               </span>
             </div>
           ))}
@@ -314,12 +311,12 @@ function VerificationTab({ p }: { p: ApiPatient }) {
           <InfoTile
             icon={<Calendar className="w-2.5 h-2.5" />}
             label="Created"
-            value={new Date(p.created_at).toLocaleDateString()}
+            value={formatDateOnly(p.created_at)}
           />
           <InfoTile
             icon={<Calendar className="w-2.5 h-2.5" />}
             label="Last updated"
-            value={new Date(p.updated_at).toLocaleDateString()}
+            value={formatDateOnly(p.updated_at)}
           />
         </div>
       </div>
@@ -327,8 +324,7 @@ function VerificationTab({ p }: { p: ApiPatient }) {
   );
 }
 
-// ─── PatientPanel ─────────────────────────────────────────────────────────────
-
+ 
 export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: PatientPanelProps) {
   const { t, i18n } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -372,8 +368,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
         )}
       >
         {patient && (
-          <>
-            {/* ── Header ── */}
+          <> 
             <div className="flex-shrink-0 border-b border-primary/10 bg-card/40">
 
               {/* Top bar */}
@@ -455,8 +450,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                 ))}
               </div>
             </div>
-
-            {/* ── Body ── */}
+ 
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-5">
                 {tab === "overview" && <OverviewTab p={patient} />}
@@ -465,8 +459,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                 {tab === "verification" && <VerificationTab p={patient} />}
               </div>
             </div>
-
-            {/* ── Footer ── */}
+ 
             <div className="flex-shrink-0 px-6 py-3.5 border-t border-primary/10 bg-card/40">
               <div className="flex gap-2 items-center">
                 <Button
@@ -509,3 +502,4 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
     </>
   );
 }
+

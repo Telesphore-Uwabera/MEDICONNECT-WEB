@@ -85,5 +85,10 @@
   "instantDoctors": "Instant Doctors",
     "team": "Team",
   "wallet": "Wallets",
-  "system_settings": "System Settings"
+  "system_settings": "System Settings",
+  "system_communication": "System Communication",
+  "consultationSummaries": "Consultation Summaries",
+  "medicalRecords": "Medical Records",
+  "hideSidebar": "Hide sidebar",
+  "showSidebar": "Show sidebar"
 }

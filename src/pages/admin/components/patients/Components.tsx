@@ -1,10 +1,10 @@
-import { useTranslation } from "react-i18next";
+﻿import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ApiPatient } from "@/hooks/admin/use-admin-patients";
-import {
-  STATUS_STYLE,
+import { formatDateOnly } from "@/lib/date";
+ import { STATUS_STYLE,
   STATUS_DOT,
   getInitials,
   formatDob,
@@ -12,8 +12,7 @@ import {
   type StatusFilter,
 } from "./Types";
 
-// ─── FilterSection ────────────────────────────────────────────────────────────
-
+ 
 export function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="py-3 border-b border-border/60 last:border-b-0">
@@ -25,8 +24,7 @@ export function FilterSection({ title, children }: { title: string; children: Re
   );
 }
 
-// ─── PillGroup ────────────────────────────────────────────────────────────────
-
+ 
 export function PillGroup<T extends string>({
   value,
   onChange,
@@ -63,9 +61,7 @@ export function PillGroup<T extends string>({
     </div>
   );
 }
-
-// ─── StatusBadge (shared) ─────────────────────────────────────────────────────
-
+ 
 function StatusBadge({ status }: { status: string }) {
   const { t, i18n } = useTranslation();
   return (
@@ -79,8 +75,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Avatar (shared) ──────────────────────────────────────────────────────────
-
+ 
 function Avatar({ name, avatar, size = "sm" }: { name: string; avatar?: string | null; size?: "sm" | "lg" }) {
   const dim = size === "lg" ? "h-16 w-16 text-lg font-bold" : "h-9 w-9 text-xs font-semibold";
   return avatar ? (
@@ -91,8 +86,6 @@ function Avatar({ name, avatar, size = "sm" }: { name: string; avatar?: string |
     </div>
   );
 }
-
-// ─── PatientRow (desktop table) ───────────────────────────────────────────────
 
 export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPatient) => void }) {
   const { t, i18n } = useTranslation();
@@ -115,12 +108,12 @@ export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPa
             <span className="text-muted-foreground/50">({calcAge(p.patient.date_of_birth)})</span>
           </span>
         ) : (
-          <span className="text-muted-foreground/40">—</span>
+          <span className="text-muted-foreground/40">-</span>
         )}
       </td>
       <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(p.created_at).toLocaleDateString()}
+        {formatDateOnly(p.created_at)}
       </td>
       <td className="px-4 py-3 text-right">
         <Button
@@ -135,8 +128,7 @@ export function PatientRow({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPa
   );
 }
 
-// ─── PatientCard (mobile) ─────────────────────────────────────────────────────
-
+ 
 export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiPatient) => void }) {
   const { t, i18n } = useTranslation();
   return (
@@ -155,7 +147,7 @@ export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiP
           {p.patient?.date_of_birth && (
             <span className="text-[10px] text-muted-foreground/50">{calcAge(p.patient.date_of_birth)}</span>
           )}
-          <span className="text-[10px] text-muted-foreground/50">{new Date(p.created_at).toLocaleDateString()}</span>
+          <span className="text-[10px] text-muted-foreground/50">{formatDateOnly(p.created_at)}</span>
         </div>
         <Button
           size="sm" variant="outline"
@@ -169,8 +161,7 @@ export function PatientCard({ p, onManage }: { p: ApiPatient; onManage: (p: ApiP
   );
 }
 
-// ─── SkeletonRows ─────────────────────────────────────────────────────────────
-
+ 
 export function SkeletonRows() {
   return (
     <>
@@ -190,8 +181,7 @@ export function SkeletonRows() {
   );
 }
 
-// ─── InfoTile ─────────────────────────────────────────────────────────────────
-
+ 
 export function InfoTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="p-3 rounded-[6px] border border-border/60 bg-secondary/30">
@@ -203,7 +193,6 @@ export function InfoTile({ icon, label, value }: { icon: React.ReactNode; label:
     </div>
   );
 }
-
-// ─── Re-export for panel use ──────────────────────────────────────────────────
 export { Avatar, StatusBadge };
 export type { StatusFilter };
+
