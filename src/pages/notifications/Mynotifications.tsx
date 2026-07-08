@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import moment from "moment";
 import {
   Bell,
@@ -36,7 +37,7 @@ type TypeConfigEntry = {
   color: string;
   bg: string;
   border: string;
-  label: string;
+  categoryKey: string;
 };
 
 const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
@@ -45,42 +46,42 @@ const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     color: "text-blue-700 dark:text-blue-300",
     bg: "bg-blue-50 dark:bg-blue-950/40",
     border: "border-blue-200 dark:border-blue-800",
-    label: "Consultations",
+    categoryKey: "consultations",
   },
   pharmacy: {
     icon: Pill,
     color: "text-violet-700 dark:text-violet-300",
     bg: "bg-violet-50 dark:bg-violet-950/40",
     border: "border-violet-200 dark:border-violet-800",
-    label: "Pharmacy",
+    categoryKey: "pharmacy",
   },
   hospital: {
     icon: Building2,
     color: "text-amber-700 dark:text-amber-300",
     bg: "bg-amber-50 dark:bg-amber-950/40",
     border: "border-amber-200 dark:border-amber-800",
-    label: "Hospital",
+    categoryKey: "hospital",
   },
   payment: {
     icon: CreditCard,
     color: "text-green-700 dark:text-green-300",
     bg: "bg-green-50 dark:bg-green-950/40",
     border: "border-green-200 dark:border-green-800",
-    label: "Payments",
+    categoryKey: "payments",
   },
   document: {
     icon: FileText,
     color: "text-teal-700 dark:text-teal-300",
     bg: "bg-teal-50 dark:bg-teal-950/40",
     border: "border-teal-200 dark:border-teal-800",
-    label: "Documents",
+    categoryKey: "documents",
   },
   alert: {
     icon: AlertCircle,
     color: "text-red-700 dark:text-red-300",
     bg: "bg-red-50 dark:bg-red-950/40",
     border: "border-red-200 dark:border-red-800",
-    label: "Alerts",
+    categoryKey: "alerts",
   },
 };
 
@@ -89,13 +90,17 @@ const FALLBACK_CONFIG: TypeConfigEntry = {
   color: "text-muted-foreground",
   bg: "bg-secondary",
   border: "border-border/40",
-  label: "Other",
+  categoryKey: "other",
 };
 
 function getTypeConfig(type: string): TypeConfigEntry {
   const lower = type.toLowerCase();
   const key = Object.keys(TYPE_CONFIG).find((k) => lower.includes(k));
   return key ? TYPE_CONFIG[key] : FALLBACK_CONFIG;
+}
+
+function getCategoryLabel(t: (key: string) => string, categoryKey: string): string {
+  return t(`common.notifications.category.${categoryKey}`);
 }
 
 function getTitle(n: Notification): string {
@@ -112,6 +117,12 @@ function getBody(n: Notification): string | undefined {
 /* ─── Date helpers ─────────────────────────────────────────────────── */
 
 type DateGroup = "Today" | "Yesterday" | "Earlier";
+
+const DATE_GROUP_KEYS: Record<DateGroup, string> = {
+  Today: "today",
+  Yesterday: "yesterday",
+  Earlier: "earlier",
+};
 
 function getDateGroup(dateStr: string): DateGroup {
   const date = moment(dateStr);
@@ -143,32 +154,26 @@ function groupNotifications(
 const CATEGORY_FILTERS = [
   {
     value: "consultations",
-    label: "Consultations",
     keywords: ["consult", "appointment", "booking", "doctor", "video", "call", "instant"],
   },
   {
     value: "payments",
-    label: "Payments",
     keywords: ["payment", "wallet", "withdraw", "invoice", "payout", "paid", "billing"],
   },
   {
     value: "pharmacy",
-    label: "Pharmacy",
     keywords: ["pharmacy", "prescription", "medicine", "drug"],
   },
   {
     value: "hospital",
-    label: "Hospital",
     keywords: ["hospital", "facility", "service", "department"],
   },
   {
     value: "documents",
-    label: "Documents",
     keywords: ["document", "file", "certificate", "record", "report", "medical"],
   },
   {
     value: "alerts",
-    label: "Alerts",
     keywords: ["alert", "warning", "failed", "rejected", "cancelled", "urgent"],
   },
 ] as const;
@@ -186,7 +191,7 @@ function matchesCategory(n: Notification, cat: CategoryFilter): boolean {
     n.resource?.type,
     n.title,
     n.message,
-    getTypeConfig(n.type).label,
+    getTypeConfig(n.type).categoryKey,
   ]
     .filter(Boolean)
     .join(" ")
@@ -209,6 +214,7 @@ function NotificationCard({
   expanded: boolean;
   onToggleExpanded: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const isUnread = !notification.is_read;
   const cfg = getTypeConfig(notification.type);
   const Icon = cfg.icon;
@@ -341,7 +347,7 @@ function NotificationCard({
               "opacity-80"
             )}
           >
-            {cfg.label}
+            {getCategoryLabel(t, cfg.categoryKey)}
           </span>
         </div>
       </div>
@@ -355,7 +361,7 @@ function NotificationCard({
               onMarkRead(notification.id);
               onToggleExpanded(notification.id);
             }}
-            title="Mark as read"
+            title={t("common.notifications.markAsRead")}
             className="p-1.5 rounded-[6px] text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all"
           >
             <Check className="h-3 w-3" />
@@ -366,7 +372,7 @@ function NotificationCard({
             e.stopPropagation();
             onDelete(notification.id);
           }}
-          title="Delete"
+          title={t("common.notifications.delete")}
           className="p-1.5 rounded-[6px] text-muted-foreground/50 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all"
         >
           <Trash2 className="h-3 w-3" />
@@ -436,18 +442,19 @@ function DateGroupSection({
   expandedIds,
   onToggleExpanded,
 }: {
-  group: string;
+  group: DateGroup;
   items: Notification[];
   onMarkRead: (id: string) => void;
   onDelete: (id: string) => void;
   expandedIds: Set<string>;
   onToggleExpanded: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="mb-0.5">
       <div className="flex items-center gap-2 px-1 py-1">
         <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/30">
-          {group}
+          {t(`common.notifications.${DATE_GROUP_KEYS[group]}`)}
         </span>
         <div className="flex-1 h-px bg-border/20" />
       </div>
@@ -543,6 +550,7 @@ interface MyNotificationsProps {
 }
 
 export function MyNotifications({ open, onClose }: MyNotificationsProps) {
+  const { t } = useTranslation();
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -632,7 +640,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
             ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
             : "opacity-0 -translate-y-2 scale-[0.98] pointer-events-none"
         )}
-        aria-label="Notifications"
+        aria-label={t("common.notifications.ariaLabel")}
         role="dialog"
         aria-modal="true"
       >
@@ -650,16 +658,16 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
               </div>
               <div>
                 <h2 className="text-[12.5px] font-semibold text-foreground leading-tight">
-                  Notifications
+                  {t("common.notifications.title")}
                 </h2>
                 <p className="text-[9.5px] text-muted-foreground mt-0.5">
                   {unreadCount > 0 ? (
                     <span className="flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-[6px] bg-primary animate-pulse" />
-                      {unreadCount} unread
+                      {t("common.notifications.unreadCount", { count: unreadCount })}
                     </span>
                   ) : (
-                    "All caught up"
+                    t("common.notifications.allCaughtUp")
                   )}
                 </p>
               </div>
@@ -670,7 +678,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 <button
                   onClick={() => markAll.mutate()}
                   disabled={markAll.isPending}
-                  title="Mark all as read"
+                  title={t("common.notifications.markAllAsRead")}
                   className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-40"
                 >
                   {markAll.isPending ? (
@@ -684,7 +692,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 <button
                   onClick={() => deleteAll.mutate()}
                   disabled={deleteAll.isPending}
-                  title="Clear all"
+                  title={t("common.notifications.clearAll")}
                   className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all disabled:opacity-40"
                 >
                   {deleteAll.isPending ? (
@@ -699,7 +707,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                   setCategoryOpen(false);
                   onClose();
                 }}
-                title="Close"
+                title={t("common.notifications.close")}
                 className="p-1.5 rounded-[6px] text-muted-foreground/60 hover:text-foreground hover:bg-secondary transition-all"
               >
                 <X className="h-3.5 w-3.5" />
@@ -713,14 +721,14 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
               active={readFilter === "all"}
               onClick={() => setReadFilter("all")}
               icon={Inbox}
-              label="All"
+              label={t("common.notifications.all")}
               count={notifications.length}
             />
             <TabButton
               active={readFilter === "unread"}
               onClick={() => setReadFilter("unread")}
               icon={Bell}
-              label="Unread"
+              label={t("common.notifications.unread")}
               count={unreadCount}
             />
           </div>
@@ -744,10 +752,10 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                    Filter
+                    {t("common.notifications.filter")}
                   </span>
                   <span className="block text-[12px] font-semibold text-foreground truncate">
-                    {selectedCategory?.label ?? "All notifications"}
+                    {selectedCategory ? getCategoryLabel(t, selectedCategory.value) : t("common.notifications.allNotifications")}
                   </span>
                 </span>
               </span>
@@ -784,7 +792,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                     <span className="h-7 w-7 rounded-[6px] bg-secondary flex items-center justify-center">
                       <Inbox className="h-3.5 w-3.5 text-muted-foreground" />
                     </span>
-                    <span className="text-[12px] font-semibold text-foreground">All notifications</span>
+                    <span className="text-[12px] font-semibold text-foreground">{t("common.notifications.allNotifications")}</span>
                   </span>
                   <span className="text-[10px] font-semibold text-muted-foreground">{notifications.length}</span>
                 </button>
@@ -823,8 +831,8 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                           <Icon className={cn("h-3.5 w-3.5", cfg.color)} />
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-[12px] font-semibold text-foreground truncate">{option.label}</span>
-                          <span className="block text-[10px] text-muted-foreground">Show matching notifications</span>
+                          <span className="block text-[12px] font-semibold text-foreground truncate">{getCategoryLabel(t, option.value)}</span>
+                          <span className="block text-[10px] text-muted-foreground">{t("common.notifications.showMatching")}</span>
                         </span>
                       </span>
                       <span className={cn("text-[10px] font-semibold", active ? "text-primary" : "text-muted-foreground")}>{count}</span>
@@ -847,10 +855,10 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                   <AlertCircle className="h-4.5 w-4.5 text-red-500" />
                 </div>
                 <p className="text-[11px] font-semibold text-foreground">
-                  Failed to load
+                  {t("common.notifications.failedToLoad")}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 max-w-[200px]">
-                  Check your connection and try again.
+                  {t("common.notifications.checkConnection")}
                 </p>
               </div>
             )}
@@ -862,15 +870,17 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 </div>
                 <p className="text-[11px] font-semibold text-foreground">
                   {readFilter === "unread"
-                    ? "No unread notifications"
+                    ? t("common.notifications.noUnreadNotifications")
                     : categoryFilter
-                      ? `No ${selectedCategory?.label.toLowerCase() ?? "matching"} notifications`
-                      : "All caught up"}
+                      ? t("common.notifications.noMatchingNotifications", {
+                          category: (selectedCategory ? getCategoryLabel(t, selectedCategory.value) : "").toLowerCase(),
+                        })
+                      : t("common.notifications.allCaughtUp")}
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
                   {readFilter === "unread"
-                    ? "Switch to 'All' to see your history."
-                    : "New notifications will appear here."}
+                    ? t("common.notifications.switchToAll")
+                    : t("common.notifications.newWillAppearHere")}
                 </p>
               </div>
             )}
@@ -880,7 +890,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 {/* ── Unread section ── */}
                 {unreadItems.length > 0 && (
                   <StatusSection
-                    label="Unread"
+                    label={t("common.notifications.unreadSection")}
                     count={unreadItems.length}
                     isUnread={true}
                   >
@@ -906,7 +916,7 @@ export function MyNotifications({ open, onClose }: MyNotificationsProps) {
                 {/* ── Read section (hidden on Unread tab) ── */}
                 {readItems.length > 0 && readFilter !== "unread" && (
                   <StatusSection
-                    label="Read"
+                    label={t("common.notifications.readSection")}
                     count={readItems.length}
                     isUnread={false}
                   >

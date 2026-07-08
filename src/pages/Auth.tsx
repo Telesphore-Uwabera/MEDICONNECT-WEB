@@ -10,8 +10,7 @@ import doctors from "@/assets/images/doctors.png";
 import SignUpForm from "@/components/auth/SignUpForm";
 import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
-import TopBar from "@/components/landing/TopBar";
-import Navbar from "@/components/landing/Navbar";
+import TopBar from "@/components/landing/TopBar"; 
 import { HeroHeader } from "@/components/landing/HeroHeader";
 
 const Auth = () => {

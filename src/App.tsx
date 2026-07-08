@@ -24,7 +24,7 @@ import { LogIn, X, ShieldAlert } from "lucide-react";
 import Index from "./pages/Index.tsx"; 
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
-import ConsultationRoomPage from "./pages/ConsultationRoom.tsx";
+import ConsultationRoomPage from "./pages/ConsultationRoom.tsx"; 
 
 /* ── Patient ── */
 import PatientOverview from "./pages/patient/PatientOverview";
@@ -102,6 +102,8 @@ import AdminSystemSettings from "./pages/admin/AdminSystemSettings.tsx";
 import Help from "./pages/Help.tsx";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotFound from "@/pages/errors/NotFound";
+import VerifyCertificate from "./pages/VerifyCertificate.tsx";
+import AdminSystemCommunication from "./pages/admin/AdminSystemCommunication.tsx";
 /* ─────────────────────────────────────────────────────────────────
    RequireAuth
    Shows a confirmation dialog instead of hard-redirecting.
@@ -353,18 +355,22 @@ const App = () => (
             <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/register" element={<Auth />} />
-            <Route path="/help" element={<Help />} />
+            <Route path="/help" element={<Help />} /> 
             <Route path="/onboarding/:role" element={<Onboarding />} />
             <Route
               path="/consultation/:roomName"
               element={<ConsultationRoomPage />}
             />
 
+          {/* verify certificate */}
+            <Route path="/verify-certificate" element={<VerifyCertificate />} />
+            
             {/* ── Patient: PUBLIC (no login needed) ───────────── */}
             <Route
               path="/patient/search-doctors"
               element={<PatientDoctors />}
             />
+
             <Route
               path="/patient/search-facilities"
               element={<PatientHospitals />}
@@ -890,7 +896,7 @@ const App = () => (
               }
             />
             <Route path="/admin/system-settings" element={<AdminSystemSettings />} />
-
+            <Route path="/admin/system-communication" element={<AdminSystemCommunication />} />
             {/* ── 404 ─────────────────────────────────────────── */}
               <Route path="*" element={<NotFound />} />
           </Routes>

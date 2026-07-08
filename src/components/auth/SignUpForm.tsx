@@ -153,7 +153,9 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           toast.success(t("auth.signup_success", "Account created! Please sign in."));
           onSuccess();
         },
-        onError: (err: unknown) => toast.error(getErrorMessage(err)),
+        onError: (err: unknown) => {
+          toast.error(getErrorMessage(err)) 
+        },
       }
     );
   };

@@ -715,16 +715,14 @@ const DoctorPrescriptions = () => {
                 </Button>
               </div>
             </div>
-             <FilterBar
-            open={filterOpen}
-            onToggle={() => setFilterOpen(!filterOpen)}
-            hasActiveFilters={hasActiveFilters}
-            onClearAll={clearAll}
-            fields={filterFields}
-            cols={{ default: 1, sm: 2, lg: 5 }}
-          />
-
-
+            <FilterBar
+              open={filterOpen}
+              onToggle={() => setFilterOpen(!filterOpen)}
+              hasActiveFilters={hasActiveFilters}
+              onClearAll={clearAll}
+              fields={filterFields}
+              cols={{ default: 1, sm: 2, lg: 5 }}
+            />
             {/* Content */}
             <div className="p-5">
               {isError ? (

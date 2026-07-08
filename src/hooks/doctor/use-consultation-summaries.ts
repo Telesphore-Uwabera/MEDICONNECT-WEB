@@ -47,6 +47,12 @@ export interface ManagementPlan {
   followup_plan?: string | null;
 }
 
+export interface SummaryPatient {
+  id: number;
+  name: string;
+  email?: string;
+}
+
 export interface ConsultationSummary {
   id: number;
   appointment_id: number | null;
@@ -56,11 +62,30 @@ export interface ConsultationSummary {
   chief_complaint?: ChiefComplaint | null;
   history_of_present_illness?: HistoryOfPresentIllness | null;
   review_of_systems?: ReviewOfSystems | null;
+  past_medical_history?: unknown;
+  past_surgical_history?: unknown;
+  medication_history?: unknown;
+  allergy_history?: unknown;
+  family_history?: unknown;
+  social_history?: unknown;
+  womens_health_history?: unknown;
+  pediatric_history?: unknown;
+  physical_examination?: unknown;
+  attachments?: unknown;
   red_flag_screening?: RedFlagScreening | null;
   clinical_assessment?: ClinicalAssessment | null;
   management_plan?: ManagementPlan | null;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
+  patient?: SummaryPatient;
+}
+
+/** One row per patient: the patient's summaries, grouped together. */
+export interface PatientSummaryGroup {
+  patient: SummaryPatient;
+  summaries_count: number;
+  summaries: ConsultationSummary[];
 }
 
 /* ─────────────────────────────────────────────
@@ -90,10 +115,24 @@ export interface SummaryListParams {
   patient_id?: number;
 }
 
-export interface SummaryListResponse {
-  data: ConsultationSummary[];
-  total: number;
+export interface SummaryListStats {
+  total_patients: number;
+  total_summaries: number;
+  via_appointment: number;
+  via_instant_consultation: number;
+}
+
+export interface SummaryListMeta {
+  current_page: number;
+  last_page: number;
   per_page: number;
+  total: number;
+}
+
+export interface SummaryListResponse {
+  data: PatientSummaryGroup[];
+  stats?: SummaryListStats;
+  meta?: SummaryListMeta;
 }
 
 /* ─────────────────────────────────────────────
@@ -110,7 +149,10 @@ export const summaryKeys = {
    GET /doctor/consultation-summaries
 ───────────────────────────────────────────── */
 
-export function useConsultationSummaries(params?: SummaryListParams) {
+export function useConsultationSummaries(
+  params?: SummaryListParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: summaryKeys.list(params),
     queryFn: () => {
@@ -122,6 +164,7 @@ export function useConsultationSummaries(params?: SummaryListParams) {
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<SummaryListResponse>(url);
     },
+    enabled: options?.enabled,
   });
 }
 
@@ -129,7 +172,7 @@ export function useConsultationSummaries(params?: SummaryListParams) {
    GET /doctor/consultation-summaries/:id
 ───────────────────────────────────────────── */
 
-export function useConsultationSummary(id: number | null) {
+export function useConsultationSummary(id: number | null) { 
   return useQuery({
     queryKey: summaryKeys.detail(id ?? -1),
     queryFn: () => apiFetch<{ summary: ConsultationSummary }>(`${BASE}/${id}`),

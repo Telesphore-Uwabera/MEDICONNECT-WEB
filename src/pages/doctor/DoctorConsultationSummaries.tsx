@@ -1,12 +1,12 @@
 // Doctor — Consultation Summaries management page.
-// Lists every consultation summary with view (expand), edit and delete.
+// Summaries are grouped by patient: each patient row expands to reveal their
+// individual summaries, and each summary can expand further to show full detail.
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import dayjs from "dayjs";
 import {
   ClipboardList, Loader2, AlertCircle, ChevronDown, Pencil, Trash2,
-  AlertTriangle, Stethoscope, Video, CalendarClock, Search, X, Download, Eye,
+  AlertTriangle, Stethoscope, Video, CalendarClock, Search, X, Download, Eye, User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -18,15 +18,18 @@ import {
   useConsultationSummaries,
   useDeleteConsultationSummary,
   type ConsultationSummary,
+  type PatientSummaryGroup,
 } from "@/hooks/doctor/use-consultation-summaries";
 import { EditSummaryModal } from "./appointments/shared/EditSummaryModal";
 import { getErrMsg } from "./appointments/shared/helpers";
 
 const pretty = (s: string) => s.replace(/_/g, " ");
 
-function patientLabel(s: ConsultationSummary, t?: (key: string, options?: Record<string, unknown>) => string): string {
-  const name = (s as unknown as { patient?: { name?: string; user?: { name?: string } } }).patient;
-  return name?.name || name?.user?.name || (t ? t("pages.doctor.patient_number", { id: s.patient_id }) : `Patient #${s.patient_id}`);
+function patientLabel(
+  group: PatientSummaryGroup,
+  t?: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  return group.patient?.name || (t ? t("pages.doctor.patient_number", { id: group.patient?.id }) : `Patient #${group.patient?.id}`);
 }
 
 export default function DoctorConsultationSummaries() {
@@ -35,34 +38,42 @@ export default function DoctorConsultationSummaries() {
   const deleteRx = useDeleteConsultationSummary();
 
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expandedPatient, setExpandedPatient] = useState<number | null>(null);
+  const [expandedSummary, setExpandedSummary] = useState<number | null>(null);
   const [editing, setEditing] = useState<ConsultationSummary | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ConsultationSummary | null>(null);
 
-  const summaries = data?.data ?? [];
+  const groups = data?.data ?? [];
+  const stats = data?.stats;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return summaries;
-    return summaries.filter((s) => {
-      const hay = [
-        patientLabel(s, t),
-        s.chief_complaint?.main_complaint ?? "",
-        s.clinical_assessment?.primary_diagnosis ?? "",
-        `#${s.id}`,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [summaries, search, t]);
+    if (!q) return groups;
+    return groups
+      .map((group) => {
+        const summaries = group.summaries.filter((s) => {
+          const hay = [
+            patientLabel(group, t),
+            s.chief_complaint?.main_complaint ?? "",
+            s.clinical_assessment?.primary_diagnosis ?? "",
+            `#${s.id}`,
+          ]
+            .join(" ")
+            .toLowerCase();
+          return hay.includes(q);
+        });
+        return { ...group, summaries, summaries_count: summaries.length };
+      })
+      .filter((group) => group.summaries.length > 0);
+  }, [groups, search, t]);
 
   const doDelete = (s: ConsultationSummary) => {
     deleteRx.mutate(s.id, {
       onSuccess: () => {
         toast.success(t("pages.doctor.summary_deleted"));
         setConfirmDelete(null);
-        if (expanded === s.id) setExpanded(null);
+        if (expandedSummary === s.id) setExpandedSummary(null);
+        refetch();
       },
       onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.summary_delete_failed"))),
     });
@@ -78,21 +89,30 @@ export default function DoctorConsultationSummaries() {
 
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
           {/* Search */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("pages.doctor.search_patient_complaint_diagnosis")}
-              className="w-full h-9 rounded-[6px] border border-border bg-background pl-8 pr-8 text-[12px] outline-none focus:border-primary/50"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="relative max-w-md flex-1 min-w-[220px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("pages.doctor.search_patient_complaint_diagnosis")}
+                className="w-full h-9 rounded-[6px] border border-border bg-background pl-8 pr-8 text-[12px] outline-none focus:border-primary/50"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {stats && (
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <span>{t("pages.doctor.total_patients", { count: stats.total_patients })}</span>
+                <span>{t("pages.doctor.total_summaries", { count: stats.total_summaries })}</span>
+              </div>
             )}
           </div>
 
@@ -125,14 +145,18 @@ export default function DoctorConsultationSummaries() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {filtered.map((s) => (
-                <SummaryCard
-                  key={s.id}
-                  summary={s}
-                  expanded={expanded === s.id}
-                  onToggle={() => setExpanded((cur) => (cur === s.id ? null : s.id))}
-                  onEdit={() => setEditing(s)}
-                  onDelete={() => setConfirmDelete(s)}
+              {filtered.map((group) => (
+                <PatientGroupCard
+                  key={group.patient.id}
+                  group={group}
+                  expanded={expandedPatient === group.patient.id}
+                  onToggle={() =>
+                    setExpandedPatient((cur) => (cur === group.patient.id ? null : group.patient.id))
+                  }
+                  expandedSummary={expandedSummary}
+                  onToggleSummary={(id) => setExpandedSummary((cur) => (cur === id ? null : id))}
+                  onEdit={setEditing}
+                  onDelete={setConfirmDelete}
                 />
               ))}
             </div>
@@ -158,7 +182,10 @@ export default function DoctorConsultationSummaries() {
               <div>
                 <p className="text-[13px] font-semibold text-foreground">{t("pages.doctor.delete_summary_title")}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {t("pages.doctor.delete_summary_desc", { id: confirmDelete.id, patient: patientLabel(confirmDelete, t) })}
+                  {t("pages.doctor.delete_summary_desc", {
+                    id: confirmDelete.id,
+                    patient: confirmDelete.patient?.name ?? t("pages.doctor.patient_number", { id: confirmDelete.patient_id }),
+                  })}
                 </p>
               </div>
             </div>
@@ -185,9 +212,70 @@ export default function DoctorConsultationSummaries() {
   );
 }
 
-/* ── Card ─────────────────────────────────────────────────────────────────── */
+/* ── Patient group ────────────────────────────────────────────────────────── */
 
-function SummaryCard({
+function PatientGroupCard({
+  group,
+  expanded,
+  onToggle,
+  expandedSummary,
+  onToggleSummary,
+  onEdit,
+  onDelete,
+}: {
+  group: PatientSummaryGroup;
+  expanded: boolean;
+  onToggle: () => void;
+  expandedSummary: number | null;
+  onToggleSummary: (id: number) => void;
+  onEdit: (summary: ConsultationSummary) => void;
+  onDelete: (summary: ConsultationSummary) => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="rounded-[6px] border border-border bg-card overflow-hidden hover:bg-muted hover:text-foreground">
+      {/* Patient row */}
+      <button onClick={onToggle} className="w-full flex items-center gap-3 px-4 py-3 text-left">
+        <div className="h-8 w-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+          <User className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-semibold text-foreground truncate">{patientLabel(group, t)}</p>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {t("pages.doctor.summaries_count", { count: group.summaries_count })}
+            </span>
+          </div>
+          {group.patient?.email && (
+            <p className="text-[11px] text-muted-foreground truncate">{group.patient.email}</p>
+          )}
+        </div>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground shrink-0 transition-transform", expanded && "rotate-180")} />
+      </button>
+
+      {/* Summaries for this patient */}
+      {expanded && (
+        <div className="border-t border-border divide-y divide-border">
+          {group.summaries.map((summary) => (
+            <SummaryRow
+              key={summary.id}
+              summary={summary}
+              expanded={expandedSummary === summary.id}
+              onToggle={() => onToggleSummary(summary.id)}
+              onEdit={() => onEdit(summary)}
+              onDelete={() => onDelete(summary)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Individual summary ──────────────────────────────────────────────────── */
+
+function SummaryRow({
   summary: s,
   expanded,
   onToggle,
@@ -203,50 +291,41 @@ function SummaryCard({
   const { t } = useTranslation();
   const isInstant = s.instant_consultation_id != null;
   const alert = s.red_flag_screening?.alert_triggered;
-  const diagnosis = s.clinical_assessment?.primary_diagnosis;
   const ros = s.review_of_systems ?? {};
   const activeFlags = Object.entries(s.red_flag_screening ?? {}).filter(
     ([k, v]) => v && k !== "alert_triggered",
   );
 
   return (
-    <div className="rounded-[6px] border border-border bg-card overflow-hidden">
-      {/* Row */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <button onClick={onToggle} className="flex-1 flex items-center gap-3 min-w-0 text-left">
-          <div className="h-8 w-8 rounded-[6px] bg-primary/10 flex items-center justify-center shrink-0 text-primary">
-            <ClipboardList className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-[13px] font-semibold text-foreground truncate">{patientLabel(s, t)}</p>
-              <span className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium",
-                isInstant ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-600",
-              )}>
-                {isInstant ? <Video className="h-2.5 w-2.5" /> : <CalendarClock className="h-2.5 w-2.5" />}
-                {isInstant ? t("pages.doctor.instant") : t("pages.doctor.appointment")}
-              </span>
-              {alert && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[9px] font-medium text-destructive">
-                  <AlertTriangle className="h-2.5 w-2.5" /> {t("pages.doctor.red_flag")}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] text-muted-foreground truncate">
-              #{s.id}
-              {s.created_at ? ` · ${dayjs(s.created_at).format("MMM D, YYYY · HH:mm")}` : ""}
-              {diagnosis ? ` · ${diagnosis}` : ""}
-            </p>
-          </div>
+    <div className="bg-background/40 hover:bg-muted hover:text-foreground">
+      <div className="flex items-center gap-2 px-4 py-3 " >
+        <button onClick={onToggle} className="flex-1 flex items-center hover:bg-muted hover:text-foreground gap-2 min-w-0 text-left">
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium shrink-0",
+            isInstant ? "bg-blue-500/10 text-blue-500" : "bg-emerald-500/10 text-emerald-600",
+          )}>
+            {isInstant ? <Video className="h-2.5 w-2.5" /> : <CalendarClock className="h-2.5 w-2.5" />}
+            {isInstant ? t("pages.doctor.instant") : t("pages.doctor.appointment")}
+          </span>
+          {alert && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[9px] font-medium text-destructive shrink-0">
+              <AlertTriangle className="h-2.5 w-2.5" /> {t("pages.doctor.red_flag")}
+            </span>
+          )}
+          <p className="text-[12px] text-muted-foreground truncate mt-4">
+            {s.chief_complaint?.main_complaint ? (
+              <RichTextRenderer value={s.chief_complaint.main_complaint} className="inline text-[12px] text-muted-foreground" />
+            ) : (
+              <Muted />
+            )}
+          </p>
         </button>
-
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => openSummaryDocument(s)}
             aria-label={t("pages.doctor.view_document")}
             title={t("pages.doctor.view_document")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground  transition-colors"
           >
             <Eye className="h-3.5 w-3.5" />
           </button>

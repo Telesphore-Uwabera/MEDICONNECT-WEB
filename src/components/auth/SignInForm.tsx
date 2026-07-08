@@ -348,6 +348,7 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
         // token is saved in the hook's onSuccess; navigate is handled by useMe
       },
       onError: (err: any) => {
+        console.log("Login error:", err);
         const msg = err?.message ?? t("auth.errors.unknown");
         toast.error(msg);
       },
