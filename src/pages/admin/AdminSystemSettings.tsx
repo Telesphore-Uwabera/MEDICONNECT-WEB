@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch"; 
 import { cn } from "@/lib/utils";
+import { parseLocalizedText, stringifyLocalizedText } from "@/lib/localized-settings";
 import {
   AlertTriangle,
   Bell,
@@ -53,7 +54,8 @@ type FieldKind =
   | "number"
   | "boolean"
   | "select"
-  | "array";
+  | "array"
+  | "multilingual-text";
 
 type FormValue = string | boolean;
 
@@ -90,7 +92,7 @@ const GROUPS: GroupConfig[] = [
     icon: Globe,
     fields: [
       { key: "app_name", label: "App name", kind: "text", placeholder: "MediConnect" },
-      { key: "app_tagline", label: "App tagline", kind: "text", placeholder: "Bringing care to your fingertips" },
+      { key: "app_tagline", label: "App tagline", kind: "multilingual-text", placeholder: "Bringing care to your fingertips" },
       { key: "contact_email", label: "Contact email", kind: "email", placeholder: "info@mediconnect.rw" },
       { key: "contact_phone", label: "Contact phone", kind: "tel", placeholder: "+250788000000" },
       { key: "contact_address", label: "Contact address", kind: "text", placeholder: "Kigali, Rwanda" },
@@ -398,6 +400,11 @@ function buildPayload(fields: FieldConfig[], form: Record<string, FormValue>) {
       return;
     }
 
+    if (field.kind === "multilingual-text") {
+      payload[field.key] = String(raw ?? "").trim();
+      return;
+    }
+
     payload[field.key] = String(raw ?? "").trim();
   });
 
@@ -503,6 +510,42 @@ function ToggleRow({
   );
 }
 
+function MultilingualTextInput({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+}) {
+  const parsed = parseLocalizedText(value);
+  const update = (key: "en" | "fr" | "kiny", nextValue: string) => {
+    onChange(stringifyLocalizedText({ ...parsed, [key]: nextValue }));
+  };
+
+  return (
+    <div className="grid gap-2">
+      {[
+        { key: "en" as const, label: "English", placeholder },
+        { key: "fr" as const, label: "French", placeholder: "Votre sante au bout des doigts" },
+        { key: "kiny" as const, label: "Kinyarwanda", placeholder: "Ubuvuzi hafi yawe" },
+      ].map((item) => (
+        <div key={item.key} className="grid gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground/70">{item.label}</span>
+          <input
+            type="text"
+            value={parsed[item.key] ?? ""}
+            onChange={(event) => update(item.key, event.target.value)}
+            placeholder={item.placeholder}
+            className={INPUT_CLASS}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FieldEditor({
   field,
   value,
@@ -552,6 +595,12 @@ function FieldEditor({
         </select>
       ) : field.secret || field.kind === "password" ? (
         <SecretInput value={String(value ?? "")} onChange={onChange as (v: string) => void} />
+      ) : field.kind === "multilingual-text" ? (
+        <MultilingualTextInput
+          value={String(value ?? "")}
+          placeholder={field.placeholder}
+          onChange={onChange as (v: string) => void}
+        />
       ) : (
         <input
           type={field.kind === "array" ? "text" : field.kind}

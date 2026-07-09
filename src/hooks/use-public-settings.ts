@@ -3,7 +3,7 @@ import { apiFetch } from "@/lib/api";
 
 export interface PublicGeneralSettings {
   app_name?: string | null;
-  app_tagline?: string | null;
+  app_tagline?: string | Record<string, string | null | undefined> | null;
   app_logo_url?: string | null;
   app_favicon_url?: string | null;
   app_url?: string | null;

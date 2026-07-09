@@ -19,6 +19,8 @@ import doctorPlaceholder from "@/assets/doctor-hero.png";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import StartConsult from "@/components/landing/StartConsult";
 import { useGetSearchDoctors } from "@/hooks/patient/use-patient-doctor";
+import { usePublicSettings } from "@/hooks/use-public-settings";
+import { localizedText } from "@/lib/localized-settings";
 
 import { cn } from "@/lib/utils";
 import { ConnectDialog } from "@/components/ConnectDialog";
@@ -298,7 +300,7 @@ function MeetOurDoctorsSlider({
 //  HeroSection 
 
 export default function HeroSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [activeIdx, setActiveIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -306,6 +308,12 @@ export default function HeroSection() {
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+  const { data: publicSettings } = usePublicSettings();
+  const heroTagline = localizedText(
+    publicSettings?.general?.app_tagline,
+    i18n.language,
+    t("pages.landing.hero_intro"),
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
@@ -429,9 +437,9 @@ export default function HeroSection() {
           <div className="relative z-10 order-2 lg:order-1">
           <HeroHeadline />
             <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
-              {t("pages.landing.hero_intro")}
+              {heroTagline}
             </p>
-                        <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
+              <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
               <svg
                 width="44" height="50" viewBox="0 0 140 160" fill="none"
                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true"

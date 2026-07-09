@@ -34,8 +34,8 @@
     "inPersonFee": "Mu mubiri: {{amount}} {{currency}}"
   },
   "notifications": {
-    "title": "Imenyesha",
-    "ariaLabel": "Imenyesha",
+    "title": "Amamenyesha",
+    "ariaLabel": "Amamenyesha",
     "unreadCount": "{{count}} zitasomwe",
     "allCaughtUp": "Byose byarangiye",
     "markAllAsRead": "Shyira byose ko byasomwe",
@@ -44,8 +44,8 @@
     "all": "Byose",
     "unread": "Zitasomwe",
     "filter": "Shungura",
-    "allNotifications": "Imenyesha yose",
-    "showMatching": "Erekana imenyesha ahuye",
+    "allNotifications": "Amamenyesha yose",
+    "showMatching": "Erekana Amamenyesha ahuye",
     "failedToLoad": "Kwakira byanze",
     "checkConnection": "Genzura interineti yawe hanyuma ugerageze indi nshuro.",
     "noUnreadNotifications": "Nta menyesha zitasomwe zihari",

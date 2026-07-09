@@ -70,8 +70,7 @@ export function HeroHeadline() {
           color: hsl(var(--primary));
           display: inline-block;
           white-space: nowrap;
-          font-weight: 700;
-          font-style: italic;
+          font-weight: 700; 
         }
       `}</style>
 

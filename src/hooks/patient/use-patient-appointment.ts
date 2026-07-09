@@ -25,6 +25,7 @@ export interface ApiAppointment {
   currency: string;
   payment_status: string;
   daily_room_url: string | null;
+  can_join?: boolean | null;
   can_review: boolean;
   doctor: {
     id: number;

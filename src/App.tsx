@@ -104,6 +104,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import NotFound from "@/pages/errors/NotFound";
 import VerifyCertificate from "./pages/VerifyCertificate.tsx";
 import AdminSystemCommunication from "./pages/admin/AdminSystemCommunication.tsx";
+import Terms from "./pages/terms.tsx";
+import Privacy from "./pages/privacy.tsx";
 /* ─────────────────────────────────────────────────────────────────
    RequireAuth
    Shows a confirmation dialog instead of hard-redirecting.
@@ -356,6 +358,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/register" element={<Auth />} />
             <Route path="/help" element={<Help />} /> 
+            <Route path="/privacy" element={<Privacy />} /> 
+            <Route path="/terms" element={<Terms />} /> 
             <Route path="/onboarding/:role" element={<Onboarding />} />
             <Route
               path="/consultation/:roomName"

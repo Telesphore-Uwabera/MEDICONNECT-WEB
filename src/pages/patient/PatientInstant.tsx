@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin, decodeCallToken } from "@/lib/scheduled-call";
+import { canJoinAppointment } from "@/lib/appointment-join";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,12 +46,14 @@ interface JoinResponse {
   room_name?: string;
   token?: string;
   join_url?: string;
+  can_join?: boolean | null;
 }
 
 // GET /patient/quick/{id} — instant detail carrying the patient's join token.
 interface InstantQuickDetail {
   id: number;
   status?: string;
+  can_join?: boolean | null;
   daily_room_url?: string;
   daily_room_name?: string;
   daily_guest_token?: string; // patient WebRTC token (is_owner: false)
@@ -137,8 +140,8 @@ function getSpecialty(appt: ApiAppointment) {
   return "—";
 }
 
-function isActionable(status: ApiAppointmentStatus) {
-  return status === "confirmed" || status === "in_progress";
+function isActionable(appt: ApiAppointment) {
+  return canJoinAppointment(appt);
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -233,7 +236,7 @@ function AppointmentCardItem({
   onJoin: () => void;
 }) {
   const avatar = getDoctorAvatar(appt);
-  const actionable = isActionable(appt.status);
+  const actionable = isActionable(appt);
 
   return (
     <Card
@@ -394,6 +397,10 @@ const PatientInstant = () => {
 
   const handleJoin = useCallback(
     (appt: ApiAppointment) => {
+      if (!canJoinAppointment(appt)) {
+        toast.error(t("pages.patient.appt_join_not_ready", { defaultValue: "You can join 10 minutes before the appointment time." }));
+        return;
+      }
       joinMutation.mutate(appt, {
         onError: (err: any) => {
           console.error("[Quick] join failed:", err?.status, err?.data);
@@ -504,6 +511,15 @@ const PatientInstant = () => {
     (acc, a) => ({ ...acc, [a.status]: (acc[a.status] ?? 0) + 1 }),
     {} as Record<string, number>
   ), [appointments]);
+  const statusTabs = useMemo(() => [
+    { value: "all" as const, label: "All statuses", count: data?.total ?? appointments.length },
+    { value: "pending" as const, label: STATUS_LABEL.pending, count: counts.pending ?? 0 },
+    { value: "confirmed" as const, label: STATUS_LABEL.confirmed, count: counts.confirmed ?? 0 },
+    { value: "in_progress" as const, label: STATUS_LABEL.in_progress, count: counts.in_progress ?? 0 },
+    { value: "completed" as const, label: STATUS_LABEL.completed, count: counts.completed ?? 0 },
+    { value: "cancelled" as const, label: STATUS_LABEL.cancelled, count: counts.cancelled ?? 0 },
+  ], [appointments.length, counts.cancelled, counts.completed, counts.confirmed, counts.in_progress, counts.pending, data?.total]);
+
   const statsItems = useMemo<PatientStatItem[]>(() => {
     const active = (counts.confirmed ?? 0) + (counts.in_progress ?? 0);
     return [
@@ -719,6 +735,33 @@ const PatientInstant = () => {
               </Link>
 
             </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-[6px] border border-border/60 bg-card/40 p-1">
+              {statusTabs.map((tab) => {
+                const active = filters.status === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => set("status", tab.value)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-[6px] px-3 py-2 text-xs font-semibold transition-all",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px]",
+                      active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+
 
             <PatientStatsGrid items={statsItems} />
 
@@ -801,7 +844,7 @@ const PatientInstant = () => {
                             </Badge>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            {isActionable(a.status) ? (
+                            {isActionable(a) ? (
                               <Button
                                 size="sm"
                                 className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
