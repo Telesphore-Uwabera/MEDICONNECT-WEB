@@ -6,12 +6,14 @@
 // Skipping leaves no prescription and continues the flow.
 
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   X, Plus, Trash2, Pill, Loader2, FileText, ExternalLink,
   Search, Building2, Check, Truck, Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 import { prepareRichTextForSave, RichTextarea } from "@/components/ui/rich-textarea";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -35,6 +37,22 @@ interface Props {
   onSkip: () => void;
   /** Finished (issued, optionally sent)  continue the flow. */
   onDone: () => void;
+}
+
+interface PublicMedicine {
+  pharmacy_id?: number;
+  name: string;
+  generic_name?: string | null;
+  price?: string | null;
+  currency?: string | null;
+  unit?: string | null;
+  barcode?: string | null;
+  rn?: number | string;
+}
+
+interface PublicMedicinesResponse {
+  count: number;
+  medicines: PublicMedicine[];
 }
 
 const inputCls =
@@ -82,6 +100,12 @@ export function QuickPrescriptionModal({
   const createRx = useCreatePrescription();
   const issueRx = useIssuePrescription();
   const sendRx = useSendToPharmacy();
+  const { data: medicinesData, isFetching: medicinesLoading } =
+    useQuery<PublicMedicinesResponse>({
+      queryKey: ["public-medicines-all"],
+      queryFn: () => apiFetch("/public/medicines/all"),
+      staleTime: 5 * 60_000,
+    });
 
   const issuing = createRx.isPending || issueRx.isPending;
 
@@ -174,6 +198,8 @@ export function QuickPrescriptionModal({
               setItem={setItem}
               addItem={addItem}
               removeItem={removeItem}
+              medicines={medicinesData?.medicines ?? []}
+              medicinesLoading={medicinesLoading}
             />
           ) : (
             <PharmacyStep
@@ -239,7 +265,7 @@ export function QuickPrescriptionModal({
  
 function PrescriptionForm({
   diagnosis, setDiagnosis, notes, setNotes, validUntil, setValidUntil,
-  items, setItem, addItem, removeItem,
+  items, setItem, addItem, removeItem, medicines, medicinesLoading,
 }: {
   diagnosis: string; setDiagnosis: (v: string) => void;
   notes: string; setNotes: (v: string) => void;
@@ -248,6 +274,8 @@ function PrescriptionForm({
   setItem: (i: number, patch: Partial<PrescriptionItem>) => void;
   addItem: () => void;
   removeItem: (i: number) => void;
+  medicines: PublicMedicine[];
+  medicinesLoading: boolean;
 }) {
   return (
     <>
@@ -298,11 +326,11 @@ function PrescriptionForm({
         {items.map((it, i) => (
           <div key={i} className="rounded-[6px] border border-border bg-background/50 p-2.5 space-y-2">
             <div className="flex items-center gap-2">
-              <input
-                className={cn(inputCls, "flex-1")}
+              <MedicineNameCombobox
                 value={it.medicine_name}
-                onChange={(e) => setItem(i, { medicine_name: e.target.value })}
-                placeholder="Medicine name *"
+                onChange={(medicine_name) => setItem(i, { medicine_name })}
+                medicines={medicines}
+                isLoading={medicinesLoading}
               />
               {items.length > 1 && (
                 <button
@@ -330,6 +358,120 @@ function PrescriptionForm({
         ))}
       </div>
     </>
+  );
+}
+
+function MedicineNameCombobox({
+  value,
+  onChange,
+  medicines,
+  isLoading,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  medicines: PublicMedicine[];
+  isLoading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const query = value.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const seen = new Set<string>();
+    return medicines
+      .filter((medicine) => {
+        if (!query) return true;
+        return [medicine.name, medicine.generic_name, medicine.barcode]
+          .filter(Boolean)
+          .some((part) => String(part).toLowerCase().includes(query));
+      })
+      .filter((medicine) => {
+        const key = [
+          medicine.name,
+          medicine.generic_name ?? "",
+          medicine.unit ?? "",
+          medicine.price ?? "",
+        ].join("|").toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 12);
+  }, [medicines, query]);
+  const hasExactMatch = medicines.some(
+    (medicine) => medicine.name.toLowerCase() === query,
+  );
+
+  return (
+    <div className="relative flex-1">
+      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <input
+        className={cn(inputCls, "pl-8")}
+        value={value}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        placeholder="Search or type medicine name *"
+        autoComplete="off"
+      />
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-[10010] overflow-hidden rounded-[6px] border border-border bg-popover shadow-xl">
+          <div className="max-h-56 overflow-y-auto p-1">
+            {isLoading && (
+              <div className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading medicines...
+              </div>
+            )}
+
+            {!isLoading && filtered.length === 0 && (
+              <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
+                No medicine found. Keep typing to use a custom name.
+              </div>
+            )}
+
+            {filtered.map((medicine) => (
+              <button
+                key={(medicine.pharmacy_id ?? "p") + "-" + (medicine.rn ?? medicine.barcode ?? medicine.name) + "-" + medicine.name}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(medicine.name);
+                  setOpen(false);
+                }}
+                className="w-full rounded-[5px] px-2.5 py-2 text-left hover:bg-secondary transition-colors"
+              >
+                <span className="block text-[12px] font-semibold text-foreground">
+                  {medicine.name}
+                </span>
+                <span className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                  {medicine.generic_name && <span>{medicine.generic_name}</span>}
+                  {medicine.unit && <span>{medicine.unit}</span>}
+                  {medicine.price && (
+                    <span>
+                      {medicine.price} {medicine.currency ?? ""}
+                    </span>
+                  )}
+                </span>
+              </button>
+            ))}
+
+            {value.trim() && !hasExactMatch && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setOpen(false)}
+                className="mt-1 w-full rounded-[5px] border border-dashed border-primary/40 px-2.5 py-2 text-left text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
+              >
+                Use "{value.trim()}" as a custom medicine
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

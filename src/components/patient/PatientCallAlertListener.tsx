@@ -211,7 +211,7 @@ export function PatientCallAlertListener() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[95] w-[min(380px,calc(100vw-24px))] rounded-[6px] border border-primary/30 bg-card shadow-2xl">
+    <div className="fixed bottom-5 right-5 z-[95] w-[min(480px,calc(100vw-24px))] rounded-[6px] border border-primary/30 bg-card shadow-2xl">
       <div className="flex items-start gap-3 p-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-primary/15 text-primary">
           <Video className="h-5 w-5 animate-pulse" />

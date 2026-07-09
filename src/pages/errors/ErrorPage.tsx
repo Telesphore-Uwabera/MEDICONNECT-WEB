@@ -36,6 +36,7 @@ import TopBar from "@/components/landing/TopBar";
 
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import { localizedText } from "@/lib/localized-settings";
 import { notifyAccessPrompt } from "@/lib/access-events";
  
 export type ErrorStatus = 400 | 401 | 403 | 404 | 419 | 422 | 429 | 500 | 502 | 503 | 504;
@@ -195,7 +196,7 @@ export default function ErrorPage({
     const appName = generalSettings?.app_name || "MEDICONNECT";
 
     const appTagline =
-        generalSettings?.app_tagline || t("pages.landing.footer_desc");
+        localizedText(generalSettings?.app_tagline, i18n.language, t("pages.landing.footer_desc"));
 
     const contactEmail =
         generalSettings?.contact_email || "support@mediconnect.com";

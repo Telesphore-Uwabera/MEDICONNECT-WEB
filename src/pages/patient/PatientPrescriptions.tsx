@@ -46,6 +46,7 @@ import {
   isExpiringSoon,
 } from "./components/prescription-constants";
 import { openPrescriptionDocument } from "@/lib/prescription-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
 import {
   StatusBadge,
@@ -64,6 +65,7 @@ import { HeartPulse } from "lucide-react";
  
 const PatientPrescriptions = () => {
   const { t, i18n } = useTranslation();
+  const { data: publicSettings } = usePublicSettings();
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
@@ -150,9 +152,9 @@ const PatientPrescriptions = () => {
   const handleAction = useCallback((p: Prescription, action: "pdf" | "send") => {
     // The backend PDF isn't publicly reachable (storage 403 / route 404), so we
     // render the prescription document on the frontend instead.
-    if (action === "pdf") openPrescriptionDocument(p);
+    if (action === "pdf") openPrescriptionDocument(p, false, publicSettings);
     if (action === "send") { setPrescriptionToSend(p); setPharmacyModalOpen(true); }
-  }, []);
+  }, [publicSettings]);
 
   const handleViewDetails = useCallback((p: Prescription) => setSelectedPrescription(p), []);
   const closeDrawer = useCallback(() => setSelectedPrescription(null), []);

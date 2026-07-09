@@ -13,6 +13,7 @@ import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
 import { useGetPrescription, type Prescription, type PrescriptionStatus } from "@/hooks/doctor/use-doctor-prescriptions";
 import { openPrescriptionDocument } from "@/lib/prescription-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
  
 function fmtDate(raw?: string | null): string {
@@ -125,8 +126,8 @@ function Row({ label, value, mono }: { label: string; value?: React.ReactNode; m
 }
 
  
-function DrawerContent({ prescription }: { prescription: Prescription }) {
-  const { t } = useTranslation();
+function DrawerContent({ prescription }: { prescription: Prescription }) {  const { t } = useTranslation();
+  const { data: publicSettings } = usePublicSettings();
   const p = prescription;
   const appt = p.appointment;
   const BASE_URL = import.meta.env.VITE_APP_BASE_URL?.replace("/api/v1", "") ?? "";
@@ -267,7 +268,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
           <div className="flex flex-wrap gap-2 pt-0.5">
             <button
               type="button"
-              onClick={() => openPrescriptionDocument(p)}
+              onClick={() => openPrescriptionDocument(p, false, publicSettings)}
               className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
             >
               <FileText className="h-4 w-4" />
@@ -275,7 +276,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {
             </button>
             <button
               type="button"
-              onClick={() => openPrescriptionDocument(p, true)}
+              onClick={() => openPrescriptionDocument(p, true, publicSettings)}
               className="flex items-center gap-2 px-3 py-2 rounded-[6px] text-sm font-medium border border-border/60 bg-card hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200"
             >
               <Download className="h-4 w-4" />

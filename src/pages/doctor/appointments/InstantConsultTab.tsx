@@ -21,6 +21,7 @@ import { useCallContext } from "@/context/CallContext";
 import { sessionToRejoinTarget, type LiveSessionResponse } from "@/lib/rejoin";
 import { apiFetch } from "@/lib/api";
 import { openBlankSummaryWindow, writeSummaryToWindow } from "@/lib/summary-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
 
 import { ActiveCallPanel } from "./shared/ActiveCallPanel";
@@ -105,6 +106,7 @@ function StatTile({
 
 export function InstantConsultTab() {
   const call = useCallStore();
+  const { data: publicSettings } = usePublicSettings();
   const [notesOpen, setNotesOpen] = useState(true);
   const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
@@ -264,7 +266,7 @@ export function InstantConsultTab() {
       );
       const summary = res.data?.[0];
       if (summary) {
-        writeSummaryToWindow(win, summary, false);
+        writeSummaryToWindow(win, summary, false, publicSettings);
       } else {
         win?.close();
         toast.error(t("pages.doctor.no_consultation_summary"));

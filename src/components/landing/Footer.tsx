@@ -18,6 +18,7 @@ import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
  
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import { localizedText } from "@/lib/localized-settings";
 
 function Footer() {
     const { t, i18n } = useTranslation(); 
@@ -26,8 +27,11 @@ function Footer() {
     const { resolvedTheme, theme } = useTheme();
 
       const appName = generalSettings?.app_name || "MEDICONNECT";
-      const appTagline =
-        generalSettings?.app_tagline || t("pages.landing.footer_desc");
+      const appTagline = localizedText(
+        generalSettings?.app_tagline,
+        i18n.language,
+        t("pages.landing.footer_desc"),
+      );
     
     const logo = generalSettings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
     const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
@@ -51,9 +55,8 @@ function Footer() {
       ];
 
       const footerLegalLinks = [
-        { label: t("pages.landing.footer_legal_privacy"), href: generalSettings?.privacy_url || "#" },
-        { label: t("pages.landing.footer_legal_terms"), href: generalSettings?.terms_url || "#" },
-        { label: t("pages.landing.footer_legal_cookies"), href: "#" },
+        { label: t("pages.landing.footer_legal_privacy"), href: generalSettings?.privacy_url || "/privacy" },
+        { label: t("pages.landing.footer_legal_terms"), href: generalSettings?.terms_url || "/terms" }, 
       ];
     
       const footerSocials = [

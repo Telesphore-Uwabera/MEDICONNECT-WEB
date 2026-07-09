@@ -12,7 +12,8 @@ import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
 import TopBar from "@/components/landing/TopBar"; 
 import { HeroHeader } from "@/components/landing/HeroHeader";
-import { usePublicSettings } from "@/hooks/use-public-settings";
+import { usePublicSettings,usePublicUserStats } from "@/hooks/use-public-settings";
+import Footer from "@/components/landing/Footer";
 
 const Auth = () => {
   const { t, i18n } = useTranslation();
@@ -47,6 +48,8 @@ const { data: publicSettings } = usePublicSettings();
 
  const generalSettings =publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
 
+ const {data: publicUserStats} = usePublicUserStats();
+ 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       <TopBar settings={generalSettings} />
@@ -62,7 +65,7 @@ const { data: publicSettings } = usePublicSettings();
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="
-            w-full max-w-6xl rounded-[2rem] overflow-hidden
+            w-full max-w-6xl rounded-[6px] overflow-hidden
             bg-card ring-1 ring-border
             flex flex-col
             md:grid md:grid-cols-[640px_1fr]
@@ -123,12 +126,12 @@ const { data: publicSettings } = usePublicSettings();
                   transition={{ delay: 0.6, duration: 0.5 }}
                   className="self-start bg-white/10 backdrop-blur-md rounded-[6px] px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
-                  <div className="w-7 h-7 rounded-[6px] bg-emerald-500/20 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-[6px]   flex items-center justify-center">
                     <span className="text-sm">💉</span>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-white">
-                      {t("auth.stat_patients_value")}
+                      {publicUserStats?.users_served}
                     </p>
                     <p className="text-[9px] text-white/50">
                       {t("auth.stat_patients_label")}
@@ -142,12 +145,12 @@ const { data: publicSettings } = usePublicSettings();
                   transition={{ delay: 0.75, duration: 0.5 }}
                   className="self-start bg-white/10 backdrop-blur-md rounded-[6px] px-3.5 py-2 flex items-center gap-2.5 border border-white/15"
                 >
-                  <div className="w-7 h-7 rounded-[6px] bg-teal-500/20 flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-[6px]   flex items-center justify-center">
                     <span className="text-sm">🩺</span>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-white">
-                      {t("auth.stat_recovery_value")}
+                        {publicUserStats?.recovery_rate} %
                     </p>
                     <p className="text-[9px] text-white/50">
                       {t("auth.stat_recovery_label")}
@@ -261,6 +264,7 @@ const { data: publicSettings } = usePublicSettings();
           </div>
         </motion.div>
       </main>
+      <Footer/>
     </div>
   );
 };

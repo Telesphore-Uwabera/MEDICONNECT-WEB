@@ -3,7 +3,7 @@ import { apiFetch } from "@/lib/api";
 
 export interface PublicGeneralSettings {
   app_name?: string | null;
-  app_tagline?: string | null;
+  app_tagline?: string | Record<string, string | null | undefined> | null;
   app_logo_url?: string | null;
   app_favicon_url?: string | null;
   app_url?: string | null;
@@ -35,13 +35,27 @@ export interface PublicSettings {
 interface PublicSettingsResponse {
   settings?: PublicSettings;
 }
-
+interface PublicUserStatsResponse {
+users_served?:number;
+recovery_rate?:number;
+}
 export function usePublicSettings() {
   return useQuery({
     queryKey: ["public-settings"],
     queryFn: async () => {
       const res = await apiFetch<PublicSettingsResponse>("/public/settings");
       return res.settings ?? {};
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function usePublicUserStats(){
+    return useQuery({
+    queryKey: ["public-user-stats"],
+    queryFn: async () => {
+      const res = await apiFetch<PublicUserStatsResponse>("/public/stats/login-stats");
+      return res ?? {};
     },
     staleTime: 10 * 60 * 1000,
   });

@@ -160,7 +160,7 @@ export function GlobalInstantPill() {
           <button
             onClick={activeInstant ? handleQuickJoin : () => setOpen(true)}
             disabled={joining}
-            className="fixed bottom-5 left-5 z-[9980] flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 pl-3 pr-4 py-2.5 text-[12px] font-semibold transition-all active:scale-95"
+            className="fixed bottom-16 left-5 z-[9980] flex items-center gap-2 rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30 pl-3 pr-4 py-2.5 text-[12px] font-semibold transition-all active:scale-95"
           >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 opacity-75 animate-ping" />

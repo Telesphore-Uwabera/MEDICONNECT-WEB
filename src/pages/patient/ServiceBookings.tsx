@@ -1001,6 +1001,19 @@ function ServiceBookings() {
       ),
     [data],
   );
+  const statusTabs = useMemo(
+    () =>
+      STATUS_OPTIONS.map((option) => ({
+        ...option,
+        count:
+          option.value === "all"
+            ? data?.total ?? bookings.length
+            : statusCounts[option.value as BookingStatus] ?? 0,
+      })),
+    [bookings.length, data?.total, statusCounts],
+  );
+
+
   const visibleValue = useMemo(
     () =>
       bookings.reduce((sum, booking) => {
@@ -1145,6 +1158,32 @@ function ServiceBookings() {
               </Link>
 
             </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-[6px] border border-border/60 bg-card/40 p-1">
+              {statusTabs.map((tab) => {
+                const active = filters.status === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => set("status", tab.value as FilterState["status"])}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-[6px] px-3 py-2 text-xs font-semibold transition-all",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px]",
+                      active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <PatientStatsGrid items={statsItems} />
             {/* Error state */}
             {isError && (
