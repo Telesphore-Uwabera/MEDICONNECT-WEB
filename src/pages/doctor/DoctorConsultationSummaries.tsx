@@ -14,6 +14,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { openSummaryDocument } from "@/lib/summary-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 import {
   useConsultationSummaries,
   useDeleteConsultationSummary,
@@ -287,8 +288,8 @@ function SummaryRow({
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) {
-  const { t } = useTranslation();
+}) {  const { t } = useTranslation();
+  const { data: publicSettings } = usePublicSettings();
   const isInstant = s.instant_consultation_id != null;
   const alert = s.red_flag_screening?.alert_triggered;
   const ros = s.review_of_systems ?? {};
@@ -322,7 +323,7 @@ function SummaryRow({
         </button>
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={() => openSummaryDocument(s)}
+            onClick={() => openSummaryDocument(s, false, publicSettings)}
             aria-label={t("pages.doctor.view_document")}
             title={t("pages.doctor.view_document")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground  transition-colors"
@@ -330,7 +331,7 @@ function SummaryRow({
             <Eye className="h-3.5 w-3.5" />
           </button>
           <button
-            onClick={() => openSummaryDocument(s, true)}
+            onClick={() => openSummaryDocument(s, true, publicSettings)}
             aria-label={t("pages.doctor.download_pdf")}
             title={t("pages.doctor.download_print_pdf")}
             className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -444,13 +445,13 @@ function SummaryRow({
 
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
-              onClick={() => openSummaryDocument(s)}
+              onClick={() => openSummaryDocument(s, false, publicSettings)}
               className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
             >
               <Eye className="h-3 w-3" /> {t("pages.doctor.view")}
             </button>
             <button
-              onClick={() => openSummaryDocument(s, true)}
+              onClick={() => openSummaryDocument(s, true, publicSettings)}
               className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
             >
               <Download className="h-3 w-3" /> PDF

@@ -8,6 +8,7 @@ import {
 import { usePatientAppointmentSummary } from "@/hooks/patient/use-patient-consultation-summary";
 import { SummaryDetails } from "@/components/consultatioRoom/SummaryDetails";
 import { openSummaryDocument } from "@/lib/summary-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { apiFetch } from "@/lib/api";
 import { useCallContext } from "@/context/CallContext";
@@ -341,8 +342,8 @@ function NotesContent({ notes }: { notes: unknown }) {
 
 // ─── Consultation summary section ─────────────────────────────────────────────
 
-function SummarySection({ appointmentId }: { appointmentId: string }) {
-  const { t } = useTranslation();
+function SummarySection({ appointmentId }: { appointmentId: string }) {  const { t } = useTranslation();
+  const { data: publicSettings } = usePublicSettings();
   const { data, isLoading, isError } = usePatientAppointmentSummary(appointmentId);
 
   if (isLoading) {
@@ -369,7 +370,7 @@ function SummarySection({ appointmentId }: { appointmentId: string }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => openSummaryDocument(summary)}
+          onClick={() => openSummaryDocument(summary, false, publicSettings)}
           className="h-9 rounded-[6px] text-sm gap-2"
         >
           <Eye className="w-4 h-4" /> {t("consult.appointment_detail.view_document")}
@@ -377,7 +378,7 @@ function SummarySection({ appointmentId }: { appointmentId: string }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => openSummaryDocument(summary, true)}
+          onClick={() => openSummaryDocument(summary, true, publicSettings)}
           className="h-9 rounded-[6px] text-sm gap-2"
         >
           <Download className="w-4 h-4" /> {t("consult.appointment_detail.download_pdf")}

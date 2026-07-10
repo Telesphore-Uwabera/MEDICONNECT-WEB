@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { usePatientInstantSummary } from "@/hooks/patient/use-patient-consultation-summary";
 import { SummaryDetails } from "@/components/consultatioRoom/SummaryDetails";
 import { openSummaryDocument } from "@/lib/summary-document";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
 export function InstantSummaryModal({
   instantId,
@@ -68,6 +69,7 @@ export function InstantSummaryModal({
 }
 
 function InstantSummaryBody({ instantId }: { instantId: string }) {
+  const { data: publicSettings } = usePublicSettings();
   const { data, isLoading, isError } = usePatientInstantSummary(instantId);
 
   if (isLoading) {
@@ -92,13 +94,13 @@ function InstantSummaryBody({ instantId }: { instantId: string }) {
       <SummaryDetails summary={summary} />
       <div className="flex justify-end gap-2">
         <button
-          onClick={() => openSummaryDocument(summary)}
+          onClick={() => openSummaryDocument(summary, false, publicSettings)}
           className="h-9 px-3 rounded-[6px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-2"
         >
           <Eye className="h-4 w-4" /> View document
         </button>
         <button
-          onClick={() => openSummaryDocument(summary, true)}
+          onClick={() => openSummaryDocument(summary, true, publicSettings)}
           className="h-9 px-3 rounded-[6px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-2"
         >
           <Download className="h-4 w-4" /> Download PDF

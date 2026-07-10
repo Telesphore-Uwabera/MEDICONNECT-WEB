@@ -1,8 +1,21 @@
-﻿import { formatDateOnly } from "@/lib/date";
+import { formatDateOnly } from "@/lib/date";
+import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 // Frontend medical-prescription document. The backend PDF isn't publicly
 // reachable (storage is 403/route 404), so we format the prescription data the
 // app already has into a printable HTML page and open it for View / Download
 // (browser print -> Save as PDF). No external dependencies.
+
+export type DocumentBrandSettings = unknown;
+
+type ResolvedBrand = {
+  appName: string;
+  tagline: string;
+  logoUrl: string;
+  email: string;
+  phone: string;
+  address: string;
+  website: string;
+};
 
 function esc(v: unknown): string {
   return String(v ?? "")
@@ -48,7 +61,107 @@ export interface PrescriptionLike {
   [key: string]: unknown;
 }
 
-export function buildPrescriptionHtml(p: PrescriptionLike): string {
+function getGeneral(settings?: DocumentBrandSettings): Record<string, unknown> {
+  const payload = (settings ?? {}) as any;
+  return payload?.general ?? payload?.settings?.general ?? payload?.settings ?? payload ?? {};
+}
+
+function localized(value: unknown): string {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{")) {
+      try {
+        return localized(JSON.parse(trimmed));
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return String(record.en ?? record.en_US ?? "");
+  }
+  return "";
+}
+function resolveBrand(settings?: DocumentBrandSettings): ResolvedBrand {
+  const general = getGeneral(settings);
+  return {
+    appName: String(general.app_name ?? "MediConnect"),
+    tagline: localized(general.app_tagline) || "Bringing care to your fingertips",
+    logoUrl: String(general.app_logo_url ?? LOGOLIGHT),
+    email: String(general.contact_email ?? "admin@mediconnect.rw"),
+    phone: String(general.contact_phone ?? "+250 782 168 650"),
+    address: String(general.contact_address ?? "Kigali, Rwanda"),
+    website: String(general.app_url ?? "mediconnect.rw"),
+  };
+}
+
+function contactBlock(brand: ResolvedBrand): string {
+  return `<table class="contact-table"><tr>
+    <td><b>Email:</b> ${esc(brand.email)}</td>
+    <td><b>Phone:</b> ${esc(brand.phone)}</td>
+  </tr><tr>
+    <td><b>Address:</b> ${esc(brand.address)}</td>
+    <td><b>Website:</b> ${esc(brand.website)}</td>
+  </tr></table>`;
+}
+
+function statusLabel(status?: string): string {
+  return String(status ?? "Prescription").replace(/_/g, " ");
+}
+
+function infoRow(label: string, value: string): string {
+  return `<tr><td class="label">${esc(label)}</td><td>${value.trim() ? value : "-"}</td></tr>`;
+}
+
+function section(title: string, rows: string): string {
+  if (!rows.trim()) return "";
+  return `<table class="section-table"><thead><tr><th colspan="2">${esc(title)}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+const documentCss = `
+  :root { --ink:#111827; --muted:#4b5563; --line:#222; --soft-line:#9ca3af; --header:#bcd7fb; --brand:#05a8a2; --brand-dark:#05716f; --success:#166534; --warning:#92400e; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: Georgia, "Times New Roman", serif; color:var(--ink); background:#eef3f8; }
+  .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid #d5dee8; font-family:Arial, sans-serif; }
+  .toolbar button { font:inherit; font-size:13px; font-weight:700; padding:8px 14px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; }
+  .toolbar button.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .page { width:8.27in; min-height:11.69in; margin:22px auto; background:#fff; padding:.55in .62in; box-shadow:0 12px 35px rgba(15,23,42,.12); }
+  .doc-header { display:grid; grid-template-columns:1.3fr 1fr; gap:20px; align-items:start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:12px; }
+  .brand-row { display:flex; gap:14px; align-items:center; }
+  .brand-row img { max-width:172px; max-height:64px; object-fit:contain; }
+  .brand-name { font-family:Arial, sans-serif; font-size:20px; font-weight:900; color:var(--brand-dark); line-height:1.05; }
+  .tagline { font-family:Arial, sans-serif; font-size:11px; color:var(--muted); margin-top:3px; }
+  .title-box { text-align:right; font-family:Arial, sans-serif; }
+  .title-box h1 { margin:0; font-size:18px; letter-spacing:.7px; text-transform:uppercase; color:#0f172a; }
+  .title-box .doc-no { margin-top:7px; font-size:12px; color:var(--muted); }
+  .badge { display:inline-block; padding:2px 8px; border:1px solid var(--brand); border-radius:99px; color:var(--brand-dark); font-weight:800; text-transform:uppercase; font-size:10px; }
+  .rx-mark { display:inline-block; margin-top:8px; border:1px solid var(--brand); color:var(--brand-dark); padding:3px 10px; font-size:17px; font-weight:900; }
+  table { width:100%; border-collapse:collapse; margin:0 0 14px; font-size:13px; }
+  .contact-table { font-family:Arial, sans-serif; font-size:11px; border:1px solid var(--soft-line); margin-bottom:18px; }
+  .contact-table td { border:1px solid var(--soft-line); padding:6px 8px; }
+  .section-table th, .med-table th { background:var(--header); border:1px solid var(--line); padding:7px 9px; text-align:left; font-size:14px; font-weight:800; }
+  .section-table td, .med-table td { border:1px solid var(--line); padding:7px 9px; vertical-align:top; line-height:1.45; }
+  .section-table td.label { width:34%; font-weight:700; background:#fafafa; }
+  .med-table th { font-size:12px; }
+  .med-table .num { width:38px; text-align:center; }
+  .sub { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+  .signed, .unsigned { margin:0 0 14px; padding:8px 10px; border:1px solid var(--line); font-family:Arial, sans-serif; font-size:12px; font-weight:700; }
+  .signed { color:var(--success); background:#f0fdf4; border-color:#86efac; }
+  .unsigned { color:var(--warning); background:#fffbeb; border-color:#fcd34d; }
+  .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-top:2px solid var(--brand); padding-top:9px; margin-top:22px; font-family:Arial, sans-serif; color:var(--muted); font-size:10.5px; }
+  .footer img { width:70px; height:70px; object-fit:contain; border:1px solid var(--soft-line); padding:4px; }
+  @media print {
+    body { background:#fff; }
+    .toolbar { display:none; }
+    .page { width:auto; min-height:auto; margin:0; padding:.35in .45in; box-shadow:none; }
+    table, .signed, .unsigned { break-inside:avoid; }
+  }
+`;
+
+export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBrandSettings): string {
+  const brand = resolveBrand(settings);
   const doctorName =
     get<string>(p, "doctor.user.name") ?? get<string>(p, "doctor.name") ?? "";
   const doctorSpec =
@@ -66,8 +179,8 @@ export function buildPrescriptionHtml(p: PrescriptionLike): string {
   const rows = items
     .map(
       (it, i) => `<tr>
-        <td>${i + 1}</td>
-        <td><b>${esc(it.medicine_name ?? "")}</b>${it.dosage ? `<div class="sub">${esc(it.dosage)}</div>` : ""}</td>
+        <td class="num">${i + 1}</td>
+        <td><b>${esc(it.medicine_name ?? "")}</b>${it.dosage ? `<span class="sub">${esc(it.dosage)}</span>` : ""}</td>
         <td>${esc(it.frequency ?? "-")}</td>
         <td>${esc(it.duration ?? "-")}</td>
         <td>${esc(it.quantity ?? "-")}</td>
@@ -77,7 +190,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike): string {
     .join("");
 
   const signedLine = p.is_signed
-    ? `<div class="signed"> ✔ Digitally signed by ${doctorName ? esc(doctorName) : "the doctor"}${p.signed_at ? ` on ${esc(fmtDate(p.signed_at))}` : ""}</div>`
+    ? `<div class="signed">Digitally signed by ${doctorName ? esc(doctorName) : "the doctor"}${p.signed_at ? ` on ${esc(fmtDate(p.signed_at))}` : ""}</div>`
     : `<div class="unsigned">Not yet signed</div>`;
 
   return `<!doctype html>
@@ -86,101 +199,70 @@ export function buildPrescriptionHtml(p: PrescriptionLike): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Prescription ${esc(p.prescription_number ?? "")}</title>
-<style>
-  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --brand:#0ea5a4; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color:var(--ink); background:#f1f5f9; }
-  .toolbar { position:sticky; top:0; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid var(--line); }
-  .toolbar button { font:inherit; font-size:13px; font-weight:600; padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:#fff; cursor:pointer; }
-  .toolbar button.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
-  .page { max-width:820px; margin:18px auto; background:#fff; border:1px solid var(--line); border-radius:8px; padding:32px 36px; }
-  header.doc { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--brand); padding-bottom:14px; margin-bottom:16px; }
-  .brand { font-size:20px; font-weight:800; color:var(--brand); letter-spacing:-.3px; }
-  .brand small { display:block; font-size:10px; font-weight:600; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
-  .docmeta { text-align:right; font-size:12px; color:var(--muted); }
-  .docmeta b { color:var(--ink); }
-  .badge { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:2px 8px; border-radius:999px; background:#ecfeff; color:#0e7490; }
-  .who { display:flex; gap:32px; flex-wrap:wrap; margin:6px 0 14px; }
-  .who div span { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
-  .who div b { font-size:14px; }
-  section { margin-top:16px; }
-  section h2 { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--brand); margin:0 0 8px; padding-bottom:4px; border-bottom:1px solid var(--line); }
-  .rx { font-size:34px; font-weight:800; color:var(--brand); line-height:1; }
-  table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:8px 8px; border-bottom:1px solid var(--line); }
-  td { padding:9px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
-  td .sub { color:var(--muted); font-size:11px; margin-top:2px; }
-  .meta { color:var(--muted); font-size:12px; }
-  .signed { margin-top:14px; color:#16a34a; font-weight:600; font-size:13px; }
-  .unsigned { margin-top:14px; color:#d97706; font-weight:600; font-size:13px; }
-  footer.doc { margin-top:22px; padding-top:12px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); display:flex; justify-content:space-between; align-items:center; }
-  footer.doc img { height:64px; width:64px; }
-  @media print { body { background:#fff; } .toolbar { display:none; } .page { border:0; margin:0; max-width:none; padding:0; } }
-</style>
+<style>${documentCss}</style>
 </head>
 <body>
   <div class="toolbar">
     <button onclick="window.print()" class="primary">Download / Print PDF</button>
     <button onclick="window.close()">Close</button>
   </div>
-  <div class="page">
-    <header class="doc">
-      <div>
-        <div class="brand">MediConnect<small>Medical Prescription</small></div>
-        <div class="rx" style="margin-top:8px">℞</div>
+  <main class="page">
+    <header class="doc-header">
+      <div class="brand-row">
+        <img src="${esc(brand.logoUrl)}" alt="${esc(brand.appName)}" />
+        <div>
+          <div class="brand-name">${esc(brand.appName)}</div>
+          <div class="tagline">${esc(brand.tagline)}</div>
+        </div>
       </div>
-      <div class="docmeta">
-        <div><b>${esc(p.prescription_number ?? "")}</b></div>
-        ${p.status ? `<div><span class="badge">${esc(String(p.status).replace(/_/g, " "))}</span></div>` : ""}
-        ${p.created_at ? `<div>Issued ${esc(fmtDate(p.issued_at ?? p.created_at))}</div>` : ""}
-        ${p.valid_until ? `<div>Valid until ${esc(fmtDate(p.valid_until))}</div>` : ""}
+      <div class="title-box">
+        <h1>Medical Prescription</h1>
+        <div class="rx-mark">Rx</div>
+        <div class="doc-no"><b>${esc(p.prescription_number ?? "Prescription")}</b></div>
+        ${p.status ? `<div class="doc-no"><span class="badge">${esc(statusLabel(p.status))}</span></div>` : ""}
       </div>
     </header>
 
-    <div class="who">
-      ${patientName ? `<div><span>Patient</span><b>${esc(patientName)}</b>${patientPhone ? `<div class="meta">${esc(patientPhone)}</div>` : ""}</div>` : ""}
-      ${doctorName ? `<div><span>Prescribing doctor</span><b>${esc(doctorName)}</b><div class="meta">${[doctorSpec, doctorDegree].filter(Boolean).map(esc).join("  · ")}</div></div>` : ""}
-    </div>
+    ${contactBlock(brand)}
 
+    ${section("Patient Information", infoRow("Patient Name", esc(patientName)) + infoRow("Phone Number", esc(patientPhone)))}
+    ${section("Prescribing Physician Information", infoRow("Physician Name", esc(doctorName)) + infoRow("Specialty", esc(doctorSpec)) + infoRow("Qualification", esc(doctorDegree)) + infoRow("Email", esc(doctorEmail)) + infoRow("Phone Number", esc(doctorPhone)))}
+    ${section("Prescription Information", infoRow("Prescription Number", esc(p.prescription_number ?? "")) + infoRow("Status", esc(statusLabel(p.status))) + infoRow("Issued Date", esc(fmtDate(p.issued_at ?? p.created_at))) + infoRow("Valid Until", esc(fmtDate(p.valid_until))))}
     ${
       p.diagnosis || p.notes
-        ? `<section><h2>Diagnosis</h2><div>${esc(p.diagnosis ?? "")}</div>${p.notes ? `<div class="meta" style="margin-top:4px">${esc(p.notes)}</div>` : ""}</section>`
+        ? section("Diagnosis and Notes", infoRow("Diagnosis", esc(p.diagnosis ?? "")) + infoRow("Notes", esc(p.notes ?? "")))
         : ""
     }
 
-    <section>
-      <h2>Medications</h2>
-      ${
-        rows
-          ? `<table>
-              <thead><tr><th>#</th><th>Medicine</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Instructions</th></tr></thead>
-              <tbody>${rows}</tbody>
-            </table>`
-          : `<p class="meta">No medications listed.</p>`
-      }
-    </section>
+    <table class="med-table">
+      <thead><tr><th class="num">#</th><th>Medicine</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Instructions</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6">No medications listed.</td></tr>`}</tbody>
+    </table>
 
     ${signedLine}
 
-    <footer class="doc">
+    <footer class="footer">
       <div>
-        ${doctorEmail ? `<div>${esc(doctorEmail)}</div>` : ""}
-        ${doctorPhone ? `<div>${esc(doctorPhone)}</div>` : ""}
-        <div style="margin-top:4px">Generated by MediConnect · ${esc(fmtDate(new Date().toISOString()))}</div>
+        <div>${esc(brand.appName)} digital health document</div>
+        <div>${esc(brand.email)} | ${esc(brand.phone)}</div>
+        <div>Generated ${esc(fmtDate(new Date().toISOString()))}</div>
       </div>
       ${p.qr_code ? `<img src="${esc(p.qr_code)}" alt="QR code" />` : ""}
     </footer>
-  </div>
+  </main>
 </body>
 </html>`;
 }
 
-export function openPrescriptionDocument(prescription: PrescriptionLike, autoPrint = false): void {
+export function openPrescriptionDocument(
+  prescription: PrescriptionLike,
+  autoPrint = false,
+  settings?: DocumentBrandSettings,
+): void {
   const win = window.open("", "_blank");
   if (!win) return;
   win.document.open();
-  win.document.write(buildPrescriptionHtml(prescription));
+  win.document.write(buildPrescriptionHtml(prescription, settings));
   win.document.close();
   if (autoPrint) win.setTimeout(() => win.print(), 350);
 }
-

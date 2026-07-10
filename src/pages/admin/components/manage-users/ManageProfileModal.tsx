@@ -1,4 +1,4 @@
-// Admin — role-specific profile editor.
+// Admin â€” role-specific profile editor.
 // Opened from AdminUsers.tsx for doctor/patient/pharmacy/hospital accounts.
 // Talks to /admin/manageusers/{role}s/... (see hooks/admin/use-admin-manage-users.ts).
 
@@ -31,8 +31,11 @@ import {
   useUploadHospitalImage,
   useUploadHospitalGallery,
 } from "@/hooks/admin/use-admin-manage-users";
+import { useGetPublicInsurances } from "@/hooks/use-patient-profile";
 
-/* ── Small shared field primitives ─────────────────────────────────────── */
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+/* â”€â”€ Small shared field primitives â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -134,7 +137,7 @@ function FileField({
       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-between gap-2 h-9 rounded-[6px] border border-dashed border-border px-3 text-[11px] text-muted-foreground cursor-pointer hover:border-primary/50">
-          <span className="truncate">{currentUrl ? "Replace file…" : "Choose file…"}</span>
+          <span className="truncate">{currentUrl ? "Replace fileâ€¦" : "Choose fileâ€¦"}</span>
           {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
           <input
             type="file"
@@ -160,7 +163,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[12px] font-semibold text-foreground pt-2">{children}</p>;
 }
 
-/* ── Modal shell ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Modal shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 export function ManageProfileModal({
   userId,
@@ -177,7 +180,7 @@ export function ManageProfileModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm">
-      <div className="w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
+      <div className="w-full max-w-5xl max-h-[88vh] flex flex-col overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
         <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
           <div>
             <p className="text-[14px] font-semibold text-foreground capitalize">{role} profile</p>
@@ -198,7 +201,7 @@ export function ManageProfileModal({
   );
 }
 
-/* ── Doctor ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Doctor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function DoctorProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetDoctorProfile(userId);
@@ -294,7 +297,7 @@ function DoctorProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* ── Patient ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Patient â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function PatientProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetPatientProfile(userId);
@@ -304,16 +307,21 @@ function PatientProfileForm({ userId }: { userId: number }) {
   const saveMedical = useSavePatientMedicalInfo(userId);
   const { data: insuranceData } = useGetPatientInsurance(userId);
   const updateInsurance = useUpdatePatientInsurance(userId);
+  const { data: publicInsurances = [], isLoading: isLoadingPublicInsurances } = useGetPublicInsurances();
 
   const [form, setForm] = useState({
     date_of_birth: "",
     gender: "",
+    national_id: "",
     blood_type: "",
     address: "",
     city: "",
     province: "",
+    country: "",
     emergency_contact_name: "",
     emergency_contact_phone: "",
+    emergency_contact_relation: "",
+    preferred_language: "",
   });
   const [medical, setMedical] = useState({
     allergies: [] as string[],
@@ -323,19 +331,26 @@ function PatientProfileForm({ userId }: { userId: number }) {
   });
   const [insuranceId, setInsuranceId] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data?.patient) return;
+    const patient = data.patient;
     setForm({
-      date_of_birth: "",
-      gender: (data.patient.gender as string) ?? "",
-      blood_type: (data.patient.blood_type as string) ?? "",
-      address: "",
-      city: "",
-      province: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
+      date_of_birth: (patient.date_of_birth as string) ?? "",
+      gender: (patient.gender as string) ?? "",
+      national_id: (patient.national_id as string) ?? "",
+      blood_type: (patient.blood_type as string) ?? "",
+      address: (patient.address as string) ?? "",
+      city: (patient.city as string) ?? "",
+      province: (patient.province as string) ?? "",
+      country: (patient.country as string) ?? "",
+      emergency_contact_name: (patient.emergency_contact_name as string) ?? "",
+      emergency_contact_phone: (patient.emergency_contact_phone as string) ?? "",
+      emergency_contact_relation: (patient.emergency_contact_relation as string) ?? "",
+      preferred_language: (patient.user?.preferred_language as string) ?? (patient.preferred_language as string) ?? "",
     });
+    setAvatarPreview(patient.avatar ?? patient.user?.avatar ?? null);
   }, [data]);
 
   useEffect(() => {
@@ -350,6 +365,12 @@ function PatientProfileForm({ userId }: { userId: number }) {
 
   const insurance = insuranceData && "insurance" in insuranceData ? insuranceData.insurance : null;
 
+  useEffect(() => {
+    if (!insurance) return;
+    setInsuranceId(String(insurance.id ?? ""));
+    setInsuranceNumber((insurance as { insurance_number?: string | null }).insurance_number ?? "");
+  }, [insurance]);
+
   if (isLoading) return <LoadingState />;
   return (
     <>
@@ -361,14 +382,34 @@ function PatientProfileForm({ userId }: { userId: number }) {
             <option value="">Select</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
+            <option value="other">Other</option>
           </select>
         </Field>
-        <Field label="Blood type"><Text value={form.blood_type} onChange={(v) => setForm((f) => ({ ...f, blood_type: v }))} placeholder="O+" /></Field>
+        <Field label="National ID"><Text value={form.national_id} onChange={(v) => setForm((f) => ({ ...f, national_id: v }))} /></Field>
+        <Field label="Blood type">
+          <select value={form.blood_type} onChange={(e) => setForm((f) => ({ ...f, blood_type: e.target.value }))} className={inputCls}>
+            <option value="">Select blood type</option>
+            {BLOOD_TYPES.map((blood) => (
+              <option key={blood} value={blood}>{blood}</option>
+            ))}
+          </select>
+        </Field>
         <Field label="City"><Text value={form.city} onChange={(v) => setForm((f) => ({ ...f, city: v }))} /></Field>
         <Field label="Province"><Text value={form.province} onChange={(v) => setForm((f) => ({ ...f, province: v }))} /></Field>
+        <Field label="Country"><Text value={form.country} onChange={(v) => setForm((f) => ({ ...f, country: v }))} /></Field>
         <Field label="Address"><Text value={form.address} onChange={(v) => setForm((f) => ({ ...f, address: v }))} /></Field>
         <Field label="Emergency contact name"><Text value={form.emergency_contact_name} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_name: v }))} /></Field>
         <Field label="Emergency contact phone"><Text value={form.emergency_contact_phone} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_phone: v }))} /></Field>
+        <Field label="Emergency relation"><Text value={form.emergency_contact_relation} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_relation: v }))} /></Field>
+        <Field label="Preferred language">
+          <select value={form.preferred_language} onChange={(e) => setForm((f) => ({ ...f, preferred_language: e.target.value }))} className={inputCls}>
+            <option value="">Select</option>
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="kiny">Kinyarwanda</option>
+            <option value="rw">Kinyarwanda (rw)</option>
+          </select>
+        </Field>
       </div>
       <SaveBar
         onSave={() =>
@@ -381,17 +422,33 @@ function PatientProfileForm({ userId }: { userId: number }) {
       />
 
       <SectionTitle>Avatar</SectionTitle>
-      <FileField
-        label="Avatar"
-        isPending={uploadAvatar.isPending}
-        currentUrl={data?.patient.avatar ?? undefined}
-        onSelect={(f) =>
-          uploadAvatar.mutate(f, {
-            onSuccess: () => sonnerToast.success("Avatar uploaded."),
-            onError: (err) => sonnerToast.error("Upload failed.", { description: getErrorMessage(err) }),
-          })
-        }
-      />
+      <div className="grid gap-3 md:grid-cols-[96px_1fr] md:items-end">
+        <div className="h-24 w-24 overflow-hidden rounded-[6px] border border-border bg-muted">
+          {avatarPreview ? (
+            <img src={avatarPreview} alt="Patient avatar preview" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              No avatar
+            </div>
+          )}
+        </div>
+        <FileField
+          label="Avatar"
+          isPending={uploadAvatar.isPending}
+          currentUrl={avatarPreview}
+          onSelect={(f) => {
+            const localPreview = URL.createObjectURL(f);
+            setAvatarPreview(localPreview);
+            uploadAvatar.mutate(f, {
+              onSuccess: (res) => {
+                setAvatarPreview(res.avatar);
+                sonnerToast.success("Avatar uploaded.");
+              },
+              onError: (err) => sonnerToast.error("Upload failed.", { description: getErrorMessage(err) }),
+            });
+          }}
+        />
+      </div>
 
       <SectionTitle>Medical info</SectionTitle>
       <Field label="Allergies"><TagList value={medical.allergies} onChange={(v) => setMedical((m) => ({ ...m, allergies: v }))} placeholder="Add and press Enter" /></Field>
@@ -418,7 +475,16 @@ function PatientProfileForm({ userId }: { userId: number }) {
         <p className="text-[11px] text-muted-foreground/70">No insurance linked to this patient.</p>
       )}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Insurance ID"><Text value={insuranceId} onChange={setInsuranceId} placeholder="e.g. 3" /></Field>
+        <Field label="Insurance provider">
+          <select value={insuranceId} onChange={(e) => setInsuranceId(e.target.value)} className={inputCls} disabled={isLoadingPublicInsurances}>
+            <option value="">{isLoadingPublicInsurances ? "Loading providers..." : "Select provider"}</option>
+            {publicInsurances.map((ins) => (
+              <option key={ins.id} value={String(ins.id)}>
+                {ins.name} ({ins.code}) - {parseFloat(ins.coverage_percentage)}%
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Insurance number"><Text value={insuranceNumber} onChange={setInsuranceNumber} placeholder="RSSB-2024-88213" /></Field>
       </div>
       <SaveBar
@@ -426,7 +492,7 @@ function PatientProfileForm({ userId }: { userId: number }) {
         onSave={() => {
           const id = Number(insuranceId);
           if (!Number.isInteger(id) || id <= 0 || !insuranceNumber.trim()) {
-            sonnerToast.error("Provide a valid insurance ID and number.");
+            sonnerToast.error("Select an insurance provider and provide the insurance number.");
             return;
           }
           updateInsurance.mutate(
@@ -443,7 +509,7 @@ function PatientProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* ── Pharmacy ───────────────────────────────────────────────────────────── */
+/* â”€â”€ Pharmacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function PharmacyProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetPharmacyProfile(userId);
@@ -531,7 +597,7 @@ function PharmacyProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* ── Hospital ───────────────────────────────────────────────────────────── */
+/* â”€â”€ Hospital â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function HospitalProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetHospitalProfile(userId);
@@ -647,7 +713,7 @@ function HospitalProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function SaveBar({ onSave, isPending, label = "Save" }: { onSave: () => void; isPending: boolean; label?: string }) {
   return (
@@ -668,7 +734,7 @@ function SaveBar({ onSave, isPending, label = "Save" }: { onSave: () => void; is
 function LoadingState() {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-[12px] text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" /> Loading profile…
+      <Loader2 className="h-4 w-4 animate-spin" /> Loading profileâ€¦
     </div>
   );
 }
@@ -677,7 +743,7 @@ function NotFoundBanner() {
   return (
     <div className="flex items-center gap-2 rounded-[6px] border border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-      No profile found yet for this user — fill in the fields below and save to create one.
+      No profile found yet for this user â€” fill in the fields below and save to create one.
     </div>
   );
 }
