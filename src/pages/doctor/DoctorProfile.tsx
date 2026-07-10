@@ -1,3 +1,4 @@
+﻿import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
 // export default DoctorProfile;
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -24,7 +25,6 @@ import {
 import { toast } from "sonner";
 import i18n from "@/lib/i18n";
 
-// ── Extracted step components & shared modules ───────────────────────────────
 import {
   STEPS,
   SOCIAL_PLATFORMS,
@@ -40,8 +40,7 @@ import type {
   QualificationMutationResponse,
 } from "../doctor/profile/Types";
 
-// ── API hooks ────────────────────────────────────────────────────────────────
-import {
+ import {
   useGetDoctorProfile,
   useUpsertDoctorProfile,
   useUploadProfileImage,
@@ -63,26 +62,23 @@ import {
 import { DoctorProfileForm } from "./profile/Doctorprofileform";
 import { StepSaveStatusBadge } from "./profile/Stepsavestatusbadge";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-const formatFee = (fee: number | string, currency: string) =>
+ const formatFee = (fee: number | string, currency: string) =>
   `${currency} ${Number(fee).toLocaleString()}`;
 
 const formatDateDisplay = (d: string) =>
   d
-    ? new Date(d).toLocaleDateString(i18n.language, {
+    ? formatDateOnly(d, i18n.language, {
       year: "numeric",
       month: "short",
     })
-    : "—";
+    : "-";
 
 const toDateInputValue = (isoOrDate: string | null | undefined): string => {
   if (!isoOrDate) return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(isoOrDate)) return isoOrDate;
   const d = new Date(isoOrDate);
   if (isNaN(d.getTime())) return "";
-  return d.toISOString().slice(0, 10);
+  return toLocalDateInputValue(d);
 };
 
 const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
@@ -95,7 +91,7 @@ const flattenValidationErrors = (errors: unknown): string => {
   return Object.values(errors as Record<string, unknown>)
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-    .join(" · ");
+    .join(" Â· ");
 };
 
 const getProfileSaveErrorMessage = (err: unknown): string => {
@@ -110,16 +106,13 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
   const baseMessage = apiData?.message || directMessage;
 
   if (validationMessage && baseMessage && !baseMessage.includes(validationMessage)) {
-    return `${baseMessage} · ${validationMessage}`;
+    return `${baseMessage} Â· ${validationMessage}`;
   }
 
   return baseMessage || validationMessage || i18n.t("doctorProfile.check_form_error");
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API → Form mapper
-// ─────────────────────────────────────────────────────────────────────────────
-function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
+ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
   return {
     personal: {
       doctor_degree: doc.doctor_degree ?? "",
@@ -187,9 +180,8 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
       license_document: null,
       national_id_document: null,
       existing: {
-        // ── profile image from top-level `image` field ──────────────────
-        profile_image_url: doc.image ?? null,
-        // ── documents ───────────────────────────────────────────────────
+       
+        profile_image_url: doc.image ?? null, 
         degree_document_url: doc.documents?.degree_document?.url
           ? doc.documents.degree_document.url
           : doc.documents?.degree_document?.path
@@ -221,9 +213,7 @@ function mapApiProfileToFormData(doc: APIDoctorProfile): DoctorProfileData {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers — save-state seeding & step data detection
-// ─────────────────────────────────────────────────────────────────────────────
+ 
 function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
   const s: StepSaveStates = {};
   if (d.personal.doctor_degree || d.personal.medical_license)
@@ -234,7 +224,7 @@ function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
   if (d.qualifications.length) s["qualifications"] = "saved";
   if (Object.values(d.linksSection).some(Boolean)) s["linksSection"] = "saved";
 
-  // ── ADD THIS ────────────────────────────────────────────────────────────
+ 
   if (
     d.documents.existing?.profile_image_url ||
     d.documents.existing?.degree_document_url ||
@@ -242,7 +232,7 @@ function computeInitialSaveStates(d: DoctorProfileData): StepSaveStates {
     d.documents.existing?.national_id_document_url
   )
     s["documents"] = "saved";
-  // ────────────────────────────────────────────────────────────────────────
+  
 
   return s;
 }
@@ -278,9 +268,8 @@ function stepHasData(stepId: string, data: DoctorProfileData | null): boolean {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton components
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// Skeleton components  
 const StatsSkeleton = React.memo(function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
@@ -386,9 +375,8 @@ const ContentSkeleton = React.memo(function ContentSkeleton() {
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StatCard
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// StatCard 
 const StatCard = React.memo(function StatCard({
   label,
   value,
@@ -418,9 +406,8 @@ const StatCard = React.memo(function StatCard({
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ViewField
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// ViewField 
 const ViewField = React.memo(function ViewField({
   label,
   value,
@@ -442,15 +429,14 @@ const ViewField = React.memo(function ViewField({
           !value && "text-muted-foreground/50 italic",
         )}
       >
-        {value || "—"}
+        {value || "-"}
       </span>
     </div>
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// EmptyStepPrompt
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// EmptyStepPrompt 
 const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
   label,
   onFill,
@@ -482,10 +468,8 @@ const EmptyStepPrompt = React.memo(function EmptyStepPrompt({
     </div>
   );
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// View panels
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// View panels 
 const ViewPersonal = React.memo(function ViewPersonal({
   data,
 }: {
@@ -606,7 +590,7 @@ const ViewEducation = React.memo(function ViewEducation({
             <ViewField label={t("doctorProfile.country_label")} value={edu.country} />
             <ViewField
               label={t("doctorProfile.period_label")}
-              value={`${edu.start_year} – ${edu.end_year}`}
+              value={`${edu.start_year} - ${edu.end_year}`}
             />
           </div>
         </div>
@@ -647,7 +631,7 @@ const ViewExperience = React.memo(function ViewExperience({
               value={
                 exp.is_current
                   ? t("doctorProfile.from_date", { date: formatDateDisplay(exp.start_date) })
-                  : `${formatDateDisplay(exp.start_date)} – ${formatDateDisplay(exp.end_date ?? "")}`
+                  : `${formatDateDisplay(exp.start_date)} - ${formatDateDisplay(exp.end_date ?? "")}`
               }
             />
           </div>
@@ -717,10 +701,8 @@ const ViewQualifications = React.memo(function ViewQualifications({
     </div>
   );
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ViewDocuments
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// ViewDocuments 
 const ViewDocuments = React.memo(function ViewDocuments({
   data,
 }: {
@@ -780,7 +762,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
       {/* Existing uploaded files from API */}
       {existingFiles.map(([label, url]) =>
         label === t("doctorProfile.profile_photo") ? (
-          // ── Profile image: show as avatar thumbnail ──────────────────────
+           
           <div
             key="existing-profile-photo"
             className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
@@ -800,7 +782,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
             </div>
           </div>
         ) : (
-          // ── Other documents: link to open in new tab ─────────────────────
+          
           <a
             key={`existing-${label}`}
             href={url}
@@ -856,10 +838,8 @@ const ViewSocialLinks = React.memo(function ViewSocialLinks({
     </div>
   );
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SectionViewPanel
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// SectionViewPanel 
 function SectionViewPanel({
   stepId,
   data,
@@ -894,9 +874,8 @@ function SectionViewPanel({
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UnifiedSidebar
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// UnifiedSidebar 
 const UnifiedSidebar = React.memo(function UnifiedSidebar({
   currentStep,
   onSelect,
@@ -938,7 +917,7 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
         profileData.personal.doctor_degree,
       license: profileData.personal.medical_license,
       degree: profileData.personal.doctor_degree,
-      fee: fee ? formatFee(fee, feeCurrency) : "—",
+      fee: fee ? formatFee(fee, feeCurrency) : "-",
     };
   }, [profileData]);
 
@@ -1108,16 +1087,13 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
     </div>
   );
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main page
-// ─────────────────────────────────────────────────────────────────────────────
+ 
+// Main page 
 type Mode = "view" | "create" | "edit";
 
 const DoctorProfile = () => {
   const { t, i18n } = useTranslation();
-
-  // ── API ─────────────────────────────────────────────────────────────────────
+ 
   const {
     data: apiData,
     isLoading: isLoadingProfile,
@@ -1137,8 +1113,7 @@ const DoctorProfile = () => {
   const updateQualification = useUpdateQualification();
   const deleteQualification = useDeleteQualification();
   const setSocialLinks = useSetSocialLinks();
-
-  // ── Local state ─────────────────────────────────────────────────────────────
+ 
   const [profileData, setProfileData] = useState<DoctorProfileData | null>(null);
   const [mode, setMode] = useState<Mode>("create");
   const [currentStep, setCurrentStep] = useState(0);
@@ -1160,7 +1135,7 @@ const DoctorProfile = () => {
     setStepSaveStates((prev) => ({ ...prev, [stepId]: state }));
   }, []);
 
-  // ── Navigation helpers ───────────────────────────────────────────────────────
+  
   const handleFillStep = useCallback((stepId: string) => {
     const idx = STEPS.findIndex((s) => s.id === stepId);
     if (idx !== -1) setCurrentStep(idx);
@@ -1182,7 +1157,7 @@ const DoctorProfile = () => {
     }
   }, [profileData]);
 
-  // ── Sync helpers ─────────────────────────────────────────────────────────────
+ 
   const syncEducation = useCallback(
     async (
       newEntries: DoctorProfileData["education"],
@@ -1308,7 +1283,7 @@ const DoctorProfile = () => {
     [addQualification, updateQualification, deleteQualification],
   );
 
-  // ── Save step ────────────────────────────────────────────────────────────────
+  
   const handleSaveStep = useCallback(
     async (stepId: string, data: Partial<DoctorProfileData>) => {
       setStepState(stepId, "saving");
@@ -1467,7 +1442,7 @@ const DoctorProfile = () => {
     ],
   );
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
+ 
   const stats = useMemo(() => {
     if (!profileData) return null;
     const fee =
@@ -1475,20 +1450,19 @@ const DoctorProfile = () => {
       profileData.specializations.online_fee;
     const feeCurrency = profileData.specializations.fee_currency ?? "RWF";
     return {
-      degree: profileData.personal.doctor_degree || "—",
-      license: profileData.personal.medical_license || "—",
+      degree: profileData.personal.doctor_degree || "â€”",
+      license: profileData.personal.medical_license || "â€”",
       education: profileData.education.length,
       experience: profileData.experience.length,
       qualifications: profileData.qualifications.length,
-      fee: fee ? formatFee(fee, feeCurrency) : "—",
+      fee: fee ? formatFee(fee, feeCurrency) : "â€”",
     };
   }, [profileData]);
 
   const activeStep = STEPS[currentStep];
-
-  // ─────────────────────────────────────────────────────────────────────────
+ 
   // Loading state
-  // ─────────────────────────────────────────────────────────────────────────
+ 
   if (isLoadingProfile) {
     return (
       <DashboardLayout role="doctor">
@@ -1507,9 +1481,9 @@ const DoctorProfile = () => {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
+ 
   // Render
-  // ─────────────────────────────────────────────────────────────────────────
+ 
   return (
     <DashboardLayout role="doctor">
       <PageHeader
@@ -1527,7 +1501,7 @@ const DoctorProfile = () => {
       />
 
       <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
-        {/* Stats bar — view mode only */}
+        {/* Stats bar - view mode only */}
         {!isForm &&
           (isFetchingProfile && !profileData ? (
             <StatsSkeleton />
@@ -1644,3 +1618,4 @@ const DoctorProfile = () => {
 };
 
 export default DoctorProfile;
+

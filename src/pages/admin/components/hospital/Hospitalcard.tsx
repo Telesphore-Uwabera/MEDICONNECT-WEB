@@ -1,10 +1,11 @@
-import { Badge } from "@/components/ui/badge";
+﻿import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Stethoscope } from "lucide-react";
 import type { ApiHospital } from "@/hooks/admin/use-admin-hospitals";
 import { cn } from "@/lib/utils";
 import { getInitials } from "./Utils";
 import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
+import { formatDateOnly } from "@/lib/date";
 
 interface HospitalCardProps {
   h: ApiHospital;
@@ -22,7 +23,7 @@ export function HospitalCard({ h, onManage }: HospitalCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-[12px] text-foreground truncate">{h.name_en}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{h.user?.name ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{h.user?.name ?? "â€”"}</p>
           </div>
           <Badge
             variant="outline"
@@ -53,7 +54,7 @@ export function HospitalCard({ h, onManage }: HospitalCardProps) {
             {h.doctors_count} doctors
           </span>
           <span className="text-[10px] text-muted-foreground/50">
-            {new Date(h.created_at).toLocaleDateString()}
+            {formatDateOnly(h.created_at)}
           </span>
         </div>
 
@@ -69,3 +70,4 @@ export function HospitalCard({ h, onManage }: HospitalCardProps) {
     </div>
   );
 }
+

@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from "react";
+﻿import React, { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import {
-  Download,
+import { formatDateOnly } from "@/lib/date";
+  import{Download,
   AlertCircle,
   XCircle,
   Loader2,
@@ -46,11 +46,7 @@ import { Video } from "lucide-react";
 
 import PaymentPanel from "./Paymentpanel";
 import { getPurposeLabel, getYesNoLabel, getJobTypes, JOB_TYPE_NONE } from "./FitnessConstants";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Status config
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function getStatusConfig(t: TFunction): Record<
   string,
   { label: string; badgeCls: string; icon: React.ElementType; dotCls: string }
@@ -112,22 +108,16 @@ function CertStatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function fmt(date: string) {
-  return new Date(date).toLocaleDateString("en-GB", {
+  return formatDateOnly(date, "en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Drawer — detail view
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function DrawerSection({
   icon: Icon,
   title,
@@ -300,7 +290,7 @@ function CertificateDrawer({
               "{cert.doctor_notes}"
               {cert.doctor && (
                 <span className="block mt-1 not-italic font-medium text-foreground/70">
-                  — {t("fitness.doctor_prefix", { name: cert.doctor.name })}
+                - {t("fitness.doctor_prefix", { name: cert.doctor.name })}
                 </span>
               )}
             </div>
@@ -382,7 +372,7 @@ function CertificateDrawer({
                   <div className="flex items-center gap-2 p-2 rounded-[6px] bg-muted/40 border border-border">
                     <Wind className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">SpO₂</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">SpO2</p>
                       <p className="text-[12px] font-semibold text-foreground">{cert.oxygen_saturation}%</p>
                     </div>
                   </div>
@@ -453,10 +443,8 @@ function CertificateDrawer({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CertificateCard — improved
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // CertificateCard   improved
+ 
 export function CertificateCard({ cert }: { cert: Certificate }) {
   console.log("CertificateCard cert: ", cert);
   const { t } = useTranslation();
@@ -471,7 +459,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
   const downloadMutation = useDownloadCertificate();
   const isApproved = cert.status === "issued";
 
-  // ── Video identity verification (join the doctor's session) ────────────────
+  //   Video identity verification (join the doctor's session)  
   const { startCall } = useCallContext();
   const joinSession = useJoinConfirmationSession(cert.id);
   // Show while a review is in progress and identity hasn't been verified yet.
@@ -668,7 +656,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
           {/* Actions row */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border/40">
-            {/* View details — always visible */}
+            {/* View details  always visible */}
             <Button
               size="sm"
               variant="ghost"
@@ -682,7 +670,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 
             <div className="flex-1" />
 
-            {/* Join verification call — while a review is pending identity check */}
+            {/* Join verification call  while a review is pending identity check */}
             {/* {canVerify && (
               <Button
                 size="sm"
@@ -699,7 +687,7 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
               </Button>
             )} */}
 
-            {/* Download — only for approved */}
+            {/* Download  only for approved */}
             {isApproved && downloadPhase === "idle" && (
               <Button
                 size="sm"
@@ -782,3 +770,4 @@ export function CertificateCard({ cert }: { cert: Certificate }) {
 }
 
 export default CertificateCard;
+

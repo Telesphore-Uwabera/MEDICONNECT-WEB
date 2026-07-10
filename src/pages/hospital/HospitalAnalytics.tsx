@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+﻿import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { cn } from "@/lib/utils";
-import {
-  Users,
+import { formatDateOnly } from "@/lib/date";
+ import{ Users,
   CreditCard,
   Activity,
   TrendingUp,
@@ -32,9 +32,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-/* ── Types ──────────────────────────────────────────────────────── */
-
+ 
 export type DashboardPeriod = "today" | "week" | "month" | "year" | "custom";
 export type ChartGroup = "day" | "week" | "month";
 export type BookingStatus =
@@ -54,9 +52,7 @@ export interface HospitalDashboardParams {
   status?: BookingStatus;
   search?: string;
 }
-
-/* ── API response shape interfaces ─────────────────────────────── */
-
+ 
 interface BookingStatusCounts {
   total: number;
   pending: number;
@@ -194,9 +190,7 @@ interface HospitalDashboardData {
   doctors?: DoctorsStats;
   reviews?: ReviewsStats;
 }
-
-/* ── Hook ───────────────────────────────────────────────────────── */
-
+ 
 const BASE = "/hospital/dashboard";
 
 export function useGetHospitalStats(params: HospitalDashboardParams = {}) {
@@ -217,8 +211,7 @@ export function useGetHospitalStats(params: HospitalDashboardParams = {}) {
   });
 }
 
-/* ── Helpers ────────────────────────────────────────────────────── */
-
+ 
 const DEPT_COLORS = [
   "hsl(var(--primary))",
   "hsl(var(--primary-glow))",
@@ -321,8 +314,7 @@ function getDefaultCustomRange() {
   };
 }
 
-/* ── Derived data types (for local chart arrays) ─────────────────── */
-
+ 
 interface DeptPieSlice {
   name: string;
   value: number;
@@ -339,9 +331,7 @@ interface StarRow {
   label: string;
   value: number;
 }
-
-/* ── Component ───────────────────────────────────────────────────── */
-
+ 
 const HospitalAnalytics = () => {
   const { t } = useTranslation();
   const defaultCustomRange = getDefaultCustomRange();
@@ -491,8 +481,7 @@ const HospitalAnalytics = () => {
   const scrollBy = (offset: number) => {
     tabsRef.current?.scrollBy({ left: offset, behavior: "smooth" });
   };
-
-  /* ── Aliases ── */
+ 
   const today = data?.today;
   const periodSB = data?.period_stats?.service_bookings;
   const periodAppts = data?.period_stats?.appointments;
@@ -505,8 +494,7 @@ const HospitalAnalytics = () => {
   const services = data?.services;
   const doctors = data?.doctors;
   const reviews = data?.reviews;
-
-  /* ── Derived ── */
+ 
   const grossRevenue = revenue?.gross ?? 0;
   const changePercent = revenue?.change_percent ?? null;
   const avgRating = reviews?.avg_rating ?? null;
@@ -643,7 +631,7 @@ const HospitalAnalytics = () => {
                 }
               />
             </div>
-            {/* ── Scrollable Tabs ── */}
+            {/* Scrollable Tabs  */}
             <div className="relative flex items-center border-b border-border/60 mb-2">
               <div
                 className={cn(
@@ -670,7 +658,8 @@ const HospitalAnalytics = () => {
                     activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Overview
+                  {t('pages.hospital.overview')}
+                  
                 </button>
                 <button
                   onClick={() => setActiveTab("clinical")}
@@ -679,7 +668,9 @@ const HospitalAnalytics = () => {
                     activeTab === "clinical" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Clinical & Operations
+               
+                   {t('pages.hospital.clinical_ops')}
+                  
                 </button>
                 <button
                   onClick={() => setActiveTab("financial")}
@@ -688,7 +679,8 @@ const HospitalAnalytics = () => {
                     activeTab === "financial" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Financials
+                  {t('pages.hospital.financials')}
+                  
                 </button>
                 <button
                   onClick={() => setActiveTab("reviews")}
@@ -697,7 +689,7 @@ const HospitalAnalytics = () => {
                     activeTab === "reviews" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
-                  Reviews
+                    {t('pages.hospital.reviews')}
                 </button>
               </div>
 
@@ -719,7 +711,7 @@ const HospitalAnalytics = () => {
             {/* OVERVIEW TAB */}
             {activeTab === "overview" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* ── TOP STAT STRIP ── */}
+                {/*  TOP STAT STRIP   */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {isLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
@@ -747,15 +739,14 @@ const HospitalAnalytics = () => {
                       />
                       <StatCard
                         label={t("pages.hospital.stat_satisfaction")}
-                        value={avgRating != null ? avgRating.toFixed(2) : "—"}
+                        value={avgRating != null ? avgRating.toFixed(2) : "-"}
                         icon={TrendingUp}
                         accent="warning"
                       />
                     </>
                   )}
                 </div>
-
-                {/* ── TODAY SNAPSHOT ── */}
+ 
                 <div className="grid grid-cols-2 gap-4">
                   <Card>
                     <SectionTitle>
@@ -835,7 +826,7 @@ const HospitalAnalytics = () => {
                   </Card>
                 </div>
 
-                {/* ── PERIOD STATS — 4 info cards ── */}
+                {/*  PERIOD STATS  4 info cards  */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {isLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
@@ -895,7 +886,7 @@ const HospitalAnalytics = () => {
                   )}
                 </div>
 
-                {/* ── BOOKINGS CHART + DEPT PIE ── */}
+                {/*   BOOKINGS CHART + DEPT PIE   */}
                 <div className="grid lg:grid-cols-3 gap-4">
                   <Card className="lg:col-span-2">
                     <SectionTitle>{t("pages.hospital.patient_flow")}</SectionTitle>
@@ -1025,7 +1016,7 @@ const HospitalAnalytics = () => {
                   </Card>
                 </div>
 
-                {/* ── BOOKING STATUS BREAKDOWN ── */}
+                {/*   BOOKING STATUS BREAKDOWN   */}
                 <Card>
                   <SectionTitle>{t("pages.hospital.booking_status_breakdown")}</SectionTitle>
                   {isLoading ? (
@@ -1091,13 +1082,13 @@ const HospitalAnalytics = () => {
             {/* FINANCIAL TAB */}
             {activeTab === "financial" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* ── REVENUE ── */}
+                {/*  REVENUE   */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
                     <SectionTitle>{t("pages.hospital.revenue")}</SectionTitle>
                     {changePercent != null && !isLoading && (
                       <span className="text-[11px] text-muted-foreground">
-                        {changePercent >= 0 ? "▲" : "▼"}{" "}
+                        {changePercent >= 0 ?"▲" : "▼"}{" "}
                         <span
                           className={
                             changePercent >= 0 ? "text-success" : "text-destructive"
@@ -1206,7 +1197,7 @@ const HospitalAnalytics = () => {
             {/* CLINICAL TAB */}
             {activeTab === "clinical" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* ── APPOINTMENTS DAILY + UPCOMING ── */}
+                {/*  APPOINTMENTS DAILY + UPCOMING   */}
                 <div className="grid lg:grid-cols-3 gap-4">
                   <Card className="lg:col-span-2">
                     <SectionTitle>{t("pages.hospital.daily_appointments")}</SectionTitle>
@@ -1317,11 +1308,11 @@ const HospitalAnalytics = () => {
                             </p>
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] text-muted-foreground">
-                                {new Date(a.appointment_date).toLocaleDateString(
+                                {formatDateOnly(a.appointment_date, 
                                   "en-US",
                                   { month: "short", day: "numeric" },
                                 )}{" "}
-                                · {String(a.appointment_time).slice(0, 5)}
+                                Â· {String(a.appointment_time).slice(0, 5)}
                               </span>
                               <span className="text-[9px] capitalize px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                                 {a.type}
@@ -1334,7 +1325,7 @@ const HospitalAnalytics = () => {
                   </Card>
                 </div>
 
-                {/* ── SERVICES + DOCTORS ── */}
+                {/*   SERVICES + DOCTORS   */}
                 <div className="grid lg:grid-cols-2 gap-4">
                   <Card>
                     <SectionTitle>{t("pages.hospital.services")}</SectionTitle>
@@ -1490,7 +1481,7 @@ const HospitalAnalytics = () => {
             {/* REVIEWS TAB */}
             {activeTab === "reviews" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* ── REVIEWS ── */}
+                {/*   REVIEWS   */}
                 <Card>
                   <div className="flex items-center justify-between mb-3">
                     <SectionTitle>{t("pages.hospital.reviews")}</SectionTitle>
@@ -1612,3 +1603,4 @@ const HospitalAnalytics = () => {
 };
 
 export default HospitalAnalytics;
+

@@ -1,3 +1,4 @@
+﻿import { formatDateOnly } from "@/lib/date";
 
 // export default PatientPrescriptions;
 
@@ -60,9 +61,7 @@ import {
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { HeartPulse } from "lucide-react";
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 const PatientPrescriptions = () => {
   const { t, i18n } = useTranslation();
 
@@ -213,9 +212,7 @@ const PatientPrescriptions = () => {
       onChange: (v: string) => set("search", v)
     }
   ], [filters, set, t]);
-
-  // ─── Render ────────────────────────────────────────────────────────────────
-
+ 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
@@ -454,12 +451,12 @@ const PatientPrescriptions = () => {
                             </div>
                           </td>
                           <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-xs">
-                            {new Date(p.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                            {formatDateOnly(p.created_at, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                           </td>
                           <td className="px-3 py-2.5 whitespace-nowrap">
                             <span className={cn("text-xs", expiring ? "text-amber-600 dark:text-amber-400 font-medium" : expired ? "text-muted-foreground/40" : "text-muted-foreground/60")}>
-                              {new Date(p.valid_until).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-                              {expiring && <span className="ml-1">⚠</span>}
+                              {formatDateOnly(p.valid_until, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                              {expiring && <span className="ml-1">⚠ </span>}
                             </span>
                           </td>
                           <td className="px-3 py-2.5">
@@ -535,3 +532,4 @@ const PatientPrescriptions = () => {
 };
 
 export default PatientPrescriptions;
+

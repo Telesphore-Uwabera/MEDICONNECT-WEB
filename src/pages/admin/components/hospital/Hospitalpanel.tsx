@@ -1,28 +1,4 @@
-// import { useEffect, useRef } from "react";
-// import { Button } from "@/components/ui/button";
-// import {
-//   ShieldOff,
-//   ShieldCheck,
-//   Building2,
-//   X,
-//   Loader2,
-//   Users,
-//   LayoutGrid,
-//   Stethoscope,
-//   Calendar,
-//   Hash,
-//   BadgeCheck,
-//   Ban,
-// } from "lucide-react";
-// import { cn } from "@/lib/utils";
-// import type { HospitalPanelProps } from "./Types";
-// import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
-// import { getInitials } from "./Utils";
-// import { InfoTile } from "./Infotile";
-
-
-
-
+﻿import { formatDateOnly } from "@/lib/date";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,8 +18,7 @@ import {
 import { statusStyle, STATUS_DOT, typeStyle } from "./Styles";
 import { getInitials } from "./Utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 export interface HospitalPanelProps {
   hospital: ApiHospital | null;
   onClose: () => void;
@@ -82,8 +57,7 @@ const paymentStatusStyle: Record<string, string> = {
   refunded: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/25 dark:text-violet-400 dark:border-violet-800/60",
 };
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
-
+ 
 function ContentWrap({ children }: { children: React.ReactNode }) {
   return <div className="max-w-[640px]">{children}</div>;
 }
@@ -184,9 +158,7 @@ function PanelSkeleton() {
     </div>
   );
 }
-
-// ─── Tab: Overview ────────────────────────────────────────────────────────────
-
+ 
 function OverviewTab({ h }: { h: ApiHospital }) {
   return (
     <ContentWrap>
@@ -225,12 +197,12 @@ function OverviewTab({ h }: { h: ApiHospital }) {
               <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Registration no." value={h.registration_number} mono full />
             )}
             <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Hospital ID" value={`#${h.id}`} mono />
-            <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(h.created_at).toLocaleDateString()} />
+            <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={formatDateOnly(h.created_at)} />
             {h.verified_at && (
-              <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={new Date(h.verified_at).toLocaleDateString()} />
+              <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={formatDateOnly(h.verified_at)} />
             )}
             {h.opens_at && h.closes_at && !h.is_open_24h && (
-              <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value={`${h.opens_at.slice(0, 5)} – ${h.closes_at.slice(0, 5)}`} />
+              <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value={`${h.opens_at.slice(0, 5)} - ${h.closes_at.slice(0, 5)}`} />
             )}
             {h.is_open_24h && (
               <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value="Open 24 hours" />
@@ -334,9 +306,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
     </ContentWrap>
   );
 }
-
-// ─── Tab: Departments ─────────────────────────────────────────────────────────
-
+ 
 function DepartmentsTab({ h }: { h: ApiHospital }) {
   const list = h.departments ?? [];
   if (list.length === 0) return <SectionEmpty label="No departments have been added to this hospital yet" />;
@@ -388,8 +358,7 @@ function DepartmentsTab({ h }: { h: ApiHospital }) {
   );
 }
 
-// ─── Tab: Schedule ────────────────────────────────────────────────────────────
-
+ 
 function ScheduleTab({ h }: { h: ApiHospital }) {
   const days = h.working_days ?? [];
   if (days.length === 0) return <SectionEmpty label="No working schedule has been configured" />;
@@ -443,7 +412,7 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
               <div className="flex items-center gap-3">
                 {!day.is_closed && day.open_time && day.close_time ? (
                   <span className="text-[11px] font-mono text-foreground/80 tabular-nums">
-                    {day.open_time.slice(0, 5)} – {day.close_time.slice(0, 5)}
+                    {day.open_time.slice(0, 5)} - {day.close_time.slice(0, 5)}
                   </span>
                 ) : (
                   <span className="text-[10.5px] text-muted-foreground/35">Closed</span>
@@ -459,9 +428,7 @@ function ScheduleTab({ h }: { h: ApiHospital }) {
     </ContentWrap>
   );
 }
-
-// ─── Tab: Bookings ────────────────────────────────────────────────────────────
-
+ 
 function BookingsTab({ hospitalId }: { hospitalId: number }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -489,7 +456,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
           type="text"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by patient name…"
+          placeholder="Search by patient name..."
           className="w-full h-8 rounded-[6px] border border-border/45 bg-background px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
         />
 
@@ -527,8 +494,8 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
                       </p>
                       <p className="text-[10px] text-muted-foreground/45 mt-0.5 font-mono">
                         #{booking.id}
-                        {booking.preferred_date && <> · {new Date(booking.preferred_date).toLocaleDateString()}</>}
-                        {" · "}{new Date(booking.created_at).toLocaleDateString()}
+                        {booking.preferred_date && <> · {formatDateOnly(booking.preferred_date)}</>}
+                        {" · "}{formatDateOnly(booking.created_at)}
                       </p>
                     </div>
                     <span className={cn(
@@ -608,8 +575,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
   );
 }
 
-// ─── HospitalPanel ────────────────────────────────────────────────────────────
-
+ 
 export function HospitalPanel({
   hospital, onClose, onApprove, onReject, onSuspend, isActing,
 }: HospitalPanelProps) {
@@ -656,8 +622,7 @@ export function HospitalPanel({
         )}
       >
         {h && (
-          <>
-            {/* ── Header ── */}
+          <> 
             <div className="flex-shrink-0 border-b border-primary/10 bg-card/40">
 
               {/* Top bar */}
@@ -683,7 +648,7 @@ export function HospitalPanel({
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-[14px] text-foreground truncate">{h.name_en}</p>
                   <p className="text-[10.5px] text-muted-foreground/45 truncate mt-0.5">
-                    {[h.city, h.country].filter(Boolean).join(", ") || h.user?.name || "—"}
+                    {[h.city, h.country].filter(Boolean).join(", ") || h.user?.name || "-"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
@@ -728,8 +693,7 @@ export function HospitalPanel({
                 ))}
               </div>
             </div>
-
-            {/* ── Body ── */}
+ 
             <div className="flex-1 overflow-y-auto">
               {profileLoading && !fullHospital ? (
                 <PanelSkeleton />
@@ -742,8 +706,7 @@ export function HospitalPanel({
                 </div>
               )}
             </div>
-
-            {/* ── Footer ── */}
+ 
             <div className="flex-shrink-0 px-6 py-3.5 border-t border-primary/10 bg-card/40">
               <div className="flex gap-2 items-center max-w-[640px]">
                 {(h.status === "pending" || h.status === "rejected") && (
@@ -791,3 +754,4 @@ export function HospitalPanel({
     </>
   );
 }
+

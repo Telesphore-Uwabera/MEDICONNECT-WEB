@@ -1,12 +1,12 @@
-import { MapPin } from "lucide-react";
+﻿import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATUS_STYLE, STATUS_DOT, getInitials } from "./config";
 import type { ApiPharmacy } from "@/hooks/admin/use-admin-pharmacies";
+import { formatDateOnly } from "@/lib/date";
 
-// ─── InfoTile ─────────────────────────────────────────────────────────────────
-
+ 
 export function InfoTile({ icon, label, value }: {
   icon: React.ReactNode;
   label: string;
@@ -23,8 +23,7 @@ export function InfoTile({ icon, label, value }: {
   );
 }
 
-// ─── SkeletonRows ─────────────────────────────────────────────────────────────
-
+ 
 export function SkeletonRows() {
   return (
     <>
@@ -43,9 +42,7 @@ export function SkeletonRows() {
     </>
   );
 }
-
-// ─── PharmacyRow (desktop) ────────────────────────────────────────────────────
-
+ 
 export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: ApiPharmacy) => void }) {
   return (
     <tr className="border-t border-border/40 hover:bg-secondary/20 transition-colors duration-150">
@@ -56,14 +53,14 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">{p.name_en}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "-"}</p>
           </div>
         </div>
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
         {p.city
           ? <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{p.city}</span>
-          : <span className="text-muted-foreground/40">—</span>}
+          : <span className="text-muted-foreground/40">-</span>}
       </td>
       <td className="px-4 py-3">
         <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize", STATUS_STYLE[p.status])}>
@@ -71,7 +68,7 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
         </Badge>
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(p.created_at).toLocaleDateString()}
+        {formatDateOnly(p.created_at)}
       </td>
       <td className="px-4 py-3 text-right">
         <Button size="sm" variant="outline"
@@ -84,8 +81,7 @@ export function PharmacyRow({ p, onManage }: { p: ApiPharmacy; onManage: (p: Api
   );
 }
 
-// ─── PharmacyCard (mobile) ────────────────────────────────────────────────────
-
+ 
 export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: ApiPharmacy) => void }) {
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
@@ -96,7 +92,7 @@ export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: Ap
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-[12px] text-foreground truncate">{p.name_en}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "—"}</p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "â€”"}</p>
           </div>
           <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize shrink-0", STATUS_STYLE[p.status])}>
             <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[p.status])} />{p.status}
@@ -109,7 +105,7 @@ export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: Ap
             </span>
           )}
           <span className="text-[10px] text-muted-foreground/50">
-            {new Date(p.created_at).toLocaleDateString()}
+            {formatDateOnly(p.created_at)}
           </span>
         </div>
         <Button size="sm" variant="outline"
@@ -121,3 +117,4 @@ export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: Ap
     </div>
   );
 }
+

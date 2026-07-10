@@ -94,7 +94,8 @@
     "doctor": "Doctor",
     "hospital": "Hospital",
     "pharmacy": "Pharmacy",
-    "patient": "Patient"
+    "patient": "Patient",
+    "admin":"Admin"
   },
   "status": {
     "active": "Active",

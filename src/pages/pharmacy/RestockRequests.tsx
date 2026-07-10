@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+﻿import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -6,8 +6,8 @@ import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Sheet,
+import { formatDateOnly } from "@/lib/date";
+  import{Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -55,16 +55,14 @@ import {
 import { useGetInventoryMedicines } from "@/hooks/pharmacy/use-inventory-medicines";
 import { MedicineCombobox } from "./components/MedicineCombobox";
 
-// ─── Augmented type ───────────────────────────────────────────────────────────
-
+ 
 type FullStockRequest = StockRequest & {
   rejection_reason?: string | null;
   approved_at?: string | null;
   received_at?: string | null;
 };
 
-// ─── Visual config ────────────────────────────────────────────────────────────
-
+ 
 const STATUS_STYLES: Record<StockRequestStatus, string> = {
   pending:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
@@ -82,9 +80,7 @@ const STATUS_DOT: Record<StockRequestStatus, string> = {
   received: "bg-emerald-500",
   rejected: "bg-red-500",
 };
-
-// ─── Filter state ─────────────────────────────────────────────────────────────
-
+ 
 interface FilterState {
   search: string;
   status: StockRequestStatus | "all";
@@ -96,7 +92,7 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -113,8 +109,7 @@ function formatDateTime(iso: string) {
   });
 }
 
-// ─── Sidebar sub-components ───────────────────────────────────────────────────
-
+ 
 function FilterSection({
   title,
   children,
@@ -174,7 +169,7 @@ const inputCls =
 
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
-// ─── Create Request Drawer ────────────────────────────────────────────────────
+//  Create Request Drawer 
 
 const CREATE_FORM_ID = "create-stock-request-form";
 
@@ -232,7 +227,7 @@ function CreateRequestDrawer({
                 )}
               >
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading medicines…
+                Loading medicines...
               </div>
             ) : (
               <MedicineCombobox
@@ -315,7 +310,7 @@ function CreateRequestDrawer({
   );
 }
 
-// ─── Receive Drawer ───────────────────────────────────────────────────────────
+// Receive Drawer 
 
 const RECEIVE_FORM_ID = "receive-stock-form";
 
@@ -460,7 +455,7 @@ function ReceiveDrawer({
   );
 }
 
-// ─── Reject Drawer ────────────────────────────────────────────────────────────
+//  Reject Drawer  
 
 const REJECT_FORM_ID = "reject-stock-request-form";
 
@@ -549,7 +544,7 @@ function RejectDrawer({
   );
 }
 
-// ─── View Details Drawer ──────────────────────────────────────────────────────
+//  View Details Drawer 
 
 function DetailRow({
   icon: Icon,
@@ -658,7 +653,7 @@ function RequestDetailsDrawer({
               <p className="text-[14px] font-bold tabular-nums text-foreground">
                 {request.received_quantity != null
                   ? request.received_quantity.toLocaleString()
-                  : "—"}
+                  : "-"}
               </p>
             </div>
             {request.batch_number && (
@@ -726,13 +721,13 @@ function RequestDetailsDrawer({
                 icon={Package}
                 label="Unit"
                 value={
-                  <span className="capitalize">{med?.unit ?? "—"}</span>
+                  <span className="capitalize">{med?.unit ?? "-"}</span>
                 }
               />
               <DetailRow
                 icon={Barcode}
                 label="Barcode"
-                value={med?.barcode ?? "—"}
+                value={med?.barcode ?? "-"}
               />
               <DetailRow
                 icon={Hash}
@@ -740,7 +735,7 @@ function RequestDetailsDrawer({
                 value={
                   med?.price
                     ? `${parseFloat(med.price).toLocaleString()} ${med.currency ?? ""}`
-                    : "—"
+                    : "-"
                 }
               />
             </div>
@@ -754,7 +749,7 @@ function RequestDetailsDrawer({
             <DetailRow
               icon={User}
               label="Name"
-              value={request.requester?.name ?? "—"}
+              value={request.requester?.name ?? "-"}
             />
           </div>
 
@@ -863,7 +858,7 @@ function RequestDetailsDrawer({
   );
 }
 
-// ─── Per-row action buttons ───────────────────────────────────────────────────
+//  Per-row action buttons 
 
 function RequestActions({
   request,
@@ -962,7 +957,7 @@ function RequestActions({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// Main Page 
 
 const RestockRequests = () => {
   const { t } = useTranslation();
@@ -1042,7 +1037,7 @@ const RestockRequests = () => {
     }
   ], [filters.status, set]);
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // Render
 
   return (
     <DashboardLayout role="pharmacy">
@@ -1060,25 +1055,25 @@ const RestockRequests = () => {
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
               label="Pending"
-              value={isLoading ? "—" : counts.pending}
+              value={isLoading ? "-" : counts.pending}
               icon={ClipboardList}
               accent="warning"
             />
             <StatCard
               label="Approved"
-              value={isLoading ? "—" : counts.approved}
+              value={isLoading ? "â€”" : counts.approved}
               icon={PackagePlus}
               accent="info"
             />
             <StatCard
               label="Received"
-              value={isLoading ? "—" : counts.received}
+              value={isLoading ? "-" : counts.received}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
               label="Rejected"
-              value={isLoading ? "—" : counts.rejected}
+              value={isLoading ? "-" : counts.rejected}
               icon={XCircle}
               accent="warning"
             />
@@ -1090,7 +1085,7 @@ const RestockRequests = () => {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading requests…
+                  Loading requests...
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -1168,7 +1163,7 @@ const RestockRequests = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search medicine, requester…"
+                  placeholder="Search medicine, requester..."
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1353,7 +1348,7 @@ const RestockRequests = () => {
                             req.received_quantity.toLocaleString()
                           ) : (
                             <span className="text-muted-foreground/40">
-                              —
+                              -
                             </span>
                           )}
                         </td>
@@ -1380,7 +1375,7 @@ const RestockRequests = () => {
                         <td className="px-4 py-3 text-muted-foreground">
                           {req.requester?.name ?? (
                             <span className="text-muted-foreground/40">
-                              —
+                            -
                             </span>
                           )}
                         </td>
@@ -1443,3 +1438,4 @@ const RestockRequests = () => {
 };
 
 export default RestockRequests;
+

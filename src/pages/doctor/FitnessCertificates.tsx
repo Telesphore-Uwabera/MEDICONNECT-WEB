@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  RichTextarea,
+import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
+  import {RichTextarea,
   RichTextRenderer,
   prepareRichTextForSave,
 } from "@/components/ui/rich-textarea";
@@ -66,10 +66,7 @@ import { useCallContext } from "@/context/CallContext";
 import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { t } from "i18next";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 const FILTER_TABS: { id: CertStatus | "all"; label: string }[] = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
@@ -118,12 +115,9 @@ const RED_FLAG_ROWS = [
   { key: "red_flag_pregnancy_complications", labelKey: "pages.doctor.cert_red_flag_pregnancy_complications" },
 ] as const;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-US", {
+  formatDateOnly(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -157,10 +151,7 @@ const getStatusMeta = (status: CertStatus) =>
     dotClass: "bg-slate-500",
   };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function SectionCard({
   icon: Icon,
   title,
@@ -209,7 +200,7 @@ function InfoRow({
         )}
       >
         {value ?? (
-          <span className="text-muted-foreground italic font-normal">—</span>
+          <span className="text-muted-foreground italic font-normal">-</span>
         )}
       </span>
     </div>
@@ -287,10 +278,8 @@ function VitalChip({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Request List Card
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Request List Card
+ 
 function RequestCard({
   cert,
   onOpen,
@@ -379,10 +368,8 @@ function RequestCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton Request Card
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Skeleton Request Card
+ 
 function SkeletonRequestCard({ compact }: { compact?: boolean }) {
   return (
     <div className="rounded-[6px] border border-border/60 bg-card p-3 sm:p-4 flex items-start gap-3.5 shadow-sm">
@@ -410,15 +397,10 @@ function SkeletonRequestCard({ compact }: { compact?: boolean }) {
     </div>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Detail View
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Workflow stepper — guides the doctor through each step and scrolls to it
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Detail View
+ 
+ // Workflow stepper - guides the doctor through each step and scrolls to it
+ 
 function scrollToAnchor(anchor: string) {
   document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -504,7 +486,7 @@ function CertStepper({ cert }: { cert: Certificate }) {
         </p>
       ) : (
         <p className="mt-2.5 text-[11px] font-medium text-emerald-600">
-          Certificate issued — all steps complete.
+          Certificate issued - all steps complete.
         </p>
       )}
     </div>
@@ -541,7 +523,7 @@ function RequestDetail({
           { isOwner: true },
         );
         if (started) {
-          toast.success("Verification call started — the patient has been notified by SMS.");
+          toast.success("Verification call started - the patient has been notified by SMS.");
         } else if (res.room_url) {
           window.open(res.room_url, "_blank", "noopener,noreferrer");
         } else {
@@ -578,7 +560,7 @@ function RequestDetail({
       // Default validity to one year out when none is set yet.
       const oneYear = new Date();
       oneYear.setFullYear(oneYear.getFullYear() + 1);
-      setValidUntil(cert.valid_until?.slice(0, 10) ?? oneYear.toISOString().slice(0, 10));
+      setValidUntil(cert.valid_until?.slice(0, 10) ?? toLocalDateInputValue(oneYear));
     }
   }, [cert?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -643,7 +625,7 @@ function RequestDetail({
           if (red_flags_found && red_flags_found.length > 0) {
             toast.warning(t("pages.doctor.red_flags_found", { flags: red_flags_found.join(", ") }));
           } else if (requires_inperson) {
-            toast.warning("This case requires an in-person examination — it can't be signed online.");
+            toast.warning("This case requires an in-person examination - it can't be signed online.");
           } else {
             toast.success(t("pages.doctor.decision_saved"));
           }
@@ -671,7 +653,7 @@ function RequestDetail({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── Top bar ── */}
+     
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 sm:py-3.5 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button
@@ -744,12 +726,12 @@ function RequestDetail({
         </div>
       </div>
 
-      {/* ── Scrollable body ── */}
+      {/*  Scrollable body   */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4">
-        {/* ── Workflow stepper ── */}
+        {/*   Workflow stepper  */}
         <CertStepper cert={cert} />
 
-        {/* ── Cannot-sign warning ── */}
+        {/*   Cannot-sign warning  */}
         {decidable && decision === "fit" && !signable && (
           <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-blue-400/30 bg-blue-500/10">
             <AlertTriangle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
@@ -763,7 +745,7 @@ function RequestDetail({
           </div>
         )}
 
-        {/* ── Red-flag / high-risk alerts ── */}
+        {/*  Red-flag / high-risk alerts  */}
         {(redFlags.length > 0 || highRisk) && (
           <div className="flex flex-col gap-2">
             {redFlags.length > 0 && (
@@ -787,7 +769,7 @@ function RequestDetail({
           </div>
         )}
 
-        {/* ── 1. Patient Information ── */}
+        {/*1. Patient Information  */}
         <SectionCard id="cert-sec-patient" icon={User} title={t("pages.doctor.patient_information")}>
           <div className="flex items-center gap-3 mb-1 pb-3 border-b border-border">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground bg-primary border-2 border-primary/20 shrink-0">
@@ -838,7 +820,7 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 2. Certificate Details ── */}
+        {/*   2. Certificate Details   */}
         <SectionCard icon={CalendarDays} title={t("pages.doctor.certificate_details")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
@@ -910,7 +892,7 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 3. Fees ── */}
+        {/*  3. Fees   */}
         <SectionCard icon={CreditCard} title={t("pages.doctor.fees")}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <VitalChip
@@ -924,7 +906,7 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 4. Job Type ── */}
+        {/*  4. Job Type */}
         <SectionCard icon={Briefcase} title={t("pages.doctor.job_type")}>
           <div>
             {JOB_FLAGS.map(({ key, labelKey }) => (
@@ -939,12 +921,12 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 5. Vitals ── */}
+        {/*   5. Vitals */}
         <SectionCard icon={HeartPulse} title={t("pages.doctor.reported_vitals")}>
           {cert.vitals_available ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {cert.temperature && (
-                <VitalChip label="Temp (°C)" value={cert.temperature} />
+                <VitalChip label="Temp (Â°C)" value={cert.temperature} />
               )}
               {cert.blood_pressure && (
                 <VitalChip label={t("pages.doctor.blood_pressure")} value={cert.blood_pressure} />
@@ -953,7 +935,7 @@ function RequestDetail({
                 <VitalChip label={t("pages.doctor.pulse_bpm")} value={cert.pulse} />
               )}
               {cert.oxygen_saturation && (
-                <VitalChip label="O₂ sat (%)" value={cert.oxygen_saturation} />
+                <VitalChip label="O2  sat (%)" value={cert.oxygen_saturation} />
               )}
             </div>
           ) : (
@@ -963,7 +945,7 @@ function RequestDetail({
           )}
         </SectionCard>
 
-        {/* ── 6. Red Flag Assessment ── */}
+        {/*  6. Red Flag Assessment   */}
         <SectionCard icon={Activity} title={t("pages.doctor.red_flag_assessment")}>
           <div className="mb-3">
             <StatusChip
@@ -987,7 +969,7 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 7. Video Confirmation ── */}
+        {/*   7. Video Confirmation   */}
         <SectionCard id="cert-sec-identity" icon={Video} title={t("pages.doctor.video_confirmation")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
@@ -1010,7 +992,7 @@ function RequestDetail({
             />
           </div>
 
-          {/* ── Video verification actions ── */}
+          {/*   Video verification actions  */}
           {!isIssued && (
             <div className="mt-3 pt-3 border-t border-border flex flex-col sm:flex-row gap-2">
               <Button
@@ -1047,7 +1029,7 @@ function RequestDetail({
           )}
         </SectionCard>
 
-        {/* ── 8. Documents ── */}
+        {/*   8. Documents   */}
         <SectionCard icon={FileText} title={t("pages.doctor.documents")}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
             <InfoRow
@@ -1083,14 +1065,14 @@ function RequestDetail({
           </div>
         </SectionCard>
 
-        {/* ── 9. Patient notes ── */}
+        {/*   9. Patient notes   */}
         {cert.patient_notes && (
           <SectionCard icon={BookOpen} title={t("pages.doctor.patient_notes")}>
             <RichTextRenderer value={cert.patient_notes} className="text-xs text-foreground" />
           </SectionCard>
         )}
 
-        {/* ── 10. Doctor's Decision ── */}
+        {/*   10. Doctor's Decision  */}
         <SectionCard
           id="cert-sec-decision"
           icon={Stethoscope}
@@ -1133,7 +1115,7 @@ function RequestDetail({
                 <RichTextarea
                   value={doctorNotes}
                   onChange={setDoctorNotes}
-                  placeholder="Clinical observations, recommendations, or reason for referral…"
+                  placeholder="Clinical observations, recommendations, or reason for referral..."
                   minHeight={130}
                   editorClassName="text-xs"
                 />
@@ -1147,7 +1129,7 @@ function RequestDetail({
                   <Input
                     type="date"
                     value={validUntil}
-                    min={new Date().toISOString().slice(0, 10)}
+                    min={toLocalDateInputValue()}
                     onChange={(e) => setValidUntil(e.target.value)}
                     className="h-9 text-xs w-full sm:w-52"
                   />
@@ -1171,7 +1153,7 @@ function RequestDetail({
                     </>
                   ) : updateMut.isPending ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
                     </>
                   ) : (
                     <>
@@ -1239,7 +1221,7 @@ function RequestDetail({
           )}
         </SectionCard>
 
-        {/* ── Reject form ── */}
+        {/*  Reject form  */}
         {showReject && (
           <SectionCard icon={XCircle} title={t("pages.doctor.reject_certificate")}>
             <div className="space-y-3">
@@ -1247,7 +1229,7 @@ function RequestDetail({
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
-                placeholder="Reason for rejection (min 10 characters)…"
+                placeholder="Reason for rejection (min 10 characters)..."
                 className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
@@ -1278,7 +1260,7 @@ function RequestDetail({
           </SectionCard>
         )}
 
-        {/* ── Revoke form ── */}
+        {/*  Revoke form   */}
         {showRevoke && (
           <SectionCard icon={Ban} title={t("pages.doctor.revoke_certificate")}>
             <div className="space-y-3">
@@ -1286,7 +1268,7 @@ function RequestDetail({
                 value={revokeReason}
                 onChange={(e) => setRevokeReason(e.target.value)}
                 rows={3}
-                placeholder="Reason for revocation (min 10 characters)…"
+                placeholder="Reason for revocation (min 10 characters)..."
                 className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
@@ -1321,10 +1303,7 @@ function RequestDetail({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function DoctorFitnessCertificates() {
   const { t, i18n } = useTranslation();
 
@@ -1400,7 +1379,7 @@ function DoctorFitnessCertificates() {
         />
 
         <div className="px-3 py-4 sm:px-6 sm:py-8">
-          {/* ── Stats cards (also quick filters) ── */}
+          {/*   Stats cards (also quick filters)   */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 mb-4">
             {stats.map(({ key, label, value, icon: Icon, tone }) => {
               const active = activeFilter === key;
@@ -1426,7 +1405,7 @@ function DoctorFitnessCertificates() {
           </div>
 
           <div className="rounded-[6px] border border-border/80 bg-card overflow-hidden shadow-lg flex min-h-[580px]">
-            {/* ── Left panel ── */}
+            {/*   Left panel  */}
             <div
               className={cn(
                 "flex flex-col border-border/60",
@@ -1502,7 +1481,7 @@ function DoctorFitnessCertificates() {
               </div>
             </div>
 
-            {/* ── Right panel ── */}
+            {/* Right panel  */}
             {selectedId !== null ? (
               <div className="flex-1 flex flex-col min-h-0">
                 <RequestDetail
@@ -1534,3 +1513,4 @@ function DoctorFitnessCertificates() {
 }
 
 export default DoctorFitnessCertificates;
+

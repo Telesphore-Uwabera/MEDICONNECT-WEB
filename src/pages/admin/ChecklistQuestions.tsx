@@ -1,11 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+﻿import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
-import {
-  ClipboardList,
+import { formatDateOnly } from "@/lib/date";
+import {ClipboardList,
   Plus,
   Pencil,
   Trash2,
@@ -38,15 +38,13 @@ import {
 import { toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Something went wrong";
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonRows() {
   return (
     <>
@@ -65,9 +63,7 @@ function SkeletonRows() {
     </>
   );
 }
-
-// ─── InfoTile ─────────────────────────────────────────────────────────────────
-
+ 
 const InfoTile = ({
   icon,
   label,
@@ -90,8 +86,7 @@ const InfoTile = ({
   </div>
 );
 
-// ─── Badge ────────────────────────────────────────────────────────────────────
-
+ 
 const Badge = ({
   children,
   variant = "default",
@@ -112,9 +107,7 @@ const Badge = ({
     </span>
   );
 };
-
-// ─── Desktop row ──────────────────────────────────────────────────────────────
-
+ 
 function QuestionRow({
   q,
   index,
@@ -152,7 +145,7 @@ function QuestionRow({
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
         <span className="flex items-center gap-1">
           <Calendar className="w-3 h-3 shrink-0" />
-          {new Date(q.created_at).toLocaleDateString()}
+          {formatDateOnly(q.created_at)}
         </span>
       </td>
       <td className="px-4 py-3 text-right">
@@ -193,8 +186,7 @@ function QuestionRow({
   );
 }
 
-// ─── Mobile card ──────────────────────────────────────────────────────────────
-
+ 
 function QuestionCard({
   q,
   index,
@@ -224,7 +216,7 @@ function QuestionCard({
         </div>
         <p className="text-[10px] text-muted-foreground/50 mt-1 flex items-center gap-1">
           <Calendar className="w-3 h-3" />
-          {new Date(q.created_at).toLocaleDateString()}
+          {formatDateOnly(q.created_at)}
         </p>
         <div className="flex items-center gap-2 mt-2.5">
           <Button
@@ -267,8 +259,7 @@ function QuestionCard({
   );
 }
 
-// ─── View Details Panel ───────────────────────────────────────────────────────
-
+ 
 function ViewDetailsPanel({
   question,
   onClose,
@@ -377,12 +368,12 @@ function ViewDetailsPanel({
                 <InfoTile
                   icon={<Calendar className="w-3.5 h-3.5" />}
                   label="Created"
-                  value={new Date(question.created_at).toLocaleDateString()}
+                  value={formatDateOnly(question.created_at)}
                 />
                 <InfoTile
                   icon={<Calendar className="w-3.5 h-3.5" />}
                   label="Updated"
-                  value={new Date(question.updated_at).toLocaleDateString()}
+                  value={formatDateOnly(question.updated_at)}
                 />
               </div>
 
@@ -565,7 +556,7 @@ function QuestionPanel({
                   <InfoTile
                     icon={<Calendar className="w-3.5 h-3.5" />}
                     label="Created"
-                    value={new Date(question.created_at).toLocaleDateString()}
+                    value={formatDateOnly(question.created_at)}
                   />
                 </div>
               )}
@@ -699,7 +690,7 @@ function DeleteConfirmPanel({
                 <InfoTile
                   icon={<Calendar className="w-3.5 h-3.5" />}
                   label="Created"
-                  value={new Date(question.created_at).toLocaleDateString()}
+                  value={formatDateOnly(question.created_at)}
                 />
               </div>
             </div>
@@ -732,9 +723,7 @@ function DeleteConfirmPanel({
     </>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function ChecklistQuestions() {
   const { t, i18n } = useTranslation(); 
 
@@ -743,8 +732,7 @@ function ChecklistQuestions() {
   const [selectedQuestion, setSelectedQuestion] = useState<ApiChecklistQuestion | null>(null);
   const [deletingQuestion, setDeletingQuestion] = useState<ApiChecklistQuestion | null>(null);
   const [viewingQuestion, setViewingQuestion] = useState<ApiChecklistQuestion | null>(null);
-
-  // ── API ──
+ 
   const { data: questionsBySection = {} as QuestionsBySection, isLoading, isError } =
     useGetChecklistQuestions();
 
@@ -760,8 +748,7 @@ function ChecklistQuestions() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const isDeleting = deleteMutation.isPending;
-
-  // ── Handlers ──
+ 
   const openCreate = useCallback(() => {
     setSelectedQuestion(null);
     setPanelMode("create");
@@ -851,7 +838,7 @@ function ChecklistQuestions() {
             <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
-                  <span className="text-muted-foreground/50">Loading…</span>
+                  <span className="text-muted-foreground/50">Loading...</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{filtered.length}</span>{" "}
@@ -867,7 +854,7 @@ function ChecklistQuestions() {
                     type="text"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search questions…"
+                    placeholder="Search questions..."
                     className="w-40 sm:w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                   />
                   {searchInput && (
@@ -1027,4 +1014,5 @@ function ChecklistQuestions() {
 }
 
 export default ChecklistQuestions;
+
 

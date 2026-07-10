@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+﻿import React, { useState, useMemo, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import {
-  Star,
+import { formatDateOnly } from "@/lib/date";
+  import{Star,
   Search,
   ChevronRight,
   ArrowLeft,
@@ -51,18 +51,12 @@ import {
   type ApiAppointment,
 } from "@/hooks/patient/use-patient-appointment";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 const FILTER_TAB_IDS: (ReviewStatus | "all")[] = ["all", "pending", "approved", "rejected"];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-US", {
+  formatDateOnly(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -87,10 +81,7 @@ const getInitials = (name: string | null | undefined): string => {
     .slice(0, 2);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skeleton Components
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function ReviewCardSkeleton({ compact = false }: { compact?: boolean }) {
   return (
     <div className="rounded-[6px] border border-border bg-card p-2.5 flex items-start gap-2.5">
@@ -188,10 +179,7 @@ function AppointmentSearchSkeleton() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Star Rating
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function StarRating({
   rating,
   max = 5,
@@ -233,10 +221,7 @@ function StarRating({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sub-components
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function SectionCard({
   icon: Icon,
   title,
@@ -269,7 +254,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
       </span>
       <span className="text-xs font-medium text-foreground">
         {value ?? (
-          <span className="text-muted-foreground italic font-normal">—</span>
+          <span className="text-muted-foreground italic font-normal">-</span>
         )}
       </span>
     </div>
@@ -292,10 +277,8 @@ function StatusChip({ ok, label }: { ok: boolean; label: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Appointment Search & Select — Portal-based dropdown (no overflow clipping)
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Appointment Search & Select  Portal-based dropdown (no overflow clipping)
+ 
 function AppointmentSearchSelect({
   appointments,
   selectedAppt,
@@ -621,10 +604,7 @@ function AppointmentSearchSelect({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Submit Review Panel
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function SubmitReviewPanel({
   onBack,
   onSuccess,
@@ -837,10 +817,7 @@ function SubmitReviewPanel({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Review List Card
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function ReviewCard({
   review,
   onOpen,
@@ -919,10 +896,7 @@ function ReviewCard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Detail View
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function ReviewDetail({
   review,
   onBack,
@@ -1279,19 +1253,13 @@ function ReviewDetail({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Panel mode type
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 type RightPanel =
   | { mode: "idle" }
   | { mode: "detail"; reviewId: number }
   | { mode: "submit" };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function PatientReviews() {
   const { t } = useTranslation();
 
@@ -1344,8 +1312,7 @@ function PatientReviews() {
 
         <div className="px-3 py-4 sm:px-5 sm:py-6">
           <div className="rounded-[6px] border border-border bg-card shadow-sm flex min-h-[560px]">
-
-            {/* ── Left panel ── */}
+ 
             <div
               className={cn(
                 "flex flex-col border-border",
@@ -1454,8 +1421,7 @@ function PatientReviews() {
                 )}
               </div>
             </div>
-
-            {/* ── Right panel ── */}
+ 
             {panel.mode === "detail" && selectedReview ? (
               <div className="flex-1 min-w-0 flex flex-col min-h-0 border-l border-border">
                 <ReviewDetail

@@ -1,11 +1,11 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+﻿import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  CalendarClock,
+import { formatDateOnly } from "@/lib/date";
+import {CalendarClock,
   CheckCircle2,
   XCircle,
   Clock,
@@ -44,9 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 type StatusFilter = "all" | "confirmed" | "pending" | "in_progress" | "cancelled" | "completed" | "no_show";
 type TypeFilter = "all" | "online" | "in_person";
 type BookingFilter = "all" | "scheduled" | "walk_in";
@@ -55,7 +53,7 @@ type SortOption = "date-desc" | "date-asc" | "patient";
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Date: Newest first" },
   { value: "date-asc", label: "Date: Oldest first" },
-  { value: "patient", label: "Patient (A–Z)" },
+  { value: "patient", label: "Patient (A-Z)" },
 ];
 
 interface FilterState {
@@ -76,8 +74,7 @@ const INITIAL_FILTERS: FilterState = {
   page: 1,
 };
 
-// ─── Style maps ───────────────────────────────────────────────────────────────
-
+ 
 const statusStyle: Record<string, string> = {
   confirmed:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
@@ -106,8 +103,7 @@ const typeStyle: Record<string, string> = {
   in_person: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-900",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -118,13 +114,13 @@ function getInitials(name: string) {
 }
 
 function formatDate(date: string): string {
-  if (!date) return "—";
+  if (!date) return "-";
   const d = new Date(date);
-  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
+  return isNaN(d.getTime()) ? "-" : d.toLocaleDateString();
 }
 
 function formatTime(time: string): string {
-  if (!time) return "—";
+  if (!time) return "-";
   const d = new Date(time);
   if (!isNaN(d.getTime())) {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -157,9 +153,7 @@ function matchesSearch(a: ApiAppointment, q: string): boolean {
 }
 
 
-
-// ─── Desktop row ──────────────────────────────────────────────────────────────
-
+ 
 function AppointmentRow({
   a,
   onManage,
@@ -241,7 +235,7 @@ function AppointmentRow({
 
       {/* Hospital */}
       <td className="px-4 py-3 text-[11px] text-muted-foreground/70 whitespace-nowrap max-w-[120px] truncate">
-        {a.hospital?.name_en ?? <span className="text-muted-foreground/30">—</span>}
+        {a.hospital?.name_en ?? <span className="text-muted-foreground/30">-</span>}
       </td>
 
       {/* Action */}
@@ -331,9 +325,7 @@ function AppointmentCard({
     </div>
   );
 }
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonRows() {
   return (
     <>
@@ -353,8 +345,7 @@ function SkeletonRows() {
   );
 }
 
-// ─── InfoTile ─────────────────────────────────────────────────────────────────
-
+ 
 const InfoTile = ({
   icon,
   label,
@@ -373,8 +364,7 @@ const InfoTile = ({
   </div>
 );
 
-// ─── Detail panel ─────────────────────────────────────────────────────────────
-
+ 
 type AppointmentDetailTab = "overview" | "summary" | "prescriptions";
 
 const DETAIL_TABS: Array<{ id: AppointmentDetailTab; label: string; icon: React.ReactNode }> = [
@@ -457,11 +447,11 @@ function AppointmentSummaryTab({ summary }: { summary: ApiAppointmentSummary | n
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Blood pressure" value={String(summary?.blood_pressure ?? "—")} />
-        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Temperature" value={String(summary?.temperature ?? "—")} />
-        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Pulse" value={String(summary?.pulse_rate ?? "—")} />
-        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Weight" value={String(summary?.weight ?? "—")} />
-        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Height" value={String(summary?.height ?? "—")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Blood pressure" value={String(summary?.blood_pressure ?? "-")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Temperature" value={String(summary?.temperature ?? "-")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Pulse" value={String(summary?.pulse_rate ?? "-")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Weight" value={String(summary?.weight ?? "-")} />
+        <InfoTile icon={<ClipboardList className="w-3.5 h-3.5" />} label="Height" value={String(summary?.height ?? "-")} />
         <InfoTile
           icon={<CalendarDays className="w-3.5 h-3.5" />}
           label="Follow-up"
@@ -760,7 +750,7 @@ function AppointmentPanel({
                     <InfoTile
                       icon={<Building2 className="w-3.5 h-3.5" />}
                       label="Hospital"
-                      value={appt.hospital?.name_en ?? "—"}
+                      value={appt.hospital?.name_en ?? "-"}
                     />
                     <InfoTile
                       icon={<Hash className="w-3.5 h-3.5" />}
@@ -803,7 +793,7 @@ function AppointmentPanel({
                               {note.content}
                             </p>
                             <p className="text-[10px] text-muted-foreground/50 mt-1">
-                              {new Date(note.created_at).toLocaleDateString()}
+                              {formatDateOnly(note.created_at)}
                             </p>
                           </div>
                         ))}
@@ -837,8 +827,7 @@ function AppointmentPanel({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function ManageAppointments() {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -854,8 +843,7 @@ function ManageAppointments() {
     const timer = setTimeout(() => setDebouncedSearch(searchInput), 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
-
-  // ── API ──
+ 
   const { data, isLoading, isError } = useGetAdminAppointments({
     status: filters.status !== "all" ? filters.status : undefined,
     type: filters.type !== "all" ? filters.type : undefined,
@@ -867,8 +855,7 @@ function ManageAppointments() {
   const total = data?.total ?? 0;
   const perPage = data?.per_page ?? 20;
   const totalPages = Math.ceil(total / perPage);
-
-  // ── Counts ──
+ 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     appointments.forEach((a) => {
@@ -884,8 +871,7 @@ function ManageAppointments() {
     });
     return counts;
   }, [appointments]);
-
-  // ── Client-side search + sort ──
+ 
   const filtered = useMemo(
     () => appointments.filter((a) => matchesSearch(a, debouncedSearch)),
     [appointments, debouncedSearch],
@@ -1006,8 +992,8 @@ function ManageAppointments() {
 
           {/*
              * Stat cards:
-             *   phone  → 2 columns
-             *   tablet (md+) → 4 columns
+             *   phone   2 columns
+             *   tablet (md+) 4 columns
              */}
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
             <StatCard
@@ -1044,7 +1030,7 @@ function ManageAppointments() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search patient, doctor, hospital…"
+                placeholder="Search patient, doctor, hospital..."
                 className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
@@ -1063,7 +1049,7 @@ function ManageAppointments() {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
-                  <span className="text-muted-foreground/50">Loading…</span>
+                  <span className="text-muted-foreground/50">Loading...</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{sorted.length}</span>{" "}
@@ -1081,7 +1067,7 @@ function ManageAppointments() {
               </p>
 
               {/*
-                 * Pending badge — visible at md+ to avoid cramping the
+                 * Pending badge  visible at md+ to avoid cramping the
                  * phone meta bar, but no longer gated behind sm: only.
                  */}
               {pendingCount > 0 && (
@@ -1094,7 +1080,7 @@ function ManageAppointments() {
 
             <div className="flex items-center gap-2 shrink-0">
               {/*
-                 * Search input in meta bar — visible at sm+ (tablets and
+                 * Search input in meta bar  visible at sm+ (tablets and
                  * desktop). Phone uses the dedicated block above.
                  * Slightly wider on tablet (md+) for comfort.
                  */}
@@ -1104,7 +1090,7 @@ function ManageAppointments() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search patient, doctor, hospital…"
+                  placeholder="Search patient, doctor, hospital..."
                   className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1184,7 +1170,7 @@ function ManageAppointments() {
             ) : (
               <>
                 {/*
-                   * Desktop table — only at lg+ (1024px+).
+                   * Desktop table  only at lg+ (1024px+).
                    * Tablets get the 2-column card grid below.
                    */}
                 <div className="hidden lg:block rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
@@ -1213,7 +1199,7 @@ function ManageAppointments() {
                 </div>
 
                 {/*
-                   * Card layout — phone AND tablet (hidden at lg+).
+                   * Card layout  phone AND tablet (hidden at lg+).
                    * 2-column grid on tablet (sm:grid-cols-2) for better
                    * use of the wider screen.
                    */}
@@ -1274,3 +1260,4 @@ function ManageAppointments() {
 }
 
 export default ManageAppointments;
+

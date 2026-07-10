@@ -1,10 +1,10 @@
-import { type PrescriptionApiStatus } from "@/hooks/patient/use-patient-prescriptions";
+﻿import { type PrescriptionApiStatus } from "@/hooks/patient/use-patient-prescriptions";
 import type { TFunction } from "i18next";
+import { formatDateOnly } from "@/lib/date";
 
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 export type ViewMode = "table" | "cards";
 
 export interface FilterState {
@@ -24,9 +24,7 @@ export const INITIAL_FILTERS: FilterState = {
   is_signed: "all",
   sort: "date-desc",
 };
-
-// ─── Status config ────────────────────────────────────────────────────────────
-
+ 
 export const STATUS_STYLES: Record<string, string> = {
   issued: "bg-primary/10 text-primary border-primary/20",
   sent_to_pharmacy:
@@ -69,11 +67,9 @@ export const ALL_STATUSES: PrescriptionApiStatus[] = [
   "expired",
   "cancelled",
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return formatDateOnly(iso, "en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -111,3 +107,4 @@ export function getPdfUrl(path: string): string {
 }
 
 export { BASE_URL };
+

@@ -1,10 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CalendarClock, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRescheduleAppointment, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { getErrMsg } from "./helpers";
+import { toLocalDateInputValue } from "@/lib/date";
 
 interface Props {
   appt: Appointment;
@@ -17,7 +18,7 @@ export function RescheduleModal({ appt, onClose }: Props) {
   const [time, setTime] = useState(appt.appointment_time?.slice(0, 5) ?? "");
   const reschedule = useRescheduleAppointment();
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = toLocalDateInputValue();
 
   const handleSubmit = () => {
     if (!date || !time) return;
@@ -96,7 +97,7 @@ export function RescheduleModal({ appt, onClose }: Props) {
             className="flex-1 h-8 text-[11px] font-semibold bg-sky-600 hover:bg-sky-500 text-white border-0"
           >
             {reschedule.isPending ? (
-              <><Loader2 className="h-3 w-3 animate-spin mr-1" />Rescheduling…</>
+              <><Loader2 className="h-3 w-3 animate-spin mr-1" />Rescheduling...</>
             ) : (
               t("pages.doctor.confirm_reschedule")
             )}
@@ -106,3 +107,4 @@ export function RescheduleModal({ appt, onClose }: Props) {
     </div>
   );
 }
+

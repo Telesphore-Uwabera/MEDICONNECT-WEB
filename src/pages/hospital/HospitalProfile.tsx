@@ -251,6 +251,12 @@ function isOpenNow(opens: string, closes: string, open24h: boolean): boolean {
   return nowMin >= oh * 60 + om && nowMin < ch * 60 + cm;
 }
 
+function toHourMinute(value?: string | null): string {
+  const match = String(value ?? "").match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return "";
+  return match[1].padStart(2, "0") + ":" + match[2];
+}
+
 const humanType = (t: string) =>
   t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -2007,8 +2013,8 @@ const HospitalProfile = () => {
           phone: serverHospital.phone,
           email: serverHospital.email,
           website: serverHospital.website,
-          opens_at: serverHospital.opens_at,
-          closes_at: serverHospital.closes_at,
+          opens_at: toHourMinute(serverHospital.opens_at),
+          closes_at: toHourMinute(serverHospital.closes_at),
           is_open_24h: serverHospital.is_open_24h,
         },
         linksSection: normaliseSocialLinks(serverHospital.social_links),
@@ -2039,8 +2045,8 @@ const HospitalProfile = () => {
       phone: hospital.phone,
       email: hospital.email,
       website: hospital.website,
-      opens_at: hospital.opens_at,
-      closes_at: hospital.closes_at,
+      opens_at: toHourMinute(hospital.opens_at),
+      closes_at: toHourMinute(hospital.closes_at),
       is_open_24h: hospital.is_open_24h,
       social_links: buildSocialLinksPayload(linksSection),
     };

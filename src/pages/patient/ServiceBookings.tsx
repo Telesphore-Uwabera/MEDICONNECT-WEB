@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
-import {
-  CalendarDays,
+import { formatDateOnly } from "@/lib/date";
+  import{CalendarDays,
   Clock,
   Building2,
   Stethoscope,
@@ -42,7 +42,7 @@ import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 import {
   BookingStatus,
-  useGetPatientServiceBookings,   // ← plural: fetches list with filters
+  useGetPatientServiceBookings,   //  plural: fetches list with filters
   useCancelPatientServiceBooking,
   type ApiServiceBooking,
   type ServiceBookingSearchParams,
@@ -50,7 +50,7 @@ import {
 } from "@/hooks/patient/use-patient-service";
 import { Link } from "react-router-dom";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+ 
 
 type SortOption = "date-desc" | "date-asc";
 type ViewMode = "table" | "cards";
@@ -68,8 +68,7 @@ const INITIAL_FILTERS: FilterState = {
   sort: "date-desc",
   page: 1,
 };
-
-// ─── Status config ────────────────────────────────────────────────────────────
+ 
 
 const STATUS_CONFIG: Record<
   BookingStatus,
@@ -126,11 +125,11 @@ const STATUS_OPTIONS: Array<{ value: BookingStatus | "all"; label: string }> = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+ 
 
 function formatDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString(undefined, {
+    return formatDateOnly(dateStr, undefined, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -167,7 +166,7 @@ function formatDateTime(dateStr: string): string {
 }
 
 function formatPrice(amount: string | null, currency = "RWF"): string {
-  if (!amount) return "—";
+  if (!amount) return "-";
   return `${parseFloat(amount).toLocaleString()} ${currency}`;
 }
 
@@ -200,7 +199,7 @@ function clientFilter(
   });
 }
 
-// ─── Action feedback banner ───────────────────────────────────────────────────
+//  Action feedback banner 
 // Shown inline below the meta bar after any successful/failed mutation.
 
 interface ActionFeedback {
@@ -247,7 +246,7 @@ function FeedbackBanner({
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+ 
 
 function StatusBadge({ status }: { status: BookingStatus }) {
   const cfg = STATUS_CONFIG[status];
@@ -314,8 +313,7 @@ function PillGroup<T extends string>({
   );
 }
 
-// ─── Detail Row helper ────────────────────────────────────────────────────────
-
+ 
 function DetailRow({
   icon: Icon,
   label,
@@ -345,7 +343,7 @@ function DetailRow({
             accent,
           )}
         >
-          {value ?? "—"}
+          {value ?? "-"}
         </p>
       </div>
     </div>
@@ -370,9 +368,7 @@ function DrawerSection({
     </div>
   );
 }
-
-// ─── Booking Detail Drawer ────────────────────────────────────────────────────
-
+ 
 function BookingDetailDrawer({
   bookingId,
   onClose,
@@ -586,7 +582,7 @@ function BookingDetailDrawer({
   );
 }
 
-// ─── Skeletons ────────────────────────────────────────────────────────────────
+ 
 
 function RowSkeleton() {
   return (
@@ -635,7 +631,7 @@ function CardSkeleton() {
   );
 }
 
-// ─── Cancel Dialog ────────────────────────────────────────────────────────────
+ 
 
 function CancelDialog({
   booking,
@@ -701,7 +697,7 @@ function CancelDialog({
             {isLoading ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Cancelling…
+                Cancelling...
               </>
             ) : (
               <>
@@ -716,8 +712,7 @@ function CancelDialog({
   );
 }
 
-// ─── Booking Card Item ────────────────────────────────────────────────────────
-
+ 
 function BookingCardItem({
   booking,
   onCancel,
@@ -733,8 +728,7 @@ function BookingCardItem({
     <Card
       className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-xl hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col"
       onClick={() => onView(booking)}
-    >
-      {/* ── Top strip ── */}
+    > 
       <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
           Service Booking
@@ -788,7 +782,7 @@ function BookingCardItem({
             <span className="text-xs font-semibold text-foreground">
               {booking.price ?? booking.service.price ? (
                 `${parseFloat((booking.price ?? booking.service.price)!).toLocaleString()} ${booking.currency ?? "RWF"}`
-              ) : "—"}
+              ) : "-"}
             </span>
           </div>
         </div>
@@ -821,8 +815,7 @@ function BookingCardItem({
     </Card>
   );
 }
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
+ 
 
 function Pagination({
   currentPage,
@@ -841,8 +834,8 @@ function Pagination({
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
     .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-    .reduce<(number | "…")[]>((acc, p, i, arr) => {
-      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+    .reduce<(number | "...")[]>((acc, p, i, arr) => {
+      if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
       acc.push(p);
       return acc;
     }, []);
@@ -865,8 +858,8 @@ function Pagination({
           <ChevronLeft className="h-3 w-3" />
         </Button>
         {pages.map((p, i) =>
-          p === "…" ? (
-            <span key={`e-${i}`} className="text-[10px] text-muted-foreground px-1">…</span>
+          p === "..." ? (
+            <span key={`e-${i}`} className="text-[10px] text-muted-foreground px-1">...</span>
           ) : (
             <Button
               key={p}
@@ -893,8 +886,7 @@ function Pagination({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function ServiceBookings() {
   const { t, i18n } = useTranslation();
 
@@ -955,7 +947,7 @@ function ServiceBookings() {
       key: "q",
       label: "Search",
       value: filters.q,
-      placeholder: "Service, hospital…",
+      placeholder: "Service, hospitalâ€¦",
       onChange: (v: string) => set("q", v)
     }
   ], [filters, set]);
@@ -970,7 +962,7 @@ function ServiceBookings() {
   const totalPages =
     data?.last_page ?? (data ? Math.ceil(data.total / data.per_page) : 1);
 
-  // ── Cancel handler ────────────────────────────────────────────────────────
+ 
   const handleCancelConfirm = useCallback(() => {
     if (!cancelTarget) return;
     setCancelError(null);
@@ -1009,6 +1001,19 @@ function ServiceBookings() {
       ),
     [data],
   );
+  const statusTabs = useMemo(
+    () =>
+      STATUS_OPTIONS.map((option) => ({
+        ...option,
+        count:
+          option.value === "all"
+            ? data?.total ?? bookings.length
+            : statusCounts[option.value as BookingStatus] ?? 0,
+      })),
+    [bookings.length, data?.total, statusCounts],
+  );
+
+
   const visibleValue = useMemo(
     () =>
       bookings.reduce((sum, booking) => {
@@ -1029,8 +1034,7 @@ function ServiceBookings() {
     [bookings.length, data?.total, statusCounts.accepted, statusCounts.completed, statusCounts.pending, visibleValue],
   );
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
+ 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
@@ -1049,7 +1053,7 @@ function ServiceBookings() {
 
         <main className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* Inline feedback banner — shown directly below the meta bar */}
+          {/* Inline feedback banner  shown directly below the meta bar */}
           {feedback && (
             <FeedbackBanner
               feedback={feedback}
@@ -1154,6 +1158,32 @@ function ServiceBookings() {
               </Link>
 
             </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-[6px] border border-border/60 bg-card/40 p-1">
+              {statusTabs.map((tab) => {
+                const active = filters.status === tab.value;
+                return (
+                  <button
+                    key={tab.value}
+                    onClick={() => set("status", tab.value as FilterState["status"])}
+                    className={cn(
+                      "flex shrink-0 items-center gap-2 rounded-[6px] px-3 py-2 text-xs font-semibold transition-all",
+                      active
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px]",
+                      active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             <PatientStatsGrid items={statsItems} />
             {/* Error state */}
             {isError && (
@@ -1200,7 +1230,7 @@ function ServiceBookings() {
               </div>
             )}
 
-            {/* ── Table view ── */}
+            {/* Table view  */}
             {view === "table" && (isLoading || bookings.length > 0) && !isError && (
               <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
@@ -1283,7 +1313,7 @@ function ServiceBookings() {
                                     <span className="hidden sm:inline">Cancel</span>
                                   </Button>
                                 ) : (
-                                  <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">—</span>
+                                  <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">-</span>
                                 )}
                               </div>
                             </td>
@@ -1295,7 +1325,7 @@ function ServiceBookings() {
               </div>
             )}
 
-            {/* ── Cards view ── */}
+            {/*  Cards view   */}
             {view === "cards" && (isLoading || bookings.length > 0) && !isError && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 px-4 sm:px-5">
                 {isLoading
@@ -1325,7 +1355,7 @@ function ServiceBookings() {
         </main>
       </div>
 
-      {/* ── Detail Drawer ── */}
+      {/*   Detail Drawer  */}
       {detailId !== null && (
         <BookingDetailDrawer
           bookingId={detailId}
@@ -1337,7 +1367,7 @@ function ServiceBookings() {
         />
       )}
 
-      {/* ── Cancel Dialog ── */}
+      {/*  Cancel Dialog   */}
       {cancelTarget && (
         <CancelDialog
           booking={cancelTarget}
@@ -1359,3 +1389,4 @@ function ServiceBookings() {
 }
 
 export default ServiceBookings;
+

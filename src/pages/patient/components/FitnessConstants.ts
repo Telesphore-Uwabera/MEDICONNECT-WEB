@@ -1,9 +1,10 @@
-import { FileText, Activity, ClipboardList, User } from "lucide-react";
+﻿import { FileText, Activity, ClipboardList, User } from "lucide-react";
 import type { CertStatus } from "@/hooks/patient/use-patient-certificates";
 import { Clock, Eye, ShieldCheck, XCircle } from "lucide-react";
 import type { TFunction } from "i18next";
+import { formatDateOnly } from "@/lib/date";
 
-// Canonical (untranslated) values — these are sent to the API and used for
+// Canonical (untranslated) values  these are sent to the API and used for
 // internal comparisons. Never localize these; only the labels shown alongside
 // them via the getters below.
 export const JOB_TYPE_NONE = "None of the above";
@@ -134,14 +135,30 @@ export const getStatusMeta = (
     color: "bg-destructive/15 text-destructive border-destructive/25",
     icon: XCircle,
   },
+  issued: {
+    label: "",
+    color: "",
+    icon: "symbol"
+  },
+  withdrawn: {
+    label: "",
+    color: "",
+    icon: "symbol"
+  },
+  expired: {
+    label: "",
+    color: "",
+    icon: "symbol"
+  }
 });
 
 export const getPurposeLabel = (t: TFunction, value: string) =>
   getPurposes(t).find((p) => p.value === value)?.label ?? value;
 
 export const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-US", {
+  formatDateOnly(d, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+

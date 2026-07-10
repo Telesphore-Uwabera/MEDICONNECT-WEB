@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import i18n from "@/lib/i18n";
@@ -7,8 +7,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
-import {
-  ShoppingBag,
+import { formatDateOnly } from "@/lib/date";
+  import{ShoppingBag,
   MapPin,
   CheckCircle2,
   XCircle,
@@ -40,8 +40,7 @@ import {
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 
-// ─── Constants ─────────────────────────────────────────────────────────────
-
+ 
 const ALL_STATUSES: OrderStatus[] = [
   "draft",
   "pending",
@@ -120,8 +119,7 @@ function openOrderReceipt(order: PharmacyOrder) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
-// ─── Sub-components ─────────────────────────────────────────────────────────
-
+ 
 function StatusBadge({ status }: { status: OrderStatus }) {
   const { t } = useTranslation();
   return (
@@ -291,7 +289,7 @@ function OrderCard({
         <div className="flex items-center gap-2">
           <DeliveryBadge type={order.delivery_type} />
           <span className="text-xs text-muted-foreground/40">
-            {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+            {formatDateOnly(order.created_at, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
           </span>
         </div>
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -311,8 +309,7 @@ function OrderCard({
   );
 }
 
-// ─── Order Detail Drawer ────────────────────────────────────────────────────
-
+ 
 function OrderDrawer({
   order,
   onClose,
@@ -394,7 +391,7 @@ function OrderDrawer({
                         <p className="text-xs font-medium text-foreground">{item.medicine_name}</p>
                         {item.dosage && <p className="text-xs text-muted-foreground/50">{item.dosage}</p>}
                       </div>
-                      <span className="text-xs font-semibold text-foreground bg-secondary/50 px-1.5 py-0.5 rounded-[6px]">×{item.quantity}</span>
+                      <span className="text-xs font-semibold text-foreground bg-secondary/50 px-1.5 py-0.5 rounded-[6px]">X{item.quantity}</span>
                     </div>
                   ))}
                 </div>
@@ -421,13 +418,13 @@ function OrderDrawer({
                 <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
                   <p className="text-xs text-muted-foreground/50">{t("pages.patient.ord_placed")}</p>
                   <p className="text-xs font-medium text-foreground">
-                    {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                    {formatDateOnly(order.created_at, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
                 </div>
                 <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-2.5 py-1.5">
                   <p className="text-xs text-muted-foreground/50">{t("pages.patient.ord_updated")}</p>
                   <p className="text-xs font-medium text-foreground">
-                    {new Date(order.updated_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                    {formatDateOnly(order.updated_at, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </p>
                 </div>
               </div>
@@ -462,8 +459,7 @@ function OrderDrawer({
   );
 }
 
-// ─── Cancel Confirmation Modal ───────────────────────────────────────────────
-
+ 
 function CancelConfirmModal({
   order,
   onConfirm,
@@ -520,9 +516,7 @@ function CancelConfirmModal({
     </>
   );
 }
-
-// ─── Page ────────────────────────────────────────────────────────────────────
-
+ 
 const Orders = () => {
   const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -641,8 +635,7 @@ const Orders = () => {
     }
   ], [filters, set, t]);
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-
+ 
   return (
     <DashboardLayout role="patient">
       <div className="flex flex-col h-full">
@@ -845,7 +838,7 @@ const Orders = () => {
                               {order.items.slice(0, 2).map((item) => (
                                 <span key={item.id} className="text-xs text-muted-foreground/70">
                                   <span className="font-medium text-foreground/80">{item.medicine_name}</span>
-                                  <span className="text-muted-foreground/45"> ×{item.quantity}</span>
+                                  <span className="text-muted-foreground/45"> X{item.quantity}</span>
                                 </span>
                               ))}
                               {order.items.length > 2 && (
@@ -859,7 +852,7 @@ const Orders = () => {
                           <td className="px-3 py-2.5 whitespace-nowrap text-muted-foreground/60 text-xs">
                             <div className="flex items-center gap-1">
                               <CalendarDays className="w-4 h-4" />
-                              {new Date(order.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                              {formatDateOnly(order.created_at, "en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
@@ -923,3 +916,4 @@ const Orders = () => {
 };
 
 export default Orders;
+

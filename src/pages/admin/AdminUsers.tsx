@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+﻿import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
@@ -7,8 +7,8 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
+import { formatDateOnly } from "@/lib/date";
+ import { AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -128,12 +128,17 @@ type RoleFilter =
   | "roles";
 type StatusFilter = "all" | "active" | "pending" | "suspended" | "rejected";
 type SortOption = "name" | "joined-desc" | "joined-asc" | "role";
+type CreatedProfileTarget = {
+  id: number;
+  role: ManagedRole;
+  name: string;
+};
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "joined-desc", label: "Joined: Newest first" },
   { value: "joined-asc", label: "Joined: Oldest first" },
-  { value: "name", label: "Name (A–Z)" },
-  { value: "role", label: "Role (A–Z)" },
+  { value: "name", label: "Name (A-Z)" },
+  { value: "role", label: "Role (A-Z)" },
 ];
 
 interface FilterState {
@@ -164,7 +169,7 @@ function getErrorMessage(error: unknown): string {
         const flat = Array.isArray(payload.errors)
           ? payload.errors
           : Object.values(payload.errors).flat();
-        if (flat.length > 0) return flat.join(" · ");
+        if (flat.length > 0) return flat.join(" Â· ");
       }
       if (typeof payload.message === "string") return payload.message;
     }
@@ -174,7 +179,7 @@ function getErrorMessage(error: unknown): string {
   return "Something went wrong";
 }
 
-// ─── Style maps ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Style maps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const statusStyle: Record<string, string> = {
   active:
@@ -335,7 +340,7 @@ function UserRow({
         </Badge>
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {new Date(u.created_at).toLocaleDateString()}
+        {formatDateOnly(u.created_at)}
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1.5">
@@ -428,7 +433,7 @@ function UserCard({
             {u.phone}
           </span>
           <span className="text-[10px] text-muted-foreground/50">
-            {new Date(u.created_at).toLocaleDateString()}
+            {formatDateOnly(u.created_at)}
           </span>
         </div>
         <div className={cn("mt-2.5 grid gap-2", canEdit ? "grid-cols-2" : "grid-cols-1")}>
@@ -499,7 +504,6 @@ function UserPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const open = !!user;
 
-  // ── Credentials & sessions ──
   const resetPassword = useResetUserPassword();
   const revokeSessions = useRevokeUserSessions();
   const resendVerification = useResendVerification();
@@ -526,12 +530,21 @@ function UserPanel({
 
   const handleSaveCredentials = () => {
     if (!user) return;
+    const normalizedCountryCode = credCountryCode.trim().startsWith("+")
+      ? credCountryCode.trim()
+      : `+${credCountryCode.trim() || "250"}`;
     const payload: ResetUserCredentialsPayload = {};
-    if (credPassword.trim()) payload.password = credPassword.trim();
+    if (credPassword.trim()) {
+      if (credPassword.trim().length < 8) {
+        sonnerToast.error("Password must be at least 8 characters.");
+        return;
+      }
+      payload.password = credPassword.trim();
+    }
     if (credEmail.trim()) payload.email = credEmail.trim();
     if (credPhone.trim()) {
       payload.phone = credPhone.trim();
-      payload.country_code = credCountryCode.trim() || undefined;
+      payload.country_code = normalizedCountryCode;
     }
     if (Object.keys(payload).length === 0) {
       sonnerToast.error("Provide at least one of: email, phone, password.");
@@ -546,7 +559,9 @@ function UserPanel({
           setCredPassword("");
           setCredEmail("");
           setCredPhone("");
-          sonnerToast.success(res.message ?? "Credentials updated.");
+          sonnerToast.success(res.message ?? "Credentials updated.", {
+            description: res.changes?.length ? `Updated: ${res.changes.join(", ")}` : undefined,
+          });
         },
         onError: (error: unknown) =>
           sonnerToast.error("Could not update credentials.", { description: getErrorMessage(error) }),
@@ -649,7 +664,7 @@ function UserPanel({
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-5 py-5 space-y-4">
-                {/* ── Identity card ── */}
+                {/* â”€â”€ Identity card â”€â”€ */}
                 <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
                   {/* Top accent strip using role color */}
                   <div
@@ -727,7 +742,6 @@ function UserPanel({
                   </div>
                 </div>
 
-                {/* ── Info grid ── */}
                 <div className="grid grid-cols-2 gap-2.5">
                   <InfoTile
                     icon={<Phone className="w-3.5 h-3.5" />}
@@ -737,7 +751,7 @@ function UserPanel({
                   <InfoTile
                     icon={<Calendar className="w-3.5 h-3.5" />}
                     label="Joined"
-                    value={new Date(user.created_at).toLocaleDateString()}
+                    value={formatDateOnly(user.created_at)}
                   />
                   <InfoTile
                     icon={<Globe className="w-3.5 h-3.5" />}
@@ -745,7 +759,7 @@ function UserPanel({
                     value={
                       user.preferred_language === "en"
                         ? "English"
-                        : (user.preferred_language ?? "—")
+                        : (user.preferred_language ?? "-")
                     }
                   />
                   <InfoTile
@@ -754,8 +768,7 @@ function UserPanel({
                     value={`#${user.id}`}
                   />
                 </div>
-
-                {/* ── Activity strip ── */}
+ 
                 <div className="rounded-[6px] border border-border/60 bg-secondary/20 divide-y divide-border/40">
                   <div className="flex items-center justify-between px-4 py-3">
                     <span className="text-[11px] text-muted-foreground flex items-center gap-2">
@@ -764,7 +777,7 @@ function UserPanel({
                     </span>
                     {user.phone_verified_at ? (
                       <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                        {new Date(user.phone_verified_at).toLocaleDateString()}
+                        {formatDateOnly(user.phone_verified_at)}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
@@ -786,7 +799,7 @@ function UserPanel({
                     </span>
                     {user.email_verified_at ? (
                       <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                        {new Date(user.email_verified_at).toLocaleDateString()}
+                        {formatDateOnly(user.email_verified_at)}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
@@ -802,8 +815,7 @@ function UserPanel({
                     )}
                   </div>
                 </div>
-
-                {/* ── Security & credentials ── */}
+ 
                 <div className="rounded-[6px] border border-border/60 bg-secondary/20 divide-y divide-border/40">
                   <div className="flex items-center justify-between px-4 py-3 gap-3">
                     <span className="text-[11px] text-muted-foreground flex items-center gap-2">
@@ -926,8 +938,7 @@ function UserPanel({
                 </div>
               </div>
             </div>
-
-            {/* ── Footer actions ── */}
+ 
             <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 space-y-2 bg-card">
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -977,9 +988,7 @@ function UserPanel({
     </>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function FormInput({
   label,
   value,
@@ -1044,7 +1053,7 @@ function CreateUserModal({
   mode: "user" | "staff";
   defaultRole: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (profileTarget?: CreatedProfileTarget) => void;
 }) {
   const createUser = useCreateAdminUser();
   const createManagedUser = useCreateManagedUser();
@@ -1087,6 +1096,7 @@ function CreateUserModal({
       return;
     }
     try {
+      let profileTarget: CreatedProfileTarget | undefined;
       if (mode === "staff") {
         const res = await createStaff.mutateAsync({
           name: form.name.trim(),
@@ -1098,18 +1108,24 @@ function CreateUserModal({
         });
         sonnerToast.success(res.message ?? "Staff user created.");
       } else if (MANAGED_ROLES.includes(form.role)) {
-        // Doctor/patient/pharmacy/hospital go through the role-specific
-        // create-user endpoint so a matching profile row is set up too.
+        // Managed roles are created in two steps: account first, then profile.
         const res = await createManagedUser.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
-          country_code: form.country_code.trim() || "250",
+          country_code: form.country_code.trim().startsWith("+")
+            ? form.country_code.trim()
+            : `+${form.country_code.trim() || "250"}`,
           password: form.password,
           role: form.role as ManagedRole,
           gender: form.gender || undefined,
         });
         sonnerToast.success(res.message ?? "User created successfully.");
+        profileTarget = {
+          id: res.user.id,
+          role: res.role,
+          name: res.user.name,
+        };
       } else {
         // Admin accounts have no role-specific profile — keep the generic path.
         const res = await createUser.mutateAsync({
@@ -1123,7 +1139,7 @@ function CreateUserModal({
         });
         sonnerToast.success(res.message ?? "User created successfully.");
       }
-      onCreated();
+      onCreated(profileTarget);
     } catch (error: unknown) {
       sonnerToast.error(mode === "staff" ? "Could not create staff." : "Could not create user.", {
         description: getErrorMessage(error),
@@ -1144,7 +1160,13 @@ function CreateUserModal({
             </div>
             <div>
               <p className="text-[14px] font-semibold text-foreground">{mode === "staff" ? "Create staff account" : "Create user account"}</p>
-              <p className="text-[11px] text-muted-foreground">{mode === "staff" ? "Staff credentials are created by the admin." : "Login credentials will be sent to the user's email."}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {mode === "staff"
+                  ? "Staff credentials are created by the admin."
+                  : MANAGED_ROLES.includes(form.role)
+                    ? "Step 1 creates login credentials. Step 2 opens the role profile."
+                    : "Login credentials will be sent to the user's email."}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="rounded-[6px] border border-border p-2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
@@ -1170,7 +1192,7 @@ function CreateUserModal({
           <Button variant="outline" className="h-9 rounded-[6px] text-[12px]" onClick={onClose}>Cancel</Button>
           <Button className="h-9 rounded-[6px] text-[12px]" onClick={save} disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            Create
+            {mode === "user" && MANAGED_ROLES.includes(form.role) ? "Create user & continue" : "Create"}
           </Button>
         </div>
       </div>
@@ -1229,7 +1251,7 @@ function StaffPasswordModal({
             <div>
               <p className="text-[14px] font-semibold text-foreground">Reset staff password</p>
               <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">
-                {staff.name} · {staff.email}
+                {staff.name} . {staff.email}
               </p>
             </div>
           </div>
@@ -1430,6 +1452,7 @@ const AdminUsers = () => {
   const [confirmDelete, setConfirmDelete] = useState<ApiUser | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [createdProfileTarget, setCreatedProfileTarget] = useState<CreatedProfileTarget | null>(null);
   
 
   // Debounced search
@@ -1439,7 +1462,7 @@ const AdminUsers = () => {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // ── API ──
+ 
   const { data, isLoading, isError, refetch } = useGetAdminUsers({
     role: filters.role !== "all" ? filters.role : undefined,
     status: filters.status !== "all" ? filters.status : undefined,
@@ -1617,8 +1640,7 @@ const AdminUsers = () => {
   function getErrorMessage(error: unknown): string {
     if (error instanceof Error) return error.message;
     return "Something went wrong";
-  }
-  // ── Actions ──
+  } 
   const toggleStatus = useCallback(
     async (u: ApiUser) => {
       try {
@@ -1868,7 +1890,7 @@ const AdminUsers = () => {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search name, email, phone…"
+                placeholder="Search name, email, phone..."
                 className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
@@ -1887,7 +1909,7 @@ const AdminUsers = () => {
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 justify-between lg:justify-start">
               <p className="text-[11px] text-muted-foreground shrink-0">
                 {isLoading ? (
-                  <span className="text-muted-foreground/50">Loading…</span>
+                  <span className="text-muted-foreground/50">Loading...</span>
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{total}</span>{" "}
@@ -1921,7 +1943,7 @@ const AdminUsers = () => {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search name, email, phone…"
+                  placeholder="Search name, email, phone..."
                   className="h-8 w-full pl-8 pr-8 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
                 {searchInput && (
@@ -2111,7 +2133,7 @@ const AdminUsers = () => {
         </main>
       </div>
 
-      {/* ── Right-side user panel ── */}
+
       <DoctorPanel
         doctor={selectedRole === "doctor" ? (doctorLookup.data ?? null) : null}
         onClose={() => setSelected(null)}
@@ -2162,18 +2184,18 @@ const AdminUsers = () => {
         isActing={isActing}
         isDeleting={deleteMutation.isPending}
       />
-
-      {/* ── Delete confirm ── */}
+ 
       <ManageProfileModal
-        userId={editingUser?.id ?? null}
+        userId={editingUser?.id ?? createdProfileTarget?.id ?? null}
         role={
           editingUser && ["doctor", "patient", "pharmacy", "hospital"].includes(getRole(editingUser))
             ? (getRole(editingUser) as ManagedRole)
-            : null
+            : createdProfileTarget?.role ?? null
         }
-        userName={editingUser?.name}
+        userName={editingUser?.name ?? createdProfileTarget?.name}
         onClose={() => {
           setEditingUser(null);
+          setCreatedProfileTarget(null);
           refetch();
           doctorLookup.refetch();
           patientLookup.refetch();
@@ -2191,9 +2213,10 @@ const AdminUsers = () => {
             : "patient"
         }
         onClose={() => setCreateUserOpen(false)}
-        onCreated={() => {
+        onCreated={(profileTarget) => {
           refetch();
           setCreateUserOpen(false);
+          if (profileTarget) setCreatedProfileTarget(profileTarget);
         }}
       />
 
@@ -2220,8 +2243,7 @@ const AdminUsers = () => {
   );
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 type EditableRoleData = ApiDoctor | ApiPatient | ApiHospital | ApiPharmacy | null;
 
 function AdminUserEditModal({
@@ -2456,3 +2478,4 @@ const InfoTile = ({
 );
 
 export default AdminUsers;
+

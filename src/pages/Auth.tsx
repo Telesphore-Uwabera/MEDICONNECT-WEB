@@ -12,6 +12,7 @@ import SignInForm from "@/components/auth/SignInForm";
 import { useMe } from "@/hooks/useAuth";
 import TopBar from "@/components/landing/TopBar"; 
 import { HeroHeader } from "@/components/landing/HeroHeader";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
 const Auth = () => {
   const { t, i18n } = useTranslation();
@@ -41,11 +42,14 @@ const Auth = () => {
     { id: "signin" as const, label: t("auth.tab_signin") },
     { id: "signup" as const, label: t("auth.tab_signup") },
   ];
+const { data: publicSettings } = usePublicSettings();
+  const publicPayload = publicSettings as any;
+
+ const generalSettings =publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      <TopBar />
-
+      <TopBar settings={generalSettings} />
       <HeroHeader
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}

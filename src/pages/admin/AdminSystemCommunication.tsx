@@ -22,6 +22,7 @@ import {
 import { toast as sonnerToast } from "sonner";
 import {
   useSendMultiNotification,
+  type MultiNotificationRole,
   type MultiNotificationTarget,
   type SendMultiNotificationResponse,
 } from "@/hooks/admin/use-admin-multi-notifications";
@@ -30,18 +31,20 @@ import { getErrorMessage } from "@/lib/getErrorMessage";
 const INPUT_CLASS =
   "w-full h-9 rounded-[6px] border border-border/60 bg-background px-3 text-[12px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-all";
 
-const TEXTAREA_CLASS =
-  "w-full min-h-[280px] rounded-[6px] border border-border/60 bg-background px-3 py-2 text-[12px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-all ";
-
 const ROLES = [
   { value: "all", label: "Everyone" },
   { value: "doctor", label: "Doctors" },
   { value: "patient", label: "Patients" },
-  { value: "pharmacy", label: "Pharmacy" },
-];
+  { value: "pharmacy", label: "Pharmacies" },
+  { value: "hospital", label: "Hospitals" },
+] satisfies Array<{ value: MultiNotificationRole; label: string }>;
 
-
-import { RichTextarea, richTextToPlainText } from "@/components/ui/rich-textarea";
+import {
+  hasRichTextContent,
+  prepareRichTextForSave,
+  RichTextarea,
+  sanitizeRichText,
+} from "@/components/ui/rich-textarea";
 
 function MiniStat({
   label,
@@ -112,18 +115,17 @@ function AdminSystemCommunication() {
   const { t } = useTranslation();
 
   const [target, setTarget] = useState<MultiNotificationTarget>("roles");
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(["doctor"]);
+  const [selectedRoles, setSelectedRoles] = useState<MultiNotificationRole[]>(["doctor"]);
   const [selectedUsers, setSelectedUsers] = useState<ApiUser[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
   const [result, setResult] = useState<SendMultiNotificationResponse | null>(null);
- const messagePlainText = useMemo(() => {
-  return richTextToPlainText(message).trim();
-}, [message]);
+  const sanitizedMessage = useMemo(() => sanitizeRichText(message), [message]);
+  const hasMessageContent = useMemo(() => hasRichTextContent(sanitizedMessage), [sanitizedMessage]);
 
-const sendNotification = useSendMultiNotification();
+  const sendNotification = useSendMultiNotification();
   const userIds = useMemo(() => selectedUsers.map((u) => u.id), [selectedUsers]);
 
   const userSearchQuery = userSearch.trim();
@@ -147,12 +149,12 @@ const sendNotification = useSendMultiNotification();
   };
 
   const canSend = useMemo(() => {
-    if (!subject.trim() || !messagePlainText) return false;
+    if (!subject.trim() || !hasMessageContent) return false;
     if (target === "roles") return selectedRoles.length > 0;
     return userIds.length > 0;
-  }, [subject, messagePlainText , target, selectedRoles, userIds]);
+  }, [subject, hasMessageContent, target, selectedRoles, userIds]);
 
-  const toggleRole = (role: string) => {
+  const toggleRole = (role: MultiNotificationRole) => {
     setSelectedRoles((prev) => {
       if (role === "all") return prev.includes("all") ? [] : ["all"];
 
@@ -204,9 +206,9 @@ const sendNotification = useSendMultiNotification();
   };
 
 const handleSend = async () => {
-    const plainMessage = richTextToPlainText(message).trim();
+    const htmlMessage = prepareRichTextForSave(message);
 
-  if (!subject.trim() || !plainMessage) {
+  if (!subject.trim() || !htmlMessage) {
     sonnerToast.error("Subject and message are required.");
     return;
   }
@@ -227,24 +229,23 @@ const handleSend = async () => {
           target,
           roles: selectedRoles,
           subject: subject.trim(),
-          message: message.trim(),
+          message: htmlMessage,
         }
       : {
           target,
           user_ids: userIds,
           subject: subject.trim(),
-          message: message.trim(),
+          message: htmlMessage,
         };
 
   try {
     const response = await sendNotification.mutateAsync(payload);
-    setResult(response);
-
+    setResult(response); 
     sonnerToast.success(
       `${response.message} Sent: ${response.emails_sent}, Failed: ${response.emails_failed}`,
     );
   } catch (error) {
-    sonnerToast.error(getErrorMessage(error));
+    sonnerToast.error("Could not send notification.", { description: getErrorMessage(error) });
   }
 };
   return (
@@ -259,22 +260,7 @@ const handleSend = async () => {
         />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-              <MiniStat label="Channel" value="Email" icon={Mail} accent />
-              <MiniStat label="Target" value={target === "roles" ? "Roles" : "Users"} icon={Users} />
-              <MiniStat
-                label="Recipients"
-                value={
-                  target === "roles"
-                    ? selectedRoles.join(", ") || "—"
-                    : selectedUsers.map((u) => u.name).join(", ") || "—"
-                }
-                icon={UserCheck}
-              />
-              <MiniStat label="Status" value={sendNotification.isPending ? "Sending" : "Ready"} icon={Bell} />
-            </div>
-          </div>
+        
 
           <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_360px]">
             <section className="rounded-[6px] border border-border/70 bg-card shadow-sm">
@@ -282,7 +268,7 @@ const handleSend = async () => {
                 <div>
                   <p className="text-[14px] font-semibold text-foreground">Compose bulk email</p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground/70">
-                    This sends HTML email through <code>/api/admin/multi-notifications/send</code>.
+                    This sends sanitized HTML email.
                   </p>
                 </div>
 
@@ -479,10 +465,10 @@ const handleSend = async () => {
                       {subject || "No subject"}
                     </p>
 
-                    {message ? (
+                    {sanitizedMessage ? (
                       <div
                         className="prose prose-sm max-w-none text-[12px] dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: message }}
+                        dangerouslySetInnerHTML={{ __html: sanitizedMessage }}
                       />
                     ) : (
                       <p className="text-[11px] text-muted-foreground/70">Your message preview will appear here.</p>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+﻿import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -24,9 +24,9 @@ import {
 } from "@/hooks/admin/use-admin-service-pricing";
 import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/date";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Something went wrong";
@@ -37,15 +37,13 @@ function formatKey(key: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
-
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonRows() {
   return (
     <>
@@ -67,8 +65,7 @@ function SkeletonRows() {
   );
 }
 
-// ─── Desktop Row ──────────────────────────────────────────────────────────────
-
+ 
 function PricingRow({
   item,
   onEdit,
@@ -135,8 +132,7 @@ function PricingRow({
   );
 }
 
-// ─── Mobile Card ──────────────────────────────────────────────────────────────
-
+ 
 function PricingCard({
   item,
   onEdit,
@@ -194,8 +190,7 @@ function PricingCard({
   );
 }
 
-// ─── Edit Panel ───────────────────────────────────────────────────────────────
-
+ 
 function PricingPanel({
   item,
   onClose,
@@ -339,7 +334,7 @@ function PricingPanel({
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                {isSaving ? "Saving…" : "Save changes"}
+                {isSaving ? "Savingâ€¦" : "Save changes"}
               </Button>
               <Button
                 variant="ghost"
@@ -356,9 +351,7 @@ function PricingPanel({
     </>
   );
 }
-
-// ─── Bulk Edit Dialog ─────────────────────────────────────────────────────────
-
+ 
 function BulkEditDialog({
   pricing,
   onClose,
@@ -464,8 +457,7 @@ function BulkEditDialog({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function ManageServicePricing() {
   const { t, i18n } = useTranslation(); 
 
@@ -510,7 +502,7 @@ function ManageServicePricing() {
             />
             <StatCard
               label="Last synced"
-              value={pricing[0] ? formatDate(pricing[0].updated_at) : "—"}
+              value={pricing[0] ? formatDate(pricing[0].updated_at) : "-"}
               icon={RefreshCw}
               accent="warning"
             />
@@ -520,7 +512,7 @@ function ManageServicePricing() {
           <div className="sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
             <p className="text-[11px] text-muted-foreground shrink-0">
               {isLoading ? (
-                <span className="text-muted-foreground/50">Loading…</span>
+                <span className="text-muted-foreground/50">Loading...</span>
               ) : (
                 <>
                   <span className="font-bold text-foreground">
@@ -654,3 +646,4 @@ function ManageServicePricing() {
 }
 
 export default ManageServicePricing;
+

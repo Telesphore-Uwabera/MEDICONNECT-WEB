@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import {
-  useGetDoctorReferrals,
+import { formatDateOnly } from "@/lib/date";
+import{useGetDoctorReferrals,
   useGetReferral,
   useCancelReferral,
   type Referral,
@@ -31,10 +31,7 @@ import {
   Ban,
 } from "lucide-react";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 type TabStatus = ReferralStatus | "all";
 
 const STATUS_TABS: { id: TabStatus; label: string }[] = [
@@ -84,12 +81,9 @@ const STATUS_CONFIG: Record<
   },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return formatDateOnly(dateStr, "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -115,10 +109,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StatusBadge
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function StatusBadge({ status }: { status: ReferralStatus }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   const Icon = cfg.icon;
@@ -135,10 +126,7 @@ function StatusBadge({ status }: { status: ReferralStatus }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// UrgencyBadge
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function UrgencyBadge({ urgency }: { urgency?: string }) {
   if (!urgency) return null;
   const cfg = URGENCY_CONFIG[urgency as keyof typeof URGENCY_CONFIG];
@@ -156,10 +144,7 @@ function UrgencyBadge({ urgency }: { urgency?: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Avatar
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function Avatar({
   name,
   src,
@@ -186,10 +171,7 @@ function Avatar({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CancelConfirmDialog
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function CancelConfirmDialog({
   referral,
   onConfirm,
@@ -250,10 +232,7 @@ function CancelConfirmDialog({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReferralDetailDrawer
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function ReferralDetailDrawer({
   referralId,
   onClose,
@@ -398,8 +377,7 @@ function ReferralDetailDrawer({
   );
 }
 
-// ─── Small helper sub-components ─────────────────────────────────────────────
-
+ 
 function Section({
   title,
   icon: Icon,
@@ -464,10 +442,8 @@ function InfoRow({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReferralCard
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // ReferralCard
+ 
 function ReferralCard({
   referral,
   onClick,
@@ -530,11 +506,7 @@ function ReferralCard({
     </button>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SkeletonReferralCard
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonReferralCard() {
   return (
     <div className="w-full text-left rounded-[6px] border border-border bg-card shadow-sm p-4">
@@ -569,10 +541,8 @@ function SkeletonReferralCard() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // EmptyState
-// ─────────────────────────────────────────────────────────────────────────────
-
+ 
 function EmptyState({ status }: { status: TabStatus }) {
   const { t } = useTranslation();
   return (
@@ -592,10 +562,8 @@ function EmptyState({ status }: { status: TabStatus }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Main — MyReferrals
-// ─────────────────────────────────────────────────────────────────────────────
-
+ // Main â€” MyReferrals
+ 
 function MyReferrals() {
   const { t, i18n } = useTranslation();
 
@@ -650,8 +618,7 @@ function MyReferrals() {
 
         <div className="px-3 py-4 sm:px-6 sm:py-6 space-y-4 flex-1">
 
-          {/* ── Stats cards (also quick filters) ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
             {stats.map(({ key, label, value, icon: Icon, tone }) => {
               const active = activeTab === key;
               return (
@@ -674,8 +641,7 @@ function MyReferrals() {
               );
             })}
           </div>
-
-          {/* ── Toolbar ── */}
+ 
           <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* Status tabs */}
             <div className="flex items-center gap-1 bg-muted/60 rounded-[6px] p-1 overflow-x-auto shrink-0">
@@ -707,8 +673,7 @@ function MyReferrals() {
               {isFetching ? t("pages.doctor.refreshing") : t("pages.doctor.refresh")}
             </Button>
           </div>
-
-          {/* ── Content ── */}
+ 
           {isLoading ? (
             <>
               {/* Count placeholder */}
@@ -755,8 +720,7 @@ function MyReferrals() {
           )}
         </div>
       </div>
-
-      {/* ── Detail Drawer ── */}
+ 
       {selectedId != null && (
         <ReferralDetailDrawer
           referralId={selectedId}
@@ -764,8 +728,7 @@ function MyReferrals() {
           onCancelRequest={(r) => setCancelTarget(r)}
         />
       )}
-
-      {/* ── Cancel Confirm ── */}
+ 
       {cancelTarget && (
         <CancelConfirmDialog
           referral={cancelTarget}
@@ -779,3 +742,4 @@ function MyReferrals() {
 }
 
 export default MyReferrals;
+

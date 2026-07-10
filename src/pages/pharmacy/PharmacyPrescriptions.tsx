@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
@@ -54,9 +54,9 @@ import {
   type PrescriptionItem,
   type ListPrescriptionParams,
 } from "@/hooks/pharmacy/use-prescription-requests";
+import { formatDateOnly } from "@/lib/date";
 
-// ─── Local UI types ────────────────────────────────────────────────────────────
-
+ 
 type SortOption = "date-desc" | "date-asc" | "patient" | "status";
 
 interface FilterState {
@@ -74,12 +74,11 @@ const INITIAL_FILTERS: FilterState = {
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Date: Newest first" },
   { value: "date-asc", label: "Date: Oldest first" },
-  { value: "patient", label: "Patient (A–Z)" },
+  { value: "patient", label: "Patient (A-Z)" },
   { value: "status", label: "Status" },
 ];
 
-// ─── Visual config ─────────────────────────────────────────────────────────────
-
+ 
 const STATUS_STYLES: Record<PrescriptionStatus, string> = {
   pending:
     "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
@@ -117,11 +116,10 @@ const STATUS_ORDER: Record<PrescriptionStatus, number> = {
   fulfilled: 4,
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(iso?: string | null, opts?: Intl.DateTimeFormatOptions) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(undefined, {
+  if (!iso) return "-";
+  return formatDateOnly(iso, undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -144,9 +142,7 @@ function resolveUrl(path?: string | null) {
   if (path.startsWith("http")) return path;
   return `${BASE_URL}${path}`;
 }
-
-// ─── Sidebar atoms ─────────────────────────────────────────────────────────────
-
+ 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="py-3 border-b border-border/60 last:border-b-0">
@@ -207,15 +203,14 @@ function PillGroup<T extends string>({
   );
 }
 
-// ─── Detail Drawer ─────────────────────────────────────────────────────────────
-
+ 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2 border-b border-border/40 last:border-b-0">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 shrink-0 mt-0.5 w-28">
         {label}
       </span>
-      <span className="text-[11px] text-foreground text-right leading-relaxed">{value ?? "—"}</span>
+      <span className="text-[11px] text-foreground text-right leading-relaxed">{value ?? "-"}</span>
     </div>
   );
 }
@@ -521,7 +516,7 @@ function DetailDrawer({
           )}
         </div>
 
-        {/* Drawer footer — actions */}
+        {/* Drawer footer  actions */}
         {rx && (
           <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 bg-card/50">
             <div className="flex items-center justify-between gap-2">
@@ -539,9 +534,7 @@ function DetailDrawer({
     </>
   );
 }
-
-// ─── Action buttons ────────────────────────────────────────────────────────────
-
+ 
 function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
   const { t, i18n } = useTranslation();
   const review = useReviewPrescription();
@@ -631,8 +624,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
   return null;
 }
 
-// ─── Table ─────────────────────────────────────────────────────────────────────
-
+ 
 interface TableHeaderProps {
   label: string;
   sortKey?: SortOption;
@@ -669,7 +661,7 @@ function TableHeader({ label, sortKey, currentSort, onSort, align = "left" }: Ta
 }
 
 /**
- * Table row — shows only the 5 most useful columns:
+ * Table row  shows only the 5 most useful columns:
  * Rx #, Patient, Delivery, Status, Date + Actions
  * Everything else lives in the detail drawer.
  */
@@ -704,7 +696,7 @@ function PrescriptionTableRow({
               #{String(rx.id).padStart(6, "0")}
             </p>
             <p className="text-[9px] text-muted-foreground/60 mt-0.5 max-w-[120px] truncate">
-              {rx.prescription?.prescription_number ?? "—"}
+              {rx.prescription?.prescription_number ?? "-"}
             </p>
           </div>
         </div>
@@ -718,12 +710,12 @@ function PrescriptionTableRow({
           </div>
           <div className="min-w-0">
             <p className="text-[11px] font-semibold text-foreground truncate max-w-[140px]">
-              {patient?.name ?? "—"}
+              {patient?.name ?? "-"}
             </p>
             <p className="text-[9px] text-muted-foreground/60 truncate max-w-[140px]">
               {patient?.phone
                 ? `${patient.country_code ?? ""} ${patient.phone}`.trim()
-                : patient?.email ?? "—"}
+                : patient?.email ?? "-"}
             </p>
           </div>
         </div>
@@ -743,7 +735,7 @@ function PrescriptionTableRow({
             )}
           </div>
         ) : (
-          <span className="text-[10px] text-muted-foreground/40">—</span>
+          <span className="text-[10px] text-muted-foreground/40">-</span>
         )}
       </td>
 
@@ -806,8 +798,7 @@ function PrescriptionTableRow({
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
-
+ 
 const PharmacyPrescriptions = () => {
   const { t, i18n } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -890,9 +881,7 @@ const PharmacyPrescriptions = () => {
 
   const startItem = (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, filtered.length);
-
-  // ─── Sidebar content ──────────────────────────────────────────────────────────
-
+ 
   const filterFields = useMemo(() => [
     {
       type: "select" as const,
@@ -911,8 +900,7 @@ const PharmacyPrescriptions = () => {
     }
   ], [filters.status, set]);
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
-
+ 
   return (
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">
@@ -926,31 +914,31 @@ const PharmacyPrescriptions = () => {
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
             <StatCard
               label="Total requests"
-              value={isLoading ? "—" : requests.length}
+              value={isLoading ? "-" : requests.length}
               icon={FileText}
               accent="primary"
             />
             <StatCard
               label="Pending"
-              value={isLoading ? "—" : counts.pending}
+              value={isLoading ? "-" : counts.pending}
               icon={Clock}
               accent="warning"
             />
             <StatCard
               label="Reviewing"
-              value={isLoading ? "—" : counts.reviewing}
+              value={isLoading ? "-" : counts.reviewing}
               icon={Eye}
               accent="primary"
             />
             <StatCard
               label="Approved"
-              value={isLoading ? "—" : counts.approved}
+              value={isLoading ? "-" : counts.approved}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
               label="Fulfilled"
-              value={isLoading ? "—" : counts.fulfilled}
+              value={isLoading ? "-" : counts.fulfilled}
               icon={PackageCheck}
               accent="success"
             />
@@ -962,7 +950,7 @@ const PharmacyPrescriptions = () => {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading…
+                  Loading...
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -1029,7 +1017,7 @@ const PharmacyPrescriptions = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search patient, diagnosis, Rx#…"
+                  placeholder="Search patient, diagnosis, Rx#..."
                   className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1160,7 +1148,7 @@ const PharmacyPrescriptions = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] text-muted-foreground">
                         Showing{" "}
-                        <span className="font-semibold text-foreground">{startItem}</span>–
+                        <span className="font-semibold text-foreground">{startItem}</span>-
                         <span className="font-semibold text-foreground">{endItem}</span> of{" "}
                         <span className="font-semibold text-foreground">{filtered.length}</span>
                       </span>
@@ -1236,3 +1224,4 @@ const PharmacyPrescriptions = () => {
 };
 
 export default PharmacyPrescriptions;
+

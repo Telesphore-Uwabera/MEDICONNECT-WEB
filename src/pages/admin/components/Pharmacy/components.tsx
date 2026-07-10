@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
+﻿import { useEffect, useRef, useState } from "react";
+import { formatDateOnly } from "@/lib/date";
+import {X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
   ShieldCheck, ShieldOff, Ban, Loader2, MapPin, Calendar, Hash, BadgeCheck,
   FlaskConical, Building2, Phone, Mail, Globe, Clock, Truck, Package,
   AlertCircle, ExternalLink, FileText, Activity, Pill as PillIcon,
@@ -21,8 +21,7 @@ import {
   type PrescriptionStatus,
 } from "@/hooks/admin/use-pharmacy-prescriptions";
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
-
+ 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="py-3 border-b border-border/60 last:border-b-0">
@@ -59,9 +58,7 @@ function PillGroup<T extends string>({ value, onChange, options }: {
     </div>
   );
 }
-
-// ─── FilterSidebar ────────────────────────────────────────────────────────────
-
+ 
 export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters, onSet, onClearAll }: {
   filters: FilterState;
   cities: string[];
@@ -124,8 +121,7 @@ export function FilterSidebar({ filters, cities, statusCounts, hasActiveFilters,
   );
 }
 
-// ─── MobileFilterSheet ────────────────────────────────────────────────────────
-
+ 
 export function MobileFilterSheet({ open, onClose, children }: {
   open: boolean;
   onClose: () => void;
@@ -161,8 +157,7 @@ export function MobileFilterSheet({ open, onClose, children }: {
   );
 }
 
-// ─── MetaBar ──────────────────────────────────────────────────────────────────
-
+ 
 export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, searchInput, sort, onSearch, onSort, onClearAll, onFilterOpen }: {
   total: number;
   isLoading: boolean;
@@ -180,7 +175,7 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <p className="text-[11px] text-muted-foreground shrink-0">
           {isLoading
-            ? <span className="text-muted-foreground/50">Loading…</span>
+            ? <span className="text-muted-foreground/50">Loading...</span>
             : <><span className="font-bold text-foreground">{total}</span> {total === 1 ? "pharmacy" : "pharmacies"}</>}
           {hasActiveFilters && (
             <button onClick={onClearAll}
@@ -200,7 +195,7 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
         <div className="relative hidden sm:block">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
           <input type="text" value={searchInput} onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search name, phone, email…"
+            placeholder="Search name, phone, email..."
             className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
         </div>
         <div className="relative">
@@ -222,15 +217,14 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
   );
 }
 
-// ─── MobileSearchBar ──────────────────────────────────────────────────────────
-
+ 
 export function MobileSearchBar({ searchInput, onSearch }: { searchInput: string; onSearch: (v: string) => void }) {
   return (
     <div className="sm:hidden px-3 pt-3">
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
         <input type="text" value={searchInput} onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search name, phone, email…"
+          placeholder="Search name, phone, email..."
           className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
         {searchInput && (
           <button onClick={() => onSearch("")}
@@ -242,9 +236,7 @@ export function MobileSearchBar({ searchInput, onSearch }: { searchInput: string
     </div>
   );
 }
-
-// ─── PharmacyTable ────────────────────────────────────────────────────────────
-
+ 
 export function PharmacyTable({ pharmacies, isLoading, page, totalPages, onManage, onPageChange, onClearAll }: {
   pharmacies: ApiPharmacy[];
   isLoading: boolean;
@@ -409,8 +401,7 @@ function LoadingRows() {
   );
 }
 
-// ─── Tab: Overview ────────────────────────────────────────────────────────────
-
+ 
 function OverviewTab({ p }: { p: ApiPharmacy }) {
   return (
     <ContentWrap>
@@ -442,12 +433,12 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
               <PanelInfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Registration no." value={p.registration_number} mono full />
             )}
             <PanelInfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Pharmacy ID" value={`#${p.id}`} mono />
-            <PanelInfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={new Date(p.created_at).toLocaleDateString()} />
+            <PanelInfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={formatDateOnly(p.created_at)} />
             {p.updated_at && (
-              <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Last updated" value={new Date(p.updated_at).toLocaleDateString()} />
+              <PanelInfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Last updated" value={formatDateOnly(p.updated_at)} />
             )}
             {p.verified_at && (
-              <PanelInfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={new Date(p.verified_at).toLocaleDateString()} />
+              <PanelInfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={formatDateOnly(p.verified_at)} />
             )}
             {/* Bilingual names */}
             {p.name_rw && p.name_rw !== p.name_en && (
@@ -639,16 +630,14 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
     </ContentWrap>
   );
 }
-
-// ─── Tab: Prescriptions ───────────────────────────────────────────────────────
-
+ 
 const RX_STATUS_STYLE: Record<string, string> = {
   issued: "bg-accent text-accent-foreground border-primary/30",
   draft: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/25 dark:text-amber-400 dark:border-amber-800/60",
 };
 
 function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
-  // ── Filter state ──
+ 
   const [statusFilter, setStatusFilter] = useState<PrescriptionStatus | "">("");
   const [signedFilter, setSignedFilter] = useState<"" | "true" | "false">("");
   const [activeFilter, setActiveFilter] = useState<"" | "true" | "false">("");
@@ -699,15 +688,14 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
   return (
     <ContentWrap>
       <div className="space-y-3">
-
-        {/* ── Search ── */}
+ 
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/30 pointer-events-none" />
           <input
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by patient name…"
+            placeholder="Search by patient name.."
             className="w-full h-8 rounded-[6px] border border-border/45 bg-background pl-7 pr-8 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
           />
           {searchInput && (
@@ -717,8 +705,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
             </button>
           )}
         </div>
-
-        {/* ── Status pills ── */}
+ 
         <div className="flex items-center gap-1.5 flex-wrap">
           {(["", "issued", "draft"] as const).map((s) => (
             <button key={s}
@@ -749,8 +736,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
             ))}
           </div>
         </div>
-
-        {/* ── Advanced filters toggle ── */}
+ 
         <button
           onClick={() => setShowAdvanced((v) => !v)}
           className={cn(
@@ -764,8 +750,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
           )}
           {showAdvanced ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </button>
-
-        {/* ── Advanced filter panel ── */}
+ 
         {showAdvanced && (
           <div className="rounded-[6px] border border-border/35 bg-card/40 p-3 space-y-2.5">
 
@@ -778,7 +763,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                 type="text"
                 value={diagnosisInput}
                 onChange={(e) => setDiagnosisInput(e.target.value)}
-                placeholder="Partial match…"
+                placeholder="Partial matchâ€¦"
                 className="w-full h-7 rounded-[7px] border border-border/40 bg-background px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
               />
             </div>
@@ -857,8 +842,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
             )}
           </div>
         )}
-
-        {/* ── Results ── */}
+ 
         {isLoading ? <LoadingRows /> : !data?.data?.length ? (
           <SectionEmpty label="No prescriptions found for this pharmacy" />
         ) : (
@@ -876,8 +860,8 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                       </p>
                       <p className="text-[10px] text-muted-foreground/45 mt-0.5 font-mono">
                         #{rx.id}
-                        {rx.valid_until && <> · expires {new Date(rx.valid_until).toLocaleDateString()}</>}
-                        {" · "}{new Date(rx.created_at).toLocaleDateString()}
+                        {rx.valid_until && <> Â· expires {formatDateOnly(rx.valid_until)}</>}
+                        {" Â· "}{formatDateOnly(rx.created_at)}
                       </p>
                     </div>
                     <span className={cn(
@@ -970,9 +954,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
     </ContentWrap>
   );
 }
-
-// ─── PharmacyPanel ────────────────────────────────────────────────────────────
-
+ 
 type PanelTabId = "overview" | "prescriptions";
 
 const PANEL_TABS: { id: PanelTabId; label: string; icon: React.ReactNode }[] = [
@@ -1033,8 +1015,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
         open ? "translate-x-0" : "translate-x-full",
       )}>
         {pharmacy && (
-          <>
-            {/* ── Header ── */}
+          <> 
             <div className="flex-shrink-0 border-b border-primary/10 bg-card/40">
 
               {/* Top bar */}
@@ -1066,7 +1047,7 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                     <p className="text-[10px] text-muted-foreground/35 truncate">{pharmacy.name_rw}</p>
                   )}
                   <p className="text-[10.5px] text-muted-foreground/45 truncate mt-0.5">
-                    {[pharmacy.city, pharmacy.country].filter(Boolean).join(", ") || pharmacy.user?.name || "—"}
+                    {[pharmacy.city, pharmacy.country].filter(Boolean).join(", ") || pharmacy.user?.name || "-"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
@@ -1101,16 +1082,14 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                 ))}
               </div>
             </div>
-
-            {/* ── Body ── */}
+ 
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-5">
                 {tab === "overview" && <OverviewTab p={pharmacy} />}
                 {tab === "prescriptions" && <PrescriptionsTab pharmacyId={pharmacy.id} />}
               </div>
             </div>
-
-            {/* ── Footer ── */}
+ 
             <div className="flex-shrink-0 px-6 py-3.5 border-t border-primary/10 bg-card/40">
               <div className="flex gap-2 items-center max-w-[640px]">
                 {(pharmacy.status === "pending" || pharmacy.status === "rejected") && (
@@ -1167,3 +1146,4 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
     </>
   );
 }
+

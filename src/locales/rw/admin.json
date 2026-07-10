@@ -94,7 +94,8 @@
     "doctor": "Umuganga",
     "hospital": "Ibitaro",
     "pharmacy": "Farumasi",
-    "patient": "Umurwayi"
+    "patient": "Umurwayi",
+    "admin":"Umuyobozi"
   },
   "status": {
     "active": "Bikora",

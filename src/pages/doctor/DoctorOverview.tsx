@@ -1,12 +1,12 @@
-import { useTranslation } from "react-i18next";
+﻿import { useTranslation } from "react-i18next";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
-import {
-  Calendar,
+import { formatDateOnly } from "@/lib/date";
+  import {Calendar,
   Users,
   FileText,
   Activity,
@@ -61,17 +61,14 @@ import {
   useRequestDoctorWithdrawal,
 } from "@/hooks/doctor/use-doctor-wallet";
 
-// ─── Period picker options ────────────────────────────────────────────────────
-
+ 
 const PERIOD_OPTIONS: { value: Period; labelKey: string }[] = [
   { value: "today", labelKey: "pages.doctor.period_today" },
   { value: "week", labelKey: "pages.doctor.period_week" },
   { value: "month", labelKey: "pages.doctor.period_month" },
   { value: "year", labelKey: "pages.doctor.period_year" },
 ];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function formatCurrency(value: number) {
   if (value >= 1000) return `RWF${(value / 1000).toFixed(1)}k`;
   return `RWF${value.toFixed(0)}`;
@@ -99,18 +96,15 @@ function formatPayoutDate(value: unknown) {
 }
 
 function formatPct(value: number | null) {
-  if (value === null) return "—";
+  if (value === null) return "â€”";
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
 function shortLabel(label: string) {
-  // "May 25, 2026" → "May 25"  |  "2026-01" → "Jan" etc.
+  // "May 25, 2026" ’ "May 25"  |  "2026-01"  "Jan" etc.
   const parts = label.split(",");
   return parts[0] ?? label;
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 function getErrMsg(err: unknown, fallback: string) {
   if (err && typeof err === "object" && "message" in err) {
     const msg = (err as { message?: unknown }).message;
@@ -284,8 +278,7 @@ const DoctorOverview = () => {
   };
 
 
-  // ── Derived values ──────────────────────────────────────────────────────
-
+   
   const today = data?.today;
   const period = data?.period_stats;
   const revenue = data?.revenue;
@@ -320,8 +313,7 @@ const DoctorOverview = () => {
   const todayCompleted = today?.completed ?? 0;
   const instantQueue = instantStats?.current_queue ?? 0;
 
-  // ── Quick stats (Today) ─────────────────────────────────────────────────
-
+  
   const payoutRequests = uniquePayoutRequests([
     ...localPayoutRequests,
     ...asRecords(withdrawals),
@@ -427,8 +419,7 @@ const DoctorOverview = () => {
     },
   ];
 
-  // ── Render ──────────────────────────────────────────────────────────────
-
+  
   return (
     <DashboardLayout role="doctor">
       <div className="flex flex-col h-full">
@@ -446,7 +437,7 @@ const DoctorOverview = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
 
-            {/* ── Toolbar: period picker + chart group + refresh ── */}
+            {/* â”€â”€ Toolbar: period picker + chart group + refresh â”€â”€ */}
             <div className="flex flex-wrap items-center gap-3">
               {PERIOD_OPTIONS.map((opt) => (
                 <button
@@ -491,16 +482,14 @@ const DoctorOverview = () => {
                 </button>
               </div>
             </div>
-
-            {/* ── Error banner ── */}
+ 
             {error && (
               <div className="flex items-center gap-3 rounded-[6px] border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
             )}
-
-            {/* ── Scrollable Tabs ── */}
+ 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               {[
                 {
@@ -794,7 +783,7 @@ const DoctorOverview = () => {
                       </div>
                     </div>
 
-                    {/* ── Toggles + today quick stats ── */}
+                    {/* Toggles + today quick stats  */}
                     {false && (
                       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                         {/* Instant Consultation toggle */}
@@ -947,8 +936,7 @@ const DoctorOverview = () => {
                         </h3>
                       </div>
                     </div>
-
-                    {/* ── Main grid ── */}
+ 
                     <div className="grid lg:grid-cols-3 gap-4">
                       {/* Patient flow chart */}
                       <div className="lg:col-span-2 rounded-[6px] border border-border/70 bg-card p-5 shadow-soft">
@@ -1104,8 +1092,8 @@ const DoctorOverview = () => {
 
             {activeTab === "clinical" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* ── Stats strip (period) ── */}
-                {/* loading prop removed — StatCard doesn't accept it */}
+               
+                {/* loading prop removed â€” StatCard doesn't accept it */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <StatCard
                     label={t("pages.doctor.stat_today")}
@@ -1246,7 +1234,7 @@ const DoctorOverview = () => {
                                   {r.patient_name}
                                 </p>
                                 <span className="text-xs text-muted-foreground flex-shrink-0">
-                                  {new Date(r.created_at).toLocaleDateString(
+                                  {formatDateOnly(r.created_at, 
                                     undefined,
                                     { month: "short", day: "numeric" },
                                   )}
@@ -1900,3 +1888,4 @@ const DoctorOverview = () => {
 };
 
 export default DoctorOverview;
+

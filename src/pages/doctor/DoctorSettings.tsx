@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -44,9 +44,9 @@ import {
   type RequestPhoneChangePayload,
 } from "@/hooks/admin/use-admin-settings"; 
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/date";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) return error.message;
   return fallback;
@@ -54,23 +54,21 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 }
 
-// ─── Shared input styles ──────────────────────────────────────────────────────
-
+ 
 const inputCls =
   "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 
 const selectCls =
   "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
 
-// ─── Field ────────────────────────────────────────────────────────────────────
-
+ 
 function Field({
   label,
   required,
@@ -92,9 +90,7 @@ function Field({
     </div>
   );
 }
-
-// ─── DisplayField — read-only row ─────────────────────────────────────────────
-
+ 
 function DisplayField({
   label,
   value,
@@ -120,8 +116,7 @@ function DisplayField({
   );
 }
 
-// ─── VerifiedBadge ────────────────────────────────────────────────────────────
-
+ 
 function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
   const { t } = useTranslation();
   if (verified) {
@@ -140,8 +135,7 @@ function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | 
   );
 }
 
-// ─── PasswordInput ────────────────────────────────────────────────────────────
-
+ 
 function PasswordInput({
   value,
   onChange,
@@ -173,8 +167,7 @@ function PasswordInput({
   );
 }
 
-// ─── SectionCard ─────────────────────────────────────────────────────────────
-
+ 
 function SectionCard({
   icon: Icon,
   title,
@@ -216,8 +209,7 @@ function SectionCard({
   );
 }
 
-// ─── OtpStep ─────────────────────────────────────────────────────────────────
-
+ 
 function OtpStep({
   label,
   onVerify,
@@ -262,9 +254,7 @@ function OtpStep({
     </div>
   );
 }
-
-// ─── InfoRow ─────────────────────────────────────────────────────────────────
-
+ 
 function InfoRow({
   label,
   value,
@@ -287,9 +277,7 @@ function InfoRow({
     </div>
   );
 }
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-
+ 
 type TabKey = "profile" | "security" | "contact" | "danger";
 
 const TAB_ICONS: { key: TabKey; icon: React.ElementType }[] = [
@@ -299,8 +287,7 @@ const TAB_ICONS: { key: TabKey; icon: React.ElementType }[] = [
   { key: "danger", icon: ShieldAlert },
 ];
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+ 
 function DoctorSettings() {
   const { t, i18n } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -364,7 +351,6 @@ function DoctorSettings() {
   const [deletePassword, setDeletePassword] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // ── Queries & mutations ────────────────────────────────────────────────────
   const { data: settingsResponse, isLoading } = useGetMySettings();
   const settings = settingsResponse?.data;
 
@@ -401,8 +387,7 @@ function DoctorSettings() {
     setEditingProfile(true);
   };
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
+  
   const handleProfileSave = async () => {
     if (!profileForm.name.trim()) {
       sonnerToast.error(t("pages.doctor.settings_toast_name_required"));
@@ -527,10 +512,8 @@ function DoctorSettings() {
     }
   };
 
-  // ── Avatar display helper ─────────────────────────────────────────────────
   const showAvatar = settings?.avatar && !avatarError;
 
-  // ── Skeleton ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <DashboardLayout role="doctor">
@@ -560,13 +543,11 @@ function DoctorSettings() {
 
         <main className="flex-1 overflow-y-auto">
 
-          {/* ── Identity Hero Banner ───────────────────────────────────────── */}
-          <div className="px-3 sm:px-4 mt-3 sm:mt-4">
+         <div className="px-3 sm:px-4 mt-3 sm:mt-4">
             <div className="rounded-[6px] border border-border/60 bg-card shadow-sm overflow-hidden">
               {/* Subtle teal gradient top strip */}
               <div className="px-5 py-4 flex items-center gap-4">
-                {/* Avatar — large, prominent */}
-                <div className="relative shrink-0 group">
+              <div className="relative shrink-0 group">
                   {showAvatar ? (
                     <img
                       src={settings!.avatar!}
@@ -603,7 +584,7 @@ function DoctorSettings() {
                 {/* Name + meta */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] font-semibold text-foreground leading-tight truncate">
-                    {settings?.name ?? "—"}
+                    {settings?.name ?? "-"}
                   </p>
                   <p className="text-[12px] text-muted-foreground/70 mt-0.5 truncate">
                     {settings?.email ?? ""}
@@ -693,9 +674,7 @@ function DoctorSettings() {
 
           {/* Content */}
           <div className="p-3 sm:p-4 space-y-4 max-w-2xl">
-
-            {/* ── Profile Tab ─────────────────────────────────────────────── */}
-            {activeTab === "profile" && (
+   {activeTab === "profile" && (
               <SectionCard
                 icon={UserCog}
                 title={t("pages.doctor.settings_profile_title")}
@@ -807,9 +786,7 @@ function DoctorSettings() {
                 )}
               </SectionCard>
             )}
-
-            {/* ── Security Tab ────────────────────────────────────────────── */}
-            {activeTab === "security" && (
+  {activeTab === "security" && (
               <SectionCard
                 icon={Lock}
                 title={t("pages.doctor.settings_password_title")}
@@ -886,9 +863,7 @@ function DoctorSettings() {
                 )}
               </SectionCard>
             )}
-
-            {/* ── Contact Tab ─────────────────────────────────────────────── */}
-            {activeTab === "contact" && (
+  {activeTab === "contact" && (
               <>
                 {/* Email */}
                 <SectionCard
@@ -1098,8 +1073,7 @@ function DoctorSettings() {
               </>
             )}
 
-            {/* ── Danger Tab ──────────────────────────────────────────────── */}
-            {activeTab === "danger" && (
+             {activeTab === "danger" && (
               <div className="rounded-[6px] border border-red-200 bg-card overflow-hidden shadow-sm dark:border-red-900/50">
                 <div className="h-0.5 bg-gradient-to-r from-red-400/60 via-red-500 to-red-400/40" />
                 <div className="px-5 py-4 border-b border-red-200/80 dark:border-red-900/50 flex items-center gap-3 bg-red-50/50 dark:bg-red-950/20">
@@ -1188,3 +1162,4 @@ function DoctorSettings() {
 }
 
 export default DoctorSettings;
+

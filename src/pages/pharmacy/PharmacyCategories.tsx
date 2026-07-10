@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
@@ -7,8 +7,8 @@ import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Sheet,
+import { formatDateOnly } from "@/lib/date";
+import {Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -46,9 +46,7 @@ import {
   type CreateCategoryPayload,
   type UpdateCategoryPayload,
 } from "@/hooks/pharmacy/use-pharmacy-inventory-categories";
-
-// ─── Visual config ────────────────────────────────────────────────────────────
-
+ 
 type StatusFilter = "all" | "active" | "inactive";
 type SortOption =
   | "name"
@@ -58,7 +56,7 @@ type SortOption =
   | "created-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "name", label: "Name (A–Z)" },
+  { value: "name", label: "Name (A-Z)" },
   { value: "medicines-desc", label: "Medicines: Most first" },
   { value: "medicines-asc", label: "Medicines: Least first" },
   { value: "created-desc", label: "Newest first" },
@@ -78,7 +76,7 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return formatDateOnly(iso, undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -95,7 +93,7 @@ function formatDateTime(iso: string) {
   });
 }
 
-// ─── Sidebar atoms (same pattern as PharmacyInventory) ────────────────────────
+//  Sidebar atoms (same pattern as PharmacyInventory) 
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -145,7 +143,7 @@ function PillGroup<T extends string | number>({
   );
 }
 
-// ─── Modal shell (same as PharmacyInventory) ──────────────────────────────────
+//   Modal shell (same as PharmacyInventory) 
 
 function Modal({
   open,
@@ -179,7 +177,7 @@ const inputCls =
   "w-full bg-background border border-border/60 rounded-[6px] px-3 py-1.5 text-[11px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all";
 const labelCls = "block text-[11px] font-medium text-muted-foreground mb-1";
 
-// ─── Add / Edit Category Modal ────────────────────────────────────────────────
+//   Add / Edit Category Modal  
 
 type CategoryFormData = {
   name: string;
@@ -288,7 +286,7 @@ function CategoryFormModal({
           />
         </div>
 
-        {/* Active toggle — edit mode only */}
+        {/* Active toggle edit mode only */}
         {isEdit && (
           <div className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2.5">
             <div>
@@ -325,8 +323,7 @@ function CategoryFormModal({
     </Modal>
   );
 }
-
-// ─── Delete confirm modal ─────────────────────────────────────────────────────
+ 
 
 function DeleteConfirmModal({
   category,
@@ -351,7 +348,7 @@ function DeleteConfirmModal({
       {blocked && (
         <p className="text-[11px] text-amber-700 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-[6px] px-3 py-2 mb-3">
           This category has {category.medicines_count} medicine
-          {category.medicines_count !== 1 ? "s" : ""} — remove or reassign them first.
+          {category.medicines_count !== 1 ? "s" : ""} - remove or reassign them first.
         </p>
       )}
 
@@ -384,7 +381,7 @@ function DeleteConfirmModal({
   );
 }
 
-// ─── View Details Drawer ───────────────────────────────────────────────────────
+// View Details Drawer 
 
 function CategoryDetailsDrawer({
   category,
@@ -524,18 +521,18 @@ function CategoryDetailsDrawer({
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+ 
 
 function PharmacyCategories() {
   const { t } = useTranslation();
   const { data: categories = [], isLoading, isError, refetch } = useGetInventoryCategories();
   const updateCategory = useUpdateCategory();
 
-  // ── filter state ────────────────────────────────────────────────────────────
+  // filter state 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // ── modal / drawer state ─────────────────────────────────────────────────────
+  //  modal / drawer state  
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
@@ -559,7 +556,7 @@ function PharmacyCategories() {
     return () => { document.body.style.overflow = ""; };
   }, [filterOpen]);
 
-  // ── client-side filter + search + sort ───────────────────────────────────────
+  //  client-side filter + search + sort  
   const filtered = useMemo(() => {
     const q = filters.search.toLowerCase().trim();
 
@@ -586,7 +583,7 @@ function PharmacyCategories() {
       });
   }, [categories, filters.search, filters.status, filters.sort]);
 
-  // ── stat counts ──────────────────────────────────────────────────────────────
+  //   stat counts 
   const counts = useMemo(() => ({
     total: categories.length,
     active: categories.filter((c) => c.is_active).length,
@@ -627,7 +624,7 @@ function PharmacyCategories() {
     }
   ], [filters.status, set]);
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+ 
 
   return (
     <DashboardLayout role="pharmacy">
@@ -644,25 +641,25 @@ function PharmacyCategories() {
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
               label="Total Categories"
-              value={isLoading ? "—" : counts.total}
+              value={isLoading ? "-" : counts.total}
               icon={Tag}
               accent="primary"
             />
             <StatCard
               label="Active"
-              value={isLoading ? "—" : counts.active}
+              value={isLoading ? "-" : counts.active}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
               label="Inactive"
-              value={isLoading ? "—" : counts.inactive}
+              value={isLoading ? "-" : counts.inactive}
               icon={AlertCircle}
               accent="warning"
             />
             <StatCard
               label="Total Medicines"
-              value={isLoading ? "—" : counts.medicines}
+              value={isLoading ? "-" : counts.medicines}
               icon={Package}
               accent="primary"
             />
@@ -675,7 +672,7 @@ function PharmacyCategories() {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading categories…
+                  Loading categories...
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -710,7 +707,7 @@ function PharmacyCategories() {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search categories…"
+                  placeholder="Search categories..."
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -979,3 +976,4 @@ function PharmacyCategories() {
 }
 
 export default PharmacyCategories;
+

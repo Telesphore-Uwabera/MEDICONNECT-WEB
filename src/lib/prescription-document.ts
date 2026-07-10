@@ -1,7 +1,8 @@
+﻿import { formatDateOnly } from "@/lib/date";
 // Frontend medical-prescription document. The backend PDF isn't publicly
 // reachable (storage is 403/route 404), so we format the prescription data the
 // app already has into a printable HTML page and open it for View / Download
-// (browser print → Save as PDF). No external dependencies.
+// (browser print -> Save as PDF). No external dependencies.
 
 function esc(v: unknown): string {
   return String(v ?? "")
@@ -14,7 +15,7 @@ function esc(v: unknown): string {
 function fmtDate(iso?: string | null): string {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    return formatDateOnly(iso, undefined, { year: "numeric", month: "short", day: "numeric" });
   } catch {
     return String(iso);
   }
@@ -67,16 +68,16 @@ export function buildPrescriptionHtml(p: PrescriptionLike): string {
       (it, i) => `<tr>
         <td>${i + 1}</td>
         <td><b>${esc(it.medicine_name ?? "")}</b>${it.dosage ? `<div class="sub">${esc(it.dosage)}</div>` : ""}</td>
-        <td>${esc(it.frequency ?? "—")}</td>
-        <td>${esc(it.duration ?? "—")}</td>
-        <td>${esc(it.quantity ?? "—")}</td>
-        <td>${esc(it.instructions ?? "—")}</td>
+        <td>${esc(it.frequency ?? "-")}</td>
+        <td>${esc(it.duration ?? "-")}</td>
+        <td>${esc(it.quantity ?? "-")}</td>
+        <td>${esc(it.instructions ?? "-")}</td>
       </tr>`,
     )
     .join("");
 
   const signedLine = p.is_signed
-    ? `<div class="signed">✔ Digitally signed by ${doctorName ? esc(doctorName) : "the doctor"}${p.signed_at ? ` on ${esc(fmtDate(p.signed_at))}` : ""}</div>`
+    ? `<div class="signed"> ✔ Digitally signed by ${doctorName ? esc(doctorName) : "the doctor"}${p.signed_at ? ` on ${esc(fmtDate(p.signed_at))}` : ""}</div>`
     : `<div class="unsigned">Not yet signed</div>`;
 
   return `<!doctype html>
@@ -138,7 +139,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike): string {
 
     <div class="who">
       ${patientName ? `<div><span>Patient</span><b>${esc(patientName)}</b>${patientPhone ? `<div class="meta">${esc(patientPhone)}</div>` : ""}</div>` : ""}
-      ${doctorName ? `<div><span>Prescribing doctor</span><b>${esc(doctorName)}</b><div class="meta">${[doctorSpec, doctorDegree].filter(Boolean).map(esc).join(" · ")}</div></div>` : ""}
+      ${doctorName ? `<div><span>Prescribing doctor</span><b>${esc(doctorName)}</b><div class="meta">${[doctorSpec, doctorDegree].filter(Boolean).map(esc).join("  · ")}</div></div>` : ""}
     </div>
 
     ${
@@ -182,3 +183,4 @@ export function openPrescriptionDocument(prescription: PrescriptionLike, autoPri
   win.document.close();
   if (autoPrint) win.setTimeout(() => win.print(), 350);
 }
+

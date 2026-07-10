@@ -1,12 +1,12 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+﻿import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast as sonnerToast } from "sonner";
-import {
-  Wallet,
+import { formatDateOnly } from "@/lib/date";
+import{ Wallet,
   Plus,
   Pencil,
   Trash2,
@@ -57,8 +57,7 @@ import {
 import { StatCard } from "@/components/StatCard"; 
 import { cn } from "@/lib/utils";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Something went wrong";
@@ -66,14 +65,14 @@ function getErrorMessage(error: unknown): string {
 
 function formatCurrency(value: string | number, currency = "RWF"): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return "—";
+  if (isNaN(num)) return "-";
   return `${num.toLocaleString()} ${currency}`;
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -107,8 +106,7 @@ const typeStyle: Record<string, string> = {
     "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
 };
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-
+ 
 function SkeletonRows({ cols = 7 }: { cols?: number }) {
   return (
     <>
@@ -127,9 +125,7 @@ function SkeletonRows({ cols = 7 }: { cols?: number }) {
     </>
   );
 }
-
-// ─── Field ────────────────────────────────────────────────────────────────────
-
+ 
 function Field({
   label,
   required,
@@ -154,8 +150,6 @@ const inputCls =
 
 const selectCls =
   "w-full px-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 type TabKey = "doctors" | "withdrawals" | "payouts" | "transactions" | "main";
 
@@ -200,8 +194,7 @@ function WalletMetric({
 }
 
 
-// ─── Doctor Wallet Row ─────────────────────────────────────────────────────────
-
+ 
 function DoctorWalletRow({
   wallet,
   onTopUp,
@@ -235,7 +228,7 @@ function DoctorWalletRow({
         {wallet.currency}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">
-        {wallet.last_topup ? new Date(wallet.last_topup).toLocaleDateString() : "—"}
+        {wallet.last_topup ? formatDateOnly(wallet.last_topup) : "-"}
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1.5">
@@ -382,10 +375,10 @@ function PayoutRow({
         {payout.payment_method}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">
-        {payout.payment_reference ?? "—"}
+        {payout.payment_reference ?? "-"}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">
-        {new Date(payout.created_at).toLocaleDateString()}
+        {formatDateOnly(payout.created_at)}
       </td>
       <td className="px-4 py-3 text-right">
         {payout.status === "completed" && (
@@ -484,15 +477,15 @@ function WithdrawalRequestRow({
         </div>
       </td>
       <td className="px-4 py-3 text-[11px] font-medium text-foreground whitespace-nowrap">{formatCurrency(request.amount)}</td>
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/70 capitalize">{String(request.method ?? "—").replace(/_/g, " ")}</td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/70 capitalize">{String(request.method ?? "â€”").replace(/_/g, " ")}</td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/70">
-        <span className="block text-foreground">{request.account_name ?? "—"}</span>
-        <span>{request.account_number ?? "—"}</span>
+        <span className="block text-foreground">{request.account_name ?? "-"}</span>
+        <span>{request.account_number ?? "-"}</span>
       </td>
       <td className="px-4 py-3">
         <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize", statusStyle[status] ?? "bg-muted text-muted-foreground border-border")}>{status}</Badge>
       </td>
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">{request.created_at ? new Date(request.created_at).toLocaleString() : "—"}</td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">{request.created_at ? new Date(request.created_at).toLocaleString() : "-"}</td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] rounded-[6px]" onClick={() => onView(request.id)}><Eye className="w-3 h-3" /></Button>
@@ -534,9 +527,9 @@ function WithdrawalRequestCard({
       </div>
       <div className="mt-2 flex items-center justify-between">
         <span className="text-[13px] font-bold text-foreground">{formatCurrency(request.amount)}</span>
-        <span className="text-[10px] text-muted-foreground/50 capitalize">{String(request.method ?? "—").replace(/_/g, " ")}</span>
+        <span className="text-[10px] text-muted-foreground/50 capitalize">{String(request.method ?? "-").replace(/_/g, " ")}</span>
       </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "—"} · {request.account_number ?? "—"}</p>
+      <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "â€”"} Â· {request.account_number ?? "-"}</p>
       <div className="grid grid-cols-2 gap-2 mt-3">
         <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-[6px]" onClick={() => onView(request.id)}><Eye className="w-3 h-3 mr-1" /> View</Button>
         {canApprove && <Button size="sm" className="h-7 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}
@@ -575,7 +568,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
         {formatCurrency(tx.balance_after)}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 truncate max-w-[200px]">
-        {tx.description ?? "—"}
+        {tx.description ?? "-"}
       </td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/60 whitespace-nowrap">
         {new Date(tx.created_at).toLocaleString()}
@@ -583,6 +576,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
     </tr>
   );
 }
+
 
 // ─── Transaction Card (mobile) ────────────────────────────────────────────────
 
@@ -606,7 +600,7 @@ function TransactionCard({ tx }: { tx: Transaction }) {
       </div>
       <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground/60">
         <span>Balance after: {formatCurrency(tx.balance_after)}</span>
-        <span>{new Date(tx.created_at).toLocaleDateString()}</span>
+        <span>{formatDateOnly(tx.created_at)}</span>
       </div>
       {tx.description && (
         <p className="text-[10px] text-muted-foreground/50 mt-1 truncate">{tx.description}</p>
@@ -996,7 +990,7 @@ function ActionPanel({
                 disabled={isSaving}
               >
                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                {isSaving ? "Processing…" : getSubmitLabel()}
+                {isSaving ? "Processing..." : getSubmitLabel()}
               </Button>
               <Button
                 variant="ghost"
@@ -1063,6 +1057,7 @@ function DeleteDialog({
   );
 }
 
+
 // ─── Main Wallet Card ─────────────────────────────────────────────────────────
 
 function MainWalletCard({
@@ -1117,7 +1112,7 @@ function MainWalletCard({
         </div>
         <div className="text-right">
           <p className="text-[16px] font-bold text-foreground">
-            {mainWallet ? formatCurrency(mainWallet.balance, mainWallet.currency) : "—"}
+            {mainWallet ? formatCurrency(mainWallet.balance, mainWallet.currency) : "-"}
           </p>
           <p className="text-[10px] text-muted-foreground/50 uppercase">{mainWallet?.currency ?? "RWF"}</p>
         </div>
@@ -1233,14 +1228,14 @@ function ManageAdminWallet() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // ── Mutations needed at page level for isMutating prop ──────────────────────
-  const topUpMutation = useTopUpDoctorWallet();
+   const topUpMutation = useTopUpDoctorWallet();
   const deductMutation = useDeductDoctorWallet();
   const refundMutation = useRefundPayout();
   const deleteMutation = useDeleteDoctorWallet();
   const withdrawalActionMutation = useWithdrawalRequestAction();
 
-  // ── Queries ─────────────────────────────────────────────────────────────────
-  const { data: walletsData, isLoading: walletsLoading, isError: walletsError } =
+   // ── Queries ─────────────────────────────────────────────────────────────────
+ const { data: walletsData, isLoading: walletsLoading, isError: walletsError } =
     useGetDoctorWallets(search || undefined, page);
   const { data: mainWallet, isLoading: mainLoading } = useGetMainWallet();
   const { data: payoutsData, isLoading: payoutsLoading, isError: payoutsError } =
@@ -1287,7 +1282,7 @@ function ManageAdminWallet() {
   const pendingWithdrawals = Number(withdrawalSummary?.pending ?? withdrawalRequests.filter((r) => r.status === "pending").length);
   const processingWithdrawals = Number(withdrawalSummary?.processing ?? withdrawalRequests.filter((r) => r.status === "processing").length);
   const completedWithdrawals = Number(withdrawalSummary?.completed ?? withdrawalRequests.filter((r) => r.status === "completed").length);
-  const mainBalance = mainWallet ? formatCurrency(mainWallet.balance, mainWallet.currency) : "—";
+  const mainBalance = mainWallet ? formatCurrency(mainWallet.balance, mainWallet.currency) : "-";
   const pendingAmount = withdrawalSummary?.total_pending_amount != null
     ? formatCurrency(withdrawalSummary.total_pending_amount as string | number)
     : undefined;
@@ -1542,7 +1537,7 @@ function ManageAdminWallet() {
               <div className="hidden sticky top-0 z-10 mt-3 sm:mt-4 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 items-center justify-between gap-2 sm:gap-3">
                 <p className="text-[11px] text-muted-foreground shrink-0">
                   {isLoading ? (
-                    <span className="text-muted-foreground/50">Loading…</span>
+                    <span className="text-muted-foreground/50">Loading...</span>
                   ) : (
                     <>
                       <span className="font-bold text-foreground">{total}</span>{" "}
@@ -1959,13 +1954,13 @@ function ManageAdminWallet() {
                 {[
                   ["Doctor", selectedWithdrawal.doctor_name],
                   ["Email", selectedWithdrawal.doctor_email],
-                  ["Method", String(selectedWithdrawal.method ?? "—").replace(/_/g, " ")],
-                  ["Account name", selectedWithdrawal.account_name ?? "—"],
-                  ["Account number", selectedWithdrawal.account_number ?? "—"],
-                  ["Note", selectedWithdrawal.note ?? "—"],
-                  ["Reason", selectedWithdrawal.reason ?? selectedWithdrawal.rejection_reason ?? selectedWithdrawal.cancellation_reason ?? "—"],
-                  ["Requested", selectedWithdrawal.created_at ? new Date(selectedWithdrawal.created_at).toLocaleString() : "—"],
-                  ["Updated", selectedWithdrawal.updated_at ? new Date(selectedWithdrawal.updated_at).toLocaleString() : "—"],
+                  ["Method", String(selectedWithdrawal.method ?? "-").replace(/_/g, " ")],
+                  ["Account name", selectedWithdrawal.account_name ?? "-"],
+                  ["Account number", selectedWithdrawal.account_number ?? "-"],
+                  ["Note", selectedWithdrawal.note ?? "-"],
+                  ["Reason", selectedWithdrawal.reason ?? selectedWithdrawal.rejection_reason ?? selectedWithdrawal.cancellation_reason ?? "-"],
+                  ["Requested", selectedWithdrawal.created_at ? new Date(selectedWithdrawal.created_at).toLocaleString() : "-"],
+                  ["Updated", selectedWithdrawal.updated_at ? new Date(selectedWithdrawal.updated_at).toLocaleString() : "-"],
                 ].map(([label, value]) => (
                   <div key={label} className="border-b border-border/40 pb-2 last:border-0">
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
@@ -2066,3 +2061,4 @@ function ManageAdminWallet() {
 }
 
 export default ManageAdminWallet;
+
