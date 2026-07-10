@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
-import { useConsultationSession } from "@/hooks/patient/se-consultation-session";
+import { useConsultationSession, pruneIfEnded } from "@/hooks/patient/se-consultation-session";
 import { useLogin } from "@/hooks/useAuth";
 import { useCallContext } from "@/context/CallContext";
 import { useNavigate } from "react-router-dom";
@@ -426,65 +426,79 @@ export const ConnectDialogContent = ({
   //    → Full clean reset.
   //
   useEffect(() => {
-    const existing = resumeDeclinedRef.current ? null : session.read();
+    let cancelled = false;
 
-    // NOTE: the `resumeDeclinedRef.current` guard is already applied above when
-    // computing `existing`. (A previous `!resumeDeclinedRef` check here was always
-    // false — a ref object is truthy — so the restore branch never ran and every
-    // remount reset the flow to idle, discarding an in-progress payment/queue.)
-    if (existing) {
-      // Pre-load everything from the saved session right away
-      setSavedSession(existing);
-      setConsultationToken(existing.token);   // ← key fix: token is live immediately
-      setGuestChatAuth(existing.token);
-      setConsultationId(existing.consultationId ?? null);
-      setGuestName(existing.guestName);
-      const existingName = splitName(existing.guestName);
-      setGuestFirstName(existingName.firstName);
-      setGuestLastName(existingName.lastName);
-      setGuestPhone(existing.guestPhone);
+    const init = async () => {
+      let existing = resumeDeclinedRef.current ? null : session.read();
 
-      if (existing.pendingPayment) {
-        // Request succeeded before but user left before paying.
-        // Restore payment context and skip straight to payment — no re-request.
-        setConsultationId(existing.pendingPayment.consultationId);
-        setPaymentInfo({
-          amount: existing.pendingPayment.amount,
-          currency: existing.pendingPayment.currency,
-        });
-        // Don't show the resume banner — jump directly to the payment step
-        setSavedSession(null);
-        setPhase("payment");
-      } else {
-        // Payment confirmed (or free) — show resume banner, polling on confirm
+      // The doctor may have completed/declined this consultation while the
+      // dialog was closed — verify before showing a stale resume banner.
+      if (existing) {
+        const ended = await pruneIfEnded(existing);
+        if (cancelled) return;
+        if (ended) existing = null;
+      }
+
+      // NOTE: the `resumeDeclinedRef.current` guard is already applied above when
+      // computing `existing`. (A previous `!resumeDeclinedRef` check here was always
+      // false — a ref object is truthy — so the restore branch never ran and every
+      // remount reset the flow to idle, discarding an in-progress payment/queue.)
+      if (existing) {
+        // Pre-load everything from the saved session right away
         setSavedSession(existing);
-        setPhase("idle");
-      }
-    } else {
-      setSavedSession(null);
-      setConsultationToken(null);
-      setConsultationId(null);
-      setQueueInfo(null);
-      setRoomUrl(null);
-      setDailyToken(null);
-      setErrorMsg(null);
-      setPaymentInfo(null);
-      setGuestName(me?.name ?? "");
-      const currentName = splitName(me?.name);
-      setGuestFirstName(currentName.firstName);
-      setGuestLastName(currentName.lastName);
-      setGuestEmail(me?.email ?? "");
-      setGuestPhone(me?.phone ?? "");
-      setLoginIdentifier(me?.email ?? me?.phone ?? "");
-      if (!initialDoctor) {
-        setPhase("search");
-      } else {
-        setPhase(isProfileComplete ? "idle" : "guest_form");
-      }
-    }
+        setConsultationToken(existing.token);   // ← key fix: token is live immediately
+        setGuestChatAuth(existing.token);
+        setConsultationId(existing.consultationId ?? null);
+        setGuestName(existing.guestName);
+        const existingName = splitName(existing.guestName);
+        setGuestFirstName(existingName.firstName);
+        setGuestLastName(existingName.lastName);
+        setGuestPhone(existing.guestPhone);
 
-    setFullscreen(false);
-    setGuestError(null);
+        if (existing.pendingPayment) {
+          // Request succeeded before but user left before paying.
+          // Restore payment context and skip straight to payment — no re-request.
+          setConsultationId(existing.pendingPayment.consultationId);
+          setPaymentInfo({
+            amount: existing.pendingPayment.amount,
+            currency: existing.pendingPayment.currency,
+          });
+          // Don't show the resume banner — jump directly to the payment step
+          setSavedSession(null);
+          setPhase("payment");
+        } else {
+          // Payment confirmed (or free) — show resume banner, polling on confirm
+          setSavedSession(existing);
+          setPhase("idle");
+        }
+      } else {
+        setSavedSession(null);
+        setConsultationToken(null);
+        setConsultationId(null);
+        setQueueInfo(null);
+        setRoomUrl(null);
+        setDailyToken(null);
+        setErrorMsg(null);
+        setPaymentInfo(null);
+        setGuestName(me?.name ?? "");
+        const currentName = splitName(me?.name);
+        setGuestFirstName(currentName.firstName);
+        setGuestLastName(currentName.lastName);
+        setGuestEmail(me?.email ?? "");
+        setGuestPhone(me?.phone ?? "");
+        setLoginIdentifier(me?.email ?? me?.phone ?? "");
+        if (!initialDoctor) {
+          setPhase("search");
+        } else {
+          setPhase(isProfileComplete ? "idle" : "guest_form");
+        }
+      }
+
+      setFullscreen(false);
+      setGuestError(null);
+    };
+
+    init();
 
     const handleMessage = (e: MessageEvent) => {
       if (e.data === "END_CALL") {
@@ -492,7 +506,10 @@ export const ConnectDialogContent = ({
       }
     };
     window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("message", handleMessage);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

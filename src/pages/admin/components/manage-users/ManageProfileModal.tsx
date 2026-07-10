@@ -1,4 +1,4 @@
-// Admin â€” role-specific profile editor.
+// Admin  role-specific profile editor.
 // Opened from AdminUsers.tsx for doctor/patient/pharmacy/hospital accounts.
 // Talks to /admin/manageusers/{role}s/... (see hooks/admin/use-admin-manage-users.ts).
 
@@ -35,7 +35,7 @@ import { useGetPublicInsurances } from "@/hooks/use-patient-profile";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
-/* â”€â”€ Small shared field primitives â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Small shared field primitives  */
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -137,7 +137,7 @@ function FileField({
       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
       <div className="flex items-center gap-2">
         <div className="flex-1 flex items-center justify-between gap-2 h-9 rounded-[6px] border border-dashed border-border px-3 text-[11px] text-muted-foreground cursor-pointer hover:border-primary/50">
-          <span className="truncate">{currentUrl ? "Replace fileâ€¦" : "Choose fileâ€¦"}</span>
+          <span className="truncate">{currentUrl ? "Replace file" : "Choose file"}</span>
           {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : <Upload className="h-3.5 w-3.5 shrink-0" />}
           <input
             type="file"
@@ -163,7 +163,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[12px] font-semibold text-foreground pt-2">{children}</p>;
 }
 
-/* â”€â”€ Modal shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Modal shell  */
 
 export function ManageProfileModal({
   userId,
@@ -200,9 +200,7 @@ export function ManageProfileModal({
     </div>
   );
 }
-
-/* â”€â”€ Doctor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
+ 
 function DoctorProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetDoctorProfile(userId);
   const save = useSaveDoctorProfile(userId);
@@ -296,9 +294,7 @@ function DoctorProfileForm({ userId }: { userId: number }) {
     </>
   );
 }
-
-/* â”€â”€ Patient â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
+ 
 function PatientProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetPatientProfile(userId);
   const save = useSavePatientProfile(userId);
@@ -509,8 +505,7 @@ function PatientProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* â”€â”€ Pharmacy â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
+ 
 function PharmacyProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetPharmacyProfile(userId);
   const save = useSavePharmacyProfile(userId);
@@ -597,8 +592,7 @@ function PharmacyProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* â”€â”€ Hospital â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
+ 
 function HospitalProfileForm({ userId }: { userId: number }) {
   const { data, isLoading, isError } = useGetHospitalProfile(userId);
   const save = useSaveHospitalProfile(userId);
@@ -644,7 +638,7 @@ function HospitalProfileForm({ userId }: { userId: number }) {
       <SaveBar
         onSave={() =>
           save.mutate(form, {
-            onSuccess: (res) => sonnerToast.success(res.message ?? "Hospital profile saved."),
+            onSuccess: (res) => sonnerToast.success(res.message ?? "Health facility profile saved."),
             onError: (err) => sonnerToast.error("Could not save profile.", { description: getErrorMessage(err) }),
           })
         }
@@ -713,7 +707,7 @@ function HospitalProfileForm({ userId }: { userId: number }) {
   );
 }
 
-/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Helpers */
 
 function SaveBar({ onSave, isPending, label = "Save" }: { onSave: () => void; isPending: boolean; label?: string }) {
   return (
@@ -734,7 +728,7 @@ function SaveBar({ onSave, isPending, label = "Save" }: { onSave: () => void; is
 function LoadingState() {
   return (
     <div className="flex items-center justify-center gap-2 py-10 text-[12px] text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" /> Loading profileâ€¦
+      <Loader2 className="h-4 w-4 animate-spin" /> Loading profile
     </div>
   );
 }
@@ -743,7 +737,7 @@ function NotFoundBanner() {
   return (
     <div className="flex items-center gap-2 rounded-[6px] border border-amber-400/40 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-      No profile found yet for this user â€” fill in the fields below and save to create one.
+      No profile found yet for this user fill in the fields below and save to create one.
     </div>
   );
 }

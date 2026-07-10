@@ -789,7 +789,7 @@ const PatientInstant = () => {
                 <table className="w-full text-sm ">
                   <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      <th className="text-left px-5 py-4 font-semibold">Doctor / Hospital</th>
+                      <th className="text-left px-5 py-4 font-semibold">Doctor / Health Facility</th>
                       <th className="text-left px-5 py-4 font-semibold">Specialty</th>
                       <th className="text-left px-5 py-4 font-semibold">Date & Time</th>
                       <th className="text-left px-5 py-4 font-semibold">Type</th>

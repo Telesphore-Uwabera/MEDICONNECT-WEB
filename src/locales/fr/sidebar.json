@@ -1,7 +1,7 @@
 {
   "overview": "Aperçu",
   "findDoctors": "Trouver un médecin",
-  "findHospitals": "Trouver un hôpital",
+  "findHospitals": "Trouver un établissement de santé",
   "instantConsult": "Consultation instantanée",
   "appointments": "Rendez-vous",
   "prescriptions": "Ordonnances",
@@ -15,16 +15,15 @@
   "inventory": "Inventaire",
   "patientPortal": "Portail patient",
   "doctorWorkspace": "Espace médecin",
-  "hospitalAdmin": "Admin hôpital",
+  "hospitalAdmin": "Admin établissement de santé",
   "pharmacyConsole": "Console pharmacie",
   "patient": "Patient",
   "doctor": "Médecin",
-  "hospital": "Hôpital",
+  "hospital": "Établissement de santé",
   "admin": "Admin",
   "team": "Équipe",
   "profile": "Profil",
   "system_settings": "Paramètres du système",
-
   "system_communication": "Communication du système",
   "dashboard": "Tableau de bord",
   "settings": "Paramètres",
@@ -58,7 +57,7 @@
   },
   "users": "Utilisateurs",
   "doctors": "Médecins",
-  "hospitals": "Hôpitaux",
+  "hospitals": "Établissements de santé",
   "myAppointments": "Mes rendez-vous",
   "quickAppointment": "Rendez-vous rapide",
   "serviceBookings": "Réservations de services",
@@ -96,5 +95,6 @@
   "consultationSummaries": "Résumés de consultation",
   "medicalRecords": "Dossiers médicaux",
   "hideSidebar": "Masquer la barre latérale",
-  "showSidebar": "Afficher la barre latérale"
+  "showSidebar": "Afficher la barre latérale",
+  "schedule": "Planning"
 }

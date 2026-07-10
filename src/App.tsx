@@ -368,6 +368,7 @@ const App = () => (
 
           {/* verify certificate */}
             <Route path="/verify-certificate" element={<VerifyCertificate />} />
+            <Route path="/fitness-certificates/verify/:certificateNumber" element={<VerifyCertificate />} />
             
             {/* ── Patient: PUBLIC (no login needed) ───────────── */}
             <Route

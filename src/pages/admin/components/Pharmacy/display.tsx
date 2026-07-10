@@ -92,7 +92,7 @@ export function PharmacyCard({ p, onManage }: { p: ApiPharmacy; onManage: (p: Ap
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-[12px] text-foreground truncate">{p.name_en}</p>
-            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "â€”"}</p>
+            <p className="text-[10px] text-muted-foreground/70 truncate">{p.user?.name ?? "-"}</p>
           </div>
           <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium capitalize shrink-0", STATUS_STYLE[p.status])}>
             <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[p.status])} />{p.status}

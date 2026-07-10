@@ -1,5 +1,5 @@
 ﻿import { toLocalDateInputValue } from "@/lib/date";
-// Quick post-call prescription step (completion flow: record â†’ THIS â†’ booking).
+// Quick post-call prescription step (completion flow: record  THIS  booking).
 //
 // The doctor fills a diagnosis + medicine items, issues (signs) the prescription
 // in one shot, then optionally sends it to a pharmacy (pickup / home delivery).

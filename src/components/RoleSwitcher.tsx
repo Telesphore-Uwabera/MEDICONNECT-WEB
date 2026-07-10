@@ -15,7 +15,7 @@ import { useGoToRole, type GoRole } from "@/hooks/useRoleManagement";
 const ROLES: { key: GoRole; label: string; icon: LucideIcon; desc: string }[] = [
   { key: "patient", label: "Patient", icon: User, desc: "Book and attend consultations" },
   { key: "doctor", label: "Doctor", icon: Stethoscope, desc: "See patients and manage care" },
-  { key: "hospital", label: "Hospital", icon: Building2, desc: "Manage facility services" },
+  { key: "hospital", label: "Health Facility", icon: Building2, desc: "Manage health facility services" },
   { key: "pharmacy", label: "Pharmacy", icon: Pill, desc: "Fulfil prescriptions and orders" },
 ];
 

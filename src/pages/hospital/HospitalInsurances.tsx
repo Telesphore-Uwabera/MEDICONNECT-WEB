@@ -2,6 +2,7 @@
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import React, { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +48,7 @@ import {
       month: "short",
       year: "numeric",
     })
-    : "â€”";
+    : "-";
 
 const fmtCurrency = (n: number | null, currency = "RWF") =>
   n == null
@@ -73,6 +74,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
   onCancel: () => void;
   isLoading?: boolean;
 }) {
+  const { t } = useTranslation();
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -98,7 +100,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
             onClick={onCancel}
             className="px-3.5 py-1.5 text-xs rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
 
           <button
@@ -107,7 +109,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
             className="px-3.5 py-1.5 text-xs rounded-[6px] bg-destructive text-white font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5 transition-colors"
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            Unlink
+            {t("pages.hospital.unlink")}
           </button>
         </div>
       </div>
@@ -122,6 +124,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
   insuranceId: number;
   currentLogo: string | null;
 }) {
+  const { t } = useTranslation();
   const uploadLogo = useUploadInsuranceLogo();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentLogo);
@@ -137,21 +140,21 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
     try {
       await uploadLogo.mutateAsync({ id: insuranceId, file });
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      setUploadError(err instanceof Error ? err.message : t("pages.hospital.upload_failed"));
     }
   };
 
   return (
     <div className="flex flex-col gap-2">
       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-        Logo
+        {t("pages.hospital.logo_label")}
       </Label>
       <div className="flex items-center gap-3">
         <div className="w-14 h-14 rounded-[6px] border border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
           {preview ? (
             <img
               src={preview}
-              alt="logo"
+              alt={t("pages.hospital.logo_label")}
               className="w-full h-full object-contain p-1"
             />
           ) : (
@@ -169,17 +172,17 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
             ) : (
               <Upload className="w-3 h-3" />
             )}
-            {uploadLogo.isPending ? "Uploading..." : "Upload image"}
+            {uploadLogo.isPending ? t("pages.hospital.uploading") : t("pages.hospital.upload_image")}
           </button>
           <p className="text-[10px] text-muted-foreground/60">
-            JPEG or PNG, max 2MB
+            {t("pages.hospital.logo_hint")}
           </p>
           {uploadError && (
             <p className="text-[10px] text-destructive">{uploadError}</p>
           )}
           {uploadLogo.isSuccess && (
             <p className="text-[10px] text-emerald-500 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> Uploaded
+              <CheckCircle2 className="w-3 h-3" /> {t("pages.hospital.uploaded")}
             </p>
           )}
         </div>
@@ -204,6 +207,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
   onChange: (ins: PublicInsurance) => void;
   alreadyLinked: Set<number>;
 }) {
+  const { t } = useTranslation();
   const { data, isLoading } = useGetPublicInsurances();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -218,7 +222,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
   return (
     <div className="flex flex-col gap-1.5 relative">
       <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-        Insurance provider *
+        {t("pages.hospital.insurance_provider_required")}
       </Label>
 
       {/* Trigger */}
@@ -244,7 +248,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
             <Building2 className="w-4 h-4 shrink-0 text-muted-foreground/50" />
           )}
           <span className="truncate">
-            {value ? `${value.name} (${value.code})` : "Select an insurance..."}
+            {value ? `${value.name} (${value.code})` : t("pages.hospital.select_insurance_placeholder")}
           </span>
         </span>
         <ChevronDown
@@ -266,7 +270,7 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
+                placeholder={t("common.search")}
                 className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40"
               />
             </div>
@@ -277,11 +281,11 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
             {isLoading ? (
               <div className="flex items-center justify-center py-6 gap-2 text-[11px] text-muted-foreground">
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading...
+                {t("common.loading")}
               </div>
             ) : options.length === 0 ? (
               <p className="text-center py-6 text-[11px] text-muted-foreground">
-                No insurances found
+                {t("pages.hospital.no_insurances_found")}
               </p>
             ) : (
               options.map((ins) => {
@@ -320,14 +324,14 @@ const fmtCurrency = (n: number | null, currency = "RWF") =>
                       <p className="font-medium truncate">{ins.name}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {ins.code} ·{" "}
-                        {ins.type === "public" ? "Public" : "Private"}
+                        {ins.type === "public" ? t("pages.hospital.type_public") : t("pages.hospital.type_private")}
                         {ins.default_percent &&
-                          ` · ${ins.default_percent}% default`}
+                          t("pages.hospital.default_percent_label", { percent: ins.default_percent })}
                       </p>
                     </div>
                     {linked && (
                       <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-medium shrink-0">
-                        Linked
+                        {t("pages.hospital.linked_badge")}
                       </span>
                     )}
                     {value?.id === ins.id && !linked && (
@@ -360,27 +364,28 @@ function CoverageFields({
   onChange: (patch: Partial<CoverageState>) => void;
   defaultPercent?: string | null;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       {/* Coverage type */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-          Coverage type *
+          {t("pages.hospital.coverage_type_required")}
         </Label>
         <div className="flex gap-2">
-          {(["full", "partial"] as const).map((t) => (
+          {(["full", "partial"] as const).map((ct) => (
             <button
-              key={t}
+              key={ct}
               type="button"
-              onClick={() => onChange({ coverage_type: t })}
+              onClick={() => onChange({ coverage_type: ct })}
               className={cn(
                 "flex-1 py-2 text-xs rounded-[6px] border transition-all font-medium capitalize",
-                state.coverage_type === t
+                state.coverage_type === ct
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground",
               )}
             >
-              {t}
+              {ct === "full" ? t("pages.hospital.coverage_full") : t("pages.hospital.coverage_partial")}
             </button>
           ))}
         </div>
@@ -390,10 +395,10 @@ function CoverageFields({
       {state.coverage_type === "partial" && (
         <div className="flex flex-col gap-1.5">
           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            Covered %
+            {t("pages.hospital.covered_percent_label")}
             {defaultPercent && (
               <span className="ml-1 normal-case text-muted-foreground/60">
-                (default: {defaultPercent}%)
+                {t("pages.hospital.default_percent_hint", { percent: defaultPercent })}
               </span>
             )}
           </Label>
@@ -405,12 +410,12 @@ function CoverageFields({
               max={100}
               value={state.covered_percent}
               onChange={(e) => onChange({ covered_percent: e.target.value })}
-              placeholder={defaultPercent ?? "e.g. 80"}
+              placeholder={defaultPercent ?? t("pages.hospital.covered_percent_example")}
               className="pl-8 h-9 text-xs border-border focus-visible:ring-primary"
             />
           </div>
           <p className="text-[10px] text-muted-foreground/60">
-            Leave blank to use the insurance default
+            {t("pages.hospital.covered_percent_hint2")}
           </p>
         </div>
       )}
@@ -419,7 +424,7 @@ function CoverageFields({
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1.5">
           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            Max amount
+            {t("pages.hospital.max_amount_label")}
           </Label>
           <div className="relative">
             <Banknote className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -428,14 +433,14 @@ function CoverageFields({
               min={0}
               value={state.max_amount_covered}
               onChange={(e) => onChange({ max_amount_covered: e.target.value })}
-              placeholder="Unlimited"
+              placeholder={t("pages.hospital.unlimited")}
               className="pl-8 h-9 text-xs border-border focus-visible:ring-primary"
             />
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            Currency
+            {t("pages.hospital.currency")}
           </Label>
           <Input
             value={state.currency}
@@ -449,12 +454,12 @@ function CoverageFields({
       {/* Notes */}
       <div className="flex flex-col gap-1.5">
         <Label className="text-[10px] text-muted-foreground uppercase tracking-wider">
-          Notes
+          {t("pages.hospital.notes_label")}
         </Label>
         <textarea
           value={state.notes}
           onChange={(e) => onChange({ notes: e.target.value })}
-          placeholder="e.g. Covers outpatient only"
+          placeholder={t("pages.hospital.notes_example")}
           rows={2}
           className="w-full px-3 py-2 text-xs rounded-[6px] border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/40 resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
         />
@@ -476,6 +481,7 @@ function CoverageFields({
   error: string | null;
   alreadyLinked: Set<number>;
 }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<PublicInsurance | null>(null);
   const [coverage, setCoverage] = useState<CoverageState>({
     coverage_type: "partial",
@@ -491,7 +497,7 @@ function CoverageFields({
 
   const handleSave = () => {
     if (!selected) {
-      setSelError("Please select an insurance provider");
+      setSelError(t("pages.hospital.select_insurance_required"));
       return;
     }
     setSelError("");
@@ -525,10 +531,10 @@ function CoverageFields({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                Link Insurance Provider
+                {t("pages.hospital.link_insurance_title")}
               </h2>
               <p className="text-[10px] text-muted-foreground">
-                Select a provider and configure coverage
+                {t("pages.hospital.link_insurance_sub")}
               </p>
             </div>
           </div>
@@ -585,7 +591,7 @@ function CoverageFields({
                   {selected.name}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {selected.code} · {selected.type === "public" ? "Public" : "Private"}
+                  {selected.code} · {selected.type === "public" ? t("pages.hospital.type_public") : t("pages.hospital.type_private")}
                 </p>
               </div>
             </div>
@@ -593,7 +599,7 @@ function CoverageFields({
 
           <div className="border-t border-border/40 pt-4 flex flex-col gap-4">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Coverage settings
+              {t("pages.hospital.coverage_settings")}
             </p>
             <CoverageFields
               state={coverage}
@@ -609,7 +615,7 @@ function CoverageFields({
             onClick={onClose}
             className="px-4 py-2 text-xs rounded-[6px] border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSave}
@@ -618,7 +624,7 @@ function CoverageFields({
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Link provider
+            {t("pages.hospital.link_provider")}
           </button>
         </div>
       </div>
@@ -640,6 +646,7 @@ function CoverageFields({
   isLoading: boolean;
   error: string | null;
 }) {
+  const { t } = useTranslation();
   const [coverage, setCoverage] = useState<CoverageState>({
     coverage_type: ins.coverage_type,
     covered_percent: ins.covered_percent?.toString() ?? "",
@@ -683,7 +690,7 @@ function CoverageFields({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                Edit Coverage
+                {t("pages.hospital.edit_coverage_title")}
               </h2>
               <p className="text-[10px] text-muted-foreground">
                 {ins.name} · {ins.code}
@@ -725,7 +732,7 @@ function CoverageFields({
             onClick={onClose}
             className="px-4 py-2 text-xs rounded-[6px] border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
-            Cancel
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSave}
@@ -734,7 +741,7 @@ function CoverageFields({
           >
             {isLoading && <Loader2 className="w-3 h-3 animate-spin" />}
             <CheckCircle2 className="h-3.5 w-3.5" />
-            Save changes
+            {t("pages.hospital.save_changes")}
           </button>
         </div>
       </div>
@@ -752,6 +759,7 @@ function CoverageFields({
   onEdit: (i: HospitalInsurance) => void;
   onDelete: (i: HospitalInsurance) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="group bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
       {/* Logo + name row */}
@@ -783,7 +791,7 @@ function CoverageFields({
           )}
         >
           {ins.coverage_type === "full"
-            ? "Full"
+            ? t("pages.hospital.coverage_full")
             : `${ins.effective_coverage}%`}
         </span>
       </div>
@@ -791,20 +799,20 @@ function CoverageFields({
       {/* Coverage detail */}
       <div className="grid grid-cols-2 gap-1.5 text-[10px]">
         <div className="flex flex-col gap-0.5">
-          <p className="text-muted-foreground/70">Coverage</p>
+          <p className="text-muted-foreground/70">{t("pages.hospital.coverage_label")}</p>
           <p className="text-foreground font-medium capitalize">
-            {ins.coverage_type}
+            {ins.coverage_type === "full" ? t("pages.hospital.coverage_full") : t("pages.hospital.coverage_partial")}
           </p>
         </div>
         <div className="flex flex-col gap-0.5">
-          <p className="text-muted-foreground/70">Max amount</p>
+          <p className="text-muted-foreground/70">{t("pages.hospital.max_amount_label")}</p>
           <p className="text-foreground font-medium">
             {fmtCurrency(ins.max_amount_covered, ins.currency)}
           </p>
         </div>
         {ins.notes && (
           <div className="col-span-2 flex flex-col gap-0.5">
-            <p className="text-muted-foreground/70">Notes</p>
+            <p className="text-muted-foreground/70">{t("pages.hospital.notes_label")}</p>
             <p className="text-foreground truncate">{ins.notes}</p>
           </div>
         )}
@@ -817,14 +825,14 @@ function CoverageFields({
           className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted/40 opacity-0 group-hover:opacity-100 transition-all"
         >
           <Pencil className="w-3 h-3" />
-          Edit
+          {t("common.edit")}
         </button>
         <button
           onClick={() => onDelete(ins)}
           className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-[6px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
         >
           <Trash2 className="w-3 h-3" />
-          Unlink
+          {t("pages.hospital.unlink")}
         </button>
       </div>
     </div>
@@ -868,7 +876,8 @@ function CoverageFields({
 } 
 
 function HospitalInsurances() {
- 
+  const { t } = useTranslation();
+
   const {
     data: insurances,
     isLoading,
@@ -936,7 +945,7 @@ function HospitalInsurances() {
       await linkIns.mutateAsync(payload);
       setShowLinkModal(false);
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -947,7 +956,7 @@ function HospitalInsurances() {
       await updateCoverage.mutateAsync({ id: editingIns.id, payload });
       setEditingIns(null);
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -957,7 +966,7 @@ function HospitalInsurances() {
       await deleteIns.mutateAsync(deletingIns.id);
       setDeletingIns(null);
     } catch (e: unknown) {
-      setMutError(e instanceof Error ? e.message : "Something went wrong");
+      setMutError(e instanceof Error ? e.message : t("pages.hospital.something_went_wrong"));
     }
   };
 
@@ -965,37 +974,37 @@ function HospitalInsurances() {
     {
       type: "select" as const,
       key: "coverageFilter",
-      label: "Coverage Type",
+      label: t("pages.hospital.coverage_type_label"),
       value: coverageFilter,
       options: [
-        { value: "all", label: "All types" },
-        { value: "full", label: "Full coverage" },
-        { value: "partial", label: "Partial coverage" },
+        { value: "all", label: t("pages.hospital.all_types") },
+        { value: "full", label: t("pages.hospital.full_coverage_label") },
+        { value: "partial", label: t("pages.hospital.coverage_partial_option") },
       ],
       onChange: (v: string) => setCoverageFilter(v as any)
     },
     {
       type: "select" as const,
       key: "hasLogo",
-      label: "Logo",
+      label: t("pages.hospital.logo_label"),
       value: hasLogo,
       options: [
-        { value: "all", label: "All providers" },
-        { value: "with", label: "With logo" },
-        { value: "without", label: "Without logo" },
+        { value: "all", label: t("pages.hospital.all_providers") },
+        { value: "with", label: t("pages.hospital.with_logo") },
+        { value: "without", label: t("pages.hospital.without_logo") },
       ],
       onChange: (v: string) => setHasLogo(v as any)
     }
-  ], [coverageFilter, hasLogo]);
+  ], [coverageFilter, hasLogo, t]);
 
   return (
     <DashboardLayout role="hospital">
       <div className="flex flex-col h-full">
         <PageHeader
-          title="Insurance Partners"
-          subtitle="Manage insurance providers accepted at your hospital"
+          title={t("pages.hospital.insurance_partners_title")}
+          subtitle={t("pages.hospital.insurance_partners_sub")}
         />
- 
+
         <div className="px-6 pt-5 pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="rounded-[6px] border border-border bg-card px-4 py-3.5 flex items-start gap-3">
@@ -1004,7 +1013,7 @@ function HospitalInsurances() {
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                  Total linked
+                  {t("pages.hospital.total_linked")}
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-primary mt-0.5">
                   {isLoading ? "-" : stats.total}
@@ -1018,7 +1027,7 @@ function HospitalInsurances() {
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                  Full coverage
+                  {t("pages.hospital.full_coverage_label")}
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-foreground mt-0.5">
                   {isLoading ? "-" : stats.fullCoverage}
@@ -1026,7 +1035,7 @@ function HospitalInsurances() {
                 <p className="text-[10px] text-muted-foreground">
                   {isLoading || stats.total === 0
                     ? ""
-                    : `${stats.total - stats.fullCoverage} partial`}
+                    : t("pages.hospital.partial_count", { count: stats.total - stats.fullCoverage })}
                 </p>
               </div>
             </div>
@@ -1037,13 +1046,13 @@ function HospitalInsurances() {
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                  Showing
+                  {t("pages.hospital.showing_label")}
                 </p>
                 <p className="text-xl font-semibold tabular-nums text-foreground mt-0.5">
                   {isLoading ? "-" : filtered.length}
                 </p>
                 {hasActiveFilters && (
-                  <p className="text-[10px] text-muted-foreground">filtered</p>
+                  <p className="text-[10px] text-muted-foreground">{t("pages.hospital.filtered_label")}</p>
                 )}
               </div>
             </div>
@@ -1056,19 +1065,19 @@ function HospitalInsurances() {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
             <p className="text-[11px] text-muted-foreground">
               {isLoading ? (
-                <span className="text-muted-foreground/50">Loading...</span>
+                <span className="text-muted-foreground/50">{t("common.loading")}</span>
               ) : (
                 <>
                   <span className="font-bold text-foreground">
                     {filtered.length}
                   </span>{" "}
-                  {filtered.length === 1 ? "provider" : "providers"}
+                  {filtered.length === 1 ? t("pages.hospital.provider_singular") : t("pages.hospital.provider_plural")}
                   {hasActiveFilters && (
                     <button
                       onClick={clearFilters}
                       className="ml-2 text-primary hover:underline text-[10px] font-medium"
                     >
-                      Reset
+                      {t("pages.hospital.reset")}
                     </button>
                   )}
                 </>
@@ -1082,7 +1091,7 @@ function HospitalInsurances() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search providers..."
+                  placeholder={t("pages.hospital.search_providers_placeholder")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1091,7 +1100,7 @@ function HospitalInsurances() {
                 onClick={() => refetch()}
                 disabled={isLoading}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                title="Refresh"
+                title={t("pages.hospital.refresh")}
               >
                 <RefreshCw
                   className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
@@ -1112,10 +1121,10 @@ function HospitalInsurances() {
                 className="h-8 text-xs bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Link provider</span>
+                <span className="hidden sm:inline">{t("pages.hospital.link_provider")}</span>
               </Button>
             </div>
-          </div> 
+          </div>
           <FilterBar
             open={filterOpen}
             onToggle={() => setFilterOpen(!filterOpen)}
@@ -1134,17 +1143,17 @@ function HospitalInsurances() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
-                    Failed to load insurance providers
+                    {t("pages.hospital.load_insurances_failed")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {error instanceof Error ? error.message : "Unknown error"}
+                    {error instanceof Error ? error.message : t("pages.hospital.unknown_error")}
                   </p>
                 </div>
                 <button
                   onClick={() => refetch()}
                   className="text-[11px] text-primary hover:underline font-semibold"
                 >
-                  Try again
+                  {t("pages.hospital.try_again")}
                 </button>
               </div>
             ) : isLoading ? (
@@ -1161,13 +1170,13 @@ function HospitalInsurances() {
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     {hasActiveFilters
-                      ? "No providers match your filters"
-                      : "No insurance providers linked yet"}
+                      ? t("pages.hospital.no_providers_match")
+                      : t("pages.hospital.no_providers_yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {hasActiveFilters
-                      ? "Try clearing your filters"
-                      : "Link your first insurance partner to get started"}
+                      ? t("pages.hospital.try_clearing_filters")
+                      : t("pages.hospital.link_first_partner_hint")}
                   </p>
                 </div>
                 {hasActiveFilters ? (
@@ -1175,7 +1184,7 @@ function HospitalInsurances() {
                     onClick={clearFilters}
                     className="text-[11px] text-primary hover:underline font-semibold"
                   >
-                    Clear filters
+                    {t("pages.hospital.clear_filters")}
                   </button>
                 ) : (
                   <Button
@@ -1183,7 +1192,7 @@ function HospitalInsurances() {
                     className="h-8 text-xs bg-primary text-primary-foreground gap-1.5"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Link provider
+                    {t("pages.hospital.link_provider")}
                   </Button>
                 )}
               </div>
@@ -1227,8 +1236,8 @@ function HospitalInsurances() {
  
       <ConfirmDialog
         open={deletingIns !== null}
-        title="Unlink Insurance Provider"
-        description={`Remove "${deletingIns?.name}" from your hospital? This action cannot be undone.`}
+        title={t("pages.hospital.unlink_insurance_title")}
+        description={t("pages.hospital.unlink_insurance_desc", { name: deletingIns?.name })}
         onConfirm={handleDelete}
         onCancel={() => setDeletingIns(null)}
         isLoading={deleteIns.isPending}

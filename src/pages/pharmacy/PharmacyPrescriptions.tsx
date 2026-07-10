@@ -72,10 +72,10 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "date-desc", label: "Date: Newest first" },
-  { value: "date-asc", label: "Date: Oldest first" },
-  { value: "patient", label: "Patient (A-Z)" },
-  { value: "status", label: "Status" },
+  { value: "date-desc", label: "pages.pharmacy.rx_sort_newest" },
+  { value: "date-asc", label: "pages.pharmacy.rx_sort_oldest" },
+  { value: "patient", label: "pages.pharmacy.rx_sort_patient" },
+  { value: "status", label: "pages.pharmacy.status" },
 ];
 
  
@@ -101,11 +101,11 @@ const STATUS_DOT: Record<PrescriptionStatus, string> = {
 };
 
 const STATUS_LABEL: Record<PrescriptionStatus, string> = {
-  pending: "Pending",
-  reviewing: "Reviewing",
-  approved: "Approved",
-  rejected: "Rejected",
-  fulfilled: "Fulfilled",
+  pending: "pages.pharmacy.pending",
+  reviewing: "pages.pharmacy.reviewing",
+  approved: "pages.pharmacy.approved",
+  rejected: "pages.pharmacy.rejected",
+  fulfilled: "pages.pharmacy.fulfilled",
 };
 
 const STATUS_ORDER: Record<PrescriptionStatus, number> = {
@@ -274,6 +274,7 @@ function DetailDrawer({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"summary" | "people" | "medicines" | "documents">("summary");
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -337,7 +338,7 @@ function DetailDrawer({
                 )}
               >
                 <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[rx.status])} />
-                {STATUS_LABEL[rx.status]}
+                {t(STATUS_LABEL[rx.status])}
               </Badge>
             )}
             <button
@@ -767,7 +768,7 @@ function PrescriptionTableRow({
             STATUS_DOT[rx.status],
             rx.status === "pending" && "animate-pulse",
           )} />
-          {STATUS_LABEL[rx.status]}
+          {t(STATUS_LABEL[rx.status])}
         </Badge>
       </td>
 
@@ -1005,7 +1006,7 @@ const PharmacyPrescriptions = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => refetch()}
-                title="Refresh"
+                title={t("pages.pharmacy.refresh")}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
@@ -1017,7 +1018,7 @@ const PharmacyPrescriptions = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search patient, diagnosis, Rx#..."
+                  placeholder={t("pages.pharmacy.search_patient_rx")}
                   className="w-52 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1029,7 +1030,7 @@ const PharmacyPrescriptions = () => {
                   className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                 >
                   {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>{t(o.label)}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
@@ -1093,10 +1094,10 @@ const PharmacyPrescriptions = () => {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {hasActiveFilters ? "No prescriptions match your filters" : "No prescription requests yet"}
+                    {hasActiveFilters ? t("pages.pharmacy.no_prescriptions_match") : t("pages.pharmacy.no_prescription_requests")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {hasActiveFilters ? "Try widening your search criteria" : "Requests will appear here once submitted"}
+                    {hasActiveFilters ? t("pages.pharmacy.try_widening_search") : t("pages.pharmacy.requests_will_appear")}
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -1114,10 +1115,10 @@ const PharmacyPrescriptions = () => {
                     <thead>
                       <tr>
                         <TableHeader label="Rx #" sortKey="date-desc" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
-                        <TableHeader label="Patient" sortKey="patient" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
-                        <TableHeader label="Medicines" currentSort={filters.sort} onSort={() => { }} />
-                        <TableHeader label="Delivery" currentSort={filters.sort} onSort={() => { }} />
-                        <TableHeader label="Status" sortKey="status" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader label={t("pages.pharmacy.patient")} sortKey="patient" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader label={t("pages.pharmacy.medicines")} currentSort={filters.sort} onSort={() => { }} />
+                        <TableHeader label={t("pages.pharmacy.delivery")} currentSort={filters.sort} onSort={() => { }} />
+                        <TableHeader label={t("pages.pharmacy.status")} sortKey="status" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
                         <TableHeader
                           label="Date"
                           sortKey="date-desc"

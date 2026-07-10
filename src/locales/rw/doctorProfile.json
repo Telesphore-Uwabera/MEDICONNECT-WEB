@@ -1,12 +1,40 @@
 {
   "steps": {
-    "personal": { "label": "Bwite", "title": "Amakuru y'akazi", "desc": "Ubuhanga, impamyabumenyi, uruhushya, umwirondoro n'amafaranga" },
-    "specializations": { "label": "Ubuhanga", "title": "Ubuhanga", "desc": "Ubuhanga bw'ibanze n'ubw'inyongera" },
-    "education": { "label": "Amashuri", "title": "Amateka y'amashuri", "desc": "Impamyabumenyi n'amateka y'amasomo" },
-    "experience": { "label": "Uburambe", "title": "Uburambe mu kazi", "desc": "Imirimo yakozwe n'iriho ubu" },
-    "qualifications": { "label": "Impamyabumenyi", "title": "Impamyabumenyi n'ubuhanga", "desc": "Impamyabumenyi n'uruhushya" },
-    "documents": { "label": "Inyandiko", "title": "Kohereza inyandiko", "desc": "Ifoto y'umwirondoro n'inyandiko za resmi" },
-    "linksSection": { "label": "Imbuga nkoranyambaga", "title": "Imbuga nkoranyambaga n'aho gaboneka kuri interineti", "desc": "LinkedIn, urubuga, ResearchGate n'ibindi" }
+    "personal": {
+      "label": "Bwite",
+      "title": "Amakuru y'akazi",
+      "desc": "Ubuhanga, impamyabumenyi, uruhushya, umwirondoro n'amafaranga"
+    },
+    "specializations": {
+      "label": "Ubuhanga",
+      "title": "Ubuhanga",
+      "desc": "Ubuhanga bw'ibanze n'ubw'inyongera"
+    },
+    "education": {
+      "label": "Amashuri",
+      "title": "Amateka y'amashuri",
+      "desc": "Impamyabumenyi n'amateka y'amasomo"
+    },
+    "experience": {
+      "label": "Uburambe",
+      "title": "Uburambe mu kazi",
+      "desc": "Imirimo yakozwe n'iriho ubu"
+    },
+    "qualifications": {
+      "label": "Impamyabumenyi",
+      "title": "Impamyabumenyi n'ubuhanga",
+      "desc": "Impamyabumenyi n'uruhushya"
+    },
+    "documents": {
+      "label": "Inyandiko",
+      "title": "Kohereza inyandiko",
+      "desc": "Ifoto y'umwirondoro n'inyandiko za resmi"
+    },
+    "linksSection": {
+      "label": "Imbuga nkoranyambaga",
+      "title": "Imbuga nkoranyambaga n'aho gaboneka kuri interineti",
+      "desc": "LinkedIn, urubuga, ResearchGate n'ibindi"
+    }
   },
   "consultation_types": {
     "online": "Kuri interineti gusa",

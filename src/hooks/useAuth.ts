@@ -131,9 +131,21 @@ export const useConvertGuest = () =>
       }),
   });
 
+export type PasswordResetIdentifier =
+  | { email: string; phone?: never; country_code?: never }
+  | { email?: never; phone: string; country_code: string };
+
+export type ForgotPasswordPayload = PasswordResetIdentifier;
+
+export type ResetPasswordPayload = PasswordResetIdentifier & {
+  otp: string;
+  password: string;
+  password_confirmation: string;
+};
+
 export const useForgotPassword = () =>
   useMutation({
-    mutationFn: (payload: { email: string }) =>
+    mutationFn: (payload: ForgotPasswordPayload) =>
       apiFetch<{ message: string }>("/auth/forgot-password", {
         method: "POST",
         body: payload,
@@ -142,12 +154,7 @@ export const useForgotPassword = () =>
 
 export const useResetPassword = () =>
   useMutation({
-    mutationFn: (payload: {
-      email: string;
-      otp: string;
-      password: string;
-      password_confirmation: string;
-    }) =>
+    mutationFn: (payload: ResetPasswordPayload) =>
       apiFetch<{ message: string }>("/auth/reset-password", {
         method: "POST",
         body: payload,

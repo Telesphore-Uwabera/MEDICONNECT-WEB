@@ -551,7 +551,7 @@ function DoctorSettings() {
                   {showAvatar ? (
                     <img
                       src={settings!.avatar!}
-                      alt={settings?.name ?? "Avatar"}
+                      alt={settings?.name ?? t("pages.doctor.settings_avatar_alt")}
                       onError={() => setAvatarError(true)}
                       className="h-[72px] w-[72px] rounded-[6px] object-cover border-2 border-primary/30 shadow-md"
                     />

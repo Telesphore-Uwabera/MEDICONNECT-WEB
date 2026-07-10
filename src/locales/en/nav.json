@@ -2,7 +2,7 @@
   "features": "Features",
   "doctors": "Doctors",
   "available_doctors": "Available Doctors",
-  "hospitals": "Hospitals",
+  "hospitals": "Health Facilities",
   "pharmacy": "Pharmacy",
   "forYou": "For You",
   "SignUp": "Sign Up",
@@ -10,8 +10,8 @@
   "closeMenu": "Close menu",
   "openMenu": "Open menu",
   "topnav": {
-  "email": "admin@mediconnect.rw",
-  "phone": "+250 782 168 650",
-  "help": "Help"
-}
+    "email": "admin@mediconnect.rw",
+    "phone": "+250 782 168 650",
+    "help": "Help"
+  }
 }

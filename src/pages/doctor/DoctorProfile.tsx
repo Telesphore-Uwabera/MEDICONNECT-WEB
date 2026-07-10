@@ -91,7 +91,7 @@ const flattenValidationErrors = (errors: unknown): string => {
   return Object.values(errors as Record<string, unknown>)
     .flatMap((value) => (Array.isArray(value) ? value : [value]))
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-    .join(" Â· ");
+    .join(" · ");
 };
 
 const getProfileSaveErrorMessage = (err: unknown): string => {
@@ -106,7 +106,7 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
   const baseMessage = apiData?.message || directMessage;
 
   if (validationMessage && baseMessage && !baseMessage.includes(validationMessage)) {
-    return `${baseMessage} Â· ${validationMessage}`;
+    return `${baseMessage} · ${validationMessage}`;
   }
 
   return baseMessage || validationMessage || i18n.t("doctorProfile.check_form_error");
@@ -1450,12 +1450,12 @@ const DoctorProfile = () => {
       profileData.specializations.online_fee;
     const feeCurrency = profileData.specializations.fee_currency ?? "RWF";
     return {
-      degree: profileData.personal.doctor_degree || "â€”",
-      license: profileData.personal.medical_license || "â€”",
+      degree: profileData.personal.doctor_degree || "-",
+      license: profileData.personal.medical_license || "-",
       education: profileData.education.length,
       experience: profileData.experience.length,
       qualifications: profileData.qualifications.length,
-      fee: fee ? formatFee(fee, feeCurrency) : "â€”",
+      fee: fee ? formatFee(fee, feeCurrency) : "-",
     };
   }, [profileData]);
 

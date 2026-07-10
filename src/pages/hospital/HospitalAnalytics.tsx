@@ -842,8 +842,10 @@ const HospitalAnalytics = () => {
                           {(periodSB?.total ?? 0).toLocaleString()}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {periodSB?.unique_services ?? 0} services ·{" "}
-                          {periodSB?.unique_patients ?? 0} patients
+                          {t("pages.hospital.services_patients_count", {
+                            services: periodSB?.unique_services ?? 0,
+                            patients: periodSB?.unique_patients ?? 0,
+                          })}
                         </span>
                       </Card>
                       <Card className="flex flex-col gap-0.5">
@@ -854,8 +856,10 @@ const HospitalAnalytics = () => {
                           {(periodAppts?.total ?? 0).toLocaleString()}
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {periodAppts?.online_count ?? 0} online ·{" "}
-                          {periodAppts?.in_person_count ?? 0} in-person
+                          {t("pages.hospital.online_inperson_count", {
+                            online: periodAppts?.online_count ?? 0,
+                            inPerson: periodAppts?.in_person_count ?? 0,
+                          })}
                         </span>
                       </Card>
                       <Card className="flex flex-col gap-0.5">
@@ -1312,7 +1316,7 @@ const HospitalAnalytics = () => {
                                   "en-US",
                                   { month: "short", day: "numeric" },
                                 )}{" "}
-                                Â· {String(a.appointment_time).slice(0, 5)}
+                                · {String(a.appointment_time).slice(0, 5)}
                               </span>
                               <span className="text-[9px] capitalize px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                                 {a.type}
@@ -1519,7 +1523,7 @@ const HospitalAnalytics = () => {
                                 color: "text-destructive",
                               },
                               {
-                                label: "Total",
+                                label: t("pages.hospital.total"),
                                 value: reviews?.total ?? 0,
                                 color: "text-foreground",
                               },

@@ -62,11 +62,12 @@
     "category": {
       "consultations": "Inama",
       "pharmacy": "Farumasi",
-      "hospital": "Ibitaro",
+      "hospital": "Ibigo nderabuzima",
       "payments": "Kwishyura",
       "documents": "Inyandiko",
       "alerts": "Imenyesha y'ihutirwa",
       "other": "Ibindi"
     }
-  }
+  },
+  "Register": "Iyandikishe"
 }

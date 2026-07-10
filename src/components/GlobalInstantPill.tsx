@@ -17,6 +17,7 @@ import { apiFetch } from "@/lib/api";
 import { decodeCallToken } from "@/lib/scheduled-call";
 import {
   readConsultSession,
+  pruneIfEnded,
   type ConsultSession,
 } from "@/hooks/patient/se-consultation-session";
 import type { Doctor } from "@/context/CallStore";
@@ -75,7 +76,15 @@ export function GlobalInstantPill() {
     }
 
     const check = async () => {
-      setSession(scanSessions());
+      const found = scanSessions();
+      if (found) {
+        // The doctor may have completed/declined this consultation while the
+        // pill wasn't being watched — verify before offering to resume it.
+        const ended = await pruneIfEnded(found);
+        setSession(ended ? null : found);
+      } else {
+        setSession(null);
+      }
 
       if (!hasToken) {
         setActiveInstant(null);

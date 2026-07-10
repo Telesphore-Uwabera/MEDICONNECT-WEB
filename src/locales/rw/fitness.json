@@ -5,13 +5,11 @@
   "tab_my_certificates": "Impamyabushobozi zanjye",
   "tab_request_short": "Icyifuzo",
   "tab_certificates_short": "Impamyabushobozi",
-
   "sidebar_title": "Icyifuzo cy'impamyabushobozi",
   "sidebar_sections_visited": "Ibice {{count}} kuri {{total}} byasuwe",
   "sidebar_editing": "birimo guhindurwa",
   "sidebar_done": "byarangiye",
   "sidebar_hint": "Jya mu bice ubushake — nta rutonde rusabwa.",
-
   "step_purpose_label": "Intego",
   "step_purpose_desc": "Ubwoko bw'impamyabushobozi & akazi",
   "step_symptoms_label": "Ibimenyetso",
@@ -20,19 +18,15 @@
   "step_history_desc": "Indwara n'imiterere yashize",
   "step_functional_label": "Imikorere",
   "step_functional_desc": "Ubushobozi bwa buri munsi & ibipimo",
-
   "step_of": "Intambwe {{current}} kuri {{total}}",
   "back_button": "← Subira inyuma",
   "save_and_next": "Bika & Ukurikira →",
   "submit_request": "Ohereza icyifuzo",
-
   "draft_saved_badge": "Umushinga wabitswe",
   "updating_badge": "Guhindura {{number}}",
-
   "continuing_pre": "Ukomeza",
   "continuing_request_word": "icyifuzo",
   "continuing_post": "Ibisubizo byawe byabitswe byuzuzwa mbere — kubika bivugurura iki cyifuzo aho gukora ikindi gishya.",
-
   "purpose_select_label": "Intego y'impamyabushobozi",
   "purpose_select_placeholder": "Hitamo intego",
   "purpose_specify_label": "Sobanura",
@@ -45,26 +39,22 @@
   "high_risk_job_pre": "Ubu bwoko bw'akazi busanzwe busaba",
   "high_risk_job_bold": "isuzuma ry'umubiri mu buryo bw'ubwite",
   "high_risk_job_post": "Icyifuzo cyawe kizasuzumwa kandi ushobora koherezwa ahandi.",
-
   "step1_saved": "Intambwe ya 1 yabitswe",
   "step1_save_failed": "Kubika intambwe ya 1 byanze",
   "step_n_saved": "Intambwe ya {{step}} yabitswe",
   "step_n_save_failed": "Kubika intambwe ya {{step}} byanze",
-
   "symptoms_note_pre": "Subiza ukuri ku bimenyetso mu",
   "symptoms_note_bold": "masaha 72 ashize",
   "symptoms_note_post": ".",
   "red_flag_pre": "Wagaragaje",
   "red_flag_bold": "ikimenyetso gikomeye",
   "red_flag_post": "Isuzuma ry'umubiri rishobora gusabwa. Ushobora kohereza kandi muganga azafata umwanzuro.",
-
   "chronic_illness_detail_label": "Sobanura indwara",
   "chronic_illness_detail_placeholder": "urugero: Umuvuduko w'amaraso, Diyabete yo ku rwego rwa 2",
   "medication_detail_label": "Andika imiti",
   "medication_detail_placeholder": "urugero: Metformin 500mg, Amlodipine 5mg",
   "allergy_detail_label": "Sobanura aleriji",
   "allergy_detail_placeholder": "urugero: Penisiline, Ubunyobwa",
-
   "functional_ability_title": "Ubushobozi bwa buri munsi",
   "vitals_title": "Ibipimo (bitari ngombwa — niba ufite ibikoresho murugo)",
   "vitals_hint": "Niba ufite thermometer, igipimo cy'umuvuduko w'amaraso, cyangwa oxymeter, andika ibipimo hano.",
@@ -72,16 +62,12 @@
   "notes_placeholder": "Ibindi bisobanuro byose bifasha..",
   "step4_saved": "Intambwe ya 4 yabitswe",
   "step4_save_failed": "Kubika intambwe ya 4 byanze",
-
   "submission_failed": "Kohereza byanze",
-
   "payment_title": "Rangiza kwishyura kugira ngo wohereze",
   "payment_description": "Icyifuzo cyawe cyiteguye. Ishyura amafaranga y'ohereza kugira ngo cyoherezwe kuri muganga asuzume.",
   "back_to_form": "← Subira ku ifishi",
-
   "submitted_title": "Icyifuzo cyoherejwe!",
   "submitted_desc": "Muganga azasuzuma icyifuzo cyawe vuba.",
-
   "no_certificates_title": "Nta mpamyabushobozi urafite",
   "no_certificates_desc": "Ohereza icyifuzo kandi muganga azagisuzuma vuba.",
   "active_request_notice": "Ufite icyifuzo gikora ubu.",
@@ -89,23 +75,19 @@
   "withdraw_confirm": "Kuraho icyifuzo cyawe cy'ubu? Ibi ntibishobora gusubizwa inyuma.",
   "withdraw_success": "Icyifuzo cyakuweho.",
   "withdraw_failed": "Ntibishoboka gukuraho icyifuzo.",
-
   "purpose_general_fitness": "Ubuzima rusange",
   "purpose_school_work": "Ubuzima bw'ishuri/akazi",
   "purpose_return_to_work": "Gusubira ku kazi nyuma y'indwara",
   "purpose_fitness_for_travel": "Ubushobozi bwo gutembera",
   "purpose_other_option": "Ikindi",
-
   "job_none": "Nta na kimwe muri ibi",
   "job_heavy_labor": "Umurimo w'umubiri ukomeye",
   "job_driving": "Gutwara/gukoresha imashini",
   "job_armed_forces": "Ingabo/umutekano",
   "job_mining": "Ubucukuzi/ubwubatsi",
   "job_xray": "Akazi gasaba X-ray",
-
   "yes": "Yego",
   "no": "Oya",
-
   "sf_fever": "Umuriro mu masaha 72 ashize?",
   "sf_headache": "Umutwe ubabara cyangwa iyerurwa by'ubu?",
   "sf_breath": "Guhumeka nabi?",
@@ -116,7 +98,6 @@
   "sf_fatigue": "Intege nke cyangwa umunaniro?",
   "sf_visual": "Ikibazo cyo kubona?",
   "sf_fainting": "Ibihe byo kuzimira vuba aha?",
-
   "hf_chronic_illness": "Indwara zidakira? (Umuvuduko w'amaraso, diyabete, asima, igicuri, indwara z'umutima)",
   "hf_hospitalization": "Kuba wari mu bitaro mu mezi 3 ashize?",
   "hf_surgery": "Kubagwa mu mezi 6 ashize?",
@@ -124,13 +105,11 @@
   "hf_allergies": "Aleriji uzi (imiti/ibiryo)?",
   "hf_medication": "Imiti idakira ukoresha ubu?",
   "hf_disability": "Ubumuga cyangwa ikibazo cyo kugenda?",
-
   "ff_walk": "Ushobora kugenda utagira ikibazo?",
   "ff_climb": "Ushobora kuzamuka amazandiko?",
   "ff_lift": "Ushobora kwikorera ibintu byoroshye utababara?",
   "ff_sleep": "Urasinzira neza?",
   "ff_appetite": "Ufite ubushake busanzwe bwo kurya?",
-
   "vf_temperature": "Ubushyuhe (°C)",
   "vf_temperature_placeholder": "urugero: 36.6",
   "vf_bp": "Umuvuduko w'amaraso",
@@ -139,14 +118,15 @@
   "vf_pulse_placeholder": "urugero: 72",
   "vf_o2": "Ogisijeni mu maraso (%)",
   "vf_o2_placeholder": "urugero: 98",
-
   "status_draft": "Umushinga",
   "status_pending": "Bitegereje",
   "status_pending_review": "Bitegereje isuzuma",
   "status_in_review": "Birimo gusuzumwa",
   "status_approved": "Byemejwe",
   "status_rejected": "Byanze",
-
+  "status_all": "Byose",
+  "status_issued": "Byatanzwe",
+  "status_revoked": "Byasubitswe",
   "cert_number_fallback": "Impamyabushobozi #{{id}}",
   "view_details_action": "Reba amakuru arambuye",
   "download_pdf_action": "Kuramo PDF",
@@ -164,7 +144,6 @@
   "verification_call_not_ready": "Ihamagara ryo kwemeza ntiriraboneka. Tegereza ko muganga aritangiza.",
   "could_not_join_verification": "Ntibishoboka kwinjira mu ihamagara ryo kwemeza.",
   "join_verification_call": "Injira mu ihamagara ryo kwemeza",
-
   "issued_on": "Byatanzwe {{date}}",
   "medical_decision": "Umwanzuro wa muganga:",
   "red_flags_detected": "Ibimenyetso bikomeye byabonetse",
@@ -184,7 +163,6 @@
   "medical_history_title": "Amateka y'ubuvuzi",
   "patient_notes_title": "Inyandiko z'umurwayi",
   "doctor_prefix": "Dr {{name}}",
-
   "rf_chest_pain": "Kubabara mu gatuza",
   "rf_breath": "Guhumeka nabi",
   "rf_syncope": "Kuzimira",
@@ -195,13 +173,11 @@
   "rf_recent_surgery": "Kubagwa vuba",
   "rf_seizure": "Igicuri",
   "rf_pregnancy": "Ibibazo byo gutwita",
-
   "jf_heavy_labor": "Umurimo ukomeye",
   "jf_driving": "Gutwara / imashini",
   "jf_armed_forces": "Ingabo",
   "jf_mining": "Ubucukuzi / ubwubatsi",
   "jf_xray": "Bisaba X-ray",
-
   "pp_confirming_payment": "Kwemeza ubwishyu bwawe…",
   "pp_confirming_hint": "Ibi bisanzwe bimara amasegonda make. Nturafunge iyi dirishya.",
   "pp_payment_confirmed": "Ubwishyu bwemejwe!",

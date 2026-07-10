@@ -763,7 +763,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                 type="text"
                 value={diagnosisInput}
                 onChange={(e) => setDiagnosisInput(e.target.value)}
-                placeholder="Partial matchâ€¦"
+                placeholder="Partial match"
                 className="w-full h-7 rounded-[7px] border border-border/40 bg-background px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:ring-1 focus:ring-primary/40"
               />
             </div>
@@ -860,8 +860,8 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                       </p>
                       <p className="text-[10px] text-muted-foreground/45 mt-0.5 font-mono">
                         #{rx.id}
-                        {rx.valid_until && <> Â· expires {formatDateOnly(rx.valid_until)}</>}
-                        {" Â· "}{formatDateOnly(rx.created_at)}
+                        {rx.valid_until && <> · expires {formatDateOnly(rx.valid_until)}</>}
+                        {" · "}{formatDateOnly(rx.created_at)}
                       </p>
                     </div>
                     <span className={cn(

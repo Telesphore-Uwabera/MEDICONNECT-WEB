@@ -4,6 +4,7 @@
 
 import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
 
 export type DocumentBrandSettings = unknown;
 
@@ -25,12 +26,6 @@ function esc(v: unknown): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-/** Rich-text fields are first-party HTML (sanitised on save) - render as-is. */
-function richOrDash(html?: string | null): string {
-  const v = (html ?? "").trim();
-  return v || "<span class='muted'>-</span>";
 }
 
 function fmtDate(iso?: string): string {
@@ -123,7 +118,10 @@ function contactBlock(brand: ResolvedBrand): string {
 
 const documentCss = `
   :root { --ink:#111827; --muted:#4b5563; --line:#222; --soft-line:#9ca3af; --header:#bcd7fb; --brand:#05a8a2; --brand-dark:#05716f; }
-  * { box-sizing:border-box; }
+  /* @page margin:0 leaves Chrome no room to draw its own header/footer
+     (url/date/page number); .page padding below recreates the visual margin. */
+  @page { margin:0; size:auto; }
+  * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
   body { margin:0; font-family: Georgia, "Times New Roman", serif; color:var(--ink); background:#eef3f8; }
   .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid #d5dee8; font-family:Arial, sans-serif; }
   .toolbar button { font:inherit; font-size:13px; font-weight:700; padding:8px 14px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; }
@@ -144,7 +142,8 @@ const documentCss = `
   .section-table th { background:var(--header); border:1px solid var(--line); padding:7px 9px; text-align:left; font-size:14px; font-weight:800; }
   .section-table td { border:1px solid var(--line); padding:7px 9px; vertical-align:top; line-height:1.45; }
   .section-table td.label { width:34%; font-weight:700; background:#fafafa; }
-  .rich-cell { min-height:34px; }
+  .rich-cell { min-height:34px; max-width:100%; overflow:hidden; }
+${richDocumentCss}
   .chip { display:inline-block; font-family:Arial, sans-serif; font-size:11px; padding:2px 7px; margin:1px 2px 1px 0; border:1px solid #a7e7e2; border-radius:99px; background:#effefd; color:#075f5e; }
   .chip.danger { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
   .alert { margin:0 0 14px; padding:8px 10px; border:1px solid #b91c1c; background:#fef2f2; color:#991b1b; font-family:Arial, sans-serif; font-size:12px; font-weight:700; }
@@ -198,10 +197,7 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
     <header class="doc-header">
       <div class="brand-row">
         <img src="${esc(brand.logoUrl)}" alt="${esc(brand.appName)}" />
-        <div>
-          <div class="brand-name">${esc(brand.appName)}</div>
-          <div class="tagline">${esc(brand.tagline)}</div>
-        </div>
+        
       </div>
       <div class="title-box">
         <h1>Consultation Summary</h1>
@@ -216,12 +212,12 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
     ${section("Patient Information", row("Patient Name", esc(patientName(s))) + row("Patient ID", esc(s.patient_id)))}
     ${section("Attending Doctor Information", row("Doctor Name", esc(dn || "-")))}
     ${section("Document Information", row("Summary ID", esc(s.id)) + row("Consultation Type", isInstant ? "Instant" : "Appointment") + row("Generated On", esc(fmtDate(new Date().toISOString()))))}
-    ${section("Chief Complaint", row("Main Complaint", `<div class="rich-cell">${richOrDash(cc.main_complaint)}</div>`) + row("Duration", cc.duration_value != null ? `${esc(cc.duration_value)} ${esc(cc.duration_unit ?? "")}` : ""))}
+    ${section("Chief Complaint", row("Main Complaint", `<div class="rich-cell">${richDocumentHtml(cc.main_complaint)}</div>`) + row("Duration", cc.duration_value != null ? `${esc(cc.duration_value)} ${esc(cc.duration_unit ?? "")}` : ""))}
     ${section("History of Present Illness", row("Onset", esc(hpi.onset ?? "")) + row("Location", esc(hpi.location ?? "")) + row("Severity", hpi.severity != null ? `${esc(hpi.severity)}/10` : ""))}
     ${rosRows ? section("Review of Systems", rosRows) : ""}
     ${flagsBody ? section("Red-Flag Screening", flagsBody) : ""}
     ${section("Clinical Assessment", row("Primary Diagnosis", esc(ca.primary_diagnosis ?? "")) + row("Severity Classification", esc(ca.severity_classification ? pretty(ca.severity_classification) : "")))}
-    ${section("Management Plan", row("Medications Prescribed", chips(meds)) + row("Follow-up Plan", `<div class="rich-cell">${mp.followup_plan ? richOrDash(mp.followup_plan) : "-"}</div>`))}
+    ${section("Management Plan", row("Medications Prescribed", chips(meds)) + row("Follow-up Plan", `<div class="rich-cell">${mp.followup_plan ? richDocumentHtml(mp.followup_plan) : "-"}</div>`))}
 
     <footer class="footer">
       <span>${esc(brand.appName)} digital health document</span>

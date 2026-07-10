@@ -20,12 +20,36 @@
     "closes_at": "Closes at"
   },
   "steps": {
-    "identity": { "label": "Identity", "title": "Hospital identity", "desc": "Names, type & registration" },
-    "location": { "label": "Location", "title": "Location & address", "desc": "Address, city, province & coordinates" },
-    "contact": { "label": "Contact", "title": "Contact information", "desc": "Phone, email & website" },
-    "hours": { "label": "Hours", "title": "Operating hours", "desc": "Opening hours & availability" },
-    "linksSection": { "label": "Social Links", "title": "Social & online presence", "desc": "Facebook, LinkedIn, WhatsApp & more" },
-    "gallery": { "label": "Gallery", "title": "Photo gallery", "desc": "Facility photos & images" }
+    "identity": {
+      "label": "Identity",
+      "title": "Health Facility identity",
+      "desc": "Names, type & registration"
+    },
+    "location": {
+      "label": "Location",
+      "title": "Location & address",
+      "desc": "Address, city, province & coordinates"
+    },
+    "contact": {
+      "label": "Contact",
+      "title": "Contact information",
+      "desc": "Phone, email & website"
+    },
+    "hours": {
+      "label": "Hours",
+      "title": "Operating hours",
+      "desc": "Opening hours & availability"
+    },
+    "linksSection": {
+      "label": "Social Links",
+      "title": "Social & online presence",
+      "desc": "Facebook, LinkedIn, WhatsApp & more"
+    },
+    "gallery": {
+      "label": "Gallery",
+      "title": "Photo gallery",
+      "desc": "Facility photos & images"
+    }
   },
   "view_tabs": {
     "social": "Social",
@@ -34,7 +58,7 @@
   "select_type": "Select type",
   "open_24h_desc": "Overrides opening & closing times",
   "open_24h_notice": "This facility is available around the clock.",
-  "social_intro": "Add your hospital's social media and online profiles. All fields are optional.",
+  "social_intro": "Add your health facility's social media and online profiles. All fields are optional.",
   "gallery_intro": "Upload up to {{count}} photos of your facility — wards, reception, equipment, etc.",
   "drop_images": "Drop images here",
   "click_or_drag": "Click or drag & drop",
@@ -76,13 +100,13 @@
   "issue_first_rx": "Issue first prescription",
   "new_rx": "New",
   "empty": {
-    "title": "No hospital profile",
-    "sub": "Create your hospital profile to manage contact details, location, and operating hours",
-    "cta": "Create Hospital Profile"
+    "title": "No health facility profile",
+    "sub": "Create your health facility profile to manage contact details, location, and operating hours",
+    "cta": "Create Health Facility Profile"
   },
   "form": {
-    "subtitle_edit": "Update your hospital information",
-    "subtitle_create": "Fill in the details below to register your hospital"
+    "subtitle_edit": "Update your health facility information",
+    "subtitle_create": "Fill in the details below to register your health facility"
   },
   "stat_type": "Type",
   "stat_city": "City",
@@ -99,6 +123,6 @@
   "open_short": "OPEN",
   "closed_short": "CLSD",
   "loading_profile": "Loading your profile…",
-  "profile_title": "Hospital Profile",
-  "profile_sub": "Manage your hospital's identity, location, contact details, and operating hours"
+  "profile_title": "Health Facility Profile",
+  "profile_sub": "Manage your health facility's identity, location, contact details, and operating hours"
 }

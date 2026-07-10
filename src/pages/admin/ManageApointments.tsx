@@ -749,7 +749,7 @@ function AppointmentPanel({
                     />
                     <InfoTile
                       icon={<Building2 className="w-3.5 h-3.5" />}
-                      label="Hospital"
+                      label="Health Facility"
                       value={appt.hospital?.name_en ?? "-"}
                     />
                     <InfoTile
@@ -1030,7 +1030,7 @@ function ManageAppointments() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search patient, doctor, hospital..."
+                placeholder="Search patient, doctor, health facility..."
                 className="w-full pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
               />
               {searchInput && (
@@ -1090,7 +1090,7 @@ function ManageAppointments() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search patient, doctor, hospital..."
+                  placeholder="Search patient, doctor, health facility..."
                   className="w-44 md:w-60 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1182,7 +1182,7 @@ function ManageAppointments() {
                         <th className="text-left px-4 py-3 font-semibold">Date & Time</th>
                         <th className="text-left px-4 py-3 font-semibold">Type</th>
                         <th className="text-left px-4 py-3 font-semibold">Status</th>
-                        <th className="text-left px-4 py-3 font-semibold">Hospital</th>
+                        <th className="text-left px-4 py-3 font-semibold">Health Facility</th>
                         <th className="px-4 py-3" />
                       </tr>
                     </thead>

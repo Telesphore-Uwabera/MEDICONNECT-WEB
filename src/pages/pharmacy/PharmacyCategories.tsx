@@ -56,11 +56,11 @@ type SortOption =
   | "created-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "name", label: "Name (A-Z)" },
-  { value: "medicines-desc", label: "Medicines: Most first" },
-  { value: "medicines-asc", label: "Medicines: Least first" },
-  { value: "created-desc", label: "Newest first" },
-  { value: "created-asc", label: "Oldest first" },
+  { value: "name", label: "pages.pharmacy.sort_name_az" },
+  { value: "medicines-desc", label: "pages.pharmacy.sort_medicines_desc" },
+  { value: "medicines-asc", label: "pages.pharmacy.sort_medicines_asc" },
+  { value: "created-desc", label: "pages.pharmacy.sort_newest" },
+  { value: "created-asc", label: "pages.pharmacy.sort_oldest" },
 ];
 
 interface FilterState {
@@ -225,7 +225,7 @@ function CategoryFormModal({
   const set = <K extends keyof CategoryFormData>(k: K, v: CategoryFormData[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const nameError = nameTouched && form.name.trim().length < 2 ? "Min 2 characters" : null;
+  const nameError = nameTouched && form.name.trim().length < 2 ? t("pages.pharmacy.min_2_chars") : null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,7 +239,7 @@ function CategoryFormModal({
         is_active: form.is_active,
       };
       update({ id: editing!.id, payload }, {
-        onSuccess: () => { toast.success("Category updated"); onClose(); },
+        onSuccess: () => { toast.success(t("pages.pharmacy.category_updated")); onClose(); },
       });
     } else {
       const payload: CreateCategoryPayload = {
@@ -247,17 +247,17 @@ function CategoryFormModal({
         description: form.description || undefined,
       };
       create(payload, {
-        onSuccess: () => { toast.success("Category created"); onClose(); },
+        onSuccess: () => { toast.success(t("pages.pharmacy.category_created")); onClose(); },
       });
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Category" : "Add Category"}>
+    <Modal open={open} onClose={onClose} title={isEdit ? t("pages.pharmacy.edit_category") : t("pages.pharmacy.add_category_modal")}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
           <label className={labelCls}>
-            Name <span className="text-red-500">*</span>
+            {t("pages.pharmacy.name")} <span className="text-red-500">*</span>
           </label>
           <input
             autoFocus
@@ -276,13 +276,13 @@ function CategoryFormModal({
         </div>
 
         <div>
-          <label className={labelCls}>Description</label>
+          <label className={labelCls}>{t("pages.pharmacy.description")}</label>
           <textarea
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             className={cn(inputCls, "resize-none")}
-            placeholder="Brief description of this category (optional)"
+            placeholder={t("pages.pharmacy.category_desc_placeholder")}
           />
         </div>
 
@@ -290,9 +290,9 @@ function CategoryFormModal({
         {isEdit && (
           <div className="flex items-center justify-between rounded-[6px] border border-border/60 bg-secondary/20 px-3 py-2.5">
             <div>
-              <p className="text-[11px] font-medium text-foreground">Active</p>
+              <p className="text-[11px] font-medium text-foreground">{t("pages.pharmacy.active")}</p>
               <p className="text-[10px] text-muted-foreground/70 mt-0.5">
-                Inactive categories are hidden from medicine listings
+                {t("pages.pharmacy.inactive_categories_hidden")}
               </p>
             </div>
             <Switch
@@ -316,7 +316,7 @@ function CategoryFormModal({
           <Button type="submit" size="sm" disabled={isPending}
             className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm">
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-            {isEdit ? "Save Changes" : "Add Category"}
+            {isEdit ? t("pages.pharmacy.save_changes") : t("pages.pharmacy.add_category_modal")}
           </Button>
         </div>
       </form>
@@ -338,7 +338,7 @@ function DeleteConfirmModal({
   const blocked = category.medicines_count > 0;
 
   return (
-    <Modal open={!!category} onClose={onClose} title="Delete Category">
+    <Modal open={!!category} onClose={onClose} title={t("pages.pharmacy.delete_category")}>
       <p className="text-[11px] text-muted-foreground mb-3">
         This will permanently remove{" "}
         <strong className="text-foreground">{category.name}</strong> from your inventory
@@ -368,7 +368,7 @@ function DeleteConfirmModal({
           disabled={isPending || blocked}
           onClick={() =>
             mutate(category.id, {
-              onSuccess: () => { toast.success("Category deleted"); onClose(); },
+              onSuccess: () => { toast.success(t("pages.pharmacy.category_deleted")); onClose(); },
             })
           }
           className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[6px] shadow-sm"
@@ -403,7 +403,7 @@ function CategoryDetailsDrawer({
       { id: category.id, payload: { is_active: !category.is_active } },
       {
         onSuccess: () => {
-          toast.success(`Category ${category.is_active ? "deactivated" : "activated"}`);
+          toast.success(category.is_active ? t("pages.pharmacy.category_deactivated") : t("pages.pharmacy.category_activated"));
         },
         onError: (e) => toast.error(e.message),
       },
@@ -423,7 +423,7 @@ function CategoryDetailsDrawer({
                 {category.name}
               </SheetTitle>
               <SheetDescription className="text-[10px] text-muted-foreground/70">
-                Category details
+                {t("pages.pharmacy.category_details")}
               </SheetDescription>
             </div>
           </div>
@@ -440,7 +440,7 @@ function CategoryDetailsDrawer({
                 )}
               />
               <span className="text-[11px] font-medium text-foreground">
-                {category.is_active ? "Active" : "Inactive"}
+                {category.is_active ? t("pages.pharmacy.active") : t("pages.pharmacy.inactive")}
               </span>
             </div>
             <Switch checked={category.is_active} onCheckedChange={handleToggleActive} />
@@ -453,7 +453,7 @@ function CategoryDetailsDrawer({
             </p>
             <p className="text-[11px] text-foreground/90 leading-relaxed">
               {category.description || (
-                <span className="text-muted-foreground/50">No description provided</span>
+                <span className="text-muted-foreground/50">{t("pages.pharmacy.no_description_provided")}</span>
               )}
             </p>
           </div>
@@ -466,7 +466,7 @@ function CategoryDetailsDrawer({
             <div className="flex items-center gap-1.5 rounded-[6px] border border-border/60 bg-card px-3 py-2 w-fit">
               <Package className="w-3 h-3 text-primary" />
               <span className="text-[11px] font-semibold text-foreground">
-                {category.medicines_count} medicine{category.medicines_count !== 1 ? "s" : ""}
+                {category.medicines_count} {t("pages.pharmacy.medicines")}
               </span>
             </div>
           </div>
@@ -476,14 +476,14 @@ function CategoryDetailsDrawer({
             <div className="flex items-start gap-2">
               <Calendar className="w-3 h-3 text-muted-foreground/60 mt-0.5" />
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Created</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.created")}</p>
                 <p className="text-[11px] text-foreground">{formatDateTime(category.created_at)}</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <Clock className="w-3 h-3 text-muted-foreground/60 mt-0.5" />
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Last updated</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.last_updated")}</p>
                 <p className="text-[11px] text-foreground">{formatDateTime(category.updated_at)}</p>
               </div>
             </div>
@@ -492,7 +492,7 @@ function CategoryDetailsDrawer({
           {/* Meta */}
           <div className="rounded-[6px] border border-border/40 bg-secondary/10 px-3 py-2">
             <p className="text-[10px] text-muted-foreground/60">
-              Category ID <span className="text-foreground/70 font-mono">#{category.id}</span>
+              {t("pages.pharmacy.category_id")} <span className="text-foreground/70 font-mono">#{category.id}</span>
             </p>
           </div>
         </div>
@@ -504,7 +504,7 @@ function CategoryDetailsDrawer({
             onClick={() => onEdit(category)}
             className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
-            <Pencil className="w-3 h-3 mr-1.5" /> Edit
+            <Pencil className="w-3 h-3 mr-1.5" /> {t("pages.pharmacy.edit")}
           </Button>
           <Button
             size="sm"
@@ -513,7 +513,7 @@ function CategoryDetailsDrawer({
             disabled={category.medicines_count > 0}
             className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
           >
-            <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+            <Trash2 className="w-3 h-3 mr-1.5" /> {t("pages.pharmacy.delete")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -597,7 +597,7 @@ function PharmacyCategories() {
       { id: category.id, payload: { is_active: !category.is_active } },
       {
         onSuccess: () => {
-          toast.success(`Category ${category.is_active ? "deactivated" : "activated"}`);
+          toast.success(category.is_active ? t("pages.pharmacy.category_deactivated") : t("pages.pharmacy.category_activated"));
           setTogglingId(null);
         },
         onError: (e) => { toast.error(e.message); setTogglingId(null); },
@@ -613,12 +613,12 @@ function PharmacyCategories() {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.pharmacy.status"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
+        { value: "all", label: t("pages.pharmacy.all_statuses") },
+        { value: "active", label: t("pages.pharmacy.active") },
+        { value: "inactive", label: t("pages.pharmacy.inactive") },
       ],
       onChange: (v: string) => set("status", v as any)
     }
@@ -640,25 +640,25 @@ function PharmacyCategories() {
           {/* Stat cards */}
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
-              label="Total Categories"
+              label={t("pages.pharmacy.total_categories")}
               value={isLoading ? "-" : counts.total}
               icon={Tag}
               accent="primary"
             />
             <StatCard
-              label="Active"
+              label={t("pages.pharmacy.active")}
               value={isLoading ? "-" : counts.active}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label="Inactive"
+              label={t("pages.pharmacy.inactive")}
               value={isLoading ? "-" : counts.inactive}
               icon={AlertCircle}
               accent="warning"
             />
             <StatCard
-              label="Total Medicines"
+              label={t("pages.pharmacy.total_medicines")}
               value={isLoading ? "-" : counts.medicines}
               icon={Package}
               accent="primary"
@@ -672,7 +672,7 @@ function PharmacyCategories() {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading categories...
+                  {t("pages.pharmacy.loading_categories")}
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -694,7 +694,7 @@ function PharmacyCategories() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => refetch()}
-                title="Refresh"
+                title={t("pages.pharmacy.refresh")}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
@@ -707,7 +707,7 @@ function PharmacyCategories() {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search categories..."
+                  placeholder={t("pages.pharmacy.search_categories")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -720,7 +720,7 @@ function PharmacyCategories() {
                   className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                 >
                   {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>{t(o.label)}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
@@ -762,8 +762,8 @@ function PharmacyCategories() {
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">Failed to load categories</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
+                  <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_categories")}</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">{t("pages.pharmacy.check_connection_try_again")}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => refetch()}
                   className="text-[11px] h-7 px-3 rounded-[6px] mt-1">
@@ -779,7 +779,7 @@ function PharmacyCategories() {
                 <table className="w-full text-[11px]">
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      {["Category", "Medicines", "Status", "Created", ""].map((h) => (
+                      {[t("pages.pharmacy.category"), t("pages.pharmacy.medicines"), t("pages.pharmacy.status"), t("pages.pharmacy.created"), ""].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                       ))}
                     </tr>
@@ -810,7 +810,7 @@ function PharmacyCategories() {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {hasActiveFilters ? "No categories match your filters" : "No categories yet"}
+                    {hasActiveFilters ? t("pages.pharmacy.no_categories_match") : t("pages.pharmacy.no_categories_yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {hasActiveFilters
@@ -839,10 +839,10 @@ function PharmacyCategories() {
                 <table className="w-full text-[11px]">
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      <th className="text-left px-4 py-3 font-semibold">Category</th>
-                      <th className="text-left px-4 py-3 font-semibold">Medicines</th>
-                      <th className="text-left px-4 py-3 font-semibold">Status</th>
-                      <th className="text-left px-4 py-3 font-semibold">Created</th>
+                      <th className="text-left px-4 py-3 font-semibold">{t("pages.pharmacy.category")}</th>
+                      <th className="text-left px-4 py-3 font-semibold">{t("pages.pharmacy.medicines")}</th>
+                      <th className="text-left px-4 py-3 font-semibold">{t("pages.pharmacy.status")}</th>
+                      <th className="text-left px-4 py-3 font-semibold">{t("pages.pharmacy.created")}</th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -906,7 +906,7 @@ function PharmacyCategories() {
                                   : "bg-secondary/40 text-muted-foreground border-border/50",
                               )}
                             >
-                              {c.is_active ? "Active" : "Inactive"}
+                              {c.is_active ? t("pages.pharmacy.active") : t("pages.pharmacy.inactive")}
                             </Badge>
                           </div>
                         </td>

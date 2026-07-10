@@ -68,29 +68,29 @@ import { t } from "i18next";
 
  
 const FILTER_TABS: { id: CertStatus | "all"; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "pending", label: "Pending" },
-  { id: "in_review", label: "In Review" },
-  { id: "draft", label: "Draft" },
-  { id: "issued", label: "Issued" },
-  { id: "approved", label: "Approved" },
-  { id: "rejected", label: "Rejected" },
-  { id: "revoked", label: "Revoked" },
+  { id: "all", label: "fitness.status_all" },
+  { id: "pending", label: "fitness.status_pending" },
+  { id: "in_review", label: "fitness.status_in_review" },
+  { id: "draft", label: "fitness.status_draft" },
+  { id: "issued", label: "fitness.status_issued"},
+  { id: "approved", label: "fitness.status_approved" },
+  { id: "rejected", label: "fitness.status_rejected" },
+  { id: "revoked", label: "fitness.status_revoked" },
 ];
 
-const DECISION_OPTIONS: { value: CertDecision; label: string }[] = [
-  { value: "fit", label: "Fit" },
-  { value: "temporarily_unfit", label: "Temporarily unfit" },
-  { value: "needs_physical_exam", label: "Needs physical examination" },
-  { value: "referred", label: "Referred to nearest facility" },
+const DECISION_OPTIONS: { value: CertDecision; labelKey: string }[] = [
+  { value: "fit", labelKey: "pages.doctor.cert_decision_fit" },
+  { value: "temporarily_unfit", labelKey: "pages.doctor.cert_decision_temporarily_unfit" },
+  { value: "needs_physical_exam", labelKey: "pages.doctor.cert_decision_needs_physical_exam" },
+  { value: "referred", labelKey: "pages.doctor.cert_decision_referred" },
 ];
 
 const PURPOSE_LABELS: Record<string, string> = {
-  general_fitness: "General fitness",
-  school_work: "School / work fitness",
-  return_to_work: "Return to work",
-  fitness_for_travel: "Fitness for travel",
-  other: "Other",
+  general_fitness: "pages.doctor.cert_purpose_general_fitness",
+  school_work: "pages.doctor.cert_purpose_school_work",
+  return_to_work: "pages.doctor.cert_purpose_return_to_work",
+  fitness_for_travel: "pages.doctor.cert_purpose_fitness_for_travel",
+  other: "pages.doctor.cert_purpose_other",
 };
 
 const JOB_FLAGS = [
@@ -486,7 +486,7 @@ function CertStepper({ cert }: { cert: Certificate }) {
         </p>
       ) : (
         <p className="mt-2.5 text-[11px] font-medium text-emerald-600">
-          Certificate issued - all steps complete.
+          {t("pages.doctor.certificate_issued_steps_complete")}
         </p>
       )}
     </div>
@@ -523,7 +523,7 @@ function RequestDetail({
           { isOwner: true },
         );
         if (started) {
-          toast.success("Verification call started - the patient has been notified by SMS.");
+          toast.success(t("pages.doctor.verification_call_started"));
         } else if (res.room_url) {
           window.open(res.room_url, "_blank", "noopener,noreferrer");
         } else {
@@ -625,7 +625,7 @@ function RequestDetail({
           if (red_flags_found && red_flags_found.length > 0) {
             toast.warning(t("pages.doctor.red_flags_found", { flags: red_flags_found.join(", ") }));
           } else if (requires_inperson) {
-            toast.warning("This case requires an in-person examination - it can't be signed online.");
+            toast.warning(t("pages.doctor.requires_inperson_cannot_sign"));
           } else {
             toast.success(t("pages.doctor.decision_saved"));
           }
@@ -752,8 +752,8 @@ function RequestDetail({
               <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-destructive/30 bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive">
-                  <strong>Red flag symptoms:</strong> {redFlags.join(", ")}.
-                  Physical examination may be required.
+                  <strong>{t("pages.doctor.red_flag_symptoms")}:</strong> {redFlags.join(", ")}.
+                  {" "}{t("pages.doctor.physical_exam_may_be_required")}
                 </p>
               </div>
             )}
@@ -761,8 +761,8 @@ function RequestDetail({
               <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-amber-400/40 bg-amber-500/10">
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  <strong>High-risk job type:</strong> {getJobTypeLabel(cert)}.
-                  This typically requires an in-person examination.
+                  <strong>{t("pages.doctor.high_risk_job_type")}:</strong> {getJobTypeLabel(cert)}.
+                  {" "}{t("pages.doctor.typically_requires_inperson_exam")}
                 </p>
               </div>
             )}
@@ -811,8 +811,8 @@ function RequestDetail({
                   ok={cert.identity_verified_via_video}
                   label={
                     cert.identity_verified_via_video
-                      ? "Verified"
-                      : "Not verified"
+                      ? t("pages.doctor.verified")
+                      : t("pages.doctor.not_verified")
                   }
                 />
               }
@@ -844,7 +844,7 @@ function RequestDetail({
             />
             <InfoRow
               label={t("pages.doctor.purpose")}
-              value={PURPOSE_LABELS[cert.purpose] ?? cert.purpose}
+              value={PURPOSE_LABELS[cert.purpose] ? t(PURPOSE_LABELS[cert.purpose]) : cert.purpose}
             />
             {cert.purpose_other && (
               <InfoRow label={t("pages.doctor.purpose_details")} value={cert.purpose_other} />
@@ -926,7 +926,7 @@ function RequestDetail({
           {cert.vitals_available ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {cert.temperature && (
-                <VitalChip label="Temp (Â°C)" value={cert.temperature} />
+                <VitalChip label={t("pages.doctor.temp_c")} value={cert.temperature} />
               )}
               {cert.blood_pressure && (
                 <VitalChip label={t("pages.doctor.blood_pressure")} value={cert.blood_pressure} />
@@ -935,7 +935,7 @@ function RequestDetail({
                 <VitalChip label={t("pages.doctor.pulse_bpm")} value={cert.pulse} />
               )}
               {cert.oxygen_saturation && (
-                <VitalChip label="O2  sat (%)" value={cert.oxygen_saturation} />
+                <VitalChip label={t("pages.doctor.oxygen_sat")} value={cert.oxygen_saturation} />
               )}
             </div>
           ) : (
@@ -1102,7 +1102,7 @@ function RequestDetail({
                           : "bg-transparent text-muted-foreground border-border hover:bg-muted hover:text-foreground",
                       )}
                     >
-                      {value.label}
+                      {t(value.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -1115,7 +1115,7 @@ function RequestDetail({
                 <RichTextarea
                   value={doctorNotes}
                   onChange={setDoctorNotes}
-                  placeholder="Clinical observations, recommendations, or reason for referral..."
+                  placeholder={t("pages.doctor.clinical_observations_placeholder")}
                   minHeight={130}
                   editorClassName="text-xs"
                 />
@@ -1153,7 +1153,7 @@ function RequestDetail({
                     </>
                   ) : updateMut.isPending ? (
                     <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("pages.doctor.saving")}
                     </>
                   ) : (
                     <>
@@ -1229,7 +1229,7 @@ function RequestDetail({
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
-                placeholder="Reason for rejection (min 10 characters)..."
+                placeholder={t("pages.doctor.reject_reason_placeholder")}
                 className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
@@ -1268,7 +1268,7 @@ function RequestDetail({
                 value={revokeReason}
                 onChange={(e) => setRevokeReason(e.target.value)}
                 rows={3}
-                placeholder="Reason for revocation (min 10 characters)..."
+                placeholder={t("pages.doctor.revoke_reason_placeholder")}
                 className="w-full rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-destructive resize-none"
               />
               <div className="flex gap-2">
@@ -1292,7 +1292,7 @@ function RequestDetail({
                   className="text-xs"
                   onClick={() => setShowRevoke(false)}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -1416,7 +1416,7 @@ function DoctorFitnessCertificates() {
             >
               {/* Filter tabs */}
               <div className="flex items-center border-b border-border/60 bg-muted/20 px-2 sm:px-3 overflow-x-auto">
-                {FILTER_TABS.map(({ id, labelKey }) => (
+                {FILTER_TABS.map(({ id, label }) => (
                   <button
                     key={id}
                     onClick={() => setActiveFilter(id)}
@@ -1427,7 +1427,7 @@ function DoctorFitnessCertificates() {
                         : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60",
                     )}
                   >
-                    {t(labelKey)}
+                    {t(label)}
                     <span
                       className={cn(
                         "text-[10px] font-semibold rounded-full px-1.5 py-0 min-w-[18px] text-center leading-5",
@@ -1499,8 +1499,7 @@ function DoctorFitnessCertificates() {
                     {t("pages.doctor.select_request")}
                   </p>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    Click any request on the left to review it and issue a
-                    decision.
+                    {t("pages.doctor.select_request_desc")}
                   </p>
                 </div>
               </div>

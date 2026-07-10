@@ -1,7 +1,7 @@
 {
-  "title": "Réserver une place à l'hôpital",
+  "title": "Réserver une place à l'établissement de santé",
   "availableDays": "Jours disponibles",
-  "noSchedule": "Aucun horaire pour cet hôpital",
+  "noSchedule": "Aucun horaire pour cet établissement de santé",
   "serviceLabel": "Service / département",
   "selectService": "Sélectionner un service",
   "reason": "Motif de la visite",
@@ -53,20 +53,28 @@
     "morning": "Matin",
     "afternoon": "Après-midi",
     "evening": "Soir",
-    "days_mon": ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"]
+    "days_mon": [
+      "Lu",
+      "Ma",
+      "Me",
+      "Je",
+      "Ve",
+      "Sa",
+      "Di"
+    ]
   },
   "hospitalAppointment": {
-    "signInDesc": "Vous avez besoin d'un compte patient pour réserver une place à l'hôpital.",
+    "signInDesc": "Vous avez besoin d'un compte patient pour réserver une place à l'établissement de santé.",
     "bookingConfirmed": "Réservation confirmée !",
     "bookingConfirmedDesc": "{{hospital}} · {{service}} · {{date}} à {{time}}",
-    "loadingDetails": "Chargement des détails de l'hôpital…",
+    "loadingDetails": "Chargement des détails de l'établissement de santé…",
     "workingDays": "Jours d'ouverture",
-    "noOpenDays": "Cet hôpital n'a pas encore de jours ouverts configurés.",
+    "noOpenDays": "Cet établissement de santé n'a pas encore de jours ouverts configurés.",
     "selectADate": "Choisir une date",
     "noOpenDatesSoon": "Aucune date disponible dans les 14 prochains jours.",
     "preferredTime": "Heure préférée",
     "department": "Département",
-    "noDepartments": "Aucun département listé pour cet hôpital.",
+    "noDepartments": "Aucun département listé pour cet établissement de santé.",
     "selectDepartmentPlaceholder": "Sélectionner un département",
     "service": "Service",
     "selectDepartmentFirst": "Sélectionnez d'abord un département.",
@@ -74,6 +82,6 @@
     "selectServicePlaceholder": "Sélectionner un service",
     "notes": "Notes",
     "notesPlaceholder": "ex. Je préfère les séances du matin",
-    "switchToPatientDesc": "Vous êtes connecté en tant que {{role}}. Passez à patient pour réserver une place à l'hôpital."
+    "switchToPatientDesc": "Vous êtes connecté en tant que {{role}}. Passez à patient pour réserver une place à l'établissement de santé."
   }
 }

@@ -1,10 +1,10 @@
 // Public fitness-certificate verification page.
-// URL: /verify/:certificateNumber
+// URL: /fitness-certificates/verify/:certificateNumber
 // API: GET /public/verify/{certificateNumber} — no auth required.
 // Anyone with the QR code / certificate number (employer, school, official)
 // lands here to confirm the certificate is real and see its key details.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -50,7 +50,9 @@ function DetailRow({
 
 export default function VerifyCertificate() {
   const params = useParams<{ certificateNumber: string }>();
-  const routeNumber = params.certificateNumber?.trim();
+  const routeNumber = params.certificateNumber
+    ? decodeURIComponent(params.certificateNumber).trim()
+    : undefined;
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
 
@@ -58,6 +60,12 @@ export default function VerifyCertificate() {
   // needing to re-navigate — pre-filled with whatever was in the URL.
   const [lookupInput, setLookupInput] = useState(routeNumber ?? "");
   const [activeNumber, setActiveNumber] = useState(routeNumber);
+
+  useEffect(() => {
+    if (!routeNumber) return;
+    setLookupInput(routeNumber);
+    setActiveNumber(routeNumber);
+  }, [routeNumber]);
 
   const { data, isLoading, isError, error, refetch } = useVerifyCertificate(activeNumber);
 

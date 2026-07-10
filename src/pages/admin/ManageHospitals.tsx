@@ -133,7 +133,7 @@ function ManageHospitals() {
       setSelected((prev) =>
         prev ? { ...prev, status: "active", verified_at: new Date().toISOString() } : null,
       );
-      sonnerToast.success("Hospital approved.");
+      sonnerToast.success("Health facility approved.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error));
     }
@@ -145,7 +145,7 @@ function ManageHospitals() {
       setSelected((prev) =>
         prev ? { ...prev, status: "rejected", verified_at: null } : null,
       );
-      sonnerToast.success("Hospital rejected.");
+      sonnerToast.success("Health facility rejected.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error));
     }
@@ -155,7 +155,7 @@ function ManageHospitals() {
     try {
       await suspendMutation.mutateAsync({ id: h.id });
       setSelected((prev) => prev ? { ...prev, status: "suspended" } : null);
-      sonnerToast.success("Hospital suspended.");
+      sonnerToast.success("Health facility suspended.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error));
     }
@@ -211,7 +211,7 @@ function ManageHospitals() {
         <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
 
           <div className="px-3 sm:px-4 pt-3 sm:pt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            <StatCard label="Total hospitals" value={total} icon={Building2} accent="primary" />
+            <StatCard label="Total health facilities" value={total} icon={Building2} accent="primary" />
             <StatCard label="Active" value={statusCounts["active"] ?? 0} icon={CheckCircle2} accent="success" />
             <StatCard label="Pending review" value={statusCounts["pending"] ?? 0} icon={Clock} accent="warning" />
             <StatCard label="Suspended" value={statusCounts["suspended"] ?? 0} icon={XCircle} accent="warning" />
@@ -225,7 +225,7 @@ function ManageHospitals() {
                 ) : (
                   <>
                     <span className="font-bold text-foreground">{total}</span>{" "}
-                    {total === 1 ? "hospital" : "hospitals"}
+                    {total === 1 ? "health facility" : "health facilities"}
                   </>
                 )}
                 {hasActiveFilters && (
@@ -323,7 +323,7 @@ function ManageHospitals() {
             {isError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                 <p className="text-[12px] font-semibold text-destructive">
-                  Failed to load hospitals
+                  Failed to load health facilities
                 </p>
                 <p className="text-[11px] text-muted-foreground/70">
                   Check your connection and try again
@@ -336,7 +336,7 @@ function ManageHospitals() {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    No hospitals match your filters
+                    No health facilities match your filters
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     Try widening your search criteria
@@ -359,7 +359,7 @@ function ManageHospitals() {
                   <table className="w-full text-[11px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">Hospital</th>
+                        <th className="text-left px-4 py-3 font-semibold">Health Facility</th>
                         <th className="text-left px-4 py-3 font-semibold">Type</th>
                         <th className="text-left px-4 py-3 font-semibold">Staff</th>
                         <th className="text-left px-4 py-3 font-semibold">Status</th>

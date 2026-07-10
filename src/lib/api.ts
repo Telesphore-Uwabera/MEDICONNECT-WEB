@@ -74,6 +74,7 @@ export async function apiFetch<T>(
 
   if (res.status === 401) {
     const hadToken = !!token;
+    const data = await readJsonSafely(res);
     localStorage.removeItem("auth_token");
 
     // Only show the global modal when a real session expired.
@@ -82,10 +83,18 @@ export async function apiFetch<T>(
     // interrupt guests with a login prompt for that.
     if (hadToken) {
       emitLoginPrompt("Your session expired. Sign in again to continue.");
+      const error: ApiError = new Error("Your session expired. Sign in again to continue.");
+      error.status = 401;
+      error.data = data;
+      throw error;
     }
 
-    const error: ApiError = new Error("Please sign in to continue.");
+    // No token means this 401 came from the request itself (e.g. wrong
+    // password on login) rather than an expired session — surface the
+    // backend's actual message instead of a generic one.
+    const error: ApiError = new Error(data?.message ?? "Please sign in to continue.");
     error.status = 401;
+    error.data = data;
     throw error;
   }
 

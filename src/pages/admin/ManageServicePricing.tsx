@@ -334,7 +334,7 @@ function PricingPanel({
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                {isSaving ? "Savingâ€¦" : "Save changes"}
+                {isSaving ? "Saving" : "Save changes"}
               </Button>
               <Button
                 variant="ghost"

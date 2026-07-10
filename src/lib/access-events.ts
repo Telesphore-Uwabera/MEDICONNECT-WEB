@@ -22,11 +22,14 @@ export function notifyAccessPrompt(detail: AccessPromptDetail) {
 }
 
 export function getAccessErrorMessage(status: number, hasToken: boolean) {
-  if (status === 401 || !hasToken) {
-    return "Please sign in to continue.";
-  }
+  // 401s are handled separately in apiFetch before this runs. Only 403
+  // (access denied to an existing resource) gets a canned message here —
+  // other statuses (400/422/etc.) should surface the backend's real
+  // message instead of being masked just because the caller has no token.
   if (status === 403) {
-    return "Your current role does not have access to this resource. Switch roles to continue.";
+    return hasToken
+      ? "Your current role does not have access to this resource. Switch roles to continue."
+      : "Please sign in to continue.";
   }
   return null;
 }

@@ -859,8 +859,8 @@ function AdminForm({
                   },
                   {
                     key: "can_manage_hospitals",
-                    label: "Manage hospitals",
-                    sub: "Full hospital profile access",
+                    label: "Manage health facilities",
+                    sub: "Full health facility profile access",
                   },
                   {
                     key: "can_manage_pharmacies",

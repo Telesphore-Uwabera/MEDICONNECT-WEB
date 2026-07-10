@@ -20,12 +20,36 @@
     "closes_at": "Ifunga saa"
   },
   "steps": {
-    "identity": { "label": "Umwirondoro", "title": "Umwirondoro w'ivuriro", "desc": "Amazina, ubwoko n'iyandikishwa" },
-    "location": { "label": "Aho ariho", "title": "Aho ariho n'aderesi", "desc": "Aderesi, umujyi, intara n'ahantu nyaho" },
-    "contact": { "label": "Aho guhamagara", "title": "Amakuru yo guhamagara", "desc": "Telefoni, imeyili n'urubuga" },
-    "hours": { "label": "Amasaha", "title": "Amasaha y'akazi", "desc": "Amasaha yo gufungura n'uko aboneka" },
-    "linksSection": { "label": "Imbuga nkoranyambaga", "title": "Imbuga nkoranyambaga n'aho gaboneka kuri interineti", "desc": "Facebook, LinkedIn, WhatsApp n'ibindi" },
-    "gallery": { "label": "Amafoto", "title": "Amafoto y'ivuriro", "desc": "Amafoto y'ivuriro n'ibindi bishushanyo" }
+    "identity": {
+      "label": "Umwirondoro",
+      "title": "Umwirondoro w'ikigo nderabuzima",
+      "desc": "Amazina, ubwoko n'iyandikishwa"
+    },
+    "location": {
+      "label": "Aho ariho",
+      "title": "Aho ariho n'aderesi",
+      "desc": "Aderesi, umujyi, intara n'ahantu nyaho"
+    },
+    "contact": {
+      "label": "Aho guhamagara",
+      "title": "Amakuru yo guhamagara",
+      "desc": "Telefoni, imeyili n'urubuga"
+    },
+    "hours": {
+      "label": "Amasaha",
+      "title": "Amasaha y'akazi",
+      "desc": "Amasaha yo gufungura n'uko aboneka"
+    },
+    "linksSection": {
+      "label": "Imbuga nkoranyambaga",
+      "title": "Imbuga nkoranyambaga n'aho gaboneka kuri interineti",
+      "desc": "Facebook, LinkedIn, WhatsApp n'ibindi"
+    },
+    "gallery": {
+      "label": "Amafoto",
+      "title": "Amafoto y'ikigo nderabuzima",
+      "desc": "Amafoto y'ikigo nderabuzima n'ibindi bishushanyo"
+    }
   },
   "view_tabs": {
     "social": "Imbuga",
@@ -34,8 +58,8 @@
   "select_type": "Hitamo ubwoko",
   "open_24h_desc": "Bisimbura amasaha yo gufungura no gufunga",
   "open_24h_notice": "Iki gitaro gihora gihari igihe cyose.",
-  "social_intro": "Ongeraho imbuga nkoranyambaga n'imyirondoro ya interineti y'ivuriro ryawe. Ibisabwa byose ni ubushake.",
-  "gallery_intro": "Ohereza amafoto {{count}} y'ivuriro ryawe — ibyumba, aho bakirira abashyitsi, ibikoresho, n'ibindi.",
+  "social_intro": "Ongeraho imbuga nkoranyambaga n'imyirondoro ya interineti y'ikigo nderabuzima ryawe. Ibisabwa byose ni ubushake.",
+  "gallery_intro": "Ohereza amafoto {{count}} y'ikigo nderabuzima ryawe — ibyumba, aho bakirira abashyitsi, ibikoresho, n'ibindi.",
   "drop_images": "Shyira amafoto hano",
   "click_or_drag": "Kanda cyangwa ukurure ushyire",
   "upload_hint": "PNG, JPG, WEBP kugeza kuri MB 5 kuri buri ifoto · {{count}}/{{max}} zoherejwe",
@@ -46,7 +70,7 @@
   "no_images_yet": "Nta mafoto yoherejwe",
   "uploading_images": "Kohereza amafoto…",
   "uploaded_on": "Yoherejwe {{date}}",
-  "photo_gallery": "Amafoto y'ivuriro",
+  "photo_gallery": "Amafoto y'ikigo nderabuzima",
   "photo_count_one": "(ifoto {{count}})",
   "photo_count_other": "(amafoto {{count}})",
   "manage": "Cunga",
@@ -76,13 +100,13 @@
   "issue_first_rx": "Tanga imiti ya mbere",
   "new_rx": "Nshya",
   "empty": {
-    "title": "Nta mwirondoro w'ivuriro",
-    "sub": "Kora umwirondoro w'ivuriro ryawe kugira ngo ucunge amakuru yo guhamagara, aho ariho, n'amasaha y'akazi",
-    "cta": "Kora Umwirondoro w'Ivuriro"
+    "title": "Nta mwirondoro w'ikigo nderabuzima",
+    "sub": "Kora umwirondoro w'ikigo nderabuzima ryawe kugira ngo ucunge amakuru yo guhamagara, aho ariho, n'amasaha y'akazi",
+    "cta": "Kora Umwirondoro w'Ikigo nderabuzima"
   },
   "form": {
-    "subtitle_edit": "Vugurura amakuru y'ivuriro ryawe",
-    "subtitle_create": "Uzuza ibisobanuro hepfo kugira ngo wandikishe ivuriro ryawe"
+    "subtitle_edit": "Vugurura amakuru y'ikigo nderabuzima ryawe",
+    "subtitle_create": "Uzuza ibisobanuro hepfo kugira ngo wandikishe ikigo nderabuzima ryawe"
   },
   "stat_type": "Ubwoko",
   "stat_city": "Umujyi",
@@ -99,6 +123,6 @@
   "open_short": "BIFUNGUYE",
   "closed_short": "BIFUNZE",
   "loading_profile": "Gupakira umwirondoro wawe…",
-  "profile_title": "Umwirondoro w'Ivuriro",
-  "profile_sub": "Cunga umwirondoro w'ivuriro ryawe, aho ariho, amakuru yo guhamagara, n'amasaha y'akazi"
+  "profile_title": "Umwirondoro w'Ikigo nderabuzima",
+  "profile_sub": "Cunga umwirondoro w'ikigo nderabuzima ryawe, aho ariho, amakuru yo guhamagara, n'amasaha y'akazi"
 }

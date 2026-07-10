@@ -20,12 +20,36 @@
     "closes_at": "Ferme à"
   },
   "steps": {
-    "identity": { "label": "Identité", "title": "Identité de l'hôpital", "desc": "Noms, type & enregistrement" },
-    "location": { "label": "Emplacement", "title": "Emplacement & adresse", "desc": "Adresse, ville, province & coordonnées" },
-    "contact": { "label": "Contact", "title": "Coordonnées", "desc": "Téléphone, e-mail & site web" },
-    "hours": { "label": "Horaires", "title": "Heures d'ouverture", "desc": "Horaires & disponibilité" },
-    "linksSection": { "label": "Liens sociaux", "title": "Réseaux sociaux & présence en ligne", "desc": "Facebook, LinkedIn, WhatsApp & plus" },
-    "gallery": { "label": "Galerie", "title": "Galerie photo", "desc": "Photos & images de l'établissement" }
+    "identity": {
+      "label": "Identité",
+      "title": "Identité de l'établissement de santé",
+      "desc": "Noms, type & enregistrement"
+    },
+    "location": {
+      "label": "Emplacement",
+      "title": "Emplacement & adresse",
+      "desc": "Adresse, ville, province & coordonnées"
+    },
+    "contact": {
+      "label": "Contact",
+      "title": "Coordonnées",
+      "desc": "Téléphone, e-mail & site web"
+    },
+    "hours": {
+      "label": "Horaires",
+      "title": "Heures d'ouverture",
+      "desc": "Horaires & disponibilité"
+    },
+    "linksSection": {
+      "label": "Liens sociaux",
+      "title": "Réseaux sociaux & présence en ligne",
+      "desc": "Facebook, LinkedIn, WhatsApp & plus"
+    },
+    "gallery": {
+      "label": "Galerie",
+      "title": "Galerie photo",
+      "desc": "Photos & images de l'établissement"
+    }
   },
   "view_tabs": {
     "social": "Social",
@@ -34,7 +58,7 @@
   "select_type": "Sélectionner le type",
   "open_24h_desc": "Remplace les heures d'ouverture & de fermeture",
   "open_24h_notice": "Cet établissement est disponible en permanence.",
-  "social_intro": "Ajoutez les réseaux sociaux et profils en ligne de votre hôpital. Tous les champs sont facultatifs.",
+  "social_intro": "Ajoutez les réseaux sociaux et profils en ligne de votre établissement de santé. Tous les champs sont facultatifs.",
   "gallery_intro": "Téléversez jusqu'à {{count}} photos de votre établissement — services, réception, équipements, etc.",
   "drop_images": "Déposez les images ici",
   "click_or_drag": "Cliquez ou glissez-déposez",
@@ -76,13 +100,13 @@
   "issue_first_rx": "Émettre la première ordonnance",
   "new_rx": "Nouvelle",
   "empty": {
-    "title": "Aucun profil d'hôpital",
-    "sub": "Créez le profil de votre hôpital pour gérer les coordonnées, l'emplacement et les heures d'ouverture",
-    "cta": "Créer le profil de l'hôpital"
+    "title": "Aucun profil d'établissement de santé",
+    "sub": "Créez le profil de votre établissement de santé pour gérer les coordonnées, l'emplacement et les heures d'ouverture",
+    "cta": "Créer le profil de l'établissement de santé"
   },
   "form": {
-    "subtitle_edit": "Mettez à jour les informations de votre hôpital",
-    "subtitle_create": "Remplissez les détails ci-dessous pour enregistrer votre hôpital"
+    "subtitle_edit": "Mettez à jour les informations de votre établissement de santé",
+    "subtitle_create": "Remplissez les détails ci-dessous pour enregistrer votre établissement de santé"
   },
   "stat_type": "Type",
   "stat_city": "Ville",
@@ -99,6 +123,6 @@
   "open_short": "OUVERT",
   "closed_short": "FERMÉ",
   "loading_profile": "Chargement de votre profil…",
-  "profile_title": "Profil de l'hôpital",
-  "profile_sub": "Gérez l'identité, l'emplacement, les coordonnées et les heures d'ouverture de votre hôpital"
+  "profile_title": "Profil de l'établissement de santé",
+  "profile_sub": "Gérez l'identité, l'emplacement, les coordonnées et les heures d'ouverture de votre établissement de santé"
 }

@@ -21,7 +21,7 @@
   "required": "required",
   "unknown": "unknown",
   "age": "Age",
-  "Register":"Register",
+  "Register": "Register",
   "specSelect": {
     "anySpecializationPlaceholder": "Any specialization…",
     "searchSpecializationsPlaceholder": "Search specializations…",
@@ -63,7 +63,7 @@
     "category": {
       "consultations": "Consultations",
       "pharmacy": "Pharmacy",
-      "hospital": "Hospital",
+      "hospital": "Health Facility",
       "payments": "Payments",
       "documents": "Documents",
       "alerts": "Alerts",

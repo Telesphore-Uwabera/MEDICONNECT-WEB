@@ -5,13 +5,11 @@
   "tab_my_certificates": "Mes certificats",
   "tab_request_short": "Demande",
   "tab_certificates_short": "Certificats",
-
   "sidebar_title": "Demande de certificat",
   "sidebar_sections_visited": "{{count}} sur {{total}} sections visitées",
   "sidebar_editing": "en cours",
   "sidebar_done": "terminé",
   "sidebar_hint": "Passez librement d'une section à l'autre — aucun ordre requis.",
-
   "step_purpose_label": "Objet",
   "step_purpose_desc": "Type de certificat & emploi",
   "step_symptoms_label": "Symptômes",
@@ -20,19 +18,15 @@
   "step_history_desc": "Maladies & conditions passées",
   "step_functional_label": "Fonctionnel",
   "step_functional_desc": "Capacité quotidienne & signes vitaux",
-
   "step_of": "Étape {{current}} sur {{total}}",
   "back_button": "← Retour",
   "save_and_next": "Enregistrer & Suivant →",
   "submit_request": "Soumettre la demande",
-
   "draft_saved_badge": "Brouillon enregistré",
   "updating_badge": "Mise à jour {{number}}",
-
   "continuing_pre": "Vous continuez votre",
   "continuing_request_word": "demande",
   "continuing_post": "Vos réponses enregistrées sont pré-remplies — enregistrer met à jour cette demande au lieu d'en créer une nouvelle.",
-
   "purpose_select_label": "Objet du certificat",
   "purpose_select_placeholder": "Sélectionner l'objet",
   "purpose_specify_label": "Veuillez préciser",
@@ -45,26 +39,22 @@
   "high_risk_job_pre": "Ce type d'emploi nécessite généralement un",
   "high_risk_job_bold": "examen physique en personne",
   "high_risk_job_post": "Votre demande sera examinée et vous pourriez être référé.",
-
   "step1_saved": "Étape 1 enregistrée",
   "step1_save_failed": "Échec de l'enregistrement de l'étape 1",
   "step_n_saved": "Étape {{step}} enregistrée",
   "step_n_save_failed": "Échec de l'enregistrement de l'étape {{step}}",
-
   "symptoms_note_pre": "Répondez honnêtement concernant les symptômes des",
   "symptoms_note_bold": "72 dernières heures",
   "symptoms_note_post": ".",
   "red_flag_pre": "Vous avez signalé un",
   "red_flag_bold": "symptôme d'alerte",
   "red_flag_post": "Un examen physique peut être requis. Vous pouvez tout de même soumettre et un médecin décidera.",
-
   "chronic_illness_detail_label": "Veuillez préciser la/les condition(s)",
   "chronic_illness_detail_placeholder": "ex. Hypertension, Diabète de type 2",
   "medication_detail_label": "Veuillez lister les médicaments",
   "medication_detail_placeholder": "ex. Metformine 500mg, Amlodipine 5mg",
   "allergy_detail_label": "Veuillez préciser les allergies",
   "allergy_detail_placeholder": "ex. Pénicilline, Arachides",
-
   "functional_ability_title": "Capacité fonctionnelle quotidienne",
   "vitals_title": "Signes vitaux (optionnel — si appareils disponibles à domicile)",
   "vitals_hint": "Si vous avez un thermomètre, un tensiomètre ou un oxymètre de pouls, saisissez les mesures ci-dessous.",
@@ -72,16 +62,12 @@
   "notes_placeholder": "Toute autre information pertinente..",
   "step4_saved": "Étape 4 enregistrée",
   "step4_save_failed": "Échec de l'enregistrement de l'étape 4",
-
   "submission_failed": "Échec de la soumission",
-
   "payment_title": "Finaliser le paiement pour soumettre",
   "payment_description": "Votre demande est prête. Payez les frais de soumission pour l'envoyer à un médecin pour examen.",
   "back_to_form": "← Retour au formulaire",
-
   "submitted_title": "Demande soumise !",
   "submitted_desc": "Un médecin examinera votre demande sous peu.",
-
   "no_certificates_title": "Aucun certificat pour l'instant",
   "no_certificates_desc": "Soumettez une demande et un médecin l'examinera sous peu.",
   "active_request_notice": "Vous avez une demande active en cours.",
@@ -89,23 +75,19 @@
   "withdraw_confirm": "Retirer votre demande actuelle ? Cette action est irréversible.",
   "withdraw_success": "Demande retirée.",
   "withdraw_failed": "Impossible de retirer la demande.",
-
   "purpose_general_fitness": "Aptitude générale",
   "purpose_school_work": "Aptitude scolaire/professionnelle",
   "purpose_return_to_work": "Reprise du travail après maladie",
   "purpose_fitness_for_travel": "Aptitude au voyage",
   "purpose_other_option": "Autre",
-
   "job_none": "Aucune des réponses ci-dessus",
   "job_heavy_labor": "Travail physique lourd",
   "job_driving": "Conduite/opération de machines",
   "job_armed_forces": "Forces armées/sécurité",
   "job_mining": "Mines/construction",
   "job_xray": "Travail nécessitant une radiographie thoracique",
-
   "yes": "Oui",
   "no": "Non",
-
   "sf_fever": "Fièvre au cours des 72 dernières heures ?",
   "sf_headache": "Maux de tête ou vertiges actuels ?",
   "sf_breath": "Essoufflement ?",
@@ -116,7 +98,6 @@
   "sf_fatigue": "Faiblesse ou fatigue corporelle ?",
   "sf_visual": "Troubles visuels ?",
   "sf_fainting": "Épisodes récents d'évanouissement ?",
-
   "hf_chronic_illness": "Maladies chroniques ? (HTA, diabète, asthme, épilepsie, maladie cardiaque)",
   "hf_hospitalization": "Hospitalisation au cours des 3 derniers mois ?",
   "hf_surgery": "Chirurgie au cours des 6 derniers mois ?",
@@ -124,13 +105,11 @@
   "hf_allergies": "Allergies connues (médicaments/aliments) ?",
   "hf_medication": "Médication chronique actuellement utilisée ?",
   "hf_disability": "Handicap ou limitations de mobilité ?",
-
   "ff_walk": "Pouvez-vous marcher sans difficulté ?",
   "ff_climb": "Pouvez-vous monter des escaliers ?",
   "ff_lift": "Pouvez-vous soulever des objets légers sans douleur ?",
   "ff_sleep": "Dormez-vous bien ?",
   "ff_appetite": "Avez-vous un appétit normal ?",
-
   "vf_temperature": "Température (°C)",
   "vf_temperature_placeholder": "ex. 36.6",
   "vf_bp": "Tension artérielle",
@@ -139,14 +118,15 @@
   "vf_pulse_placeholder": "ex. 72",
   "vf_o2": "Saturation en O₂ (%)",
   "vf_o2_placeholder": "ex. 98",
-
   "status_draft": "Brouillon",
   "status_pending": "En attente",
   "status_pending_review": "En attente d'examen",
   "status_in_review": "En cours d'examen",
   "status_approved": "Approuvé",
   "status_rejected": "Rejeté",
-
+  "status_all": "Toute",
+  "status_issued": "Émis",
+  "status_revoked": "Révoqué",
   "cert_number_fallback": "Certificat n°{{id}}",
   "view_details_action": "Voir les détails",
   "download_pdf_action": "Télécharger le PDF",
@@ -164,7 +144,6 @@
   "verification_call_not_ready": "L'appel de vérification n'est pas encore prêt. Veuillez attendre que votre médecin le démarre.",
   "could_not_join_verification": "Impossible de rejoindre l'appel de vérification.",
   "join_verification_call": "Rejoindre l'appel de vérification",
-
   "issued_on": "Émis le {{date}}",
   "medical_decision": "Décision médicale :",
   "red_flags_detected": "Signaux d'alerte détectés",
@@ -184,7 +163,6 @@
   "medical_history_title": "Antécédents médicaux",
   "patient_notes_title": "Notes du patient",
   "doctor_prefix": "Dr {{name}}",
-
   "rf_chest_pain": "Douleur thoracique",
   "rf_breath": "Essoufflement",
   "rf_syncope": "Syncope / évanouissement",
@@ -195,13 +173,11 @@
   "rf_recent_surgery": "Chirurgie récente",
   "rf_seizure": "Convulsions",
   "rf_pregnancy": "Complications de grossesse",
-
   "jf_heavy_labor": "Travail lourd",
   "jf_driving": "Conduite / machines",
   "jf_armed_forces": "Forces armées",
   "jf_mining": "Mines / construction",
   "jf_xray": "Radiographie requise",
-
   "pp_confirming_payment": "Confirmation de votre paiement…",
   "pp_confirming_hint": "Cela prend généralement quelques secondes. Merci de ne pas fermer cette fenêtre.",
   "pp_payment_confirmed": "Paiement confirmé !",

@@ -1041,7 +1041,7 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
 
         {doctor.hospitals && doctor.hospitals.length > 0 && (
           <div>
-            <SectionHeading>Affiliated hospitals</SectionHeading>
+            <SectionHeading>Affiliated health facilities</SectionHeading>
             <div className="flex flex-col gap-1.5">
               {doctor.hospitals.map((h) => (
                 <Card key={h.id} className="flex items-center gap-3">

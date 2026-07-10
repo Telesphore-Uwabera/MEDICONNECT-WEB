@@ -33,10 +33,29 @@
     "medical": "Amakuru y'ubuvuzi",
     "insurance": "Ubwishingizi bwanjye"
   },
-  "gender": { "male": "Gabo", "female": "Gore", "other": "Ikindi" },
-  "relation": { "spouse": "Umufasha", "parent": "Umubyeyi", "sibling": "Umuvandimwe", "child": "Umwana", "friend": "Inshuti", "other": "Ikindi" },
-  "smoking": { "never": "Ntabwo anywa", "former": "Yarayireke", "current": "Aranywa" },
-  "alcohol": { "never": "Ntabwo anywa", "occasional": "Rimwe na rimwe", "regular": "Kenshi" },
+  "gender": {
+    "male": "Gabo",
+    "female": "Gore",
+    "other": "Ikindi"
+  },
+  "relation": {
+    "spouse": "Umufasha",
+    "parent": "Umubyeyi",
+    "sibling": "Umuvandimwe",
+    "child": "Umwana",
+    "friend": "Inshuti",
+    "other": "Ikindi"
+  },
+  "smoking": {
+    "never": "Ntabwo anywa",
+    "former": "Yarayireke",
+    "current": "Aranywa"
+  },
+  "alcohol": {
+    "never": "Ntabwo anywa",
+    "occasional": "Rimwe na rimwe",
+    "regular": "Kenshi"
+  },
   "setup": "Gutegura umwirondoro",
   "sections_visited": "{{count}} kuri {{total}} by'ibice byasuwe",
   "editing": "birahindurwa",

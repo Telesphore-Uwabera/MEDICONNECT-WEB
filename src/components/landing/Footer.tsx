@@ -37,7 +37,11 @@ function Footer() {
     const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
     const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
     const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
-
+  const heroTagline = localizedText(
+    publicSettings?.general?.app_tagline,
+    i18n.language,
+    t("pages.landing.hero_intro"),
+  );
   
       const footerPlatformLinks = [
         { label: t("pages.landing.doctors"), to: "/patient/search-doctors" },
@@ -210,7 +214,7 @@ function Footer() {
 
                 <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-center text-xs text-muted-foreground sm:text-left">
-                        {t("pages.landing.footer_copyright", { year: new Date().getFullYear(), name: appName })}
+                       {t("pages.landing.footer_copyright", { year: new Date().getFullYear(), name: appName })}    {heroTagline}
                     </span>
                     <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                         {footerLegalLinks.map((l) => (

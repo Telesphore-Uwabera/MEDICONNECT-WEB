@@ -174,7 +174,7 @@ const STEPS = [
     id: "identity" as const,
     label: "Identity",
     icon: Building2,
-    sectionTitle: "Hospital identity",
+    sectionTitle: "Health facility identity",
     description: "Names, type & registration",
     fields: [
       "name_en",
@@ -1137,7 +1137,7 @@ function HospitalForm({
               className="col-span-1 sm:col-span-2"
             >
               <Input
-                {...register("name_en", { required: "Required" })}
+                {...register("name_en", { required: t("profile.required") })}
                 placeholder="King Faisal Hospital"
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
@@ -1178,7 +1178,7 @@ function HospitalForm({
                     shouldValidate: true,
                   })
                 }
-                placeholder="Leading referral hospital in Rwanda"
+                placeholder={t("pages.hospital.description_placeholder")}
                 minHeight={130}
                 editorClassName="text-xs"
               />
@@ -1273,7 +1273,7 @@ function HospitalForm({
             >
               <Input
                 {...register("latitude", {
-                  pattern: { value: /^-?\d+(\.\d+)?$/, message: "Invalid" },
+                  pattern: { value: /^-?\d+(\.\d+)?$/, message: t("pages.hospital.invalid_coordinate") },
                 })}
                 placeholder="-1.9441"
                 className="border-border focus-visible:ring-primary font-mono text-xs h-9"
@@ -1286,7 +1286,7 @@ function HospitalForm({
             >
               <Input
                 {...register("longitude", {
-                  pattern: { value: /^-?\d+(\.\d+)?$/, message: "Invalid" },
+                  pattern: { value: /^-?\d+(\.\d+)?$/, message: t("pages.hospital.invalid_coordinate") },
                 })}
                 placeholder="30.0619"
                 className="border-border focus-visible:ring-primary font-mono text-xs h-9"
@@ -1321,7 +1321,7 @@ function HospitalForm({
                 {...register("email", {
                   pattern: {
                     value: /^\S+@\S+\.\S+$/,
-                    message: "Invalid email",
+                    message: t("pages.hospital.invalid_email"),
                   },
                 })}
                 placeholder="info@kingfaisal.rw"
@@ -1930,7 +1930,7 @@ function EmptyHospital({ onCreate }: { onCreate: () => void }) {
         className="text-primary-foreground bg-primary hover:bg-primary/90"
       >
         <Plus className="h-4 w-4 mr-1.5" />
-        {t("hospital.empty.cta", "Create Hospital Profile")}
+        {t("hospital.empty.cta", "Create Health Facility Profile")}
       </Button>
     </div>
   );

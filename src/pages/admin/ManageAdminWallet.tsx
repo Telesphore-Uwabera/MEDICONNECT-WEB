@@ -477,7 +477,7 @@ function WithdrawalRequestRow({
         </div>
       </td>
       <td className="px-4 py-3 text-[11px] font-medium text-foreground whitespace-nowrap">{formatCurrency(request.amount)}</td>
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/70 capitalize">{String(request.method ?? "â€”").replace(/_/g, " ")}</td>
+      <td className="px-4 py-3 text-[11px] text-muted-foreground/70 capitalize">{String(request.method ?? "-").replace(/_/g, " ")}</td>
       <td className="px-4 py-3 text-[11px] text-muted-foreground/70">
         <span className="block text-foreground">{request.account_name ?? "-"}</span>
         <span>{request.account_number ?? "-"}</span>
@@ -529,7 +529,7 @@ function WithdrawalRequestCard({
         <span className="text-[13px] font-bold text-foreground">{formatCurrency(request.amount)}</span>
         <span className="text-[10px] text-muted-foreground/50 capitalize">{String(request.method ?? "-").replace(/_/g, " ")}</span>
       </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "â€”"} Â· {request.account_number ?? "-"}</p>
+      <p className="text-[10px] text-muted-foreground/60 mt-1">{request.account_name ?? "-"} · {request.account_number ?? "-"}</p>
       <div className="grid grid-cols-2 gap-2 mt-3">
         <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-[6px]" onClick={() => onView(request.id)}><Eye className="w-3 h-3 mr-1" /> View</Button>
         {canApprove && <Button size="sm" className="h-7 text-[10px] rounded-[6px]" disabled={isMutating} onClick={() => onAction(request, "approve")}>Approve</Button>}

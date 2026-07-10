@@ -1,7 +1,7 @@
 {
-  "title": "Book a hospital spot",
+  "title": "Book a health facility spot",
   "availableDays": "Available days",
-  "noSchedule": "No service schedule yet for this hospital",
+  "noSchedule": "No service schedule yet for this health facility",
   "serviceLabel": "Service / department",
   "selectService": "Select a service",
   "reason": "Reason for visit",
@@ -53,20 +53,28 @@
     "morning": "Morning",
     "afternoon": "Afternoon",
     "evening": "Evening",
-    "days_mon": ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+    "days_mon": [
+      "Mo",
+      "Tu",
+      "We",
+      "Th",
+      "Fr",
+      "Sa",
+      "Su"
+    ]
   },
   "hospitalAppointment": {
-    "signInDesc": "You need a patient account to book a hospital spot.",
+    "signInDesc": "You need a patient account to book a health facility spot.",
     "bookingConfirmed": "Booking confirmed!",
-    "bookingConfirmedDesc": "{{hospital}} · {{service}} · {{date}} at {{time}}",
-    "loadingDetails": "Loading hospital details…",
+    "bookingConfirmedDesc": "{{health facility}} · {{service}} · {{date}} at {{time}}",
+    "loadingDetails": "Loading health facility details…",
     "workingDays": "Working days",
-    "noOpenDays": "This hospital has no open days configured yet.",
+    "noOpenDays": "This health facility has no open days configured yet.",
     "selectADate": "Select a date",
     "noOpenDatesSoon": "No open dates in the next 14 days.",
     "preferredTime": "Preferred time",
     "department": "Department",
-    "noDepartments": "No departments listed for this hospital.",
+    "noDepartments": "No departments listed for this health facility.",
     "selectDepartmentPlaceholder": "Select a department",
     "service": "Service",
     "selectDepartmentFirst": "Select a department first.",
@@ -74,6 +82,6 @@
     "selectServicePlaceholder": "Select a service",
     "notes": "Notes",
     "notesPlaceholder": "e.g. I prefer morning sessions",
-    "switchToPatientDesc": "You're signed in as {{role}}. Switch to patient to book a hospital spot."
+    "switchToPatientDesc": "You're signed in as {{role}}. Switch to patient to book a health facility spot."
   }
 }
