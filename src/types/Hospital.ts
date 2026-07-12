@@ -28,6 +28,7 @@ export interface Service {
 }
 
 export interface Department {
+  name: string;
   id: number;
   name_en: string;
   name_fr: string | null;

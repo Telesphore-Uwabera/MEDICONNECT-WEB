@@ -69,5 +69,18 @@
       "alerts": "Alerts",
       "other": "Other"
     }
-  }
+  },
+  "checking_access": "Checking workspace access...",
+  "role_access_title": "{{role}} profile approval required",
+  "role_access_missing_desc": "You need to complete your {{role}} profile before this workspace can be reviewed and approved.",
+  "role_access_pending_desc": "Your {{role}} profile is currently {{status}}. You can use this workspace after the profile is approved.",
+  "role_access_rejected_desc": "Your {{role}} profile was rejected. Please update your profile and submit it again for review.",
+  "role_access_help": "Open your profile, complete the required information, then wait for the admin team to approve it. Patient access does not require approval.",
+  "switch_back": "Switch back",
+  "go_to_profile": "Go to profile",
+  "status_pending": "pending",
+  "status_approved": "approved",
+  "status_active": "active",
+  "status_rejected": "rejected",
+  "status_suspended": "suspended"
 }

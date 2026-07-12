@@ -46,6 +46,7 @@ import {
   type CreateCategoryPayload,
   type UpdateCategoryPayload,
 } from "@/hooks/pharmacy/use-pharmacy-inventory-categories";
+import { t } from "i18next";
  
 type StatusFilter = "all" | "active" | "inactive";
 type SortOption =

@@ -1,4 +1,5 @@
 ﻿import { toLocalDateInputValue } from "@/lib/date";
+import { useTranslation } from "react-i18next";
 // Quick post-call prescription step (completion flow: record  THIS  booking).
 //
 // The doctor fills a diagnosis + medicine items, issues (signs) the prescription
@@ -85,6 +86,7 @@ export function QuickPrescriptionModal({
   onSkip,
   onDone,
 }: Props) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<"form" | "pharmacy">("form");
 
   // Prescription form
@@ -124,7 +126,7 @@ export function QuickPrescriptionModal({
   // Create draft  issue (sign) in sequence.
   const handleIssue = () => {
     if (!canIssue) {
-      toast.error("Add a diagnosis and at least one medicine (name, dosage, frequency).");
+      toast.error(t("pages.doctor.quick_rx.validation_required"));
       return;
     }
     createRx.mutate(
@@ -145,15 +147,15 @@ export function QuickPrescriptionModal({
             onSuccess: (issued) => {
               setPrescriptionId(id);
               setPdfUrl(issued.prescription.pdf_url ?? (issued as any).pdf_url ?? null);
-              toast.success("Prescription issued.");
+              toast.success(t("pages.doctor.quick_rx.issued"));
               setPhase("pharmacy");
             },
             onError: (err) =>
-              toast.error((err as ApiError)?.message || "Failed to issue prescription."),
+              toast.error((err as ApiError)?.message || t("pages.doctor.quick_rx.issue_failed")),
           });
         },
         onError: (err) =>
-          toast.error((err as ApiError)?.message || "Failed to create prescription."),
+          toast.error((err as ApiError)?.message || t("pages.doctor.quick_rx.create_failed")),
       },
     );
   };
@@ -169,10 +171,10 @@ export function QuickPrescriptionModal({
             </div>
             <div>
               <p className="text-[13px] font-semibold text-foreground leading-tight">
-                {phase === "form" ? "Quick prescription" : "Send to pharmacy"}
+                {phase === "form" ? t("pages.doctor.quick_rx.title") : t("pages.doctor.quick_rx.send_title")}
               </p>
               <p className="text-[10px] text-muted-foreground leading-tight">
-                {patientName ? `For ${patientName} · optional` : "Optional"}
+                {patientName ? t("pages.doctor.quick_rx.for_patient", { patient: patientName }) : t("pages.doctor.quick_rx.optional")}
               </p>
             </div>
           </div>
@@ -211,12 +213,12 @@ export function QuickPrescriptionModal({
                   { id: prescriptionId!, payload },
                   {
                     onSuccess: () => {
-                      toast.success("Prescription sent to pharmacy.");
+                      toast.success(t("pages.doctor.quick_rx.sent"));
                       onDone();
                     },
                     onError: (err) =>
                       toast.error(
-                        (err as ApiError)?.message || "Failed to send to pharmacy.",
+                        (err as ApiError)?.message || t("pages.doctor.quick_rx.send_failed"),
                       ),
                   },
                 )
@@ -231,7 +233,7 @@ export function QuickPrescriptionModal({
             onClick={onSkip}
             className="px-3 h-9 rounded-[6px] text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
-            {phase === "form" ? "Skip prescription" : "Skip pharmacy"}
+            {phase === "form" ? t("pages.doctor.quick_rx.skip_prescription") : t("pages.doctor.quick_rx.skip_pharmacy")}
           </button>
 
           {phase === "form" ? (
@@ -246,7 +248,7 @@ export function QuickPrescriptionModal({
               )}
             >
               {issuing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
-              Issue prescription
+              {t("pages.doctor.quick_rx.issue_prescription")}
             </button>
           ) : (
             <button
@@ -254,7 +256,7 @@ export function QuickPrescriptionModal({
               className="px-4 h-9 rounded-[6px] text-[12px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-2"
             >
               <Check className="h-3.5 w-3.5" />
-              Done
+              {t("pages.doctor.quick_rx.done")}
             </button>
           )}
         </div>
@@ -277,20 +279,21 @@ function PrescriptionForm({
   medicines: PublicMedicine[];
   medicinesLoading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2 space-y-1">
-          <label className={labelCls}>Diagnosis *</label>
+          <label className={labelCls}>{t("pages.doctor.quick_rx.diagnosis")} *</label>
           <input
             className={inputCls}
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="e.g. Malaria"
+            placeholder={t("pages.doctor.quick_rx.diagnosis_placeholder")}
           />
         </div>
         <div className="space-y-1">
-          <label className={labelCls}>Valid until</label>
+          <label className={labelCls}>{t("pages.doctor.quick_rx.valid_until")}</label>
           <input
             type="date"
             className={inputCls}
@@ -301,11 +304,11 @@ function PrescriptionForm({
       </div>
 
       <div className="space-y-1">
-        <label className={labelCls}>Notes</label>
+        <label className={labelCls}>{t("pages.doctor.quick_rx.notes")}</label>
         <RichTextarea
           value={notes}
           onChange={setNotes}
-          placeholder="e.g. Take with food"
+          placeholder={t("pages.doctor.quick_rx.notes_placeholder")}
           minHeight={110}
           editorClassName="text-[12px]"
         />
@@ -314,12 +317,12 @@ function PrescriptionForm({
       {/* Medicine items */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <label className={labelCls}>Medicines</label>
+          <label className={labelCls}>{t("pages.doctor.quick_rx.medicines")}</label>
           <button
             onClick={addItem}
             className="text-[11px] font-medium text-primary hover:text-primary/80 flex items-center gap-1"
           >
-            <Plus className="h-3 w-3" /> Add medicine
+            <Plus className="h-3 w-3" /> {t("pages.doctor.quick_rx.add_medicine")}
           </button>
         </div>
 
@@ -343,17 +346,17 @@ function PrescriptionForm({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <input className={inputCls} value={it.dosage}
-                onChange={(e) => setItem(i, { dosage: e.target.value })} placeholder="Dosage *" />
+                onChange={(e) => setItem(i, { dosage: e.target.value })} placeholder={t("pages.doctor.quick_rx.dosage")} />
               <input className={inputCls} value={it.frequency}
-                onChange={(e) => setItem(i, { frequency: e.target.value })} placeholder="Frequency *" />
+                onChange={(e) => setItem(i, { frequency: e.target.value })} placeholder={t("pages.doctor.quick_rx.frequency")} />
               <input className={inputCls} value={it.duration}
-                onChange={(e) => setItem(i, { duration: e.target.value })} placeholder="Duration" />
+                onChange={(e) => setItem(i, { duration: e.target.value })} placeholder={t("pages.doctor.quick_rx.duration")} />
               <input className={inputCls} type="number" min={1} value={it.quantity}
-                onChange={(e) => setItem(i, { quantity: Number(e.target.value) })} placeholder="Qty" />
+                onChange={(e) => setItem(i, { quantity: Number(e.target.value) })} placeholder={t("pages.doctor.quick_rx.qty")} />
             </div>
             <input className={inputCls} value={it.instructions ?? ""}
               onChange={(e) => setItem(i, { instructions: e.target.value })}
-              placeholder="Instructions (e.g. Take after meals)" />
+              placeholder={t("pages.doctor.quick_rx.instructions_placeholder")} />
           </div>
         ))}
       </div>
@@ -372,6 +375,7 @@ function MedicineNameCombobox({
   medicines: PublicMedicine[];
   isLoading: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const query = value.trim().toLowerCase();
   const filtered = useMemo(() => {
@@ -412,7 +416,7 @@ function MedicineNameCombobox({
           onChange(e.target.value);
           setOpen(true);
         }}
-        placeholder="Search or type medicine name *"
+        placeholder={t("pages.doctor.quick_rx.search_medicine_placeholder")}
         autoComplete="off"
       />
 
@@ -422,13 +426,13 @@ function MedicineNameCombobox({
             {isLoading && (
               <div className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Loading medicines...
+                {t("pages.doctor.quick_rx.loading_medicines")}
               </div>
             )}
 
             {!isLoading && filtered.length === 0 && (
               <div className="px-2.5 py-2 text-[11px] text-muted-foreground">
-                No medicine found. Keep typing to use a custom name.
+                {t("pages.doctor.quick_rx.no_medicine_found")}
               </div>
             )}
 
@@ -465,7 +469,7 @@ function MedicineNameCombobox({
                 onClick={() => setOpen(false)}
                 className="mt-1 w-full rounded-[5px] border border-dashed border-primary/40 px-2.5 py-2 text-left text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
               >
-                Use "{value.trim()}" as a custom medicine
+                {t("pages.doctor.quick_rx.use_custom_medicine", { name: value.trim() })}
               </button>
             )}
           </div>
@@ -489,6 +493,7 @@ function PharmacyStep({
     notes?: string;
   }) => void;
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const debounced = useDebounce(query, 350);
   const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
@@ -524,13 +529,13 @@ function PharmacyStep({
           className="flex items-center gap-2 rounded-[6px] border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-500/15 transition-colors"
         >
           <FileText className="h-3.5 w-3.5" />
-          View signed prescription PDF
+          {t("pages.doctor.quick_rx.view_pdf")}
           <ExternalLink className="h-3 w-3 ml-auto" />
         </a>
       )}
 
       <p className="text-[11px] text-muted-foreground">
-        Optionally send this prescription to a pharmacy for the patient.
+        {t("pages.doctor.quick_rx.send_hint")}
       </p>
 
       {/* Pharmacy search */}
@@ -542,17 +547,17 @@ function PharmacyStep({
               className={cn(inputCls, "pl-8")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search pharmacies..."
+              placeholder={t("pages.doctor.quick_rx.search_pharmacies")}
             />
           </div>
           <div className="max-h-44 overflow-y-auto space-y-1">
             {isFetching && (
               <div className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching...
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("pages.doctor.quick_rx.searching")}
               </div>
             )}
             {!isFetching && pharmacies.length === 0 && (
-              <p className="px-2 py-2 text-[11px] text-muted-foreground">No pharmacies found.</p>
+              <p className="px-2 py-2 text-[11px] text-muted-foreground">{t("pages.doctor.quick_rx.no_pharmacies")}</p>
             )}
             {pharmacies.map((p) => (
               <button
@@ -585,15 +590,15 @@ function PharmacyStep({
               onClick={() => setPharmacy(null)}
               className="text-[11px] text-primary hover:text-primary/80 font-medium"
             >
-              Change
+              {t("pages.doctor.quick_rx.change")}
             </button>
           </div>
 
           {/* Delivery type */}
           <div className="grid grid-cols-2 gap-2">
             {([
-              { key: "pickup", label: "Pickup", icon: Store },
-              { key: "home_delivery", label: "Home delivery", icon: Truck },
+              { key: "pickup", label: t("pages.doctor.quick_rx.pickup"), icon: Store },
+              { key: "home_delivery", label: t("pages.doctor.quick_rx.home_delivery"), icon: Truck },
             ] as const).map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -612,23 +617,23 @@ function PharmacyStep({
 
           {deliveryType === "home_delivery" && (
             <div className="space-y-1">
-              <label className={labelCls}>Delivery address *</label>
+              <label className={labelCls}>{t("pages.doctor.quick_rx.delivery_address")} *</label>
               <input
                 className={inputCls}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. KG 123 St, Kigali"
+                placeholder={t("pages.doctor.quick_rx.delivery_address_placeholder")}
               />
             </div>
           )}
 
           <div className="space-y-1">
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t("pages.doctor.quick_rx.notes")}</label>
             <input
               className={inputCls}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Call before delivery"
+              placeholder={t("pages.doctor.quick_rx.delivery_notes_placeholder")}
             />
           </div>
 
@@ -643,7 +648,7 @@ function PharmacyStep({
             )}
           >
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            Send to pharmacy
+            {t("pages.doctor.quick_rx.send_to_pharmacy")}
           </button>
         </div>
       )}

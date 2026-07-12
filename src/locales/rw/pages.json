@@ -2188,11 +2188,11 @@
     "sort_medicines_asc": "Medicines: Least first",
     "sort_newest": "Newest first",
     "sort_oldest": "Oldest first",
-    "sort_time_newest": "Time: Newest first",
-    "sort_time_oldest": "Time: Oldest first",
-    "sort_total_desc": "Total: High to low",
-    "sort_total_asc": "Total: Low to high",
-    "sort_patient_az": "Patient (A-Z)",
+    "sort_time_newest": "Igihe: ibishya bibanze",
+    "sort_time_oldest": "Igihe: ibya kera bibanze",
+    "sort_total_desc": "Igiteranyo: kinini kibanze",
+    "sort_total_asc": "Igiteranyo: gito kibanze",
+    "sort_patient_az": "Umurwayi (A-Z)",
     "sort_date_newest": "Date: Newest first",
     "sort_date_oldest": "Date: Oldest first",
     "in_stock": "Irahari",
@@ -2343,13 +2343,13 @@
     "internal": "Imbere",
     "external": "Hanze",
     "loading_orders": "Komande zirimo gufunguka...",
-    "search_orders": "Search patient, order ID...",
+    "search_orders": "Shaka umurwayi cyangwa ID ya komande...",
     "failed_load_orders": "Kuzana komande byanze",
-    "no_orders_match": "No orders match your filters",
+    "no_orders_match": "Nta komande ihuye n ibyo wahisemo",
     "no_orders_yet": "Nta komande ziraboneka",
-    "orders_will_appear": "Orders will appear here once received",
-    "order_receipt_missing": "The order is completed, but no receipt link was returned by the API.",
-    "medicine_out_of_stock": "Medicine out of stock",
+    "orders_will_appear": "Komande zizagaragara hano nizimara kwakirwa",
+    "order_receipt_missing": "Komande yarangiye, ariko API ntiyatanze link y inyemezabwishyu.",
+    "medicine_out_of_stock": "Umuti washize mu bubiko",
     "settings_title": "Igenamiterere",
     "settings_sub": "Cunga profayile, umutekano na konti",
     "settings_manage_account": "Manage your account",
@@ -2640,7 +2640,13 @@
     "profile_sub": "Genzura umwirondoro wa farumasi, amasaha, kugeza imiti n?amakuru rusange",
     "provider_name_placeholder": "Izina ry?utanga serivisi",
     "restock_drawer_desc": "Saba kongerera ububiko imiti ku mutangabikoresho",
-    "secret_key_placeholder": "Shyiramo urufunguzo rw?ibanga rw?utanga serivisi"
+    "secret_key_placeholder": "Shyiramo urufunguzo rw?ibanga rw?utanga serivisi",
+    "th_source": "Inkomoko",
+    "accepted": "Byakiriwe",
+    "complete_order": "Soza komande",
+    "order_singular": "komande",
+    "order_plural": "komande",
+    "receipt_not_available": "Inyemezabwishyu ntiraboneka."
   },
   "admin": {
     "overview_sub": "Incamake y'urubuga rwose",
@@ -2763,5 +2769,21 @@
     "loading": "Biracyaza…",
     "error": "Habayemo ikibazo.",
     "no_data": "Nta makuru aboneka"
-  }
+  },
+  
+  "legal":{
+      "loading_terms":"Tegereza",
+      "legal_urls":"Amategeko",
+      "terms_url":"Amabwiriza",
+      "privacy_url":"Ubuzima bwite",
+      "terms_title":"Amategeko n'amabwiriza",
+      "privacy_title":"Ubuzima bwite n'Amabwiriza",
+      "terms_eyebrow":"Amasezerano",
+      "privacy_eyebrow":"Ubuzima bwite",
+      "check_back_later":"Suzuma nyuma",
+      "no_current_privacy":"Suzuma nyuma",
+      "retry":"Ongera ugerageze",
+      "effective":"Itariki yo gutangira gukurikizwa: {{date}}",
+      "version":"Verisiyo : {{version}}"
+    }
 }

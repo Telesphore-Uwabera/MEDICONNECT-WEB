@@ -50,6 +50,9 @@ export function RoleSwitcher({ open, onClose }: { open: boolean; onClose: () => 
   // From the sidebar we do a full switch (reload into the role's workspace).
   // go() adds the role first if the account doesn't have it yet.
   const handleGo = (role: GoRole) => {
+    if (active && active !== role) {
+      localStorage.setItem("mediconnect.previous_role", active);
+    }
     setBusy(role);
     void go(role).finally(() => setBusy(null));
   };

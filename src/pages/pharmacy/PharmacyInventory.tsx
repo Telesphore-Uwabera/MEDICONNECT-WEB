@@ -60,6 +60,7 @@ import {
   useGetInventoryCategories,
   type Category,
 } from "@/hooks/pharmacy/use-pharmacy-inventory-categories";
+import { t } from "i18next";
 
  
 type StockStatus = "in-stock" | "low" | "out";
@@ -304,7 +305,7 @@ function ImportMedicinesDrawer({
         onClose();
       },
       onError: (error) => {
-        toast.error(t("pages.pharmacy.import_failed"), { description: getErrorMessage(error, t("pages.pharmacy.something_went_wrong")) });
+        toast.error(t("pages.pharmacy.import_failed"), { description: getErrorMessage(t("pages.pharmacy.something_went_wrong")) });
       },
     });
   };
@@ -703,7 +704,7 @@ function MedicineDetailsDrawer({
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium", STOCK_STYLES[status])}>
               <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status], status === "low" && "animate-pulse")} />
-              {t(STATUS_LABEL_KEYS[status])}
+              {(STATUS_LABELS[status])}
             </Badge>
             <Badge
               variant="outline"
@@ -1275,7 +1276,7 @@ const PharmacyInventory = () => {
                                   status === "low" && "animate-pulse",
                                 )}
                               />
-                              {t(STATUS_LABEL_KEYS[status])}
+                              {(STATUS_LABELS[status])}
                             </Badge>
                           </td>
 
@@ -1354,4 +1355,3 @@ const PharmacyInventory = () => {
 };
 
 export default PharmacyInventory;
-

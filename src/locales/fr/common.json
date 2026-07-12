@@ -69,5 +69,18 @@
       "other": "Autre"
     }
   },
-  "Register": "S'inscrire"
+  "Register": "S'inscrire",
+  "checking_access": "Verification de l'acces a l'espace...",
+  "role_access_title": "Approbation du profil {{role}} requise",
+  "role_access_missing_desc": "Vous devez completer votre profil {{role}} avant que cet espace puisse etre examine et approuve.",
+  "role_access_pending_desc": "Votre profil {{role}} est actuellement {{status}}. Vous pourrez utiliser cet espace apres son approbation.",
+  "role_access_rejected_desc": "Votre profil {{role}} a ete rejete. Veuillez le mettre a jour et le soumettre a nouveau.",
+  "role_access_help": "Ouvrez votre profil, completez les informations requises, puis attendez l'approbation de l'equipe administrative. L'acces patient ne necessite pas d'approbation.",
+  "switch_back": "Revenir au role precedent",
+  "go_to_profile": "Aller au profil",
+  "status_pending": "en attente",
+  "status_approved": "approuve",
+  "status_active": "actif",
+  "status_rejected": "rejete",
+  "status_suspended": "suspendu"
 }

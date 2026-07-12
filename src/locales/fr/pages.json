@@ -2188,10 +2188,10 @@
     "sort_medicines_asc": "Medicines: Least first",
     "sort_newest": "Newest first",
     "sort_oldest": "Oldest first",
-    "sort_time_newest": "Time: Newest first",
-    "sort_time_oldest": "Time: Oldest first",
-    "sort_total_desc": "Total: High to low",
-    "sort_total_asc": "Total: Low to high",
+    "sort_time_newest": "Heure: plus recentes d abord",
+    "sort_time_oldest": "Heure: plus anciennes d abord",
+    "sort_total_desc": "Total: du plus eleve au plus bas",
+    "sort_total_asc": "Total: du plus bas au plus eleve",
     "sort_patient_az": "Patient (A-Z)",
     "sort_date_newest": "Date: Newest first",
     "sort_date_oldest": "Date: Oldest first",
@@ -2344,12 +2344,12 @@
     "external": "Externe",
     "loading_orders": "Chargement des commandes...",
     "search_orders": "Rechercher patient, ID commande...",
-    "failed_load_orders": "?chec du chargement des commandes",
-    "no_orders_match": "Aucune commande ne correspond ? vos filtres",
+    "failed_load_orders": "Echec du chargement des commandes",
+    "no_orders_match": "Aucune commande ne correspond a vos filtres",
     "no_orders_yet": "Aucune commande pour le moment",
-    "orders_will_appear": "Les commandes appara?tront ici une fois re?ues",
-    "order_receipt_missing": "La commande est termin?e, mais aucun lien de re?u n?a ?t? renvoy? par l?API.",
-    "medicine_out_of_stock": "M?dicament en rupture de stock",
+    "orders_will_appear": "Les commandes apparaitront ici une fois recues",
+    "order_receipt_missing": "La commande est terminee, mais aucun lien de recu n'a ete renvoye par l API.",
+    "medicine_out_of_stock": "Medicament en rupture de stock",
     "settings_title": "Param?tres",
     "settings_sub": "G?rez votre profil, votre s?curit? et votre compte",
     "settings_manage_account": "G?rez votre compte",
@@ -2640,7 +2640,13 @@
     "profile_sub": "G?rez le profil de la pharmacie, les horaires, la livraison et les informations publiques",
     "provider_name_placeholder": "Nom du fournisseur",
     "restock_drawer_desc": "Demander un r?approvisionnement aupr?s de votre fournisseur",
-    "secret_key_placeholder": "Collez la cl? secr?te du fournisseur"
+    "secret_key_placeholder": "Collez la cl? secr?te du fournisseur",
+    "th_source": "Source",
+    "accepted": "Accepte",
+    "complete_order": "Terminer",
+    "order_singular": "commande",
+    "order_plural": "commandes",
+    "receipt_not_available": "Le recu n'est pas encore disponible."
   },
   "admin": {
     "overview_sub": "Aperçu du tableau de bord",
@@ -2763,5 +2769,21 @@
     "loading": "Chargement…",
     "error": "Une erreur est survenue. Veuillez réessayer.",
     "no_data": "Aucune donnée disponible"
-  }
+  }, 
+
+  "legal":{
+      "loading_terms":"Attendez",
+      "legal_urls":"URL des conditions générales",
+      "terms_url":"URL des termes",
+      "privacy_url":"URL de confidentialité",
+      "terms_title":"Conditions généraless",
+      "privacy_title":"Confidentialité et politiques",
+      "terms_eyebrow":"termes",
+      "privacy_eyebrow":"confidentialité",
+      "check_back_later":"Revenez plus tard",
+      "no_current_privacy":"Revenez plus tard",
+      "retry":"Réessayer",
+      "effective":"Date d'entrée en vigueur: {{date}}",
+      "version":"Version : {{version}}"
+    }
 }

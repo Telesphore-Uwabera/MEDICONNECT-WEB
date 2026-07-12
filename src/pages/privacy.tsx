@@ -37,7 +37,7 @@ const formatEffectiveDate = (value?: string | null) => {
 };
 
 const Privacy = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: publicSettings } = usePublicSettings();
   const { data: document, isLoading, isError, refetch, isFetching } = usePublicLegalDocument("privacy");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,7 +45,7 @@ const Privacy = () => {
 
   const publicPayload = publicSettings as any;
   const generalSettings = publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
-  const title = localizedField(document, "title", i18n.language) || "Privacy Policy";
+  const title = localizedField(document, "title", i18n.language) || t("pages.legal.privacy_title");
   const content = localizedField(document, "content", i18n.language);
   const effectiveDate = formatEffectiveDate(document?.effective_date);
   const privacyUrl = generalSettings?.privacy_url || "/privacy";
@@ -68,7 +68,7 @@ const Privacy = () => {
           <div className="container py-14 lg:py-20">
             <div className="mx-auto max-w-3xl text-center">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-primary">
-                Privacy
+                {t("pages.legal.privacy_eyebrow")}
               </p>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
                 {title}
@@ -77,13 +77,13 @@ const Privacy = () => {
                 {document?.version && (
                   <span className="inline-flex items-center gap-2 rounded-[6px] border border-border bg-background px-3 py-2">
                     <FileText className="h-3.5 w-3.5 text-primary" />
-                    Version {document.version}
+                    {t("pages.legal.version", { version: document.version })}
                   </span>
                 )}
                 {effectiveDate && (
                   <span className="inline-flex items-center gap-2 rounded-[6px] border border-border bg-background px-3 py-2">
                     <CalendarDays className="h-3.5 w-3.5 text-primary" />
-                    Effective {effectiveDate}
+                    {t("pages.legal.effective", { date: effectiveDate })}
                   </span>
                 )}
               </div>
@@ -97,40 +97,33 @@ const Privacy = () => {
               {isLoading ? (
                 <div className="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
-                  Loading privacy policy...
+                  {t("pages.legal.loading_terms")}
                 </div>
-              ) : isError ? (
+              ) : isError ? ( 
                 <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 text-center">
                   <AlertCircle className="h-8 w-8 text-destructive" />
                   <div>
-                    <h2 className="text-lg font-semibold text-foreground">Unable to load privacy policy</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">Please try again in a moment.</p>
+                    <h2 className="text-lg font-semibold text-foreground">{t("pages.legal.no_current_privacy")}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{t("pages.legal.check_back_later")}</p>
                   </div>
                   <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
                     <RefreshCw className={isFetching ? "mr-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4"} />
-                    Retry
+                    {t("pages.legal.retry")}
                   </Button>
                 </div>
               ) : content ? (
                 <RichTextRenderer value={content} className="text-sm text-foreground/80" />
               ) : (
                 <div className="flex min-h-[280px] items-center justify-center text-center text-sm text-muted-foreground">
-                  No current privacy policy is available yet.
+                  {t("pages.legal.no_current_privacy")}
                 </div>
               )}
             </article>
 
             <aside className="space-y-3">
-              <div className="rounded-[6px] border border-border bg-card p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-foreground">Legal URLs</p>
-                <div className="mt-4 grid gap-2 text-sm">
-                  <a href={privacyUrl} className="text-primary hover:underline">Privacy URL</a>
-                  <a href={termsUrl} className="text-primary hover:underline">Terms & conditions URL</a>
-                </div>
-              </div>
               <Link to="/terms">
                 <Button variant="outline" className="w-full justify-between rounded-[6px]">
-                  Terms & conditions
+                  {t("pages.legal.terms_title")}
                   <FileText className="h-4 w-4" />
                 </Button>
               </Link>

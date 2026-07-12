@@ -56,6 +56,7 @@ import { useState, useCallback } from "react";
 import { InstantPaidAlertListener } from "@/components/doctor/InstantPaidAlertListener";
 import { PatientCallAlertListener } from "@/components/patient/PatientCallAlertListener";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
+import { RoleApprovalGate } from "@/components/RoleApprovalGate";
 
 export type Role = "patient" | "doctor" | "hospital" | "pharmacy" | "admin";
 
@@ -653,7 +654,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="flex-1 min-w-0"
         >
-          {children}
+          <RoleApprovalGate role={role}>{children}</RoleApprovalGate>
         </motion.main>
         {role === "doctor" && <InstantPaidAlertListener />}
         {role === "patient" && <PatientCallAlertListener />}

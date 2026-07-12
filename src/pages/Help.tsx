@@ -68,6 +68,13 @@ const Index = () => {
 
     const defaultCurrency =
         generalSettings?.default_currency || "RWF";
+
+    const helpTopics = [
+        { title: t("pages.help.topic_book_doctors_title"), desc: t("pages.help.topic_book_doctors_desc"), to: "/patient/search-doctors" },
+        { title: t("pages.help.topic_find_facilities_title"), desc: t("pages.help.topic_find_facilities_desc"), to: "/patient/search-facilities" },
+        { title: t("pages.help.topic_pharmacy_title"), desc: t("pages.help.topic_pharmacy_desc"), to: "/patient/pharmacy" },
+        { title: t("pages.help.topic_sign_in_title"), desc: t("pages.help.topic_sign_in_desc"), to: "/auth" },
+    ];
   return (
       <section className="bg-background">
           <div className="sticky top-0 z-50">
@@ -84,29 +91,28 @@ const Index = () => {
               <div className="container py-14 lg:py-20">
                   <div className="mx-auto max-w-3xl text-center">
                       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.25em] text-primary">
-                          Help & Contact
+                          {t("pages.help.eyebrow")}
                       </p>
 
                       <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                          How can we help you?
+                          {t("pages.help.title")}
                       </h1>
 
                       <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-                          Get support for {appName}, contact our team, or learn how to use the
-                          platform for doctors, health facilities, pharmacies, and patients.
+                          {t("pages.help.subtitle", { appName })}
                       </p>
 
                       <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                           <a href={`mailto:${contactEmail}`}>
                               <Button className="h-11 rounded-[6px] px-6">
-                                  Email support
+                                  {t("pages.help.email_support")}
                                   <ArrowRight className="ml-2 h-4 w-4" />
                               </Button>
                           </a>
 
                           <a href={`tel:${contactPhone.replace(/\s+/g, "")}`}>
                               <Button variant="outline" className="h-11 rounded-[6px] px-6">
-                                  Call us
+                                  {t("pages.help.call_us")}
                                   <Phone className="ml-2 h-4 w-4" />
                               </Button>
                           </a>
@@ -125,7 +131,7 @@ const Index = () => {
                       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
                           <Mail className="h-5 w-5" />
                       </div>
-                      <p className="text-sm font-semibold text-foreground">Email support</p>
+                      <p className="text-sm font-semibold text-foreground">{t("pages.help.email_support")}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{contactEmail}</p>
                   </a>
 
@@ -136,7 +142,7 @@ const Index = () => {
                       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
                           <Phone className="h-5 w-5" />
                       </div>
-                      <p className="text-sm font-semibold text-foreground">Phone contact</p>
+                      <p className="text-sm font-semibold text-foreground">{t("pages.help.phone_contact")}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{contactPhone}</p>
                   </a>
 
@@ -144,7 +150,7 @@ const Index = () => {
                       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
                           <MapPin className="h-5 w-5" />
                       </div>
-                      <p className="text-sm font-semibold text-foreground">Office location</p>
+                      <p className="text-sm font-semibold text-foreground">{t("pages.help.office_location")}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{contactAddress}</p>
                   </div>
               </div>
@@ -153,36 +159,15 @@ const Index = () => {
               <div className="mt-12 grid gap-8 lg:grid-cols-1">
                   <div className="rounded-[6px] border border-border bg-card p-5 sm:p-6">
                       <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                          Help center
+                          {t("pages.help.help_center")}
                       </p>
 
                       <h2 className="mt-3 text-2xl font-semibold text-foreground">
-                          Common things you can do on {appName}
+                          {t("pages.help.common_things", { appName })}
                       </h2>
 
                       <div className="mt-6 grid gap-3">
-                          {[
-                              {
-                                  title: "Find and book doctors",
-                                  desc: "Search available doctors and book consultations online or in person.",
-                                  to: "/patient/search-doctors",
-                              },
-                              {
-                                  title: "Find health facilities",
-                                  desc: "Browse registered health facilities, clinics, and care services.",
-                                  to: "/patient/search-facilities",
-                              },
-                              {
-                                  title: "Access pharmacy services",
-                                  desc: "Find pharmacies and medicine-related services near you.",
-                                  to: "/patient/pharmacy",
-                              },
-                              {
-                                  title: "Sign in to your account",
-                                  desc: "Access your patient, doctor, health facility, pharmacy, or admin workspace.",
-                                  to: "/auth",
-                              },
-                          ].map((item) => (
+                          {helpTopics.map((item) => (
                               <Link
                                   key={item.title}
                                   to={item.to}

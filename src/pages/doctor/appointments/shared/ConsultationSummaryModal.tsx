@@ -1,19 +1,5 @@
-// Post-call consultation summary (full SOAP note). Required step before a
-// doctor can finalize an appointment OR an instant consultation.
-//
-// Before rendering a blank form, we check whether a summary already exists
-// for this appointment/instant-consultation (GET /doctor/consultation-summaries
-// filtered by id, then GET .../{id} for the full record) and pre-fill from it —
-// otherwise reopening this step (or re-triggering the completion flow) would
-// create a duplicate summary instead of continuing the existing one.
-//
-// Saving:
-//   • Existing summary found  → single PUT /doctor/consultation-summaries/{id}
-//   • No existing summary     → POST /doctor/consultation-summaries (intake),
-//                                then PUT .../{id} for assessment + plan, if filled
-// Then onSaved() continues the completion flow (prescription → booking → complete).
-
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X, Loader2, AlertTriangle, Stethoscope, ClipboardList,
   Activity, ShieldAlert, Pill, Plus,
@@ -56,7 +42,12 @@ const inputCls =
 const labelCls =
   "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
 
-const DURATION_UNITS = ["hours", "days", "weeks", "months"];
+const DURATION_UNITS = ["hours", "days", "weeks", "months"] as const;
+
+type DurationUnit = (typeof DURATION_UNITS)[number];
+
+const isDurationUnit = (value: unknown): value is DurationUnit =>
+  typeof value === "string" && DURATION_UNITS.includes(value as DurationUnit);
 
 const SYSTEMS: Array<{ key: string; label: string; symptoms: string[] }> = [
   { key: "general", label: "General", symptoms: ["fever", "fatigue", "weight_loss", "chills", "night_sweats"] },
@@ -68,8 +59,8 @@ const SYSTEMS: Array<{ key: string; label: string; symptoms: string[] }> = [
 
 const RED_FLAGS: Array<{ key: string; label: string }> = [
   { key: "severe_chest_pain", label: "Severe chest pain" },
-  { key: "severe_breathing", label: "Severe breathing difficulty" },
-  { key: "severe_bleeding", label: "Severe / uncontrolled bleeding" },
+  { key: "severe_breathing", label: "Breathing difficulty" },
+  { key: "severe_bleeding", label: "uncontrolled bleeding" },
   { key: "loss_of_consciousness", label: "Loss of consciousness" },
   { key: "stroke_signs", label: "Signs of stroke (face/arm/speech)" },
   { key: "suicidal_ideation", label: "Suicidal ideation" },
@@ -101,10 +92,11 @@ export function ConsultationSummaryModal({
   onClose,
   onSaved,
 }: Props) {
+  const { t } = useTranslation();
   // Chief complaint
   const [mainComplaint, setMainComplaint] = useState(defaultComplaint ?? "");
   const [durationValue, setDurationValue] = useState<string>("");
-  const [durationUnit, setDurationUnit] = useState("days");
+  const [durationUnit, setDurationUnit] = useState<DurationUnit>("days");
 
   // History of present illness
   const [onset, setOnset] = useState("");
@@ -171,7 +163,8 @@ export function ConsultationSummaryModal({
     setDurationValue(
       summary.chief_complaint?.duration_value != null ? String(summary.chief_complaint.duration_value) : "",
     );
-    setDurationUnit(summary.chief_complaint?.duration_unit ?? "days");
+    const savedDurationUnit = summary.chief_complaint?.duration_unit;
+    setDurationUnit(isDurationUnit(savedDurationUnit) ? savedDurationUnit : "days");
 
     setOnset(summary.history_of_present_illness?.onset ?? "");
     setLocation(summary.history_of_present_illness?.location ?? "");
@@ -193,9 +186,11 @@ export function ConsultationSummaryModal({
     setCustomSystems(extraSystems);
     setCustomSymptoms(extraSymptoms);
 
-    const flags = { ...(summary.red_flag_screening ?? {}) };
-    delete flags.alert_triggered;
-    setRedFlags(flags as Record<string, boolean>);
+    const savedFlags = summary.red_flag_screening ?? {};
+    const flags = Object.fromEntries(
+      Object.entries(savedFlags).filter(([key]) => key !== "alert_triggered"),
+    ) as Record<string, boolean>;
+    setRedFlags(flags);
 
     setPrimaryDiagnosis(summary.clinical_assessment?.primary_diagnosis ?? "");
     setSeverityClass(summary.clinical_assessment?.severity_classification ?? "");
@@ -266,7 +261,7 @@ export function ConsultationSummaryModal({
       return;
     }
     if (!hasRichTextContent(mainComplaint)) {
-      toast.error("Enter the chief complaint to continue.");
+      toast.error(t("pages.doctor.summary.enter_chief_complaint"));
       return;
     }
 
@@ -296,7 +291,7 @@ export function ConsultationSummaryModal({
           }
         : undefined;
 
-    const hasAssessment = primaryDiagnosis.trim() || severityClass;
+    const hasAssessment = Boolean(primaryDiagnosis.trim() || severityClass);
     const hasPlan = hasRichTextContent(followup);
     const clinicalAssessment = hasAssessment
       ? {
@@ -323,10 +318,10 @@ export function ConsultationSummaryModal({
         { id: existingSummaryId, payload: updatePayload },
         {
           onSuccess: () => {
-            toast.success("Consultation summary updated.");
+            toast.success(t("pages.doctor.summary.updated"));
             onSaved();
           },
-          onError: (err) => toast.error(getErrMsg(err, "Failed to update the summary.")),
+          onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.summary.update_failed"))),
         },
       );
       return;
@@ -356,19 +351,19 @@ export function ConsultationSummaryModal({
             },
             {
               onSuccess: () => {
-                toast.success("Consultation summary saved.");
+                toast.success(t("pages.doctor.summary.saved"));
                 onSaved();
               },
               onError: (err) =>
-                toast.error(getErrMsg(err, "Summary saved, but assessment/plan failed to save.")),
+                toast.error(getErrMsg(err, t("pages.doctor.summary.assessment_plan_failed"))),
             },
           );
         } else {
-          toast.success("Consultation summary saved.");
+          toast.success(t("pages.doctor.summary.saved"));
           onSaved();
         }
       },
-      onError: (err) => toast.error(getErrMsg(err, "Failed to save the summary.")),
+      onError: (err) => toast.error(getErrMsg(err, t("pages.doctor.summary.save_failed"))),
     });
   };
 
@@ -387,10 +382,10 @@ export function ConsultationSummaryModal({
             </div>
             <div className="min-w-0">
               <h2 className="text-[13px] font-semibold text-foreground flex items-center gap-2">
-                Consultation summary
+                {t("pages.doctor.summary.title")}
                 {existingSummaryId != null && (
                   <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
-                    Editing existing
+                    {t("pages.doctor.summary.editing_existing")}
                   </span>
                 )}
               </h2>
@@ -401,7 +396,7 @@ export function ConsultationSummaryModal({
           </div>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("pages.doctor.summary.close")}
             className="h-7 w-7 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0"
           >
             <X className="h-4 w-4" />
@@ -418,20 +413,20 @@ export function ConsultationSummaryModal({
           )}
           {/* Chief complaint */}
           <section className="space-y-3">
-            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title="Chief complaint" hint="Required" />
+            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title={t("pages.doctor.summary.chief_complaint")} hint={t("pages.doctor.summary.required")} />
             <div className="space-y-1.5">
-              <label className={labelCls}>Main complaint *</label>
+              <label className={labelCls}>{t("pages.doctor.summary.main_complaint")} *</label>
               <RichTextarea
                 value={mainComplaint}
                 onChange={setMainComplaint}
-                placeholder="e.g. Fever and cough for 3 days"
+                placeholder={t("pages.doctor.summary.main_complaint_placeholder")}
                 minHeight={80}
                 editorClassName="text-[12px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className={labelCls}>Duration</label>
+                <label className={labelCls}>{t("pages.doctor.summary.duration")}</label>
                 <input
                   type="number"
                   min={0}
@@ -442,14 +437,14 @@ export function ConsultationSummaryModal({
                 />
               </div>
               <div className="space-y-1.5">
-                <label className={labelCls}>Unit</label>
+                <label className={labelCls}>{t("pages.doctor.summary.unit")}</label>
                 <select
                   value={durationUnit}
-                  onChange={(e) => setDurationUnit(e.target.value)}
+                  onChange={(e) => setDurationUnit(e.target.value as DurationUnit)}
                   className={cn(inputCls, "appearance-none")}
                 >
                   {DURATION_UNITS.map((u) => (
-                    <option key={u} value={u}>{u}</option>
+                    <option key={u} value={u}>{t(`pages.doctor.summary.duration_${u}`, u)}</option>
                   ))}
                 </select>
               </div>
@@ -458,26 +453,26 @@ export function ConsultationSummaryModal({
 
           {/* History of present illness */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title="History of present illness" />
+            <SectionHeader icon={<Activity className="h-3.5 w-3.5" />} title={t("pages.doctor.summary.hpi")} />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className={labelCls}>Onset</label>
+                <label className={labelCls}>{t("pages.doctor.summary.onset")}</label>
                 <select
                   value={onset}
                   onChange={(e) => setOnset(e.target.value)}
                   className={cn(inputCls, "appearance-none")}
                 >
                   <option value="">—</option>
-                  <option value="sudden">Sudden</option>
-                  <option value="gradual">Gradual</option>
+                  <option value="sudden">{t("pages.doctor.summary.sudden")}</option>
+                  <option value="gradual">{t("pages.doctor.summary.gradual")}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className={labelCls}>Location</label>
+                <label className={labelCls}>{t("pages.doctor.summary.location")}</label>
                 <input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. chest"
+                  placeholder={t("pages.doctor.summary.location_placeholder")}
                   className={inputCls}
                 />
               </div>
@@ -505,7 +500,7 @@ export function ConsultationSummaryModal({
                 const symptoms = [...sys.preset, ...(customSymptoms[sys.key] ?? [])];
                 return (
                   <div key={sys.key} className="space-y-1.5">
-                    <p className={labelCls}>{sys.label}</p>
+                    <p className={labelCls}>{t(`pages.doctor.summary.system_${sys.key}`, sys.label)}</p>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {symptoms.map((sym) => {
                         const active = (ros[sys.key] ?? []).includes(sym);
@@ -538,13 +533,13 @@ export function ConsultationSummaryModal({
                               addCustomSymptom(sys.key);
                             }
                           }}
-                          placeholder="Add symptom"
+                          placeholder={t("pages.doctor.summary.add_symptom")}
                           className="h-7 w-28 px-2 rounded-full border border-dashed border-border bg-background text-[11px] text-foreground outline-none focus:border-primary/50"
                         />
                         <button
                           type="button"
                           onClick={() => addCustomSymptom(sys.key)}
-                          aria-label={`Add symptom to ${sys.label}`}
+                          aria-label={t("pages.doctor.summary.add_symptom_to", { system: sys.label })}
                           className="h-6 w-6 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                         >
                           <Plus className="h-3 w-3" />
@@ -567,7 +562,7 @@ export function ConsultationSummaryModal({
                     addCustomSystem();
                   }
                 }}
-                placeholder="Add a system (e.g. Musculoskeletal)"
+                placeholder={t("pages.doctor.summary.add_system_placeholder")}
                 className={cn(inputCls, "h-8")}
               />
               <button
@@ -575,14 +570,14 @@ export function ConsultationSummaryModal({
                 onClick={addCustomSystem}
                 className="h-8 px-3 rounded-[5px] border border-border text-[12px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1 shrink-0"
               >
-                <Plus className="h-3.5 w-3.5" /> System
+                <Plus className="h-3.5 w-3.5" /> {t("pages.doctor.summary.system")}
               </button>
             </div>
           </section>
 
           {/* Red-flag screening */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<ShieldAlert className="h-3.5 w-3.5" />} title="Red-flag screening" />
+            <SectionHeader icon={<ShieldAlert className="h-3.5 w-3.5" />} title={t("pages.doctor.summary.red_flags")} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {RED_FLAGS.map((f) => (
                 <label
@@ -600,7 +595,7 @@ export function ConsultationSummaryModal({
                     onChange={() => toggleFlag(f.key)}
                     className="h-3.5 w-3.5 accent-destructive"
                   />
-                  <span className="text-[11px] font-medium text-foreground">{f.label}</span>
+                  <span className="text-[11px] font-medium text-foreground">{t(`pages.doctor.summary.red_flag_${f.key}`, f.label)}</span>
                 </label>
               ))}
             </div>
@@ -614,27 +609,27 @@ export function ConsultationSummaryModal({
 
           {/* Clinical assessment */}
           <section className="space-y-3 border-t border-border pt-5">
-            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title="Clinical assessment" />
+            <SectionHeader icon={<Stethoscope className="h-3.5 w-3.5" />} title={t("pages.doctor.summary.clinical_assessment")} />
             <div className="space-y-1.5">
-              <label className={labelCls}>Primary diagnosis</label>
+              <label className={labelCls}>{t("pages.doctor.summary.primary_diagnosis")}</label>
               <input
                 value={primaryDiagnosis}
                 onChange={(e) => setPrimaryDiagnosis(e.target.value)}
-                placeholder="e.g. Community-acquired pneumonia"
+                placeholder={t("pages.doctor.summary.primary_diagnosis_placeholder")}
                 className={inputCls}
               />
             </div>
             <div className="space-y-1.5">
-              <label className={labelCls}>Severity classification</label>
+              <label className={labelCls}>{t("pages.doctor.summary.severity_classification")}</label>
               <select
                 value={severityClass}
                 onChange={(e) => setSeverityClass(e.target.value)}
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">—</option>
-                <option value="mild">Mild</option>
-                <option value="moderate">Moderate</option>
-                <option value="severe">Severe</option>
+                <option value="mild">{t("pages.doctor.summary.mild")}</option>
+                <option value="moderate">{t("pages.doctor.summary.moderate")}</option>
+                <option value="severe">{t("pages.doctor.summary.severe")}</option>
               </select>
             </div>
           </section>
@@ -644,15 +639,15 @@ export function ConsultationSummaryModal({
           <section className="space-y-3 border-t border-border pt-5">
             <SectionHeader
               icon={<Pill className="h-3.5 w-3.5" />}
-              title="Management plan"
-              hint="Medications are prescribed in the next step"
+              title={t("pages.doctor.summary.management_plan")}
+              hint={t("pages.doctor.summary.management_hint")}
             />
             <div className="space-y-1.5">
-              <label className={labelCls}>Follow-up plan</label>
+              <label className={labelCls}>{t("pages.doctor.summary.followup_plan")}</label>
               <RichTextarea
                 value={followup}
                 onChange={setFollowup}
-                placeholder="e.g. Review in 5 days; return earlier if breathing worsens"
+                placeholder={t("pages.doctor.summary.followup_placeholder")}
                 minHeight={80}
                 editorClassName="text-[12px]"
               />
@@ -663,7 +658,7 @@ export function ConsultationSummaryModal({
         {/* Footer */}
         <div className="flex items-center justify-between gap-2 px-5 py-4 border-t border-border bg-muted/20 shrink-0">
           <span className="text-[10px] text-muted-foreground">
-            {existingSummaryId != null ? "Updating this consultation's existing summary" : "Saving records this consultation"}
+            {existingSummaryId != null ? t("pages.doctor.summary.updating_existing") : t("pages.doctor.summary.saving_records")}
           </span>
           <button
             onClick={handleSave}
@@ -671,7 +666,7 @@ export function ConsultationSummaryModal({
             className="h-9 px-4 rounded-[5px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {(saving || isResolvingExisting) && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Save & continue
+            {t("pages.doctor.summary.save_continue")}
           </button>
         </div>
       </div>
