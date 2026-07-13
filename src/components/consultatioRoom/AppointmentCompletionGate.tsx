@@ -20,6 +20,7 @@ import {
 import { ConsultationSummaryModal } from "@/pages/doctor/appointments/shared/ConsultationSummaryModal";
 import { QuickPrescriptionModal } from "@/pages/doctor/appointments/shared/QuickPrescriptionModal";
 import { BookPhysicalModal } from "@/pages/doctor/appointments/shared/BookPhysicalModal";
+import { TransferPatientPrompt } from "@/pages/doctor/appointments/shared/TransferPatientPrompt";
 import { getErrMsg } from "@/pages/doctor/appointments/shared/helpers";
 
 export function AppointmentCompletionGate() {
@@ -44,7 +45,7 @@ function CompletionFlow({
 }) {
   const { data, isLoading } = useGetAppointment(appointmentId);
   const complete = useCompleteAppointment();
-  const [step, setStep] = useState<"record" | "prescription" | "booking">("record");
+  const [step, setStep] = useState<"record" | "prescription" | "transfer" | "booking">("record");
 
   const appt = data?.appointment;
   const patientId = appt?.patient?.id ?? null;
@@ -104,13 +105,24 @@ function CompletionFlow({
         patientName={patientName}
         defaultDiagnosis={defaultDiagnosis}
         defaultNotes={defaultNotes}
-        onSkip={() => setStep("booking")}
-        onDone={() => setStep("booking")}
+        onSkip={() => setStep("transfer")}
+        onDone={() => setStep("transfer")}
       />
     );
   }
 
-  // Step 3 — optional: book a physical hospital visit, then complete.
+  // Step 3 - ask whether to transfer the patient before opening booking.
+  if (step === "transfer") {
+    return (
+      <TransferPatientPrompt
+        patientName={patientName}
+        onConfirm={() => setStep("booking")}
+        onDecline={finalize}
+      />
+    );
+  }
+
+  // Step 4 - optional: book a physical hospital visit, then complete.
   return (
     <BookPhysicalModal
       open

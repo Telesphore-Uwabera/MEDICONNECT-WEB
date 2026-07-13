@@ -36,8 +36,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
   const navLinks = [
     { href: "#doctors", label: t("nav.available_doctors") },
     { href: "#specialities", label: t("pages.landing.what_we_do") },
-    { href: "#hospitals", label: t("nav.hospitals") },
-    { href: "#pharmacy", label: t("nav.pharmacy") },
+    { href: "#pharmacy", label: t("pages.landing.facilities_pharmacies_nav") },
     { href: "#team", label: t("nav.our_team", "Our Team") },
   ];
 
@@ -111,12 +110,12 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
       ref={menuRef}
       className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-50"
     >
-      <div className="container flex items-center justify-between py-2">
+      <div className="container flex items-center justify-between py-1.5">
         {/* Logo — simplified to a plain wordmark, no custom underline hack.
             Swap back to the <img> logo below if you'd rather use the asset;
             keeping text for now since that's what was active. */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <span className="font-display text-xl font-bold tracking-tight text-foreground">
+          <span className="font-display text-lg font-bold tracking-tight text-foreground">
             MEDI<span className="text-primary">CONNECT</span>
           </span>
         </Link>
@@ -130,7 +129,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
                 key={l.href}
                 onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-[6px] transition-smooth cursor-pointer",
+                  "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer",
                   active
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"

@@ -45,6 +45,7 @@ import type {
   useUpsertDoctorProfile,
   useUploadProfileImage,
   useUploadDoctorDocument,
+  useUploadDoctorSignature,
   useAddEducation,
   useUpdateEducation,
   useDeleteEducation,
@@ -83,6 +84,12 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
 
 const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
 
+
+const resolveStorageUrl = (value?: string | null): string | null => {
+  if (!value) return null;
+  if (/^(https?:|blob:|data:)/i.test(value)) return value;
+  return BASE_URL ? `${BASE_URL}/${value.replace(/^\/+/, "")}` : value;
+};
 const getStepLabel = (stepId: string) =>
   i18n.t(`doctorProfile.steps.${stepId}.label`, i18n.t("doctorProfile.section_fallback"));
 
@@ -179,6 +186,7 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
       degree_document: null,
       license_document: null,
       national_id_document: null,
+      signature_file: null,
       existing: {
        
         profile_image_url: doc.image ?? null, 
@@ -198,6 +206,12 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
           : doc.documents?.national_id_document?.path
             ? `${BASE_URL}/${doc.documents.national_id_document.path}`
             : null,
+        signature_url:
+          resolveStorageUrl((doc as any).signature_url) ??
+          resolveStorageUrl((doc as any).signature) ??
+          resolveStorageUrl(doc.documents?.signature?.url) ??
+          resolveStorageUrl(doc.documents?.signature?.path) ??
+          null,
       },
     },
     linksSection: {
@@ -718,6 +732,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
           [t("doctorProfile.degree_document"), data.documents.degree_document],
           [t("doctorProfile.license_scan"), data.documents.license_document],
           [t("doctorProfile.national_id"), data.documents.national_id_document],
+          [t("doctorProfile.signature", "Signature"), data.documents.signature_file],
         ] as [string, File | null | undefined][]
       ).filter((entry): entry is [string, File] => !!entry[1]),
     [data.documents, t],
@@ -733,6 +748,7 @@ const ViewDocuments = React.memo(function ViewDocuments({
         [t("doctorProfile.degree_document"), ex.degree_document_url],
         [t("doctorProfile.license_scan"), ex.medical_license_document_url],
         [t("doctorProfile.national_id"), ex.national_id_document_url],
+        [t("doctorProfile.signature", "Signature"), ex.signature_url],
       ] as [string, string | null][]
     ).filter((entry): entry is [string, string] => !!entry[1]);
   }, [data.documents.existing, t]);
@@ -761,7 +777,26 @@ const ViewDocuments = React.memo(function ViewDocuments({
 
       {/* Existing uploaded files from API */}
       {existingFiles.map(([label, url]) =>
-        label === t("doctorProfile.profile_photo") ? (
+        label === t("doctorProfile.signature", "Signature") ? (
+          <div
+            key="existing-signature"
+            className="flex items-center gap-3 rounded-[6px] border border-border bg-muted/30 px-4 py-3"
+          >
+            <img
+              src={url}
+              alt={t("doctorProfile.signature", "Signature")}
+              className="h-10 w-24 rounded-[4px] object-contain shrink-0 border border-border bg-background"
+            />
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                {t("doctorProfile.signature", "Signature")}
+              </p>
+              <p className="text-[13px] font-medium text-foreground">
+                {t("doctorProfile.uploaded_label")}
+              </p>
+            </div>
+          </div>
+        ) : label === t("doctorProfile.profile_photo") ? (
            
           <div
             key="existing-profile-photo"
@@ -1103,6 +1138,7 @@ const DoctorProfile = () => {
   const upsertProfile = useUpsertDoctorProfile();
   const uploadImage = useUploadProfileImage();
   const uploadDocument = useUploadDoctorDocument();
+  const uploadSignature = useUploadDoctorSignature();
   const addEducation = useAddEducation();
   const updateEducation = useUpdateEducation();
   const deleteEducation = useDeleteEducation();
@@ -1398,6 +1434,13 @@ const DoctorProfile = () => {
                 type: "national_id_document",
                 file: d.national_id_document,
               });
+            if (d.signature_file) {
+              const res = await uploadSignature.mutateAsync(d.signature_file);
+              d.existing = {
+                ...(d.existing ?? {}),
+                signature_url: (res as { signature?: string })?.signature ?? d.existing?.signature_url ?? null,
+              };
+            }
             setProfileData((prev) => (prev ? { ...prev, documents: d } : null));
             break;
           }
@@ -1434,6 +1477,7 @@ const DoctorProfile = () => {
       upsertProfile,
       uploadImage,
       uploadDocument,
+      uploadSignature,
       setSocialLinks,
       syncEducation,
       syncExperience,

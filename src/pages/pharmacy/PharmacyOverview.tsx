@@ -566,7 +566,7 @@ function StatusBanner({
       <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">·</span>
       <div className="flex items-center gap-1 text-[11px] text-emerald-700/70 dark:text-emerald-400/70">
         <Clock size={11} />
-        <span>{t("pages.pharmacy.closes_at", { time: "6:00 PM" })}</span>
+        <span>{t("pages.pharmacy.closes_at_time", { time: "6:00 PM" })}</span>
       </div>
       <div className="ml-auto flex items-center gap-3">
         {loading

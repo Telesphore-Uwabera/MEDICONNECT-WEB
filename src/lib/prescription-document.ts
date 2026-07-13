@@ -39,6 +39,18 @@ function get<T = unknown>(obj: unknown, path: string): T | undefined {
   return path.split(".").reduce<any>((o, k) => (o == null ? o : o[k]), obj) as T | undefined;
 }
 
+function signatureUrl(obj: unknown): string {
+  return (
+    get<string>(obj, "doctor.signature_url") ??
+    get<string>(obj, "doctor.signature") ??
+    get<string>(obj, "doctor.profile.signature_url") ??
+    get<string>(obj, "doctor.profile.signature") ??
+    get<string>(obj, "signature_url") ??
+    get<string>(obj, "signature") ??
+    ""
+  );
+}
+
 /** Accepts the patient OR doctor prescription shape (read defensively). */
 export interface PrescriptionLike {
   prescription_number?: string;
@@ -108,6 +120,21 @@ function contactBlock(brand: ResolvedBrand): string {
   </tr></table>`;
 }
 
+
+function watermarkBlock(brand: ResolvedBrand): string {
+  return `<div class="watermark" aria-hidden="true">
+    <img src="${esc(brand.logoUrl)}" alt="" />
+    <span>${esc(brand.appName)}</span>
+  </div>`;
+}
+
+function officialStamp(brand: ResolvedBrand, signed = true): string {
+  return `<div class="official-stamp ${signed ? "" : "muted-stamp"}" aria-label="Official prescription stamp">
+    <span class="stamp-ring">${esc(brand.appName)}</span>
+    <span class="stamp-core">${signed ? "APPROVED" : "DRAFT"}<br/>PRESCRIPTION</span>
+    <span class="stamp-foot">${esc(brand.phone)}</span>
+  </div>`;
+}
 function statusLabel(status?: string): string {
   return String(status ?? "Prescription").replace(/_/g, " ");
 }
@@ -131,7 +158,11 @@ const documentCss = `
   .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid #d5dee8; font-family:Arial, sans-serif; }
   .toolbar button { font:inherit; font-size:13px; font-weight:700; padding:8px 14px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; }
   .toolbar button.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
-  .page { width:8.27in; min-height:11.69in; margin:22px auto; background:#fff; padding:.55in .62in; box-shadow:0 12px 35px rgba(15,23,42,.12); }
+  .page { position:relative; overflow:hidden; width:8.27in; min-height:11.69in; margin:22px auto; background:#fff; padding:.55in .62in; box-shadow:0 12px 35px rgba(15,23,42,.12); }
+  .page > *:not(.watermark) { position:relative; z-index:1; }
+  .watermark { position:absolute; inset:0; z-index:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; opacity:.055; transform:rotate(-32deg); font-family:Arial, sans-serif; text-align:center; }
+  .watermark img { width:360px; max-height:132px; object-fit:contain; filter:grayscale(1); }
+  .watermark span { margin-top:12px; font-size:54px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--brand-dark); white-space:nowrap; }
   .doc-header { display:grid; grid-template-columns:1.3fr 1fr; gap:20px; align-items:start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:12px; }
   .brand-row { display:flex; gap:14px; align-items:center; }
   .brand-row img { max-width:172px; max-height:64px; object-fit:contain; }
@@ -157,7 +188,18 @@ ${richDocumentCss}
   .signed, .unsigned { margin:0 0 14px; padding:8px 10px; border:1px solid var(--line); font-family:Arial, sans-serif; font-size:12px; font-weight:700; }
   .signed { color:var(--success); background:#f0fdf4; border-color:#86efac; }
   .unsigned { color:var(--warning); background:#fffbeb; border-color:#fcd34d; }
-  .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-top:2px solid var(--brand); padding-top:9px; margin-top:22px; font-family:Arial, sans-serif; color:var(--muted); font-size:10.5px; }
+  .authorization { display:flex; align-items:flex-end; justify-content:space-between; gap:22px; border-top:1px solid #d1d5db; margin-top:20px; padding-top:16px; font-family:Arial, sans-serif; page-break-inside:avoid; }
+  .auth-copy { color:var(--ink); font-size:12px; line-height:1.6; }
+  .auth-copy strong { display:block; margin-top:5px; font-size:13px; }
+  .signature-image { display:block; width:150px; max-height:58px; object-fit:contain; object-position:left center; margin:0 0 7px; }
+  .official-stamp { position:relative; width:92px; height:92px; flex:0 0 auto; border:3px double #1d4ed8; border-radius:50%; color:#1d4ed8; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Arial, sans-serif; text-align:center; transform:rotate(-13deg); background:rgba(255,255,255,.74); }
+  .official-stamp:before { content:""; position:absolute; inset:9px; border:1px solid #1d4ed8; border-radius:50%; }
+  .official-stamp.muted-stamp { opacity:.55; color:#64748b; border-color:#64748b; }
+  .official-stamp.muted-stamp:before { border-color:#64748b; }
+  .stamp-ring { position:relative; z-index:1; max-width:72px; font-size:7px; font-weight:900; line-height:1.05; text-transform:uppercase; }
+  .stamp-core { position:relative; z-index:1; margin-top:5px; font-size:9px; font-weight:900; line-height:1.05; }
+  .stamp-foot { position:relative; z-index:1; margin-top:4px; max-width:66px; font-size:6.5px; line-height:1; }
+  .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; border-top:2px solid var(--brand); padding-top:9px; margin-top:18px; font-family:Arial, sans-serif; color:var(--muted); font-size:10.5px; }
   .footer img { width:70px; height:70px; object-fit:contain; border:1px solid var(--soft-line); padding:4px; }
   @media print {
     body { background:#fff; }
@@ -177,6 +219,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
     get<string>(p, "doctor.doctor_degree") ?? get<string>(p, "doctor.degree") ?? "";
   const doctorEmail = get<string>(p, "doctor.user.email") ?? get<string>(p, "doctor.email") ?? "";
   const doctorPhone = get<string>(p, "doctor.user.phone") ?? get<string>(p, "doctor.phone") ?? "";
+  const doctorSignatureUrl = signatureUrl(p);
 
   const patientName =
     get<string>(p, "patient.name") ?? get<string>(p, "patient.user.name") ?? "";
@@ -214,6 +257,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
     <button onclick="window.close()">Close</button>
   </div>
   <main class="page">
+    ${watermarkBlock(brand)}
     <header class="doc-header">
       <div class="brand-row">
         <img src="${esc(brand.logoUrl)}" alt="${esc(brand.appName)}" />
@@ -245,6 +289,16 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
 
     ${signedLine}
 
+    <section class="authorization">
+      <div class="auth-copy">
+        Authorized by
+        ${doctorSignatureUrl ? `<img class="signature-image" src="${esc(doctorSignatureUrl)}" alt="Doctor signature" />` : ""}
+        <strong>${esc(doctorName || "MediConnect Clinician")}</strong>
+        <span>${esc(brand.appName)} | ${esc(brand.address)} | ${esc(brand.phone)}</span>
+      </div>
+      ${officialStamp(brand, Boolean(p.is_signed))}
+    </section>
+
     <footer class="footer">
       <div>
         <div>${esc(brand.appName)} digital health document</div>
@@ -270,3 +324,4 @@ export function openPrescriptionDocument(
   win.document.close();
   if (autoPrint) win.setTimeout(() => win.print(), 350);
 }
+

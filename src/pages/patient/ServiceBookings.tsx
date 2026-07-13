@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -50,6 +50,7 @@ import {
 } from "@/hooks/patient/use-patient-service";
 import { Link } from "react-router-dom";
 import { t } from "i18next";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 
  
 
@@ -496,7 +497,9 @@ function BookingDetailDrawer({
               <DrawerSection title={t("pages.patient.appointment")}>
                 <DetailRow icon={CalendarDays} label={t("pages.patient.date")} value={formatDate(booking.preferred_date)} />
                 <DetailRow icon={Clock} label={t("pages.patient.time")} value={formatTime(booking.preferred_time)} />
-                {booking.notes && <DetailRow icon={FileText} label={t("pages.patient.notes")} value={booking.notes} />}
+                <RichTextRenderer
+                value={booking.notes}
+                 /> 
               </DrawerSection>
 
               <DrawerSection title={t("pages.patient.health_facility")}>
@@ -514,7 +517,7 @@ function BookingDetailDrawer({
               <DrawerSection title={t("pages.patient.payment")}>
                 <DetailRow
                   icon={Receipt}
-                  label={t("pages.patient.price")}
+                  label={t("pages.patient.booking_price")}
                   value={formatPrice(booking.price ?? booking.service.price, booking.currency ?? "RWF")}
                   accent="font-semibold"
                 />
@@ -778,7 +781,7 @@ function BookingCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <CreditCard className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.price")}</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.booking_price")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {booking.price ?? booking.service.price ? (

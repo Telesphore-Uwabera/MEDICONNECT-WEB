@@ -18,6 +18,10 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import {
   useConsultationSummaries,
   useDeleteConsultationSummary,
+  useDownloadConsultationSummary,
+  summaryFieldText,
+  summaryHasRedFlagAlert,
+  summaryRedFlagList,
   type ConsultationSummary,
   type PatientSummaryGroup,
 } from "@/hooks/doctor/use-consultation-summaries";
@@ -55,8 +59,8 @@ export default function DoctorConsultationSummaries() {
         const summaries = group.summaries.filter((s) => {
           const hay = [
             patientLabel(group, t),
-            s.chief_complaint?.main_complaint ?? "",
-            s.clinical_assessment?.primary_diagnosis ?? "",
+            summaryFieldText(s.chief_complaint, "main_complaint"),
+            summaryFieldText(s.clinical_assessment, "primary_diagnosis"),
             `#${s.id}`,
           ]
             .join(" ")
@@ -288,18 +292,39 @@ function SummaryRow({
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) {  const { t } = useTranslation();
+}) {
+  const { t } = useTranslation();
   const { data: publicSettings } = usePublicSettings();
   const isInstant = s.instant_consultation_id != null;
-  const alert = s.red_flag_screening?.alert_triggered;
-  const ros = s.review_of_systems ?? {};
-  const activeFlags = Object.entries(s.red_flag_screening ?? {}).filter(
-    ([k, v]) => v && k !== "alert_triggered",
-  );
-
+  const alert = summaryHasRedFlagAlert(s.red_flag_screening);
+  const activeFlags = summaryRedFlagList(s.red_flag_screening);
+  const chiefComplaint = summaryFieldText(s.chief_complaint, "main_complaint");
+  const hpi = summaryFieldText(s.history_of_present_illness);
+  const reviewOfSystems = summaryFieldText(s.review_of_systems);
+  const pastMedicalHistory = summaryFieldText(s.past_medical_history);
+  const medicationHistory = summaryFieldText(s.medication_history);
+  const allergyHistory = summaryFieldText(s.allergy_history);
+  const clinicalAssessment = summaryFieldText(s.clinical_assessment, "primary_diagnosis");
+  const managementPlan = summaryFieldText(s.management_plan, "followup_plan");
+  const downloadSummary = useDownloadConsultationSummary();
+  const isDownloading = downloadSummary.isPending && downloadSummary.variables?.id === s.id;
+  const handleDownloadPdf = () => {
+    downloadSummary.mutate(
+      { id: s.id, type: "summary", filename: `consultation-summary-${s.id}.pdf` },
+      {
+        onError: (err) =>
+          toast.error(
+            getErrMsg(
+              err,
+              t("pages.doctor.summary_pdf_download_failed", "Could not download the consultation summary PDF."),
+            ),
+          ),
+      },
+    );
+  };
   return (
     <div className="bg-background/40 hover:bg-muted hover:text-foreground">
-      <div className="flex items-center gap-2 px-4 py-3 " >
+      <div className="flex items-center gap-2 px-4 py-3">
         <button onClick={onToggle} className="flex-1 flex items-center hover:bg-muted hover:text-foreground gap-2 min-w-0 text-left">
           <span className={cn(
             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-medium shrink-0",
@@ -314,159 +339,73 @@ function SummaryRow({
             </span>
           )}
           <p className="text-[12px] text-muted-foreground truncate mt-4">
-            {s.chief_complaint?.main_complaint ? (
-              <RichTextRenderer value={s.chief_complaint.main_complaint} className="inline text-[12px] text-muted-foreground" />
+            {chiefComplaint ? (
+              <RichTextRenderer value={chiefComplaint} className="inline text-[12px] text-muted-foreground" />
             ) : (
               <Muted />
             )}
           </p>
         </button>
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => openSummaryDocument(s, false, publicSettings)}
-            aria-label={t("pages.doctor.view_document")}
-            title={t("pages.doctor.view_document")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground  transition-colors"
-          >
+          <button onClick={() => openSummaryDocument(s, false, publicSettings)} aria-label={t("pages.doctor.view_document")} title={t("pages.doctor.view_document")} className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground transition-colors">
             <Eye className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={() => openSummaryDocument(s, true, publicSettings)}
-            aria-label={t("pages.doctor.download_pdf")}
-            title={t("pages.doctor.download_print_pdf")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <Download className="h-3.5 w-3.5" />
+          <button onClick={handleDownloadPdf} disabled={isDownloading} aria-label={t("pages.doctor.download_pdf")} title={t("pages.doctor.download_pdf")} className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50">
+            {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
           </button>
-          <button
-            onClick={onEdit}
-            aria-label={t("pages.doctor.edit_summary")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
+          <button onClick={onEdit} aria-label={t("pages.doctor.edit_summary")} className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={onDelete}
-            aria-label={t("pages.doctor.delete_summary")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
+          <button onClick={onDelete} aria-label={t("pages.doctor.delete_summary")} className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
-          <button
-            onClick={onToggle}
-            aria-label={t("pages.doctor.toggle_details")}
-            className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
+          <button onClick={onToggle} aria-label={t("pages.doctor.toggle_details")} className="h-8 w-8 rounded-[5px] flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
             <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
           </button>
         </div>
       </div>
 
-      {/* Details */}
       {expanded && (
         <div className="border-t border-border px-4 py-4 space-y-4 bg-muted/10">
-          <Field label={t("pages.doctor.chief_complaint")}>
-            {s.chief_complaint?.main_complaint ? (
-              <RichTextRenderer value={s.chief_complaint.main_complaint} className="text-[12px] text-foreground" />
-            ) : (
-              <Muted />
-            )}
-            {(s.chief_complaint?.duration_value != null) && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {t("pages.doctor.duration_value", { value: s.chief_complaint.duration_value, unit: s.chief_complaint.duration_unit ?? "" })}
-              </p>
-            )}
-          </Field>
-
-          {s.history_of_present_illness && (
-            <Field label={t("pages.doctor.history_present_illness")}>
-              <p className="text-[12px] text-foreground">
-                {[
-                  s.history_of_present_illness.onset && t("pages.doctor.onset_value", { value: s.history_of_present_illness.onset }),
-                  s.history_of_present_illness.location && t("pages.doctor.location_value", { value: s.history_of_present_illness.location }),
-                  s.history_of_present_illness.severity != null && t("pages.doctor.severity_value", { value: s.history_of_present_illness.severity }),
-                ].filter(Boolean).join(" · ") || <Muted />}
-              </p>
-            </Field>
-          )}
-
-          {Object.keys(ros).length > 0 && (
-            <Field label={t("pages.doctor.review_of_systems")}>
-              <div className="space-y-1.5">
-                {Object.entries(ros).map(([sys, list]) =>
-                  (list ?? []).length ? (
-                    <div key={sys} className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">
-                        {pretty(sys)}:
-                      </span>
-                      {(list ?? []).map((sym) => (
-                        <span key={sym} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                          {pretty(sym)}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null,
-                )}
-              </div>
-            </Field>
-          )}
+          <RichField label={t("pages.doctor.chief_complaint")} value={chiefComplaint} />
+          <RichField label={t("pages.doctor.history_present_illness")} value={hpi} />
+          <RichField label={t("pages.doctor.review_of_systems")} value={reviewOfSystems} />
+          <RichField label={t("pages.doctor.summary.past_medical_history", "Past medical history")} value={pastMedicalHistory} />
+          <RichField label={t("pages.doctor.summary.medication_history", "Medication history")} value={medicationHistory} />
+          <RichField label={t("pages.doctor.summary.allergy_history", "Allergy history")} value={allergyHistory} />
 
           {activeFlags.length > 0 && (
             <Field label={t("pages.doctor.red_flags")}>
               <div className="flex flex-wrap gap-1.5">
-                {activeFlags.map(([k]) => (
-                  <span key={k} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
-                    <AlertTriangle className="h-2.5 w-2.5" /> {pretty(k)}
+                {activeFlags.map((flag) => (
+                  <span key={flag} className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                    <AlertTriangle className="h-2.5 w-2.5" /> {pretty(flag)}
                   </span>
                 ))}
               </div>
             </Field>
           )}
 
-          {(s.clinical_assessment?.primary_diagnosis || s.clinical_assessment?.severity_classification) && (
+          {clinicalAssessment && (
             <Field label={t("pages.doctor.clinical_assessment")}>
-              <p className="text-[12px] text-foreground flex items-center gap-2">
-                <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
-                {s.clinical_assessment?.primary_diagnosis || "—"}
-                {s.clinical_assessment?.severity_classification && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
-                    {t(`pages.doctor.${s.clinical_assessment.severity_classification}`)}
-                  </span>
-                )}
-              </p>
+              <div className="flex items-start gap-2">
+                <Stethoscope className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <RichTextRenderer value={clinicalAssessment} className="text-[12px] text-foreground" />
+              </div>
             </Field>
           )}
 
-          {s.management_plan?.followup_plan && (
-            <Field label={t("pages.doctor.follow_up_plan")}>
-              <RichTextRenderer value={s.management_plan.followup_plan} className="text-[12px] text-foreground" />
-            </Field>
-          )}
+          <RichField label={t("pages.doctor.follow_up_plan")} value={managementPlan} />
 
           <div className="flex items-center justify-end gap-2 pt-1">
-            <button
-              onClick={() => openSummaryDocument(s, false, publicSettings)}
-              className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
-            >
+            <button onClick={() => openSummaryDocument(s, false, publicSettings)} className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5">
               <Eye className="h-3 w-3" /> {t("pages.doctor.view")}
             </button>
-            <button
-              onClick={() => openSummaryDocument(s, true, publicSettings)}
-              className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
-            >
-              <Download className="h-3 w-3" /> {t("pages.doctor.pdf")}
+            <button onClick={handleDownloadPdf} disabled={isDownloading} className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5 disabled:opacity-50">
+              {isDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} {t("pages.doctor.pdf")}
             </button>
-            <button
-              onClick={onEdit}
-              className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
-            >
+            <button onClick={onEdit} className="h-8 px-3 rounded-[5px] bg-primary text-primary-foreground text-[11px] font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1.5">
               <Pencil className="h-3 w-3" /> {t("pages.doctor.edit")}
-            </button>
-            <button
-              onClick={onDelete}
-              className="h-8 px-3 rounded-[5px] border border-destructive/30 text-[11px] font-medium text-destructive hover:bg-destructive/10 transition-colors flex items-center gap-1.5"
-            >
-              <Trash2 className="h-3 w-3" /> {t("pages.doctor.delete")}
             </button>
           </div>
         </div>
@@ -475,6 +414,13 @@ function SummaryRow({
   );
 }
 
+function RichField({ label, value }: { label: string; value: string }) {
+  return value ? (
+    <Field label={label}>
+      <RichTextRenderer value={value} className="text-[12px] text-foreground" />
+    </Field>
+  ) : null;
+}
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">

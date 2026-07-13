@@ -97,7 +97,7 @@ const Privacy = () => {
               {isLoading ? (
                 <div className="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
-                  {t("pages.legal.loading_terms")}
+                  {t("pages.legal.loading_privacy")}
                 </div>
               ) : isError ? ( 
                 <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 text-center">

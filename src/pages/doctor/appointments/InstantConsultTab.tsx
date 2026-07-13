@@ -29,6 +29,7 @@ import { IncomingCard } from "./shared/IncomingCard";
 import { InstantNotesSidebar } from "./shared/InstantNotesSidebar";
 import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
+import { TransferPatientPrompt } from "./shared/TransferPatientPrompt";
 import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
 import { t } from "i18next";
 
@@ -111,6 +112,7 @@ export function InstantConsultTab() {
   const [queueTab, setQueueTab] = useState<"active" | "completed">("active");
   const [activeAction, setActiveAction] = useState<ItemAction>(null);
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
+  const [transferPromptItem, setTransferPromptItem] = useState<InstantConsultQueueItem | null>(null);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
 
   // Queue items expose only the request id. The consultation-summary endpoint
@@ -631,12 +633,29 @@ export function InstantConsultTab() {
           onSaved={() => {
             const item = recordItem;
             setRecordItem(null);
-            setBookingItem(item);
+            setTransferPromptItem(item);
           }}
         />
       )}
 
-      {/* Step 2 — optional: book physical appointment, then complete */}
+
+      {/* Step 2 - ask whether to transfer before opening facility booking */}
+      {transferPromptItem != null && (
+        <TransferPatientPrompt
+          patientName={transferPromptItem.guest_phone}
+          onConfirm={() => {
+            const item = transferPromptItem;
+            setTransferPromptItem(null);
+            setBookingItem(item);
+          }}
+          onDecline={() => {
+            const item = transferPromptItem;
+            setTransferPromptItem(null);
+            if (item) completeConsult(item);
+          }}
+        />
+      )}
+      {/* Step 3 - optional: book physical appointment, then complete */}
       {bookingItem != null && (
         <BookPhysicalModal
           open

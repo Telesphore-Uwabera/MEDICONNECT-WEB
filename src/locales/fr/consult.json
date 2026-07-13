@@ -273,7 +273,7 @@
     "session_completed": "La session a été marquée comme terminée.",
     "failed_to_complete": "Échec de la mise à jour de la session en cours.",
     "preview": "Aperçu",
-    "complete": "Terminer",
+    "complete": "Dossier patient",
     "waiting_timer": "En attente {{time}}",
     "accept": "Accepter",
     "no_description": "Aucune description",

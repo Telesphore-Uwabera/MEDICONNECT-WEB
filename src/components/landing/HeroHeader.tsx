@@ -61,8 +61,7 @@ export function HeroHeader({
   const navLinks = [
     { href: "#doctors", label: t("nav.available_doctors") },
     { href: "#specialities", label: t("pages.landing.what_we_do") },
-    { href: "#hospitals", label: t("nav.hospitals") },
-    { href: "#pharmacy", label: t("nav.pharmacy") },
+    { href: "#pharmacy", label: t("pages.landing.facilities_pharmacies_nav") },
     { href: "#team", label: t("nav.team") },
   ];
 
@@ -139,12 +138,12 @@ export function HeroHeader({
       )}
     >
       {/* ── Navbar row ── */}
-      <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-2">
+      <div className="px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-2 py-1.5">
 
         {/* Logo */} 
         <div className="flex items-center gap-2 lg:shrink-0">
           <Link to="/#landing-page" className="flex items-center gap-2">
-            <img src={logo} alt={appName} className="lg:h-12 lg:w-auto w-[50%]" />
+            <img src={logo} alt={appName} className="h-9 w-auto lg:h-10" />
           </Link>
         </div>
 
@@ -157,7 +156,7 @@ export function HeroHeader({
                 key={l.href}
                 onClick={() => handleNavClick(l.href)}
                 className={cn(
-                  "relative px-3 py-2 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
+                  "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
                   active
                     ? "text-foreground bg-accent"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary",

@@ -618,12 +618,6 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                           {/* Actions */}
                           <td className="px-5 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {hasNotes && (
-                                <span className="text-xs text-emerald-600 dark:text-emerald-500 flex items-center gap-1.5">
-                                  <FileText className="h-4 w-4" /> {t("consult.booking.has_notes")}
-                                </span>
-                              )}
-
                               {/* Details */}
                               <button
                                 onClick={() => setDetailAppt(a)}

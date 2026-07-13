@@ -1,4 +1,4 @@
-﻿import { toLocalDateInputValue } from "@/lib/date";
+import { toLocalDateInputValue } from "@/lib/date";
 import { useTranslation } from "react-i18next";
 // Quick post-call prescription step (completion flow: record  THIS  booking).
 //
@@ -20,7 +20,9 @@ import { useDebounce } from "@/hooks/use-debounce";
 import {
   useCreatePrescription,
   useIssuePrescription,
+  useMatchingPharmacies,
   useSendToPharmacy,
+  type MatchingPharmacy,
   type PrescriptionItem,
 } from "@/hooks/doctor/use-doctor-prescriptions";
 import {
@@ -61,6 +63,16 @@ const inputCls =
 const labelCls =
   "text-[10px] font-semibold uppercase tracking-wide text-muted-foreground";
 
+const resolvePrescriptionPdfUrl = (url: string | null) => {
+  const raw = url?.trim();
+  if (!raw) return null;
+  if (/^(https?:|blob:|data:)/i.test(raw)) return raw;
+
+  const apiBase = import.meta.env.VITE_APP_BASE_URL ?? "";
+  const apiOrigin = apiBase ? new URL(apiBase, window.location.origin).origin : window.location.origin;
+  const normalized = raw.startsWith("/") ? raw : `/${raw}`;
+  return `${apiOrigin}${normalized}`;
+};
 function emptyItem(): PrescriptionItem {
   return {
     medicine_name: "",
@@ -481,7 +493,7 @@ function MedicineNameCombobox({
 
  
 function PharmacyStep({
-  pdfUrl, sending, onSend,
+  prescriptionId, pdfUrl, sending, onSend,
 }: {
   prescriptionId: number;
   pdfUrl: string | null;
@@ -494,20 +506,56 @@ function PharmacyStep({
   }) => void;
 }) {
   const { t } = useTranslation();
+  type PharmacyChoice = (Pharmacy | MatchingPharmacy) & {
+    match_count?: number;
+    province?: string | null;
+    address?: string | null;
+  };
+
   const [query, setQuery] = useState("");
   const debounced = useDebounce(query, 350);
-  const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
+  const [pharmacy, setPharmacy] = useState<PharmacyChoice | null>(null);
   const [deliveryType, setDeliveryType] = useState<"pickup" | "home_delivery">("pickup");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const resolvedPdfUrl = resolvePrescriptionPdfUrl(pdfUrl);
 
-  const { data, isFetching } = useSearchPharmacies({ q: debounced, per_page: 8 });
-  const pharmacies = data?.data ?? [];
+  const matchingQuery = useMatchingPharmacies(prescriptionId);
+  const fallbackQuery = useSearchPharmacies({ q: debounced, per_page: 8 });
+  const useFallback = !prescriptionId || matchingQuery.isError;
+  const totalMedicines = matchingQuery.data?.total_medicines ?? 0;
+
+  const pharmacies = useMemo<PharmacyChoice[]>(() => {
+    const source = (useFallback
+      ? fallbackQuery.data?.data ?? []
+      : matchingQuery.data?.data ?? []) as PharmacyChoice[];
+
+    if (useFallback) return source;
+
+    const q = debounced.trim().toLowerCase();
+    if (!q) return source;
+
+    return source.filter((p) =>
+      [p.name, p.city, p.province, p.address]
+        .filter(Boolean)
+        .some((part) => String(part).toLowerCase().includes(q)),
+    );
+  }, [debounced, fallbackQuery.data?.data, matchingQuery.data?.data, useFallback]);
+
+  const isFetching = useFallback ? fallbackQuery.isFetching : matchingQuery.isFetching;
 
   const canSend = useMemo(
     () => !!pharmacy && (deliveryType === "pickup" || address.trim().length > 0) && !sending,
     [pharmacy, deliveryType, address, sending],
   );
+
+  const pharmacyLocation = (p: PharmacyChoice) =>
+    [p.city, p.province || p.address].filter(Boolean).join(" - ");
+
+  const matchLabel = (p: PharmacyChoice) => {
+    if (useFallback || typeof p.match_count !== "number") return null;
+    return totalMedicines > 0 ? `${p.match_count}/${totalMedicines}` : String(p.match_count);
+  };
 
   const send = () => {
     if (!pharmacy) return;
@@ -521,24 +569,25 @@ function PharmacyStep({
 
   return (
     <div className="space-y-4">
-      {pdfUrl && (
+      {/* {resolvedPdfUrl && (
         <a
-          href={pdfUrl}
+          href={resolvedPdfUrl}
           target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-[6px] border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[12px] text-emerald-600 hover:bg-emerald-500/15 transition-colors"
+          rel="noreferrer"
+          className="flex h-9 items-center justify-between rounded-[6px] border border-primary/30 bg-primary/5 px-3 text-[12px] font-medium text-primary hover:bg-primary/10"
         >
-          <FileText className="h-3.5 w-3.5" />
-          {t("pages.doctor.quick_rx.view_pdf")}
-          <ExternalLink className="h-3 w-3 ml-auto" />
+          <span className="flex items-center gap-2">
+            <FileText className="h-3.5 w-3.5" />
+            {t("pages.doctor.quick_rx.view_pdf")}
+          </span>
+          <ExternalLink className="h-3.5 w-3.5" />
         </a>
-      )}
+      )} */}
 
       <p className="text-[11px] text-muted-foreground">
         {t("pages.doctor.quick_rx.send_hint")}
       </p>
 
-      {/* Pharmacy search */}
       {!pharmacy ? (
         <div className="space-y-2">
           <div className="relative">
@@ -550,7 +599,7 @@ function PharmacyStep({
               placeholder={t("pages.doctor.quick_rx.search_pharmacies")}
             />
           </div>
-          <div className="max-h-44 overflow-y-auto space-y-1">
+          <div className="max-h-52 overflow-y-auto space-y-1">
             {isFetching && (
               <div className="flex items-center gap-2 px-2 py-2 text-[11px] text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("pages.doctor.quick_rx.searching")}
@@ -559,21 +608,37 @@ function PharmacyStep({
             {!isFetching && pharmacies.length === 0 && (
               <p className="px-2 py-2 text-[11px] text-muted-foreground">{t("pages.doctor.quick_rx.no_pharmacies")}</p>
             )}
-            {pharmacies.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPharmacy(p)}
-                className="w-full flex items-center gap-2 rounded-[6px] border border-border bg-background px-2.5 py-2 text-left hover:border-primary/50 transition-colors"
-              >
-                <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[12px] font-medium text-foreground truncate">{p.name}</span>
-                  <span className="block text-[10px] text-muted-foreground truncate">
-                    {[p.city, p.address].filter(Boolean).join(" · ")}
+            {pharmacies.map((p) => {
+              const matches = matchLabel(p);
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPharmacy(p)}
+                  className="w-full flex items-center gap-2 rounded-[6px] border border-border bg-background px-2.5 py-2 text-left hover:border-primary/50 transition-colors"
+                >
+                  <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[12px] font-medium text-foreground truncate">{p.name}</span>
+                    <span className="block text-[10px] text-muted-foreground truncate">
+                      {pharmacyLocation(p) || "-"}
+                    </span>
                   </span>
-                </span>
-              </button>
-            ))}
+                  {matches && (
+                    <span
+                      title="Matching medicines"
+                      className={cn(
+                        "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                        (p.match_count ?? 0) > 0
+                          ? "border-primary/30 bg-primary/10 text-primary"
+                          : "border-border bg-secondary text-muted-foreground",
+                      )}
+                    >
+                      {matches}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -583,9 +648,14 @@ function PharmacyStep({
             <span className="flex-1 min-w-0">
               <span className="block text-[12px] font-medium text-foreground truncate">{pharmacy.name}</span>
               <span className="block text-[10px] text-muted-foreground truncate">
-                {[pharmacy.city, pharmacy.address].filter(Boolean).join(" · ")}
+                {pharmacyLocation(pharmacy) || "-"}
               </span>
             </span>
+            {matchLabel(pharmacy) && (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                {matchLabel(pharmacy)}
+              </span>
+            )}
             <button
               onClick={() => setPharmacy(null)}
               className="text-[11px] text-primary hover:text-primary/80 font-medium"
@@ -594,7 +664,6 @@ function PharmacyStep({
             </button>
           </div>
 
-          {/* Delivery type */}
           <div className="grid grid-cols-2 gap-2">
             {([
               { key: "pickup", label: t("pages.doctor.quick_rx.pickup"), icon: Store },
@@ -655,4 +724,5 @@ function PharmacyStep({
     </div>
   );
 }
+
 
