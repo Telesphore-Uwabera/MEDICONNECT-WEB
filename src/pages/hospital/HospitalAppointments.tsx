@@ -45,6 +45,7 @@ import {
   useGetDepartments,
   useGetServicesByDepartment,
 } from "@/hooks/hospital/use-hospital-departments";
+import { t } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -5,6 +5,7 @@
 // lands here to confirm the certificate is real and see its key details.
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -49,6 +50,7 @@ function DetailRow({
 }
 
 export default function VerifyCertificate() {
+  const { t } = useTranslation();
   const params = useParams<{ certificateNumber: string }>();
   const routeNumber = params.certificateNumber
     ? decodeURIComponent(params.certificateNumber).trim()
@@ -94,9 +96,9 @@ export default function VerifyCertificate() {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-5">
-          <h1 className="text-lg font-bold text-foreground">Certificate Verification</h1>
+          <h1 className="text-lg font-bold text-foreground">{t("pages.verify_certificate.title")}</h1>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            Confirm the authenticity of a MediConnect fitness certificate.
+            {t("pages.verify_certificate.subtitle")}
           </p>
         </div>
 
@@ -109,14 +111,14 @@ export default function VerifyCertificate() {
           <input
             value={lookupInput}
             onChange={(e) => setLookupInput(e.target.value)}
-            placeholder="e.g. MC-FIT-3BEU-20260706-7290"
+            placeholder={t("pages.verify_certificate.placeholder")}
             className="flex-1 h-8 bg-transparent text-[12px] outline-none placeholder:text-muted-foreground/60"
           />
           <button
             type="submit"
             className="h-8 px-3 rounded-[5px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
           >
-            Verify
+            {t("pages.verify_certificate.verify")}
           </button>
         </form>
 
@@ -125,13 +127,13 @@ export default function VerifyCertificate() {
           <div className="rounded-[6px] border border-border bg-card p-8 text-center">
             <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
             <p className="text-[12px] text-muted-foreground">
-              Enter a certificate number above to verify it.
+              {t("pages.verify_certificate.enter_number")}
             </p>
           </div>
         ) : isLoading ? (
           <div className="rounded-[6px] border border-border bg-card p-10 flex flex-col items-center gap-2 text-center">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-[12px] text-muted-foreground">Verifying certificate…</p>
+            <p className="text-[12px] text-muted-foreground">{t("pages.verify_certificate.verify")}ing certificate…</p>
           </div>
         ) : isValid && cert ? (
           <div className="rounded-[6px] border border-emerald-500/30 bg-card overflow-hidden shadow-sm">
@@ -140,22 +142,22 @@ export default function VerifyCertificate() {
                 <ShieldCheck className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-emerald-700">Certificate is valid</p>
+                <p className="text-[13px] font-semibold text-emerald-700">{t("pages.verify_certificate.valid_title")}</p>
                 <p className="text-[11px] text-emerald-700/80">
-                  {data.message || "This certificate is authentic."}
+                  {data.message || t("pages.verify_certificate.valid_message")}
                 </p>
               </div>
             </div>
 
             <div className="px-4 py-2">
-              <DetailRow icon={BadgeCheck} label="Certificate Number" value={cert.certificate_number} />
-              <DetailRow icon={User} label="Patient" value={cert.patient_name} />
-              <DetailRow icon={FileText} label="Purpose" value={cert.purpose} />
+              <DetailRow icon={BadgeCheck} label={t("pages.verify_certificate.certificate_number")} value={cert.certificate_number} />
+              <DetailRow icon={User} label={t("pages.verify_certificate.patient")} value={cert.patient_name} />
+              <DetailRow icon={FileText} label={t("pages.verify_certificate.purpose")} value={cert.purpose} />
               <div className="flex items-start gap-3 py-2.5 border-b border-border last:border-0">
                 <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Decision
+                    {t("pages.verify_certificate.decision")}
                   </p>
                   <span
                     className={cn(
@@ -169,10 +171,10 @@ export default function VerifyCertificate() {
                   </span>
                 </div>
               </div>
-              <DetailRow icon={Stethoscope} label="Issued By" value={cert.issued_by} />
-              <DetailRow icon={Calendar} label="Issued At" value={cert.issued_at} />
-              <DetailRow icon={CalendarX} label="Valid Until" value={cert.valid_until} />
-              <DetailRow icon={Building2} label="Platform" value={cert.platform} />
+              <DetailRow icon={Stethoscope} label={t("pages.verify_certificate.issued_by")} value={cert.issued_by} />
+              <DetailRow icon={Calendar} label={t("pages.verify_certificate.issued_at")} value={cert.issued_at} />
+              <DetailRow icon={CalendarX} label={t("pages.verify_certificate.valid_until")} value={cert.valid_until} />
+              <DetailRow icon={Building2} label={t("pages.verify_certificate.platform")} value={cert.platform} />
             </div>
           </div>
         ) : isKnownInvalid ? (
@@ -182,24 +184,22 @@ export default function VerifyCertificate() {
                 <ShieldX className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-destructive">Certificate not valid</p>
+                <p className="text-[13px] font-semibold text-destructive">{t("pages.verify_certificate.invalid_title")}</p>
                 <p className="text-[11px] text-destructive/80">
                   {data?.message ||
                     (error as Error | undefined)?.message ||
-                    "We couldn't find a certificate matching this number."}
+                    t("pages.verify_certificate.not_found")}
                 </p>
               </div>
             </div>
             <div className="px-4 py-3 text-[11px] text-muted-foreground">
-              Double-check the certificate number and try again, or contact the issuing doctor if you
-              believe this is a mistake.
+              {t("pages.verify_certificate.invalid_help")}
             </div>
           </div>
         ) : null}
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
-          Powered by MediConnect · Bringing care to your fingertips
-        </p>
+          {t("pages.verify_certificate.powered_by")}</p>
       </div>
     </div>
   );

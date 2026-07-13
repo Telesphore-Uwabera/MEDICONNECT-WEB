@@ -69,5 +69,18 @@
       "other": "Ibindi"
     }
   },
-  "Register": "Iyandikishe"
+  "Register": "Iyandikishe",
+  "checking_access": "Turi kugenzura uburenganzira bwo kwinjira...",
+  "role_access_title": "Umwirondoro wa {{role}} ugomba kubanza kwemezwa",
+  "role_access_missing_desc": "Ugomba kubanza kuzuza umwirondoro wa {{role}} kugira ngo usuzumwe kandi wemezwe.",
+  "role_access_pending_desc": "Umwirondoro wawe wa {{role}} uri kuri {{status}}. Uzawukoresha nyuma yo kwemezwa.",
+  "role_access_rejected_desc": "Umwirondoro wawe wa {{role}} wanze. Wuhindure wongere uwusabe gusuzumwa.",
+  "role_access_help": "Fungura umwirondoro wawe, wuzuze amakuru asabwa, hanyuma utegereze ko itsinda ry'abayobozi riwemeza. Uruhande rw'umurwayi ntirusaba kwemezwa.",
+  "switch_back": "Subira ku ruhare rwabanje",
+  "go_to_profile": "Jya ku mwirondoro",
+  "status_pending": "utegereje",
+  "status_approved": "wemejwe",
+  "status_active": "ukora",
+  "status_rejected": "wanze",
+  "status_suspended": "wahagaritswe"
 }

@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useMemo, useId } from "react";
 import { Search, Check, ChevronDown, X, Pill } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { t } from "i18next";
 
 interface Medicine {
   id: number;

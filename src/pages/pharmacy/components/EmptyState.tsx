@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   Building2, Plus, Image as ImageIcon, AlertCircle,
 } from "lucide-react";
+import { t } from "i18next";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Empty state & skeleton

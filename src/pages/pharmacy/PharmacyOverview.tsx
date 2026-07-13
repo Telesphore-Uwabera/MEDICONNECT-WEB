@@ -40,6 +40,7 @@ import {
   type ExpiringSoonItem,
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import { Link } from "react-router-dom";
+import { t } from "i18next";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtRWF(n: number): string {
@@ -79,18 +80,18 @@ function SkeletonRow() {
 
 // ─── Period selector ──────────────────────────────────────────────────────────
 
-const PERIODS: { value: DashboardPeriod; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-  { value: "year", label: "Year" },
-  { value: "custom", label: "Custom" },
+const PERIODS: { value: DashboardPeriod; labelKey: string }[] = [
+  { value: "today", labelKey: "pages.pharmacy.period_today" },
+  { value: "week", labelKey: "pages.pharmacy.period_week" },
+  { value: "month", labelKey: "pages.pharmacy.period_month" },
+  { value: "year", labelKey: "pages.pharmacy.period_year" },
+  { value: "custom", labelKey: "pages.pharmacy.period_custom" },
 ];
 
-const CHART_GROUPS: { value: ChartGroup; label: string }[] = [
-  { value: "day", label: "Day" },
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
+const CHART_GROUPS: { value: ChartGroup; labelKey: string }[] = [
+  { value: "day", labelKey: "pages.pharmacy.group_day" },
+  { value: "week", labelKey: "pages.pharmacy.group_week" },
+  { value: "month", labelKey: "pages.pharmacy.group_month" },
 ];
 
 function PeriodBar({
@@ -104,6 +105,7 @@ function PeriodBar({
   onDateRange: (r: { from: string; to: string }) => void;
   isFetching: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Period pills */}
@@ -119,7 +121,7 @@ function PeriodBar({
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
             )}
           >
-            {p.label}
+            {t(p.labelKey)}
           </button>
         ))}
       </div>
@@ -149,7 +151,7 @@ function PeriodBar({
       {/* Chart group */}
       <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm ml-auto">
         <span className="px-2 py-1.5 text-[10px] text-muted-foreground/70 font-medium border-r border-border/60 bg-muted/30">
-          Group
+          {t("pages.pharmacy.group")}
         </span>
         {CHART_GROUPS.map((g) => (
           <button
@@ -162,7 +164,7 @@ function PeriodBar({
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
             )}
           >
-            {g.label}
+            {t(g.labelKey)}
           </button>
         ))}
       </div>
@@ -200,15 +202,16 @@ function Section({
 // ─── Orders chart ─────────────────────────────────────────────────────────────
 
 function OrdersChart({ data, loading }: { data: OrdersChartPoint[]; loading: boolean }) {
+  const { t } = useTranslation();
   const maxTotal = useMemo(() => Math.max(...data.map((d) => d.total), 1), [data]);
   const visible = data.length > 14 ? data.slice(-14) : data;
 
   return (
-    <Section title="Orders Chart" icon={BarChart3}
+    <Section title={t("pages.pharmacy.orders_chart")} icon={BarChart3}
       action={
         loading
           ? <Loader2 size={11} className="animate-spin text-primary" />
-          : <span className="font-mono text-[10px]">{data.length} data points</span>
+          : <span className="font-mono text-[10px]">{t("pages.pharmacy.data_points", { count: data.length })}</span>
       }
     >
       <div className="px-4 py-4">
@@ -220,7 +223,7 @@ function OrdersChart({ data, loading }: { data: OrdersChartPoint[]; loading: boo
           </div>
         ) : visible.length === 0 ? (
           <div className="h-36 flex items-center justify-center text-[11px] text-muted-foreground">
-            No data for this period
+            {t("pages.pharmacy.no_data_period")}
           </div>
         ) : (
           <>
@@ -248,9 +251,9 @@ function OrdersChart({ data, loading }: { data: OrdersChartPoint[]; loading: boo
             </div>
             <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-center">
               {[
-                { label: "Total orders", value: fmtNum(data.reduce((s, d) => s + d.total, 0)) },
-                { label: "Completed", value: fmtNum(data.reduce((s, d) => s + d.completed, 0)) },
-                { label: "Total revenue", value: fmtRWF(data.reduce((s, d) => s + d.revenue, 0)) },
+                { label: t("pages.pharmacy.total_orders"), value: fmtNum(data.reduce((s, d) => s + d.total, 0)) },
+                { label: t("pages.pharmacy.completed"), value: fmtNum(data.reduce((s, d) => s + d.completed, 0)) },
+                { label: t("pages.pharmacy.total_revenue"), value: fmtRWF(data.reduce((s, d) => s + d.revenue, 0)) },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-sm font-bold text-foreground">{value}</p>
@@ -275,17 +278,18 @@ function StockAlertsSection({
   expiringSoon: ExpiringSoonItem[];
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"low" | "out" | "expiring">("low");
 
   const tabs = [
-    { id: "low" as const, label: "Low Stock", count: lowStock.length, icon: AlertTriangle },
-    { id: "out" as const, label: "Out of Stock", count: outOfStock.length, icon: PackageX },
-    { id: "expiring" as const, label: "Expiring", count: expiringSoon.length, icon: Timer },
+    { id: "low" as const, label: t("pages.pharmacy.low_stock"), count: lowStock.length, icon: AlertTriangle },
+    { id: "out" as const, label: t("pages.pharmacy.out_of_stock"), count: outOfStock.length, icon: PackageX },
+    { id: "expiring" as const, label: t("pages.pharmacy.expiring"), count: expiringSoon.length, icon: Timer },
   ];
 
   return (
-    <Section title="Stock Alerts" icon={AlertTriangle}
-      action={<Link to={'/pharmacy/restock-requests'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Manage <ChevronRight size={11} /></Link>}
+    <Section title={t("pages.pharmacy.stock_alerts")} icon={AlertTriangle}
+      action={<Link to={'/pharmacy/restock-requests'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">{t("pages.pharmacy.manage")} <ChevronRight size={11} /></Link>}
     >
       <div className="flex border-b border-border">
         {tabs.map((t) => (
@@ -318,7 +322,7 @@ function StockAlertsSection({
           Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
         ) : tab === "low" ? (
           lowStock.length === 0
-            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">No low stock items</div>
+            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_low_stock_items")}</div>
             : lowStock.map((item) => {
               const pct = Math.min(Math.round((item.quantity / item.threshold) * 100), 100);
               return (
@@ -340,7 +344,7 @@ function StockAlertsSection({
             })
         ) : tab === "out" ? (
           outOfStock.length === 0
-            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">No out-of-stock items</div>
+            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_out_of_stock_items")}</div>
             : outOfStock.map((item) => (
               <div key={item.medicine_id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
                 <div className="w-7 h-7 rounded-[6px] bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0 border border-red-200 dark:border-red-900">
@@ -351,13 +355,13 @@ function StockAlertsSection({
                   <p className="text-[10px] text-muted-foreground capitalize">{item.unit}</p>
                 </div>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900">
-                  Out of stock
+                  {t("pages.pharmacy.out_of_stock")}
                 </span>
               </div>
             ))
         ) : (
           expiringSoon.length === 0
-            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">No items expiring soon</div>
+            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_items_expiring_soon")}</div>
             : expiringSoon.map((item) => (
               <div key={item.medicine_id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
                 <div className="w-7 h-7 rounded-[6px] bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center shrink-0 border border-orange-200 dark:border-orange-900">
@@ -365,7 +369,7 @@ function StockAlertsSection({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-foreground truncate">{item.medicine_name}</p>
-                  <p className="text-[10px] text-muted-foreground">Qty: {item.quantity} · Expires {item.expiry_date}</p>
+                  <p className="text-[10px] text-muted-foreground">{t("pages.pharmacy.qty_expires", { quantity: item.quantity, date: item.expiry_date })}</p>
                 </div>
                 <span className={cn(
                   "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
@@ -373,7 +377,7 @@ function StockAlertsSection({
                     ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900"
                     : "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
                 )}>
-                  {item.days_left}d left
+                  {t("pages.pharmacy.days_left", { count: item.days_left })}
                 </span>
               </div>
             ))
@@ -389,15 +393,16 @@ function TopMedicines({ medicines, loading }: {
   medicines: { medicine_id: number; medicine_name: string; total_sold: number; total_revenue: number; order_count: number }[];
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
-    <Section title="Top Medicines" icon={Star}
-      action={<Link to={'/pharmacy/inventory'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">Full report <ChevronRight size={11} /></Link>}
+    <Section title={t("pages.pharmacy.top_medicines")} icon={Star}
+      action={<Link to={'/pharmacy/inventory'} className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">{t("pages.pharmacy.full_report")} <ChevronRight size={11} /></Link>}
     >
       <div className="divide-y divide-border">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
           : medicines.length === 0
-            ? <div className="px-4 py-8 text-center text-[11px] text-muted-foreground">No data for this period</div>
+            ? <div className="px-4 py-8 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_data_period")}</div>
             : medicines.slice(0, 6).map((m, idx) => (
               <div key={m.medicine_id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
                 <span className={cn(
@@ -413,11 +418,11 @@ function TopMedicines({ medicines, loading }: {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-foreground truncate">{m.medicine_name}</p>
-                  <p className="text-[10px] text-muted-foreground">{m.order_count} orders</p>
+                  <p className="text-[10px] text-muted-foreground">{t("pages.pharmacy.orders_count", { count: m.order_count })}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-semibold text-foreground">{fmtRWF(m.total_revenue)}</p>
-                  <p className="text-[10px] text-muted-foreground">{m.total_sold} units</p>
+                  <p className="text-[10px] text-muted-foreground">{t("pages.pharmacy.units_count", { count: m.total_sold })}</p>
                 </div>
               </div>
             ))
@@ -427,21 +432,22 @@ function TopMedicines({ medicines, loading }: {
   );
 }
 
-// ─── Prescriptions ────────────────────────────────────────────────────────────
+// ─── {t("pages.pharmacy.prescriptions")} ────────────────────────────────────────────────────────────
 
-function AwaitingPrescriptions({ items, counts, loading }: {
+function Awaiting({ items, counts, loading }: {
   items: { id: number; patient_name: string; status: string; submitted: string }[];
   counts: { pending: number; reviewing: number };
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
-    <Section title="Prescriptions" icon={ClipboardList}
-      action={<span className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">View all <ChevronRight size={11} /></span>}
+    <Section title={t("pages.pharmacy.prescriptions")} icon={ClipboardList}
+      action={<span className="flex items-center gap-1 text-primary font-medium cursor-pointer hover:underline">{t("pages.pharmacy.view_all")} <ChevronRight size={11} /></span>}
     >
       <div className="grid grid-cols-2 gap-px border-b border-border bg-border">
         {[
-          { label: "Pending", value: counts.pending, cls: "text-amber-600 dark:text-amber-400" },
-          { label: "Reviewing", value: counts.reviewing, cls: "text-blue-600 dark:text-blue-400" },
+          { label: t("pages.pharmacy.pending"), value: counts.pending, cls: "text-amber-600 dark:text-amber-400" },
+          { label: t("pages.pharmacy.reviewing"), value: counts.reviewing, cls: "text-blue-600 dark:text-blue-400" },
         ].map(({ label, value, cls }) => (
           <div key={label} className="bg-card px-4 py-2.5 text-center">
             {loading
@@ -456,7 +462,7 @@ function AwaitingPrescriptions({ items, counts, loading }: {
         {loading
           ? Array.from({ length: 3 }).map((_, i) => <SkeletonRow key={i} />)
           : items.length === 0
-            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">No pending prescriptions</div>
+            ? <div className="px-4 py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_pending_prescriptions")}</div>
             : items.map((rx) => (
               <div key={rx.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer">
                 <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
@@ -487,9 +493,10 @@ function RevenueBreakdownCard({ revenue, loading }: {
   } | undefined;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const change = revenue ? changeSign(revenue.change_percent) : null;
   return (
-    <Section title="Revenue Breakdown" icon={TrendingUp}>
+    <Section title={t("pages.pharmacy.revenue_breakdown")} icon={TrendingUp}>
       {loading ? (
         <div className="p-4 space-y-3">
           <SkeletonBox className="h-8 w-32" />
@@ -511,7 +518,7 @@ function RevenueBreakdownCard({ revenue, loading }: {
             {change && (
               <div className={cn("flex items-center gap-1 text-[11px] font-medium mt-0.5", change.cls)}>
                 <change.icon size={12} />
-                {change.label} vs previous period
+                {t("pages.pharmacy.vs_previous_period", { change: change.label })}
               </div>
             )}
           </div>
@@ -532,7 +539,7 @@ function RevenueBreakdownCard({ revenue, loading }: {
             })}
           </div>
           <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
-            Avg. order value: <span className="font-semibold text-foreground">{fmtRWF(revenue.avg_order_value)}</span>
+            {t("pages.pharmacy.avg_order_value")}: <span className="font-semibold text-foreground">{fmtRWF(revenue.avg_order_value)}</span>
           </p>
         </div>
       ) : null}
@@ -545,6 +552,7 @@ function RevenueBreakdownCard({ revenue, loading }: {
 function StatusBanner({
   todayOrders, loading,
 }: { todayOrders: { total: number; pending: number; completed: number } | undefined; loading: boolean }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 rounded-[6px] border border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-4 py-2.5">
       <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
@@ -553,12 +561,12 @@ function StatusBanner({
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
         </span>
         <CheckCircle2 size={13} />
-        <span className="text-[11px] font-semibold">Pharmacy is open</span>
+        <span className="text-[11px] font-semibold">{t("pages.pharmacy.pharmacy_open")}</span>
       </div>
       <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">·</span>
       <div className="flex items-center gap-1 text-[11px] text-emerald-700/70 dark:text-emerald-400/70">
         <Clock size={11} />
-        <span>Closes at 6:00 PM</span>
+        <span>{t("pages.pharmacy.closes_at", { time: "6:00 PM" })}</span>
       </div>
       <div className="ml-auto flex items-center gap-3">
         {loading
@@ -567,11 +575,11 @@ function StatusBanner({
             <>
               <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
                 <Zap size={11} />
-                {todayOrders.pending} in queue
+                {t("pages.pharmacy.in_queue", { count: todayOrders.pending })}
               </span>
               <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">·</span>
               <span className="text-[11px] text-emerald-700/70 dark:text-emerald-400/70">
-                {todayOrders.completed} completed today
+                {t("pages.pharmacy.completed_today", { count: todayOrders.completed })}
               </span>
             </>
           )
@@ -586,6 +594,7 @@ function StatusBanner({
 function ExternalSyncBanner({ sync }: {
   sync: { applicable: boolean; provider_name: string; last_sync_status: string; last_sync_at: string; items_synced: number; items_failed: number } | undefined;
 }) {
+  const { t } = useTranslation();
   if (!sync?.applicable) return null;
   const ok = sync.last_sync_status === "success";
   return (
@@ -601,11 +610,11 @@ function ExternalSyncBanner({ sync }: {
       </span>
       <span className="text-muted-foreground hidden sm:inline">·</span>
       <span className="text-muted-foreground hidden sm:inline">
-        Last sync: <span className="font-medium text-foreground">{sync.last_sync_at}</span>
+        {t("pages.pharmacy.last_sync")}: <span className="font-medium text-foreground">{sync.last_sync_at}</span>
       </span>
       <span className="text-muted-foreground hidden sm:inline">·</span>
       <span className="text-muted-foreground">
-        {sync.items_synced} synced
+        {t("pages.pharmacy.synced_count", { count: sync.items_synced })}
         {sync.items_failed > 0 && (
           <span className="text-red-600 dark:text-red-400 ml-1 font-medium">· {sync.items_failed} failed</span>
         )}
@@ -617,13 +626,14 @@ function ExternalSyncBanner({ sync }: {
 // ─── Quick actions ────────────────────────────────────────────────────────────
 
 function QuickActions() {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       {([
-        { label: "New Order", icon: ShoppingBag, primary: true },
-        { label: "Add Stock", icon: Package, primary: false },
-        { label: "View Reports", icon: TrendingUp, primary: false },
-        { label: "Deliveries", icon: Truck, primary: false },
+        { label: t("pages.pharmacy.new_order"), icon: ShoppingBag, primary: true },
+        { label: t("pages.pharmacy.add_stock"), icon: Package, primary: false },
+        { label: t("pages.pharmacy.view_reports"), icon: TrendingUp, primary: false },
+        { label: t("pages.pharmacy.deliveries"), icon: Truck, primary: false },
       ] as const).map(({ label, icon: Icon, primary }) => (
         <button
           key={label}
@@ -710,8 +720,8 @@ function PharmacyDashboard() {
               <div className="w-14 h-14 rounded-[6px] bg-red-50 dark:bg-red-950/20 flex items-center justify-center border border-red-200 dark:border-red-900">
                 <AlertCircle className="w-6 h-6 text-red-500" />
               </div>
-              <p className="text-[12px] font-semibold text-foreground">Failed to load dashboard</p>
-              <p className="text-[11px] text-muted-foreground/70">{(error as any)?.message ?? "Something went wrong"}</p>
+              <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_dashboard")}</p>
+              <p className="text-[11px] text-muted-foreground/70">{(error as any)?.message ?? t("pages.pharmacy.something_went_wrong")}</p>
             </div>
           ) : (
             <>
@@ -749,7 +759,7 @@ function PharmacyDashboard() {
                       activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                     )}
                   >
-                    Overview & Orders
+                    {t("pages.pharmacy.overview_orders")}
                   </button>
                   <button
                     onClick={() => setActiveTab("inventory")}
@@ -758,7 +768,7 @@ function PharmacyDashboard() {
                       activeTab === "inventory" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                     )}
                   >
-                    Inventory
+                    {t("pages.pharmacy.inventory_title")}
                   </button>
                   <button
                     onClick={() => setActiveTab("prescriptions")}
@@ -767,7 +777,7 @@ function PharmacyDashboard() {
                       activeTab === "prescriptions" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                     )}
                   >
-                    Prescriptions
+                    {t("pages.pharmacy.prescriptions")}
                   </button>
                 </div>
 
@@ -801,12 +811,12 @@ function PharmacyDashboard() {
                       ))
                       : data && (
                         <>
-                          <StatCard label="Total Orders" value={fmtNum(data.period_stats.orders.total)} icon={ShoppingBag} accent="primary" />
-                          <StatCard label="Revenue" value={fmtRWF(data.revenue.total)} icon={TrendingUp} accent="success" />
-                          <StatCard label="Customers" value={fmtNum(data.period_stats.orders.unique_customers)} icon={Users} accent="info" />
-                          <StatCard label="Deliveries" value={fmtNum(data.period_stats.orders.delivery_count)} icon={Truck} accent="info" />
-                          <StatCard label="Stock Alerts" value={String(data.inventory.low_stock + data.inventory.out_of_stock)} icon={AlertTriangle} accent="warning" />
-                          <StatCard label="Avg. Order" value={fmtRWF(data.revenue.avg_order_value)} icon={Activity} accent="primary" />
+                          <StatCard label={t("pages.pharmacy.total_orders")} value={fmtNum(data.period_stats.orders.total)} icon={ShoppingBag} accent="primary" />
+                          <StatCard label={t("pages.pharmacy.revenue")} value={fmtRWF(data.revenue.total)} icon={TrendingUp} accent="success" />
+                          <StatCard label={t("pages.pharmacy.customers")} value={fmtNum(data.period_stats.orders.unique_customers)} icon={Users} accent="info" />
+                          <StatCard label={t("pages.pharmacy.deliveries")} value={fmtNum(data.period_stats.orders.delivery_count)} icon={Truck} accent="info" />
+                          <StatCard label={t("pages.pharmacy.stock_alerts")} value={String(data.inventory.low_stock + data.inventory.out_of_stock)} icon={AlertTriangle} accent="warning" />
+                          <StatCard label={t("pages.pharmacy.avg_order")} value={fmtRWF(data.revenue.avg_order_value)} icon={Activity} accent="primary" />
                         </>
                       )
                     }
@@ -816,10 +826,10 @@ function PharmacyDashboard() {
                   {!isLoading && data && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
-                        { label: "Today · Pending orders", value: data.today.orders.pending, bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900", cls: "text-amber-600 dark:text-amber-400" },
-                        { label: "Today · Completed orders", value: data.today.orders.completed, bg: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900", cls: "text-emerald-600 dark:text-emerald-400" },
-                        { label: "Today · Pending Rx", value: data.today.prescriptions.pending, bg: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-900", cls: "text-sky-600 dark:text-sky-400" },
-                        { label: "Today · Out of stock", value: data.today.stock_alerts.out_of_stock, bg: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900", cls: "text-red-600 dark:text-red-400" },
+                        { label: t("pages.pharmacy.today_pending_orders"), value: data.today.orders.pending, bg: "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900", cls: "text-amber-600 dark:text-amber-400" },
+                        { label: t("pages.pharmacy.today_completed_orders"), value: data.today.orders.completed, bg: "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900", cls: "text-emerald-600 dark:text-emerald-400" },
+                        { label: t("pages.pharmacy.today_pending_rx"), value: data.today.prescriptions.pending, bg: "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-900", cls: "text-sky-600 dark:text-sky-400" },
+                        { label: t("pages.pharmacy.out_of_stock"), value: data.today.stock_alerts.out_of_stock, bg: "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900", cls: "text-red-600 dark:text-red-400" },
                       ].map(({ label, value, bg, cls }) => (
                         <div key={label} className={cn("rounded-[6px] border px-4 py-3", bg)}>
                           <p className={cn("text-xl font-bold", cls)}>{value}</p>
@@ -853,29 +863,29 @@ function PharmacyDashboard() {
                     />
                   </div>
 
-                  {/* Inventory summary strip */}
-                  {/* Inventory summary strip */}
+                  {/* {t("pages.pharmacy.inventory_title")} summary strip */}
+                  {/* {t("pages.pharmacy.inventory_title")} summary strip */}
                   {!isLoading && data && (
                     <div className="rounded-[6px] border border-border bg-card overflow-hidden shadow-sm">
                       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/30">
                         <div className="w-6 h-6 rounded-[6px] bg-primary/15 flex items-center justify-center text-primary">
                           <FlaskConical size={13} />
                         </div>
-                        <span className="text-xs font-semibold text-foreground">Inventory Summary</span>
+                        <span className="text-xs font-semibold text-foreground">{t("pages.pharmacy.inventory_summary")}</span>
                         <span className="ml-auto text-[10px] text-muted-foreground capitalize">
-                          Source: {data.inventory.source}
+                          {t("pages.pharmacy.source")}: {data.inventory.source}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-px bg-border">
                         {[
-                          { label: "Total medicines", value: data.inventory.total_medicines },
-                          { label: "Active", value: data.inventory.active_medicines },
-                          { label: "Inactive", value: data.inventory.inactive_medicines },
-                          { label: "Rx Required", value: data.inventory.prescription_required },
-                          { label: "Units in stock", value: fmtNum(data.inventory.total_units_in_stock) },
-                          { label: "Healthy stock", value: data.inventory.healthy_stock },
-                          { label: "Low stock", value: data.inventory.low_stock },
-                          { label: "Expiring (30d)", value: data.inventory.expiring_in_30_days },
+                          { label: t("pages.pharmacy.total_medicines"), value: data.inventory.total_medicines },
+                          { label: t("pages.pharmacy.active"), value: data.inventory.active_medicines },
+                          { label: t("pages.pharmacy.inactive"), value: data.inventory.inactive_medicines },
+                          { label: t("pages.pharmacy.rx_required"), value: data.inventory.prescription_required },
+                          { label: t("pages.pharmacy.units_in_stock"), value: fmtNum(data.inventory.total_units_in_stock) },
+                          { label: t("pages.pharmacy.healthy_stock"), value: data.inventory.healthy_stock },
+                          { label: t("pages.pharmacy.low_stock"), value: data.inventory.low_stock },
+                          { label: t("pages.pharmacy.expiring_30d"), value: data.inventory.expiring_in_30_days },
                         ].map(({ label, value }) => (
                           <div key={label} className="bg-card px-3 py-3 text-center">
                             <p className="text-sm font-bold text-foreground">{value}</p>
@@ -891,7 +901,7 @@ function PharmacyDashboard() {
               {/* PRESCRIPTIONS TAB */}
               {activeTab === "prescriptions" && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <AwaitingPrescriptions
+                  <Awaiting 
                     items={data?.prescriptions.awaiting_action ?? []}
                     counts={{ pending: data?.prescriptions.pending ?? 0, reviewing: data?.prescriptions.reviewing ?? 0 }}
                     loading={isLoading}

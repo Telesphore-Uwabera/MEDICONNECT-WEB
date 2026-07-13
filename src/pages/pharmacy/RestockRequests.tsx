@@ -275,7 +275,7 @@ function CreateRequestDrawer({
                 setForm((f) => ({ ...f, notes: e.target.value }))
               }
               className={cn(inputCls, "resize-none")}
-              placeholder="e.g. Running low on this one"
+              placeholder={t("pages.pharmacy.restock_notes_placeholder")}
             />
           </div>
 
@@ -378,7 +378,7 @@ function ReceiveDrawer({
               <label className={labelCls}>
                 {t("pages.pharmacy.received_quantity")}{" "}
                 <span className="text-muted-foreground/50 font-normal">
-                  (leave blank for full amount)
+                  ({t("pages.pharmacy.leave_blank_full_amount")})
                 </span>
               </label>
               <input
@@ -400,7 +400,7 @@ function ReceiveDrawer({
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className={labelCls}>Batch Number</label>
+                <label className={labelCls}>{t("pages.pharmacy.batch_number")}</label>
                 <input
                   type="text"
                   value={form.batch_number}
@@ -412,7 +412,7 @@ function ReceiveDrawer({
                 />
               </div>
               <div>
-                <label className={labelCls}>Expiry Date</label>
+                <label className={labelCls}>{t("pages.pharmacy.expiry_date")}</label>
                 <input
                   type="date"
                   value={form.expiry_date}
@@ -450,7 +450,7 @@ function ReceiveDrawer({
             className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-            Confirm Receipt
+            {t("pages.pharmacy.confirm_receipt")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -511,7 +511,7 @@ function RejectDrawer({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 className={cn(inputCls, "resize-none")}
-                placeholder="e.g. Out of budget this month"
+                placeholder={t("pages.pharmacy.reject_reason_placeholder")}
               />
             </div>
             {error && (
@@ -633,14 +633,14 @@ function RequestDetailsDrawer({
                   request.status === "pending" && "animate-pulse",
                 )}
               />
-              {request.status}
+              {t(`pages.pharmacy.${request.status}`)}
             </Badge>
             {med?.requires_prescription && (
               <Badge
                 variant="outline"
                 className="border text-[9px] px-1.5 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900"
               >
-                <ShieldCheck className="w-2.5 h-2.5 mr-1" /> Prescription
+                <ShieldCheck className="w-2.5 h-2.5 mr-1" /> {t("pages.pharmacy.prescription")}
               </Badge>
             )}
           </div>
@@ -648,7 +648,7 @@ function RequestDetailsDrawer({
           {/* Quantities */}
           <div className="rounded-[6px] border border-border/60 bg-secondary/10 p-3 grid grid-cols-2 gap-2.5">
             <div>
-              <p className="text-[10px] text-muted-foreground/70">Requested</p>
+              <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.requested")}</p>
               <p className="text-[14px] font-bold tabular-nums text-foreground">
                 {request.requested_quantity.toLocaleString()}
               </p>
@@ -664,7 +664,7 @@ function RequestDetailsDrawer({
             {request.batch_number && (
               <div>
                 <p className="text-[10px] text-muted-foreground/70">
-                  Batch Number
+                  {t("pages.pharmacy.batch_number")}
                 </p>
                 <p className="text-[11px] text-foreground">
                   {request.batch_number}
@@ -674,7 +674,7 @@ function RequestDetailsDrawer({
             {request.expiry_date && (
               <div>
                 <p className="text-[10px] text-muted-foreground/70">
-                  Expiry Date
+                  {t("pages.pharmacy.expiry_date")}
                 </p>
                 <p className="text-[11px] text-foreground">
                   {formatDate(request.expiry_date)}
@@ -719,24 +719,24 @@ function RequestDetailsDrawer({
             <div className="grid grid-cols-2 gap-2.5">
               <DetailRow
                 icon={Tag}
-                label="Category"
-                value={med?.category?.name ?? "Uncategorized"}
+                label={t("pages.pharmacy.category")}
+                value={med?.category?.name ?? t("pages.pharmacy.uncategorized")}
               />
               <DetailRow
                 icon={Package}
-                label="Unit"
+                label={t("pages.pharmacy.unit")}
                 value={
                   <span className="capitalize">{med?.unit ?? "-"}</span>
                 }
               />
               <DetailRow
                 icon={Barcode}
-                label="Barcode"
+                label={t("pages.pharmacy.barcode")}
                 value={med?.barcode ?? "-"}
               />
               <DetailRow
                 icon={Hash}
-                label="Price"
+                label={t("pages.pharmacy.price")}
                 value={
                   med?.price
                     ? `${parseFloat(med.price).toLocaleString()} ${med.currency ?? ""}`
@@ -749,11 +749,11 @@ function RequestDetailsDrawer({
           {/* Requester */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-              Requested By
+              {t("pages.pharmacy.requested_by")}
             </p>
             <DetailRow
               icon={User}
-              label="Name"
+              label={t("pages.pharmacy.name")}
               value={request.requester?.name ?? "-"}
             />
           </div>
@@ -762,12 +762,12 @@ function RequestDetailsDrawer({
           <div className="grid grid-cols-1 gap-2.5">
             <DetailRow
               icon={Calendar}
-              label="Created"
+              label={t("pages.pharmacy.created")}
               value={formatDateTime(request.created_at)}
             />
             <DetailRow
               icon={Clock}
-              label="Last updated"
+              label={t("pages.pharmacy.last_updated")}
               value={formatDateTime(request.updated_at)}
             />
             {request.approved_at && (

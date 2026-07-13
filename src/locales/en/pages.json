@@ -2640,7 +2640,13 @@
     "profile_sub": "Manage pharmacy profile, hours, delivery, and public details",
     "provider_name_placeholder": "Provider name",
     "restock_drawer_desc": "Request a medicine restock from your supplier",
-    "secret_key_placeholder": "Paste the provider secret key"
+    "secret_key_placeholder": "Paste the provider secret key",
+    "th_source": "Source",
+    "accepted": "Accepted",
+    "complete_order": "Complete",
+    "order_singular": "order",
+    "order_plural": "orders",
+    "receipt_not_available": "Receipt is not available yet."
   },
   "admin": {
     "overview_sub": "Dashboard Overview",
@@ -2763,5 +2769,20 @@
     "loading": "Loading…",
     "error": "An error occurred. Please try again.",
     "no_data": "No data available"
+  },
+  "legal":{
+    "loading_terms":"loading",
+    "legal_urls":"Terms & conditions url",
+    "terms_url":"Terms url",
+    "privacy_url":"Privacy url",
+    "terms_title":"Terms & conditions",
+    "privacy_title":"Privacy & Policies",
+    "terms_eyebrow":"terms",
+    "privacy_eyebrow":"Privacy",
+    "check_back_later":"Check back later",
+    "no_current_privacy":"Check back later",
+    "retry":"Retry",
+    "effective":"Effective Date: {{date}}",
+    "version":"Version : {{version}}"
   }
 }

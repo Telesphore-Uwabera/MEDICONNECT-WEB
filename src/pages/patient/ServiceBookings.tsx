@@ -49,6 +49,7 @@ import {
   useGetPatientServiceBooking,
 } from "@/hooks/patient/use-patient-service";
 import { Link } from "react-router-dom";
+import { t } from "i18next";
 
  
 
@@ -238,7 +239,7 @@ function FeedbackBanner({
       <button
         onClick={onDismiss}
         className="ml-auto flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity"
-        aria-label="Dismiss"
+        aria-label={t("pages.patient.dismiss")}
       >
         <X className="w-4 h-4" />
       </button>
@@ -249,6 +250,7 @@ function FeedbackBanner({
  
 
 function StatusBadge({ status }: { status: BookingStatus }) {
+  const { t } = useTranslation();
   const cfg = STATUS_CONFIG[status];
   const Icon = cfg.icon;
   return (
@@ -259,7 +261,7 @@ function StatusBadge({ status }: { status: BookingStatus }) {
       )}
     >
       <Icon className="w-3 h-3" />
-      {cfg.label}
+      {t(`pages.patient.status_${status}`, cfg.label)}
     </span>
   );
 }
@@ -379,6 +381,7 @@ function BookingDetailDrawer({
   onCancelRequest: (b: ApiServiceBooking) => void;
 }) {
   const { data, isLoading, isError, refetch } = useGetPatientServiceBooking(bookingId);
+  const { t } = useTranslation();
   const booking = data?.booking;
 
   const canCancel =
@@ -409,7 +412,7 @@ function BookingDetailDrawer({
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">Booking details</p>
+              <p className="text-sm font-semibold text-foreground">{t("pages.patient.booking_details")}</p>
               {booking && (
                 <p className="text-xs text-muted-foreground/60">#{booking.id}</p>
               )}
@@ -447,15 +450,15 @@ function BookingDetailDrawer({
                 <AlertCircle className="w-5 h-5 text-destructive/60" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">Failed to load details</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                <p className="text-[12px] font-semibold text-foreground">{t("pages.patient.failed_load_details")}</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">{t("pages.patient.something_went_wrong_try_again")}</p>
               </div>
               <button
                 onClick={() => refetch()}
                 className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold transition-colors"
               >
                 <RefreshCw className="w-3 h-3" />
-                Retry
+                {t("pages.patient.retry")}
               </button>
             </div>
           )}
@@ -475,7 +478,7 @@ function BookingDetailDrawer({
                     <StatusBadge status={booking.status} />
                   </div>
                   <p className="text-sm text-muted-foreground/70 mt-1">
-                    Booked by <span className="font-medium capitalize">{booking.booked_by}</span>
+                    {t("pages.patient.booked_by")} <span className="font-medium capitalize">{booking.booked_by}</span>
                   </p>
                 </div>
               </div>
@@ -484,68 +487,68 @@ function BookingDetailDrawer({
                 <div className="mb-5 flex items-start gap-3 p-4 rounded-[6px] bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
                   <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">Rejection reason</p>
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">{t("pages.patient.rejection_reason")}</p>
                     <p className="text-xs text-red-600 dark:text-red-400/80 leading-relaxed">{booking.rejection_reason}</p>
                   </div>
                 </div>
               )}
 
-              <DrawerSection title="Appointment">
-                <DetailRow icon={CalendarDays} label="Date" value={formatDate(booking.preferred_date)} />
-                <DetailRow icon={Clock} label="Time" value={formatTime(booking.preferred_time)} />
-                {booking.notes && <DetailRow icon={FileText} label="Notes" value={booking.notes} />}
+              <DrawerSection title={t("pages.patient.appointment")}>
+                <DetailRow icon={CalendarDays} label={t("pages.patient.date")} value={formatDate(booking.preferred_date)} />
+                <DetailRow icon={Clock} label={t("pages.patient.time")} value={formatTime(booking.preferred_time)} />
+                {booking.notes && <DetailRow icon={FileText} label={t("pages.patient.notes")} value={booking.notes} />}
               </DrawerSection>
 
-              <DrawerSection title="Health Facility">
-                <DetailRow icon={Building2} label="Name" value={booking.hospital.name_en} />
-                {booking.hospital.address && <DetailRow icon={MapPin} label="Address" value={booking.hospital.address} />}
-                {booking.hospital.phone && <DetailRow icon={Phone} label="Phone" value={booking.hospital.phone} mono />}
+              <DrawerSection title={t("pages.patient.health_facility")}>
+                <DetailRow icon={Building2} label={t("pages.patient.name")} value={booking.hospital.name_en} />
+                {booking.hospital.address && <DetailRow icon={MapPin} label={t("pages.patient.address")} value={booking.hospital.address} />}
+                {booking.hospital.phone && <DetailRow icon={Phone} label={t("pages.patient.phone")} value={booking.hospital.phone} mono />}
               </DrawerSection>
 
-              <DrawerSection title="Service">
-                <DetailRow icon={Stethoscope} label="Service" value={booking.service.name_en} />
-                {booking.service.description_en && <DetailRow icon={Info} label="Description" value={booking.service.description_en} />}
-                <DetailRow icon={Hash} label="Department" value={booking.department.name_en} />
+              <DrawerSection title={t("pages.patient.service")}>
+                <DetailRow icon={Stethoscope} label={t("pages.patient.service")} value={booking.service.name_en} />
+                {booking.service.description_en && <DetailRow icon={Info} label={t("pages.patient.description")} value={booking.service.description_en} />}
+                <DetailRow icon={Hash} label={t("pages.patient.department")} value={booking.department.name_en} />
               </DrawerSection>
 
-              <DrawerSection title="Payment">
+              <DrawerSection title={t("pages.patient.payment")}>
                 <DetailRow
                   icon={Receipt}
-                  label="Price"
+                  label={t("pages.patient.price")}
                   value={formatPrice(booking.price ?? booking.service.price, booking.currency ?? "RWF")}
                   accent="font-semibold"
                 />
                 {booking.insurance_covered && parseFloat(booking.insurance_covered) > 0 && (
-                  <DetailRow icon={ShieldCheck} label="Insurance covered" value={formatPrice(booking.insurance_covered, booking.currency ?? "RWF")} />
+                  <DetailRow icon={ShieldCheck} label={t("pages.patient.insurance_covered")} value={formatPrice(booking.insurance_covered, booking.currency ?? "RWF")} />
                 )}
                 {booking.patient_pays && (
                   <DetailRow
                     icon={CreditCard}
-                    label="Patient pays"
+                    label={t("pages.patient.patient_pays")}
                     value={formatPrice(booking.patient_pays, booking.currency ?? "RWF")}
                     accent="font-semibold text-primary"
                   />
                 )}
                 <DetailRow
                   icon={CreditCard}
-                  label="Payment status"
+                  label={t("pages.patient.payment_status")}
                   value={
                     <span className={cn("capitalize font-medium", booking.payment_status === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")}>
-                      {booking.payment_status ?? "Unpaid"}
+                      {booking.payment_status ?? t("pages.patient.unpaid")}
                     </span>
                   }
                 />
                 {booking.payment_method && (
-                  <DetailRow icon={CreditCard} label="Payment method" value={<span className="capitalize">{booking.payment_method}</span>} />
+                  <DetailRow icon={CreditCard} label={t("pages.patient.payment_method")} value={<span className="capitalize">{booking.payment_method}</span>} />
                 )}
               </DrawerSection>
 
-              <DrawerSection title="Timeline">
-                <DetailRow icon={CalendarDays} label="Created" value={formatDateTime(booking.created_at)} />
-                {booking.accepted_at && <DetailRow icon={CheckCircle2} label="Accepted" value={formatDateTime(booking.accepted_at)} accent="text-emerald-600 dark:text-emerald-400" />}
-                {booking.rejected_at && <DetailRow icon={XCircle} label="Rejected" value={formatDateTime(booking.rejected_at)} accent="text-red-600 dark:text-red-400" />}
-                {booking.completed_at && <DetailRow icon={CheckCircle2} label="Completed" value={formatDateTime(booking.completed_at)} accent="text-blue-600 dark:text-blue-400" />}
-                {booking.cancelled_at && <DetailRow icon={Ban} label="Cancelled" value={formatDateTime(booking.cancelled_at)} accent="text-slate-500" />}
+              <DrawerSection title={t("pages.patient.timeline")}>
+                <DetailRow icon={CalendarDays} label={t("pages.patient.created")} value={formatDateTime(booking.created_at)} />
+                {booking.accepted_at && <DetailRow icon={CheckCircle2} label={t("pages.patient.accepted")} value={formatDateTime(booking.accepted_at)} accent="text-emerald-600 dark:text-emerald-400" />}
+                {booking.rejected_at && <DetailRow icon={XCircle} label={t("pages.patient.rejected")} value={formatDateTime(booking.rejected_at)} accent="text-red-600 dark:text-red-400" />}
+                {booking.completed_at && <DetailRow icon={CheckCircle2} label={t("pages.patient.completed")} value={formatDateTime(booking.completed_at)} accent="text-blue-600 dark:text-blue-400" />}
+                {booking.cancelled_at && <DetailRow icon={Ban} label={t("pages.patient.cancelled")} value={formatDateTime(booking.cancelled_at)} accent="text-slate-500" />}
               </DrawerSection>
             </>
           )}
@@ -568,11 +571,11 @@ function BookingDetailDrawer({
                 className="h-7 px-3 text-[10px] font-semibold rounded-[6px] text-destructive border-destructive/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all flex-shrink-0"
               >
                 <Trash2 className="w-3 h-3 mr-1" />
-                Cancel booking
+                {t("pages.patient.cancel_booking")}
               </Button>
             ) : (
               <span className={cn("text-[10px] font-medium px-2 py-1 rounded-[6px] border flex-shrink-0", STATUS_CONFIG[booking.status].badge)}>
-                {STATUS_CONFIG[booking.status].label}
+                {t(`pages.patient.status_${booking.status}`, STATUS_CONFIG[booking.status].label)}
               </span>
             )}
           </div>
@@ -647,6 +650,7 @@ function CancelDialog({
   error: string | null;
 }) {
   // Close on Escape
+  const { t } = useTranslation();
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !isLoading) onCancel();
@@ -663,13 +667,9 @@ function CancelDialog({
             <Trash2 className="w-5 h-5 text-destructive" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Cancel booking?</p>
+            <p className="text-sm font-semibold text-foreground">{t("pages.patient.cancel_booking")}?</p>
             <p className="text-xs text-muted-foreground/70 mt-1 leading-relaxed">
-              Cancel{" "}
-              <span className="font-medium text-foreground">{booking.service.name_en}</span>
-              {" "}at{" "}
-              <span className="font-medium text-foreground">{booking.hospital.name_en}</span>
-              {" "}on {formatDate(booking.preferred_date)}. This cannot be undone.
+              {t("pages.patient.cancel_booking_desc", { service: booking.service.name_en, facility: booking.hospital.name_en, date: formatDate(booking.preferred_date) })}
             </p>
           </div>
         </div>
@@ -687,7 +687,7 @@ function CancelDialog({
             disabled={isLoading}
             className="flex-1 px-4 py-2.5 rounded-[6px] text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:border-border transition-all disabled:opacity-50"
           >
-            Keep booking
+            {t("pages.patient.keep_booking")}
           </button>
           <button
             onClick={onConfirm}
@@ -697,12 +697,12 @@ function CancelDialog({
             {isLoading ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Cancelling...
+                {t("pages.patient.cancelling")}
               </>
             ) : (
               <>
                 <Trash2 className="w-3 h-3" />
-                Yes, cancel
+                {t("pages.patient.yes_cancel")}
               </>
             )}
           </button>
@@ -723,6 +723,7 @@ function BookingCardItem({
   onView: (b: ApiServiceBooking) => void;
 }) {
   const canCancel = booking.status === "pending" || booking.status === "accepted";
+  const { t } = useTranslation();
 
   return (
     <Card
@@ -731,10 +732,10 @@ function BookingCardItem({
     > 
       <div className="flex items-center justify-between px-4 py-2 bg-muted/60 border-b border-border">
         <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Service Booking
+          {t("pages.patient.service_booking")}
         </span>
         <span className={cn("text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-[6px] border", STATUS_CONFIG[booking.status].badge)}>
-          {STATUS_CONFIG[booking.status].label}
+          {t(`pages.patient.status_${booking.status}`, STATUS_CONFIG[booking.status].label)}
         </span>
       </div>
 
@@ -759,7 +760,7 @@ function BookingCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <CalendarDays className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Date</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.date")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {formatDate(booking.preferred_date)}
@@ -768,7 +769,7 @@ function BookingCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <Clock className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Time</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.time")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {formatTime(booking.preferred_time)}
@@ -777,7 +778,7 @@ function BookingCardItem({
           <div className="flex flex-col items-center py-2 px-1 bg-muted/20">
             <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
               <CreditCard className="h-3.5 w-3.5" />
-              <span className="text-[10px] uppercase tracking-wider font-semibold">Price</span>
+              <span className="text-[10px] uppercase tracking-wider font-semibold">{t("pages.patient.price")}</span>
             </div>
             <span className="text-xs font-semibold text-foreground">
               {booking.price ?? booking.service.price ? (
@@ -795,7 +796,7 @@ function BookingCardItem({
             className="h-8 px-3 text-xs font-bold rounded-[6px] border-border/60 hover:bg-muted/50 transition-colors flex-1"
             onClick={(e) => { e.stopPropagation(); onView(booking); }}
           >
-            Details
+            {t("pages.patient.details")}
           </Button>
           <Button
             size="sm"
@@ -808,7 +809,7 @@ function BookingCardItem({
                 : "bg-muted text-muted-foreground"
             )}
           >
-            {canCancel ? "Cancel" : "Cannot Cancel"}
+            {canCancel ? t("pages.patient.cancel") : t("pages.patient.cannot_cancel")}
           </Button>
         </div>
       </div>
@@ -831,6 +832,7 @@ function Pagination({
   onPageChange: (p: number) => void;
 }) {
   if (totalPages <= 1) return null;
+  const { t } = useTranslation();
 
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
     .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
@@ -843,9 +845,7 @@ function Pagination({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
       <p className="text-[10px] text-muted-foreground">
-        Page <span className="font-semibold text-foreground">{currentPage}</span> of{" "}
-        <span className="font-semibold text-foreground">{totalPages}</span>
-        <span className="text-muted-foreground/60 ml-1">({total} total)</span>
+        {t("pages.patient.page_of_total", { page: currentPage, pages: totalPages, total })}
       </p>
       <div className="flex items-center gap-1.5">
         <Button
@@ -937,7 +937,7 @@ function ServiceBookings() {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.patient.status"),
       value: filters.status,
       options: STATUS_OPTIONS.map(o => ({ value: o.value, label: o.label })),
       onChange: (v: string) => set("status", v as any)
@@ -945,9 +945,9 @@ function ServiceBookings() {
     {
       type: "search" as const,
       key: "q",
-      label: "Search",
+      label: t("pages.patient.search"),
       value: filters.q,
-      placeholder: "Service, health facility",
+      placeholder: t("pages.patient.search_service_facility"),
       onChange: (v: string) => set("q", v)
     }
   ], [filters, set]);
@@ -970,7 +970,7 @@ function ServiceBookings() {
 
     cancelBooking(cancelTarget.id, {
       onSuccess: (res) => {
-        const msg = res?.message ?? "Booking cancelled successfully.";
+        const msg = res?.message ?? t("pages.patient.booking_cancelled_successfully");
         setCancelTarget(null);
         setCancelError(null);
         // Inline banner + toast for users who miss the banner
@@ -978,7 +978,7 @@ function ServiceBookings() {
         toast.success(msg, { description: serviceName });
       },
       onError: (err) => {
-        const msg = err?.message ?? "Could not cancel this booking.";
+        const msg = err?.message ?? t("pages.patient.could_not_cancel_booking");
         setCancelError(msg);
         setFeedback({ type: "error", message: msg });
         toast.error(msg);
@@ -1065,7 +1065,7 @@ function ServiceBookings() {
           <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               <p className="text-[11px] text-muted-foreground whitespace-nowrap">
-               Service bookings ({data?.total ?? bookings.length} total)
+               {t("pages.patient.service_bookings_total", { total: data?.total ?? bookings.length })}
               </p> 
             </div>
 
@@ -1075,8 +1075,8 @@ function ServiceBookings() {
                 onChange={(e) => set("sort", e.target.value as SortOption)}
                 className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
               >
-                <option value="date-desc">Newest first</option>
-                <option value="date-asc">Oldest first</option>
+                <option value="date-desc">{t("pages.patient.newest_first")}</option>
+                <option value="date-asc">{t("pages.patient.oldest_first")}</option>
               </select>
 
               <FilterToggleButton
@@ -1089,7 +1089,7 @@ function ServiceBookings() {
               <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
                 <button
                   onClick={() => setView("table")}
-                  aria-label="Table view"
+                  aria-label={t("pages.patient.table_view")}
                   className={cn(
                     "px-2.5 py-1.5 transition-all",
                     view === "table"
@@ -1104,7 +1104,7 @@ function ServiceBookings() {
                 </button>
                 <button
                   onClick={() => setView("cards")}
-                  aria-label="Card view"
+                  aria-label={t("pages.patient.card_view")}
                   className={cn(
                     "px-2.5 py-1.5 border-l border-border/60 transition-all",
                     view === "cards"
@@ -1192,15 +1192,15 @@ function ServiceBookings() {
                   <AlertCircle className="w-6 h-6 text-destructive/60" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">Failed to load bookings</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Something went wrong. Please try again.</p>
+                  <p className="text-[12px] font-semibold text-foreground">{t("pages.patient.failed_load_bookings")}</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">{t("pages.patient.something_went_wrong_try_again")}</p>
                 </div>
                 <button
                   onClick={() => refetch()}
                   className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors"
                 >
                   <RefreshCw className="w-3 h-3" />
-                  Retry
+                  {t("pages.patient.retry")}
                 </button>
               </div>
             )}
@@ -1213,10 +1213,10 @@ function ServiceBookings() {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {filters.status === "all" ? "No bookings yet" : `No ${filters.status} bookings`}
+                    {filters.status === "all" ? t("pages.patient.no_bookings_yet") : t("pages.patient.no_status_bookings", { status: t(`pages.patient.status_${filters.status}`, filters.status) })}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {filters.q ? "Try a different search term" : "Your service bookings will appear here"}
+                    {filters.q ? t("pages.patient.try_different_search") : t("pages.patient.service_bookings_will_appear")}
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -1224,7 +1224,7 @@ function ServiceBookings() {
                     onClick={clearAll}
                     className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline"
                   >
-                    Clear all filters
+                    {t("pages.patient.clear_all_filters")}
                   </button>
                 )}
               </div>
@@ -1237,10 +1237,10 @@ function ServiceBookings() {
                   <table className="w-full text-[11px] min-w-[480px]">
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
-                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">Service</th>
-                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Health Facility</th>
-                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">Date & Time</th>
-                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">Status</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">{t("pages.patient.service")}</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">{t("pages.patient.health_facility")}</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">{t("pages.patient.date_time")}</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold">{t("pages.patient.status")}</th>
                         <th className="px-3 sm:px-4 py-3" />
                       </tr>
                     </thead>
@@ -1300,7 +1300,7 @@ function ServiceBookings() {
                                   onClick={() => setDetailId(b.id)}
                                 >
                                   <Eye className="w-3 h-3 sm:mr-1" />
-                                  <span className="hidden sm:inline">Details</span>
+                                  <span className="hidden sm:inline">{t("pages.patient.details")}</span>
                                 </Button>
                                 {b.status === "pending" || b.status === "accepted" ? (
                                   <Button
@@ -1310,7 +1310,7 @@ function ServiceBookings() {
                                     onClick={() => setCancelTarget(b)}
                                   >
                                     <Trash2 className="w-3 h-3 sm:mr-1" />
-                                    <span className="hidden sm:inline">Cancel</span>
+                                    <span className="hidden sm:inline">{t("pages.patient.cancel")}</span>
                                   </Button>
                                 ) : (
                                   <span className="hidden sm:inline text-[10px] text-muted-foreground/40 w-[58px] text-center">-</span>

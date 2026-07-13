@@ -81,12 +81,12 @@ const STATUS_DOT: Record<OrderStatus, string> = {
   rejected: "bg-red-500",
 };
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "time-desc", label: "pages.pharmacy.sort_time_newest" },
-  { value: "time-asc", label: "pages.pharmacy.sort_time_oldest" },
-  { value: "total-desc", label: "pages.pharmacy.sort_total_desc" },
-  { value: "total-asc", label: "pages.pharmacy.sort_total_asc" },
-  { value: "patient", label: "Patient (A–Z)" },
+const SORT_OPTIONS: { value: SortOption; labelKey: string }[] = [
+  { value: "time-desc", labelKey: "pages.pharmacy.sort_time_newest" },
+  { value: "time-asc", labelKey: "pages.pharmacy.sort_time_oldest" },
+  { value: "total-desc", labelKey: "pages.pharmacy.sort_total_desc" },
+  { value: "total-asc", labelKey: "pages.pharmacy.sort_total_asc" },
+  { value: "patient", labelKey: "pages.pharmacy.sort_patient_az" },
 ];
 
 const API_BASE_URL =
@@ -110,11 +110,15 @@ function resolveOrderReceiptUrl(order: Order): string | null {
   return url.startsWith("/") ? `${base}${url}` : `${base}/${url}`;
 }
 
-function openOrderReceipt(order: Order) {
+function openOrderReceipt(
+  order: Order,
+  missingTitle: string,
+  missingDescription: string,
+) {
   const url = resolveOrderReceiptUrl(order);
   if (!url) {
-    sonnerToast.error("Receipt is not available yet.", {
-      description: t("pages.pharmacy.order_receipt_missing"),
+    sonnerToast.error(missingTitle, {
+      description: missingDescription,
     });
     return;
   }
@@ -185,7 +189,7 @@ function PillGroup<T extends string>({
 //   completed / rejected → receipt / nothing
 
 function OrderActions({ order }: { order: Order }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // All three mutations live here; only the relevant one fires per row.
   const accept = useAcceptOrder();
@@ -204,7 +208,10 @@ function OrderActions({ order }: { order: Order }) {
           variant="outline"
           disabled={busy}
           onClick={() =>
-            reject.mutate({ id: order.id, reason: "Medicine out of stock" })
+            reject.mutate({
+              id: order.id,
+              reason: t("pages.pharmacy.medicine_out_of_stock"),
+            })
           }
           className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
         >
@@ -245,7 +252,7 @@ function OrderActions({ order }: { order: Order }) {
         {complete.isPending ? (
           <Loader2 className="w-3 h-3 animate-spin" />
         ) : (
-          t("pages.pharmacy.completed")
+          t("pages.pharmacy.complete_order")
         )}
       </Button>
     );
@@ -257,7 +264,13 @@ function OrderActions({ order }: { order: Order }) {
       <Button
         size="sm"
         variant="ghost"
-        onClick={() => openOrderReceipt(order)}
+        onClick={() =>
+          openOrderReceipt(
+            order,
+            t("pages.pharmacy.receipt_not_available"),
+            t("pages.pharmacy.order_receipt_missing"),
+          )
+        }
         className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px] transition-all duration-200"
       >
         <Download className="mr-1 h-3 w-3" />
@@ -273,7 +286,7 @@ function OrderActions({ order }: { order: Order }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const PharmacyOrders = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -425,20 +438,24 @@ const PharmacyOrders = () => {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading orders…
+                  {t("pages.pharmacy.loading_orders")}
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
                   <span className="font-bold text-foreground">
                     {filtered.length}
                   </span>{" "}
-                  {filtered.length === 1 ? "order" : "orders"}
+                  {t(
+                    filtered.length === 1
+                      ? "pages.pharmacy.order_singular"
+                      : "pages.pharmacy.order_plural",
+                  )}
                   {hasActiveFilters && (
                     <button
                       onClick={clearAll}
                       className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                     >
-                      Reset
+                      {t("pages.pharmacy.reset")}
                     </button>
                   )}
                 </p>
@@ -453,7 +470,7 @@ const PharmacyOrders = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      {counts.pending} pending
+                      {counts.pending} {t("pages.pharmacy.pending")}
                     </button>
                   )}
                   {counts.accepted > 0 && (
@@ -462,7 +479,7 @@ const PharmacyOrders = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                      {counts.accepted} accepted
+                      {counts.accepted} {t("pages.pharmacy.accepted")}
                     </button>
                   )}
                   {counts.completed > 0 && (
@@ -471,7 +488,7 @@ const PharmacyOrders = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      {counts.completed} completed
+                      {counts.completed} {t("pages.pharmacy.completed")}
                     </button>
                   )}
                   {counts.rejected > 0 && (
@@ -480,7 +497,7 @@ const PharmacyOrders = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                      {counts.rejected} rejected
+                      {counts.rejected} {t("pages.pharmacy.rejected")}
                     </button>
                   )}
                 </div>
@@ -506,7 +523,7 @@ const PharmacyOrders = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search patient, order ID…"
+                  placeholder={t("pages.pharmacy.search_orders")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -520,7 +537,7 @@ const PharmacyOrders = () => {
                 >
                   {SORT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
-                      {o.label}
+                      {t(o.labelKey)}
                     </option>
                   ))}
                 </select>
@@ -567,7 +584,7 @@ const PharmacyOrders = () => {
                   className="text-[11px] h-7 px-3 rounded-[6px] mt-1"
                 >
                   <RefreshCw className="w-3 h-3 mr-1.5" />
-                  Retry
+                  {t("pages.pharmacy.retry")}
                 </Button>
               </div>
             )}
@@ -578,7 +595,15 @@ const PharmacyOrders = () => {
                 <table className="w-full text-[11px]">
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      {["Order", "Patient", "Items", "Total", "Source", "Status", ""].map(
+                      {[
+                        t("pages.pharmacy.th_order"),
+                        t("pages.pharmacy.th_patient"),
+                        t("pages.pharmacy.th_items"),
+                        t("pages.pharmacy.th_total"),
+                        t("pages.pharmacy.th_source"),
+                        t("pages.pharmacy.th_status"),
+                        "",
+                      ].map(
                         (h) => (
                           <th
                             key={h}
@@ -617,13 +642,13 @@ const PharmacyOrders = () => {
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
                     {hasActiveFilters
-                      ? "No orders match your filters"
-                      : "No orders yet"}
+                      ? t("pages.pharmacy.no_orders_match")
+                      : t("pages.pharmacy.no_orders_yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {hasActiveFilters
-                      ? "Try widening your search criteria"
-                      : "Orders will appear here once received"}
+                      ? t("pages.pharmacy.try_widening_search")
+                      : t("pages.pharmacy.orders_will_appear")}
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -631,7 +656,7 @@ const PharmacyOrders = () => {
                     onClick={clearAll}
                     className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                   >
-                    Clear all filters
+                    {t("pages.pharmacy.clear_all_filters")}
                   </button>
                 )}
               </div>
@@ -656,7 +681,7 @@ const PharmacyOrders = () => {
                         {t("pages.pharmacy.th_total", "Total")}
                       </th>
                       <th className="text-left px-4 py-3 font-semibold">
-                        Source
+                        {t("pages.pharmacy.th_source")}
                       </th>
                       <th className="text-left px-4 py-3 font-semibold">
                         {t("pages.pharmacy.th_status", "Status")}
@@ -709,7 +734,7 @@ const PharmacyOrders = () => {
                                 : "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900",
                             )}
                           >
-                            {o.source}
+                            {t(`pages.pharmacy.${o.source}`)}
                           </span>
                         </td>
 
@@ -729,7 +754,7 @@ const PharmacyOrders = () => {
                                 o.status === "pending" && "animate-pulse",
                               )}
                             />
-                            {o.status}
+                            {t(`pages.pharmacy.${o.status}`)}
                           </Badge>
                         </td>
 
