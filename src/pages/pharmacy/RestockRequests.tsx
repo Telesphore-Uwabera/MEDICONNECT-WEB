@@ -136,6 +136,7 @@ function PillGroup<T extends string>({
   onChange: (v: T) => void;
   options: { value: T; label: string; dot?: string }[];
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-1">
       {options.map((o) => (
@@ -157,7 +158,7 @@ function PillGroup<T extends string>({
               )}
             />
           )}
-          {o.label}
+          {t(o.label)}
         </button>
       ))}
     </div>
@@ -180,6 +181,7 @@ function CreateRequestDrawer({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { mutate, isPending, error } = useCreateStockRequest();
   const { data: medicinesData, isLoading: loadingMeds } =
     useGetInventoryMedicines();
@@ -202,10 +204,10 @@ function CreateRequestDrawer({
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
           <SheetTitle className="text-[13px] font-semibold text-foreground">
-            New Stock Request
+            {t("pages.pharmacy.new_stock_request")}
           </SheetTitle>
           <SheetDescription className="text-[10px] text-muted-foreground/70">
-            Request a medicine restock from your supplier
+            {t("pages.pharmacy.restock_drawer_desc")}
           </SheetDescription>
         </SheetHeader>
 
@@ -217,7 +219,7 @@ function CreateRequestDrawer({
           {/* Medicine combobox */}
           <div>
             <label className={labelCls}>
-              Medicine <span className="text-red-500">*</span>
+              {t("pages.pharmacy.medicine")} <span className="text-red-500">*</span>
             </label>
             {loadingMeds ? (
               <div
@@ -227,7 +229,7 @@ function CreateRequestDrawer({
                 )}
               >
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Loading medicines...
+                {t("pages.pharmacy.loading_medicines")}
               </div>
             ) : (
               <MedicineCombobox
@@ -242,7 +244,7 @@ function CreateRequestDrawer({
 
           {/* Quantity */}
           <div>
-            <label className={labelCls}>Requested Quantity</label>
+            <label className={labelCls}>{t("pages.pharmacy.requested_quantity")}</label>
             <input
               type="number"
               required
@@ -261,9 +263,9 @@ function CreateRequestDrawer({
           {/* Notes */}
           <div>
             <label className={labelCls}>
-              Notes{" "}
+              {t("pages.pharmacy.notes")}{" "}
               <span className="text-muted-foreground/50 font-normal">
-                (optional)
+                ({t("pages.pharmacy.optional")})
               </span>
             </label>
             <textarea
@@ -292,7 +294,7 @@ function CreateRequestDrawer({
             onClick={onClose}
             className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
-            Cancel
+            {t("pages.pharmacy.cancel")}
           </Button>
           <Button
             type="submit"
@@ -302,7 +304,7 @@ function CreateRequestDrawer({
             className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-            Submit Request
+            {t("pages.pharmacy.submit_request")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -321,6 +323,7 @@ function ReceiveDrawer({
   request: StockRequest | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { mutate, isPending, error } = useReceiveStock();
   const [form, setForm] = useState<ReceiveStockPayload>({
     received_quantity: undefined,
@@ -349,7 +352,7 @@ function ReceiveDrawer({
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
           <SheetTitle className="text-[13px] font-semibold text-foreground">
-            Receive Stock
+            {t("pages.pharmacy.receive_stock")}
           </SheetTitle>
         </SheetHeader>
 
@@ -373,7 +376,7 @@ function ReceiveDrawer({
 
             <div>
               <label className={labelCls}>
-                Received Quantity{" "}
+                {t("pages.pharmacy.received_quantity")}{" "}
                 <span className="text-muted-foreground/50 font-normal">
                   (leave blank for full amount)
                 </span>
@@ -437,7 +440,7 @@ function ReceiveDrawer({
             onClick={onClose}
             className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
-            Cancel
+            {t("pages.pharmacy.cancel")}
           </Button>
           <Button
             type="submit"
@@ -466,6 +469,7 @@ function RejectDrawer({
   request: StockRequest | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { mutate, isPending, error } = useRejectStockRequest();
   const [reason, setReason] = useState("");
 
@@ -480,7 +484,7 @@ function RejectDrawer({
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
           <SheetTitle className="text-[13px] font-semibold text-foreground">
-            Reject Request
+            {t("pages.pharmacy.reject_request")}
           </SheetTitle>
         </SheetHeader>
 
@@ -491,7 +495,7 @@ function RejectDrawer({
             className="flex-1 overflow-y-auto px-5 py-4 space-y-3"
           >
             <p className="text-[11px] text-muted-foreground">
-              Rejecting request for{" "}
+              {t("pages.pharmacy.rejecting_request_for")}{" "}
               <strong className="text-foreground">
                 {request.medicine?.name ?? `Medicine #${request.medicine_id}`}
               </strong>
@@ -499,7 +503,7 @@ function RejectDrawer({
             </p>
             <div>
               <label className={labelCls}>
-                Reason <span className="text-red-500">*</span>
+                {t("pages.pharmacy.reason")} <span className="text-red-500">*</span>
               </label>
               <textarea
                 required
@@ -526,7 +530,7 @@ function RejectDrawer({
             onClick={onClose}
             className="flex-1 h-7 text-[11px] rounded-[6px]"
           >
-            Cancel
+            {t("pages.pharmacy.cancel")}
           </Button>
           <Button
             type="submit"
@@ -536,7 +540,7 @@ function RejectDrawer({
             className="flex-1 h-7 text-[11px] font-semibold bg-red-600 hover:bg-red-700 text-white rounded-[6px] shadow-sm"
           >
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-            Reject
+            {t("pages.pharmacy.reject")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -577,6 +581,7 @@ function RequestDetailsDrawer({
   onReceive: (r: StockRequest) => void;
   onReject: (r: StockRequest) => void;
 }) {
+  const { t } = useTranslation();
   const { mutate: approve, isPending: approving } = useApproveStockRequest();
   const { mutate: deleteReq, isPending: deleting } = useDeleteStockRequest();
 
@@ -605,7 +610,7 @@ function RequestDetailsDrawer({
                 {med?.name ?? `Medicine #${request.medicine_id}`}
               </SheetTitle>
               <SheetDescription className="text-[10px] text-muted-foreground/70">
-                Stock request #{request.id}
+                {t("pages.pharmacy.stock_request", { id: request.id })}
               </SheetDescription>
             </div>
           </div>
@@ -649,7 +654,7 @@ function RequestDetailsDrawer({
               </p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground/70">Received</p>
+              <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.received")}</p>
               <p className="text-[14px] font-bold tabular-nums text-foreground">
                 {request.received_quantity != null
                   ? request.received_quantity.toLocaleString()
@@ -682,7 +687,7 @@ function RequestDetailsDrawer({
           {request.notes && (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                Notes
+                {t("pages.pharmacy.notes")}
               </p>
               <div className="flex items-start gap-2 rounded-[6px] border border-border/50 bg-secondary/10 px-3 py-2">
                 <StickyNote className="w-3 h-3 text-muted-foreground/60 mt-0.5 shrink-0" />
@@ -698,7 +703,7 @@ function RequestDetailsDrawer({
             (request.reason || request.rejection_reason) && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                  Rejection Reason
+                  {t("pages.pharmacy.rejection_reason")}
                 </p>
                 <p className="text-[11px] text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-[6px] px-3 py-2 leading-relaxed">
                   {request.reason ?? request.rejection_reason}
@@ -709,7 +714,7 @@ function RequestDetailsDrawer({
           {/* Medicine details */}
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-              Medicine
+              {t("pages.pharmacy.medicine")}
             </p>
             <div className="grid grid-cols-2 gap-2.5">
               <DetailRow
@@ -768,14 +773,14 @@ function RequestDetailsDrawer({
             {request.approved_at && (
               <DetailRow
                 icon={CheckCircle2}
-                label="Approved"
+                label={t("pages.pharmacy.approved")}
                 value={formatDateTime(request.approved_at)}
               />
             )}
             {request.received_at && (
               <DetailRow
                 icon={PackagePlus}
-                label="Received"
+                label={t("pages.pharmacy.received")}
                 value={formatDateTime(request.received_at)}
               />
             )}
@@ -796,7 +801,7 @@ function RequestDetailsDrawer({
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
                   <>
-                    <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+                    <Trash2 className="w-3 h-3 mr-1.5" /> {t("pages.pharmacy.delete")}
                   </>
                 )}
               </Button>
@@ -807,7 +812,7 @@ function RequestDetailsDrawer({
                 onClick={() => onReject(request)}
                 className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
               >
-                Reject
+                {t("pages.pharmacy.reject")}
               </Button>
               <Button
                 size="sm"
@@ -818,7 +823,7 @@ function RequestDetailsDrawer({
                 {approving ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
-                  "Approve"
+                  t("pages.pharmacy.approve")
                 )}
               </Button>
             </>
@@ -831,14 +836,14 @@ function RequestDetailsDrawer({
                 onClick={() => onReject(request)}
                 className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
               >
-                Reject
+                {t("pages.pharmacy.reject")}
               </Button>
               <Button
                 size="sm"
                 onClick={() => onReceive(request)}
                 className="flex-1 h-7 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm"
               >
-                Receive
+                {t("pages.pharmacy.receive")}
               </Button>
             </>
           )}
@@ -849,7 +854,7 @@ function RequestDetailsDrawer({
               onClick={onClose}
               className="flex-1 h-7 text-[11px] rounded-[6px]"
             >
-              Close
+              {t("pages.pharmacy.close")}
             </Button>
           )}
         </SheetFooter>
@@ -871,6 +876,7 @@ function RequestActions({
   onReceive: (r: StockRequest) => void;
   onReject: (r: StockRequest) => void;
 }) {
+  const { t } = useTranslation();
   const { mutate: approve, isPending: approving } = useApproveStockRequest();
   const { mutate: deleteReq, isPending: deleting } = useDeleteStockRequest();
   const busy = approving || deleting;
@@ -898,7 +904,7 @@ function RequestActions({
             {deleting ? (
               <Loader2 className="w-3 h-3 animate-spin" />
             ) : (
-              "Delete"
+              t("pages.pharmacy.delete")
             )}
           </Button>
           <Button
@@ -908,7 +914,7 @@ function RequestActions({
             onClick={() => onReject(request)}
             className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
           >
-            Reject
+            {t("pages.pharmacy.reject")}
           </Button>
           <Button
             size="sm"
@@ -933,14 +939,14 @@ function RequestActions({
             onClick={() => onReject(request)}
             className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
           >
-            Reject
+            {t("pages.pharmacy.reject")}
           </Button>
           <Button
             size="sm"
             onClick={() => onReceive(request)}
             className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
           >
-            Receive
+            {t("pages.pharmacy.receive")}
           </Button>
         </>
       )}
@@ -1024,14 +1030,14 @@ const RestockRequests = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.pharmacy.status"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "pending", label: "Pending" },
-        { value: "approved", label: "Approved" },
-        { value: "received", label: "Received" },
-        { value: "rejected", label: "Rejected" },
+        { value: "all", label: "pages.pharmacy.all_statuses" },
+        { value: "pending", label: "pages.pharmacy.pending" },
+        { value: "approved", label: "pages.pharmacy.approved" },
+        { value: "received", label: "pages.pharmacy.received" },
+        { value: "rejected", label: "pages.pharmacy.rejected" },
       ],
       onChange: (v: string) => set("status", v as any)
     }
@@ -1060,19 +1066,19 @@ const RestockRequests = () => {
               accent="warning"
             />
             <StatCard
-              label="Approved"
-              value={isLoading ? "â€”" : counts.approved}
+              label={t("pages.pharmacy.approved")}
+              value={isLoading ? "-" : counts.approved}
               icon={PackagePlus}
               accent="info"
             />
             <StatCard
-              label="Received"
+              label={t("pages.pharmacy.received")}
               value={isLoading ? "-" : counts.received}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label="Rejected"
+              label={t("pages.pharmacy.rejected")}
               value={isLoading ? "-" : counts.rejected}
               icon={XCircle}
               accent="warning"
@@ -1149,7 +1155,7 @@ const RestockRequests = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => refetch()}
-                title="Refresh"
+                title={t("pages.pharmacy.refresh")}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw
@@ -1163,7 +1169,7 @@ const RestockRequests = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search medicine, requester..."
+                  placeholder={t("pages.pharmacy.search_medicine_requester")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1229,10 +1235,10 @@ const RestockRequests = () => {
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
                       {[
-                        "Medicine",
-                        "Requested",
-                        "Received",
-                        "Status",
+                        t("pages.pharmacy.medicine"),
+                        t("pages.pharmacy.requested"),
+                        t("pages.pharmacy.received"),
+                        t("pages.pharmacy.status"),
                         "Requester",
                         "Date",
                         "",
@@ -1275,13 +1281,13 @@ const RestockRequests = () => {
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
                     {hasActiveFilters
-                      ? "No requests match your filters"
-                      : "No stock requests yet"}
+                      ? t("pages.pharmacy.no_requests_match")
+                      : t("pages.pharmacy.no_stock_requests")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
                     {hasActiveFilters
-                      ? "Try widening your search criteria"
-                      : "Create one using the button above"}
+                      ? t("pages.pharmacy.try_widening_search")
+                      : t("pages.pharmacy.create_one_button")}
                   </p>
                 </div>
                 {hasActiveFilters && (
@@ -1289,7 +1295,7 @@ const RestockRequests = () => {
                     onClick={clearAll}
                     className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                   >
-                    Clear all filters
+                    {t("pages.pharmacy.clear_all_filters")}
                   </button>
                 )}
               </div>
@@ -1302,7 +1308,7 @@ const RestockRequests = () => {
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
                       <th className="text-left px-4 py-3 font-semibold">
-                        Medicine
+                        {t("pages.pharmacy.medicine")}
                       </th>
                       <th className="text-left px-4 py-3 font-semibold">
                         Requested

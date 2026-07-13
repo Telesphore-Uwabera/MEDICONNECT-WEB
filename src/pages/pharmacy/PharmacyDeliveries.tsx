@@ -11,10 +11,10 @@ function PharmacyDeliveries() {
     <DashboardLayout role="pharmacy">
       <div className="flex flex-col h-full">
         <PageHeader
-          title={t("pages.pharmacy.overview_title")}
-          subtitle={t("pages.pharmacy.overview_sub")}
+          title={t("pages.pharmacy.deliveries_title")}
+          subtitle={t("pages.pharmacy.deliveries_sub")}
         />
-        <div className="flex justify-center items-center pt-20">PharmacyDeliveries</div>
+        <div className="flex justify-center items-center pt-20">{t("pages.pharmacy.deliveries_placeholder")}</div>
       </div>
     </DashboardLayout>
   );

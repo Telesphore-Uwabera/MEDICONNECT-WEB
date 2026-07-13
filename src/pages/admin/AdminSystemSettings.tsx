@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
+import { LegalDocumentsManager } from "@/pages/admin/components/LegalDocumentsManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch"; 
@@ -17,6 +18,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  FileText,
   Globe,
   History,
   Info,
@@ -42,9 +44,7 @@ import {
 
 
 import { toast as sonnerToast } from "sonner";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
+ 
 type FieldKind =
   | "text"
   | "email"
@@ -58,6 +58,7 @@ type FieldKind =
   | "multilingual-text";
 
 type FormValue = string | boolean;
+type SettingsSection = SettingsGroup | "legal";
 
 interface FieldOption {
   value: string;
@@ -75,15 +76,13 @@ interface FieldConfig {
 }
 
 interface GroupConfig {
-  group: SettingsGroup;
+  group: SettingsSection;
   label: string;
   description: string;
   icon: React.ElementType;
   fields: FieldConfig[];
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
+ 
 const GROUPS: GroupConfig[] = [
   {
     group: "general",
@@ -294,15 +293,23 @@ const GROUPS: GroupConfig[] = [
       { key: "require_email_verification", label: "Require email verification", kind: "boolean" },
     ],
   },
+  {
+    group: "legal",
+    label: "Legal",
+    description: "Terms and privacy policy versions",
+    icon: FileText,
+    fields: [],
+  },
 ];
+
+const SETTINGS_GROUPS = GROUPS.filter((item): item is GroupConfig & { group: SettingsGroup } => item.group !== "legal");
 
 const INPUT_CLASS =
   "w-full h-9 rounded-[6px] border border-border/60 bg-background px-3 text-[12px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-all";
 
-const MASK = "••••••••";
+const MASK = "********";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+ 
 function getErrorMessage(error: unknown): string {
   if (error && typeof error === "object") {
     const data = "data" in error ? (error as { data?: unknown }).data : null;
@@ -312,7 +319,7 @@ function getErrorMessage(error: unknown): string {
         const flat = Array.isArray(payload.errors)
           ? payload.errors
           : Object.values(payload.errors).flat();
-        if (flat.length > 0) return flat.join(" · ");
+        if (flat.length > 0) return flat.join(" - ");
       }
       if (typeof payload.message === "string") return payload.message;
     }
@@ -329,7 +336,7 @@ function toBool(value: unknown): boolean {
 }
 
 function formatDateTime(iso?: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString(undefined, {
     year: "numeric",
     month: "short",
@@ -340,8 +347,8 @@ function formatDateTime(iso?: string | null): string {
 }
 
 function displayValue(value?: string | null) {
-  if (value === null || value === undefined || value === "") return "—";
-  return value.length > 42 ? `${value.slice(0, 42)}…` : value;
+  if (value === null || value === undefined || value === "") return "-";
+  return value.length > 42 ? `${value.slice(0, 42)}...` : value;
 }
 
 function isMaskedSecret(value: unknown): boolean {
@@ -350,16 +357,16 @@ function isMaskedSecret(value: unknown): boolean {
   if (!trimmed) return false;
 
   // Backends commonly return encrypted values as bullets, asterisks, or dots.
-  return /^[•●*·.]{4,}$/.test(trimmed) || trimmed === MASK;
+  return /^[\u2022\u25cf*\u00b7.]{4,}$/.test(trimmed) || trimmed === MASK;
 }
 
 function settingValueToString(value: SettingValue | undefined): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (value === null || value === undefined || value === "") return "-";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
   return String(value);
 }
 
-function groupConfig(group: SettingsGroup) {
+function groupConfig(group: SettingsSection) {
   return GROUPS.find((item) => item.group === group) ?? GROUPS[0];
 }
 
@@ -411,7 +418,7 @@ function buildPayload(fields: FieldConfig[], form: Record<string, FormValue>) {
   return payload;
 }
 
-// ─── Small UI components ──────────────────────────────────────────────────────
+// Small UI components
 
 function MiniStat({
   label,
@@ -431,7 +438,7 @@ function MiniStat({
         {label}
       </div>
       <p className={cn("mt-2 truncate text-[15px] font-semibold", accent ? "text-primary" : "text-foreground")}>
-        {value || "—"}
+        {value || "-"}
       </p>
     </div>
   );
@@ -620,12 +627,12 @@ function FieldEditor({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// Page
 
 function AdminSystemSettings() {
   const { t } = useTranslation(); 
 
-  const [activeGroup, setActiveGroup] = useState<SettingsGroup>("general");
+  const [activeGroup, setActiveGroup] = useState<SettingsSection>("general");
   const [form, setForm] = useState<Record<string, FormValue>>({});
   const [auditGroup, setAuditGroup] = useState<"all" | SettingsGroup>("all");
   const [auditAction, setAuditAction] = useState("updated");
@@ -634,10 +641,12 @@ function AdminSystemSettings() {
 
   const activeConfig = useMemo(() => groupConfig(activeGroup), [activeGroup]);
   const ActiveGroupIcon = activeConfig.icon;
+  const isLegalTab = activeGroup === "legal";
+  const activeSettingsGroup: SettingsGroup = isLegalTab ? "general" : activeGroup;
 
   const publicSettings = useGetPublicSettings();
   const generalSettingsQuery = useGetSettingsGroup("general");
-  const settingsQuery = useGetSettingsGroup(activeGroup);
+  const settingsQuery = useGetSettingsGroup(activeSettingsGroup);
   const auditLogs = useGetSettingsAuditLogs({
     group: auditGroup === "all" ? undefined : auditGroup,
     action: auditAction || undefined,
@@ -701,6 +710,7 @@ function AdminSystemSettings() {
 
 
   const handleSave = async () => {
+    if (isLegalTab) return;
     const payload = buildPayload(activeConfig.fields, form);
 
     if (Object.keys(payload).length === 0) { 
@@ -709,7 +719,7 @@ function AdminSystemSettings() {
     }
 
     try {
-      const res = await updateSettings.mutateAsync({ group: activeGroup, payload });
+      const res = await updateSettings.mutateAsync({ group: activeSettingsGroup, payload });
       const skipped = res.skipped?.length ? ` Skipped: ${res.skipped.join(", ")}` : "";
       sonnerToast.success(`Settings saved successfully.${skipped}`);
     } catch (error) {
@@ -773,6 +783,11 @@ function AdminSystemSettings() {
             </div>
           </div>
 
+          {isLegalTab ? (
+            <div className="p-3 sm:p-4">
+              <LegalDocumentsManager />
+            </div>
+          ) : (
           <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_360px]">
             {/* Main settings card */}
             <section className="rounded-[6px] border border-border/70 bg-card shadow-sm">
@@ -871,9 +886,11 @@ function AdminSystemSettings() {
                     Enter a new value only when you want to replace it.
                   </div>
                 </div>
-              </div>
-
-              <div className="rounded-[6px] border border-border/70 bg-card shadow-sm">
+              </div>            
+            </aside>
+          </div>
+          )}
+             <div className="mx-4 rounded-[6px] mt-1 border border-border/70 bg-card shadow-sm">
                 <div className="border-b border-border/60 px-4 py-3">
                   <p className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
                     <History className="h-4 w-4 text-primary" /> Audit logs
@@ -888,7 +905,7 @@ function AdminSystemSettings() {
                     className="h-8 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/50"
                   >
                     <option value="all">All groups</option>
-                    {GROUPS.map((item) => (
+                    {SETTINGS_GROUPS.map((item) => (
                       <option key={item.group} value={item.group}>
                         {item.label}
                       </option>
@@ -916,7 +933,7 @@ function AdminSystemSettings() {
                   </select>
                 </div>
 
-                <div className="max-h-[calc(100vh-430px)] min-h-[320px] overflow-y-auto">
+                <div className=" overflow-y-auto">
                   {auditLogs.isLoading ? (
                     <div className="space-y-2 p-4">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -941,7 +958,7 @@ function AdminSystemSettings() {
                                 {log.setting_key}
                               </p>
                               <p className="mt-0.5 text-[10px] text-muted-foreground/70">
-                                {log.setting_group} · {log.action} · {log.admin?.name ?? "Unknown admin"}
+                                {log.setting_group} - {log.action} - {log.admin?.name ?? "Unknown admin"}
                               </p>
                             </div>
                             <Badge variant="outline" className="shrink-0 rounded-[6px] text-[9px]">
@@ -969,7 +986,7 @@ function AdminSystemSettings() {
                   <p className="text-[10px] text-muted-foreground/70">
                     {auditLogs.isFetching ? (
                       <span className="inline-flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Loading logs…
+                        <Loader2 className="h-3 w-3 animate-spin" /> Loading logs...
                       </span>
                     ) : auditTotal > 0 ? (
                       <>Showing {auditStart}-{auditEnd} of {auditTotal}</>
@@ -1002,8 +1019,6 @@ function AdminSystemSettings() {
                   </div>
                 </div>
               </div>
-            </aside>
-          </div>
         </main>
       </div>
     </DashboardLayout>

@@ -1,22 +1,30 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from "lucide-react";
-import { useForgotPassword, useResetPassword } from "@/hooks/useAuth";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Smartphone } from "lucide-react";
+import { useForgotPassword, useResetPassword, type PasswordResetIdentifier } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
-type Step = "email" | "reset";
+type Step = "contact" | "reset";
+type ResetMethod = "email" | "phone";
+
+function buildIdentifier(method: ResetMethod, email: string, phone: string, countryCode: string): PasswordResetIdentifier {
+  return method === "email"
+    ? { email: email.trim() }
+    : { phone: phone.trim(), country_code: countryCode.trim() || "+250" };
+}
 
 const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
-  const { t, i18n } = useTranslation();
-  const [step, setStep] = useState<Step>("email");
-
-  // Step 1 — email
+  const { t } = useTranslation();
+  const [step, setStep] = useState<Step>("contact");
+  const [method, setMethod] = useState<ResetMethod>("email");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [countryCode, setCountryCode] = useState("+250");
 
-  // Step 2 — reset
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
@@ -27,66 +35,72 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
   const resetPassword = useResetPassword();
 
   const isLoading = forgotPassword.isPending || resetPassword.isPending;
+  const identifier = useMemo(
+    () => buildIdentifier(method, email, phone, countryCode),
+    [method, email, phone, countryCode],
+  );
+  const contactLabel = method === "email" ? email.trim() : `${countryCode.trim() || "+250"} ${phone.trim()}`.trim();
+  const canSend = method === "email" ? email.trim().length > 0 : phone.trim().length > 0;
 
   const inputCls =
     "h-10 rounded-[6px] border-border bg-muted/50 text-xs focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 pl-9 text-foreground placeholder:text-muted-foreground";
 
-  // ── Step 1: send OTP to email ──
   const onSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    forgotPassword.mutate(
-      { email },
-      {
-        onSuccess: (data) => {
-          toast.success(data.message ?? t("auth.otp_sent"));
-          setStep("reset");
-        },
-        onError: (err: any) => {
-          const msg = err?.message ?? t("auth.errors.unknown");
-          toast.error(msg);
-        },
+    if (!canSend) return;
+    forgotPassword.mutate(identifier, {
+      onSuccess: (data) => {
+        toast.success(data.message ?? t("auth.otp_sent"));
+        setStep("reset");
       },
-    );
+      onError: (err: any) => toast.error(err?.message ?? t("auth.errors.unknown")),
+    });
   };
 
-  // ── Step 2: verify OTP + set new password ──
+  const onResend = () => {
+    if (!canSend) return;
+    forgotPassword.mutate(identifier, {
+      onSuccess: () => toast.success(t("auth.otp_sent")),
+      onError: (err: any) => toast.error(err?.message ?? t("auth.errors.unknown")),
+    });
+  };
+
   const onReset = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== passwordConfirmation) {
       toast.error(t("auth.errors.password_mismatch", "Passwords do not match"));
       return;
     }
+
     resetPassword.mutate(
-      { email, otp, password, password_confirmation: passwordConfirmation },
+      { ...identifier, otp, password, password_confirmation: passwordConfirmation },
       {
         onSuccess: (data) => {
           toast.success(data.message ?? t("auth.reset_success", "Password reset successfully"));
-          onBack(); // return to sign-in
+          onBack();
         },
-        onError: (err: any) => {
-          const msg = err?.message ?? t("auth.errors.unknown");
-          toast.error(msg);
-        },
+        onError: (err: any) => toast.error(err?.message ?? t("auth.errors.unknown")),
       },
     );
   };
 
   return (
     <div>
-      {/* ── Back button + heading ── */}
       <button
         type="button"
-        onClick={step === "reset" ? () => setStep("email") : onBack}
-        className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors mb-4"
+        onClick={step === "reset" ? () => setStep("contact") : onBack}
+        className="mb-4 flex items-center gap-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="w-3 h-3" />
-        {step === "reset" ? t("auth.back_to_email", "Change email") : t("auth.back_to_signin", "Back to sign in")}
+        <ArrowLeft className="h-3 w-3" />
+        {step === "reset"
+          ? t("auth.back_to_contact", "Change email or phone")
+          : t("auth.back_to_signin", "Back to sign in")}
       </button>
 
       <AnimatePresence mode="wait">
-        {step === "email" ? (
+        {step === "contact" ? (
           <motion.form
-            key="email-step"
+            key="contact-step"
             initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -12 }}
@@ -95,42 +109,90 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             className="space-y-3"
           >
             <div className="mb-4">
-              <h2 className="text-base font-bold text-foreground tracking-tight">
+              <h2 className="text-base font-bold tracking-tight text-foreground">
                 {t("auth.forgot_title", "Reset your password")}
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("auth.forgot_sub", "Enter your email and we'll send you a reset code")}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("auth.forgot_sub", "Enter your email or phone number and we'll send you a reset code")}
               </p>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {t("auth.email")}
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputCls}
-                  placeholder="email@example.com"
-                  required
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-1 rounded-[6px] border border-border/60 bg-muted/30 p-1">
+              {(["email", "phone"] as ResetMethod[]).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setMethod(option)}
+                  className={cn(
+                    "flex h-8 items-center justify-center gap-1.5 rounded-[5px] text-[11px] font-semibold transition-colors",
+                    method === option
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground",
+                  )}
+                >
+                  {option === "email" ? <Mail className="h-3.5 w-3.5" /> : <Smartphone className="h-3.5 w-3.5" />}
+                  {option === "email" ? t("auth.email") : t("auth.phone")}
+                </button>
+              ))}
             </div>
+
+            {method === "email" ? (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("auth.email")}
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={inputCls}
+                    placeholder="email@example.com"
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("auth.phone")}
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  <Input
+                    value={countryCode}
+                    hidden
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="h-10 rounded-[6px] border-border bg-muted/50 px-3 text-xs text-foreground outline-none transition-all duration-200 focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/20"
+                    placeholder="+250"
+                    required
+                  />
+                  <div className="relative">
+                    <Smartphone className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className={inputCls}
+                      placeholder="0786420000"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
-              disabled={isLoading || !email}
-              className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              disabled={isLoading || !canSend}
+              className="mt-1 flex h-10 w-full items-center justify-center gap-1.5 rounded-[6px] bg-gradient-primary text-xs font-semibold text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 group"
             >
               {forgotPassword.isPending ? (
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
               ) : (
                 <>
                   {t("auth.send_reset_code", "Send reset code")}
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
             </button>
@@ -146,17 +208,16 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             className="space-y-3"
           >
             <div className="mb-4">
-              <h2 className="text-base font-bold text-foreground tracking-tight">
+              <h2 className="text-base font-bold tracking-tight text-foreground">
                 {t("auth.reset_title", "Enter new password")}
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                {t("auth.reset_sub", "Enter the code sent to")} <span className="font-semibold text-foreground">{email}</span>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t("auth.reset_sub", "Enter the code sent to")} <span className="font-semibold text-foreground">{contactLabel}</span>
               </p>
             </div>
 
-            {/* OTP */}
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("auth.otp_label")}
               </label>
               <InputOTP maxLength={6} value={otp} onChange={setOtp}>
@@ -165,78 +226,60 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
+                      className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold text-foreground transition-all focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/20"
                     />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
             </div>
 
-            {/* New password */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {t("auth.new_password", "New password")}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${inputCls} pr-9`}
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
+            {[
+              {
+                label: t("auth.new_password", "New password"),
+                value: password,
+                onChange: setPassword,
+                show: showPassword,
+                setShow: setShowPassword,
+              },
+              {
+                label: t("auth.confirm_password", "Confirm password"),
+                value: passwordConfirmation,
+                onChange: setPasswordConfirmation,
+                show: showConfirm,
+                setShow: setShowConfirm,
+              },
+            ].map((field) => (
+              <div key={field.label} className="space-y-1">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {field.label}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type={field.show ? "text" : "password"}
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className={`${inputCls} pr-9`}
+                    placeholder="********"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => field.setShow(!field.show)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    {field.show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
               </div>
-            </div>
+            ))}
 
-            {/* Confirm password */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {t("auth.confirm_password", "Confirm password")}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  type={showConfirm ? "text" : "password"}
-                  value={passwordConfirmation}
-                  onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  className={`${inputCls} pr-9`}
-                  placeholder="••••••••"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Resend link */}
             <div className="flex items-center justify-end text-[10px]">
               <button
                 type="button"
-                onClick={() =>
-                  forgotPassword.mutate(
-                    { email },
-                    {
-                      onSuccess: () => toast.success(t("auth.otp_sent")),
-                      onError: (err: any) => toast.error(err?.message ?? t("auth.errors.unknown")),
-                    },
-                  )
-                }
+                onClick={onResend}
                 disabled={forgotPassword.isPending}
-                className="font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                className="font-semibold text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
               >
                 {t("auth.resend", "Resend code")}
               </button>
@@ -245,14 +288,14 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
             <button
               type="submit"
               disabled={isLoading || otp.length !== 6 || !password || !passwordConfirmation}
-              className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              className="flex h-10 w-full items-center justify-center gap-1.5 rounded-[6px] bg-gradient-primary text-xs font-semibold text-primary-foreground transition-all duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 group"
             >
               {resetPassword.isPending ? (
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
               ) : (
                 <>
                   {t("auth.reset_password", "Reset password")}
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
             </button>

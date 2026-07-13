@@ -92,10 +92,10 @@
   },
   "roles": {
     "doctor": "Umuganga",
-    "hospital": "Ibitaro",
+    "hospital": "Ibigo nderabuzima",
     "pharmacy": "Farumasi",
     "patient": "Umurwayi",
-    "admin":"Umuyobozi"
+    "admin": "Umuyobozi"
   },
   "status": {
     "active": "Bikora",

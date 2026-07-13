@@ -92,10 +92,10 @@
   },
   "roles": {
     "doctor": "Médecin",
-    "hospital": "Hôpital",
+    "hospital": "Établissement de santé",
     "pharmacy": "Pharmacie",
     "patient": "Patient",
-    "admin":"Administrateur"
+    "admin": "Administrateur"
   },
   "status": {
     "active": "Actif",

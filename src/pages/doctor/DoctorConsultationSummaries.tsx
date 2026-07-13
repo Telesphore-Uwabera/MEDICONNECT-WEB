@@ -454,7 +454,7 @@ function SummaryRow({
               onClick={() => openSummaryDocument(s, true, publicSettings)}
               className="h-8 px-3 rounded-[5px] border border-border text-[11px] font-medium text-foreground hover:bg-muted transition-colors flex items-center gap-1.5"
             >
-              <Download className="h-3 w-3" /> PDF
+              <Download className="h-3 w-3" /> {t("pages.doctor.pdf")}
             </button>
             <button
               onClick={onEdit}

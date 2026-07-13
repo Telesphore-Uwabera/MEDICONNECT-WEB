@@ -53,14 +53,14 @@
     "tpl_plan": "Plan"
   },
   "booking": {
-    "title": "Book a hospital spot",
+    "title": "Book a health facility spot",
     "for_patient": "For {{name}}",
-    "hospital": "Hospital",
-    "search_hospitals": "Search hospitals…",
+    "hospital": "Health Facility",
+    "search_hospitals": "Search health facilities…",
     "searching": "Searching…",
-    "no_hospitals": "No hospitals found.",
+    "no_hospitals": "No health facilities found.",
     "change": "Change",
-    "loading_details": "Loading hospital details…",
+    "loading_details": "Loading health facility details…",
     "working_days": "Working days",
     "cancel": "Cancel booking",
     "open": "Open",
@@ -70,7 +70,7 @@
     "preferred_time": "Preferred time",
     "department": "Department",
     "select_department": "Select a department",
-    "no_departments": "No departments listed for this hospital.",
+    "no_departments": "No departments listed for this health facility.",
     "service": "Service",
     "select_service": "Select a service",
     "select_department_first": "Select a department first.",
@@ -380,7 +380,7 @@
     "specialization": "Specialization",
     "consultation_type": "Consultation type",
     "fee": "Fee",
-    "hospital": "Hospital",
+    "hospital": "Health Facility",
     "name": "Name",
     "address": "Address",
     "website": "Website",
@@ -408,7 +408,7 @@
     "booking_type_values": {
       "online": "Online",
       "in_person": "In-person",
-      "hospital": "Hospital",
+      "hospital": "Health Facility",
       "doctor": "Doctor"
     },
     "consultation_type_values": {

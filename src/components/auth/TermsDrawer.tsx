@@ -15,7 +15,7 @@ interface TermsDrawerProps {
 const ROLE_LABELS = {
   patient: "Patient",
   doctor: "Doctor",
-  hospital: "Hospital",
+  hospital: "Health Facility",
   pharmacy: "Pharmacy",
 };
 

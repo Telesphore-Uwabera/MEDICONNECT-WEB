@@ -1,5 +1,6 @@
 import { formatDateOnly } from "@/lib/date";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
 // Frontend medical-prescription document. The backend PDF isn't publicly
 // reachable (storage is 403/route 404), so we format the prescription data the
 // app already has into a printable HTML page and open it for View / Download
@@ -122,7 +123,10 @@ function section(title: string, rows: string): string {
 
 const documentCss = `
   :root { --ink:#111827; --muted:#4b5563; --line:#222; --soft-line:#9ca3af; --header:#bcd7fb; --brand:#05a8a2; --brand-dark:#05716f; --success:#166534; --warning:#92400e; }
-  * { box-sizing:border-box; }
+  /* @page margin:0 leaves Chrome no room to draw its own header/footer
+     (url/date/page number); .page padding below recreates the visual margin. */
+  @page { margin:0; size:auto; }
+  * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; color-adjust:exact; }
   body { margin:0; font-family: Georgia, "Times New Roman", serif; color:var(--ink); background:#eef3f8; }
   .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid #d5dee8; font-family:Arial, sans-serif; }
   .toolbar button { font:inherit; font-size:13px; font-weight:700; padding:8px 14px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; }
@@ -146,6 +150,9 @@ const documentCss = `
   .section-table td.label { width:34%; font-weight:700; background:#fafafa; }
   .med-table th { font-size:12px; }
   .med-table .num { width:38px; text-align:center; }
+  .med-table td:last-child { max-width:240px; }
+  .muted { color:var(--muted); }
+${richDocumentCss}
   .sub { display:block; color:var(--muted); font-size:11px; margin-top:2px; }
   .signed, .unsigned { margin:0 0 14px; padding:8px 10px; border:1px solid var(--line); font-family:Arial, sans-serif; font-size:12px; font-weight:700; }
   .signed { color:var(--success); background:#f0fdf4; border-color:#86efac; }
@@ -184,7 +191,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
         <td>${esc(it.frequency ?? "-")}</td>
         <td>${esc(it.duration ?? "-")}</td>
         <td>${esc(it.quantity ?? "-")}</td>
-        <td>${esc(it.instructions ?? "-")}</td>
+        <td>${richDocumentHtml(it.instructions)}</td>
       </tr>`,
     )
     .join("");
@@ -210,10 +217,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
     <header class="doc-header">
       <div class="brand-row">
         <img src="${esc(brand.logoUrl)}" alt="${esc(brand.appName)}" />
-        <div>
-          <div class="brand-name">${esc(brand.appName)}</div>
-          <div class="tagline">${esc(brand.tagline)}</div>
-        </div>
+       
       </div>
       <div class="title-box">
         <h1>Medical Prescription</h1>
@@ -230,7 +234,7 @@ export function buildPrescriptionHtml(p: PrescriptionLike, settings?: DocumentBr
     ${section("Prescription Information", infoRow("Prescription Number", esc(p.prescription_number ?? "")) + infoRow("Status", esc(statusLabel(p.status))) + infoRow("Issued Date", esc(fmtDate(p.issued_at ?? p.created_at))) + infoRow("Valid Until", esc(fmtDate(p.valid_until))))}
     ${
       p.diagnosis || p.notes
-        ? section("Diagnosis and Notes", infoRow("Diagnosis", esc(p.diagnosis ?? "")) + infoRow("Notes", esc(p.notes ?? "")))
+        ? section("Diagnosis and Notes", infoRow("Diagnosis", esc(p.diagnosis ?? "")) + infoRow("Notes", richDocumentHtml(p.notes)))
         : ""
     }
 

@@ -175,7 +175,7 @@ function FilterPanel({
 
         {(compactFields.length > 0 || extraSlot) && (
           <div className="-mx-3 overflow-x-auto px-3 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-center gap-2">
+            <div className="flex min-w-max items-start  lg:items-center gap-2 flex-wrap flex-col ">
               {compactFields.map((f) => (
                 <FilterField key={f.key} field={f} compact />
               ))}

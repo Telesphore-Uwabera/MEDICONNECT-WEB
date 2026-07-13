@@ -55,12 +55,12 @@
   "booking": {
     "title": "Fata umwanya mu bitaro",
     "for_patient": "Kuri {{name}}",
-    "hospital": "Ibitaro",
-    "search_hospitals": "Shakisha ibitaro…",
+    "hospital": "Ibigo nderabuzima",
+    "search_hospitals": "Shakisha ibigo nderabuzima…",
     "searching": "Gushakisha…",
     "no_hospitals": "Nta bitaro byabonetse.",
     "change": "Hindura",
-    "loading_details": "Gushaka amakuru y'ibitaro…",
+    "loading_details": "Gushaka amakuru y'ibigo nderabuzima…",
     "working_days": "Iminsi y'akazi",
     "cancel": "Hagarika booking",
     "open": "Birafunguye",
@@ -151,7 +151,12 @@
     "try_widening_your_search_criteria": "gerageza kwagura ibisabwa",
     "clear_all_filters": "Kuramo Byose Muyunguruzi",
     "filter_by": "Gushakisha",
-    "search": "Gushakisha"
+    "search": "Gushakisha",
+    "date": "Itariki",
+    "time": "Igihe",
+    "pending": "Birategereje",
+    "in_progress": "Birimo gukorwa",
+    "completed": "Byarangiye"
   },
   "record": {
     "title": "Dosiye y'ubuvuzi y'umurwayi",
@@ -375,7 +380,7 @@
     "specialization": "Inzobere",
     "consultation_type": "Ubwoko bw ubujyanama",
     "fee": "Ikiguzi",
-    "hospital": "Ibitaro",
+    "hospital": "Ibigo nderabuzima",
     "name": "Izina",
     "address": "Aderesi",
     "website": "Urubuga",
@@ -403,7 +408,7 @@
     "booking_type_values": {
       "online": "Kumurongo",
       "in_person": "Imbonankubone",
-      "hospital": "Ibitaro",
+      "hospital": "Ibigo nderabuzima",
       "doctor": "Muganga"
     },
     "consultation_type_values": {

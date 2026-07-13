@@ -1,5 +1,6 @@
-﻿import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toLocalDateInputValue } from "@/lib/date";
   import {X, ChevronRight, ChevronLeft, Plus, Trash2, Pill,
@@ -14,6 +15,7 @@ import {
   RichTextRenderer,
 } from "@/components/ui/rich-textarea";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api";
 import { useCreatePrescription } from "@/hooks/doctor/use-doctor-prescriptions";
 import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 // import { useGetAppointments, type Appointment } from "@/hooks/useDoctorAppointments";
@@ -26,6 +28,23 @@ export interface PrescriptionItem {
   duration: string;
   quantity: number;
   instructions: string;
+}
+
+
+interface PublicMedicine {
+  pharmacy_id?: number;
+  name: string;
+  generic_name?: string | null;
+  price?: string | null;
+  currency?: string | null;
+  unit?: string | null;
+  barcode?: string | null;
+  rn?: number | string;
+}
+
+interface PublicMedicinesResponse {
+  count: number;
+  medicines: PublicMedicine[];
 }
 
 const EMPTY_ITEM: PrescriptionItem = {
@@ -315,18 +334,138 @@ const DURATION_PRESETS = [
   "3 days", "5 days", "7 days", "10 days", "14 days", "30 days",
 ];
 
+function MedicineNameCombobox({
+  value,
+  onChange,
+  medicines,
+  isLoading,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  medicines: PublicMedicine[];
+  isLoading: boolean;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const query = value.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const seen = new Set<string>();
+    return medicines
+      .filter((medicine) => {
+        if (!query) return true;
+        return [medicine.name, medicine.generic_name, medicine.barcode]
+          .filter(Boolean)
+          .some((part) => String(part).toLowerCase().includes(query));
+      })
+      .filter((medicine) => {
+        const key = [
+          medicine.name,
+          medicine.generic_name ?? "",
+          medicine.unit ?? "",
+          medicine.price ?? "",
+        ].join("|").toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 12);
+  }, [medicines, query]);
+  const hasExactMatch = medicines.some(
+    (medicine) => medicine.name.toLowerCase() === query,
+  );
+
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+      <input
+        value={value}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        placeholder={placeholder}
+        className={cn(inputCls, "pl-9")}
+        autoComplete="off"
+      />
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-[60] overflow-hidden rounded-[6px] border border-border bg-popover shadow-xl">
+          <div className="max-h-56 overflow-y-auto p-1">
+            {isLoading && (
+              <div className="flex items-center gap-2 px-2.5 py-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading medicines...
+              </div>
+            )}
+
+            {!isLoading && filtered.length === 0 && (
+              <div className="px-2.5 py-2 text-xs text-muted-foreground">
+                No medicine found. Keep typing to use a custom name.
+              </div>
+            )}
+
+            {filtered.map((medicine) => (
+              <button
+                key={(medicine.pharmacy_id ?? "p") + "-" + (medicine.rn ?? medicine.barcode ?? medicine.name) + "-" + medicine.name}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(medicine.name);
+                  setOpen(false);
+                }}
+                className="w-full rounded-[5px] px-2.5 py-2 text-left transition-colors hover:bg-secondary"
+              >
+                <span className="block text-sm font-semibold text-foreground">
+                  {medicine.name}
+                </span>
+                <span className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                  {medicine.generic_name && <span>{medicine.generic_name}</span>}
+                  {medicine.unit && <span>{medicine.unit}</span>}
+                  {medicine.price && (
+                    <span>
+                      {medicine.price} {medicine.currency ?? ""}
+                    </span>
+                  )}
+                </span>
+              </button>
+            ))}
+
+            {value.trim() && !hasExactMatch && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setOpen(false)}
+                className="mt-1 w-full rounded-[5px] border border-dashed border-primary/40 px-2.5 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                Use "{value.trim()}" as a custom medicine
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MedicationRow({
   item,
   index,
   onChange,
   onRemove,
   canRemove,
+  medicines,
+  medicinesLoading,
 }: {
   item: PrescriptionItem;
   index: number;
   onChange: (i: number, field: keyof PrescriptionItem, value: string | number) => void;
   onRemove: (i: number) => void;
   canRemove: boolean;
+  medicines: PublicMedicine[];
+  medicinesLoading: boolean;
 }) {
   const { t } = useTranslation();
   const set = (field: keyof PrescriptionItem) =>
@@ -364,11 +503,12 @@ function MedicationRow({
       {/* Name + dosage */}
       <div className="grid grid-cols-2 gap-2">
         <Field label={t("pages.doctor.medicine_name")} required>
-          <input
+          <MedicineNameCombobox
             value={item.medicine_name}
-            onChange={set("medicine_name")}
+            onChange={(medicineName) => onChange(index, "medicine_name", medicineName)}
+            medicines={medicines}
+            isLoading={medicinesLoading}
             placeholder={t("pages.doctor.rx_medicine_placeholder")}
-            className={inputCls}
           />
         </Field>
         <Field label={t("pages.doctor.dosage")} required>
@@ -460,11 +600,15 @@ function MedicationsStep({
   onAdd,
   onChange,
   onRemove,
+  medicines,
+  medicinesLoading,
 }: {
   items: PrescriptionItem[];
   onAdd: () => void;
   onChange: (i: number, field: keyof PrescriptionItem, value: string | number) => void;
   onRemove: (i: number) => void;
+  medicines: PublicMedicine[];
+  medicinesLoading: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -486,6 +630,8 @@ function MedicationsStep({
               onChange={onChange}
               onRemove={onRemove}
               canRemove={items.length > 1}
+              medicines={medicines}
+              medicinesLoading={medicinesLoading}
             />
           ))}
         </AnimatePresence>
@@ -531,7 +677,7 @@ function ReviewStep({
           <div>
             <p className="text-sm font-semibold text-foreground">{appointment.patient?.name ?? t("pages.doctor.patient")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {appointment.appointment_date} · {appointment.appointment_time} Â·{" "}
+              {appointment.appointment_date} · {appointment.appointment_time} ·{" "}
               {appointment.type === "online" ? t("pages.doctor.online") : t("pages.doctor.in_person")}
             </p>
           </div>
@@ -598,6 +744,12 @@ export function PrescriptionWizard({
   const [items, setItems] = useState<PrescriptionItem[]>([{ ...EMPTY_ITEM }]);
 
   const createPrescription = useCreatePrescription();
+  const { data: medicinesData, isFetching: medicinesLoading } =
+    useQuery<PublicMedicinesResponse>({
+      queryKey: ["public-medicines-all"],
+      queryFn: () => apiFetch("/public/medicines/all"),
+      staleTime: 5 * 60_000,
+    });
 
   // Reset on close
   useEffect(() => {
@@ -790,6 +942,8 @@ export function PrescriptionWizard({
                     onAdd={addItem}
                     onChange={changeItem}
                     onRemove={removeItem}
+                    medicines={medicinesData?.medicines ?? []}
+                    medicinesLoading={medicinesLoading}
                   />
                 )}
                 {step === "review" && appointment && (

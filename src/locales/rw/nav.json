@@ -2,7 +2,7 @@
   "features": "Ibikorwa",
   "available_doctors": "Abaganga Baboneka",
   "doctors": "Abaganga",
-  "hospitals": "Ibitaro",
+  "hospitals": "Ibigo nderabuzima",
   "pharmacy": "Farumasi",
   "forYou": "Kuri Wowe",
   "team": "Komite",
@@ -12,5 +12,6 @@
     "email": "admin@mediconnect.rw",
     "phone": "+250 782 168 650",
     "help": "Ubufasha"
-  }
+  },
+  "SignUp": "Iyandikishe"
 }

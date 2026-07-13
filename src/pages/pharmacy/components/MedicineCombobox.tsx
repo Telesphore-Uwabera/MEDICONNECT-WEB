@@ -140,7 +140,7 @@ export function MedicineCombobox({
             tabIndex={-1}
             onClick={clearSelection}
             className="p-0.5 rounded-[6px] text-muted-foreground/50 hover:text-foreground hover:bg-secondary/50 transition-colors"
-            aria-label="Clear selection"
+            aria-label={t("pages.pharmacy.combo_clear_selection")}
           >
             <X className="w-3 h-3" />
           </button>
@@ -180,7 +180,7 @@ export function MedicineCombobox({
                 "flex-1 bg-transparent text-[11px] text-foreground outline-none",
                 "placeholder:text-muted-foreground/40",
               )}
-              aria-label="Search medicines"
+              aria-label={t("pages.pharmacy.combo_search_aria")}
               autoComplete="off"
             />
             {query && (
@@ -203,7 +203,7 @@ export function MedicineCombobox({
           >
             {filtered.length === 0 ? (
               <p className="py-6 text-center text-[11px] text-muted-foreground/60">
-                No medicines match &ldquo;{query}&rdquo;
+                {t("pages.pharmacy.combo_no_match", { query })}
               </p>
             ) : (
               filtered.map((med, i) => {

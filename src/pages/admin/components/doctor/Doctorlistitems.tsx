@@ -32,7 +32,7 @@ export function DoctorRow({
               {d.user.name}
             </p>
             <p className="text-[10px] text-muted-foreground/70 truncate">
-              {d.user.email ?? "â€”"}
+              {d.user.email ?? "-"}
             </p>
           </div>
         </div>

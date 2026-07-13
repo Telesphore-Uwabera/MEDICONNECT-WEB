@@ -236,7 +236,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {  cons
           } />
           <Row label={t("pages.doctor.status")} value={appt.status} />
           <Row label={t("pages.doctor.booking_type")} value={appt.booking_type} />
-          <Row label={t("pages.doctor.duration")} value={appt.duration_minutes ? `${appt.duration_minutes} min` : undefined} />
+          <Row label={t("pages.doctor.duration")} value={appt.duration_minutes ? t("pages.doctor.minutes_value", { count: appt.duration_minutes }) : undefined} />
           <Row label={t("pages.doctor.fee")} value={
             appt.consultation_fee !== "0.00"
               ? `${appt.currency} ${parseFloat(appt.consultation_fee).toLocaleString()}`
@@ -246,7 +246,7 @@ function DrawerContent({ prescription }: { prescription: Prescription }) {  cons
             appt.payment_status === "paid"
               ? <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
                 <CheckCircle2 className="h-3 w-3" /> {t("pages.doctor.paid")}
-                {appt.payment_method && ` Â· ${appt.payment_method.replace(/_/g, " ")}`}
+                {appt.payment_method && ` · ${appt.payment_method.replace(/_/g, " ")}`}
               </span>
               : appt.payment_status
           } />

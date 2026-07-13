@@ -196,7 +196,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
             {h.registration_number && (
               <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Registration no." value={h.registration_number} mono full />
             )}
-            <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Hospital ID" value={`#${h.id}`} mono />
+            <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Health Facility ID" value={`#${h.id}`} mono />
             <InfoTile icon={<Calendar className="w-2.5 h-2.5" />} label="Joined" value={formatDateOnly(h.created_at)} />
             {h.verified_at && (
               <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={formatDateOnly(h.verified_at)} />
@@ -309,7 +309,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
  
 function DepartmentsTab({ h }: { h: ApiHospital }) {
   const list = h.departments ?? [];
-  if (list.length === 0) return <SectionEmpty label="No departments have been added to this hospital yet" />;
+  if (list.length === 0) return <SectionEmpty label="No departments have been added to this health facility yet" />;
 
   return (
     <ContentWrap>
@@ -478,7 +478,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
         </div>
 
         {isLoading ? <LoadingRow /> : !data?.data.length ? (
-          <SectionEmpty label="No service bookings found for this hospital" />
+          <SectionEmpty label="No service bookings found for this health facility" />
         ) : (
           <>
             <div className="flex flex-col gap-2">
@@ -628,7 +628,7 @@ export function HospitalPanel({
               {/* Top bar */}
               <div className="flex items-center justify-between px-6 pt-4 pb-3">
                 <div>
-                  <p className="text-[13px] font-bold text-foreground">Hospital profile</p>
+                  <p className="text-[13px] font-bold text-foreground">Health facility profile</p>
                   <p className="text-[10px] text-muted-foreground/45 mt-0.5">Review details and manage account status</p>
                 </div>
                 <button
@@ -714,7 +714,7 @@ export function HospitalPanel({
                     className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
                     disabled={isActing} onClick={() => onApprove(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                    Approve hospital
+                    Approve health facility
                   </Button>
                 )}
                 {h.status === "active" && (

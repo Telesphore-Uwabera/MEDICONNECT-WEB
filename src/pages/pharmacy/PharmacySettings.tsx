@@ -119,6 +119,7 @@ function DisplayField({
   value?: string | null;
   badge?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">
@@ -126,7 +127,7 @@ function DisplayField({
       </p>
       <div className="flex items-center gap-2 flex-wrap">
         <p className="text-[13px] text-foreground font-medium">
-          {value || <span className="text-muted-foreground/40 font-normal italic">Not set</span>}
+          {value || <span className="text-muted-foreground/40 font-normal italic">{t("pages.pharmacy.not_set")}</span>}
         </p>
         {badge}
       </div>
@@ -135,18 +136,19 @@ function DisplayField({
 }
  
 function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | null }) {
+  const { t } = useTranslation();
   if (verified) {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        Verified{date ? ` · ${formatDate(date)}` : ""}
+        {t("pages.pharmacy.verified")}{date ? ` ? ${formatDate(date)}` : ""}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
       <Clock className="w-3 h-3" />
-      Unverified
+      {t("pages.pharmacy.unverified")}
     </span>
   );
 }
@@ -197,6 +199,7 @@ function SectionCard({
   onEdit?: () => void;
   isEditing?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-[6px] border border-border/70 bg-card overflow-hidden shadow-sm">
       <div className="px-5 py-4 border-b border-border/50 flex items-center gap-3">
@@ -213,7 +216,7 @@ function SectionCard({
             className="shrink-0 flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-[6px] border border-border/50 transition-all"
           >
             <Pencil className="w-3 h-3" />
-            Edit
+            {t("pages.pharmacy.edit")}
           </button>
         )}
       </div>
@@ -233,11 +236,12 @@ function OtpStep({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   const [otp, setOtp] = useState("");
   return (
     <div className="mt-4 p-4 rounded-[6px] border border-primary/20 bg-primary/5 space-y-3">
       <p className="text-[11px] text-foreground font-medium">{label}</p>
-      <Field label="OTP code" required>
+      <Field label={t("pages.pharmacy.otp_code")} required>
         <input
           type="text"
           inputMode="numeric"
@@ -256,10 +260,10 @@ function OtpStep({
           disabled={isPending || otp.length < 6}
         >
           {isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-          Verify
+          {t("pages.pharmacy.verify")}
         </Button>
         <Button size="sm" variant="ghost" className="h-8 text-[11px]" onClick={onCancel} disabled={isPending}>
-          Cancel
+          {t("pages.pharmacy.cancel")}
         </Button>
       </div>
     </div>
@@ -276,12 +280,13 @@ function InfoRow({
   value?: string | null;
   badge?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between py-3 border-b border-border/40 last:border-0 gap-4">
       <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{label}</p>
       <div className="flex items-center gap-2 flex-wrap justify-end">
         <span className="text-[12px] text-foreground font-medium text-right">
-          {value || <span className="text-muted-foreground/40 italic font-normal">Not set</span>}
+          {value || <span className="text-muted-foreground/40 italic font-normal">{t("pages.pharmacy.not_set")}</span>}
         </span>
         {badge}
       </div>
@@ -293,17 +298,17 @@ function InfoRow({
 type TabKey = "profile" | "security" | "contact" | "inventory_mode" | "danger";
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
-  { key: "profile", label: "Profile", icon: UserCog },
-  { key: "security", label: "Security", icon: KeyRound },
-  { key: "contact", label: "Contact", icon: Mail },
-  { key: "inventory_mode", label: "Inventory mode", icon: Database },
-  { key: "danger", label: "Danger", icon: ShieldAlert },
+  { key: "profile", label: "pages.pharmacy.settings_tab_profile", icon: UserCog },
+  { key: "security", label: "pages.pharmacy.settings_tab_security", icon: KeyRound },
+  { key: "contact", label: "pages.pharmacy.settings_tab_contact", icon: Mail },
+  { key: "inventory_mode", label: "pages.pharmacy.settings_tab_inventory_mode", icon: Database },
+  { key: "danger", label: "pages.pharmacy.settings_tab_danger", icon: ShieldAlert },
 ];
 
 const LANGUAGE_LABELS: Record<string, string> = {
-  en: "English",
+  en: "pages.pharmacy.settings_lang_en",
   fr: "FranÃ§ais",
-  rw: "Kinyarwanda",
+  rw: "pages.pharmacy.settings_lang_rw",
 };
 
  
@@ -675,7 +680,7 @@ function PharmacySettings() {
     return (
       <DashboardLayout role="pharmacy">
         <div className="flex flex-col h-full">
-          <PageHeader title="Settings" subtitle="Manage your account" />
+          <PageHeader title={t("pages.pharmacy.settings_title")} subtitle={t("pages.pharmacy.settings_manage_account")} />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
             <SkeletonCard />
             {Array.from({ length: 2 }).map((_, i) => (
@@ -719,7 +724,7 @@ function PharmacySettings() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={updateAvatar.isPending}
                     className="absolute inset-0 rounded-[6px] bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Change photo"
+                    title={t("pages.pharmacy.change_photo")}
                   >
                     {updateAvatar.isPending
                       ? <Loader2 className="w-5 h-5 text-white animate-spin" />
@@ -748,12 +753,12 @@ function PharmacySettings() {
                     {settings?.is_verified ? (
                       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <BadgeCheck className="w-3 h-3" />
-                        Verified
+                        {t("pages.pharmacy.verified")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 px-1.5 py-0.5 rounded-[6px]">
                         <Clock className="w-3 h-3" />
-                        Unverified
+                        {t("pages.pharmacy.unverified")}
                       </span>
                     )}
                     {/* Roles */}
@@ -778,7 +783,7 @@ function PharmacySettings() {
                     disabled={updateAvatar.isPending}
                   >
                     <Upload className="w-3 h-3" />
-                    {showAvatar ? "Change photo" : "Upload photo"}
+                    {showAvatar ? t("pages.pharmacy.change_photo") : t("pages.pharmacy.upload_photo")}
                   </Button>
                   {showAvatar && (
                     <Button
@@ -819,7 +824,7 @@ function PharmacySettings() {
                     )}
                   >
                     <Icon className={cn("w-3.5 h-3.5", tab.key === "danger" && "text-destructive")} />
-                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="hidden sm:inline">{t(tab.label)}</span>
                   </button>
                 );
               })}
@@ -832,8 +837,8 @@ function PharmacySettings() {
             {activeTab === "profile" && (
               <SectionCard
                 icon={UserCog}
-                title="Profile"
-                description="Your account details and preferences"
+                title={t("pages.pharmacy.profile_section_title")}
+                description={t("pages.pharmacy.profile_section_desc")}
                 onEdit={openProfileEdit}
                 isEditing={editingProfile}
               >
@@ -843,17 +848,17 @@ function PharmacySettings() {
                     <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
                       <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36 flex items-center gap-1.5">
                         <Hash className="w-3 h-3 text-muted-foreground/40" />
-                        User ID
+                        {t("pages.pharmacy.user_id")}
                       </p>
                       <span className="text-[12px] text-foreground font-medium font-mono">
-                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">Not set</span>}
+                        {settings?.id ?? <span className="text-muted-foreground/40 italic font-sans font-normal">{t("pages.pharmacy.not_set")}</span>}
                       </span>
                     </div>
 
-                    <InfoRow label="Full name" value={settings?.name} />
+                    <InfoRow label={t("pages.pharmacy.full_name")} value={settings?.name} />
 
                     <InfoRow
-                      label="Email address"
+                      label={t("pages.pharmacy.email_address")}
                       value={settings?.email}
                       badge={
                         settings?.email ? (
@@ -863,7 +868,7 @@ function PharmacySettings() {
                     />
 
                     <InfoRow
-                      label="Phone number"
+                      label={t("pages.pharmacy.phone_number")}
                       value={
                         settings?.phone
                           ? `${settings?.country_code ?? ""} ${settings?.phone}`.trim()
@@ -877,18 +882,18 @@ function PharmacySettings() {
                     />
 
                     <InfoRow
-                      label="Preferred language"
-                      value={LANGUAGE_LABELS[settings?.preferred_language ?? "en"]}
+                      label={t("pages.pharmacy.preferred_language")}
+                      value={t(LANGUAGE_LABELS[settings?.preferred_language ?? "en"])}
                     />
 
                     <InfoRow
-                      label="Member since"
+                      label={t("pages.pharmacy.member_since")}
                       value={settings?.created_at ? formatDate(settings.created_at) : null}
                     />
                   </div>
                 ) : (
                   <>
-                    <Field label="Full name" required>
+                    <Field label={t("pages.pharmacy.full_name")} required>
                       <input
                         type="text"
                         value={profileForm.name}
@@ -898,7 +903,7 @@ function PharmacySettings() {
                         autoFocus
                       />
                     </Field>
-                    <Field label="Preferred language" required>
+                    <Field label={t("pages.pharmacy.preferred_language")} required>
                       <select
                         value={profileForm.preferred_language}
                         onChange={(e) =>
@@ -909,9 +914,9 @@ function PharmacySettings() {
                         }
                         className={selectCls}
                       >
-                        <option value="en">English</option>
+                        <option value="en">{t("pages.pharmacy.settings_lang_en")}</option>
                         <option value="fr">Français</option>
-                        <option value="rw">Kinyarwanda</option>
+                        <option value="rw">{t("pages.pharmacy.settings_lang_rw")}</option>
                       </select>
                     </Field>
                     <div className="flex gap-2">
@@ -925,7 +930,7 @@ function PharmacySettings() {
                         ) : (
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         )}
-                        Save changes
+                        {t("pages.pharmacy.save_changes")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -934,7 +939,7 @@ function PharmacySettings() {
                         disabled={updateProfile.isPending}
                       >
                         <X className="w-3.5 h-3.5 mr-1.5" />
-                        Cancel
+                        {t("pages.pharmacy.cancel")}
                       </Button>
                     </div>
                   </>
@@ -945,8 +950,8 @@ function PharmacySettings() {
              {activeTab === "security" && (
               <SectionCard
                 icon={Lock}
-                title="Password"
-                description="Min 8 characters, mixed case and numbers. Logs out all other devices."
+                title={t("pages.pharmacy.password")}
+                description={t("pages.pharmacy.password_section_desc")}
                 onEdit={() => setEditingPassword(true)}
                 isEditing={editingPassword}
               >
@@ -958,35 +963,35 @@ function PharmacySettings() {
                         {Array.from({ length: 8 }).map((_, i) => (
                           <span key={i} className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
                         ))}
-                        <span className="ml-2 text-[11px] text-muted-foreground/50">Set</span>
+                        <span className="ml-2 text-[11px] text-muted-foreground/50">{t("pages.pharmacy.password_set")}</span>
                       </div>
                     </div>
                     <InfoRow
-                      label="Member since"
+                      label={t("pages.pharmacy.member_since")}
                       value={settings?.created_at ? formatDate(settings.created_at) : null}
                     />
                   </div>
                 ) : (
                   <>
-                    <Field label="Current password" required>
+                    <Field label={t("pages.pharmacy.current_password")} required>
                       <PasswordInput
                         value={passwordForm.current_password}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, current_password: v }))}
-                        placeholder="Your current password"
+                        placeholder={t("pages.pharmacy.current_password_placeholder")}
                       />
                     </Field>
-                    <Field label="New password" required>
+                    <Field label={t("pages.pharmacy.new_password")} required>
                       <PasswordInput
                         value={passwordForm.password}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, password: v }))}
-                        placeholder="At least 8 characters"
+                        placeholder={t("pages.pharmacy.new_password_placeholder")}
                       />
                     </Field>
-                    <Field label="Confirm new password" required>
+                    <Field label={t("pages.pharmacy.confirm_new_password")} required>
                       <PasswordInput
                         value={passwordForm.password_confirmation}
                         onChange={(v) => setPasswordForm((p) => ({ ...p, password_confirmation: v }))}
-                        placeholder="Repeat new password"
+                        placeholder={t("pages.pharmacy.confirm_new_password_placeholder")}
                       />
                     </Field>
                     <div className="flex gap-2">
@@ -1012,7 +1017,7 @@ function PharmacySettings() {
                         disabled={updatePassword.isPending}
                       >
                         <X className="w-3.5 h-3.5 mr-1.5" />
-                        Cancel
+                        {t("pages.pharmacy.cancel")}
                       </Button>
                     </div>
                   </>
@@ -1025,8 +1030,8 @@ function PharmacySettings() {
                 {/* Email */}
                 <SectionCard
                   icon={Mail}
-                  title="Email address"
-                  description="An OTP will be sent to your new address to confirm the change."
+                  title={t("pages.pharmacy.email_address")}
+                  description={t("pages.pharmacy.email_change_desc")}
                   onEdit={() => {
                     setEmailForm({ email: "", current_password: "" });
                     setEmailOtpStep(false);
@@ -1037,7 +1042,7 @@ function PharmacySettings() {
                   {!editingEmail ? (
                     <div className="-my-1">
                       <InfoRow
-                        label="Current email"
+                        label={t("pages.pharmacy.current_email")}
                         value={settings?.email}
                         badge={
                           settings?.email ? (
@@ -1046,7 +1051,7 @@ function PharmacySettings() {
                         }
                       />
                       <InfoRow
-                        label="Verified at"
+                        label={t("pages.pharmacy.verified_at")}
                         value={settings?.email_verified_at ? formatDate(settings.email_verified_at) : null}
                       />
                     </div>
@@ -1054,26 +1059,26 @@ function PharmacySettings() {
                     <>
                       {settings?.email && (
                         <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">{t("pages.pharmacy.changing_from")}</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">{settings.email}</p>
                         </div>
                       )}
-                      <Field label="New email" required>
+                      <Field label={t("pages.pharmacy.new_email")} required>
                         <input
                           type="email"
                           value={emailForm.email}
                           onChange={(e) => setEmailForm((p) => ({ ...p, email: e.target.value }))}
-                          placeholder="newemail@example.com"
+                          placeholder={t("pages.pharmacy.new_email_placeholder")}
                           className={inputCls}
                           disabled={emailOtpStep}
                           autoFocus
                         />
                       </Field>
-                      <Field label="Current password" required>
+                      <Field label={t("pages.pharmacy.current_password")} required>
                         <PasswordInput
                           value={emailForm.current_password}
                           onChange={(v) => setEmailForm((p) => ({ ...p, current_password: v }))}
-                          placeholder="Confirm your identity"
+                          placeholder={t("pages.pharmacy.confirm_identity")}
                         />
                       </Field>
                       {!emailOtpStep ? (
@@ -1097,12 +1102,12 @@ function PharmacySettings() {
                             disabled={requestEmail.isPending}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
-                            Cancel
+                            {t("pages.pharmacy.cancel")}
                           </Button>
                         </div>
                       ) : (
                         <OtpStep
-                          label="Enter the 6-digit code sent to your new email."
+                          label={t("pages.pharmacy.email_otp_hint")}
                           onVerify={handleVerifyEmail}
                           onCancel={() => setEmailOtpStep(false)}
                           isPending={verifyEmail.isPending}
@@ -1115,8 +1120,8 @@ function PharmacySettings() {
                 {/* Phone */}
                 <SectionCard
                   icon={Phone}
-                  title="Phone number"
-                  description="An OTP will be sent to your new number to confirm the change."
+                  title={t("pages.pharmacy.phone_number")}
+                  description={t("pages.pharmacy.phone_change_desc")}
                   onEdit={() => {
                     setPhoneForm({ phone: "", country_code: "+250", current_password: "" });
                     setPhoneOtpStep(false);
@@ -1127,7 +1132,7 @@ function PharmacySettings() {
                   {!editingPhone ? (
                     <div className="-my-1">
                       <InfoRow
-                        label="Current phone"
+                        label={t("pages.pharmacy.current_phone")}
                         value={
                           settings?.phone
                             ? `${settings.country_code ?? ""} ${settings.phone}`.trim()
@@ -1139,9 +1144,9 @@ function PharmacySettings() {
                           ) : undefined
                         }
                       />
-                      <InfoRow label="Country code" value={settings?.country_code} />
+                      <InfoRow label={t("pages.pharmacy.country_code")} value={settings?.country_code} />
                       <InfoRow
-                        label="Verified at"
+                        label={t("pages.pharmacy.verified_at")}
                         value={settings?.phone_verified_at ? formatDate(settings.phone_verified_at) : null}
                       />
                     </div>
@@ -1149,14 +1154,14 @@ function PharmacySettings() {
                     <>
                       {settings?.phone && (
                         <div className="px-3 py-2.5 rounded-[6px] bg-secondary/40 border border-border/60">
-                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">Changing from</p>
+                          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-semibold">{t("pages.pharmacy.changing_from")}</p>
                           <p className="text-[12px] font-medium text-foreground mt-1">
                             {settings.country_code} {settings.phone}
                           </p>
                         </div>
                       )}
                       <div className="grid grid-cols-[100px_1fr] gap-3">
-                        <Field label="Code" required>
+                        <Field label={t("pages.pharmacy.code")} required>
                           <select
                             value={phoneForm.country_code}
                             onChange={(e) => setPhoneForm((p) => ({ ...p, country_code: e.target.value }))}
@@ -1173,7 +1178,7 @@ function PharmacySettings() {
                             <option value="+243">+243</option>
                           </select>
                         </Field>
-                        <Field label="Phone number" required>
+                        <Field label={t("pages.pharmacy.phone_number")} required>
                           <input
                             type="tel"
                             value={phoneForm.phone}
@@ -1185,11 +1190,11 @@ function PharmacySettings() {
                           />
                         </Field>
                       </div>
-                      <Field label="Current password" required>
+                      <Field label={t("pages.pharmacy.current_password")} required>
                         <PasswordInput
                           value={phoneForm.current_password}
                           onChange={(v) => setPhoneForm((p) => ({ ...p, current_password: v }))}
-                          placeholder="Confirm your identity"
+                          placeholder={t("pages.pharmacy.confirm_identity")}
                         />
                       </Field>
                       {!phoneOtpStep ? (
@@ -1213,12 +1218,12 @@ function PharmacySettings() {
                             disabled={requestPhone.isPending}
                           >
                             <X className="w-3.5 h-3.5 mr-1.5" />
-                            Cancel
+                            {t("pages.pharmacy.cancel")}
                           </Button>
                         </div>
                       ) : (
                         <OtpStep
-                          label="Enter the 6-digit code sent to your new phone number."
+                          label={t("pages.pharmacy.phone_otp_hint")}
                           onVerify={handleVerifyPhone}
                           onCancel={() => setPhoneOtpStep(false)}
                           isPending={verifyPhone.isPending}
@@ -1233,12 +1238,12 @@ function PharmacySettings() {
               {activeTab === "inventory_mode" && (
               <SectionCard
                 icon={Database}
-                title="Inventory mode"
-                description="Choose whether stock comes from MediConnect data or an external pharmacy system."
+                title={t("pages.pharmacy.inventory_mode_title")}
+                description={t("pages.pharmacy.inventory_mode_desc")}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                    Current mode
+                    {t("pages.pharmacy.current_mode")}
                   </span>
                   <span
                     className={cn(
@@ -1262,7 +1267,7 @@ function PharmacySettings() {
                       className="h-7 rounded-[6px] px-2 text-[11px]"
                       onClick={() => refetchInventoryMode()}
                     >
-                      Retry
+                      {t("pages.pharmacy.retry")}
                     </Button>
                   )}
                 </div>
@@ -1293,9 +1298,9 @@ function PharmacySettings() {
                         <Database className="h-4 w-4" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[13px] font-semibold text-foreground">Internal inventory</span>
+                        <span className="block text-[13px] font-semibold text-foreground">{t("pages.pharmacy.internal_inventory")}</span>
                         <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
-                          Use medicines and stock saved directly inside MediConnect.
+                          {t("pages.pharmacy.internal_inventory_desc")}
                         </span>
                       </span>
                     </div>
@@ -1317,9 +1322,9 @@ function PharmacySettings() {
                         <PlugZap className="h-4 w-4" />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[13px] font-semibold text-foreground">External provider</span>
+                        <span className="block text-[13px] font-semibold text-foreground">{t("pages.pharmacy.external_provider")}</span>
                         <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
-                          Prepare connection details for systems like Ishyiga or another stock API.
+                          {t("pages.pharmacy.external_provider_desc")}
                         </span>
                       </span>
                     </div>
@@ -1333,32 +1338,32 @@ function PharmacySettings() {
                         <ServerCog className="h-4 w-4" />
                       </span>
                       <div>
-                        <p className="text-[13px] font-semibold text-foreground">Connect external provider</p>
+                        <p className="text-[13px] font-semibold text-foreground">{t("pages.pharmacy.connect_external_provider")}</p>
                         <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                          Add the pharmacy stock API connection. Secrets are sent only when connecting and are hidden by the backend afterwards.
+                          {t("pages.pharmacy.connect_external_provider_desc")}
                         </p>
                       </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Provider name" required>
+                      <Field label={t("pages.pharmacy.provider_name")} required>
                         <input
                           value={externalProviderForm.name}
                           onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, name: e.target.value }))}
                           className={inputCls}
-                          placeholder="MedSupply Rwanda"
+                          placeholder={t("pages.pharmacy.provider_name_placeholder")}
                         />
                       </Field>
-                      <Field label="API URL" required>
+                      <Field label={t("pages.pharmacy.api_url")} required>
                         <input
                           value={externalProviderForm.api_url}
                           onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, api_url: e.target.value }))}
                           className={inputCls}
-                          placeholder="https://api.provider.rw"
+                          placeholder={t("pages.pharmacy.api_url_placeholder")}
                           inputMode="url"
                         />
                       </Field>
-                      <Field label="Auth type" required>
+                      <Field label={t("pages.pharmacy.auth_type")} required>
                         <select
                           value={externalProviderForm.auth_type}
                           onChange={(e) =>
@@ -1374,23 +1379,23 @@ function PharmacySettings() {
                           <option value="basic">Basic auth</option>
                         </select>
                       </Field>
-                      <Field label="API key" required>
+                      <Field label={t("pages.pharmacy.api_key")} required>
                         <input
                           value={externalProviderForm.api_key}
                           onChange={(e) => setExternalProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
                           className={inputCls}
-                          placeholder="Enter provider API key"
+                          placeholder={t("pages.pharmacy.api_key_placeholder")}
                           autoComplete="off"
                         />
                       </Field>
-                      <Field label="Secret key" required>
+                      <Field label={t("pages.pharmacy.secret_key")} required>
                         <PasswordInput
                           value={externalProviderForm.secret_key}
                           onChange={(secret_key) => setExternalProviderForm((prev) => ({ ...prev, secret_key }))}
-                          placeholder="Enter provider secret key"
+                          placeholder={t("pages.pharmacy.secret_key_placeholder")}
                         />
                       </Field>
-                      <Field label="Sync interval" required>
+                      <Field label={t("pages.pharmacy.sync_interval")} required>
                         <input
                           type="number"
                           min={5}
@@ -1406,7 +1411,7 @@ function PharmacySettings() {
                         />
                       </Field>
                       <div className="sm:col-span-2">
-                        <Field label="Extra headers" hint='Optional JSON object, e.g. {"X-Client-Id":"mediconnect"}'>
+                        <Field label={t("pages.pharmacy.extra_headers")} hint={t("pages.pharmacy.extra_headers_hint")}>
                           <textarea
                             value={externalProviderForm.extra_headers}
                             onChange={(e) =>
@@ -1452,9 +1457,9 @@ function PharmacySettings() {
                 <div className="rounded-[6px] border border-border/70 bg-background overflow-hidden">
                   <div className="flex flex-col gap-3 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[13px] font-semibold text-foreground">Connected providers</p>
+                      <p className="text-[13px] font-semibold text-foreground">{t("pages.pharmacy.connected_providers")}</p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        Manage external stock APIs and trigger manual syncs.
+                        {t("pages.pharmacy.connected_providers_desc")}
                       </p>
                     </div>
                     <Button
@@ -1464,7 +1469,7 @@ function PharmacySettings() {
                       onClick={() => refetchProviders()}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
-                      Refresh
+                      {t("pages.pharmacy.refresh")}
                     </Button>
                   </div>
 
@@ -1472,18 +1477,18 @@ function PharmacySettings() {
                     {providersLoading ? (
                       <div className="flex items-center gap-2 py-6 text-[12px] text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading providers...
+                        {t("pages.pharmacy.loading_providers")}
                       </div>
                     ) : providersError ? (
                       <div className="rounded-[6px] border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
-                        Could not load external providers. Make sure the pharmacy profile is active.
+                        {t("pages.pharmacy.providers_load_failed")}
                       </div>
                     ) : externalProviders.length === 0 ? (
                       <div className="rounded-[6px] border border-dashed border-border/70 px-4 py-8 text-center">
                         <ServerCog className="mx-auto h-6 w-6 text-muted-foreground/50" />
-                        <p className="mt-2 text-[12px] font-semibold text-foreground">No external provider connected</p>
+                        <p className="mt-2 text-[12px] font-semibold text-foreground">{t("pages.pharmacy.no_external_provider")}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          Connect one above before switching fully to external inventory mode.
+                          {t("pages.pharmacy.no_external_provider_desc")}
                         </p>
                       </div>
                     ) : (
@@ -1537,7 +1542,7 @@ function PharmacySettings() {
                                     disabled={syncExternalProvider.isPending || !provider.is_active}
                                   >
                                     <RefreshCw className="h-3 w-3" />
-                                    Sync
+                                    {t("pages.pharmacy.sync")}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1550,7 +1555,7 @@ function PharmacySettings() {
                                     disabled={updateExternalProvider.isPending}
                                   >
                                     {provider.is_active ? <PowerOff className="h-3 w-3" /> : <Power className="h-3 w-3" />}
-                                    {provider.is_active ? "Disable" : "Enable"}
+                                    {provider.is_active ? t("pages.pharmacy.disable") : t("pages.pharmacy.enable")}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -1569,7 +1574,7 @@ function PharmacySettings() {
 
                               <div className="mt-3 flex items-center gap-2 border-t border-border/40 pt-2">
                                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
-                                  Interval
+                                  {t("pages.pharmacy.interval")}
                                 </span>
                                 <select
                                   value={provider.sync_interval_minutes}
@@ -1593,22 +1598,22 @@ function PharmacySettings() {
                           <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
                             <FileClock className="h-4 w-4 text-primary" />
                             <div>
-                              <p className="text-[12px] font-semibold text-foreground">Sync logs</p>
+                              <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.sync_logs")}</p>
                               <p className="text-[10px] text-muted-foreground">
-                                {selectedProvider?.name ?? "Select a provider"}
+                                {selectedProvider?.name ?? t("pages.pharmacy.select_provider")}
                               </p>
                             </div>
                           </div>
                           <div className="max-h-[260px] overflow-y-auto p-3">
                             {!selectedProvider ? (
-                              <p className="py-6 text-center text-[11px] text-muted-foreground">No provider selected.</p>
+                              <p className="py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_provider_selected")}</p>
                             ) : syncLogsLoading ? (
                               <div className="flex items-center gap-2 py-6 text-[11px] text-muted-foreground">
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Loading logs...
+                                {t("pages.pharmacy.loading_logs")}
                               </div>
                             ) : !syncLogsResponse?.data?.length ? (
-                              <p className="py-6 text-center text-[11px] text-muted-foreground">No sync logs yet.</p>
+                              <p className="py-6 text-center text-[11px] text-muted-foreground">{t("pages.pharmacy.no_sync_logs")}</p>
                             ) : (
                               <div className="space-y-2">
                                 {syncLogsResponse.data.map((log) => (
@@ -1656,10 +1661,10 @@ function PharmacySettings() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-red-700 dark:text-red-400 leading-tight">
-                      Delete account
+                      {t("pages.pharmacy.delete_account")}
                     </p>
                     <p className="text-[10px] text-red-500/70 dark:text-red-500/60 mt-0.5">
-                      Permanently removes your account and revokes all active sessions
+                      {t("pages.pharmacy.delete_account_desc")}
                     </p>
                   </div>
                 </div>
@@ -1669,7 +1674,7 @@ function PharmacySettings() {
                       <p className="text-[12px] text-muted-foreground leading-relaxed">
                         Once you delete your account, all your data will be permanently erased and a farewell email
                         will be sent. This action{" "}
-                        <span className="font-semibold text-foreground">cannot be undone</span>.
+                        <span className="font-semibold text-foreground">{t("pages.pharmacy.cannot_be_undone")}</span>.
                       </p>
                       <Button
                         variant="outline"
@@ -1678,21 +1683,21 @@ function PharmacySettings() {
                         onClick={() => setShowDeleteConfirm(true)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Delete my account
+                        {t("pages.pharmacy.delete_my_account")}
                       </Button>
                     </>
                   ) : (
                     <>
                       <div className="p-3 rounded-[6px] bg-red-50/70 border border-red-200 dark:bg-red-950/20 dark:border-red-900/60">
                         <p className="text-[11px] text-red-700 dark:text-red-400 font-medium">
-                          Enter your password to confirm account deletion.
+                          {t("pages.pharmacy.confirm_delete_desc")}
                         </p>
                       </div>
-                      <Field label="Password" required>
+                      <Field label={t("pages.pharmacy.password")} required>
                         <PasswordInput
                           value={deletePassword}
                           onChange={setDeletePassword}
-                          placeholder="Your current password"
+                          placeholder={t("pages.pharmacy.current_password_placeholder")}
                         />
                       </Field>
                       <div className="flex gap-2">
@@ -1720,7 +1725,7 @@ function PharmacySettings() {
                           }}
                           disabled={deleteAccount.isPending}
                         >
-                          Cancel
+                          {t("pages.pharmacy.cancel")}
                         </Button>
                       </div>
                     </>

@@ -16,7 +16,7 @@ interface Patient {
   age: number;
   last: string;
   rawLast: string; // ISO for sorting
-  condition: string;
+  conditionKey: string;
   risk: RiskLevel;
 }
 

@@ -1,12 +1,40 @@
 {
   "steps": {
-    "personal": { "label": "Personnel", "title": "Informations professionnelles", "desc": "Spécialisation, diplôme, licence, bio & tarifs" },
-    "specializations": { "label": "Spécialisations", "title": "Spécialisations", "desc": "Spécialisations médicales principales & secondaires" },
-    "education": { "label": "Formation", "title": "Parcours académique", "desc": "Diplômes et parcours académique" },
-    "experience": { "label": "Expérience", "title": "Expérience professionnelle", "desc": "Postes passés et actuels" },
-    "qualifications": { "label": "Qualifications", "title": "Certifications & qualifications", "desc": "Certifications et licences" },
-    "documents": { "label": "Documents", "title": "Téléverser des documents", "desc": "Photo de profil et documents officiels" },
-    "linksSection": { "label": "Liens sociaux", "title": "Réseaux sociaux & présence en ligne", "desc": "LinkedIn, site web, ResearchGate & plus" }
+    "personal": {
+      "label": "Personnel",
+      "title": "Informations professionnelles",
+      "desc": "Spécialisation, diplôme, licence, bio & tarifs"
+    },
+    "specializations": {
+      "label": "Spécialisations",
+      "title": "Spécialisations",
+      "desc": "Spécialisations médicales principales & secondaires"
+    },
+    "education": {
+      "label": "Formation",
+      "title": "Parcours académique",
+      "desc": "Diplômes et parcours académique"
+    },
+    "experience": {
+      "label": "Expérience",
+      "title": "Expérience professionnelle",
+      "desc": "Postes passés et actuels"
+    },
+    "qualifications": {
+      "label": "Qualifications",
+      "title": "Certifications & qualifications",
+      "desc": "Certifications et licences"
+    },
+    "documents": {
+      "label": "Documents",
+      "title": "Téléverser des documents",
+      "desc": "Photo de profil et documents officiels"
+    },
+    "linksSection": {
+      "label": "Liens sociaux",
+      "title": "Réseaux sociaux & présence en ligne",
+      "desc": "LinkedIn, site web, ResearchGate & plus"
+    }
   },
   "consultation_types": {
     "online": "En ligne uniquement",

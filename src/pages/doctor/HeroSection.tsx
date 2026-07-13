@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { createPortal } from "react-dom";
 import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
   import {Search,
@@ -58,11 +59,11 @@ interface DisplayDoctor {
   raw: ApiDoctor;
 }
 
-function toDisplayDoctor(doc: ApiDoctor): DisplayDoctor {
+function toDisplayDoctor(doc: ApiDoctor, t: TFunction): DisplayDoctor {
   return {
     id: doc.id,
-    name: doc.user?.name || doc.designations || "Doctor",
-    role: doc.specialization || doc.doctor_degree || "General Practitioner",
+    name: doc.user?.name || doc.designations || t("pages.doctor.fallback_doctor_name"),
+    role: doc.specialization || doc.doctor_degree || t("pages.doctor.fallback_specialization"),
     image: doc.image || doc.user?.avatar || doctorPlaceholder,
     fee: doc.consultation_fee,
     currency: doc.currency,
@@ -239,6 +240,8 @@ function MeetOurDoctorsSlider({
   setPaused,
   className = "",
 }: SliderProps) {
+  const { t } = useTranslation();
+
   if (doctors.length === 0) return null;
 
   const safeIndex = index % doctors.length;
@@ -250,7 +253,7 @@ function MeetOurDoctorsSlider({
   return (
     <div className={`bg-card rounded-[6px] p-3 sm:p-4 border border-border ${className}`}>
       <div className="flex items-center justify-between">
-        <div className="font-bold text-foreground text-xs sm:text-sm">Meet Our Doctors</div>
+        <div className="font-bold text-foreground text-xs sm:text-sm">{t("pages.doctor.meet_our_doctors")}</div>
         <div className="flex gap-1">
           <button
             onClick={prev}
@@ -287,7 +290,7 @@ function MeetOurDoctorsSlider({
           <button
             key={i}
             onClick={() => { setPaused(true); setIndex(i); }}
-            aria-label={`Show doctor ${i + 1}`}
+            aria-label={t("pages.doctor.show_doctor_aria", { number: i + 1 })}
             className={`h-1.5 rounded-full transition-all duration-300 ${i === safeIndex ? "bg-primary w-4" : "bg-muted-foreground/20 w-1.5"
               }`}
           />
@@ -347,7 +350,7 @@ export default function HeroSection() {
       date: selectedDate,
     });
 
-  const doctors: DisplayDoctor[] = (instantDoctorsData?.data ?? []).map(toDisplayDoctor);
+  const doctors: DisplayDoctor[] = (instantDoctorsData?.data ?? []).map((doc) => toDisplayDoctor(doc, t));
   const hasDoctors = doctors.length > 0;
   const activeDoc = hasDoctors ? doctors[activeIdx % doctors.length] : null;
   const totalDoctors: number = instantDoctorsData?.total ?? doctors.length;

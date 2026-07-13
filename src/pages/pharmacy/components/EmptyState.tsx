@@ -17,12 +17,12 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <div className="w-20 h-20 rounded-[6px] bg-muted border border-border flex items-center justify-center mb-4">
         <Building2 className="h-9 w-9 text-muted-foreground" />
       </div>
-      <h2 className="text-base font-bold text-foreground mb-2">No pharmacy profile found</h2>
+      <h2 className="text-base font-bold text-foreground mb-2">{t("pages.pharmacy.empty_profile_title")}</h2>
       <p className="text-xs text-muted-foreground mb-6 max-w-xs leading-relaxed">
-        Create your pharmacy profile to manage your information, hours, and delivery settings in one place.
+        {t("pages.pharmacy.empty_profile_desc")}
       </p>
       <Button onClick={onCreate} className="text-primary-foreground bg-primary hover:bg-primary/90 gap-2 h-10 px-5">
-        <Plus className="h-4 w-4" /> Create Profile
+        <Plus className="h-4 w-4" /> {t("pages.pharmacy.create_profile")}
       </Button>
     </div>
   );

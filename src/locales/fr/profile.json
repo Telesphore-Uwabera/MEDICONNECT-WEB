@@ -33,10 +33,29 @@
     "medical": "Infos médicales",
     "insurance": "Mon assurance"
   },
-  "gender": { "male": "Homme", "female": "Femme", "other": "Autre" },
-  "relation": { "spouse": "Conjoint(e)", "parent": "Parent", "sibling": "Frère/Sœur", "child": "Enfant", "friend": "Ami(e)", "other": "Autre" },
-  "smoking": { "never": "Jamais", "former": "Ancien fumeur", "current": "Fumeur actuel" },
-  "alcohol": { "never": "Jamais", "occasional": "Occasionnel", "regular": "Régulier" },
+  "gender": {
+    "male": "Homme",
+    "female": "Femme",
+    "other": "Autre"
+  },
+  "relation": {
+    "spouse": "Conjoint(e)",
+    "parent": "Parent",
+    "sibling": "Frère/Sœur",
+    "child": "Enfant",
+    "friend": "Ami(e)",
+    "other": "Autre"
+  },
+  "smoking": {
+    "never": "Jamais",
+    "former": "Ancien fumeur",
+    "current": "Fumeur actuel"
+  },
+  "alcohol": {
+    "never": "Jamais",
+    "occasional": "Occasionnel",
+    "regular": "Régulier"
+  },
   "setup": "Configuration du profil",
   "sections_visited": "{{count}} sur {{total}} sections visitées",
   "editing": "en cours",

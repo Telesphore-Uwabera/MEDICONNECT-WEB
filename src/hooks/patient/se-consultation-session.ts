@@ -13,6 +13,7 @@
  */
 
 import { useCallback } from "react";
+import { apiFetch } from "@/lib/api";
 
 export interface ConsultSession {
   /** Guest token returned by the request API — used to poll status. */
@@ -54,6 +55,41 @@ export function readConsultSession(doctorId: number): ConsultSession | null {
   } catch {
     return null;
   }
+}
+
+// ─── Prune ended sessions ─────────────────────────────────────────────────────
+//
+// A saved session only tracks what the patient's browser last knew — it has no
+// idea the doctor accepted, then completed (or declined/cancelled) the
+// consultation while the patient wasn't looking at the dialog. Left alone,
+// the stale entry keeps surfacing "Resume"/"Join your consultation" affordances
+// for a session that's actually over, which is confusing. This checks the
+// authoritative status by guest token and clears the entry once it's terminal.
+
+const TERMINAL_STATUSES = new Set([
+  "declined",
+  "withdrawn",
+  "expired",
+  "completed",
+  "rejected",
+  "cancelled",
+]);
+
+/** Returns true if the session was stale and has been cleared. */
+export async function pruneIfEnded(session: ConsultSession): Promise<boolean> {
+  try {
+    const res = await apiFetch<{ status: string }>(
+      `/public/instant-consultations/${session.token}/status`,
+    );
+    if (TERMINAL_STATUSES.has(res.status)) {
+      localStorage.removeItem(key(session.doctorId));
+      return true;
+    }
+  } catch {
+    // Ambiguous failure (offline, etc.) — keep the session rather than
+    // discarding it on a hunch.
+  }
+  return false;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

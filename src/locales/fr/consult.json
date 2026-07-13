@@ -53,14 +53,14 @@
     "tpl_plan": "Plan"
   },
   "booking": {
-    "title": "Réserver une place à l'hôpital",
+    "title": "Réserver une place à l'établissement de santé",
     "for_patient": "Pour {{name}}",
-    "hospital": "Hôpital",
-    "search_hospitals": "Rechercher des hôpitaux…",
+    "hospital": "Établissement de santé",
+    "search_hospitals": "Rechercher des établissements de santé…",
     "searching": "Recherche…",
-    "no_hospitals": "Aucun hôpital trouvé.",
+    "no_hospitals": "Aucun établissement de santé trouvé.",
     "change": "Changer",
-    "loading_details": "Chargement des détails de l'hôpital…",
+    "loading_details": "Chargement des détails de l'établissement de santé…",
     "working_days": "Jours d'ouverture",
     "cancel": "Annuler la réservation",
     "open": "Ouvert",
@@ -70,7 +70,7 @@
     "preferred_time": "Heure souhaitée",
     "department": "Service",
     "select_department": "Choisir un service",
-    "no_departments": "Aucun service répertorié pour cet hôpital.",
+    "no_departments": "Aucun service répertorié pour cet établissement de santé.",
     "service": "Prestation",
     "select_service": "Choisir une prestation",
     "select_department_first": "Choisissez d'abord un service.",
@@ -107,7 +107,6 @@
     "waiting_room": "Salle d'attente",
     "next": "Prochain",
     "booking": "Réservation",
-    
     "booking_date": "Date de réservation",
     "booking_time": "Heure de réservation",
     "booking_status": "Statut de la réservation",
@@ -158,7 +157,6 @@
     "clear_all_filters": "Effacer tous les filtres",
     "filter_by": "Filtre par",
     "search": "Rechercher"
-
   },
   "record": {
     "title": "Dossier médical du patient",
@@ -293,7 +291,6 @@
     "accepted_ready": "Consultation acceptée · rejoignez quand vous êtes prêt",
     "in_session": "Consultation en cours",
     "ready_to_accept": "Prêt à accepter"
-
   },
   "medical_info": {
     "title": "Informations médicales",
@@ -383,7 +380,7 @@
     "specialization": "Specialisation",
     "consultation_type": "Consultation type",
     "fee": "Fee",
-    "hospital": "Hopital",
+    "hospital": "Établissement de santé",
     "name": "Name",
     "address": "Address",
     "website": "Website",
@@ -411,7 +408,7 @@
     "booking_type_values": {
       "online": "En ligne",
       "in_person": "En presentiel",
-      "hospital": "Hopital",
+      "hospital": "Établissement de santé",
       "doctor": "Medecin"
     },
     "consultation_type_values": {

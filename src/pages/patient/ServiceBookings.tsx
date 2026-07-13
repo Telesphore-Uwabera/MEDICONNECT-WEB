@@ -496,7 +496,7 @@ function BookingDetailDrawer({
                 {booking.notes && <DetailRow icon={FileText} label="Notes" value={booking.notes} />}
               </DrawerSection>
 
-              <DrawerSection title="Hospital">
+              <DrawerSection title="Health Facility">
                 <DetailRow icon={Building2} label="Name" value={booking.hospital.name_en} />
                 {booking.hospital.address && <DetailRow icon={MapPin} label="Address" value={booking.hospital.address} />}
                 {booking.hospital.phone && <DetailRow icon={Phone} label="Phone" value={booking.hospital.phone} mono />}
@@ -947,7 +947,7 @@ function ServiceBookings() {
       key: "q",
       label: "Search",
       value: filters.q,
-      placeholder: "Service, hospitalâ€¦",
+      placeholder: "Service, health facility",
       onChange: (v: string) => set("q", v)
     }
   ], [filters, set]);
@@ -1238,7 +1238,7 @@ function ServiceBookings() {
                     <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                       <tr>
                         <th className="text-left px-3 sm:px-4 py-3 font-semibold">Service</th>
-                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Hospital</th>
+                        <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden sm:table-cell">Health Facility</th>
                         <th className="text-left px-3 sm:px-4 py-3 font-semibold hidden md:table-cell">Date & Time</th>
                         <th className="text-left px-3 sm:px-4 py-3 font-semibold">Status</th>
                         <th className="px-3 sm:px-4 py-3" />

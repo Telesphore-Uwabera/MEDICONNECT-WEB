@@ -98,6 +98,7 @@ function CapacityInput({
   onCommit: (id: number, value: number) => void;
   disabled: boolean;
 }) {
+  const { t } = useTranslation();
   const serverVal = hour.max_patients ?? 0;
   const [local, setLocal] = useState<string>(
     hour.max_patients != null ? String(hour.max_patients) : ""
@@ -115,7 +116,7 @@ function CapacityInput({
   return (
     <div className="flex flex-col items-center gap-0.5">
       <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">
-        Max pts
+        {t("pages.hospital.max_pts")}
       </span>
       <div className="flex items-center gap-1">
         <input
@@ -139,7 +140,7 @@ function CapacityInput({
           <button
             onClick={handleSave}
             disabled={disabled}
-            title="Save"
+            title={t("common.save")}
             className={cn(
               "h-7 w-7 flex items-center justify-center rounded-[6px]",
               "bg-primary text-primary-foreground",
@@ -288,6 +289,12 @@ const HospitalSchedule = () => {
     return sortedHours;
   }, [sortedHours, filter]);
 
+  const filterLabels: Record<DayFilter, string> = {
+    all: t("pages.hospital.filter_all"),
+    active: t("pages.hospital.active"),
+    closed: t("pages.hospital.closed"),
+  };
+
   const totals = useMemo(() => {
     const active = sortedHours.filter((d) => !d.is_closed);
     const totalCap = active.reduce((a, d) => a + (d.max_patients ?? 0), 0);
@@ -307,11 +314,11 @@ const HospitalSchedule = () => {
   /* ─── Generate schedule ─── */
   const generate = () => {
     if (!range?.from || !range?.to) {
-      toast.error("Pick a start and end date");
+      toast.error(t("pages.hospital.pick_start_end_date"));
       return;
     }
     if (workingHours.length > 0) {
-      if (!window.confirm("This will replace the current schedule. Continue?"))
+      if (!window.confirm(t("pages.hospital.confirm_replace_schedule")))
         return;
     }
 
@@ -344,7 +351,9 @@ const HospitalSchedule = () => {
     setSchedule.mutate(hours, {
       onSuccess: (res) =>
         toast.success(t("pages.hospital.schedule_generated"), {
-          description: `${res.working_hours.length} days saved`,
+          description: t("pages.hospital.days_saved", {
+            count: res.working_hours.length,
+          }),
         }),
       onError: (err) => toast.error(err.message),
     });
@@ -375,7 +384,7 @@ const HospitalSchedule = () => {
     updateHour.mutate(
       { id, patch: { max_patients } },
       {
-        onSuccess: () => toast.success("Capacity updated"),
+        onSuccess: () => toast.success(t("pages.hospital.capacity_updated")),
         onError: (err) => toast.error(err.message),
       }
     );
@@ -393,7 +402,11 @@ const HospitalSchedule = () => {
     }));
     setSchedule.mutate(payload, {
       onSuccess: () =>
-        toast.success(active ? "All days activated" : "All days closed"),
+        toast.success(
+          active
+            ? t("pages.hospital.all_days_activated")
+            : t("pages.hospital.all_days_closed")
+        ),
       onError: (err) => toast.error(err.message),
     });
   };
@@ -409,7 +422,7 @@ const HospitalSchedule = () => {
       ...(h.max_patients ? { max_patients: h.max_patients } : {}),
     }));
     setSchedule.mutate(payload, {
-      onSuccess: () => toast.success("Weekends closed"),
+      onSuccess: () => toast.success(t("pages.hospital.weekends_closed")),
       onError: (err) => toast.error(err.message),
     });
   };
@@ -425,15 +438,17 @@ const HospitalSchedule = () => {
     }));
     setSchedule.mutate(payload, {
       onSuccess: () =>
-        toast.success(`Capacity set to ${defaultCapacity} for all days`),
+        toast.success(
+          t("pages.hospital.capacity_set_all", { count: defaultCapacity })
+        ),
       onError: (err) => toast.error(err.message),
     });
   };
 
   const handleReset = () => {
-    if (!window.confirm("This will delete all working hours. Continue?")) return;
+    if (!window.confirm(t("pages.hospital.confirm_reset_hours"))) return;
     resetHours.mutate(undefined, {
-      onSuccess: () => toast.success("Working hours reset"),
+      onSuccess: () => toast.success(t("pages.hospital.working_hours_reset")),
       onError: (err) => toast.error(err.message),
     });
   };
@@ -493,10 +508,12 @@ const HospitalSchedule = () => {
                     </p>
                     <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                       {hoursLoading
-                        ? "Loading…"
+                        ? t("common.loading")
                         : totals.totalDays > 0
-                          ? `${totals.totalDays} days configured`
-                          : "No schedule yet"}
+                          ? t("pages.hospital.days_configured", {
+                            count: totals.totalDays,
+                          })
+                          : t("pages.hospital.no_schedule_yet")}
                     </p>
                   </div>
                 </div>
@@ -505,9 +522,9 @@ const HospitalSchedule = () => {
 
                 {/* Hide from patients — red toggle */}
                 <ToggleRow
-                  label="Hide from patients"
-                  activeLabel="Hidden from search"
-                  inactiveLabel="Visible in search"
+                  label={t("pages.hospital.hide_from_patients")}
+                  activeLabel={t("pages.hospital.hidden_from_search")}
+                  inactiveLabel={t("pages.hospital.visible_in_search")}
                   icon={!isActive ? EyeOff : Eye}
                   activeColor="red"
                   checked={!isActive}
@@ -519,9 +536,9 @@ const HospitalSchedule = () => {
 
                 {/* Pause bookings — amber toggle */}
                 <ToggleRow
-                  label="Pause bookings"
-                  activeLabel="Not accepting"
-                  inactiveLabel="Accepting bookings"
+                  label={t("pages.hospital.pause_bookings")}
+                  activeLabel={t("pages.hospital.not_accepting")}
+                  inactiveLabel={t("pages.hospital.accepting_bookings")}
                   icon={!isAccepting ? BanIcon : BookOpen}
                   activeColor="amber"
                   checked={!isAccepting}
@@ -536,7 +553,7 @@ const HospitalSchedule = () => {
               <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-[11px] text-red-700 dark:text-red-400">
                 <AlertTriangle size={14} className="flex-shrink-0 text-red-500" />
                 <span className="font-medium">
-                  Hospital is hidden from patient search. No new bookings possible.
+                  {t("pages.hospital.hospital_hidden_banner")}
                 </span>
               </div>
             )}
@@ -544,7 +561,7 @@ const HospitalSchedule = () => {
               <div className="flex items-center gap-3 rounded-[6px] border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[11px] text-amber-700 dark:text-amber-400">
                 <AlertTriangle size={14} className="flex-shrink-0 text-amber-500" />
                 <span className="font-medium">
-                  Hospital is visible but not accepting bookings.
+                  {t("pages.hospital.hospital_not_accepting_banner")}
                 </span>
               </div>
             )}
@@ -552,10 +569,10 @@ const HospitalSchedule = () => {
             {/* ── Stats row ── */}
             {sortedHours.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <StatCard label="Total days" value={totals.totalDays} accent="primary" />
-                <StatCard label="Active days" value={totals.activeDays} accent="success" />
-                <StatCard label="Total capacity" value={totals.capacity} accent="info" />
-                <StatCard label="Off days" value={totals.offDays} accent="primary" />
+                <StatCard label={t("pages.hospital.total_days")} value={totals.totalDays} accent="primary" />
+                <StatCard label={t("pages.hospital.active_days")} value={totals.activeDays} accent="success" />
+                <StatCard label={t("pages.hospital.total_capacity")} value={totals.capacity} accent="info" />
+                <StatCard label={t("pages.hospital.off_days")} value={totals.offDays} accent="primary" />
               </div>
             )}
 
@@ -595,7 +612,8 @@ const HospitalSchedule = () => {
                           </div>
                           {dayCount !== null && (
                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary shrink-0">
-                              {dayCount}d
+                              {dayCount}
+                              {t("pages.hospital.days_suffix")}
                             </span>
                           )}
                           <ChevronDown className="h-3 w-3 text-muted-foreground/50 shrink-0" />
@@ -656,7 +674,7 @@ const HospitalSchedule = () => {
                   <div className="rounded-[6px] border border-border/70 bg-card p-4 shadow-sm space-y-2">
                     <h3 className="text-[12px] font-semibold text-foreground flex items-center gap-1.5">
                       <ChevronsDownUp size={13} className="text-primary" />
-                      Bulk actions
+                      {t("pages.hospital.bulk_actions")}
                     </h3>
                     <div className="space-y-1.5">
                       <button
@@ -665,7 +683,7 @@ const HospitalSchedule = () => {
                         className="w-full flex items-center gap-1.5 text-[10px] text-primary font-medium px-2.5 py-1.5 rounded-[6px] border border-primary/20 bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-50"
                       >
                         <CalendarCheck2 size={11} />
-                        Activate all days
+                        {t("pages.hospital.activate_all_days")}
                       </button>
                       <button
                         onClick={() => bulkActivate(false)}
@@ -673,7 +691,7 @@ const HospitalSchedule = () => {
                         className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <CalendarX2 size={11} />
-                        Close all days
+                        {t("pages.hospital.close_all_days")}
                       </button>
                       <button
                         onClick={bulkCloseWeekends}
@@ -681,7 +699,7 @@ const HospitalSchedule = () => {
                         className="w-full flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium px-2.5 py-1.5 rounded-[6px] border border-border/60 bg-muted hover:bg-muted/80 transition-colors disabled:opacity-50"
                       >
                         <XCircle size={11} />
-                        Close weekends only
+                        {t("pages.hospital.close_weekends_only")}
                       </button>
                       <button
                         onClick={bulkSetCapacity}
@@ -689,7 +707,9 @@ const HospitalSchedule = () => {
                         className="w-full flex items-center gap-1.5 text-[10px] text-amber-700 dark:text-amber-400 font-medium px-2.5 py-1.5 rounded-[6px] border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
                       >
                         <Users2 size={11} />
-                        Apply capacity ({defaultCapacity}) to all
+                        {t("pages.hospital.apply_capacity_to_all", {
+                          count: defaultCapacity,
+                        })}
                       </button>
                       <button
                         onClick={handleReset}
@@ -697,7 +717,7 @@ const HospitalSchedule = () => {
                         className="w-full flex items-center gap-1.5 text-[10px] text-red-600 dark:text-red-400 font-medium px-2.5 py-1.5 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
                       >
                         <XCircle size={11} />
-                        Reset all hours
+                        {t("pages.hospital.reset_all_hours")}
                       </button>
                     </div>
                   </div>
@@ -727,7 +747,7 @@ const HospitalSchedule = () => {
                       </h3>
                       <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                         {hoursLoading
-                          ? "Loading schedule…"
+                          ? t("pages.hospital.loading_schedule")
                           : sortedHours.length === 0
                             ? t("pages.hospital.no_schedule_yet")
                             : t("pages.hospital.days_configured", {
@@ -749,7 +769,7 @@ const HospitalSchedule = () => {
                                 : "text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            {f.charAt(0).toUpperCase() + f.slice(1)}
+                            {filterLabels[f]}
                             {f === "active" && (
                               <span className="ml-1 text-[9px] text-primary">
                                 {totals.activeDays}
@@ -777,7 +797,7 @@ const HospitalSchedule = () => {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
                           <TrendingUp size={10} />
-                          Active days / total days
+                          {t("pages.hospital.active_total_days")}
                         </span>
                         <span className="text-[10px] font-semibold text-foreground">
                           {totals.activeDays} / {totals.totalDays}
@@ -803,7 +823,7 @@ const HospitalSchedule = () => {
                   {hoursLoading ? (
                     <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
                       <Loader2 size={16} className="animate-spin" />
-                      <span className="text-[11px]">Loading schedule…</span>
+                      <span className="text-[11px]">{t("pages.hospital.loading_schedule")}</span>
                     </div>
                   ) : filteredHours.length === 0 ? (
                     <div className="text-center py-16 space-y-2">
@@ -814,7 +834,9 @@ const HospitalSchedule = () => {
                       <p className="text-[11px] text-muted-foreground">
                         {sortedHours.length === 0
                           ? t("pages.hospital.no_schedule_hint")
-                          : `No ${filter} days in this period.`}
+                          : filter === "closed"
+                            ? t("pages.hospital.no_closed_days_period")
+                            : t("pages.hospital.no_active_days_period")}
                       </p>
                     </div>
                   ) : (
@@ -855,7 +877,7 @@ const HospitalSchedule = () => {
                                   className="text-[9px] px-1.5 py-0 border-primary/20 bg-primary/5 text-primary gap-1"
                                 >
                                   <CheckCircle2 size={9} />
-                                  Open
+                                  {t("pages.hospital.open")}
                                 </Badge>
                               ) : (
                                 <Badge
@@ -863,7 +885,7 @@ const HospitalSchedule = () => {
                                   className="text-[9px] px-1.5 py-0 border-border bg-muted text-muted-foreground gap-1"
                                 >
                                   <XCircle size={9} />
-                                  Closed
+                                  {t("pages.hospital.closed")}
                                 </Badge>
                               )}
                               {!hour.is_closed && hour.open_time && (
@@ -877,7 +899,11 @@ const HospitalSchedule = () => {
                             {!hour.is_closed && hour.max_patients != null && (
                               <div className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
                                 <Users2 size={9} />
-                                <span>{hour.max_patients} max patients</span>
+                                <span>
+                                  {t("pages.hospital.max_patients_count", {
+                                    count: hour.max_patients,
+                                  })}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -894,7 +920,7 @@ const HospitalSchedule = () => {
                             {/* Open/closed toggle */}
                             <div className="flex flex-col items-center gap-0.5">
                               <span className="text-[9px] uppercase tracking-wide text-muted-foreground/60">
-                                Open
+                                {t("pages.hospital.open")}
                               </span>
                               <Switch
                                 checked={!hour.is_closed}

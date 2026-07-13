@@ -98,11 +98,11 @@ const UNIT_OPTIONS: MedicineUnit[] = [
 type SortOption = "name" | "stock-asc" | "stock-desc" | "price-asc" | "price-desc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "name", label: "Name (A-Z)" },
-  { value: "stock-desc", label: "Stock: Most first" },
-  { value: "stock-asc", label: "Stock: Least first" },
-  { value: "price-asc", label: "Price: Low to high" },
-  { value: "price-desc", label: "Price: High to low" },
+  { value: "name", label: "pages.pharmacy.sort_name_az" },
+  { value: "stock-desc", label: "pages.pharmacy.sort_stock_desc" },
+  { value: "stock-asc", label: "pages.pharmacy.sort_stock_asc" },
+  { value: "price-asc", label: "pages.pharmacy.sort_price_asc" },
+  { value: "price-desc", label: "pages.pharmacy.sort_price_desc" },
 ];
 
  
@@ -143,7 +143,7 @@ function formatPrice(price: string, currency: string) {
   return `${Number.isNaN(n) ? price : n.toLocaleString()} ${currency}`;
 }
 
-// â”€â”€â”€ Sidebar atoms (identical to PharmacyOrders / RestockRequests) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Sidebar atoms (identical to PharmacyOrders / RestockRequests) 
 
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -276,7 +276,7 @@ function ImportMedicinesDrawer({
     setDownloading(true);
     try {
       await downloadMedicineImportTemplate();
-      toast.success("Template downloaded.");
+      toast.success(t("pages.pharmacy.template_downloaded"));
     } catch (error) {
       toast.error("Could not download template.", {
         description: getErrorMessage(error),
@@ -288,23 +288,23 @@ function ImportMedicinesDrawer({
 
   const handleImport = () => {
     if (!file) {
-      toast.error("Choose an Excel or CSV file first.");
+      toast.error(t("pages.pharmacy.choose_import_file"));
       return;
     }
 
     importMedicines.mutate(file, {
       onSuccess: (res) => {
-        toast.success(res.message || "Medicines imported successfully.", {
+        toast.success(res.message || t("pages.pharmacy.medicines_imported"), {
           description: [
-            typeof res.imported === "number" ? `${res.imported} imported` : null,
-            typeof res.updated === "number" ? `${res.updated} updated` : null,
-            typeof res.skipped === "number" ? `${res.skipped} skipped` : null,
+            typeof res.imported === "number" ? t("pages.pharmacy.imported_count", { count: res.imported }) : null,
+            typeof res.updated === "number" ? t("pages.pharmacy.updated_count", { count: res.updated }) : null,
+            typeof res.skipped === "number" ? t("pages.pharmacy.skipped_count", { count: res.skipped }) : null,
           ].filter(Boolean).join(" . ") || undefined,
         });
         onClose();
       },
       onError: (error) => {
-        toast.error("Import failed.", { description: getErrorMessage(error) });
+        toast.error(t("pages.pharmacy.import_failed"), { description: getErrorMessage(error, t("pages.pharmacy.something_went_wrong")) });
       },
     });
   };
@@ -317,7 +317,7 @@ function ImportMedicinesDrawer({
             Import medicines
           </SheetTitle>
           <SheetDescription className="text-[10px] text-muted-foreground/70">
-            Download the template, fill it, then upload the Excel or CSV file.
+            {t("pages.pharmacy.import_medicines_desc")}
           </SheetDescription>
         </SheetHeader>
 
@@ -328,9 +328,9 @@ function ImportMedicinesDrawer({
                 <FileSpreadsheet className="h-4 w-4" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-foreground">Medicine import template</p>
+                <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.import_template_title")}</p>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Use the backend template so columns match the expected format.
+                  {t("pages.pharmacy.import_template_desc")}
                 </p>
               </div>
             </div>
@@ -347,7 +347,7 @@ function ImportMedicinesDrawer({
           </div>
 
           <div className="space-y-2">
-            <label className={labelCls}>Upload filled file</label>
+            <label className={labelCls}>{t("pages.pharmacy.upload_filled_file")}</label>
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
@@ -356,7 +356,7 @@ function ImportMedicinesDrawer({
             />
             {file && (
               <p className="text-[10px] text-muted-foreground">
-                Selected: <span className="font-medium text-foreground">{file.name}</span>
+                {t("pages.pharmacy.selected_file")} <span className="font-medium text-foreground">{file.name}</span>
               </p>
             )}
           </div>
@@ -447,10 +447,10 @@ function MedicineFormDrawer({
       <SheetContent className="w-full sm:max-w-lg p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0 flex-shrink-0">
           <SheetTitle className="text-[13px] font-semibold text-foreground">
-            {isEdit ? "Edit Medicine" : "Add Medicine"}
+            {isEdit ? t("pages.pharmacy.edit_medicine") : t("pages.pharmacy.add_medicine")}
           </SheetTitle>
           <SheetDescription className="text-[10px] text-muted-foreground/70">
-            {isEdit ? `Editing "${editing?.name}"` : "Add a new medicine to your inventory"}
+            {isEdit ? t("pages.pharmacy.editing_item", { name: editing?.name }) : t("pages.pharmacy.add_medicine_desc")}
           </SheetDescription>
         </SheetHeader>
 
@@ -458,12 +458,12 @@ function MedicineFormDrawer({
           {/* Row 1: name + generic */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Name <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t("pages.pharmacy.name")} <span className="text-red-500">*</span></label>
               <input required value={form.name} onChange={(e) => set("name", e.target.value)}
                 className={inputCls} placeholder="Amoxicillin 500mg" />
             </div>
             <div>
-              <label className={labelCls}>Generic Name</label>
+              <label className={labelCls}>{t("pages.pharmacy.generic_name")}</label>
               <input value={form.generic_name} onChange={(e) => set("generic_name", e.target.value)}
                 className={inputCls} placeholder="Amoxicillin" />
             </div>
@@ -472,17 +472,17 @@ function MedicineFormDrawer({
           {/* Row 2: category + unit */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Category</label>
+              <label className={labelCls}>{t("pages.pharmacy.category")}</label>
               <select value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
                 className={inputCls}>
-                <option value="">- None -</option>
+                <option value="">{t("pages.pharmacy.none")}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className={labelCls}>Unit <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t("pages.pharmacy.unit")} <span className="text-red-500">*</span></label>
               <select required value={form.unit} onChange={(e) => set("unit", e.target.value as MedicineUnit)}
                 className={inputCls}>
                 {UNIT_OPTIONS.map((u) => (
@@ -495,13 +495,13 @@ function MedicineFormDrawer({
           {/* Row 3: price + currency */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Price <span className="text-red-500">*</span></label>
+              <label className={labelCls}>{t("pages.pharmacy.price")} <span className="text-red-500">*</span></label>
               <input required type="number" min={0} step="0.01" value={form.price}
                 onChange={(e) => set("price", e.target.value)}
                 className={inputCls} placeholder="1200" />
             </div>
             <div>
-              <label className={labelCls}>Currency</label>
+              <label className={labelCls}>{t("pages.pharmacy.currency")}</label>
               <input value={form.currency} onChange={(e) => set("currency", e.target.value)}
                 className={inputCls} placeholder="RWF" />
             </div>
@@ -509,16 +509,16 @@ function MedicineFormDrawer({
 
           {/* Description */}
           <div>
-            <label className={labelCls}>Description</label>
+            <label className={labelCls}>{t("pages.pharmacy.description")}</label>
             <textarea rows={2} value={form.description}
               onChange={(e) => set("description", e.target.value)}
-              className={cn(inputCls, "resize-none")} placeholder="Optional description..." />
+              className={cn(inputCls, "resize-none")} placeholder={t("pages.pharmacy.optional_description_placeholder")} />
           </div>
 
           {/* Barcode + Prescription */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Barcode</label>
+              <label className={labelCls}>{t("pages.pharmacy.barcode")}</label>
               <input value={form.barcode} onChange={(e) => set("barcode", e.target.value)}
                 className={inputCls} placeholder="123456789" />
             </div>
@@ -527,7 +527,7 @@ function MedicineFormDrawer({
                 <input type="checkbox" checked={form.requires_prescription}
                   onChange={(e) => set("requires_prescription", e.target.checked)}
                   className="w-3.5 h-3.5 accent-primary" />
-                <span className="text-[11px] text-muted-foreground">Requires prescription</span>
+                <span className="text-[11px] text-muted-foreground">{t("pages.pharmacy.requires_prescription")}</span>
               </label>
             </div>
           </div>
@@ -540,25 +540,25 @@ function MedicineFormDrawer({
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Quantity</label>
+                  <label className={labelCls}>{t("pages.pharmacy.quantity")}</label>
                   <input type="number" min={0} value={form.initial_quantity}
                     onChange={(e) => set("initial_quantity", e.target.value)}
                     className={inputCls} placeholder="100" />
                 </div>
                 <div>
-                  <label className={labelCls}>Low Stock Threshold</label>
+                  <label className={labelCls}>{t("pages.pharmacy.low_stock_threshold")}</label>
                   <input type="number" min={0} value={form.low_stock_threshold}
                     onChange={(e) => set("low_stock_threshold", e.target.value)}
                     className={inputCls} placeholder="10" />
                 </div>
                 <div>
-                  <label className={labelCls}>Batch Number</label>
+                  <label className={labelCls}>{t("pages.pharmacy.batch_number")}</label>
                   <input value={form.batch_number}
                     onChange={(e) => set("batch_number", e.target.value)}
                     className={inputCls} placeholder="BATCH-001" />
                 </div>
                 <div>
-                  <label className={labelCls}>Expiry Date</label>
+                  <label className={labelCls}>{t("pages.pharmacy.expiry_date")}</label>
                   <input type="date" value={form.expiry_date}
                     onChange={(e) => set("expiry_date", e.target.value)}
                     className={inputCls} />
@@ -582,7 +582,7 @@ function MedicineFormDrawer({
           <Button type="submit" form={MEDICINE_FORM_ID} size="sm" disabled={isPending}
             className="flex-1 h-7 text-[11px] font-semibold rounded-[6px] shadow-sm">
             {isPending && <Loader2 className="w-3 h-3 animate-spin mr-1.5" />}
-            {isEdit ? "Save Changes" : "Add Medicine"}
+            {isEdit ? t("pages.pharmacy.save_changes") : t("pages.pharmacy.add_medicine")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -605,7 +605,7 @@ function DeleteConfirmDrawer({
     <Sheet open={!!medicine} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full sm:max-w-sm p-0 flex flex-col">
         <SheetHeader className="px-5 py-4 border-b border-border/60 text-left space-y-0">
-          <SheetTitle className="text-[13px] font-semibold text-foreground">Remove Medicine</SheetTitle>
+          <SheetTitle className="text-[13px] font-semibold text-foreground">{t("pages.pharmacy.remove_medicine")}</SheetTitle>
         </SheetHeader>
 
         {medicine && (
@@ -692,7 +692,7 @@ function MedicineDetailsDrawer({
                 {medicine.name}
               </SheetTitle>
               <SheetDescription className="text-[10px] text-muted-foreground/70 truncate">
-                {medicine.generic_name || "Medicine details"}
+                {medicine.generic_name || t("pages.pharmacy.medicine_details")}
               </SheetDescription>
             </div>
           </div>
@@ -703,7 +703,7 @@ function MedicineDetailsDrawer({
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="outline" className={cn("border text-[9px] px-1.5 py-0 font-medium", STOCK_STYLES[status])}>
               <span className={cn("w-1 h-1 rounded-full mr-1", STATUS_DOT[status], status === "low" && "animate-pulse")} />
-              {STATUS_LABELS[status]}
+              {t(STATUS_LABEL_KEYS[status])}
             </Badge>
             <Badge
               variant="outline"
@@ -714,11 +714,11 @@ function MedicineDetailsDrawer({
                   : "bg-secondary/40 text-muted-foreground border-border/50",
               )}
             >
-              {medicine.is_active ? "Active" : "Inactive"}
+              {medicine.is_active ? t("pages.pharmacy.active") : t("pages.pharmacy.inactive")}
             </Badge>
             {medicine.requires_prescription && (
               <Badge variant="outline" className="border text-[9px] px-1.5 py-0 font-medium bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-900">
-                <ShieldCheck className="w-2.5 h-2.5 mr-1" /> Prescription
+                <ShieldCheck className="w-2.5 h-2.5 mr-1" /> {t("pages.pharmacy.prescription")}
               </Badge>
             )}
           </div>
@@ -739,16 +739,16 @@ function MedicineDetailsDrawer({
               Description
             </p>
             <p className="text-[11px] text-foreground/90 leading-relaxed">
-              {medicine.description || <span className="text-muted-foreground/50">No description provided</span>}
+              {medicine.description || <span className="text-muted-foreground/50">{t("pages.pharmacy.no_description_provided")}</span>}
             </p>
           </div>
 
           {/* Category / unit / barcode */}
           <div className="grid grid-cols-2 gap-2.5">
-            <DetailRow icon={Tag} label="Category" value={medicine.category?.name ?? "Uncategorized"} />
-            <DetailRow icon={Package} label="Unit" value={<span className="capitalize">{medicine.unit}</span>} />
-            <DetailRow icon={Barcode} label="Barcode" value={medicine.barcode ?? "-"} />
-            <DetailRow icon={Hash} label="Medicine ID" value={`#${medicine.id}`} />
+            <DetailRow icon={Tag} label={t("pages.pharmacy.category")} value={medicine.category?.name ?? t("pages.pharmacy.uncategorized")} />
+            <DetailRow icon={Package} label={t("pages.pharmacy.unit")} value={<span className="capitalize">{medicine.unit}</span>} />
+            <DetailRow icon={Barcode} label={t("pages.pharmacy.barcode")} value={medicine.barcode ?? "-"} />
+            <DetailRow icon={Hash} label={t("pages.pharmacy.medicine_id")} value={`#${medicine.id}`} />
           </div>
 
           {/* Stock */}
@@ -758,7 +758,7 @@ function MedicineDetailsDrawer({
             </p>
             <div className="rounded-[6px] border border-border/60 bg-secondary/10 p-3 grid grid-cols-2 gap-2.5">
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Quantity</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.quantity")}</p>
                 <p
                   className={cn(
                     "text-[12px] font-mono font-semibold tabular-nums",
@@ -769,19 +769,19 @@ function MedicineDetailsDrawer({
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Low Stock Threshold</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.low_stock_threshold")}</p>
                 <p className="text-[12px] font-mono font-semibold tabular-nums text-foreground">
                   {medicine.stock?.low_stock_threshold ?? "-"}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Batch Number</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.batch_number")}</p>
                 <p className="text-[11px] text-foreground">{medicine.stock?.batch_number ?? "-"}</p>
               </div>
               <div>
-                <p className="text-[10px] text-muted-foreground/70">Expiry Date</p>
+                <p className="text-[10px] text-muted-foreground/70">{t("pages.pharmacy.expiry_date")}</p>
                 <p className="text-[11px] text-foreground">
-                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "â€”"}
+                  {medicine.stock?.expiry_date ? formatDate(medicine.stock.expiry_date) : "-"}
                 </p>
               </div>
             </div>
@@ -789,14 +789,14 @@ function MedicineDetailsDrawer({
 
           {/* Timestamps */}
           <div className="grid grid-cols-1 gap-2.5">
-            <DetailRow icon={Calendar} label="Created" value={formatDateTime(medicine.created_at)} />
-            <DetailRow icon={Clock} label="Last updated" value={formatDateTime(medicine.updated_at)} />
+            <DetailRow icon={Calendar} label={t("pages.pharmacy.created")} value={formatDateTime(medicine.created_at)} />
+            <DetailRow icon={Clock} label={t("pages.pharmacy.last_updated")} value={formatDateTime(medicine.updated_at)} />
           </div>
         </div>
 
         <SheetFooter className="px-5 py-3.5 border-t border-border/60 flex-row gap-2">
           <Button size="sm" variant="outline" onClick={() => onEdit(medicine)} className="flex-1 h-7 text-[11px] rounded-[6px]">
-            <Pencil className="w-3 h-3 mr-1.5" /> Edit
+            <Pencil className="w-3 h-3 mr-1.5" /> {t("pages.pharmacy.edit")}
           </Button>
           <Button
             size="sm"
@@ -804,7 +804,7 @@ function MedicineDetailsDrawer({
             onClick={() => onDelete(medicine)}
             className="flex-1 h-7 text-[11px] rounded-[6px] text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950/30"
           >
-            <Trash2 className="w-3 h-3 mr-1.5" /> Delete
+            <Trash2 className="w-3 h-3 mr-1.5" /> {t("pages.pharmacy.delete")}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -917,23 +917,23 @@ const PharmacyInventory = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Stock Status",
+      label: t("pages.pharmacy.stock_status"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "in-stock", label: "In stock" },
-        { value: "low", label: "Low stock" },
-        { value: "out", label: "Out of stock" },
+        { value: "all", label: t("pages.pharmacy.all_statuses") },
+        { value: "in-stock", label: t("pages.pharmacy.in_stock_filter") },
+        { value: "low", label: t("pages.pharmacy.low_stock_filter") },
+        { value: "out", label: t("pages.pharmacy.out_of_stock_filter") },
       ],
       onChange: (v: string) => set("status", v as any)
     },
     {
       type: "select" as const,
       key: "categoryId",
-      label: "Category",
+      label: t("pages.pharmacy.category"),
       value: String(filters.categoryId),
       options: [
-        { value: "all", label: "All categories" },
+        { value: "all", label: t("pages.pharmacy.all_categories") },
         ...categories.map((c) => ({ value: String(c.id), label: c.name }))
       ],
       onChange: (v: string) => set("categoryId", v === "all" ? "all" : Number(v))
@@ -955,25 +955,25 @@ const PharmacyInventory = () => {
           {/* Stat cards */}
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
-              label="Total Items"
+              label={t("pages.pharmacy.total_items")}
               value={isLoading ? "-" : counts.total}
               icon={Package}
               accent="primary"
             />
             <StatCard
-              label="In Stock"
+              label={t("pages.pharmacy.in_stock")}
               value={isLoading ? "-" : counts.inStock}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label="Low Stock"
+              label={t("pages.pharmacy.low_stock")}
               value={isLoading ? "-" : counts.low}
               icon={AlertTriangle}
               accent="warning"
             />
             <StatCard
-              label="Out of Stock"
+              label={t("pages.pharmacy.out_of_stock")}
               value={isLoading ? "-" : counts.out}
               icon={AlertCircle}
               accent="warning"
@@ -987,7 +987,7 @@ const PharmacyInventory = () => {
               {isLoading ? (
                 <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading medicines...
+                  {t("pages.pharmacy.loading_medicines")}
                 </span>
               ) : (
                 <p className="text-[11px] text-muted-foreground">
@@ -1013,7 +1013,7 @@ const PharmacyInventory = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-red-700 bg-red-50 dark:bg-red-950/30 dark:text-red-400 border border-red-200 dark:border-red-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                      {counts.out} out of stock
+                      {counts.out} {t("pages.pharmacy.out_of_stock_filter")}
                     </button>
                   )}
                   {counts.low > 0 && (
@@ -1022,7 +1022,7 @@ const PharmacyInventory = () => {
                       className="flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-900 px-2 py-0.5 rounded-[6px] hover:opacity-80 transition-opacity"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                      {counts.low} low stock
+                      {counts.low} {t("pages.pharmacy.low_stock_filter")}
                     </button>
                   )}
                 </div>
@@ -1033,7 +1033,7 @@ const PharmacyInventory = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => refetch()}
-                title="Refresh"
+                title={t("pages.pharmacy.refresh")}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
@@ -1046,7 +1046,7 @@ const PharmacyInventory = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search medicine or category..."
+                  placeholder={t("pages.pharmacy.search_medicine_category")}
                   className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -1059,7 +1059,7 @@ const PharmacyInventory = () => {
                   className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
                 >
                   {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={o.value} value={o.value}>{t(o.label)}</option>
                   ))}
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
@@ -1070,10 +1070,10 @@ const PharmacyInventory = () => {
                 variant="outline"
                 onClick={() => setImportOpen(true)}
                 className="flex h-7 w-7 sm:w-auto sm:px-3 p-0 sm:p-2 text-[10px] font-semibold rounded-[6px] border-border/60"
-                title="Import medicines"
+                title={t("pages.pharmacy.import_medicines")}
               >
                 <Upload className="h-3 w-3 sm:mr-1" />
-                <span className="hidden sm:inline">Import</span>
+                <span className="hidden sm:inline">{t("pages.pharmacy.import")}</span>
               </Button>
 
               {/* Add medicine button */}
@@ -1113,8 +1113,8 @@ const PharmacyInventory = () => {
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">Failed to load medicines</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
+                  <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_medicines")}</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">{t("pages.pharmacy.check_connection_try_again")}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => refetch()}
                   className="text-[11px] h-7 px-3 rounded-[6px] mt-1">
@@ -1130,7 +1130,7 @@ const PharmacyInventory = () => {
                 <table className="w-full text-[11px]">
                   <thead className="bg-secondary/40 text-[9px] uppercase tracking-wider text-muted-foreground/80 border-b border-border/60">
                     <tr>
-                      {["Medicine", "Category", "Stock", "Price", "Status", ""].map((h) => (
+                      {[t("pages.pharmacy.medicine"), t("pages.pharmacy.category"), t("pages.pharmacy.stock"), t("pages.pharmacy.price"), t("pages.pharmacy.status"), ""].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                       ))}
                     </tr>
@@ -1161,10 +1161,10 @@ const PharmacyInventory = () => {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    {hasActiveFilters ? "No medicines match your filters" : "No medicines yet"}
+                    {hasActiveFilters ? t("pages.pharmacy.no_medicines_match") : t("pages.pharmacy.no_medicines_yet")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    {hasActiveFilters ? "Try widening your search criteria" : "Add your first medicine to get started"}
+                    {hasActiveFilters ? t("pages.pharmacy.try_widening_search") : t("pages.pharmacy.add_first_medicine")}
                   </p>
                 </div>
                 {hasActiveFilters ? (
@@ -1275,7 +1275,7 @@ const PharmacyInventory = () => {
                                   status === "low" && "animate-pulse",
                                 )}
                               />
-                              {STATUS_LABELS[status]}
+                              {t(STATUS_LABEL_KEYS[status])}
                             </Badge>
                           </td>
 

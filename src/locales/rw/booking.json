@@ -53,13 +53,21 @@
     "morning": "Mu gitondo",
     "afternoon": "Ku manywa",
     "evening": "Nimugoroba",
-    "days_mon": ["Mb", "Kb", "Gt", "Kn", "Gn", "Gd", "Cy"]
+    "days_mon": [
+      "Mb",
+      "Kb",
+      "Gt",
+      "Kn",
+      "Gn",
+      "Gd",
+      "Cy"
+    ]
   },
   "hospitalAppointment": {
     "signInDesc": "Ukeneye konti y'umurwayi kugira ngo ufate umwanya mu bitaro.",
     "bookingConfirmed": "Gufata gahunda byemejwe!",
     "bookingConfirmedDesc": "{{hospital}} · {{service}} · {{date}} saa {{time}}",
-    "loadingDetails": "Gupakira amakuru y'ivuriro…",
+    "loadingDetails": "Gupakira amakuru y'ikigo nderabuzima…",
     "workingDays": "Iminsi y'akazi",
     "noOpenDays": "Iki gitaro nta minsi ifunguye cyashyizeho.",
     "selectADate": "Hitamo itariki",

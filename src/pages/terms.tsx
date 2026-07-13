@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AlertCircle, CalendarDays, FileText, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import TopBar from "@/components/landing/TopBar";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import Footer from "@/components/landing/Footer";
@@ -111,10 +112,7 @@ const Terms = () => {
                   </Button>
                 </div>
               ) : content ? (
-                <div
-                  className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: content }}
-                />
+                <RichTextRenderer value={content} className="text-sm text-foreground/80" />
               ) : (
                 <div className="flex min-h-[280px] items-center justify-center text-center text-sm text-muted-foreground">
                   No current terms and conditions document is available yet.

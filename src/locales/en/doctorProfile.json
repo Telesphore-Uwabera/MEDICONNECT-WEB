@@ -1,12 +1,40 @@
 {
   "steps": {
-    "personal": { "label": "Personal", "title": "Professional information", "desc": "Specialization, degree, license, bio & fees" },
-    "specializations": { "label": "Specializations", "title": "Specializations", "desc": "Primary & secondary medical specializations" },
-    "education": { "label": "Education", "title": "Education history", "desc": "Degrees and academic background" },
-    "experience": { "label": "Experience", "title": "Work experience", "desc": "Past and current positions" },
-    "qualifications": { "label": "Qualifications", "title": "Certifications & qualifications", "desc": "Certifications and licenses" },
-    "documents": { "label": "Documents", "title": "Upload documents", "desc": "Profile photo and official docs" },
-    "linksSection": { "label": "Social Links", "title": "Social & online presence", "desc": "LinkedIn, website, ResearchGate & more" }
+    "personal": {
+      "label": "Personal",
+      "title": "Professional information",
+      "desc": "Specialization, degree, license, bio & fees"
+    },
+    "specializations": {
+      "label": "Specializations",
+      "title": "Specializations",
+      "desc": "Primary & secondary medical specializations"
+    },
+    "education": {
+      "label": "Education",
+      "title": "Education history",
+      "desc": "Degrees and academic background"
+    },
+    "experience": {
+      "label": "Experience",
+      "title": "Work experience",
+      "desc": "Past and current positions"
+    },
+    "qualifications": {
+      "label": "Qualifications",
+      "title": "Certifications & qualifications",
+      "desc": "Certifications and licenses"
+    },
+    "documents": {
+      "label": "Documents",
+      "title": "Upload documents",
+      "desc": "Profile photo and official docs"
+    },
+    "linksSection": {
+      "label": "Social Links",
+      "title": "Social & online presence",
+      "desc": "LinkedIn, website, ResearchGate & more"
+    }
   },
   "consultation_types": {
     "online": "Online only",

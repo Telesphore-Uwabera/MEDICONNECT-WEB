@@ -216,7 +216,7 @@ function Pagination({
     <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-card/50">
       <p className="text-[12px] text-muted-foreground">
         Showing <span className="font-semibold text-foreground">{from}–{to}</span> of{" "}
-        <span className="font-semibold text-foreground">{total}</span> hospitals
+        <span className="font-semibold text-foreground">{total}</span> health facilities
       </p>
       <div className="flex items-center gap-1">
         <button

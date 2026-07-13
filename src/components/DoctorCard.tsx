@@ -39,7 +39,7 @@ import type {
   ApiDoctorHospital,
   ApiDoctorSpecialization,
 } from "@/hooks/patient/use-patient-doctor";
-import { readConsultSession } from "@/hooks/patient/se-consultation-session";
+import { readConsultSession, pruneIfEnded } from "@/hooks/patient/se-consultation-session";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
@@ -84,8 +84,7 @@ function DoctorAvatar({
   );
 }
 
-// â”€â”€â”€ Consultation badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Unchanged â€” shared with UnifiedModal, out of scope for this pass.
+// Unchanged  shared with UnifiedModal, out of scope for this pass.
 
 function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   const { t } = useTranslation();
@@ -726,15 +725,28 @@ export const DoctorCard = ({
   useEffect(() => {
     if (modalOpen) return;
 
-    const check = () => {
-      const exists = !!readConsultSession(doctor.id);
-      setHasSavedSession(exists);
-      if (exists) setSavedSessionPillDismissed(false);
+    let cancelled = false;
+
+    const check = async () => {
+      const existing = readConsultSession(doctor.id);
+      if (!existing) {
+        if (!cancelled) setHasSavedSession(false);
+        return;
+      }
+      // The doctor may have completed/declined this consultation while the
+      // patient wasn't looking — verify before keeping the resume affordance up.
+      const ended = await pruneIfEnded(existing);
+      if (cancelled) return;
+      setHasSavedSession(!ended);
+      if (!ended) setSavedSessionPillDismissed(false);
     };
 
     check();
     const id = setInterval(check, 2000);
-    return () => clearInterval(id);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [modalOpen, doctor.id]);
 
   if (!bookOpen && doctorProp !== doctor && doctorProp.id === doctor.id) {

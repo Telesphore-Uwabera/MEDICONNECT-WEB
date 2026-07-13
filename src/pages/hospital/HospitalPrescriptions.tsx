@@ -35,12 +35,6 @@ const HOSPITAL = "King Faisal Hospital";
 type SortOption = "date-desc" | "date-asc" | "patient";
 type ViewMode = "grid" | "list";
 
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "date-desc", label: "Date: Newest first" },
-  { value: "date-asc", label: "Date: Oldest first" },
-  { value: "patient", label: "Patient (A–Z)" },
-];
-
 interface FilterState {
   search: string;
   status: RxStatus | "All";
@@ -222,11 +216,13 @@ function PillGroup<T extends string>({
 function PrescriptionCard({
   p,
   statusLabel,
+  channelLabel,
 }: {
   p: (typeof DUMMY_PRESCRIPTIONS)[number];
   statusLabel: Record<RxStatus, string>;
+  channelLabel: Record<"app" | "email" | "sms", string>;
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   return (
     <div className="bg-card border border-border/70 rounded-[6px] p-4 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all duration-200">
@@ -281,7 +277,7 @@ function PrescriptionCard({
                 className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-[6px] bg-secondary/60 border border-border/40 text-muted-foreground/80"
               >
                 <I className="h-2.5 w-2.5" />
-                {c}
+                {channelLabel[c]}
               </span>
             );
           })}
@@ -294,10 +290,13 @@ function PrescriptionCard({
 function PrescriptionListRow({
   p,
   statusLabel,
+  channelLabel,
 }: {
   p: (typeof DUMMY_PRESCRIPTIONS)[number];
   statusLabel: Record<RxStatus, string>;
+  channelLabel: Record<"app" | "email" | "sms", string>;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="rounded-[6px] border border-border/70 bg-card px-3 py-3 transition-all hover:border-primary/30 hover:shadow-sm">
       <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_140px] lg:items-center">
@@ -314,16 +313,16 @@ function PrescriptionListRow({
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Medication</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{t("pages.hospital.medication_label")}</p>
           <p className="truncate text-[12px] font-medium text-foreground">
-            {p.medications[0]?.name ?? "No medicine"}
+            {p.medications[0]?.name ?? t("pages.hospital.rx_no_medicine")}
             {p.medications.length > 1 ? ` +${p.medications.length - 1}` : ""}
           </p>
           <p className="truncate text-[10px] text-muted-foreground">{p.medications[0]?.frequency}</p>
         </div>
 
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Delivery</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{t("pages.hospital.rx_delivery")}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {p.channels.length ? (
               p.channels.map((channel) => {
@@ -331,12 +330,12 @@ function PrescriptionListRow({
                 return (
                   <span key={channel} className="inline-flex items-center gap-1 rounded-[6px] border border-border/50 bg-secondary/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">
                     <Icon className="h-3 w-3" />
-                    {channel}
+                    {channelLabel[channel]}
                   </span>
                 );
               })
             ) : (
-              <span className="text-[11px] text-muted-foreground">Not sent</span>
+              <span className="text-[11px] text-muted-foreground">{t("pages.hospital.rx_not_sent")}</span>
             )}
           </div>
           {p.pharmacyName && <p className="mt-1 truncate text-[10px] text-emerald-500">{p.pharmacyName}</p>}
@@ -397,17 +396,29 @@ const HospitalPrescriptions = () => {
     "sent-to-pharmacy": t("pages.doctor.rx_status_sent_pharmacy"),
     filled: t("pages.doctor.rx_status_filled"),
     cancelled: t("pages.doctor.rx_status_cancelled"),
-    completed: "Completed",
-    active: "Active",
-    rejected: "Rejected",
-    pending: "Pending",
-    dispensed: "Dispensed",
-    returned: "Returned",
-    expired: "Expired",
+    completed: t("pages.doctor.rx_status_completed"),
+    active: t("pages.doctor.rx_status_active"),
+    rejected: t("pages.doctor.rx_status_rejected"),
+    pending: t("pages.doctor.rx_status_pending"),
+    dispensed: t("pages.doctor.rx_status_dispensed"),
+    returned: t("pages.doctor.rx_status_returned"),
+    expired: t("pages.doctor.rx_status_expired"),
   };
 
+  const channelLabel: Record<"app" | "email" | "sms", string> = {
+    app: t("pages.hospital.rx_channel_app"),
+    email: t("pages.hospital.email"),
+    sms: t("pages.hospital.rx_channel_sms"),
+  };
+
+  const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+    { value: "date-desc", label: t("pages.hospital.rx_sort_newest") },
+    { value: "date-asc", label: t("pages.hospital.rx_sort_oldest") },
+    { value: "patient", label: t("pages.hospital.rx_sort_patient_az") },
+  ];
+
   const STATUS_FILTER_OPTIONS: { value: RxStatus | "All"; label: string }[] = [
-    { value: "All", label: "All statuses" },
+    { value: "All", label: t("pages.hospital.all_statuses") },
     { value: "draft", label: statusLabel.draft },
     { value: "sent-to-patient", label: statusLabel["sent-to-patient"] },
     { value: "sent-to-pharmacy", label: statusLabel["sent-to-pharmacy"] },
@@ -416,10 +427,10 @@ const HospitalPrescriptions = () => {
   ];
 
   const CHANNEL_OPTIONS: { value: FilterState["channelFilter"]; label: string }[] = [
-    { value: "All", label: "All channels" },
-    { value: "app", label: "App" },
-    { value: "email", label: "Email" },
-    { value: "sms", label: "SMS" },
+    { value: "All", label: t("pages.hospital.rx_all_channels") },
+    { value: "app", label: t("pages.hospital.rx_channel_app") },
+    { value: "email", label: t("pages.hospital.email") },
+    { value: "sms", label: t("pages.hospital.rx_channel_sms") },
   ];
 
   const filtered = useMemo(() => {
@@ -468,7 +479,7 @@ const HospitalPrescriptions = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.hospital.status"),
       value: filters.status,
       options: STATUS_FILTER_OPTIONS,
       onChange: (v: string) => set("status", v as any)
@@ -476,7 +487,7 @@ const HospitalPrescriptions = () => {
     {
       type: "select" as const,
       key: "channelFilter",
-      label: "Delivery Channel",
+      label: t("pages.hospital.rx_delivery_channel"),
       value: filters.channelFilter,
       options: CHANNEL_OPTIONS,
       onChange: (v: string) => set("channelFilter", v as any)
@@ -484,12 +495,12 @@ const HospitalPrescriptions = () => {
     {
       type: "select" as const,
       key: "sort",
-      label: "Sort By",
+      label: t("pages.hospital.sort_by"),
       value: filters.sort,
       options: SORT_OPTIONS,
       onChange: (v: string) => set("sort", v as any)
     }
-  ], [filters.status, filters.channelFilter, filters.sort, set]);
+  ], [filters.status, filters.channelFilter, filters.sort, set, t, STATUS_FILTER_OPTIONS, CHANNEL_OPTIONS, SORT_OPTIONS]);
 
   return (
     <DashboardLayout role="hospital">
@@ -510,11 +521,11 @@ const HospitalPrescriptions = () => {
         <main className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 pt-4">
             <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
-              <StatCard label="Total prescriptions" value={allPrescriptions.length} icon={Pill} accent="primary" />
-              <StatCard label="Sent" value={sentCount} icon={Send} accent="info" />
-              <StatCard label="Filled" value={filledCount} icon={CheckCircle2} accent="success" />
-              <StatCard label="Drafts" value={draftCount} icon={Clock} accent="warning" />
-              <StatCard label="Cancelled" value={cancelledCount} icon={Ban} accent="warning" />
+              <StatCard label={t("pages.hospital.rx_total_prescriptions")} value={allPrescriptions.length} icon={Pill} accent="primary" />
+              <StatCard label={t("pages.hospital.rx_sent_label")} value={sentCount} icon={Send} accent="info" />
+              <StatCard label={t("pages.doctor.rx_status_filled")} value={filledCount} icon={CheckCircle2} accent="success" />
+              <StatCard label={t("pages.hospital.rx_drafts_label")} value={draftCount} icon={Clock} accent="warning" />
+              <StatCard label={t("pages.hospital.cancelled")} value={cancelledCount} icon={Ban} accent="warning" />
             </div>
           </div>
 
@@ -523,13 +534,13 @@ const HospitalPrescriptions = () => {
             <div className="flex items-center gap-3">
               <p className="text-[11px] text-muted-foreground">
                 <span className="font-bold text-foreground">{filtered.length}</span>{" "}
-                {filtered.length === 1 ? "prescription" : "prescriptions"}
+                {filtered.length === 1 ? t("pages.doctor.rx_prescription") : t("pages.doctor.rx_prescriptions")}
                 {hasActiveFilters && (
                   <button
                     onClick={clearAll}
                     className="ml-2 text-primary hover:text-primary/80 hover:underline text-[10px] font-medium transition-colors"
                   >
-                    Reset
+                    {t("pages.hospital.reset")}
                   </button>
                 )}
               </p>
@@ -538,25 +549,25 @@ const HospitalPrescriptions = () => {
                 {sentCount > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-medium text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200 dark:border-sky-900 px-2 py-0.5 rounded-[6px]">
                     <Send className="h-2.5 w-2.5" />
-                    {sentCount} sent
+                    {t("pages.hospital.rx_sent_count", { count: sentCount })}
                   </span>
                 )}
                 {filledCount > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 px-2 py-0.5 rounded-[6px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {filledCount} filled
+                    {t("pages.hospital.rx_filled_count", { count: filledCount })}
                   </span>
                 )}
                 {draftCount > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-900/40 dark:text-slate-400 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-[6px]">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    {draftCount} draft
+                    {t("pages.hospital.rx_draft_count", { count: draftCount })}
                   </span>
                 )}
                 {pharmacyCount > 0 && (
                   <span className="flex items-center gap-1 text-[10px] font-medium text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-[6px]">
                     <Building2 className="h-2.5 w-2.5" />
-                    {pharmacyCount} pharmacy
+                    {t("pages.hospital.rx_pharmacy_count", { count: pharmacyCount })}
                   </span>
                 )}
               </div>
@@ -570,7 +581,7 @@ const HospitalPrescriptions = () => {
                   type="text"
                   value={filters.search}
                   onChange={(e) => set("search", e.target.value)}
-                  placeholder="Search patient, doctor, medication…"
+                  placeholder={t("pages.hospital.rx_search_placeholder")}
                   className="w-56 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
@@ -587,7 +598,7 @@ const HospitalPrescriptions = () => {
                   )}
                 >
                   <List className="h-3.5 w-3.5" />
-                  List
+                  {t("pages.hospital.view_list")}
                 </button>
                 <button
                   type="button"
@@ -600,7 +611,7 @@ const HospitalPrescriptions = () => {
                   )}
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
-                  Grid
+                  {t("pages.hospital.view_grid")}
                 </button>
               </div>
 
@@ -631,7 +642,7 @@ const HospitalPrescriptions = () => {
               <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2 lg:col-span-2">
                 <label className="space-y-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                    From date
+                    {t("pages.hospital.from_date")}
                   </span>
                   <input
                     type="date"
@@ -642,7 +653,7 @@ const HospitalPrescriptions = () => {
                 </label>
                 <label className="space-y-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-                    To date
+                    {t("pages.hospital.to_date")}
                   </span>
                   <input
                     type="date"
@@ -664,17 +675,17 @@ const HospitalPrescriptions = () => {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    No prescriptions match your filters
+                    {t("pages.doctor.rx_no_match")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    Try widening your search criteria
+                    {t("pages.hospital.try_widen_search")}
                   </p>
                 </div>
                 <button
                   onClick={clearAll}
                   className="text-[11px] text-primary hover:text-primary/80 font-semibold hover:underline transition-colors mt-1"
                 >
-                  Clear all filters
+                  {t("pages.doctor.clear_all_filters")}
                 </button>
               </div>
             ) : (
@@ -685,6 +696,7 @@ const HospitalPrescriptions = () => {
                       key={p.id}
                       p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
                       statusLabel={statusLabel}
+                      channelLabel={channelLabel}
                     />
                   ))}
                 </div>
@@ -695,6 +707,7 @@ const HospitalPrescriptions = () => {
                       key={p.id}
                       p={p as (typeof DUMMY_PRESCRIPTIONS)[number]}
                       statusLabel={statusLabel}
+                      channelLabel={channelLabel}
                     />
                   ))}
                 </div>
@@ -707,7 +720,7 @@ const HospitalPrescriptions = () => {
       <PrescriptionWizard
         open={open}
         onOpenChange={setOpen}
-        doctorName="Hospital Clinician"
+        doctorName="Health Facility Clinician"
         issuer="hospital"
         issuerOrg={HOSPITAL}
       />

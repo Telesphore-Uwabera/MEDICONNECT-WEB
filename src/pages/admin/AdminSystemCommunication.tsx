@@ -7,15 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
-  Bell,
   CheckCircle2,
   Eye,
   Loader2,
   Mail,
   Search,
-  Send,
-  Users,
-  UserCheck,
+  Send, 
   X,
   XCircle,
 } from "lucide-react";
@@ -28,6 +25,13 @@ import {
 } from "@/hooks/admin/use-admin-multi-notifications";
 import { useGetAdminUsers, type ApiUser } from "@/hooks/admin/use-admin-users";
 import { getErrorMessage } from "@/lib/getErrorMessage";
+import {
+  hasRichTextContent,
+  prepareRichTextForSave,
+  RichTextarea,
+  sanitizeRichText,
+} from "@/components/ui/rich-textarea";
+
 const INPUT_CLASS =
   "w-full h-9 rounded-[6px] border border-border/60 bg-background px-3 text-[12px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground/40 transition-all";
 
@@ -36,15 +40,64 @@ const ROLES = [
   { value: "doctor", label: "Doctors" },
   { value: "patient", label: "Patients" },
   { value: "pharmacy", label: "Pharmacies" },
-  { value: "hospital", label: "Hospitals" },
+  { value: "hospital", label: "Health Facilities" },
 ] satisfies Array<{ value: MultiNotificationRole; label: string }>;
 
-import {
-  hasRichTextContent,
-  prepareRichTextForSave,
-  RichTextarea,
-  sanitizeRichText,
-} from "@/components/ui/rich-textarea";
+
+const EMAIL_PAGE_BACKGROUND = "#f6f9fc";
+const EMAIL_PANEL_BACKGROUND = "#ffffff";
+const EMAIL_TEXT_COLOR = "#111827";
+const EMAIL_MUTED_COLOR = "#4b5563";
+const EMAIL_LINK_COLOR = "#0f766e";
+
+function stripThemeStyles(html: string) {
+  if (typeof DOMParser === "undefined") return html;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.body.querySelectorAll<HTMLElement>("*").forEach((element) => {
+    element.removeAttribute("class");
+    element.removeAttribute("bgcolor");
+    element.style.removeProperty("background");
+    element.style.removeProperty("background-color");
+    element.style.removeProperty("background-image");
+    element.style.removeProperty("color");
+
+    if (element.tagName.toLowerCase() === "a") {
+      element.style.color = EMAIL_LINK_COLOR;
+      element.style.textDecoration = "underline";
+    }
+  });
+
+  return doc.body.innerHTML;
+}
+
+function buildEmailMessageHtml(value: string) {
+  const body = stripThemeStyles(sanitizeRichText(value));
+
+  return `
+<div style="margin:0;padding:0;background:${EMAIL_PAGE_BACKGROUND};color:${EMAIL_TEXT_COLOR};font-family:Arial,Helvetica,sans-serif;color-scheme:light only;supported-color-schemes:light;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;background:${EMAIL_PAGE_BACKGROUND};color-scheme:light only;supported-color-schemes:light;">
+    <tr>
+      <td style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;margin:0 auto;border-collapse:collapse;background:${EMAIL_PANEL_BACKGROUND};border:1px solid #e5e7eb;border-radius:8px;">
+          <tr>
+            <td style="padding:24px;color:${EMAIL_TEXT_COLOR};font-size:14px;line-height:1.65;">
+              <div style="color:${EMAIL_TEXT_COLOR};background:${EMAIL_PANEL_BACKGROUND};">
+                ${body}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 24px;border-top:1px solid #e5e7eb;color:${EMAIL_MUTED_COLOR};font-size:12px;">
+              MediConnect
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`.trim();
+}
 
 function MiniStat({
   label,
@@ -123,6 +176,7 @@ function AdminSystemCommunication() {
 
   const [result, setResult] = useState<SendMultiNotificationResponse | null>(null);
   const sanitizedMessage = useMemo(() => sanitizeRichText(message), [message]);
+  const emailPreviewHtml = useMemo(() => (sanitizedMessage ? buildEmailMessageHtml(sanitizedMessage) : ""), [sanitizedMessage]);
   const hasMessageContent = useMemo(() => hasRichTextContent(sanitizedMessage), [sanitizedMessage]);
 
   const sendNotification = useSendMultiNotification();
@@ -229,13 +283,13 @@ const handleSend = async () => {
           target,
           roles: selectedRoles,
           subject: subject.trim(),
-          message: htmlMessage,
+          message: buildEmailMessageHtml(htmlMessage),
         }
       : {
           target,
           user_ids: userIds,
           subject: subject.trim(),
-          message: htmlMessage,
+          message: buildEmailMessageHtml(htmlMessage),
         };
 
   try {
@@ -467,8 +521,8 @@ const handleSend = async () => {
 
                     {sanitizedMessage ? (
                       <div
-                        className="prose prose-sm max-w-none text-[12px] dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: sanitizedMessage }}
+                        className="overflow-hidden rounded-[6px] border border-border/50 bg-white text-[12px] text-slate-900"
+                        dangerouslySetInnerHTML={{ __html: emailPreviewHtml }}
                       />
                     ) : (
                       <p className="text-[11px] text-muted-foreground/70">Your message preview will appear here.</p>

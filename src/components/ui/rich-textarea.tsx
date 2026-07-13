@@ -228,6 +228,7 @@ export interface RichTextareaProps {
   className?: string;
   editorClassName?: string;
   minHeight?: number;
+  maxHeight?:number
 }
 
 type Command =
@@ -282,6 +283,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       className,
       editorClassName,
       minHeight = 120,
+      maxHeight
     },
     ref,
   ) => {
@@ -649,7 +651,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               "[&_img]:my-3 [&_img]:max-h-80 [&_img]:max-w-full [&_img]:rounded-[6px] [&_img]:border [&_img]:border-border [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:ml-5 [&_ul]:list-disc",
               editorClassName,
             )}
-            style={{ minHeight }}
+            style={{ minHeight,maxHeight }}
           />
         </div>
       </div>

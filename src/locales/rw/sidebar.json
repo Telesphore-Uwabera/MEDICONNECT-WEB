@@ -1,7 +1,7 @@
 {
   "overview": "Incamake",
   "findDoctors": "Shaka Umuganga",
-  "findHospitals": "Shaka Ibitaro",
+  "findHospitals": "Shaka Ibigo nderabuzima",
   "instantConsult": "Inama y'ako kanya",
   "appointments": "Gahunda",
   "prescriptions": "Imiti yanditswe",
@@ -15,11 +15,11 @@
   "inventory": "Ububiko",
   "patientPortal": "Urubuga rw'umurwayi",
   "doctorWorkspace": "Akazi k'umuganga",
-  "hospitalAdmin": "Ubuyobozi bw'ibitaro",
+  "hospitalAdmin": "Ubuyobozi bw'ibigo nderabuzima",
   "pharmacyConsole": "Konsole ya farumasi",
   "patient": "Umurwayi",
   "doctor": "Umuganga",
-  "hospital": "Ibitaro",
+  "hospital": "Ibigo nderabuzima",
   "admin": "Umuyobozi",
   "team": "Komite",
   "profile": "Umwirondoro",
@@ -57,7 +57,7 @@
   },
   "users": "Abakoresha",
   "doctors": "Abaganga",
-  "hospitals": "Ibitaro",
+  "hospitals": "Ibigo nderabuzima",
   "myAppointments": "Gahunda zanjye",
   "quickAppointment": "Gahunda yihuse",
   "serviceBookings": "Kwiyandikisha ku bikorwa",
@@ -95,5 +95,6 @@
   "consultationSummaries": "Incamake z'inama",
   "medicalRecords": "Inyandiko z'ubuvuzi",
   "hideSidebar": "Hisha urutonde",
-  "showSidebar": "Erekana urutonde"
+  "showSidebar": "Erekana urutonde",
+  "schedule": "Ingengabihe"
 }

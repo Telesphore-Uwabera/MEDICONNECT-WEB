@@ -169,7 +169,7 @@ function getErrorMessage(error: unknown): string {
         const flat = Array.isArray(payload.errors)
           ? payload.errors
           : Object.values(payload.errors).flat();
-        if (flat.length > 0) return flat.join(" Â· ");
+        if (flat.length > 0) return flat.join(" · ");
       }
       if (typeof payload.message === "string") return payload.message;
     }
@@ -179,8 +179,7 @@ function getErrorMessage(error: unknown): string {
   return "Something went wrong";
 }
 
-// â”€â”€â”€ Style maps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+ 
 const statusStyle: Record<string, string> = {
   active:
     "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
@@ -226,7 +225,7 @@ const USER_TABS: Array<{
   { value: "all", label: "All users", description: "Every account", icon: Users },
   { value: "patient", label: "Patients", description: "Care seekers", icon: UserCircle },
   { value: "doctor", label: "Doctors", description: "Clinical users", icon: Stethoscope },
-  { value: "hospital", label: "Facilities", description: "Hospitals", icon: Building2 },
+  { value: "hospital", label: "Facilities", description: "Health facilities", icon: Building2 },
   { value: "pharmacy", label: "Pharmacies", description: "Medicine providers", icon: Pill },
   { value: "admin", label: "Admins", description: "Back office", icon: ShieldCheck },
   { value: "staff", label: "Staff", description: "Operations users", icon: BriefcaseBusiness },
@@ -664,7 +663,7 @@ function UserPanel({
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto">
               <div className="px-5 py-5 space-y-4">
-                {/* â”€â”€ Identity card â”€â”€ */}
+                {/* Identity card  */}
                 <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
                   {/* Top accent strip using role color */}
                   <div
@@ -1716,7 +1715,7 @@ const AdminUsers = () => {
   const handleHospitalApprove = useCallback(async (hospital: ApiHospital) => {
     try {
       await approveHospitalMutation.mutateAsync(hospital.id);
-      sonnerToast.success("Hospital approved.");
+      sonnerToast.success("Health facility approved.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to approve hospital.");
     }
@@ -1725,7 +1724,7 @@ const AdminUsers = () => {
   const handleHospitalReject = useCallback(async (hospital: ApiHospital) => {
     try {
       await rejectHospitalMutation.mutateAsync({ id: hospital.id });
-      sonnerToast.error("Hospital rejected.");
+      sonnerToast.error("Health facility rejected.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to reject hospital.");
     }
@@ -1734,7 +1733,7 @@ const AdminUsers = () => {
   const handleHospitalSuspend = useCallback(async (hospital: ApiHospital) => {
     try {
       await suspendHospitalMutation.mutateAsync({ id: hospital.id });
-      sonnerToast.success("Hospital suspended.");
+      sonnerToast.success("Health facility suspended.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to suspend hospital.");
     }

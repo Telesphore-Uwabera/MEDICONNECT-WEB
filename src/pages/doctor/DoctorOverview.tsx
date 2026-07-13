@@ -96,7 +96,7 @@ function formatPayoutDate(value: unknown) {
 }
 
 function formatPct(value: number | null) {
-  if (value === null) return "â€”";
+  if (value === null) return "-";
   return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
@@ -437,7 +437,7 @@ const DoctorOverview = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-3">
 
-            {/* â”€â”€ Toolbar: period picker + chart group + refresh â”€â”€ */}
+            {/*  Toolbar: period picker + chart group + refresh  */}
             <div className="flex flex-wrap items-center gap-3">
               {PERIOD_OPTIONS.map((opt) => (
                 <button
@@ -467,7 +467,7 @@ const DoctorOverview = () => {
                         : "bg-transparent border-transparent text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {g}
+                    {t(`pages.doctor.chart_${g}`)}
                   </button>
                 ))}
 
@@ -869,7 +869,7 @@ const DoctorOverview = () => {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-foreground">
-                              Pause Bookings
+                              {t("pages.doctor.pause_bookings")}
                             </p>
                             <p
                               className={cn(
@@ -880,8 +880,8 @@ const DoctorOverview = () => {
                               )}
                             >
                               {toggleState.bookings_paused
-                                ? "No new bookings allowed"
-                                : "Accepting bookings"}
+                                ? t("pages.doctor.no_new_bookings_allowed")
+                                : t("pages.doctor.accepting_bookings")}
                             </p>
                           </div>
                         </div>
@@ -1093,7 +1093,7 @@ const DoctorOverview = () => {
             {activeTab === "clinical" && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                
-                {/* loading prop removed â€” StatCard doesn't accept it */}
+                {/* loading prop removed StatCard doesn't accept it */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   <StatCard
                     label={t("pages.doctor.stat_today")}
@@ -1368,7 +1368,7 @@ const DoctorOverview = () => {
                   <div className="rounded-[6px] border border-border/70 bg-card p-5 shadow-soft flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Earnings
+                        {t("pages.doctor.earnings")}
                       </h3>
                       {revenueChangePct !== null && (
                         <span
@@ -1402,8 +1402,9 @@ const DoctorOverview = () => {
                         </p>
                       ) : revenue && revenue.previous_period_total > 0 ? (
                         <p className="text-xs text-muted-foreground mt-2">
-                          vs {formatCurrency(revenue.previous_period_total)} prev
-                          period
+                          {t("pages.doctor.vs_previous_period", {
+                            amount: formatCurrency(revenue.previous_period_total),
+                          })}
                         </p>
                       ) : null}
                     </div>
@@ -1475,7 +1476,7 @@ const DoctorOverview = () => {
                         <div className="grid grid-cols-2 gap-2">
                           <label className="space-y-1.5">
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                              Amount
+                              {t("pages.doctor.amount")}
                             </span>
                             <input
                               type="number"
@@ -1492,7 +1493,7 @@ const DoctorOverview = () => {
 
                           <label className="space-y-1.5">
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                              Method
+                              {t("pages.doctor.method")}
                             </span>
                             <select
                               value={withdrawalForm.method}
@@ -1516,7 +1517,7 @@ const DoctorOverview = () => {
                             onChange={(event) =>
                               setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
                             }
-                            placeholder="Dr. John Doe"
+                            placeholder={t("pages.doctor.account_name_placeholder")}
                             className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
                           />
                         </label>
@@ -1544,7 +1545,7 @@ const DoctorOverview = () => {
                             onChange={(event) =>
                               setWithdrawalForm((prev) => ({ ...prev, note: event.target.value }))
                             }
-                            placeholder="Monthly withdrawal"
+                            placeholder={t("pages.doctor.withdrawal_note_placeholder")}
                             rows={3}
                             className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
                           />
@@ -1627,7 +1628,7 @@ const DoctorOverview = () => {
 
                     <div className="rounded-[6px] border border-border/60 bg-card/80 p-3">
                       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Available
+                        {t("pages.doctor.available")}
                       </p>
                       <p className=" leading-none font-bold text-foreground text-sm mt-1">
                         {formatMoney(walletBalance, walletCurrency)}
@@ -1702,7 +1703,7 @@ const DoctorOverview = () => {
                                   {formatMoney(getPayoutAmount(withdrawal), walletCurrency)}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground capitalize">
-                                  {getPayoutMethod(withdrawal)}
+                                  {translatePayoutValue("payout_method", getPayoutMethod(withdrawal))}
                                 </td>
                                 <td className="px-5 py-3 text-xs text-muted-foreground">
                                   <span className="block text-foreground">
@@ -1784,7 +1785,7 @@ const DoctorOverview = () => {
             <div className="grid sm:grid-cols-2 gap-3">
               <label className="space-y-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Amount
+                  {t("pages.doctor.amount")}
                 </span>
                 <input
                   type="number"
@@ -1801,7 +1802,7 @@ const DoctorOverview = () => {
 
               <label className="space-y-1.5">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Method
+                  {t("pages.doctor.method")}
                 </span>
                 <select
                   value={withdrawalForm.method}
@@ -1825,7 +1826,7 @@ const DoctorOverview = () => {
                 onChange={(event) =>
                   setWithdrawalForm((prev) => ({ ...prev, account_name: event.target.value }))
                 }
-                placeholder="Dr. John Doe"
+                placeholder={t("pages.doctor.account_name_placeholder")}
                 className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
               />
             </label>
@@ -1846,14 +1847,14 @@ const DoctorOverview = () => {
 
             <label className="space-y-1.5 block">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Note
+                {t("pages.doctor.note")}
               </span>
               <textarea
                 value={withdrawalForm.note}
                 onChange={(event) =>
                   setWithdrawalForm((prev) => ({ ...prev, note: event.target.value }))
                 }
-                placeholder="Monthly withdrawal"
+                placeholder={t("pages.doctor.withdrawal_note_placeholder")}
                 rows={3}
                 className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               />

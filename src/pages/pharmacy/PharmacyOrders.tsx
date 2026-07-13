@@ -82,10 +82,10 @@ const STATUS_DOT: Record<OrderStatus, string> = {
 };
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "time-desc", label: "Time: Newest first" },
-  { value: "time-asc", label: "Time: Oldest first" },
-  { value: "total-desc", label: "Total: High to low" },
-  { value: "total-asc", label: "Total: Low to high" },
+  { value: "time-desc", label: "pages.pharmacy.sort_time_newest" },
+  { value: "time-asc", label: "pages.pharmacy.sort_time_oldest" },
+  { value: "total-desc", label: "pages.pharmacy.sort_total_desc" },
+  { value: "total-asc", label: "pages.pharmacy.sort_total_asc" },
   { value: "patient", label: "Patient (A–Z)" },
 ];
 
@@ -114,7 +114,7 @@ function openOrderReceipt(order: Order) {
   const url = resolveOrderReceiptUrl(order);
   if (!url) {
     sonnerToast.error("Receipt is not available yet.", {
-      description: "The order is completed, but no receipt link was returned by the API.",
+      description: t("pages.pharmacy.order_receipt_missing"),
     });
     return;
   }
@@ -211,7 +211,7 @@ function OrderActions({ order }: { order: Order }) {
           {reject.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin" />
           ) : (
-            t("pages.pharmacy.reject", "Reject")
+            t("pages.pharmacy.reject")
           )}
         </Button>
 
@@ -225,7 +225,7 @@ function OrderActions({ order }: { order: Order }) {
           {accept.isPending ? (
             <Loader2 className="w-3 h-3 animate-spin" />
           ) : (
-            t("pages.pharmacy.approve", "Accept")
+            t("pages.pharmacy.approve")
           )}
         </Button>
       </div>
@@ -245,7 +245,7 @@ function OrderActions({ order }: { order: Order }) {
         {complete.isPending ? (
           <Loader2 className="w-3 h-3 animate-spin" />
         ) : (
-          t("pages.pharmacy.complete", "Complete")
+          t("pages.pharmacy.completed")
         )}
       </Button>
     );
@@ -261,7 +261,7 @@ function OrderActions({ order }: { order: Order }) {
         className="h-7 px-3 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-[6px] transition-all duration-200"
       >
         <Download className="mr-1 h-3 w-3" />
-        {t("pages.pharmacy.receipt", "Receipt")}
+        {t("pages.pharmacy.receipt")}
       </Button>
     );
   }
@@ -352,26 +352,26 @@ const PharmacyOrders = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.pharmacy.status"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "pending", label: t("pages.pharmacy.stat_incoming", "Pending") },
-        { value: "accepted", label: t("pages.pharmacy.stat_processing", "Accepted") },
-        { value: "completed", label: t("pages.pharmacy.stat_delivered", "Completed") },
-        { value: "rejected", label: t("pages.pharmacy.rejected", "Rejected") },
+        { value: "all", label: t("pages.pharmacy.all_statuses") },
+        { value: "pending", label: t("pages.pharmacy.pending") },
+        { value: "accepted", label: t("pages.pharmacy.approved") },
+        { value: "completed", label: t("pages.pharmacy.completed") },
+        { value: "rejected", label: t("pages.pharmacy.rejected") },
       ],
       onChange: (v: string) => set("status", v as any)
     },
     {
       type: "select" as const,
       key: "source",
-      label: "Source",
+      label: t("pages.pharmacy.source"),
       value: filters.source,
       options: [
-        { value: "all", label: "All sources" },
-        { value: "internal", label: "Internal" },
-        { value: "external", label: "External" },
+        { value: "all", label: t("pages.pharmacy.all_sources") },
+        { value: "internal", label: t("pages.pharmacy.internal") },
+        { value: "external", label: t("pages.pharmacy.external") },
       ],
       onChange: (v: string) => set("source", v as any)
     }
@@ -393,25 +393,25 @@ const PharmacyOrders = () => {
           {/* Stat cards — counts from the current API page */}
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
-              label={t("pages.pharmacy.stat_incoming", "Pending")}
+              label={t("pages.pharmacy.pending")}
               value={isLoading ? "—" : counts.pending}
               icon={ClipboardList}
               accent="warning"
             />
             <StatCard
-              label={t("pages.pharmacy.stat_processing", "Accepted")}
+              label={t("pages.pharmacy.approved")}
               value={isLoading ? "—" : counts.accepted}
               icon={Package}
               accent="info"
             />
             <StatCard
-              label={t("pages.pharmacy.stat_delivered", "Completed")}
+              label={t("pages.pharmacy.completed")}
               value={isLoading ? "—" : counts.completed}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label={t("pages.pharmacy.rejected", "Rejected")}
+              label={t("pages.pharmacy.rejected")}
               value={isLoading ? "—" : counts.rejected}
               icon={XCircle}
               accent="danger"
@@ -491,7 +491,7 @@ const PharmacyOrders = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => refetch()}
-                title="Refresh"
+                title={t("pages.pharmacy.refresh")}
                 className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 hover:border-primary/40 hover:bg-secondary/30 transition-all text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw
@@ -554,10 +554,10 @@ const PharmacyOrders = () => {
                 </div>
                 <div>
                   <p className="text-[12px] font-semibold text-foreground">
-                    Failed to load orders
+                    {t("pages.pharmacy.failed_load_orders")}
                   </p>
                   <p className="text-[11px] text-muted-foreground/70 mt-1">
-                    Check your connection and try again
+                    {t("pages.pharmacy.check_connection_try_again")}
                   </p>
                 </div>
                 <Button

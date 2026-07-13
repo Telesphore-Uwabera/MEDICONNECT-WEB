@@ -62,11 +62,12 @@
     "category": {
       "consultations": "Consultations",
       "pharmacy": "Pharmacie",
-      "hospital": "Hôpital",
+      "hospital": "Établissement de santé",
       "payments": "Paiements",
       "documents": "Documents",
       "alerts": "Alertes",
       "other": "Autre"
     }
-  }
+  },
+  "Register": "S'inscrire"
 }

@@ -44,38 +44,33 @@ const STATUS_TABS: { id: TabStatus; label: string }[] = [
 ];
 
 const URGENCY_CONFIG = {
-  low: { label: "Low", className: "bg-muted text-muted-foreground border-border" },
-  medium: { label: "Medium", className: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" },
-  high: { label: "High", className: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400" },
-  emergency: { label: "Emergency", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  low: { className: "bg-muted text-muted-foreground border-border" },
+  medium: { className: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" },
+  high: { className: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400" },
+  emergency: { className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 const STATUS_CONFIG: Record<
   ReferralStatus,
-  { label: string; icon: React.ElementType; className: string }
+  { icon: React.ElementType; className: string }
 > = {
   pending: {
-    label: "Pending",
     icon: Clock,
     className: "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400",
   },
   accepted: {
-    label: "Accepted",
     icon: CheckCircle2,
     className: "bg-primary/10 text-primary border-primary/20",
   },
   completed: {
-    label: "Completed",
     icon: CheckCircle2,
     className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400",
   },
   rejected: {
-    label: "Rejected",
     icon: XCircle,
     className: "bg-destructive/10 text-destructive border-destructive/20",
   },
   cancelled: {
-    label: "Cancelled",
     icon: Ban,
     className: "bg-muted text-muted-foreground border-border",
   },
@@ -111,7 +106,9 @@ function getInitials(name: string) {
 
  
 function StatusBadge({ status }: { status: ReferralStatus }) {
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const { t } = useTranslation();
+  const resolvedStatus = STATUS_CONFIG[status] ? status : "pending";
+  const cfg = STATUS_CONFIG[resolvedStatus];
   const Icon = cfg.icon;
   return (
     <span
@@ -121,13 +118,14 @@ function StatusBadge({ status }: { status: ReferralStatus }) {
       )}
     >
       <Icon className="h-2.5 w-2.5" />
-      {cfg.label}
+      {t(`pages.doctor.referral_status_${resolvedStatus}`)}
     </span>
   );
 }
 
  
 function UrgencyBadge({ urgency }: { urgency?: string }) {
+  const { t } = useTranslation();
   if (!urgency) return null;
   const cfg = URGENCY_CONFIG[urgency as keyof typeof URGENCY_CONFIG];
   if (!cfg) return null;
@@ -139,7 +137,7 @@ function UrgencyBadge({ urgency }: { urgency?: string }) {
       )}
     >
       <AlertTriangle className="h-2.5 w-2.5" />
-      {cfg.label}
+      {t(`pages.doctor.urgency_${urgency}`)}
     </span>
   );
 }
@@ -562,7 +560,7 @@ function EmptyState({ status }: { status: TabStatus }) {
   );
 }
 
- // Main â€” MyReferrals
+ // Main  MyReferrals
  
 function MyReferrals() {
   const { t, i18n } = useTranslation();
@@ -702,8 +700,8 @@ function MyReferrals() {
             <>
               {/* Count */}
               <p className="text-[11px] text-muted-foreground">
-                {referrals.length} referral{referrals.length !== 1 ? "s" : ""}
-                {activeTab !== "all" && ` · ${activeTab}`}
+                {t("pages.doctor.referrals_count", { count: referrals.length })}
+                {activeTab !== "all" && ` · ${t(`pages.doctor.referral_status_${activeTab}`)}`}
               </p>
 
               {/* Grid */}

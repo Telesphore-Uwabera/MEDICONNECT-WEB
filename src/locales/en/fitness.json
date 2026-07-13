@@ -5,13 +5,11 @@
   "tab_my_certificates": "My Certificates",
   "tab_request_short": "Request",
   "tab_certificates_short": "Certificates",
-
   "sidebar_title": "Certificate request",
   "sidebar_sections_visited": "{{count}} of {{total}} sections visited",
   "sidebar_editing": "editing",
   "sidebar_done": "done",
   "sidebar_hint": "Jump between sections freely — no order needed.",
-
   "step_purpose_label": "Purpose",
   "step_purpose_desc": "Certificate type & job",
   "step_symptoms_label": "Symptoms",
@@ -20,19 +18,15 @@
   "step_history_desc": "Past illnesses & conditions",
   "step_functional_label": "Functional",
   "step_functional_desc": "Daily ability & vitals",
-
   "step_of": "Step {{current}} of {{total}}",
   "back_button": "← Back",
   "save_and_next": "Save & Next →",
   "submit_request": "Submit request",
-
   "draft_saved_badge": "Draft saved",
   "updating_badge": "Updating {{number}}",
-
   "continuing_pre": "You're continuing your",
   "continuing_request_word": "request",
   "continuing_post": "Your saved answers are pre-filled — saving updates this request instead of creating a new one.",
-
   "purpose_select_label": "Certificate purpose",
   "purpose_select_placeholder": "Select purpose",
   "purpose_specify_label": "Please specify",
@@ -45,26 +39,22 @@
   "high_risk_job_pre": "This job type typically requires an",
   "high_risk_job_bold": "in-person physical examination",
   "high_risk_job_post": "Your request will be reviewed and you may be referred.",
-
   "step1_saved": "Step 1 saved",
   "step1_save_failed": "Failed to save step 1",
   "step_n_saved": "Step {{step}} saved",
   "step_n_save_failed": "Failed to save step {{step}}",
-
   "symptoms_note_pre": "Answer honestly about symptoms in the",
   "symptoms_note_bold": "past 72 hours",
   "symptoms_note_post": ".",
   "red_flag_pre": "You have reported a",
   "red_flag_bold": "red flag symptom",
   "red_flag_post": "A physical examination may be required. You can still submit and a doctor will decide.",
-
   "chronic_illness_detail_label": "Please specify condition(s)",
   "chronic_illness_detail_placeholder": "e.g. Hypertension, Diabetes Type 2",
   "medication_detail_label": "Please list medications",
   "medication_detail_placeholder": "e.g. Metformin 500mg, Amlodipine 5mg",
   "allergy_detail_label": "Please specify allergies",
   "allergy_detail_placeholder": "e.g. Penicillin, Peanuts",
-
   "functional_ability_title": "Daily functional ability",
   "vitals_title": "Vitals (optional — if home devices available)",
   "vitals_hint": "If you have a thermometer, BP cuff, or pulse oximeter, enter readings below.",
@@ -72,16 +62,12 @@
   "notes_placeholder": "Any other relevant information..",
   "step4_saved": "Step 4 saved",
   "step4_save_failed": "Failed to save step 4",
-
   "submission_failed": "Submission failed",
-
   "payment_title": "Complete payment to submit",
   "payment_description": "Your request is ready. Pay the submission fee to send it to a doctor for review.",
   "back_to_form": "← Back to form",
-
   "submitted_title": "Request submitted!",
   "submitted_desc": "A doctor will review your request shortly.",
-
   "no_certificates_title": "No certificates yet",
   "no_certificates_desc": "Submit a request and a doctor will review it shortly.",
   "active_request_notice": "You have an active request in progress.",
@@ -89,23 +75,19 @@
   "withdraw_confirm": "Withdraw your current request? This cannot be undone.",
   "withdraw_success": "Request withdrawn.",
   "withdraw_failed": "Could not withdraw request.",
-
   "purpose_general_fitness": "General fitness",
   "purpose_school_work": "School/work fitness",
   "purpose_return_to_work": "Return to work after illness",
   "purpose_fitness_for_travel": "Fitness for travel",
   "purpose_other_option": "Other",
-
   "job_none": "None of the above",
   "job_heavy_labor": "Heavy physical labor",
   "job_driving": "Driving/operating machinery",
   "job_armed_forces": "Armed forces/security",
   "job_mining": "Mining/construction",
   "job_xray": "Work requiring chest X-ray",
-
   "yes": "Yes",
   "no": "No",
-
   "sf_fever": "Any fever in the past 72 hours?",
   "sf_headache": "Any current headache or dizziness?",
   "sf_breath": "Any shortness of breath?",
@@ -116,7 +98,6 @@
   "sf_fatigue": "Any body weakness or fatigue?",
   "sf_visual": "Any visual disturbances?",
   "sf_fainting": "Any recent fainting episodes?",
-
   "hf_chronic_illness": "Any chronic illnesses? (HTN, diabetes, asthma, epilepsy, heart disease)",
   "hf_hospitalization": "Any hospitalization in the last 3 months?",
   "hf_surgery": "Any surgery in the last 6 months?",
@@ -124,13 +105,11 @@
   "hf_allergies": "Any known allergies (drug/food)?",
   "hf_medication": "Any chronic medication currently used?",
   "hf_disability": "Any disability or mobility limitations?",
-
   "ff_walk": "Can you walk without difficulty?",
   "ff_climb": "Can you climb stairs?",
   "ff_lift": "Can you lift light objects without pain?",
   "ff_sleep": "Do you sleep well?",
   "ff_appetite": "Do you have a normal appetite?",
-
   "vf_temperature": "Temperature (°C)",
   "vf_temperature_placeholder": "e.g. 36.6",
   "vf_bp": "Blood pressure",
@@ -139,14 +118,15 @@
   "vf_pulse_placeholder": "e.g. 72",
   "vf_o2": "O₂ saturation (%)",
   "vf_o2_placeholder": "e.g. 98",
-
   "status_draft": "Draft",
   "status_pending": "Pending",
   "status_pending_review": "Pending Review",
   "status_in_review": "In Review",
   "status_approved": "Approved",
   "status_rejected": "Rejected",
-
+  "status_all": "All",
+  "status_issued": "Issued",
+  "status_revoked": "Revoked",
   "cert_number_fallback": "Certificate #{{id}}",
   "view_details_action": "View details",
   "download_pdf_action": "Download PDF",
@@ -164,7 +144,6 @@
   "verification_call_not_ready": "The verification call isn't ready yet. Please wait for your doctor to start it.",
   "could_not_join_verification": "Could not join the verification call.",
   "join_verification_call": "Join verification call",
-
   "issued_on": "Issued {{date}}",
   "medical_decision": "Medical decision:",
   "red_flags_detected": "Red flags detected",
@@ -184,7 +163,6 @@
   "medical_history_title": "Medical history",
   "patient_notes_title": "Patient notes",
   "doctor_prefix": "Dr. {{name}}",
-
   "rf_chest_pain": "Chest pain",
   "rf_breath": "Shortness of breath",
   "rf_syncope": "Syncope / fainting",
@@ -195,13 +173,11 @@
   "rf_recent_surgery": "Recent surgery",
   "rf_seizure": "Seizure",
   "rf_pregnancy": "Pregnancy complications",
-
   "jf_heavy_labor": "Heavy labor",
   "jf_driving": "Driving / machinery",
   "jf_armed_forces": "Armed forces",
   "jf_mining": "Mining / construction",
   "jf_xray": "Requires X-ray",
-
   "pp_confirming_payment": "Confirming your payment…",
   "pp_confirming_hint": "This usually takes a few seconds. Please don't close this window.",
   "pp_payment_confirmed": "Payment confirmed!",

@@ -1302,7 +1302,10 @@ const DoctorAvailability = () => {
                         </h3>
                         {days.length > 0 && (
                           <p className="truncate text-sm text-muted-foreground/60">
-                            {days.length} days · {interval}-min intervals
+                            {t("pages.doctor.days_interval_meta", {
+                              days: days.length,
+                              interval,
+                            })}
                           </p>
                         )}
                       </div>
@@ -1358,7 +1361,10 @@ const DoctorAvailability = () => {
                           )}
                         </h3>
                         <p className="text-sm text-muted-foreground/70 mt-1">
-                          {currentDay.slots.length} slots · {interval} min each
+                          {t("pages.doctor.slots_interval_meta", {
+                            slots: currentDay.slots.length,
+                            interval,
+                          })}
                         </p>
                       </div>
 

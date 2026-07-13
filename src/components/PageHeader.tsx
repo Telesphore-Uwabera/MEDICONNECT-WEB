@@ -105,7 +105,7 @@ const ROLE_CONFIG: Record<
     gradient: "from-emerald-500/20 to-emerald-500/5",
   },
   hospital: {
-    label: "Hospital",
+    label: "Health Facility",
     icon: Building2,
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-500/10",

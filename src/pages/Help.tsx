@@ -93,7 +93,7 @@ const Index = () => {
 
                       <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
                           Get support for {appName}, contact our team, or learn how to use the
-                          platform for doctors, hospitals, pharmacies, and patients.
+                          platform for doctors, health facilities, pharmacies, and patients.
                       </p>
 
                       <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -168,8 +168,8 @@ const Index = () => {
                                   to: "/patient/search-doctors",
                               },
                               {
-                                  title: "Find hospitals and facilities",
-                                  desc: "Browse registered hospitals, clinics, and care facilities.",
+                                  title: "Find health facilities",
+                                  desc: "Browse registered health facilities, clinics, and care services.",
                                   to: "/patient/search-facilities",
                               },
                               {
@@ -179,7 +179,7 @@ const Index = () => {
                               },
                               {
                                   title: "Sign in to your account",
-                                  desc: "Access your patient, doctor, hospital, pharmacy, or admin workspace.",
+                                  desc: "Access your patient, doctor, health facility, pharmacy, or admin workspace.",
                                   to: "/auth",
                               },
                           ].map((item) => (

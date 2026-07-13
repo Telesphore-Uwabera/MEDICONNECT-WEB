@@ -45,7 +45,6 @@ import {
   useGetDepartments,
   useGetServicesByDepartment,
 } from "@/hooks/hospital/use-hospital-departments";
-import { t } from "i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +94,8 @@ const STATUS_DOT: Record<BookingStatus, string> = {
   cancelled: "bg-zinc-400",
 };
 
+const STATUS_TAB_VALUES = ["all", "pending", "accepted", "completed", "rejected", "cancelled"] as const;
+
 const PAYMENT_STYLES: Record<string, string> = {
   unpaid: "text-amber-600 bg-amber-50 dark:bg-amber-950/20",
   paid: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20",
@@ -130,8 +131,6 @@ const fmtPreferredDateShort = (raw: string): string => {
     return raw;
   }
 };
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ─── Detail field ─────────────────────────────────────────────────────────────
 
@@ -199,7 +198,7 @@ function BookingDrawer({
       <div
         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
         onClick={onClose}
-        aria-label="Close drawer"
+        aria-label={t('pages.hospital.close_drawer')}
       />
 
       {/* Drawer panel */}
@@ -212,7 +211,7 @@ function BookingDrawer({
         )}
         role="dialog"
         aria-modal="true"
-        aria-label={`Booking #${bookingId} details`}
+        aria-label={t('pages.hospital.booking_details_aria', { id: bookingId })}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/50 bg-card/80 backdrop-blur shrink-0">
@@ -222,7 +221,7 @@ function BookingDrawer({
             </div>
             <div>
               <h2 className="text-xs font-semibold text-foreground tracking-tight">
-                Booking #{bookingId}
+                {t('pages.hospital.booking_hash', { id: bookingId })}
               </h2>
               <p className="text-[10px] text-muted-foreground/60 mt-px">{t('pages.hospital.full_details')}</p>
             </div>
@@ -230,7 +229,7 @@ function BookingDrawer({
           <button
             onClick={onClose}
             className="w-6 h-6 rounded-[5px] flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            aria-label="Close"
+            aria-label={t("common.close")}
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -299,7 +298,7 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
         )}
       >
         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", STATUS_DOT[booking.status])} />
-        {capitalize(booking.status)}
+        {t(`pages.hospital.status_${booking.status}`)}
         {booking.accepted_at && booking.status === "accepted" && (
           <span className="ml-auto font-normal text-[10px] opacity-60">
             {t('pages.hospital.status_accepted')} {format(parseISO(booking.accepted_at), "MMM d, HH:mm")}
@@ -329,10 +328,10 @@ function BookingDrawerContent({ booking }: { booking: ServiceBookingDetail }) {
         <DetailRow
           icon={Clock}
           label={t('pages.hospital.service_code')}
-          value={`${booking.service.duration_minutes} min`}
+          value={`${booking.service.duration_minutes} ${t('pages.hospital.minutes_short')}`}
         />
       )}
-      <DetailRow icon={Building2} label="Department" value={booking.department.name_en} />
+      <DetailRow icon={Building2} label={t('pages.hospital.department')} value={booking.department.name_en} />
       {booking.department.floor && (
         <DetailRow
           icon={Building2}
@@ -503,7 +502,7 @@ function RejectModal({
 
   const handleConfirm = () => {
     if (!reason.trim()) {
-      setErr("Rejection reason is required");
+      setErr(t('pages.hospital.rejection_reason_required'));
       return;
     }
     onConfirm(reason.trim());
@@ -547,7 +546,7 @@ function RejectModal({
               setReason(e.target.value);
               setErr("");
             }}
-            placeholder="e.g. No availability on requested date"
+            placeholder={t('pages.hospital.reject_reason_placeholder')}
             rows={3}
             className="w-full px-3 py-2 text-xs rounded-[5px] border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/40 resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
           />
@@ -633,13 +632,13 @@ function AcceptModal({
         <div className="flex flex-col gap-1.5">
           <label className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">
             {t('pages.doctor.patient_notes')} {" "}
-            <span className="normal-case text-muted-foreground/50 font-normal">(optional)</span>
+            <span className="normal-case text-muted-foreground/50 font-normal">({t('pages.hospital.optional')})</span>
           </label>
           <textarea
             autoFocus
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Please arrive 10 minutes early"
+            placeholder={t('pages.hospital.notes_placeholder')}
             rows={2}
             className="w-full px-3 py-2 text-xs rounded-[5px] border border-border/70 bg-background text-foreground placeholder:text-muted-foreground/40 resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
           />
@@ -652,7 +651,7 @@ function AcceptModal({
             style={{ borderRadius: "5px" }}
             className="px-3 py-1.5 text-[11px] border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50"
           > 
-             {t('pages.doctor.cancel_btn')}
+             {t('pages.hospital.cancel_btn')}
           </button>
           <button
             onClick={() => onConfirm(notes.trim() || undefined)}
@@ -665,7 +664,7 @@ function AcceptModal({
             ) : (
               <Check className="w-3 h-3" />
             )} 
-             {t('pages.doctor.accept_notify')}
+             {t('pages.hospital.accept_notify')}
           </button>
         </div>
       </div>
@@ -794,7 +793,7 @@ function AppointmentCard({
             className={cn("text-[9px] px-1.5 py-0 gap-1", STATUS_STYLES[booking.status])}
           >
             <span className={cn("w-1 h-1 rounded-full", STATUS_DOT[booking.status])} />
-            {capitalize(booking.status)}
+            {t(`pages.hospital.status_${booking.status}`)}
           </Badge>
         </div>
 
@@ -906,7 +905,6 @@ const HospitalAppointments = () => {
 
   const apiFilters = useMemo(
     () => ({
-      status: filters.status !== "all" ? filters.status : undefined,
       department_id:
         filters.departmentId !== "all" ? Number(filters.departmentId) : undefined,
       hospital_service_id:
@@ -1015,24 +1013,39 @@ const HospitalAppointments = () => {
     const pending = bookings.filter((b) => b.status === "pending").length;
     const accepted = bookings.filter((b) => b.status === "accepted").length;
     const completed = bookings.filter((b) => b.status === "completed").length;
+    const rejected = bookings.filter((b) => b.status === "rejected").length;
+    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
     const paid = bookings.filter((b) => b.payment_status === "paid").length;
     const unpaid = bookings.filter((b) => b.payment_status !== "paid").length;
-    return { total, pending, accepted, completed, paid, unpaid };
+    return { total, pending, accepted, completed, rejected, cancelled, paid, unpaid };
   }, [bookings]);
 
   const pendingCount = stats.pending;
+  const statusTabs = useMemo(
+    () =>
+      STATUS_TAB_VALUES.map((value) => ({
+        value,
+        label:
+          value === "all"
+            ? t("pages.hospital.all_statuses")
+            : t(`pages.hospital.status_${value}`),
+        count: value === "all" ? stats.total : stats[value as BookingStatus],
+      })),
+    [stats, t],
+  );
+
 
   const handleAccept = async (notes?: string) => {
     if (!acceptingBooking) return;
     try {
       const res = await acceptMut.mutateAsync({ id: acceptingBooking.id, notes });
-      toast.success(res.message ?? "Booking accepted");
+      toast.success(res.message ?? t('pages.hospital.booking_accepted'));
       if (res.invoice_number) {
-        toast.info(`Invoice ${res.invoice_number} sent to patient`);
+        toast.info(t('pages.hospital.invoice_sent_to_patient', { number: res.invoice_number }));
       }
       setAcceptingBooking(null);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to accept booking");
+      toast.error(e instanceof Error ? e.message : t('pages.hospital.failed_accept_booking'));
     }
   };
 
@@ -1043,19 +1056,19 @@ const HospitalAppointments = () => {
         id: rejectingBooking.id,
         rejection_reason: reason,
       });
-      toast.success(res.message ?? "Booking rejected");
+      toast.success(res.message ?? t('pages.hospital.booking_rejected'));
       setRejectingBooking(null);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to reject booking");
+      toast.error(e instanceof Error ? e.message : t('pages.hospital.failed_reject_booking'));
     }
   };
 
   const handleComplete = async (booking: ServiceBookingSummary) => {
     try {
       const res = await completeMut.mutateAsync(booking.id);
-      toast.success(res.message ?? "Booking marked as completed");
+      toast.success(res.message ?? t('pages.hospital.booking_marked_completed'));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to complete booking");
+      toast.error(e instanceof Error ? e.message : t('pages.hospital.failed_complete_booking'));
     }
   };
 
@@ -1068,7 +1081,7 @@ const HospitalAppointments = () => {
 
   const departmentOptions = useMemo(
     () => [
-      { value: "all", label: "All departments" },
+      { value: "all", label: t('pages.hospital.all_departments') },
       ...departments.map((department) => ({
         value: String(department.id),
         label:
@@ -1086,7 +1099,7 @@ const HospitalAppointments = () => {
         ? selectedDepartmentServices
         : departments.flatMap((department) => department.services ?? []);
     return [
-      { value: "all", label: "All services" },
+      { value: "all", label: t('pages.hospital.all_services') },
       ...services.map((service) => ({
         value: String(service.id),
         label:
@@ -1106,7 +1119,7 @@ const HospitalAppointments = () => {
     ) ?? [];
     const seen = new Set<number>();
     return [
-      { value: "all", label: "All doctors" },
+      { value: "all", label: t('pages.hospital.all_doctors') },
       ...doctors
         .filter((doctor) => {
           if (seen.has(doctor.id)) return false;
@@ -1274,8 +1287,8 @@ const HospitalAppointments = () => {
               <StatCard label={t("pages.hospital.status_pending")}  value={isLoading ? "..." : stats.pending} icon={Clock} accent="warning" />
               <StatCard label={t("pages.hospital.status_accepted")}  value={isLoading ? "..." : stats.accepted} icon={CheckCircle2} accent="info" />
               <StatCard label={t("pages.hospital.status_completed")}  value={isLoading ? "..." : stats.completed} icon={Check} accent="success" />
-              <StatCard label={t("pages.hospital.total_bookings")}  value={isLoading ? "..." : stats.paid} icon={CreditCard} accent="success" />
-              <StatCard label={t("pages.hospital.total_bookings")}  value={isLoading ? "..." : stats.unpaid} icon={XCircle} accent="warning" />
+              <StatCard label={t("pages.hospital.status_paid")}  value={isLoading ? "..." : stats.paid} icon={CreditCard} accent="success" />
+              <StatCard label={t("pages.hospital.status_unpaid")}  value={isLoading ? "..." : stats.unpaid} icon={XCircle} accent="warning" />
             </div>
           </div>
 
@@ -1286,7 +1299,7 @@ const HospitalAppointments = () => {
                 <span className="font-bold text-foreground">
                   {isLoading ? "—" : filtered.length}
                 </span>{" "}
-                {filtered.length === 1 ? "booking" : "bookings"}
+                {t('pages.hospital.booking_word', { count: filtered.length })}
                 {!isLoading && data && (
                   <span className="text-muted-foreground/50 ml-1">
                     / {data.total} {t('pages.hospital.total')}
@@ -1330,7 +1343,7 @@ const HospitalAppointments = () => {
                 disabled={isLoading}
                 style={{ borderRadius: "5px" }}
                 className="w-7 h-7 flex items-center justify-center border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 disabled:opacity-50 transition-colors"
-                title="Refresh"
+                title={t('pages.hospital.refresh')}
               >
                 <RefreshCw
                   className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
@@ -1342,6 +1355,43 @@ const HospitalAppointments = () => {
                 onToggle={() => setFilterOpen(!filterOpen)}
                 hasActiveFilters={hasActiveFilters}
               />
+            </div>
+          </div>
+          
+          <div className="border-b border-border/60 bg-background/95 px-4 py-2">
+            <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
+              {statusTabs.map((tab) => {
+                const active = filters.status === tab.value;
+                const dotClass =
+                  tab.value === "all"
+                    ? "bg-muted-foreground/50"
+                    : STATUS_DOT[tab.value as BookingStatus];
+
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => set("status", tab.value as FilterState["status"])}
+                    className={cn(
+                      "flex h-8 shrink-0 items-center gap-2 rounded-[6px] border px-3 text-[11px] font-semibold transition-colors",
+                      active
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/60 bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground",
+                    )}
+                  >
+                    <span className={cn("h-1.5 w-1.5 rounded-full", dotClass)} />
+                    <span>{tab.label}</span>
+                    <span
+                      className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px] tabular-nums",
+                        active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {isLoading ? "..." : tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           <FilterBar

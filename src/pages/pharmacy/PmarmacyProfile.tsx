@@ -63,9 +63,6 @@ import {
 import EmptyState from "./components/EmptyState";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Types
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface WorkingHoursDay {
   enabled: boolean;
   opens_at: string;
@@ -140,43 +137,43 @@ type SectionId =
 type DayKey = (typeof DAYS_OF_WEEK)[number];
 
 const DAY_LABELS: Record<DayKey, string> = {
-  monday: "Monday",
-  tuesday: "Tuesday",
-  wednesday: "Wednesday",
-  thursday: "Thursday",
-  friday: "Friday",
-  saturday: "Saturday",
-  sunday: "Sunday",
+  monday: "pages.pharmacy.monday",
+  tuesday: "pages.pharmacy.tuesday",
+  wednesday: "pages.pharmacy.wednesday",
+  thursday: "pages.pharmacy.thursday",
+  friday: "pages.pharmacy.friday",
+  saturday: "pages.pharmacy.saturday",
+  sunday: "pages.pharmacy.sunday",
 };
 
 const SOCIAL_PLATFORMS = [
   {
     key: "website" as const,
-    label: "Website",
+    label: "pages.pharmacy.website",
     icon: Globe,
     placeholder: "https://medipharm.rw",
   },
   {
     key: "facebook" as const,
-    label: "Facebook",
+    label: "pages.pharmacy.facebook",
     icon: Facebook,
     placeholder: "https://facebook.com/medipharm",
   },
   {
     key: "twitter" as const,
-    label: "Twitter / X",
+    label: "pages.pharmacy.twitter_x",
     icon: Twitter,
     placeholder: "https://twitter.com/medipharm",
   },
   {
     key: "instagram" as const,
-    label: "Instagram",
+    label: "pages.pharmacy.instagram",
     icon: Instagram,
     placeholder: "https://instagram.com/medipharm",
   },
   {
     key: "linkedin" as const,
-    label: "LinkedIn",
+    label: "pages.pharmacy.linkedin",
     icon: Linkedin,
     placeholder: "https://linkedin.com/company/medipharm",
   },
@@ -208,39 +205,39 @@ const SECTIONS: {
 }[] = [
     {
       id: "general",
-      label: "General",
+      label: "pages.pharmacy.section_general",
       icon: Building2,
-      description: "Name, registration & description",
+      description: "pages.pharmacy.section_general_desc",
     },
     {
       id: "location",
-      label: "Location",
+      label: "pages.pharmacy.section_location",
       icon: MapPin,
-      description: "Address, city, province & coordinates",
+      description: "pages.pharmacy.section_location_desc",
     },
     {
       id: "contact",
-      label: "Contact",
+      label: "pages.pharmacy.section_contact",
       icon: Phone,
-      description: "Phone number & email",
+      description: "pages.pharmacy.section_contact_desc",
     },
     {
       id: "hours",
-      label: "Hours & Delivery",
+      label: "pages.pharmacy.section_hours",
       icon: Truck,
-      description: "Opening hours & delivery settings",
+      description: "pages.pharmacy.section_hours_desc",
     },
     {
       id: "working_hours",
-      label: "Working Hours",
+      label: "pages.pharmacy.section_working_hours",
       icon: Calendar,
-      description: "Per-day open/close schedule",
+      description: "pages.pharmacy.section_working_hours_desc",
     },
     {
       id: "social_links",
-      label: "Social Links",
+      label: "pages.pharmacy.section_social_links",
       icon: Share2,
-      description: "Website, Facebook, Instagram...",
+      description: "pages.pharmacy.section_social_links_desc",
     },
   ];
 
@@ -259,7 +256,7 @@ const formatPhone = (p: string) =>
   p?.replace(/(\+\d{3})(\d{3})(\d{3})(\d{3})/, "$1 $2 $3 $4") ?? p;
 
 const formatTime = (t: string) => {
-  if (!t) return "â€”";
+  if (!t) return "-";
   const norm = normalizeTime(t);
   const [h, m] = norm.split(":").map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
@@ -435,6 +432,7 @@ function SectionEditBar({
   isEditing: boolean;
   isSaving: boolean;
 }) {
+  const { t } = useTranslation();
   if (!isEditing) {
     return (
       <Button
@@ -444,7 +442,7 @@ function SectionEditBar({
         className="h-7 px-3 text-xs gap-1.5 border-border hover:border-primary hover:text-primary hover:bg-primary/5 transition-all duration-150"
       >
         <Pencil size={11} />
-        Edit
+        {t("pages.pharmacy.edit")}
       </Button>
     );
   }
@@ -456,7 +454,7 @@ function SectionEditBar({
         onClick={onCancel}
         className="h-7 px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground"
       >
-        <X size={11} /> Cancel
+        <X size={11} /> {t("pages.pharmacy.cancel")}
       </Button>
       <Button
         size="sm"
@@ -469,7 +467,7 @@ function SectionEditBar({
         ) : (
           <Save size={11} />
         )}
-        Save changes
+        {t("pages.pharmacy.save_changes")}
       </Button>
     </div>
   );
@@ -488,6 +486,7 @@ function SectionCard({
   editBar?: React.ReactNode;
   isEditing?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -512,7 +511,7 @@ function SectionCard({
           <span className="text-sm font-semibold text-foreground">{title}</span>
           {isEditing && (
             <span className="text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full">
-              editing
+              {t("pages.pharmacy.editing")}
             </span>
           )}
         </div>
@@ -527,33 +526,20 @@ function SectionCard({
 // verification status, inventory mode, timestamps..) that previously had
 // nowhere to display.
 function SystemDetailsCard({ profile }: { profile: PharmacyProfile }) {
+  const { t } = useTranslation();
   const p = profile as any;
   const rows: { label: string; value: string; mono?: boolean }[] = [
-    { label: "Slug", value: p.slug ?? "-", mono: true },
-    { label: "Inventory mode", value: p.inventory_mode ?? "-" },
-    { label: "Shown on homepage", value: p.show_homepage ? "Yes" : "No" },
-    {
-      label: "Registration fee paid",
-      value: p.registration_fee_paid ? "Yes" : "No",
-    },
-    { label: "Active", value: p.is_active ? "Yes" : "No" },
-    {
-      label: "Verified on",
-      value: p.verified_at
-        ? formatDateDisplay(p.verified_at)
-        : "Not yet verified",
-    },
-    {
-      label: "Created",
-      value: p.created_at ? formatDateDisplay(p.created_at) : "-",
-    },
-    {
-      label: "Last updated",
-      value: p.updated_at ? formatDateDisplay(p.updated_at) : "-",
-    },
+    { label: t("pages.pharmacy.slug"), value: p.slug ?? "-", mono: true },
+    { label: t("pages.pharmacy.inventory_mode"), value: p.inventory_mode ?? "-" },
+    { label: t("pages.pharmacy.shown_homepage"), value: p.show_homepage ? t("pages.pharmacy.yes") : t("pages.pharmacy.no") },
+    { label: t("pages.pharmacy.registration_fee_paid"), value: p.registration_fee_paid ? t("pages.pharmacy.yes") : t("pages.pharmacy.no") },
+    { label: t("pages.pharmacy.active"), value: p.is_active ? t("pages.pharmacy.yes") : t("pages.pharmacy.no") },
+    { label: t("pages.pharmacy.verified_date"), value: p.verified_at ? formatDateDisplay(p.verified_at) : t("pages.pharmacy.not_yet_verified") },
+    { label: t("pages.pharmacy.created"), value: p.created_at ? formatDateDisplay(p.created_at) : "-" },
+    { label: t("pages.pharmacy.last_updated"), value: p.updated_at ? formatDateDisplay(p.updated_at) : "-" },
   ];
   return (
-    <SectionCard title="System & verification" icon={Info}>
+    <SectionCard title={t("pages.pharmacy.system_verification")} icon={Info}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
         {rows.map((r) => (
           <ViewRow
@@ -648,6 +634,7 @@ function Sidebar({
   visitedSteps?: Set<number>;
   onCreateNew?: () => void;
 }) {
+  const { t } = useTranslation();
   const isSetup = mode === "setup";
   const pct = visitedSteps
     ? Math.round((visitedSteps.size / SECTIONS.length) * 100)
@@ -662,7 +649,7 @@ function Sidebar({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                Profile setup
+                {t("pages.pharmacy.profile_setup")}
               </span>
               <span className="text-[11px] font-bold text-primary tabular-nums">
                 {pct}%
@@ -675,7 +662,7 @@ function Sidebar({
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              {visitedSteps?.size ?? 0} of {SECTIONS.length} sections visited
+              {t("pages.pharmacy.sections_visited", { count: visitedSteps?.size ?? 0, total: SECTIONS.length })}
             </p>
           </div>
         ) : profile ? (
@@ -714,15 +701,15 @@ function Sidebar({
             </div>
             <div className="rounded-[6px] bg-muted/40 divide-y divide-border/60">
               {[
-                { label: "City", value: profile.city },
+                { label: t("pages.pharmacy.city"), value: profile.city },
                 {
-                  label: "Delivery",
+                  label: t("pages.pharmacy.delivery"),
                   value: profile.offers_delivery
                     ? formatDeliveryFee(
                       profile.delivery_fee,
                       profile.delivery_currency,
                     )
-                    : "No delivery",
+                    : t("pages.pharmacy.no_delivery"),
                 },
               ].map(({ label, value }) => (
                 <div
@@ -804,7 +791,7 @@ function Sidebar({
             onClick={onCreateNew}
             className="w-full text-xs gap-1.5 h-8 text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw size={11} /> Reset & recreate
+            <RefreshCw size={11} /> {t("pages.pharmacy.reset_recreate")}
           </Button>
         </div>
       )}
@@ -824,6 +811,7 @@ function Sidebar({
 // of the page instead of being buried as two small thumbnails inside the
 // General tab. Upload buttons live directly on the image they affect.
 function ProfileHero({ profile }: { profile: PharmacyProfile }) {
+  const { t } = useTranslation();
   const p = profile as any;
   const logoRef = useRef<HTMLInputElement>(null);
   const coverRef = useRef<HTMLInputElement>(null);
@@ -839,7 +827,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
     const file = e.target.files?.[0];
     if (!file) return;
     uploadLogo.mutate(file, {
-      onSuccess: () => toast.success("Logo updated"),
+      onSuccess: () => toast.success(t("pages.pharmacy.logo_updated")),
       onError: (e) => toast.error(e.message),
     });
     e.target.value = "";
@@ -848,7 +836,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
     const file = e.target.files?.[0];
     if (!file) return;
     uploadCover.mutate(file, {
-      onSuccess: () => toast.success("Cover photo updated"),
+      onSuccess: () => toast.success(t("pages.pharmacy.cover_updated")),
       onError: (e) => toast.error(e.message),
     });
     e.target.value = "";
@@ -860,10 +848,10 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success("Link copied");
+      toast.success(t("pages.pharmacy.link_copied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy link");
+      toast.error(t("pages.pharmacy.copy_failed"));
     }
   };
 
@@ -893,7 +881,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
           ) : (
             <Upload size={11} />
           )}
-          {coverUrl ? "Change cover" : "Add cover"}
+          {coverUrl ? t("pages.pharmacy.change_cover") : t("pages.pharmacy.add_cover")}
         </button>
         <input
           ref={coverRef}
@@ -923,7 +911,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
               onClick={() => logoRef.current?.click()}
               disabled={uploadLogo.isPending}
               className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-all"
-              title="Change logo"
+              title={t("pages.pharmacy.change_logo")}
             >
               {uploadLogo.isPending ? (
                 <RefreshCw size={14} className="animate-spin" />
@@ -949,10 +937,10 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
               </h2>
               {isVerified && (
                 <span
-                  title={`Verified on ${formatDateDisplay(p.verified_at)}`}
+                  title={t("pages.pharmacy.verified_on", { date: formatDateDisplay(p.verified_at) })}
                   className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2 py-0.5"
                 >
-                  <BadgeCheck size={11} /> Verified
+                  <BadgeCheck size={11} /> {t("pages.pharmacy.verified")}
                 </span>
               )}
               <span
@@ -980,7 +968,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
               onClick={handleCopySlug}
               className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-primary border border-border rounded-full px-3 py-1.5 hover:border-primary/40 transition-colors shrink-0 self-start sm:self-auto"
             >
-              <Link2 size={11} /> {copied ? "Copied!" : `/pharmacy/${p.slug}`}
+              <Link2 size={11} /> {copied ? t("pages.pharmacy.copied") : `/pharmacy/${p.slug}`}
             </button>
           )}
         </div>
@@ -999,6 +987,7 @@ function WorkingHoursGrid({
   onChange?: (v: WorkingHours) => void;
   readonly?: boolean;
 }) {
+  const { t } = useTranslation();
   const updateDay = (day: DayKey, patch: Partial<WorkingHoursDay>) =>
     onChange?.({ ...value, [day]: { ...value[day], ...patch } });
 
@@ -1020,7 +1009,7 @@ function WorkingHoursGrid({
     <div className="space-y-1.5">
       {!readonly && (
         <div className="hidden sm:grid grid-cols-[96px_1fr_1fr_auto_auto] gap-2 px-3 mb-1">
-          {["Day", "Opens at", "Closes at", "Copy", "Open"].map((h) => (
+          {[t("pages.pharmacy.day"), t("pages.pharmacy.opens_at"), t("pages.pharmacy.closes_at"), t("pages.pharmacy.copy"), t("pages.pharmacy.open")].map((h) => (
             <span
               key={h}
               className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
@@ -1055,7 +1044,7 @@ function WorkingHoursGrid({
                   isWeekend && d.enabled && "text-primary",
                 )}
               >
-                {DAY_LABELS[day]}
+                {t(DAY_LABELS[day])}
               </span>
               {d.enabled ? (
                 <span className="font-mono text-foreground text-[11px]">
@@ -1074,7 +1063,7 @@ function WorkingHoursGrid({
                     : "bg-muted text-muted-foreground",
                 )}
               >
-                {d.enabled ? "Open" : "Closed"}
+                {d.enabled ? t("pages.pharmacy.open") : t("pages.pharmacy.closed")}
               </span>
             </div>
           );
@@ -1101,7 +1090,7 @@ function WorkingHoursGrid({
                   isWeekend && d.enabled && "text-primary",
                 )}
               >
-                {DAY_LABELS[day].slice(0, 3)}
+                {t(DAY_LABELS[day]).slice(0, 3)}
               </span>
               <input
                 type="time"
@@ -1136,7 +1125,7 @@ function WorkingHoursGrid({
               <button
                 onClick={() => applyToAll(day)}
                 disabled={!d.enabled}
-                title="Copy to all days"
+                title={t("pages.pharmacy.copy_all_days")}
                 className="text-[10px] font-bold text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors px-1"
               >
                  ↓ All
@@ -1157,7 +1146,7 @@ function WorkingHoursGrid({
                     isWeekend && d.enabled && "text-primary",
                   )}
                 >
-                  {DAY_LABELS[day]}
+                  {t(DAY_LABELS[day])}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -1218,6 +1207,7 @@ function WorkingHoursGrid({
  // Closures Manager
 // FIX: normalizeDate strips ISO timestamps; DateInput shows calendar icon.
 function ClosuresManager() {
+  const { t } = useTranslation();
   const { data: closures = [], isLoading } = useGetClosures();
   const createClosure = useCreateClosure();
   const updateClosure = useUpdateClosure();
@@ -1252,7 +1242,7 @@ function ClosuresManager() {
         { id: editingId, payload },
         {
           onSuccess: () => {
-            toast.success("Closure updated");
+            toast.success(t("pages.pharmacy.closure_updated"));
             resetForm();
           },
           onError: (e) => toast.error(e.message),
@@ -1261,7 +1251,7 @@ function ClosuresManager() {
     } else {
       createClosure.mutate(payload, {
         onSuccess: () => {
-          toast.success("Closure saved");
+          toast.success(t("pages.pharmacy.closure_saved"));
           resetForm();
         },
         onError: (e) => toast.error(e.message),
@@ -1283,7 +1273,7 @@ function ClosuresManager() {
       {/* Check a date */}
       <div className="rounded-[6px] border border-border bg-muted/20 p-4 space-y-3">
         <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-          Check a date
+          {t("pages.pharmacy.check_date")}
         </p>
         <div className="flex gap-2 items-center">
           {/* FIX: use DateInput for consistent icon visibility */}
@@ -1306,7 +1296,7 @@ function ClosuresManager() {
             {checkDate.isPending ? (
               <RefreshCw size={11} className="animate-spin" />
             ) : (
-              "Check"
+              t("pages.pharmacy.check")
             )}
           </Button>
         </div>
@@ -1321,12 +1311,12 @@ function ClosuresManager() {
           >
             {checkResult.is_closed ? (
               <>
-                <CalendarOff size={12} /> Closed
+                <CalendarOff size={12} /> {t("pages.pharmacy.closed")}
                 {checkResult.reason ? ` - ${checkResult.reason}` : ""}
               </>
             ) : (
               <>
-                <Check size={12} /> Open on this date
+                <Check size={12} /> {t("pages.pharmacy.open_on_date")}
               </>
             )}
           </div>
@@ -1347,7 +1337,7 @@ function ClosuresManager() {
             className="text-muted-foreground mx-auto mb-2"
           />
           <p className="text-[11px] text-muted-foreground">
-            No upcoming closures scheduled
+            {t("pages.pharmacy.no_closures")}
           </p>
         </div>
       ) : (
@@ -1390,9 +1380,9 @@ function ClosuresManager() {
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm("Delete this closure?")) {
+                    if (confirm(t("pages.pharmacy.delete_closure_confirm"))) {
                       deleteClosure.mutate(c.id, {
-                        onSuccess: () => toast.success("Closure removed"),
+                        onSuccess: () => toast.success(t("pages.pharmacy.closure_removed")),
                         onError: (e) => toast.error(e.message),
                       });
                     }
@@ -1413,7 +1403,7 @@ function ClosuresManager() {
         <div className="rounded-[6px] border border-primary/40 bg-primary/5 p-4 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-primary">
-              {editingId !== null ? "Edit closure" : "New closure period"}
+              {editingId !== null ? t("pages.pharmacy.edit_closure") : t("pages.pharmacy.new_closure_period")}
             </p>
             <button
               onClick={resetForm}
@@ -1423,7 +1413,7 @@ function ClosuresManager() {
             </button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="From date">
+            <FormField label={t("pages.pharmacy.from_date")}>
               {/* FIX: DateInput ensures calendar icon is visible */}
               <DateInput
                 value={form.from_date}
@@ -1431,7 +1421,7 @@ function ClosuresManager() {
                 onChange={(v) => setForm((f) => ({ ...f, from_date: v }))}
               />
             </FormField>
-            <FormField label="To date">
+            <FormField label={t("pages.pharmacy.to_date")}>
               <DateInput
                 value={form.to_date}
                 min={form.from_date || today}
@@ -1439,10 +1429,10 @@ function ClosuresManager() {
               />
             </FormField>
           </div>
-          <FormField label="Reason (optional)">
+          <FormField label={t("pages.pharmacy.reason_optional")}>
             <Input
               value={form.reason}
-              placeholder="e.g. Christmas Holiday"
+              placeholder={t("pages.pharmacy.reason_placeholder")}
               onChange={(e) =>
                 setForm((f) => ({ ...f, reason: e.target.value }))
               }
@@ -1474,7 +1464,7 @@ function ClosuresManager() {
               ) : (
                 <Check size={11} />
               )}
-              {editingId !== null ? "Update closure" : "Save closure"}
+              {editingId !== null ? t("pages.pharmacy.update_closure") : t("pages.pharmacy.save_closure")}
             </Button>
           </div>
         </div>
@@ -1485,7 +1475,7 @@ function ClosuresManager() {
           onClick={() => setShowForm(true)}
           className="w-full h-9 text-xs gap-2 border-dashed hover:border-primary hover:text-primary transition-colors"
         >
-          <Plus size={12} /> Add closure period
+          <Plus size={12} /> {t("pages.pharmacy.add_closure_period")}
         </Button>
       )}
     </div>
@@ -1500,6 +1490,7 @@ function GeneralSection({
   profile: PharmacyProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const p = profile as any;
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
@@ -1525,7 +1516,7 @@ function GeneralSection({
   const onSubmit = handleSubmit((data) => {
     save.mutate(data, {
       onSuccess: () => {
-        toast.success("General info updated");
+        toast.success(t("pages.pharmacy.general_updated"));
         setEditing(false);
         onSaved();
       },
@@ -1534,14 +1525,14 @@ function GeneralSection({
   });
 
   const descriptions = [
-    { lang: "English", value: profile.description_en },
+    { lang: t("pages.pharmacy.settings_lang_en"), value: profile.description_en },
     { lang: "Français", value: p.description_fr },
-    { lang: "Ikinyarwanda", value: p.description_kiny },
+    { lang: t("pages.pharmacy.settings_lang_rw"), value: p.description_kiny },
   ].filter((d) => d.value);
 
   return (
     <SectionCard
-      title="General information"
+      title={t("pages.pharmacy.general_information")}
       icon={Building2}
       isEditing={editing}
       editBar={
@@ -1560,33 +1551,33 @@ function GeneralSection({
       {editing ? (
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <FormField label="Name (English) *" error={errors.name_en?.message}>
+            <FormField label={`${t("pages.pharmacy.name_en")} *`} error={errors.name_en?.message}>
               <Input
-                {...register("name_en", { required: "Required" })}
+                {...register("name_en", { required: t("pages.pharmacy.required") })}
                 className="h-9 text-xs"
               />
             </FormField>
-            <FormField label="Name (French)">
+            <FormField label={t("pages.pharmacy.name_fr")}>
               <Input {...register("name_fr")} className="h-9 text-xs" />
             </FormField>
-            <FormField label="Name (Kinyarwanda)">
+            <FormField label={t("pages.pharmacy.name_kiny")}>
               <Input {...register("name_kiny")} className="h-9 text-xs" />
             </FormField>
           </div>
-          <FormField label="Registration Number">
+          <FormField label={t("pages.pharmacy.registration_number")}>
             <Input
               {...register("registration_number")}
               className="h-9 text-xs font-mono"
             />
           </FormField>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-border/60">
-            <FormField label="Description (English)">
+            <FormField label={t("pages.pharmacy.description_en")}>
               <Input {...register("description_en")} className="h-9 text-xs" />
             </FormField>
-            <FormField label="Description (French)">
+            <FormField label={t("pages.pharmacy.description_fr")}>
               <Input {...register("description_fr")} className="h-9 text-xs" />
             </FormField>
-            <FormField label="Description (Kinyarwanda)">
+            <FormField label={t("pages.pharmacy.description_kiny")}>
               <Input
                 {...register("description_kiny")}
                 className="h-9 text-xs"
@@ -1594,17 +1585,17 @@ function GeneralSection({
             </FormField>
           </div>
           <div className="grid grid-cols-1 gap-4 pt-2 border-t border-border/60">
-            <FormField label="SEO title">
+            <FormField label={t("pages.pharmacy.seo_title")}>
               <Input
                 {...register("seo_title")}
-                placeholder="Shown in search engine results"
+                placeholder={t("pages.pharmacy.seo_title_placeholder")}
                 className="h-9 text-xs"
               />
             </FormField>
-            <FormField label="SEO description">
+            <FormField label={t("pages.pharmacy.seo_description")}>
               <Input
                 {...register("seo_description")}
-                placeholder="Short summary shown under the search result title"
+                placeholder={t("pages.pharmacy.seo_description_placeholder")}
                 className="h-9 text-xs"
               />
             </FormField>
@@ -1613,12 +1604,12 @@ function GeneralSection({
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-            <ViewRow label="Name (EN)" value={profile.name_en} />
-            <ViewRow label="Name (FR)" value={profile.name_fr ?? ""} />
-            <ViewRow label="Name (Kinyarwanda)" value={p.name_kiny ?? ""} />
+            <ViewRow label={t("pages.pharmacy.name_en")} value={profile.name_en} />
+            <ViewRow label={t("pages.pharmacy.name_fr")} value={profile.name_fr ?? ""} />
+            <ViewRow label={t("pages.pharmacy.name_kiny")} value={p.name_kiny ?? ""} />
             <div className="col-span-1 sm:col-span-3">
               <ViewRow
-                label="Registration"
+                label={t("pages.pharmacy.registration")}
                 value={profile.registration_number ?? ""}
                 mono
               />
@@ -1640,9 +1631,9 @@ function GeneralSection({
           )}
           {(p.seo_title || p.seo_description) && (
             <div className="pt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              <ViewRow label="SEO title" value={p.seo_title ?? ""} />
+              <ViewRow label={t("pages.pharmacy.seo_title")} value={p.seo_title ?? ""} />
               <ViewRow
-                label="SEO description"
+                label={t("pages.pharmacy.seo_description")}
                 value={p.seo_description ?? ""}
               />
             </div>
@@ -1660,6 +1651,7 @@ function LocationSection({
   profile: PharmacyProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
   const {
@@ -1687,7 +1679,7 @@ function LocationSection({
       },
       {
         onSuccess: () => {
-          toast.success("Location updated");
+          toast.success(t("pages.pharmacy.location_updated"));
           setEditing(false);
           onSaved();
         },
@@ -1698,7 +1690,7 @@ function LocationSection({
 
   return (
     <SectionCard
-      title="Location"
+      title={t("pages.pharmacy.section_location")}
       icon={MapPin}
       isEditing={editing}
       editBar={
@@ -1717,42 +1709,42 @@ function LocationSection({
       {editing ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
-            label="Street Address"
+            label={t("pages.pharmacy.street_address")}
             error={errors.address?.message}
             className="col-span-1 sm:col-span-2"
           >
             <Input
-              {...register("address", { required: "Required" })}
+              {...register("address", { required: t("pages.pharmacy.required") })}
               className="h-9 text-xs"
             />
           </FormField>
-          <FormField label="City" error={errors.city?.message}>
+          <FormField label={t("pages.pharmacy.city")} error={errors.city?.message}>
             <Input
-              {...register("city", { required: "Required" })}
+              {...register("city", { required: t("pages.pharmacy.required") })}
               className="h-9 text-xs"
             />
           </FormField>
-          <FormField label="Province">
+          <FormField label={t("pages.pharmacy.province")}>
             <Input {...register("province")} className="h-9 text-xs" />
           </FormField>
           <FormField
-            label="Country"
+            label={t("pages.pharmacy.country")}
             error={errors.country?.message}
             className="col-span-1 sm:col-span-2"
           >
             <Input
-              {...register("country", { required: "Required" })}
+              {...register("country", { required: t("pages.pharmacy.required") })}
               className="h-9 text-xs"
             />
           </FormField>
-          <FormField label="Latitude">
+          <FormField label={t("pages.pharmacy.latitude")}>
             <Input
               {...register("latitude")}
               placeholder="-1.9441"
               className="h-9 text-xs font-mono"
             />
           </FormField>
-          <FormField label="Longitude">
+          <FormField label={t("pages.pharmacy.longitude")}>
             <Input
               {...register("longitude")}
               placeholder="30.0619"
@@ -1763,14 +1755,14 @@ function LocationSection({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           <div className="col-span-1 sm:col-span-2">
-            <ViewRow label="Street" value={profile.address} />
+            <ViewRow label={t("pages.pharmacy.street")} value={profile.address} />
           </div>
-          <ViewRow label="City" value={profile.city} />
-          <ViewRow label="Province" value={profile.province ?? ""} />
-          <ViewRow label="Country" value={profile.country} />
+          <ViewRow label={t("pages.pharmacy.city")} value={profile.city} />
+          <ViewRow label={t("pages.pharmacy.province")} value={profile.province ?? ""} />
+          <ViewRow label={t("pages.pharmacy.country")} value={profile.country} />
           {profile.latitude != null && (
             <ViewRow
-              label="Coordinates"
+              label={t("pages.pharmacy.coordinates")}
               value={`${profile.latitude}, ${profile.longitude}`}
               mono
             />
@@ -1788,6 +1780,7 @@ function ContactSection({
   profile: PharmacyProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
   const {
@@ -1802,7 +1795,7 @@ function ContactSection({
   const onSubmit = handleSubmit((data) => {
     save.mutate(data, {
       onSuccess: () => {
-        toast.success("Contact details updated");
+        toast.success(t("pages.pharmacy.contact_updated"));
         setEditing(false);
         onSaved();
       },
@@ -1812,7 +1805,7 @@ function ContactSection({
 
   return (
     <SectionCard
-      title="Contact details"
+      title={t("pages.pharmacy.contact_details")}
       icon={Phone}
       isEditing={editing}
       editBar={
@@ -1831,26 +1824,26 @@ function ContactSection({
       {editing ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
-            label="Phone Number"
+            label={t("pages.pharmacy.phone_number")}
             error={errors.phone?.message}
             className="col-span-1 sm:col-span-2"
           >
             <Input
               type="tel"
-              {...register("phone", { required: "Required" })}
+              {...register("phone", { required: t("pages.pharmacy.required") })}
               className="h-9 text-xs"
             />
           </FormField>
           <FormField
-            label="Email Address"
+            label={t("pages.pharmacy.email_address")}
             error={errors.email?.message}
             className="col-span-1 sm:col-span-2"
           >
             <Input
               type="email"
               {...register("email", {
-                required: "Required",
-                pattern: { value: /^\S+@\S+\.\S+$/, message: "Invalid email" },
+                required: t("pages.pharmacy.required"),
+                pattern: { value: /^\S+@\S+\.\S+$/, message: t("pages.pharmacy.invalid_email") },
               })}
               className="h-9 text-xs"
             />
@@ -1863,7 +1856,7 @@ function ContactSection({
               <Phone size={13} />
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground mb-0.5">Phone</p>
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t("pages.pharmacy.phone")}</p>
               <span className="text-xs font-bold font-mono text-primary">
                 {formatPhone(profile.phone)}
               </span>
@@ -1874,7 +1867,7 @@ function ContactSection({
               @
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground mb-0.5">Email</p>
+              <p className="text-[10px] text-muted-foreground mb-0.5">{t("pages.pharmacy.email")}</p>
               <span className="text-xs font-semibold text-foreground truncate block">
                 {profile.email}
               </span>
@@ -1893,6 +1886,7 @@ function HoursSection({
   profile: PharmacyProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
   const { register, handleSubmit, watch, setValue, reset } = useForm({
@@ -1940,7 +1934,7 @@ function HoursSection({
       },
       {
         onSuccess: () => {
-          toast.success("Hours & delivery updated");
+          toast.success(t("pages.pharmacy.hours_delivery_updated"));
           setEditing(false);
           onSaved();
         },
@@ -1951,7 +1945,7 @@ function HoursSection({
 
   return (
     <SectionCard
-      title="Hours & delivery"
+      title={t("pages.pharmacy.hours_delivery")}
       icon={Truck}
       isEditing={editing}
       editBar={
@@ -1971,9 +1965,9 @@ function HoursSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3">
             <div>
-              <p className="text-xs font-semibold">Open 24 hours</p>
+              <p className="text-xs font-semibold">{t("pages.pharmacy.open_24_hours")}</p>
               <p className="text-[10px] text-muted-foreground">
-                Overrides open/close times
+                {t("pages.pharmacy.overrides_times")}
               </p>
             </div>
             <Switch
@@ -1981,7 +1975,7 @@ function HoursSection({
               onCheckedChange={(v) => setValue("is_open_24h", v)}
             />
           </div>
-          <FormField label="Opens At">
+          <FormField label={t("pages.pharmacy.opens_at")}>
             <input
               type="time"
               disabled={is24h}
@@ -1989,7 +1983,7 @@ function HoursSection({
               className="w-full h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [color-scheme:dark] disabled:opacity-40 transition-all [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           </FormField>
-          <FormField label="Closes At">
+          <FormField label={t("pages.pharmacy.closes_at")}>
             <input
               type="time"
               disabled={is24h}
@@ -2004,7 +1998,7 @@ function HoursSection({
                 className="flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3"
               >
                 <p className="text-xs font-semibold capitalize">
-                  {key.replace("offers_", "Offers ")}
+                  {key === "offers_delivery" ? t("pages.pharmacy.offers_delivery") : t("pages.pharmacy.offers_pickup")}
                 </p>
                 <Switch
                   checked={watch(key)}
@@ -2015,14 +2009,14 @@ function HoursSection({
           </div>
           {offersDelivery && (
             <>
-              <FormField label="Delivery Fee (RWF)">
+              <FormField label={`${t("pages.pharmacy.delivery_fee")} (RWF)`}>
                 <Input
                   type="number"
                   {...register("delivery_fee")}
                   className="h-9 text-xs"
                 />
               </FormField>
-              <FormField label="Radius (km)">
+              <FormField label={t("pages.pharmacy.radius_km")}>
                 <Input
                   type="number"
                   {...register("delivery_radius_km")}
@@ -2030,7 +2024,7 @@ function HoursSection({
                 />
               </FormField>
               <FormField
-                label="Est. Delivery Time (min)"
+                label={t("pages.pharmacy.est_delivery_time_min")}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
@@ -2046,13 +2040,13 @@ function HoursSection({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
           {profile.is_open_24h ? (
             <div className="col-span-1 sm:col-span-2">
-              <ViewRow label="Hours" value="Open 24 hours" />
+              <ViewRow label={t("pages.pharmacy.hours")} value={t("pages.pharmacy.open_24_hours")} />
             </div>
           ) : (
             <>
-              <ViewRow label="Opens at" value={formatTime(profile.opens_at)} />
+              <ViewRow label={t("pages.pharmacy.opens_at")} value={formatTime(profile.opens_at)} />
               <ViewRow
-                label="Closes at"
+                label={t("pages.pharmacy.closes_at")}
                 value={formatTime(profile.closes_at)}
               />
             </>
@@ -2060,20 +2054,20 @@ function HoursSection({
           {profile.offers_delivery && (
             <>
               <ViewRow
-                label="Delivery fee"
+                label={t("pages.pharmacy.delivery_fee")}
                 value={formatDeliveryFee(
                   profile.delivery_fee,
                   profile.delivery_currency,
                 )}
               />
               <ViewRow
-                label="Radius"
+                label={t("pages.pharmacy.radius")}
                 value={`${profile.delivery_radius_km} km`}
               />
               <div className="col-span-1 sm:col-span-2">
                 <ViewRow
-                  label="Est. delivery time"
-                  value={`${profile.estimated_delivery_minutes} minutes`}
+                  label={t("pages.pharmacy.eta_time")}
+                  value={`${profile.estimated_delivery_minutes} ${t("pages.pharmacy.minutes")}`}
                 />
               </div>
             </>
@@ -2081,12 +2075,12 @@ function HoursSection({
           <div className="col-span-1 sm:col-span-2 flex gap-2 flex-wrap">
             {profile.offers_delivery && (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-3 py-1 bg-primary/15 text-primary">
-                <Check size={10} /> Delivery
+                <Check size={10} /> {t("pages.pharmacy.delivery_label")}
               </span>
             )}
             {profile.offers_pickup && (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold rounded-full px-3 py-1 bg-primary/15 text-primary">
-                <Check size={10} /> Pickup
+                <Check size={10} /> {t("pages.pharmacy.pickup")}
               </span>
             )}
           </div>
@@ -2101,6 +2095,7 @@ function WorkingHoursSection({
 }: {
   workingHoursData: WorkingHourRecord[];
 }) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const setHours = useSetWorkingHours();
   const resetHours = useResetWorkingHours();
@@ -2129,7 +2124,7 @@ function WorkingHoursSection({
     }));
     setHours.mutate(payload, {
       onSuccess: () => {
-        toast.success("Working hours saved");
+        toast.success(t("pages.pharmacy.working_hours_saved"));
         setEditing(false);
       },
       onError: (e) => toast.error(e.message),
@@ -2142,10 +2137,10 @@ function WorkingHoursSection({
   };
 
   const handleReset = () => {
-    if (!confirm("Reset all working hours to defaults?")) return;
+    if (!confirm(t("pages.pharmacy.reset_hours_confirm"))) return;
     resetHours.mutate(undefined, {
       onSuccess: () => {
-        toast.success("Working hours reset");
+        toast.success(t("pages.pharmacy.working_hours_reset"));
         setLocalHours(DEFAULT_WORKING_HOURS);
         setEditing(false);
       },
@@ -2156,7 +2151,7 @@ function WorkingHoursSection({
   return (
     <div className="space-y-3">
       <SectionCard
-        title="Weekly working hours"
+        title={t("pages.pharmacy.weekly_working_hours")}
         icon={Calendar}
         isEditing={editing}
         editBar={
@@ -2188,7 +2183,7 @@ function WorkingHoursSection({
               ) : (
                 <Trash2 size={11} />
               )}
-              Reset all to defaults
+              {t("pages.pharmacy.reset_all_defaults")}
             </Button>
             <p className="text-[10px] text-muted-foreground">
               Use "↓ All" to copy times across all days
@@ -2197,7 +2192,7 @@ function WorkingHoursSection({
         )}
       </SectionCard>
 
-      <SectionCard title="Closure periods" icon={CalendarOff}>
+      <SectionCard title={t("pages.pharmacy.closure_periods")} icon={CalendarOff}>
         <ClosuresManager />
       </SectionCard>
     </div>
@@ -2211,6 +2206,7 @@ function SocialLinksSection({
   profile: PharmacyProfile;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const p = profile as any;
   const [editing, setEditing] = useState(false);
   const save = useCreateOrUpdateProfile();
@@ -2248,7 +2244,7 @@ function SocialLinksSection({
       },
       {
         onSuccess: () => {
-          toast.success("Social links updated");
+          toast.success(t("pages.pharmacy.social_links_updated"));
           setEditing(false);
           onSaved();
         },
@@ -2263,7 +2259,7 @@ function SocialLinksSection({
 
   return (
     <SectionCard
-      title="Social media & web"
+      title={t("pages.pharmacy.social_media_web")}
       icon={Share2}
       isEditing={editing}
       editBar={
@@ -2282,10 +2278,10 @@ function SocialLinksSection({
       {editing ? (
         <div className="space-y-3">
           <p className="text-[11px] text-muted-foreground">
-            All fields are optional.
+            {t("pages.pharmacy.all_fields_optional")}
           </p>
           {SOCIAL_PLATFORMS.map(({ key, label, icon: Icon, placeholder }) => (
-            <FormField key={key} label={label}>
+            <FormField key={key} label={t(label)}>
               <div className="flex items-center gap-2 rounded-[6px] border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <input
@@ -2302,7 +2298,7 @@ function SocialLinksSection({
         <div className="rounded-[6px] border border-dashed border-border py-6 text-center">
           <Share2 size={20} className="text-muted-foreground mx-auto mb-2" />
           <p className="text-[11px] text-muted-foreground">
-            No social links added yet
+            {t("pages.pharmacy.no_social_links")}
           </p>
         </div>
       ) : (
@@ -2350,6 +2346,7 @@ function SocialLinksSection({
   closures: ClosureRecord[];
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4">
       {profile.status !== "approved" && (
@@ -2363,8 +2360,8 @@ function SocialLinksSection({
         >
           <AlertCircle size={14} className="shrink-0" />
           {profile.status === "rejected"
-            ? "Your profile was rejected. Please edit and resubmit."
-            : "Your profile is pending admin approval."}
+            ? t("pages.pharmacy.rejected_profile_notice")
+            : t("pages.pharmacy.pending_profile_notice")}
         </div>
       )}
 
@@ -2402,6 +2399,7 @@ function SetupWizard({
   workingHoursData: WorkingHourRecord[];
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const createOrUpdate = useCreateOrUpdateProfile();
   const setWorkingHours = useSetWorkingHours();
 
@@ -2498,7 +2496,7 @@ function SetupWizard({
       }));
       await setWorkingHours.mutateAsync(hoursPayload);
 
-      toast.success("Profile created! Awaiting admin approval.");
+      toast.success(t("pages.pharmacy.profile_created"));
       onSuccess();
     } catch (err: any) {
       toast.error(err.message ?? "Something went wrong");
@@ -2532,7 +2530,7 @@ function SetupWizard({
             {section.label}
           </span>
           <span className="ml-auto text-[11px] text-muted-foreground font-medium">
-            Step {currentIdx + 1} of {SECTIONS.length}
+            {t("pages.pharmacy.step_of", { current: currentIdx + 1, total: SECTIONS.length })}
           </span>
         </div>
 
@@ -2540,16 +2538,16 @@ function SetupWizard({
           {activeSection === "general" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
-                label="Name (English) *"
+                label={`${t("pages.pharmacy.name_en")} *`}
                 error={errors.name_en?.message}
               >
                 <Input
-                  {...register("name_en", { required: "Required" })}
+                  {...register("name_en", { required: t("pages.pharmacy.required") })}
                   placeholder="MediPharm Kigali"
                   className="h-9 text-xs"
                 />
               </FormField>
-              <FormField label="Name (French)">
+              <FormField label={t("pages.pharmacy.name_fr")}>
                 <Input
                   {...register("name_fr")}
                   placeholder="MediPharmacie Kigali"
@@ -2557,18 +2555,18 @@ function SetupWizard({
                 />
               </FormField>
               <FormField
-                label="Registration Number *"
+                label={`${t("pages.pharmacy.registration_number")} *`}
                 error={errors.registration_number?.message}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
-                  {...register("registration_number", { required: "Required" })}
+                  {...register("registration_number", { required: t("pages.pharmacy.required") })}
                   placeholder="RW-PHARM-2024-001"
                   className="h-9 text-xs font-mono"
                 />
               </FormField>
               <FormField
-                label="Description"
+                label={t("pages.pharmacy.description")}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
@@ -2583,24 +2581,24 @@ function SetupWizard({
           {activeSection === "location" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
-                label="Street Address *"
+                label={`${t("pages.pharmacy.street_address")} *`}
                 error={errors.address?.message}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
-                  {...register("address", { required: "Required" })}
+                  {...register("address", { required: t("pages.pharmacy.required") })}
                   placeholder="KN 5 Rd, Nyarugenge"
                   className="h-9 text-xs"
                 />
               </FormField>
-              <FormField label="City *" error={errors.city?.message}>
+              <FormField label={`${t("pages.pharmacy.city")} *`} error={errors.city?.message}>
                 <Input
-                  {...register("city", { required: "Required" })}
+                  {...register("city", { required: t("pages.pharmacy.required") })}
                   placeholder="Kigali"
                   className="h-9 text-xs"
                 />
               </FormField>
-              <FormField label="Province">
+              <FormField label={t("pages.pharmacy.province")}>
                 <Input
                   {...register("province")}
                   placeholder="Kigali City"
@@ -2608,24 +2606,24 @@ function SetupWizard({
                 />
               </FormField>
               <FormField
-                label="Country *"
+                label={`${t("pages.pharmacy.country")} *`}
                 error={errors.country?.message}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
-                  {...register("country", { required: "Required" })}
+                  {...register("country", { required: t("pages.pharmacy.required") })}
                   placeholder="Rwanda"
                   className="h-9 text-xs"
                 />
               </FormField>
-              <FormField label="Latitude">
+              <FormField label={t("pages.pharmacy.latitude")}>
                 <Input
                   {...register("latitude")}
                   placeholder="-1.9441"
                   className="h-9 text-xs font-mono"
                 />
               </FormField>
-              <FormField label="Longitude">
+              <FormField label={t("pages.pharmacy.longitude")}>
                 <Input
                   {...register("longitude")}
                   placeholder="30.0619"
@@ -2638,29 +2636,29 @@ function SetupWizard({
           {activeSection === "contact" && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
-                label="Phone Number *"
+                label={`${t("pages.pharmacy.phone_number")} *`}
                 error={errors.phone?.message}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
                   type="tel"
-                  {...register("phone", { required: "Required" })}
+                  {...register("phone", { required: t("pages.pharmacy.required") })}
                   placeholder="+250788000200"
                   className="h-9 text-xs"
                 />
               </FormField>
               <FormField
-                label="Email Address *"
+                label={`${t("pages.pharmacy.email_address")} *`}
                 error={errors.email?.message}
                 className="col-span-1 sm:col-span-2"
               >
                 <Input
                   type="email"
                   {...register("email", {
-                    required: "Required",
+                    required: t("pages.pharmacy.required"),
                     pattern: {
                       value: /^\S+@\S+\.\S+$/,
-                      message: "Invalid email",
+                      message: t("pages.pharmacy.invalid_email"),
                     },
                   })}
                   placeholder="info@medipharm.rw"
@@ -2674,9 +2672,9 @@ function SetupWizard({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-1 sm:col-span-2 flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3">
                 <div>
-                  <p className="text-xs font-semibold">Open 24 hours</p>
+                  <p className="text-xs font-semibold">{t("pages.pharmacy.open_24_hours")}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    Overrides open/close times
+                    {t("pages.pharmacy.overrides_times")}
                   </p>
                 </div>
                 <Switch
@@ -2684,7 +2682,7 @@ function SetupWizard({
                   onCheckedChange={(v) => setValue("is_open_24h", v)}
                 />
               </div>
-              <FormField label="Opens At">
+              <FormField label={t("pages.pharmacy.opens_at")}>
                 <input
                   type="time"
                   disabled={is24h}
@@ -2692,7 +2690,7 @@ function SetupWizard({
                   className={timeInputClass}
                 />
               </FormField>
-              <FormField label="Closes At">
+              <FormField label={t("pages.pharmacy.closes_at")}>
                 <input
                   type="time"
                   disabled={is24h}
@@ -2707,7 +2705,7 @@ function SetupWizard({
                     className="flex items-center justify-between rounded-[6px] border border-border bg-muted/40 px-4 py-3"
                   >
                     <p className="text-xs font-semibold capitalize">
-                      {key.replace("offers_", "Offers ")}
+                      {key === "offers_delivery" ? t("pages.pharmacy.offers_delivery") : t("pages.pharmacy.offers_pickup")}
                     </p>
                     <Switch
                       checked={watch(key)}
@@ -2718,7 +2716,7 @@ function SetupWizard({
               </div>
               {offersDelivery && (
                 <>
-                  <FormField label="Delivery Fee (RWF)">
+                  <FormField label={`${t("pages.pharmacy.delivery_fee")} (RWF)`}>
                     <Input
                       type="number"
                       {...register("delivery_fee")}
@@ -2726,7 +2724,7 @@ function SetupWizard({
                       className="h-9 text-xs"
                     />
                   </FormField>
-                  <FormField label="Radius (km)">
+                  <FormField label={t("pages.pharmacy.radius_km")}>
                     <Input
                       type="number"
                       {...register("delivery_radius_km")}
@@ -2735,7 +2733,7 @@ function SetupWizard({
                     />
                   </FormField>
                   <FormField
-                    label="Est. Delivery Time (min)"
+                    label={t("pages.pharmacy.est_delivery_time_min")}
                     className="col-span-1 sm:col-span-2"
                   >
                     <Input
@@ -2765,11 +2763,11 @@ function SetupWizard({
           {activeSection === "social_links" && (
             <div className="space-y-3">
               <p className="text-[11px] text-muted-foreground">
-                All fields are optional.
+                {t("pages.pharmacy.all_fields_optional")}
               </p>
               {SOCIAL_PLATFORMS.map(
                 ({ key, label, icon: Icon, placeholder }) => (
-                  <FormField key={key} label={label}>
+                  <FormField key={key} label={t(label)}>
                     <div className="flex items-center gap-2 rounded-[6px] border border-border bg-muted/20 px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <input
@@ -2819,7 +2817,7 @@ function SetupWizard({
             className="text-xs h-9 px-5 bg-primary text-primary-foreground gap-1.5 shadow-sm shadow-primary/30"
           >
             {isPending && <RefreshCw size={11} className="animate-spin" />}
-            {isLast ? "Create profile" : "Next →"}
+            {isLast ? t("pages.pharmacy.create_profile") : `${t("pages.pharmacy.next")} ?`}
           </Button>
         </div>
       </div>
@@ -2867,7 +2865,7 @@ const PharmacyProfile = () => {
         : `${formatTime(profile.opens_at)} - ${formatTime(profile.closes_at)}`,
       delivery: profile.offers_delivery
         ? formatDeliveryFee(profile.delivery_fee, profile.delivery_currency)
-        : "None",
+        : t("pages.pharmacy.none"),
       radius: profile.offers_delivery
         ? `${profile.delivery_radius_km} km`
         : "-",
@@ -2883,7 +2881,7 @@ const PharmacyProfile = () => {
         title={t("pages.pharmacy.profile_title")}
         subtitle={
           pageMode === "setup"
-            ? "Fill in the details below to get started"
+            ? t("pages.pharmacy.setup_subtitle")
             : t("pages.pharmacy.profile_sub")
         }
       />
@@ -2895,16 +2893,16 @@ const PharmacyProfile = () => {
         {/* Stats bar */}
         {stats && pageMode === "view" && (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-            <StatCard label="City" value={stats.city} />
+            <StatCard label={t("pages.pharmacy.city")} value={stats.city} />
             <StatCard
-              label="Status"
+              label={t("pages.pharmacy.status")}
               value={stats.status}
               accent={profile?.status === "approved"}
             />
-            <StatCard label="Hours" value={stats.hours} />
-            <StatCard label="Delivery fee" value={stats.delivery} accent />
-            <StatCard label="Radius" value={stats.radius} sub="km coverage" />
-            <StatCard label="Est. time" value={stats.eta} sub="delivery ETA" />
+            <StatCard label={t("pages.pharmacy.hours")} value={stats.hours} />
+            <StatCard label={t("pages.pharmacy.delivery_fee")} value={stats.delivery} accent />
+            <StatCard label={t("pages.pharmacy.radius")} value={stats.radius} sub={t("pages.pharmacy.km_coverage")} />
+            <StatCard label={t("pages.pharmacy.eta_time")} value={stats.eta} sub={t("pages.pharmacy.delivery_eta")} />
           </div>
         )}
 
