@@ -133,7 +133,7 @@ export default function VerifyCertificate() {
         ) : isLoading ? (
           <div className="rounded-[6px] border border-border bg-card p-10 flex flex-col items-center gap-2 text-center">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="text-[12px] text-muted-foreground">{t("pages.verify_certificate.verify")}ing certificate…</p>
+            <p className="text-[12px] text-muted-foreground">{t("pages.verify_certificate.verifying")}</p>
           </div>
         ) : isValid && cert ? (
           <div className="rounded-[6px] border border-emerald-500/30 bg-card overflow-hidden shadow-sm">

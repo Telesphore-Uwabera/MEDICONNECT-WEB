@@ -18,13 +18,15 @@ import {
   Mail,
   MapPin,
   Phone,
+  Building2,
+  BookOpen,
+  FileText,
 } from "lucide-react";
 
 import echo from "@/lib/echo";
 
 import { Button } from "@/components/ui/button";
 import { DoctorCard } from "@/components/DoctorCard";
-import { HospitalCard } from "@/components/HospitalCard";
 
 import { cn } from "@/lib/utils";
 
@@ -36,10 +38,6 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
-import {
-  useGetSearchHospitals,
-  useInfiniteSearchHospitals,
-} from "@/hooks/patient/use-patient-search-hospital";
 
 // NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
 // If your hook file doesn't currently export ApiDoctor, add `export` to its interface
@@ -58,6 +56,7 @@ import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
 import HeroSection from "./doctor/HeroSection";
 import Specialities from "@/components/landing/Specialities";
 import OurTeam from "@/components/landing/Ourteam";
+import VerifiedFacilities from "@/components/landing/VerifiedFacilities";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import Footer from "@/components/landing/Footer";
@@ -268,40 +267,6 @@ const Index = () => {
     useGetSearchDoctors({ instant: true, page: 1, per_page: 6 });
 
   // ── Hospitals (infinite scrolling) ──────────────────────────────────────────
-  const {
-    data: hospitalsData,
-    isLoading: hospitalsLoading,
-    fetchNextPage: fetchNextHospitalsPage,
-    hasNextPage: hasNextHospitalsPage,
-    isFetchingNextPage: isFetchingNextHospitalsPage,
-  } = useInfiniteSearchHospitals({ page: 1, per_page: 6 });
-
-  const allHospitals = useMemo(() => {
-    return hospitalsData?.pages.flatMap((page) => page.data) ?? [];
-  }, [hospitalsData]);
-
-  const observerHospitals = useRef<IntersectionObserver | null>(null);
-  const lastHospitalElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (hospitalsLoading || isFetchingNextHospitalsPage) return;
-      if (observerHospitals.current) observerHospitals.current.disconnect();
-
-      observerHospitals.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextHospitalsPage) {
-          fetchNextHospitalsPage();
-        }
-      });
-
-      if (node) observerHospitals.current.observe(node);
-    },
-    [
-      hospitalsLoading,
-      isFetchingNextHospitalsPage,
-      hasNextHospitalsPage,
-      fetchNextHospitalsPage,
-    ],
-  );
-
   // Filter to available instant doctors, max 4 slides
   const instantDoctors = useMemo<ApiDoctor[]>(
     () =>
@@ -382,211 +347,125 @@ const Index = () => {
         <HeroSection />
       </section>
 
-      {/* ── Available Doctors Grid ── */}
+      {/* ?? Top rated doctors + quick access ?? */}
       <section
         id="doctors"
-        className=" w-full  flex flex-col justify-center py-20 bg-gradient-soft border-t border-border"
+        className="w-full border-t border-border bg-gradient-soft py-10 md:py-12"
       >
-        <div className="lg:container px-6">
-          <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
-            <div className="flex-1 min-w-0">
-              <h2 className={cn(SECTION_TITLE, "text-left lg:w-[500px]")}>
-                {t("pages.landing.doctors_ready")}
-              </h2>
-
-              {/* ── Filters ── */}
-              <div className="mt-6 flex  flex-wrap items-center gap-3">
-                {/* Type filter */}
-                <div className="inline-flex items-center  
-                appearance-none px-4 py-1 text-xs font-medium bg-background border rounded-[6px] transition-all cursor-pointer outline-none shadow-sm">
-                  <button
-                    onClick={() => setDoctorFilter("all")}
-                    className={cn(
-                      "px-4 py-1.5 text-xs font-semibold rounded-[6px] transition-all duration-300",
-                      doctorFilter === "all"
-                        ? "bg-primary text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {t("pages.landing.filter_all")}
-                  </button>
-                  <button
-                    onClick={() => setDoctorFilter("instant")}
-                    className={cn(
-                      "px-2 py-1.5 text-xs flex gap-1 font-semibold rounded-[6px] transition-all duration-300",
-                      doctorFilter === "instant"
-                        ? "bg-primary text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    {t("pages.landing.filter_instant_only")}
-                  </button>
-                </div>
-
-                {/* Specialization filter */}
-                <div className="w-64">
-                  <SpecializationSelect
-                    className="h-9 border-none"
-                    value={selectedSpecialization}
-                    onChange={setSelectedSpecialization}
-                  />
-                </div>
-
-                {/* Language filter */}
-                <div className="relative">
-                  <select
-                    value={selectedLanguage}
-                    onChange={(e) => setSelectedLanguage(e.target.value)}
-                    className={cn(
-                      "appearance-none px-4 py-2.5 pr-9 text-xs font-medium bg-background border rounded-[6px] transition-all cursor-pointer outline-none shadow-sm",
-                      selectedLanguage !== "all"
-                        ? "border-primary/50 ring-2 ring-primary/10 text-foreground"
-                        : "border-border/60 text-muted-foreground hover:border-primary/40",
-                    )}
-                  >
-                    <option value="all">{t("pages.landing.filter_any_language")}</option>
-                    <option value="en">{t("pages.landing.lang_en")}</option>
-                    <option value="fr">{t("pages.landing.lang_fr")}</option>
-                    <option value="rw">{t("pages.landing.lang_rw")}</option>
-                  </select>
-                  <ChevronRight className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-muted-foreground/50 pointer-events-none" />
-                </div>
-
-                {/* Clear filters */}
-                {hasActiveFilters && (
-                  <button
-                    onClick={clearFilters}
-                    className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
-                  >
-                    <X className="w-3 h-3" />
-                    {t("pages.landing.filter_clear")}
-                  </button>
-                )}
+        <div className="container space-y-6">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+                  {t("pages.landing.top_rated_doctors")}
+                </h2>
+                <Link to="/patient/search-doctors" className="text-sm font-semibold text-primary hover:underline">
+                  {t("pages.landing.view_all")}
+                </Link>
               </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {doctorsLoading
+                  ? Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
+                    >
+                      <div className="h-28 rounded-[6px] bg-muted" />
+                      <div className="h-4 w-2/3 rounded bg-muted" />
+                      <div className="h-3 w-1/2 rounded bg-muted" />
+                      <div className="h-9 rounded-[6px] bg-muted" />
+                    </div>
+                  ))
+                  : allDoctors.slice(0, 6).map((doctor) => (
+                    <DoctorCard key={doctor.id} doctor={doctor} />
+                  ))}
+              </div>
+
+              {!doctorsLoading && allDoctors.length === 0 && (
+                <div className="rounded-[6px] border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                  {t("pages.landing.no_doctors_match")}
+                </div>
+              )}
             </div>
-            <Link to="/patient/search-doctors">
-              <Button variant="outline" size="sm" className="rounded-[6px] px-5 py-2 font-medium text-sm border-border/60 hover:bg-muted/50 hover:text-foreground transition-all">
-                {t("pages.landing.see_all_doctors")}{" "}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {doctorsLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 w-2/3 rounded bg-muted" />
-                      <div className="h-2.5 w-1/2 rounded bg-muted" />
-                      <div className="h-2 w-1/3 rounded bg-muted" />
-                    </div>
-                    <div className="h-4 w-14 rounded-[6px] bg-muted shrink-0" />
-                  </div>
-                  <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
-                    {Array.from({ length: 3 }).map((_, j) => (
-                      <div
-                        key={j}
-                        className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-muted" />
-                        <div className="h-2.5 w-8 rounded bg-muted" />
-                        <div className="h-2 w-6 rounded bg-muted" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 rounded-[6px] bg-muted" />
-                    <div className="h-3 w-16 rounded bg-muted" />
-                  </div>
-                  <div className="border-t border-border" />
-                  <div className="flex items-center justify-between">
-                    <div className="h-3 w-28 rounded bg-muted" />
-                    <div className="flex gap-1.5">
-                      <div className="h-6 w-12 rounded-[6px] bg-muted" />
-                      <div className="h-6 w-16 rounded-[6px] bg-muted" />
-                    </div>
-                  </div>
-                </div>
-              ))
-              : allDoctors.map((d, i) => {
-                if (allDoctors.length === i + 1) {
+
+            <aside className="space-y-4">
+              <h3 className="text-xl font-semibold text-foreground">
+                {t("pages.landing.quick_access")}
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { to: "/patient/search-doctors", icon: Calendar, label: t("pages.landing.qa_book_appointment"), tone: "bg-emerald-100 text-emerald-700" },
+                  { to: "/patient/search-pharmacy", icon: Pill, label: t("pages.landing.qa_find_pharmacy"), tone: "bg-blue-100 text-blue-700" },
+                  { to: "/patient/search-facilities", icon: Building2, label: t("pages.landing.qa_find_facility"), tone: "bg-violet-100 text-violet-700" },
+                  { to: "/help", icon: BookOpen, label: t("pages.landing.qa_health_articles"), tone: "bg-orange-100 text-orange-700" },
+                ].map((item) => {
+                  const Icon = item.icon;
                   return (
-                    <div ref={lastDoctorElementRef} key={d.id}>
-                      <DoctorCard doctor={d} />
-                    </div>
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="w-full sm:w-auto text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-5 py-2 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace"
+                    > 
+                      <span className=" block text-sm font-semibold">
+                        {item.label}
+                      </span> 
+                    </Link>
                   );
-                } else {
-                  return <DoctorCard key={d.id} doctor={d} />;
-                }
-              })}
-            {isFetchingNextPage &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={`skeleton-${i}`}
-                  className="rounded-[6px] border border-border bg-card p-3.5 shadow-sm space-y-2.5 animate-pulse"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 w-2/3 rounded bg-muted" />
-                      <div className="h-2.5 w-1/2 rounded bg-muted" />
-                      <div className="h-2 w-1/3 rounded bg-muted" />
-                    </div>
-                    <div className="h-4 w-14 rounded-[6px] bg-muted shrink-0" />
-                  </div>
-                  <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
-                    {Array.from({ length: 3 }).map((_, j) => (
-                      <div
-                        key={j}
-                        className="flex flex-col items-center py-1.5 px-1 bg-muted/30 gap-1"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-muted" />
-                        <div className="h-2.5 w-8 rounded bg-muted" />
-                        <div className="h-2 w-6 rounded bg-muted" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 rounded-[6px] bg-muted" />
-                    <div className="h-3 w-16 rounded bg-muted" />
-                  </div>
-                  <div className="border-t border-border" />
-                  <div className="flex items-center justify-between">
-                    <div className="h-3 w-28 rounded bg-muted" />
-                    <div className="flex gap-1.5">
-                      <div className="h-6 w-12 rounded-[6px] bg-muted" />
-                      <div className="h-6 w-16 rounded-[6px] bg-muted" />
-                    </div>
-                  </div>
+                })}
+              </div>
+
+              <Link
+                to="/verify-certificate"
+                className="group flex items-center gap-4 rounded-[6px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+              >
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
+                  <FileText className="h-6 w-6" />
+                </span>
+                <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+                  {t("pages.landing.qa_fitness_certificates")}
+                </span>
+                <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
+              </Link>
+
+              <div className="relative overflow-hidden rounded-[6px] border border-primary/15 bg-primary/10 p-5">
+                <div className="relative z-10">
+                  <p className="text-base font-semibold text-foreground">{t("pages.landing.urgent_help_title")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("pages.landing.urgent_help_sub")}</p>
+                  <a href={`tel:${generalSettings?.contact_phone ?? "+250 782 168 650"}`} className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-primary">
+                    <Phone className="h-4 w-4" />
+                    {generalSettings?.contact_phone ?? "+250 782 168 650"}
+                  </a>
                 </div>
-              ))}
+                <Activity className="absolute bottom-3 right-5 h-14 w-14 text-primary/25" />
+              </div>
+            </aside>
           </div>
 
-          {/* Empty state when filters return no results */}
-          {!doctorsLoading && allDoctors.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-sm text-muted-foreground">
-                {t("pages.landing.no_doctors_match")}{" "}
-                <button
-                  onClick={clearFilters}
-                  className="text-primary hover:underline"
-                >
-                  {t("pages.landing.reset_filters")}
-                </button>
-              </p>
+          <div className="overflow-hidden rounded-[6px] border border-primary/20 bg-primary/10 shadow-sm">
+            <div className="grid min-h-[150px] lg:grid-cols-[minmax(0,0.95fr)_1.05fr]">
+              <div className="flex flex-col justify-center p-5 md:p-7">
+                <h3 className="max-w-md text-2xl font-semibold leading-tight text-foreground md:text-3xl">
+                  {t("pages.landing.pharmacy_banner_title")}
+                </h3>
+                <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                  {t("pages.landing.pharmacy_banner_sub")}
+                </p>
+                <Button asChild className="mt-6 w-fit rounded-[6px] px-6">
+                  <Link to="/patient/search-pharmacy">
+                    {t("pages.landing.explore_pharmacies")}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+              <div className="min-h-[150px] md:min-h-[170px] bg-[url('/images/arpad-czapp-tvP6pCnq9iI.jpg')] bg-cover bg-center" />
             </div>
-          )}
+          </div>
         </div>
       </section>
 
       {/* ── Specialities ── */}
-      <section id="specialities" className=" flex flex-col justify-center py-20">
+      <section id="specialities" className=" flex flex-col justify-center py-10 md:py-12">
         <div className="container">
           <div className="max-w-2xl">
             <h2 className={SECTION_TITLE}>
@@ -599,174 +478,22 @@ const Index = () => {
         </div>
       </section>
 
-      {/* ── Hospitals ── */}
-      <section id="hospitals" className=" border-t flex flex-col justify-center py-20 border-border">
+      <VerifiedFacilities />
+
+      {/* ?? Our Team ?? */}
+      <section id="team" className="border-t border-border bg-gradient-soft py-10 md:py-12">
         <div className="container">
-          <div className="flex items-end justify-between flex-wrap gap-4 mb-8 md:mb-10">
-            <div>
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
               <h2 className={SECTION_TITLE}>
-                {t("pages.landing.health_facility")}
+                {t("pages.landing.team_heading")}
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-                {t("pages.landing.hospitals_sub")}
+              <p className="mt-2 text-sm md:text-base text-muted-foreground">
+                {t("pages.landing.team_sub")}
               </p>
-            </div>
-            <Link to="/patient/search-facilities">
-              <Button variant="outline" size="sm" className="rounded-[6px] px-5 py-2 font-medium text-sm border-border/60 hover:bg-muted/50 hover:text-foreground transition-all">
-                {t("pages.landing.see_all_hospitals")}{" "}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            </div> 
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-            {hospitalsLoading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-[6px] border border-border bg-card overflow-hidden animate-pulse"
-                >
-                  <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
-                    <div className="h-2.5 w-16 rounded bg-muted" />
-                    <div className="h-2.5 w-12 rounded bg-muted" />
-                  </div>
-                  <div className="px-3.5 pt-3 pb-3 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-2/3 rounded bg-muted" />
-                        <div className="h-2.5 w-1/2 rounded bg-muted" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
-                      {Array.from({ length: 3 }).map((_, j) => (
-                        <div
-                          key={j}
-                          className="flex flex-col items-center py-2 px-1 bg-muted/30 gap-1"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-muted" />
-                          <div className="h-2.5 w-10 rounded bg-muted" />
-                          <div className="h-2 w-6 rounded bg-muted" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <div className="h-4 w-14 rounded-[6px] bg-muted" />
-                      <div className="h-4 w-18 rounded-[6px] bg-muted" />
-                    </div>
-                    <div className="h-2.5 w-28 rounded bg-muted" />
-                    <div className="flex gap-2">
-                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
-                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
-                    </div>
-                  </div>
-                </div>
-              ))
-              : allHospitals.map((hospital, i) => {
-                if (allHospitals.length === i + 1) {
-                  return (
-                    <div ref={lastHospitalElementRef} key={hospital.id}>
-                      <HospitalCard hospital={hospital} />
-                    </div>
-                  );
-                } else {
-                  return (
-                    <HospitalCard key={hospital.id} hospital={hospital} />
-                  );
-                }
-              })}
-            {isFetchingNextHospitalsPage &&
-              Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={`skeleton-hosp-${i}`}
-                  className="rounded-[6px] border border-border bg-card overflow-hidden animate-pulse"
-                >
-                  <div className="px-3.5 py-1.5 bg-muted/60 border-b border-border flex items-center justify-between">
-                    <div className="h-2.5 w-16 rounded bg-muted" />
-                    <div className="h-2.5 w-12 rounded bg-muted" />
-                  </div>
-                  <div className="px-3.5 pt-3 pb-3 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-[6px] bg-muted shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-3 w-2/3 rounded bg-muted" />
-                        <div className="h-2.5 w-1/2 rounded bg-muted" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 divide-x divide-border rounded-[6px] border border-border overflow-hidden">
-                      {Array.from({ length: 3 }).map((_, j) => (
-                        <div
-                          key={j}
-                          className="flex flex-col items-center py-2 px-1 bg-muted/30 gap-1"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-muted" />
-                          <div className="h-2.5 w-10 rounded bg-muted" />
-                          <div className="h-2 w-6 rounded bg-muted" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-1">
-                      <div className="h-4 w-14 rounded-[6px] bg-muted" />
-                      <div className="h-4 w-18 rounded-[6px] bg-muted" />
-                    </div>
-                    <div className="h-2.5 w-28 rounded bg-muted" />
-                    <div className="flex gap-2">
-                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
-                      <div className="h-7 flex-1 rounded-[6px] bg-muted" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-
-          {!hospitalsLoading && allHospitals.length === 0 && (
-            <div className="text-center py-12 text-sm text-muted-foreground">
-              {t("pages.landing.no_hospitals_found")}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Pharmacy teaser ── */}
-      <section
-        id="pharmacy"
-        className="h-fit flex flex-col justify-center bg-primary  w-full "
-      >
-        <div className=" grid lg:grid-cols-2  items-center">
-          <div className="px-10 py-10 lg:px-20 lg:py-20">
-            <h2 className={cn(SECTION_TITLE, "dark:text-black text-white ")}>
-              {t("pages.landing.pharmacy_title")}
-            </h2>
-            <p className="mt-6 text-base md:text-lg dark:text-black  text-white/90 leading-relaxed max-w-xl">
-              {t("pages.landing.pharmacy_sub")}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link to="/patient/search-pharmacy">
-                <Button
-                  size="lg"
-                  className="bg-white text-primary hover:bg-white/90 hover:scale-[1.02] shadow-xl rounded-[6px] px-8 py-6 text-base font-semibold transition-all duration-300 dark:text-black"
-                >
-                  <Pill className="mr-2 h-5 w-5" />
-                  {t("pages.landing.open_marketplace")}
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <div className="bg-[url('/images/arpad-czapp-tvP6pCnq9iI.jpg')] bg-cover bg-center h-full">
-          </div>
-        </div>
-      </section>
-
-      {/* ── Our Team ── */}
-      <section id="team" className="min-h-dvh flex flex-col justify-center py-20 bg-gradient-soft">
-        <div className="container">
-          <div className="max-w-2xl">
-            <h2 className={SECTION_TITLE}>
-              {t("pages.landing.team_heading")}
-            </h2>
-          </div>
-          <div className="">
-            <OurTeam />
-          </div>
+          <OurTeam />
         </div>
       </section>
 

@@ -75,6 +75,7 @@ export interface AppointmentFilterParams {
 
 export function useGetPatientAppointments(
   params: AppointmentFilterParams = {},
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
 ) {
   const searchParams = new URLSearchParams();
 
@@ -95,6 +96,8 @@ export function useGetPatientAppointments(
     queryKey: ["patient-appointments", params],
     queryFn: () => apiFetch(url),
     staleTime: 30_000,
+    enabled: options.enabled ?? true,
+    refetchInterval: options.refetchInterval,
   });
 }
 

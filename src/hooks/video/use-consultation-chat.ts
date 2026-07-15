@@ -133,8 +133,7 @@ export function useConsultationChat(
     const channel = echo.channel(channelName);
     const handleMessage = (data: { data?: ChatMessageApi } & ChatMessageApi) => {
       // The event payload may be the message directly or nested in .data
-      const msg: ChatMessageApi = data.data ?? data;
-      console.info("[Chat] Real-time message received:", msg);
+      const msg: ChatMessageApi = data.data ?? data; 
 
       const uiMsg = toUiMessage(msg);
 

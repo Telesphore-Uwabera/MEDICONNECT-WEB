@@ -416,7 +416,7 @@ function DetailDrawer({
                         {fmtDate(rx.prescription.signed_at)}
                       </span>
                     ) : (
-                      <span className="text-amber-600 dark:text-amber-400">Not signed</span>
+                      <span className="text-amber-600 dark:text-amber-400">{t("pages.pharmacy.not_signed")}</span>
                     )
                   }
                 />
@@ -448,8 +448,8 @@ function DetailDrawer({
                 </DrawerSection>
               ) : (
                 <div className="rounded-[6px] border border-dashed border-border/70 bg-secondary/10 px-4 py-8 text-center">
-                  <p className="text-[13px] font-semibold text-foreground">No medicines listed</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">This prescription has no medicine items attached.</p>
+                  <p className="text-[13px] font-semibold text-foreground">{t("pages.pharmacy.no_medicines_listed")}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{t("pages.pharmacy.no_medicines_attached")}</p>
                 </div>
               )}
                 </>
@@ -561,7 +561,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
       >
         {review.isPending
           ? <Loader2 className="w-3 h-3 animate-spin" />
-          : <><Eye className="w-3 h-3 mr-1" />Review</>}
+          : <><Eye className="w-3 h-3 mr-1" />{t("pages.pharmacy.review")}</>}
       </Button>
     );
   }
@@ -583,7 +583,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
         >
           {reject.isPending
             ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <><XCircle className="w-3 h-3 mr-1" />Reject</>}
+            : <><XCircle className="w-3 h-3 mr-1" />{t("pages.pharmacy.reject")}</>}
         </Button>
         <Button
           size="sm"
@@ -597,7 +597,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
         >
           {approve.isPending
             ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <><CheckCircle2 className="w-3 h-3 mr-1" />Approve</>}
+            : <><CheckCircle2 className="w-3 h-3 mr-1" />{t("pages.pharmacy.approve")}</>}
         </Button>
       </div>
     );
@@ -617,7 +617,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
       >
         {fulfill.isPending
           ? <Loader2 className="w-3 h-3 animate-spin" />
-          : <><PackageCheck className="w-3 h-3 mr-1" />Fulfill</>}
+          : <><PackageCheck className="w-3 h-3 mr-1" />{t("pages.pharmacy.fulfill")}</>}
       </Button>
     );
   }
@@ -749,8 +749,8 @@ function PrescriptionTableRow({
             : "bg-primary/5 border-primary/15 text-primary",
         )}>
           {rx.delivery_type === "pickup"
-            ? <><ShoppingBag className="w-2.5 h-2.5" />Pickup</>
-            : <><Truck className="w-2.5 h-2.5" />Delivery</>}
+            ? <><ShoppingBag className="w-2.5 h-2.5" />{t("pages.pharmacy.pickup")}</>
+            : <><Truck className="w-2.5 h-2.5" />{t("pages.pharmacy.delivery")}</>}
         </span>
       </td>
 
@@ -1060,8 +1060,8 @@ const PharmacyPrescriptions = () => {
                   <AlertCircle className="w-6 h-6 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-[12px] font-semibold text-foreground">Failed to load prescriptions</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-1">Check your connection and try again</p>
+                  <p className="text-[12px] font-semibold text-foreground">{t("pages.pharmacy.failed_load_prescriptions")}</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">{t("pages.pharmacy.check_connection_try_again")}</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => refetch()} className="text-[11px] h-7 px-3 rounded-[6px] mt-1">
                   <RefreshCw className="w-3 h-3 mr-1.5" />Retry
@@ -1154,7 +1154,7 @@ const PharmacyPrescriptions = () => {
                         <span className="font-semibold text-foreground">{filtered.length}</span>
                       </span>
                       <div className="flex items-center gap-1 ml-2">
-                        <span className="text-[10px] text-muted-foreground">Rows:</span>
+                        <span className="text-[10px] text-muted-foreground">{t("pages.pharmacy.rows")}</span>
                         <select
                           value={pageSize}
                           onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}

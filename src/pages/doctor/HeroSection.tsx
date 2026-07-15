@@ -422,7 +422,7 @@ export default function HeroSection() {
   }, [paused, call.dialogOpen, isAnyCallInProgress, hasDoctors, doctors.length]);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden relative">
+    <div className="lg:min-h-[67vh] lg:mt-0 mt-12 bg-background overflow-x-hidden relative">
       {/* Diagonal lines background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.35]"
@@ -432,18 +432,18 @@ export default function HeroSection() {
         }}
       />
 
-      <div className="relative pt-4 sm:pt-7">
+      <div className="relative pt-2 sm:pt-4">
      
-        <section id="landing-page" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-center px-4 py-4 sm:px-6 sm:py-6 md:px-8 lg:p-10 relative">
+        <section id="landing-page" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 items-center px-4 py-3 sm:px-6 sm:py-4 md:px-8 lg:px-10 lg:py-6 relative">
 
           
           <div className="relative z-10 order-2 lg:order-1">
           <HeroHeadline />
-            <p className="mt-3 sm:mt-6 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
+            <p className="mt-3 sm:mt-4 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
               {heroTagline}
             </p>
-              <div className="hidden sm:flex justify-between py-6 lg:py-8 items-center w-full">
-              <svg
+              <div className="hidden sm:flex justify-between py-4 lg:py-5 items-center w-full">
+              {/* <svg
                 width="44" height="50" viewBox="0 0 140 160" fill="none"
                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
                 className="lg:w-[52px] lg:h-[60px] shrink-0"
@@ -460,8 +460,8 @@ export default function HeroSection() {
                   <circle cx="102" cy="118" r="10" fill="#18B19A" opacity="0.18" />
                   <circle cx="102" cy="118" r="4" fill="#18B19A" />
                 </g>
-              </svg>
-              <svg
+              </svg> */}
+              {/* <svg
                 width="100%" height="50" viewBox="0 0 400 160" fill="none"
                 xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
                 className="flex-1 ml-4 lg:ml-6 lg:h-[60px]"
@@ -481,12 +481,12 @@ export default function HeroSection() {
                 <circle cx="63" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
                 <circle cx="158" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
                 <circle cx="253" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
-              </svg>
+              </svg> */}
             </div>
 
             <StartConsult />
  
-            <div className="mt-5 sm:mt-7 bg-card rounded-[6px] border border-border overflow-visible">
+            <div className="mt-4 sm:mt-5 bg-card rounded-[6px] border border-border overflow-visible">
               <div className="flex flex-col sm:flex-row sm:items-center gap-0">
                 <div className="flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-border">
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -516,7 +516,7 @@ export default function HeroSection() {
           </div>
  
           <div
-            className="order-1 lg:order-2 w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none"
+            className="order-1 lg:order-2 lg:block hidden w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
@@ -524,7 +524,7 @@ export default function HeroSection() {
           >
 
             {/* Visual block */}
-            <div className="relative h-[320px] xs:h-[360px] sm:h-[400px] md:h-[470px] lg:h-[620px]">
+            <div className="relative h-[260px] xs:h-[290px] sm:h-[330px] md:h-[380px] lg:h-[470px]">
 
               {/* Floating plus icons   lg only */}
               <div className="hidden lg:block absolute left-10 top-10 text-primary/80 z-10">
@@ -539,7 +539,7 @@ export default function HeroSection() {
                            xs:w-[270px] xs:h-[270px]
                            sm:w-[310px] sm:h-[310px]
                            md:w-[370px] md:h-[370px]
-                           lg:w-[500px] lg:h-[500px]"
+                           lg:w-[390px] lg:h-[390px]"
               >
                 <div className="absolute inset-3 sm:inset-5 rounded-full border border-primary-foreground/30" />
                 <div className="absolute inset-8 sm:inset-12 rounded-full border border-primary-foreground/20" />
@@ -553,7 +553,7 @@ export default function HeroSection() {
                            xs:w-[254px] xs:h-[254px]
                            sm:w-[282px] sm:h-[282px]
                            md:w-[344px] md:h-[344px]
-                           lg:w-[464px] lg:h-[464px]"
+                           lg:w-[360px] lg:h-[360px]"
               >
                 {doctorsLoading ? (
                   <div className="w-full h-full bg-muted animate-pulse" />
@@ -599,8 +599,8 @@ export default function HeroSection() {
                              xs:w-[100px]
                              sm:w-[110px] sm:p-2.5
                              md:w-[120px]
-                             lg:w-[140px] lg:p-3 lg:translate-x-[18%]
-                             top-[120px] xs:top-[140px] sm:top-[158px] md:top-[188px] lg:top-[200px]"
+                             lg:w-[122px] lg:p-2.5 lg:translate-x-[12%]
+                             top-[96px] xs:top-[112px] sm:top-[132px] md:top-[152px] lg:top-[150px]"
                 >
                   <img
                     src={activeDoc.image}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BellRing, Clock3, ExternalLink, Phone, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { formatAppointmentDateTime } from "@/lib/display-dates";
 import {
   useGetAppointments,
   useGetInstantQueue,
@@ -273,7 +274,10 @@ export function InstantPaidAlertListener() {
               <span>
                 {activeAlert.kind === "instant"
                   ? activeAlert.item.waiting_label || "Waiting now"
-                  : `${activeAlert.item.appointment_date} ${activeAlert.item.appointment_time}`}
+                  : formatAppointmentDateTime(
+                      activeAlert.item.appointment_date,
+                      activeAlert.item.appointment_time,
+                    )}
               </span>
             </div>
           </div>

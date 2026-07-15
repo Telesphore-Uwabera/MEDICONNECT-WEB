@@ -117,6 +117,7 @@ export function DoctorProfileForm({
     if (defaultData?.experience) setExperience(defaultData.experience);
     if (defaultData?.qualifications)
       setQualifications(defaultData.qualifications);
+    if (defaultData?.documents) setDocuments(defaultData.documents);
     if (defaultData?.linksSection) setLinksSection(defaultData.linksSection);
   }, [defaultData]);
 
@@ -192,6 +193,10 @@ export function DoctorProfileForm({
   const handleNationalIdChange = useCallback(
     (f: File | null) =>
       setDocuments((d) => ({ ...d, national_id_document: f })),
+    [],
+  );
+  const handleSignatureChange = useCallback(
+    (f: File | null) => setDocuments((d) => ({ ...d, signature_file: f })),
     [],
   );
 
@@ -370,6 +375,12 @@ export function DoctorProfileForm({
               accept="image/jpeg,image/png,application/pdf"
               file={documents.national_id_document}
               onChange={handleNationalIdChange}
+            />
+            <FileUploadBox
+              label={t("doctorProfile.signature", "Signature")}
+              accept="image/jpeg,image/png,image/webp"
+              file={documents.signature_file}
+              onChange={handleSignatureChange}
             />
           </div>
         )}

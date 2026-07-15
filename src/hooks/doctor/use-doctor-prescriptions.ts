@@ -130,6 +130,23 @@ export interface SendToPharmacyPayload {
   notes?: string;
 }
 
+export interface MatchingPharmacy {
+  id: number;
+  name: string;
+  slug?: string;
+  city?: string | null;
+  province?: string | null;
+  address?: string | null;
+  match_count?: number;
+}
+
+export interface MatchingPharmaciesResponse {
+  status?: boolean;
+  prescription_id: number;
+  total_medicines: number;
+  data: MatchingPharmacy[];
+}
+
 /* ─────────────────────────────────────────────
    Query key factory
 ───────────────────────────────────────────── */
@@ -138,6 +155,7 @@ export const prescriptionKeys = {
   all:    ()                                 => ["doctor-prescriptions"] as const,
   list:   (params?: PrescriptionListParams)  => ["doctor-prescriptions", "list", params] as const,
   detail: (id: number)                       => ["doctor-prescriptions", "detail", id] as const,
+  matchingPharmacies: (id: number)           => ["doctor-prescriptions", "matching-pharmacies", id] as const,
 };
 
 /* ─────────────────────────────────────────────
@@ -268,6 +286,15 @@ export function useIssuePrescription() {
    useSendToPharmacy  →  POST /doctor/prescriptions/:id/send-to-pharmacy
 ───────────────────────────────────────────── */
 
+export function useMatchingPharmacies(prescriptionId: number | null | undefined) {
+  return useQuery({
+    queryKey: prescriptionKeys.matchingPharmacies(prescriptionId ?? 0),
+    queryFn: () =>
+      apiFetch<MatchingPharmaciesResponse>(`${BASE}/${prescriptionId}/matching-pharmacies`),
+    enabled: !!prescriptionId,
+    staleTime: 60_000,
+  });
+}
 export function useSendToPharmacy() {
   const qc = useQueryClient();
   return useMutation({

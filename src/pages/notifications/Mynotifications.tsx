@@ -21,6 +21,7 @@ import {
   Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { normalizeDateTimeText } from "@/lib/display-dates";
 import {
   useGetNotifications,
   useMarkOneRead,
@@ -218,7 +219,8 @@ function NotificationCard({
   const isUnread = !notification.is_read;
   const cfg = getTypeConfig(notification.type);
   const Icon = cfg.icon;
-  const body = getBody(notification);
+  const title = normalizeDateTimeText(getTitle(notification)) ?? "";
+  const body = normalizeDateTimeText(getBody(notification));
   const dragStartX = useRef<number | null>(null);
   const dragStartY = useRef<number | null>(null);
   const dragX = useRef(0);
@@ -316,7 +318,7 @@ function NotificationCard({
                 : "font-medium text-foreground/55"
             )}
           >
-            {getTitle(notification)}
+            {title}
           </p>
           {isUnread && (
             <span className="shrink-0 h-[6px] w-[6px] rounded-[6px] bg-primary mt-[3px]" />

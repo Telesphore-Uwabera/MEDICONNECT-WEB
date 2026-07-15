@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2 } from "lucide-react";
+import { AlertTriangle, Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, WifiOff, MessageSquare, Minimize2, Maximize2, Users, X, FileText, User, UserCircleIcon, PictureInPicture2, Paperclip } from "lucide-react";
 import { useCallContext } from "@/context/CallContext";
 import { useAudioVolume } from "@/hooks/video/use-audio-volume";
 import { usePictureInPicture } from "@/hooks/video/usePictureInPicture";
 import { cn } from "@/lib/utils";
 import echo from "@/lib/echo";
 import { ChatPanel } from "@/components/consultatioRoom/ChatPanel";
+import { IllnessProofPanel } from "@/components/consultatioRoom/IllnessProofPanel";
 import { InstantNotesSidebar } from "@/components/consultatioRoom/InstantNotesSidebar";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -80,7 +81,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [proofsOpen, setProofsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadProofCount, setUnreadProofCount] = useState(0);
+  const [proofSignal, setProofSignal] = useState<{ id: number; nonce: number } | null>(null);
 
   // Remote media status
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(true);
@@ -129,10 +133,21 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 
   // Prefer our own token's id; fall back to the one the peer shared over signaling.
   const effectiveConsultationId = consultationId ?? peerConsultationId;
+  const doctorId = useMemo(() => {
+    const t = token as any;
+    const candidates = [t?.doctor_id, t?.doctorId, t?.doctor?.id, t?.doctor?.doctor_id];
+    for (const candidate of candidates) {
+      const id = Number(candidate);
+      if (Number.isFinite(id) && id > 0) return id;
+    }
+    return null;
+  }, [token]);
 
   // Scheduled appointments tag the token so chat uses the appointment endpoints.
   const chatMode: "instant" | "appointment" =
     (token as any)?.chat_mode === "appointment" ? "appointment" : "instant";
+  const proofAppointmentId = chatMode === "appointment" ? effectiveConsultationId : null;
+  const proofInstantConsultationId = chatMode === "instant" ? effectiveConsultationId : null;
   const isInstantRoom = chatMode === "instant" && /instant/i.test(roomName ?? "");
   const appointmentDurationSeconds = useMemo(() => {
     const duration = Number((token as any)?.appointment_duration_minutes);
@@ -351,6 +366,15 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       candidateQueue.current = [];
       setRemoteStream(null);
       setConnState("disconnected");
+      return;
+    }
+
+    if (payload.type === "illness-proof-submitted") {
+      const data = payload.data as { proof_id?: unknown; id?: unknown };
+      const id = Number(data?.proof_id ?? data?.id);
+      if (isOwner && Number.isFinite(id) && id > 0) {
+        setProofSignal({ id, nonce: Date.now() });
+      }
       return;
     }
 
@@ -882,6 +906,33 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
             </div>
           )}
 
+
+          {/* Illness proof panel */}
+          {!isMinimized && (
+            <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", proofsOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
+              <div className="relative h-full w-screen sm:w-[22rem] md:w-96 max-w-full">
+                <IllnessProofPanel
+                  open={proofsOpen}
+                  onClose={() => setProofsOpen(false)}
+                  isOwner={isOwner}
+                  appointmentId={proofAppointmentId}
+                  instantConsultationId={proofInstantConsultationId}
+                  doctorId={doctorId}
+                  proofSignal={proofSignal}
+                  onUnreadChange={setUnreadProofCount}
+                  onSubmitted={(proof) => {
+                    const id = Number(proof.id);
+                    if (!Number.isFinite(id) || id <= 0) return;
+                    sendSignalRef.current?.("illness-proof-submitted", {
+                      proof_id: id,
+                      appointment_id: proof.appointment_id ?? proofAppointmentId,
+                      instant_consultation_id: proof.instant_consultation_id ?? proofInstantConsultationId,
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          )}
           {/* ── Notes panel ─────────────────────────────────────────────────── */}
           {!isMinimized && isOwner && (
             <div className={cn("absolute inset-y-0 right-0 z-30 overflow-hidden transition-[width] duration-300 ease-in-out", notesOpen ? "w-full sm:w-[22rem] md:w-96 max-w-full pointer-events-auto" : "w-0 pointer-events-none")}>
@@ -914,7 +965,10 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                   <button onClick={() => {
                     const next = !chatOpen;
                     setChatOpen(next);
-                    if (next) setNotesOpen(false);
+                    if (next) {
+                      setNotesOpen(false);
+                      setProofsOpen(false);
+                    }
                   }} title={t("consult.call.chat")} aria-label={t("consult.call.chat")} aria-pressed={chatOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", chatOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
                     <MessageSquare className="w-5 h-5" />
                   </button>
@@ -924,11 +978,32 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
                     </span>
                   )}
                 </div>
+                <div className="relative">
+                  <button onClick={() => {
+                    const next = !proofsOpen;
+                    setProofsOpen(next);
+                    if (next) {
+                      setChatOpen(false);
+                      setNotesOpen(false);
+                      setUnreadProofCount(0);
+                    }
+                  }} title={t("consult.proofs.title", "Illness proofs")} aria-label={t("consult.proofs.title", "Illness proofs")} aria-pressed={proofsOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", proofsOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
+                    <Paperclip className="w-5 h-5" />
+                  </button>
+                  {unreadProofCount > 0 && !proofsOpen && (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center leading-none z-10 shadow-lg border border-[#0a0a0a]">
+                      {unreadProofCount > 9 ? "9+" : unreadProofCount}
+                    </span>
+                  )}
+                </div>
                 {isOwner && (
                   <button onClick={() => {
                     const next = !notesOpen;
                     setNotesOpen(next);
-                    if (next) setChatOpen(false);
+                    if (next) {
+                      setChatOpen(false);
+                      setProofsOpen(false);
+                    }
                   }} title={t("consult.call.call_notes")} aria-label={t("consult.call.call_notes")} aria-pressed={notesOpen} className={cn("h-10 w-10 sm:h-11 sm:w-11 rounded-full flex items-center justify-center transition-all active:scale-90 shrink-0", notesOpen ? "bg-white/20 hover:bg-white/30 text-white" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white")}>
                     <FileText className="w-5 h-5" />
                   </button>
@@ -992,3 +1067,5 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
 };
 
 export default ConsultationRoom;
+
+

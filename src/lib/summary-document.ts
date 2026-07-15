@@ -2,7 +2,12 @@
 // printable HTML page and opens it in a new tab for viewing or for
 // "Download" (browser print -> Save as PDF). No external dependencies.
 
-import type { ConsultationSummary } from "@/hooks/doctor/use-consultation-summaries";
+import {
+  summaryFieldText,
+  summaryHasRedFlagAlert,
+  summaryRedFlagList,
+  type ConsultationSummary,
+} from "@/hooks/doctor/use-consultation-summaries";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { richDocumentCss, richDocumentHtml } from "@/lib/document-rich-text";
 
@@ -26,6 +31,10 @@ function esc(v: unknown): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function get<T = unknown>(obj: unknown, path: string): T | undefined {
+  return path.split(".").reduce<any>((o, k) => (o == null ? o : o[k]), obj) as T | undefined;
 }
 
 function fmtDate(iso?: string): string {
@@ -55,6 +64,18 @@ function patientName(s: ConsultationSummary): string {
 function doctorName(s: ConsultationSummary): string {
   const d = (s as unknown as { doctor?: { user?: { name?: string }; name?: string } }).doctor;
   return d?.user?.name || d?.name || "";
+}
+
+function doctorSignatureUrl(s: ConsultationSummary): string {
+  return (
+    get<string>(s, "doctor.signature_url") ??
+    get<string>(s, "doctor.signature") ??
+    get<string>(s, "doctor.profile.signature_url") ??
+    get<string>(s, "doctor.profile.signature") ??
+    get<string>(s, "signature_url") ??
+    get<string>(s, "signature") ??
+    ""
+  );
 }
 
 function getGeneral(settings?: DocumentBrandSettings): Record<string, unknown> {
@@ -97,6 +118,21 @@ function row(label: string, value: string): string {
   return `<tr><td class="label">${esc(label)}</td><td>${value.trim() ? value : "-"}</td></tr>`;
 }
 
+
+function watermarkBlock(brand: ResolvedBrand): string {
+  return `<div class="watermark" aria-hidden="true">
+    <img src="${esc(brand.logoUrl)}" alt="" />
+    <span>${esc(brand.appName)}</span>
+  </div>`;
+}
+
+function officialStamp(brand: ResolvedBrand): string {
+  return `<div class="official-stamp" aria-label="Official document stamp">
+    <span class="stamp-ring">${esc(brand.appName)}</span>
+    <span class="stamp-core">OFFICIAL<br/>DOCUMENT</span>
+    <span class="stamp-foot">${esc(brand.phone)}</span>
+  </div>`;
+}
 function chips(items: string[]): string {
   return items.length ? items.map((i) => `<span class="chip">${esc(pretty(i))}</span>`).join(" ") : "-";
 }
@@ -126,7 +162,11 @@ const documentCss = `
   .toolbar { position:sticky; top:0; z-index:10; display:flex; gap:8px; justify-content:flex-end; padding:12px 16px; background:#fff; border-bottom:1px solid #d5dee8; font-family:Arial, sans-serif; }
   .toolbar button { font:inherit; font-size:13px; font-weight:700; padding:8px 14px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer; }
   .toolbar button.primary { background:var(--brand); border-color:var(--brand); color:#fff; }
-  .page { width:8.27in; min-height:11.69in; margin:22px auto; background:#fff; padding:.55in .62in; box-shadow:0 12px 35px rgba(15,23,42,.12); }
+  .page { position:relative; overflow:hidden; width:8.27in; min-height:11.69in; margin:22px auto; background:#fff; padding:.55in .62in; box-shadow:0 12px 35px rgba(15,23,42,.12); }
+  .page > *:not(.watermark) { position:relative; z-index:1; }
+  .watermark { position:absolute; inset:0; z-index:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; opacity:.055; transform:rotate(-32deg); font-family:Arial, sans-serif; text-align:center; }
+  .watermark img { width:360px; max-height:132px; object-fit:contain; filter:grayscale(1); }
+  .watermark span { margin-top:12px; font-size:54px; font-weight:900; letter-spacing:5px; text-transform:uppercase; color:var(--brand-dark); white-space:nowrap; }
   .doc-header { display:grid; grid-template-columns:1.3fr 1fr; gap:20px; align-items:start; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-bottom:12px; }
   .brand-row { display:flex; gap:14px; align-items:center; }
   .brand-row img { max-width:172px; max-height:64px; object-fit:contain; }
@@ -148,7 +188,16 @@ ${richDocumentCss}
   .chip.danger { border-color:#fecaca; background:#fef2f2; color:#b91c1c; }
   .alert { margin:0 0 14px; padding:8px 10px; border:1px solid #b91c1c; background:#fef2f2; color:#991b1b; font-family:Arial, sans-serif; font-size:12px; font-weight:700; }
   .muted { color:var(--muted); }
-  .footer { display:flex; justify-content:space-between; gap:16px; border-top:2px solid var(--brand); padding-top:9px; margin-top:22px; font-family:Arial, sans-serif; color:var(--muted); font-size:10.5px; }
+  .authorization { display:flex; align-items:flex-end; justify-content:space-between; gap:22px; border-top:1px solid #d1d5db; margin-top:24px; padding-top:16px; font-family:Arial, sans-serif; page-break-inside:avoid; }
+  .auth-copy { color:var(--ink); font-size:12px; line-height:1.6; }
+  .auth-copy strong { display:block; margin-top:5px; font-size:13px; }
+  .signature-image { display:block; width:150px; max-height:58px; object-fit:contain; object-position:left center; margin:0 0 7px; }
+  .official-stamp { position:relative; width:92px; height:92px; flex:0 0 auto; border:3px double #1d4ed8; border-radius:50%; color:#1d4ed8; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:Arial, sans-serif; text-align:center; transform:rotate(-13deg); background:rgba(255,255,255,.74); }
+  .official-stamp:before { content:""; position:absolute; inset:9px; border:1px solid #1d4ed8; border-radius:50%; }
+  .stamp-ring { position:relative; z-index:1; max-width:72px; font-size:7px; font-weight:900; line-height:1.05; text-transform:uppercase; }
+  .stamp-core { position:relative; z-index:1; margin-top:5px; font-size:9px; font-weight:900; line-height:1.05; }
+  .stamp-foot { position:relative; z-index:1; margin-top:4px; max-width:66px; font-size:6.5px; line-height:1; }
+  .footer { display:flex; justify-content:space-between; gap:16px; border-top:2px solid var(--brand); padding-top:9px; margin-top:18px; font-family:Arial, sans-serif; color:var(--muted); font-size:10.5px; }
   @media print {
     body { background:#fff; }
     .toolbar { display:none; }
@@ -160,24 +209,28 @@ ${richDocumentCss}
 export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBrandSettings): string {
   const brand = resolveBrand(settings);
   const isInstant = s.instant_consultation_id != null;
-  const cc = s.chief_complaint ?? {};
-  const hpi = s.history_of_present_illness ?? {};
-  const ros = s.review_of_systems ?? {};
-  const ca = s.clinical_assessment ?? {};
-  const mp = s.management_plan ?? {};
-  const flags = Object.entries(s.red_flag_screening ?? {}).filter(
-    ([k, v]) => v && k !== "alert_triggered",
-  );
-  const alert = s.red_flag_screening?.alert_triggered;
+  const chiefComplaint = summaryFieldText(s.chief_complaint, "main_complaint");
+  const hpi = summaryFieldText(s.history_of_present_illness);
+  const review = summaryFieldText(s.review_of_systems);
+  const pastMedical = summaryFieldText(s.past_medical_history);
+  const pastSurgical = summaryFieldText(s.past_surgical_history);
+  const medicationHistory = summaryFieldText(s.medication_history);
+  const allergyHistory = summaryFieldText(s.allergy_history);
+  const familyHistory = summaryFieldText(s.family_history);
+  const socialHistory = summaryFieldText(s.social_history);
+  const womensHistory = summaryFieldText(s.womens_health_history);
+  const pediatricHistory = summaryFieldText(s.pediatric_history);
+  const physicalExam = summaryFieldText(s.physical_examination);
+  const attachments = summaryFieldText(s.attachments);
+  const clinicalAssessment = summaryFieldText(s.clinical_assessment, "primary_diagnosis");
+  const managementPlan = summaryFieldText(s.management_plan, "followup_plan");
+  const flags = summaryRedFlagList(s.red_flag_screening);
+  const alert = summaryHasRedFlagAlert(s.red_flag_screening);
   const dn = doctorName(s);
-  const meds = mp.medications_prescribed ?? [];
+  const signature = doctorSignatureUrl(s);
 
-  const rosRows = Object.entries(ros)
-    .filter(([, list]) => (list ?? []).length)
-    .map(([sys, list]) => row(pretty(sys), chips(list ?? [])))
-    .join("");
   const flagsBody = flags.length
-    ? `<tr><td class="label">Active red flags</td><td>${flags.map(([k]) => `<span class="chip danger">${esc(pretty(k))}</span>`).join(" ")}</td></tr>`
+    ? `<tr><td class="label">Active red flags</td><td>${flags.map((flag) => `<span class="chip danger">${esc(pretty(flag))}</span>`).join(" ")}</td></tr>`
     : "";
 
   return `<!doctype html>
@@ -194,10 +247,10 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
     <button onclick="window.close()">Close</button>
   </div>
   <main class="page">
+    ${watermarkBlock(brand)}
     <header class="doc-header">
       <div class="brand-row">
         <img src="${esc(brand.logoUrl)}" alt="${esc(brand.appName)}" />
-        
       </div>
       <div class="title-box">
         <h1>Consultation Summary</h1>
@@ -207,29 +260,34 @@ export function buildSummaryHtml(s: ConsultationSummary, settings?: DocumentBran
     </header>
 
     ${contactBlock(brand)}
-    ${alert ? `<div class="alert">Red flag present - escalation or in-person care may be required.</div>` : ""}
+    ${alert ? `<div class="alert">Alert: Urgent in-person evaluation required if positive.</div>` : ""}
 
     ${section("Patient Information", row("Patient Name", esc(patientName(s))) + row("Patient ID", esc(s.patient_id)))}
     ${section("Attending Doctor Information", row("Doctor Name", esc(dn || "-")))}
     ${section("Document Information", row("Summary ID", esc(s.id)) + row("Consultation Type", isInstant ? "Instant" : "Appointment") + row("Generated On", esc(fmtDate(new Date().toISOString()))))}
-    ${section("Chief Complaint", row("Main Complaint", `<div class="rich-cell">${richDocumentHtml(cc.main_complaint)}</div>`) + row("Duration", cc.duration_value != null ? `${esc(cc.duration_value)} ${esc(cc.duration_unit ?? "")}` : ""))}
-    ${section("History of Present Illness", row("Onset", esc(hpi.onset ?? "")) + row("Location", esc(hpi.location ?? "")) + row("Severity", hpi.severity != null ? `${esc(hpi.severity)}/10` : ""))}
-    ${rosRows ? section("Review of Systems", rosRows) : ""}
+    ${section("Clinical Story", row("Chief Complaint", `<div class="rich-cell">${richDocumentHtml(chiefComplaint)}</div>`) + row("History of Present Illness", `<div class="rich-cell">${richDocumentHtml(hpi)}</div>`) + row("Review of Systems", `<div class="rich-cell">${richDocumentHtml(review)}</div>`) + row("Physical Examination", `<div class="rich-cell">${richDocumentHtml(physicalExam)}</div>`))}
+    ${section("Patient History", row("Past Medical History", `<div class="rich-cell">${richDocumentHtml(pastMedical)}</div>`) + row("Past Surgical History", `<div class="rich-cell">${richDocumentHtml(pastSurgical)}</div>`) + row("Medication History", `<div class="rich-cell">${richDocumentHtml(medicationHistory)}</div>`) + row("Allergy History", `<div class="rich-cell">${richDocumentHtml(allergyHistory)}</div>`) + row("Family History", `<div class="rich-cell">${richDocumentHtml(familyHistory)}</div>`) + row("Social History", `<div class="rich-cell">${richDocumentHtml(socialHistory)}</div>`) + row("Women's Health History", `<div class="rich-cell">${richDocumentHtml(womensHistory)}</div>`) + row("Pediatric History", `<div class="rich-cell">${richDocumentHtml(pediatricHistory)}</div>`))}
     ${flagsBody ? section("Red-Flag Screening", flagsBody) : ""}
-    ${section("Clinical Assessment", row("Primary Diagnosis", esc(ca.primary_diagnosis ?? "")) + row("Severity Classification", esc(ca.severity_classification ? pretty(ca.severity_classification) : "")))}
-    ${section("Management Plan", row("Medications Prescribed", chips(meds)) + row("Follow-up Plan", `<div class="rich-cell">${mp.followup_plan ? richDocumentHtml(mp.followup_plan) : "-"}</div>`))}
+    ${section("Assessment and Plan", row("Clinical Assessment", `<div class="rich-cell">${richDocumentHtml(clinicalAssessment)}</div>`) + row("Management Plan", `<div class="rich-cell">${richDocumentHtml(managementPlan)}</div>`) + row("Attachments", `<div class="rich-cell">${richDocumentHtml(attachments)}</div>`))}
+
+    <section class="authorization">
+      <div class="auth-copy">
+        Authorized by
+        ${signature ? `<img class="signature-image" src="${esc(signature)}" alt="Doctor signature" />` : ""}
+        <strong>${esc(dn || "MediConnect Clinician")}</strong>
+        <span>${esc(brand.appName)} | ${esc(brand.address)} | ${esc(brand.phone)}</span>
+      </div>
+      ${officialStamp(brand)}
+    </section>
 
     <footer class="footer">
-      <span>${esc(brand.appName)} digital health document</span>
-      <span>${esc(brand.email)} | ${esc(brand.phone)}</span>
+      <span>${esc(brand.appName)} digital health document<br>${esc(brand.email)} | ${esc(brand.phone)}</span>
+      <span>Generated ${esc(fmtDate(new Date().toISOString()))}</span>
     </footer>
   </main>
 </body>
 </html>`;
 }
-
-/** Write the document into an already-opened window (preserves the user gesture
- *  so the browser doesn't block it when data is fetched asynchronously). */
 export function writeSummaryToWindow(
   win: Window | null,
   summary: ConsultationSummary,
@@ -269,3 +327,6 @@ export function openBlankSummaryWindow(): Window | null {
   }
   return win;
 }
+
+
+

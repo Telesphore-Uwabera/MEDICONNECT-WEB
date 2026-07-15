@@ -356,6 +356,8 @@ export function IncomingCard({
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <CheckCircle2 className="h-3.5 w-3.5" />}
                   {t("consult.bookings.complete")}
+
+                  
                 </button>
               </>
             )}

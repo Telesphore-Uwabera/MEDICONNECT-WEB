@@ -273,7 +273,7 @@
     "session_completed": "Session marked as completed.",
     "failed_to_complete": "Failed to update completed session.",
     "preview": "Preview",
-    "complete": "Complete",
+    "complete": "Patient file",
     "waiting_timer": "Waiting {{time}}",
     "accept": "Accept",
     "no_description": "No description",

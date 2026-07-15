@@ -23,6 +23,8 @@ export interface DoctorProfile {
   consultation_fee?: string | number;             // ← add
   currency?: string;                              // ← add
   specialization_fee_id?: number | null;          // ← add
+  signature?: string | null;
+  signature_url?: string | null;
   years_of_experience?: number;                   // ← add
   specialization_fee?: {                          // ← add
     sub_specialization?: string;
@@ -49,6 +51,7 @@ export interface DoctorProfile {
     degree_document?: { path: string | null; url: string | null };
     medical_license_document?: { path: string | null; url: string | null };
     national_id_document?: { path: string | null; url: string | null };
+    signature?: { path: string | null; url: string | null };
   };
 }
 
@@ -179,7 +182,21 @@ export function useUploadProfileImage() {
   });
 }
 
-// ─── 5. Education ─────────────────────────────────────────────────────────────
+export function useUploadDoctorSignature() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append("signature", file);
+      return apiFetch<{ message: string; signature: string }>(`${BASE}/profile/signature`, {
+        method: "POST",
+        body: form,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["doctor-profile"] }),
+  });
+}
+// Section 5. Education ─────────────────────────────────────────────────────────────
 
 /** GET /doctor/education — fetch saved education list independently.
  *  The profile query already includes this, so prefer useGetDoctorProfile()
