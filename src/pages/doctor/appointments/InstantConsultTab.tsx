@@ -31,6 +31,7 @@ import { getErrMsg, fmt } from "./shared/helpers";
 import { BookPhysicalModal } from "./shared/BookPhysicalModal";
 import { TransferPatientPrompt } from "./shared/TransferPatientPrompt";
 import { ConsultationSummaryModal } from "./shared/ConsultationSummaryModal";
+import { QuickPrescriptionModal } from "./shared/QuickPrescriptionModal";
 import { t } from "i18next";
 
 type ItemAction = {
@@ -114,6 +115,7 @@ export function InstantConsultTab() {
   const [bookingItem, setBookingItem] = useState<InstantConsultQueueItem | null>(null);
   const [transferPromptItem, setTransferPromptItem] = useState<InstantConsultQueueItem | null>(null);
   const [recordItem, setRecordItem] = useState<InstantConsultQueueItem | null>(null);
+  const [prescriptionItem, setPrescriptionItem] = useState<InstantConsultQueueItem | null>(null);
 
   // Queue items expose only the request id. The consultation-summary endpoint
   // validates against the real `instant_consultations` id, so we remember the
@@ -633,13 +635,30 @@ export function InstantConsultTab() {
           onSaved={() => {
             const item = recordItem;
             setRecordItem(null);
+            setPrescriptionItem(item);
+          }}
+        />
+      )}
+
+      {/* Step 2 — optional: quick prescription (create + issue + optional pharmacy) */}
+      {prescriptionItem != null && (
+        <QuickPrescriptionModal
+          instantConsultationId={resolveInstantConsultId(prescriptionItem) ?? undefined}
+          patientName={prescriptionItem.guest_phone}
+          onSkip={() => {
+            const item = prescriptionItem;
+            setPrescriptionItem(null);
+            setTransferPromptItem(item);
+          }}
+          onDone={() => {
+            const item = prescriptionItem;
+            setPrescriptionItem(null);
             setTransferPromptItem(item);
           }}
         />
       )}
 
-
-      {/* Step 2 - ask whether to transfer before opening facility booking */}
+      {/* Step 3 - ask whether to transfer before opening facility booking */}
       {transferPromptItem != null && (
         <TransferPatientPrompt
           patientName={transferPromptItem.guest_phone}
@@ -655,7 +674,7 @@ export function InstantConsultTab() {
           }}
         />
       )}
-      {/* Step 3 - optional: book physical appointment, then complete */}
+      {/* Step 4 - optional: book physical appointment, then complete */}
       {bookingItem != null && (
         <BookPhysicalModal
           open

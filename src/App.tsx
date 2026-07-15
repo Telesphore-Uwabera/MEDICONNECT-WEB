@@ -94,6 +94,8 @@ import ManageAppointments from "./pages/admin/ManageApointments.tsx";
 import ManageInsurances from "./pages/admin/ManageInsurances.tsx";
 import ManageServicePricing from "./pages/admin/ManageServicePricing.tsx";
 import ManageInstantDoctors from "./pages/admin/ManageInstantDoctors.tsx";
+import ManageCertificationDoctor from "./pages/admin/ManageCertificationDoctor.tsx";
+import ManageHelpCenterLinks from "./pages/admin/ManageHelpCenterLinks.tsx";
 import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
@@ -863,6 +865,22 @@ const App = () => (
               element={
                 <RequireAuth>
                   <ManageInstantDoctors />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/help-center-links"
+              element={
+                <RequireAuth>
+                  <ManageHelpCenterLinks />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/certification-doctor"
+              element={
+                <RequireAuth>
+                  <ManageCertificationDoctor />
                 </RequireAuth>
               }
             />

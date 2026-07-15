@@ -78,37 +78,42 @@ export function YesNoField({
   value,
   onChange,
   warning,
+  children,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   warning?: boolean;
+  children?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0 gap-3">
-      <span className="text-xs text-foreground leading-snug">{label}</span>
-      <div className="flex gap-1.5 shrink-0">
-        {YES_NO.map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(opt)}
-            className={cn(
-              "px-3 py-1 rounded text-[11px] font-medium border transition-all",
-              value === opt
-                ? opt === "Yes" && warning
-                  ? "bg-destructive text-destructive-foreground border-destructive"
-                  : opt === "Yes"
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-amber-500 text-white border-amber-500"
-                : "bg-transparent text-muted-foreground border-border hover:bg-muted/60",
-            )}
-          >
-            {getYesNoLabel(t, opt)}
-          </button>
-        ))}
+    <div className="border-b border-border last:border-0">
+      <div className="flex items-center justify-between py-2.5 gap-3">
+        <span className="text-xs text-foreground leading-snug">{label}</span>
+        <div className="flex gap-1.5 shrink-0">
+          {YES_NO.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className={cn(
+                "px-3 py-1 rounded text-[11px] font-medium border transition-all",
+                value === opt
+                  ? opt === "Yes" && warning
+                    ? "bg-destructive text-destructive-foreground border-destructive"
+                    : opt === "Yes"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-amber-500 text-white border-amber-500"
+                  : "bg-transparent text-muted-foreground border-border hover:bg-muted/60",
+              )}
+            >
+              {getYesNoLabel(t, opt)}
+            </button>
+          ))}
+        </div>
       </div>
+      {children && <div className="pb-3">{children}</div>}
     </div>
   );
 }
@@ -342,6 +347,12 @@ interface YesNoStepProps {
   fields: { label: string; field: string; warning?: boolean }[];
   initialAnswers?: Record<string, string>;
   headerNote?: React.ReactNode;
+  fieldExtra?: (
+    field: { label: string; field: string; warning?: boolean },
+    answers: Record<string, string>,
+    setAnswer: (k: string, v: string) => void,
+    register: UseFormRegister<FieldValues>,
+  ) => React.ReactNode;
   extraFields?: (
     answers: Record<string, string>,
     setAnswer: (k: string, v: string) => void,
@@ -350,7 +361,15 @@ interface YesNoStepProps {
   onSaved: (nextStep: number) => void;
 }
 
-export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, extraFields, onSaved }: YesNoStepProps) {
+export function YesNoStep({
+  apiStep,
+  fields,
+  initialAnswers = {},
+  headerNote,
+  fieldExtra,
+  extraFields,
+  onSaved,
+}: YesNoStepProps) {
   const { t } = useTranslation();
   const saveStep = useSaveStep();
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
@@ -377,8 +396,16 @@ export function YesNoStep({ apiStep, fields, initialAnswers = {}, headerNote, ex
   return (
     <div className="space-y-2">
       {headerNote}
-      {fields.map(({ label, field, warning }) => (
-        <YesNoField key={field} label={label} value={answers[field] ?? ""} onChange={(v) => setAnswer(field, v)} warning={warning} />
+      {fields.map((item) => (
+        <YesNoField
+          key={item.field}
+          label={item.label}
+          value={answers[item.field] ?? ""}
+          onChange={(v) => setAnswer(item.field, v)}
+          warning={item.warning}
+        >
+          {fieldExtra?.(item, answers, setAnswer, register)}
+        </YesNoField>
       ))}
       {redFlagSymptoms && apiStep === 2 && (
         <div className="flex items-start gap-2.5 p-3 rounded-[6px] border border-destructive/30 bg-destructive/10 mt-3">
