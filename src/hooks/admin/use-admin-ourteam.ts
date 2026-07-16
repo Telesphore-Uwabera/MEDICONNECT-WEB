@@ -3,24 +3,28 @@ import { apiFetch } from "@/lib/api";
 
 const BASE = "/admin/team";
 
-// ── Types ────────────────────────────────────────────────────
-
 export interface ApiTeamMember {
   id: number;
   name: string;
   title: string;
-  joined_at: string;
-  bio: string | null;         // ← ADD THIS
+  level: number | null;
+  order: number | null;
+  icon: string | null;
+  color_code: string | null;
+  joined_at: string | null;
+  bio: string | null;
   photo: string | null;
   photo_url: string | null;
+  icon_url: string | null;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TeamApiResponse {
   current_page: number;
   data: ApiTeamMember[];
+  per_page?: number;
   total: number;
 }
 
@@ -35,14 +39,12 @@ export interface GetTeamParams {
   page?: number;
 }
 
-// ── GET /admin/team ──────────────────────────────────────────
-
 export function useGetAdminTeam(params?: GetTeamParams) {
   const query = new URLSearchParams();
-  if (params?.search)                    query.set("search",    params.search);
-  if (params?.is_active !== undefined)   query.set("is_active", String(params.is_active));
-  if (params?.per_page)                  query.set("per_page",  String(params.per_page));
-  if (params?.page)                      query.set("page",      String(params.page));
+  if (params?.search) query.set("search", params.search);
+  if (params?.is_active !== undefined) query.set("is_active", String(params.is_active));
+  if (params?.per_page) query.set("per_page", String(params.per_page));
+  if (params?.page) query.set("page", String(params.page));
   const qs = query.toString();
 
   return useQuery<TeamApiResponse>({
@@ -50,8 +52,6 @@ export function useGetAdminTeam(params?: GetTeamParams) {
     queryFn: () => apiFetch(`${BASE}${qs ? `?${qs}` : ""}`) as Promise<TeamApiResponse>,
   });
 }
-
-// ── GET /admin/team/:id ──────────────────────────────────────
 
 export function useGetAdminTeamMember(id: number | null) {
   return useQuery<TeamMemberResponse>({
@@ -61,8 +61,6 @@ export function useGetAdminTeamMember(id: number | null) {
   });
 }
 
-// ── POST /admin/team ─────────────────────────────────────────
-
 export function useCreateTeamMember() {
   const qc = useQueryClient();
   return useMutation({
@@ -71,8 +69,6 @@ export function useCreateTeamMember() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-team"] }),
   });
 }
-
-// ── POST /admin/team/:id (update) ────────────────────────────
 
 export function useUpdateTeamMember(id: number) {
   const qc = useQueryClient();
@@ -86,8 +82,6 @@ export function useUpdateTeamMember(id: number) {
   });
 }
 
-// ── POST /admin/team/:id/photo ───────────────────────────────
-
 export function useUploadTeamPhoto(id: number) {
   const qc = useQueryClient();
   return useMutation({
@@ -100,7 +94,17 @@ export function useUploadTeamPhoto(id: number) {
   });
 }
 
-// ── PATCH /admin/team/:id/toggle-active ─────────────────────
+export function useUploadTeamIcon(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (formData: FormData) =>
+      apiFetch(`${BASE}/${id}/icon`, { method: "POST", body: formData }) as Promise<{ message: string; icon_url: string }>,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-team"] });
+      qc.invalidateQueries({ queryKey: ["admin-team-member", id] });
+    },
+  });
+}
 
 export function useToggleTeamMemberActive(id: number) {
   const qc = useQueryClient();
@@ -113,8 +117,6 @@ export function useToggleTeamMemberActive(id: number) {
     },
   });
 }
-
-// ── DELETE /admin/team/:id ───────────────────────────────────
 
 export function useDeleteTeamMember() {
   const qc = useQueryClient();

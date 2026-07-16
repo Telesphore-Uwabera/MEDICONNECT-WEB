@@ -29,7 +29,7 @@ import { useTranslation } from "react-i18next";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type StatusFilter = "all" | "active" | "inactive";
-type SortOption = "date-desc" | "date-asc" | "name-asc" | "name-desc";
+type SortOption = "order-asc" | "level-asc" | "date-desc" | "date-asc" | "name-asc" | "name-desc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "date-desc", label: "Joined: Newest first" },
@@ -48,7 +48,7 @@ interface FilterState {
 const INITIAL_FILTERS: FilterState = {
   search: "",
   status: "all",
-  sort: "date-desc",
+  sort: "order-asc",
   page: 1,
 };
 
@@ -80,7 +80,8 @@ function matchesSearch(m: ApiTeamMember, q: string): boolean {
   return (
     m.name.toLowerCase().includes(lower) ||
     (m.title ?? "").toLowerCase().includes(lower) ||
-    String(m.id).includes(lower)
+    String(m.id).includes(lower) ||
+    String(m.level ?? "").includes(lower)
   );
 }
 
@@ -216,7 +217,7 @@ function TeamCard({
             <Calendar className="w-3 h-3" />
             {formatDate(m.joined_at)}
           </span>
-          <span>{getYears(m.joined_at)} yrs exp</span>
+          <span>L{m.level ?? "-"} / #{m.order ?? "-"}</span>
         </div>
         <Button
           size="sm"
@@ -296,10 +297,12 @@ function AdminOurTeam() {
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       switch (filters.sort) {
-        case "date-asc": return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+        case "order-asc": return (a.order ?? 999) - (b.order ?? 999) || (a.level ?? 99) - (b.level ?? 99);
+        case "level-asc": return (a.level ?? 99) - (b.level ?? 99) || (a.order ?? 999) - (b.order ?? 999);
+        case "date-asc": return new Date(a.joined_at ?? "").getTime() - new Date(b.joined_at ?? "").getTime();
         case "name-asc": return a.name.localeCompare(b.name);
         case "name-desc": return b.name.localeCompare(a.name);
-        default: return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime();
+        default: return new Date(b.joined_at ?? "").getTime() - new Date(a.joined_at ?? "").getTime();
       }
     });
   }, [filtered, filters.sort]);
@@ -499,7 +502,7 @@ function AdminOurTeam() {
                         <th className="text-left px-4 py-3 font-semibold">Member</th>
                         <th className="text-left px-4 py-3 font-semibold">Title</th>
                         <th className="text-left px-4 py-3 font-semibold">Joined</th>
-                        <th className="text-left px-4 py-3 font-semibold">Experience</th>
+                        <th className="text-left px-4 py-3 font-semibold">Hierarchy</th>
                         <th className="text-left px-4 py-3 font-semibold">Status</th>
                         <th className="px-4 py-3" />
                       </tr>
