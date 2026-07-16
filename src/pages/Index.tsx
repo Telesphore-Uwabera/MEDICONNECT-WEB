@@ -418,10 +418,7 @@ const Index = () => {
               <Link
                 to="/verify-certificate"
                 className="group flex items-center gap-4 rounded-[6px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-              >
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
-                  <FileText className="h-6 w-6" />
-                </span>
+              > 
                 <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
                   {t("pages.landing.qa_fitness_certificates")}
                 </span>

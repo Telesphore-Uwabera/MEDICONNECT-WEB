@@ -107,6 +107,7 @@ export interface PrescriptionListParams {
 
 export interface CreatePrescriptionPayload {
   appointment_id?: number;
+  instant_consultation_id?: number;
   diagnosis: string;
   notes?: string;
   valid_until?: string;

@@ -96,5 +96,9 @@
   "medicalRecords": "Dossiers médicaux",
   "hideSidebar": "Masquer la barre latérale",
   "showSidebar": "Afficher la barre latérale",
-  "schedule": "Planning"
+  "schedule": "Planning",
+  "certificationDoctor": "Médecin certificateur",
+"helpCenterLinks": "Liens du centre d'aide"
 }
+
+

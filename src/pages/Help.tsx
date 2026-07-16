@@ -19,12 +19,14 @@ import { useTheme } from "@/context/ThemeContext";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
-import TopBar from "@/components/landing/TopBar"; 
- 
+import TopBar from "@/components/landing/TopBar";
+
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
+import { useGetHelpCenterLinks } from "@/hooks/public/use-help-center";
+import { resolveHelpCenterIcon } from "@/lib/help-center-icons";
 
  
 const Index = () => {
@@ -69,12 +71,26 @@ const Index = () => {
     const defaultCurrency =
         generalSettings?.default_currency || "RWF";
 
-    const helpTopics = [
+    const fallbackTopics = [
         { title: t("pages.help.topic_book_doctors_title"), desc: t("pages.help.topic_book_doctors_desc"), to: "/patient/search-doctors" },
         { title: t("pages.help.topic_find_facilities_title"), desc: t("pages.help.topic_find_facilities_desc"), to: "/patient/search-facilities" },
         { title: t("pages.help.topic_pharmacy_title"), desc: t("pages.help.topic_pharmacy_desc"), to: "/patient/pharmacy" },
         { title: t("pages.help.topic_sign_in_title"), desc: t("pages.help.topic_sign_in_desc"), to: "/auth" },
     ];
+
+    const { data: helpCenterLinks, isLoading: helpLinksLoading } = useGetHelpCenterLinks();
+
+    // Prefer admin-managed links from the API; fall back to the static topics
+    // above while loading, or if the admin hasn't configured any links yet.
+    const helpTopics =
+        helpCenterLinks && helpCenterLinks.length > 0
+            ? helpCenterLinks.map((link) => ({
+                  title: link.title,
+                  desc: link.description,
+                  to: link.url,
+                  icon: link.icon,
+              }))
+            : fallbackTopics;
   return (
       <section className="bg-background">
           <div className="sticky top-0 z-50">
@@ -167,25 +183,41 @@ const Index = () => {
                       </h2>
 
                       <div className="mt-6 grid gap-3">
-                          {helpTopics.map((item) => (
-                              <Link
-                                  key={item.title}
-                                  to={item.to}
-                                  className="group rounded-[6px] border border-border bg-background p-4 transition-all hover:border-primary/40 hover:bg-primary/5"
-                              >
-                                  <div className="flex items-start justify-between gap-4">
-                                      <div>
-                                          <p className="text-sm font-semibold text-foreground">
-                                              {item.title}
-                                          </p>
-                                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                                              {item.desc}
-                                          </p>
-                                      </div>
-                                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary" />
-                                  </div>
-                              </Link>
-                          ))}
+                          {helpLinksLoading ? (
+                              Array.from({ length: 4 }).map((_, i) => (
+                                  <div key={i} className="h-[72px] rounded-[6px] border border-border bg-background animate-pulse" />
+                              ))
+                          ) : (
+                              helpTopics.map((item) => {
+                                  const TopicIcon = "icon" in item ? resolveHelpCenterIcon(item.icon) : null;
+                                  return (
+                                      <Link
+                                          key={item.title}
+                                          to={item.to}
+                                          className="group rounded-[6px] border border-border bg-background p-4 transition-all hover:border-primary/40 hover:bg-primary/5"
+                                      >
+                                          <div className="flex items-start justify-between gap-4">
+                                              <div className="flex items-start gap-3">
+                                                  {TopicIcon && (
+                                                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-primary/20 bg-primary/10 text-primary">
+                                                          <TopicIcon className="h-4 w-4" />
+                                                      </div>
+                                                  )}
+                                                  <div>
+                                                      <p className="text-sm font-semibold text-foreground">
+                                                          {item.title}
+                                                      </p>
+                                                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                                          {item.desc}
+                                                      </p>
+                                                  </div>
+                                              </div>
+                                              <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-all group-hover:translate-x-1 group-hover:text-primary" />
+                                          </div>
+                                      </Link>
+                                  );
+                              })
+                          )}
                       </div>
                   </div>
  

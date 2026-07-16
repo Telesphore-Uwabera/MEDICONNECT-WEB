@@ -98,7 +98,10 @@ function MemberModal({
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            {member.bio || t("pages.landing.team_no_description")}
+            <div
+                className="overflow-hidden text-[12px] "
+                dangerouslySetInnerHTML={{ __html: member.bio }}
+              /> 
           </p>
 
           <div className="mt-5 grid grid-cols-2 gap-2">
@@ -159,10 +162,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
             {member.title}
           </p>
         )}
-
-        <span className="mt-5 inline-flex h-7 w-7 items-center justify-center rounded-full border border-border text-foreground/70 transition-colors group-hover:border-primary/40 group-hover:text-primary">
-          <Linkedin className="h-3.5 w-3.5" />
-        </span>
+ 
       </button>
 
       {modalOpen && <MemberModal member={member} onClose={() => setModalOpen(false)} />}

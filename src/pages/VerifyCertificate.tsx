@@ -25,6 +25,9 @@ import { useTheme } from "@/context/ThemeContext";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 import { useVerifyCertificate } from "@/hooks/public/use-verify-certificate";
+import TopBar from "@/components/landing/TopBar";
+import { HeroHeader } from "@/components/landing/HeroHeader";
+import { usePublicSettings } from "@/hooks/use-public-settings";
 
 function DetailRow({
   icon: Icon,
@@ -87,13 +90,22 @@ export default function VerifyCertificate() {
   const isValid = data?.valid === true && !!data.certificate;
   const isKnownInvalid = data?.valid === false || (isError && !!activeNumber);
   const cert = data?.certificate;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+const { data: publicSettings } = usePublicSettings();
+  const publicPayload = publicSettings as any;
+
+ const generalSettings =publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
 
   return (
+    <>
+      <TopBar settings={generalSettings} />
+      <HeroHeader
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
     <div className="min-h-screen bg-gradient-to-b from-muted/40 to-background flex flex-col items-center px-4 py-10 sm:py-16">
-      <Link to="/" className="mb-8 flex items-center gap-2">
-        <img src={logo} alt="MediConnect" className="h-9 w-auto" />
-      </Link>
-
+  
       <div className="w-full max-w-md">
         <div className="text-center mb-5">
           <h1 className="text-lg font-bold text-foreground">{t("pages.verify_certificate.title")}</h1>
@@ -201,6 +213,7 @@ export default function VerifyCertificate() {
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
           {t("pages.verify_certificate.powered_by")}</p>
       </div>
-    </div>
+    </div></>
+    
   );
 }

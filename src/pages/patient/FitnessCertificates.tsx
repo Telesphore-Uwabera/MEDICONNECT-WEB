@@ -269,37 +269,48 @@ function RequestForm({ onSubmit: onDone }: { onSubmit: () => void }) {
             apiStep={3}
             initialAnswers={savedAnswerMap}
             fields={getHistoryFields(t)}
-            extraFields={(answers, setAnswer, register) => (
-              <div className="mt-3 space-y-3">
-                {answers["chronic_illness"] === "Yes" && (
+            fieldExtra={(field, answers, setAnswer) => {
+              if (field.field === "chronic_illness" && answers["chronic_illness"] === "Yes") {
+                return (
                   <FormField label={t("fitness.chronic_illness_detail_label")}>
                     <Input
-                      {...register("chronic_illness_detail")}
+                      value={answers["chronic_illness_detail"] ?? ""}
+                      onChange={(event) => setAnswer("chronic_illness_detail", event.target.value)}
                       placeholder={t("fitness.chronic_illness_detail_placeholder")}
-                      className="border-border focus-visible:ring-primary text-xs h-9"
+                      className="border-border focus-visible:ring-primary text-xs h-14"
                     />
                   </FormField>
-                )}
-                {answers["chronic_medication"] === "Yes" && (
-                  <FormField label={t("fitness.medication_detail_label")}>
-                    <Input
-                      {...register("medication_detail")}
-                      placeholder={t("fitness.medication_detail_placeholder")}
-                      className="border-border focus-visible:ring-primary text-xs h-9"
-                    />
-                  </FormField>
-                )}
-                {answers["allergies"] === "Yes" && (
+                );
+              }
+
+              if (field.field === "allergies" && answers["allergies"] === "Yes") {
+                return (
                   <FormField label={t("fitness.allergy_detail_label")}>
                     <Input
-                      {...register("allergy_detail")}
+                      value={answers["allergy_detail"] ?? ""}
+                      onChange={(event) => setAnswer("allergy_detail", event.target.value)}
                       placeholder={t("fitness.allergy_detail_placeholder")}
-                      className="border-border focus-visible:ring-primary text-xs h-9"
+                      className="border-border focus-visible:ring-primary text-xs  h-14"
                     />
                   </FormField>
-                )}
-              </div>
-            )}
+                );
+              }
+
+              if (field.field === "chronic_medication" && answers["chronic_medication"] === "Yes") {
+                return (
+                  <FormField label={t("fitness.medication_detail_label")}>
+                    <Input
+                      value={answers["medication_detail"] ?? ""}
+                      onChange={(event) => setAnswer("medication_detail", event.target.value)}
+                      placeholder={t("fitness.medication_detail_placeholder")}
+                      className="border-border focus-visible:ring-primary text-xs  h-14"
+                    />
+                  </FormField>
+                );
+              }
+
+              return null;
+            }}
             onSaved={handleStepSaved}
           />
         );

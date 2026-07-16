@@ -525,29 +525,10 @@ export default function HeroSection() {
 
             {/* Visual block */}
             <div className="relative h-[260px] xs:h-[290px] sm:h-[330px] md:h-[380px] lg:h-[470px]">
-
-              {/* Floating plus icons   lg only */}
-              <div className="hidden lg:block absolute left-10 top-10 text-primary/80 z-10">
-                <Plus className="w-10 h-10" strokeWidth={3} />
-                <Plus className="w-7 h-7 -mt-2 ml-7" strokeWidth={3} />
-              </div>
-
-              {/* Teal circle backdrop */}
-              <div
-                className="absolute right-0 top-0 rounded-full overflow-hidden bg-gradient-primary
-                           w-[240px] h-[240px]
-                           xs:w-[270px] xs:h-[270px]
-                           sm:w-[310px] sm:h-[310px]
-                           md:w-[370px] md:h-[370px]
-                           lg:w-[390px] lg:h-[390px]"
-              >
-                <div className="absolute inset-3 sm:inset-5 rounded-full border border-primary-foreground/30" />
-                <div className="absolute inset-8 sm:inset-12 rounded-full border border-primary-foreground/20" />
-              </div>
-
+            
               {/* Active doctor image */}
               <div
-                className="absolute rounded-full overflow-hidden
+                className="absolute border-[10px] border-primary  rounded-full overflow-hidden
                            right-[8px] top-[8px]
                            w-[224px] h-[224px]
                            xs:w-[254px] xs:h-[254px]
@@ -563,13 +544,13 @@ export default function HeroSection() {
                     src={activeDoc.image}
                     alt={activeDoc.name}
                     onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
-                    className="w-full h-full object-contain object-bottom transition-opacity duration-500 animate-in fade-in scale-110"
+                    className="w-full h-full object-cover object-bottom transition-opacity duration-500 animate-in fade-in scale-110"
                   />
                 ) : (
                   <img
                     src={doctorPlaceholder}
                     alt={t("pages.landing.no_doctors_available")}
-                    className="w-full h-full object-contain object-bottom opacity-60"
+                    className="w-full h-full object-cover object-bottom opacity-60"
                   />
                 )}
               </div>

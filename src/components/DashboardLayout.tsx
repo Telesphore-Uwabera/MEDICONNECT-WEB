@@ -110,6 +110,11 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
           label: t("sidebar.insurances"),
           icon: Shield,
         },
+        {
+          to: "/admin/certification-doctor",
+          label: t("sidebar.certificationDoctor"),
+          icon: ShieldCheck,
+        },
         // {
         //   to: "/admin/manage-instant-doctors",
         //   label: t("sidebar.instantDoctors"),
@@ -137,6 +142,7 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
         { to: "/admin/our-team", label: t("sidebar.team"), icon: Wrench },
         { to: "/admin/system-settings", label: t("sidebar.system_settings"), icon: Settings},
         { to: "/admin/system-communication", label: t("sidebar.system_communication"), icon: Bell},
+        { to: "/admin/help-center-links", label: t("sidebar.helpCenterLinks"), icon: HelpCircle},
       ],
     },
     {

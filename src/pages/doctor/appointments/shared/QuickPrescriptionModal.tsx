@@ -32,7 +32,9 @@ import {
 import type { ApiError } from "@/lib/Api";
 
 interface Props {
-  appointmentId: number;
+  /** Provide exactly one of appointmentId / instantConsultationId. */
+  appointmentId?: number;
+  instantConsultationId?: number;
   patientName?: string;
   defaultDiagnosis?: string;
   defaultNotes?: string;
@@ -92,6 +94,7 @@ function defaultValidUntil(): string {
 
 export function QuickPrescriptionModal({
   appointmentId,
+  instantConsultationId,
   patientName,
   defaultDiagnosis,
   defaultNotes,
@@ -143,7 +146,8 @@ export function QuickPrescriptionModal({
     }
     createRx.mutate(
       {
-        appointment_id: appointmentId,
+        ...(appointmentId != null ? { appointment_id: appointmentId } : {}),
+        ...(instantConsultationId != null ? { instant_consultation_id: instantConsultationId } : {}),
         diagnosis: diagnosis.trim(),
         notes: prepareRichTextForSave(notes),
         valid_until: validUntil || undefined,
