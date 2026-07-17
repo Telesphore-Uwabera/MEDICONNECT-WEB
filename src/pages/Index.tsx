@@ -841,7 +841,7 @@ const Index = () => {
             <div className="grid min-h-[210px] md:grid-cols-[0.46fr_1fr]">
               <div className="relative min-h-[210px] overflow-hidden bg-teal-50">
                 <img
-                  src={docSarah}
+                  src={"images/Jul18202601_47_20AM.png"}
                   alt={t("pages.landing.patient_using_alt", { defaultValue: "Patient using MediConnect" })}
                   className="absolute inset-0 h-full w-full object-cover object-top"
                 />
