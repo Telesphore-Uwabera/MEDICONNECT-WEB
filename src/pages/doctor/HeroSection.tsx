@@ -499,7 +499,7 @@ export default function HeroSection() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2.5 px-3 py-2.5 sm:w-[150px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
+                <div className="flex items-center gap-2.5 px-3 py-2.5 sm:w-[200px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
                   <DatePicker value={selectedDate} onChange={setSelectedDate} />
                 </div>
 

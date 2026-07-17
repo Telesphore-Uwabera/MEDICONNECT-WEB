@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { useRegister } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/lib/getErrorMessage";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 import TermsDrawer from "@/components/auth/TermsDrawer";
 import type { Role } from "@/types/auth";
 import {
@@ -65,7 +66,7 @@ const GENDER_CONFIG: Record<Gender, { icon: React.ReactNode; color: string; labe
   },
 };
 
-// Simple, permissive email shape check — good enough to catch obvious typos
+// Simple, permissive email shape check -- good enough to catch obvious typos
 // without rejecting valid-but-unusual addresses. Only used for non-patient
 // roles, where email is mandatory.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,6 +130,11 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
       return toast.error(t("auth.errors.email_invalid", "Please enter a valid email address"));
     }
 
+    const phoneValidation = validatePhoneForCountry(form.phone, form.countryCode);
+    if (!phoneValidation.isValid) {
+      return toast.error(phoneValidation.message);
+    }
+
     if (form.password !== form.confirm)
       return toast.error(t("auth.errors.passwords_mismatch"));
     if (!acceptedTerms)
@@ -140,8 +146,8 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
       {
         name: form.name,
         email: form.email.trim() || undefined,
-        phone: form.phone,
-        country_code: form.countryCode,
+        phone: phoneValidation.normalizedPhone,
+        country_code: phoneValidation.normalizedCountryCode,
         role: form.role,
         gender: form.gender,
         password: form.password,
@@ -229,7 +235,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </div>
         </div>
 
-        {/* Email — required for every role except patient */}
+        {/* Email -- required for every role except patient */}
         <div className="space-y-1">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.email")}
@@ -274,8 +280,6 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 onChange={set("phone")}
                 placeholder="0781234567"
                 className={inputCls}
-                maxLength={10}
-                minLength={10}
                 required
               />
             </div>
@@ -339,7 +343,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 value={form.password}
                 onChange={set("password")}
                 className={`${inputCls} pr-9`}
-                placeholder="••••••••"
+                placeholder="Password"
                 required
               />
               <button
@@ -362,7 +366,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 value={form.confirm}
                 onChange={set("confirm")}
                 className={`${inputCls} pr-9`}
-                placeholder="••••••••"
+                placeholder="Password"
                 required
               />
               <button

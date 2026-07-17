@@ -247,15 +247,39 @@ export function HeroHeader({
           )}
         </div>
 
-        {/* Mobile/tablet: theme + lang + hamburger */}
+        {/* Mobile/tablet: auth actions + hamburger */}
         <div className="flex lg:hidden items-center gap-1 shrink-0">
-          <ThemeToggle />
-          <LanguageSwitcher />
+          <div className="hidden sm:flex items-center gap-1">
+            <ThemeToggle />
+            <LanguageSwitcher />
+          </div>
+
+          {user ? (
+            <Link to={dashboardPath(user.role)} className="hidden min-[380px]:block">
+              <Button variant="ghost" size="sm" className="h-9 px-2 text-xs">
+                {t("common.dashboard", "Dashboard")}
+              </Button>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="h-9 px-2 text-xs">
+                  {t("common.signIn")}
+                </Button>
+              </Link>
+              <Link to="/auth?mode=signup">
+                <Button size="sm" className="h-9 px-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90 sm:px-3">
+                  {t("common.Register")}
+                </Button>
+              </Link>
+            </div>
+          )}
+
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
             aria-expanded={mobileMenuOpen}
-            className="ml-1 w-9 h-9 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
+            className="ml-1 h-9 w-9 shrink-0 rounded-[6px] flex items-center justify-center text-foreground hover:bg-accent transition-smooth"
           >
             {mobileMenuOpen ? (
               <X className="h-5 w-5" />

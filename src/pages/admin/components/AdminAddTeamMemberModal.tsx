@@ -39,6 +39,7 @@ function TextInput({
 }
 
 function RichBioEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+   const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const exec = useCallback((command: string, arg?: string) => {
@@ -89,6 +90,7 @@ interface AdminAddTeamMemberModalProps {
 }
 
 export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberModalProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [joinedAt, setJoinedAt] = useState("");

@@ -8,6 +8,7 @@ import type { User } from "@/types/auth";
 export interface InstantConsultationRequestPayload {
   doctor_id: number;
   guest_phone?: string;
+  country_code?: string;
   guest_name?: string;
   guest_email?: string;
   description?: string;
@@ -16,6 +17,7 @@ export interface InstantConsultationRequestPayload {
 
 export interface InstantConsultationRequestAnyPayload {
   guest_phone?: string;
+  country_code?: string;
   guest_name?: string;
   guest_email?: string;
   description?: string;

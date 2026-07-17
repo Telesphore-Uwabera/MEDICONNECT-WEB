@@ -44,6 +44,7 @@ import {
   type RequestPhoneChangePayload,
 } from "@/hooks/admin/use-admin-settings";
 import { cn } from "@/lib/utils";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { formatDateOnly } from "@/lib/date";
 
 
@@ -123,7 +124,7 @@ function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | 
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        {t("pages.hospital.verified")}{date ? ` · ${formatDate(date)}` : ""}
+        {t("pages.hospital.verified")}{date ? ` Ã‚Â· ${formatDate(date)}` : ""}
       </span>
     );
   }
@@ -478,8 +479,13 @@ function HospitalSettings() {
       sonnerToast.error(t("pages.hospital.settings_toast_fields_required"));
       return;
     }
+    const phoneValidation = validatePhoneForCountry(phoneForm.phone, phoneForm.country_code);
+    if (!phoneValidation.isValid) {
+      sonnerToast.error(phoneValidation.message);
+      return;
+    }
     try {
-      await requestPhone.mutateAsync(phoneForm);
+      await requestPhone.mutateAsync({ ...phoneForm, phone: phoneValidation.normalizedPhone, country_code: phoneValidation.normalizedCountryCode });
       sonnerToast.success(t("pages.hospital.settings_toast_phone_otp_sent"));
       setPhoneOtpStep(true);
     } catch (err) {

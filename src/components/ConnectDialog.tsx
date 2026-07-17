@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 import {
   sessionToRejoinTarget,
   fetchPatientLiveSession,
@@ -66,6 +67,8 @@ declare global {
     IremboPay: IremboPayStatic;
   }
 }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type CallPhase =
   | "search"
@@ -371,9 +374,11 @@ export const ConnectDialogContent = ({
   const [guestLastName, setGuestLastName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [guestCountryCode, setGuestCountryCode] = useState("+250");
   const [guestPassword, setGuestPassword] = useState("");
   const [authMode, setAuthMode] = useState<"register" | "login">("register");
   const [loginIdentifier, setLoginIdentifier] = useState("");
+  const [loginCountryCode, setLoginCountryCode] = useState("+250");
   const [loginPassword, setLoginPassword] = useState("");
   const [guestDescription, setGuestDescription] = useState("");
   const [guestError, setGuestError] = useState<string | null>(null);
@@ -454,6 +459,7 @@ export const ConnectDialogContent = ({
         setGuestFirstName(existingName.firstName);
         setGuestLastName(existingName.lastName);
         setGuestPhone(existing.guestPhone);
+        setGuestCountryCode("+250");
 
         if (existing.pendingPayment) {
           // Request succeeded before but user left before paying.
@@ -486,6 +492,8 @@ export const ConnectDialogContent = ({
         setGuestLastName(currentName.lastName);
         setGuestEmail(me?.email ?? "");
         setGuestPhone(me?.phone ?? "");
+        setGuestCountryCode(me?.country_code ?? "+250");
+        setLoginCountryCode(me?.country_code ?? "+250");
         setLoginIdentifier(me?.email ?? me?.phone ?? "");
         if (!initialDoctor) {
           setPhase("search");
@@ -522,6 +530,8 @@ export const ConnectDialogContent = ({
       setGuestLastName(currentName.lastName);
       setGuestEmail(me?.email ?? "");
       setGuestPhone(me?.phone ?? "");
+      setGuestCountryCode(me?.country_code ?? "+250");
+      setLoginCountryCode(me?.country_code ?? "+250");
       setPhase("idle");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -594,6 +604,8 @@ export const ConnectDialogContent = ({
     setGuestLastName(currentName.lastName);
     setGuestEmail(me?.email ?? "");
     setGuestPhone(me?.phone ?? "");
+    setGuestCountryCode(me?.country_code ?? "+250");
+    setLoginCountryCode(me?.country_code ?? "+250");
     setPhase(isProfileComplete ? "idle" : "guest_form");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isProfileComplete, me]);
@@ -666,10 +678,11 @@ export const ConnectDialogContent = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeInstant, onCloseCompletely, startCall]);
 
-  const handleRequest = useCallback(async (override?: { name: string; phone: string; email?: string; password?: string }) => {
+  const handleRequest = useCallback(async (override?: { name: string; phone: string; countryCode?: string; email?: string; password?: string }) => {
     const name = override?.name ?? me?.name ?? guestName;
     const phone = override?.phone ?? me?.phone ?? guestPhone;
     const email = override?.email ?? me?.email ?? guestEmail;
+    const countryCode = override?.countryCode ?? me?.country_code ?? guestCountryCode;
 
     // ── Fast-path: token already exists, skip re-requesting ────────────────
     if (consultationToken) {
@@ -703,12 +716,14 @@ export const ConnectDialogContent = ({
     try {
       const name = override?.name ?? me?.name ?? guestName;
       const phone = override?.phone ?? me?.phone ?? guestPhone;
+      const countryCode = override?.countryCode ?? me?.country_code ?? guestCountryCode;
 
       let res;
       if (isGeneral) {
         res = await requestAnyMutation.mutateAsync({
           guest_name: name,
           guest_phone: phone,
+          country_code: countryCode,
           guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
@@ -718,6 +733,7 @@ export const ConnectDialogContent = ({
           doctor_id: doctor!.id,
           guest_name: name,
           guest_phone: phone,
+          country_code: countryCode,
           guest_email: email || undefined,
           password: override?.password ?? guestPassword,
           description: guestDescription,
@@ -736,7 +752,7 @@ export const ConnectDialogContent = ({
           await loginMutation.mutateAsync({
             phone,
             password: attemptedPassword,
-            country_code: "RW",
+            country_code: countryCode,
             auth_method: "password"
           });
         } catch (err) {
@@ -786,7 +802,7 @@ export const ConnectDialogContent = ({
       setPhase("failed");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, guestEmail, me, guestDescription, guestPassword]);
+  }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, guestCountryCode, guestEmail, me, guestDescription, guestPassword]);
 
   // Once the session reflects the patient role after a stay-and-switch, retry.
   useEffect(() => {
@@ -849,9 +865,25 @@ export const ConnectDialogContent = ({
   // ── Guest form submit ─────────────────────────────────────────────────────
   const handleGuestSubmit = () => {
     const name = joinName(guestFirstName, guestLastName);
+    const email = guestEmail.trim();
+
     if (!guestFirstName.trim()) { setGuestError(t("consult.connect.err_first_name_required")); return; }
     if (!guestLastName.trim()) { setGuestError(t("consult.connect.err_last_name_required")); return; }
-    if (!guestPhone.trim()) { setGuestError(t("consult.connect.err_phone_required")); return; }
+    if (!isLoggedIn && !email) {
+      setGuestError(t("consult.connect.err_email_required", "Email is required to create your account."));
+      return;
+    }
+    if (email && !EMAIL_RE.test(email)) {
+      setGuestError(t("consult.connect.err_email_invalid", "Please enter a valid email address."));
+      return;
+    }
+
+    const phoneValidation = validatePhoneForCountry(guestPhone, guestCountryCode);
+    if (!phoneValidation.isValid) {
+      setGuestError(phoneValidation.message ?? t("consult.connect.err_phone_required"));
+      return;
+    }
+
     if (!isLoggedIn && !guestPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
     if (!isLoggedIn && guestPassword.length < 6) { setGuestError(t("consult.connect.err_password_min_length")); return; }
 
@@ -859,8 +891,9 @@ export const ConnectDialogContent = ({
     setGuestName(name);
     handleRequest({
       name,
-      phone: guestPhone.trim(),
-      email: guestEmail.trim(),
+      phone: phoneValidation.normalizedPhone,
+      countryCode: phoneValidation.normalizedCountryCode,
+      email,
       password: isLoggedIn ? undefined : guestPassword.trim(),
     });
   };
@@ -873,12 +906,23 @@ export const ConnectDialogContent = ({
     setGuestError(null);
     try {
       const isEmail = identifier.includes("@");
+      const phoneValidation = !isEmail ? validatePhoneForCountry(identifier, loginCountryCode) : null;
+
+      if (isEmail && !EMAIL_RE.test(identifier)) {
+        setGuestError(t("consult.connect.err_email_invalid", "Please enter a valid email address."));
+        return;
+      }
+      if (phoneValidation && !phoneValidation.isValid) {
+        setGuestError(phoneValidation.message ?? t("consult.connect.err_identifier_required"));
+        return;
+      }
+
       const data = await loginMutation.mutateAsync(
         isEmail
           ? { email: identifier, auth_method: "password" as const, password: loginPassword }
           : {
-            phone: identifier,
-            country_code: "+250",
+            phone: phoneValidation?.normalizedPhone ?? identifier,
+            country_code: phoneValidation?.normalizedCountryCode ?? "+250",
             auth_method: "password" as const,
             password: loginPassword,
           },
@@ -889,9 +933,12 @@ export const ConnectDialogContent = ({
       setGuestLastName(currentName.lastName);
       setGuestEmail(data.user.email ?? "");
       setGuestPhone(data.user.phone ?? "");
+      setGuestCountryCode(data.user.country_code ?? "+250");
+      setLoginCountryCode(data.user.country_code ?? "+250");
       await handleRequest({
         name: data.user.name,
         phone: data.user.phone,
+        countryCode: data.user.country_code,
         email: data.user.email,
       });
     } catch (err: any) {
@@ -899,7 +946,7 @@ export const ConnectDialogContent = ({
     }
   };
 
-  // ── Join call ─────────────────────────────────────────────────────────────
+  // Join call
   const handleJoin = () => {
     if (!roomUrl || !dailyToken) return;
     const roomName = roomUrl.split("/consultation/").pop() ?? roomUrl;
@@ -1293,9 +1340,10 @@ export const ConnectDialogContent = ({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">{t("consult.connect.email_address")}</Label>
+                      <Label className="text-sm font-medium">{t("consult.connect.email_address")}{!isLoggedIn && <span className="ml-1 text-destructive">*</span>}</Label>
                       <Input
                         type="email"
+                        required={!isLoggedIn}
                         placeholder={t("consult.connect.email_placeholder")}
                         value={guestEmail}
                         onChange={(e) => setGuestEmail(e.target.value)}
@@ -1305,13 +1353,24 @@ export const ConnectDialogContent = ({
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">{t("consult.connect.phone_number")}</Label>
-                      <Input
-                        placeholder={t("consult.connect.phone_placeholder")}
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                        className="h-9 text-sm"
-                        onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                      />
+                      <div className="flex gap-2">
+                        <Input
+                          value={guestCountryCode}
+                          onChange={(e) => setGuestCountryCode(e.target.value)}
+                          className="h-9 w-20 text-center text-sm font-medium"
+                          placeholder="+250"
+                          aria-label={t("consult.connect.country_code", "Country code")}
+                        />
+                        <Input
+                          type="tel"
+                          inputMode="tel"
+                          placeholder={t("consult.connect.phone_placeholder")}
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          className="h-9 flex-1 text-sm"
+                          onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
+                        />
+                      </div>
                     </div>
                     {!isLoggedIn && (
                       <div className="space-y-1.5">
@@ -1331,13 +1390,24 @@ export const ConnectDialogContent = ({
                   <>
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
-                      <Input
-                        placeholder={t("consult.connect.email_or_phone_placeholder")}
-                        value={loginIdentifier}
-                        onChange={(e) => setLoginIdentifier(e.target.value)}
-                        className="h-9 text-sm"
-                        onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
-                      />
+                      <div className="flex gap-2">
+                        {!loginIdentifier.includes("@") && (
+                          <Input
+                            value={loginCountryCode}
+                            onChange={(e) => setLoginCountryCode(e.target.value)}
+                            className="h-9 w-20 text-center text-sm font-medium"
+                            placeholder="+250"
+                            aria-label={t("consult.connect.country_code", "Country code")}
+                          />
+                        )}
+                        <Input
+                          placeholder={t("consult.connect.email_or_phone_placeholder")}
+                          value={loginIdentifier}
+                          onChange={(e) => setLoginIdentifier(e.target.value)}
+                          className="h-9 flex-1 text-sm"
+                          onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>

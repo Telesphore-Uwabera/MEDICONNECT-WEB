@@ -7,6 +7,8 @@ import {
   Pill,
   Hospital,
   ArrowRight,
+  ChevronDown,
+  Download,
   LayoutDashboard,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -17,6 +19,7 @@ const StartConsult = () => {
   const { t } = useTranslation();
   const { data: user } = useMe();
   const [connectOpen, setConnectOpen] = useState(false);
+  const [appDownloadOpen, setAppDownloadOpen] = useState(false);
 
   // ── Authenticated: show dashboard shortcut ──────────
 
@@ -142,24 +145,51 @@ const StartConsult = () => {
             </button>
           </Link>
 
-          <Link to="/patient/search-doctors">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAppDownloadOpen((open) => !open)}
+              className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium"
+              aria-expanded={appDownloadOpen}
+              aria-haspopup="menu"
+            >
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                  <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none">
-                    {t("pages.landing.book_appointment")}
+                    {t("pages.landing.download_app")}
                   </p>
                   <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
-                    500+ specialists
+                    {t("pages.landing.choose_store")}
                   </p>
                 </div>
               </div>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              <ChevronDown className={appDownloadOpen ? "h-3.5 w-3.5 sm:h-4 sm:w-4 rotate-180 opacity-80 transition-transform shrink-0" : "h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-80 transition-transform shrink-0"} />
             </button>
-          </Link>
+
+            {appDownloadOpen && (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 rounded-[8px] border border-border bg-card p-3 shadow-xl">
+                <div className="grid gap-2">
+                  <a
+                    href="#"
+                    onClick={() => setAppDownloadOpen(false)}
+                    className="flex items-center rounded-[6px] border border-border bg-background px-3 py-2 transition-colors hover:bg-muted"
+                  >
+                    <img src="/images/android.png" alt={t("pages.landing.google_play_alt")} className="h-9 w-auto object-contain" />
+                  </a>
+                  <a
+                    href="#"
+                    onClick={() => setAppDownloadOpen(false)}
+                    className="flex items-center rounded-[6px] border border-border bg-background px-3 py-2 transition-colors hover:bg-muted"
+                  >
+                    <img src="/images/apple.png" alt={t("pages.landing.app_store_alt")} className="h-9 w-auto object-contain" />
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
 

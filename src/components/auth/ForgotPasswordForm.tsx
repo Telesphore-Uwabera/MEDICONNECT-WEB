@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Smartphone } from "lucide-react";
 import { useForgotPassword, useResetPassword, type PasswordResetIdentifier } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 
 type Step = "contact" | "reset";
 type ResetMethod = "email" | "phone";
@@ -14,7 +15,13 @@ type ResetMethod = "email" | "phone";
 function buildIdentifier(method: ResetMethod, email: string, phone: string, countryCode: string): PasswordResetIdentifier {
   return method === "email"
     ? { email: email.trim() }
-    : { phone: phone.trim(), country_code: countryCode.trim() || "+250" };
+    : (() => {
+        const phoneValidation = validatePhoneForCountry(phone, countryCode);
+        return {
+          phone: phoneValidation.normalizedPhone,
+          country_code: phoneValidation.normalizedCountryCode,
+        };
+      })();
 }
 
 const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
@@ -48,6 +55,13 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
   const onSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSend) return;
+    if (method === "phone") {
+      const phoneValidation = validatePhoneForCountry(phone, countryCode);
+      if (!phoneValidation.isValid) {
+        toast.error(phoneValidation.message);
+        return;
+      }
+    }
     forgotPassword.mutate(identifier, {
       onSuccess: (data) => {
         toast.success(data.message ?? t("auth.otp_sent"));
@@ -59,6 +73,13 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
 
   const onResend = () => {
     if (!canSend) return;
+    if (method === "phone") {
+      const phoneValidation = validatePhoneForCountry(phone, countryCode);
+      if (!phoneValidation.isValid) {
+        toast.error(phoneValidation.message);
+        return;
+      }
+    }
     forgotPassword.mutate(identifier, {
       onSuccess: () => toast.success(t("auth.otp_sent")),
       onError: (err: any) => toast.error(err?.message ?? t("auth.errors.unknown")),
@@ -67,6 +88,14 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
 
   const onReset = (e: React.FormEvent) => {
     e.preventDefault();
+    if (method === "phone") {
+      const phoneValidation = validatePhoneForCountry(phone, countryCode);
+      if (!phoneValidation.isValid) {
+        toast.error(phoneValidation.message);
+        return;
+      }
+    }
+
     if (password !== passwordConfirmation) {
       toast.error(t("auth.errors.password_mismatch", "Passwords do not match"));
       return;

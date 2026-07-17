@@ -414,6 +414,18 @@ const buildNav = (t: (k: string) => string): Record<Role, NavGroup[]> => ({
   ],
 });
 
+const ACTIVE_ROUTE_ALIASES: Partial<Record<Role, Record<string, string[]>>> = {
+  patient: {
+    "/patient/appointments": [
+      "/patient/appointments",
+      "/patient/instant",
+      "/patient/service-bookings",
+    ],
+  },
+};
+
+const matchesRoute = (pathname: string, target: string) =>
+  pathname === target || pathname.startsWith(`${target}/`);
 const roleConfig: Record<Role, { labelKey: string; initials: string }> = {
   patient: { labelKey: "sidebar.patientPortal", initials: "PT" },
   doctor: { labelKey: "sidebar.doctorWorkspace", initials: "DR" },
@@ -449,7 +461,9 @@ export const DashboardLayout = ({ role, children }: Props) => {
 
   const isActive = (to: string) => {
     if (to === `/${role}`) return location.pathname === to;
-    return location.pathname.startsWith(to);
+
+    const aliases = ACTIVE_ROUTE_ALIASES[role]?.[to] ?? [to];
+    return aliases.some((route) => matchesRoute(location.pathname, route));
   };
 
   const SidebarContent = () => (

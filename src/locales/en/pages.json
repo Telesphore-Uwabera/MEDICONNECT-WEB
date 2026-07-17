@@ -278,7 +278,21 @@
     "specialty_cardiologist": "Cardiologist",
     "specialty_gynecologist": "Gynecologist",
     "specialty_dermatologist": "Dermatologist",
-    "specialty_psychiatrist": "Psychiatrist"
+    "specialty_psychiatrist": "Psychiatrist",
+    "consult_expert_doctors": "Consult With Expert Doctors",
+    "find_pharmacy": "Find Pharmacy",
+    "order_medicine": "Order medicine",
+    "find_hospital_health_facility": "Health Facility",
+    "health_articles": "Health Articles",
+    "fitness_certificates_requests": "Fitness Certificate",
+    "request_now": "Request now",
+    "need_urgent_help": "Need urgent help?",
+    "call_support_line": "Call our support line",
+    "order_medicines_registered": "Order medicines from registered pharmacies",
+    "order_medicines_registered_sub": "Fast, safe and reliable delivery to your door.",
+    "pharmacy_shelves_alt": "Registered pharmacy shelves",
+    "download_app": "Download App",
+    "choose_store": "Play Store or App Store"
   },
   "patient": {
     "overview_title": "Welcome back",

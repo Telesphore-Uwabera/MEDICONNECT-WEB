@@ -1,4 +1,4 @@
-﻿
+
 import { toast as sonnerToast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -64,6 +64,7 @@ import {
   type PharmacyExternalAuthType,
 } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { cn } from "@/lib/utils";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { formatDateOnly } from "@/lib/date";
  
 function getErrorMessage(error: unknown): string {
@@ -307,7 +308,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "pages.pharmacy.settings_lang_en",
-  fr: "FranÃ§ais",
+  fr: "FranÃƒÂ§ais",
   rw: "pages.pharmacy.settings_lang_rw",
 };
 
@@ -535,8 +536,13 @@ function PharmacySettings() {
       sonnerToast.error("All fields are required");
       return;
     }
+    const phoneValidation = validatePhoneForCountry(phoneForm.phone, phoneForm.country_code);
+    if (!phoneValidation.isValid) {
+      sonnerToast.error(phoneValidation.message);
+      return;
+    }
     try {
-      await requestPhone.mutateAsync(phoneForm);
+      await requestPhone.mutateAsync({ ...phoneForm, phone: phoneValidation.normalizedPhone, country_code: phoneValidation.normalizedCountryCode });
       sonnerToast.success("OTP sent to your new phone number.");
       setPhoneOtpStep(true);
     } catch (err) {
@@ -915,7 +921,7 @@ function PharmacySettings() {
                         className={selectCls}
                       >
                         <option value="en">{t("pages.pharmacy.settings_lang_en")}</option>
-                        <option value="fr">Français</option>
+                        <option value="fr">FranÃ§ais</option>
                         <option value="rw">{t("pages.pharmacy.settings_lang_rw")}</option>
                       </select>
                     </Field>
@@ -1526,7 +1532,7 @@ function PharmacySettings() {
                                   </div>
                                   <p className="mt-1 truncate text-[11px] text-muted-foreground">{provider.api_url}</p>
                                   <p className="mt-1 text-[10px] text-muted-foreground/70">
-                                    {provider.inventory_count ?? 0} inventory items · sync every {provider.sync_interval_minutes} min
+                                    {provider.inventory_count ?? 0} inventory items Â· sync every {provider.sync_interval_minutes} min
                                   </p>
                                 </div>
 
@@ -1637,7 +1643,7 @@ function PharmacySettings() {
                                     </div>
                                     <p className="mt-1 text-[11px] text-muted-foreground">
                                       {log.items_synced ?? 0} items synced
-                                      {log.message ? ` · ${log.message}` : ""}
+                                      {log.message ? ` Â· ${log.message}` : ""}
                                     </p>
                                   </div>
                                 ))}
