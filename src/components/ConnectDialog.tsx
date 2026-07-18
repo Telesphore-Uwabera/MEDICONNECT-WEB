@@ -31,6 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
@@ -1354,13 +1355,13 @@ export const ConnectDialogContent = ({
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">{t("consult.connect.phone_number")}</Label>
                       <div className="flex gap-2">
-                        <Input
-                          value={guestCountryCode}
-                          onChange={(e) => setGuestCountryCode(e.target.value)}
-                          className="h-9 w-20 text-center text-sm font-medium"
-                          placeholder="+250"
-                          aria-label={t("consult.connect.country_code", "Country code")}
-                        />
+                        <div className="w-28">
+                          <CountryCodeSelect
+                            value={guestCountryCode}
+                            onChange={setGuestCountryCode}
+                            className="h-9 text-sm"
+                          />
+                        </div>
                         <Input
                           type="tel"
                           inputMode="tel"
@@ -1391,14 +1392,14 @@ export const ConnectDialogContent = ({
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
                       <div className="flex gap-2">
-                        {!loginIdentifier.includes("@") && (
-                          <Input
-                            value={loginCountryCode}
-                            onChange={(e) => setLoginCountryCode(e.target.value)}
-                            className="h-9 w-20 text-center text-sm font-medium"
-                            placeholder="+250"
-                            aria-label={t("consult.connect.country_code", "Country code")}
-                          />
+                        {/^[0-9]/.test(loginIdentifier.trim()) && (
+                          <div className="w-28">
+                            <CountryCodeSelect
+                              value={loginCountryCode}
+                              onChange={setLoginCountryCode}
+                              className="h-9 text-sm"
+                            />
+                          </div>
                         )}
                         <Input
                           placeholder={t("consult.connect.email_or_phone_placeholder")}

@@ -20,7 +20,7 @@
   "optional": "facultatif",
   "required": "requis",
   "unknown": "inconnu",
-  "age": "Âge",
+  "age": "Age",
   "specSelect": {
     "anySpecializationPlaceholder": "Toute spécialisation…",
     "searchSpecializationsPlaceholder": "Rechercher des spécialisations…",

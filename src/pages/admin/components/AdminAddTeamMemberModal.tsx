@@ -105,6 +105,7 @@ export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberMod
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+ 
   const photoRef = useRef<HTMLInputElement>(null);
   const iconRef = useRef<HTMLInputElement>(null);
   const create = useCreateTeamMember();

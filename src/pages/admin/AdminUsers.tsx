@@ -109,6 +109,7 @@ import {
 } from "@/hooks/admin/use-admin-pharmacies"; 
 import { cn } from "@/lib/utils";
 import { normalizeCountryCode, validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
@@ -170,7 +171,7 @@ function getErrorMessage(error: unknown): string {
         const flat = Array.isArray(payload.errors)
           ? payload.errors
           : Object.values(payload.errors).flat();
-        if (flat.length > 0) return flat.join(" Ã‚Â· ");
+        if (flat.length > 0) return flat.join(" · ");
       }
       if (typeof payload.message === "string") return payload.message;
     }
@@ -509,7 +510,7 @@ function UserPanel({
   const resendVerification = useResendVerification();
   const [confirmRevoke, setConfirmRevoke] = useState(false);
 
-  // -- Reset credentials form (email / phone / password Ã¢â‚¬â€ any combination) --
+  // -- Reset credentials form (email / phone / password  any combination) --
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [credPassword, setCredPassword] = useState("");
   const [credEmail, setCredEmail] = useState("");
@@ -1068,7 +1069,7 @@ function CreateUserModal({
     name: "",
     email: "",
     phone: "",
-    country_code: "250",
+    country_code: "+250",
     role: mode === "staff" ? "moderator" : defaultRole,
     gender: "",
     preferred_language: "en",
@@ -1139,7 +1140,7 @@ function CreateUserModal({
           name: res.user.name,
         };
       } else {
-        // Admin accounts have no role-specific profile Ã¢â‚¬â€ keep the generic path.
+        // Admin accounts have no role-specific profile  keep the generic path.
         const res = await createUser.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
@@ -1187,7 +1188,12 @@ function CreateUserModal({
           <FormInput label="Name" value={form.name} onChange={(v) => setValue("name", v)} />
           <FormInput label="Email" type="email" value={form.email} onChange={(v) => setValue("email", v)} />
           <FormInput label="Phone" value={form.phone} onChange={(v) => setValue("phone", v)} />
-          {mode === "user" && <FormInput label="Country code" value={form.country_code} onChange={(v) => setValue("country_code", v)} />}
+          {mode === "user" && (
+            <label className="space-y-1">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">Country code</span>
+              <CountryCodeSelect value={form.country_code} onChange={(v) => setValue("country_code", v)} className="h-9" />
+            </label>
+          )}
           <FormSelect label="Role" value={form.role} options={roles} onChange={(v) => setValue("role", v)} />
           {mode === "user" && <FormSelect label="Gender" value={form.gender} options={["", "male", "female", "other"]} onChange={(v) => setValue("gender", v)} />}
           {mode === "user" && MANAGED_ROLES.includes(form.role) ? (

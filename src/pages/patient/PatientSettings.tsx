@@ -47,6 +47,7 @@ import {
 } from "@/hooks/admin/use-admin-settings"; 
 import { cn } from "@/lib/utils";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import i18n from "@/lib/i18n";
 import { formatDateOnly } from "@/lib/date";
 
@@ -126,7 +127,7 @@ function VerifiedBadge({ verified, date }: { verified: boolean; date?: string | 
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        {t("pages.cards.verified")}{date ? ` Â· ${formatDate(date)}` : ""}
+        {t("pages.cards.verified")}{date ? ` · ${formatDate(date)}` : ""}
       </span>
     );
   }
@@ -293,7 +294,7 @@ const TAB_DEFS: { key: TabKey; labelKey: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
-  fr: "FranÃƒÂ§ais",
+  fr: "Français",
   rw: "Kinyarwanda",
 };
 
@@ -750,7 +751,7 @@ function PatientSettings() {
                         className={selectCls}
                       >
                         <option value="en">English</option>
-                        <option value="fr">FranÃ§ais</option>
+                        <option value="fr">Français</option>
                         <option value="rw">Kinyarwanda</option>
                       </select>
                     </Field>
@@ -996,21 +997,12 @@ function PatientSettings() {
                       )}
                       <div className="grid grid-cols-[100px_1fr] gap-3">
                         <Field label={t("pages.patient.set_code")} required>
-                          <select
+                          <CountryCodeSelect
                             value={phoneForm.country_code}
-                            onChange={(e) => setPhoneForm((p) => ({ ...p, country_code: e.target.value }))}
+                            onChange={(dialCode) => setPhoneForm((p) => ({ ...p, country_code: dialCode }))}
                             className={selectCls}
                             disabled={phoneOtpStep}
-                          >
-                            <option value="+250">+250</option>
-                            <option value="+1">+1</option>
-                            <option value="+33">+33</option>
-                            <option value="+44">+44</option>
-                            <option value="+254">+254</option>
-                            <option value="+255">+255</option>
-                            <option value="+256">+256</option>
-                            <option value="+243">+243</option>
-                          </select>
+                          />
                         </Field>
                         <Field label={t("consult.connect.phone_number")} required>
                           <input

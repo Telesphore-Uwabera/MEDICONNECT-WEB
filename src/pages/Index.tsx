@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 import {
+  ArrowLeft,
   ArrowRight,
   Calendar,
   Stethoscope,
@@ -138,7 +139,7 @@ const Index = () => {
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("doctors");
+  const [activeSection, setActiveSection] = useState("home");
   const [partnerTab, setPartnerTab] = useState<"facilities" | "pharmacies">("facilities");
 
   // ── Doctor filter state ─────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ const Index = () => {
   }, [location.hash]);
 
   useEffect(() => {
-    const sectionIds = ["doctors", "specialities", "hospitals", "pharmacy", "team"];
+    const sectionIds = ["home", "doctors", "specialities", "hospitals", "pharmacy", "team"];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el);
@@ -460,7 +461,7 @@ const Index = () => {
       </div>
 
       {/* ── Hero ── */}
-      <section className="relative bg-gradient-hero">
+      <section id="home" className="relative bg-gradient-hero">
         <HeroSection />
       </section>
 
@@ -709,7 +710,7 @@ const Index = () => {
               )}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" >
               {pharmaciesLoading && homepagePharmacies.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="h-[330px] animate-pulse rounded-[10px] border border-border bg-card" />
