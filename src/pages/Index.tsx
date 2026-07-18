@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
   CalendarDays,
@@ -25,6 +26,10 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { BookingDialog } from "@/components/BookingDialog";
+import { UnifiedModal } from "@/components/DoctorCard";
+import { useCallStore } from "@/context/CallStore";
+import type { Doctor } from "@/context/CallStore";
 import { dashboardPath } from "@/lib/auth-store";
 import { localizedText } from "@/lib/localized-settings";
 import { useMe } from "@/hooks/useAuth";
@@ -289,8 +294,78 @@ const Index = () => {
   const { data: user } = useMe();
   const { data: publicSettings } = usePublicSettings();
   const { data: userStats } = usePublicUserStats();
-  const { data: doctorsData, isLoading: doctorsLoading } =
+const { data: doctorsData, isLoading: doctorsLoading } =
     useInfiniteSearchDoctors({ per_page: 6 });
+
+
+const [bookOpen, setBookOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | null>(null);
+  const call = useCallStore();
+
+  const handleBookNow = (doctor: any, isApiDoctor: boolean) => {
+    if (isApiDoctor) {
+      setSelectedDoctor(doctor as ApiDoctor);
+      setBookOpen(true);
+    } else {
+      navigate("/patient/search-doctors");
+    }
+  };
+
+  const handleCardClick = (doctor: any, isApiDoctor: boolean) => {
+    if (isApiDoctor) {
+      setSelectedDoctor(doctor as ApiDoctor);
+      setDetailsOpen(true);
+    } else {
+      navigate("/patient/search-doctors");
+    }
+  };
+
+  const selectedCallDoctor: Doctor | null = selectedDoctor
+    ? {
+        id: selectedDoctor.id,
+        user: {
+          id: selectedDoctor.user.id,
+          name: selectedDoctor.user.name,
+          avatar: selectedDoctor.user.avatar,
+        },
+        specialization: selectedDoctor.specialization,
+      }
+    : null;
+
+  const isSelectedCallInProgress =
+    call.doctor?.id === selectedDoctor?.id &&
+    call.phase !== "idle" &&
+    call.phase !== "ended";
+
+  const canBookSelected =
+    !!selectedDoctor &&
+    selectedDoctor.is_available &&
+    !selectedDoctor.bookings_paused;
+
+  const canConnectSelected =
+    !!selectedDoctor &&
+    selectedDoctor.is_available &&
+    !selectedDoctor.bookings_paused &&
+    selectedDoctor.instant_consultation;
+
+const doctorsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateDoctorsScrollState = () => {
+    const el = doctorsScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+const scrollDoctors = (direction: "left" | "right") => {
+    const el = doctorsScrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.9;
+    el.scrollBy({ left: direction === "right" ? amount : -amount, behavior: "smooth" });
+  };
 
   const publicPayload = publicSettings as any;
   const generalSettings =
@@ -307,7 +382,43 @@ const Index = () => {
     () => doctorsData?.pages.flatMap((page) => page.data).slice(0, 6) ?? [],
     [doctorsData],
   );
+  
   const displayDoctors = doctors.length > 0 ? doctors : fallbackDoctors;
+
+  useEffect(() => {
+    updateDoctorsScrollState();
+    const el = doctorsScrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateDoctorsScrollState);
+    window.addEventListener("resize", updateDoctorsScrollState);
+    return () => {
+      el.removeEventListener("scroll", updateDoctorsScrollState);
+      window.removeEventListener("resize", updateDoctorsScrollState);
+    };
+  }, [displayDoctors.length]);
+
+
+  useEffect(() => {
+  const sectionIds = ["home", "services", "doctors", "education", "team"];
+  const sections = sectionIds
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => Boolean(el));
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible[0]) {
+        setActiveSection(visible[0].target.id);
+      }
+    },
+    { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+  );
+
+  sections.forEach((section) => observer.observe(section));
+  return () => observer.disconnect();
+}, []);
 
   const testimonialPages = useMemo(
     () => [
@@ -474,7 +585,7 @@ const Index = () => {
 
       <section id="about" className="bg-muted/30 py-8 lg:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-[14px] bg-card p-5 shadow-sm ring-1 ring-border">
+          <div className="rounded-[6px] bg-card p-5 shadow-sm ring-1 ring-border">
             <p className="text-center text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
               {t("pages.landing.how_it_works", { defaultValue: "How It Works" })}
             </p>
@@ -539,7 +650,7 @@ const Index = () => {
 
       <section className="bg-background py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:items-center px-8 py-2  overflow-hidden rounded-[14px] bg-gradient-to-r from-teal-800 to-teal-600 text-white shadow-xl grid-cols-2 sm:grid-cols-5">
+          <div className="grid lg:items-center px-8 py-2  overflow-hidden rounded-[6px] bg-gradient-to-r from-teal-800 to-teal-600 text-white shadow-xl grid-cols-2 sm:grid-cols-5">
             <div className="items-center lg:flex hidden">
               <HeartPulse size={100} className="lg:block hidden"/>
               <div className="border-white/15  text-center sm:border-r last:border-r-0">
@@ -570,133 +681,152 @@ const Index = () => {
         </div>
       </section>
 
-      <section id="doctors" className="bg-background py-10 lg:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex items-end justify-between gap-4">
+<section id="doctors" className="bg-background py-8 sm:py-10 lg:py-12">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+          <div className="mb-5 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
+              <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
                 {t("pages.landing.meet_doctors", { defaultValue: "Meet Our Doctors" })}
               </p>
-              <h2 className="mt-1 text-2xl font-black text-foreground">
+              <h2 className="mt-1 text-xl sm:text-2xl font-black text-foreground">
                 {t("pages.landing.consult_experts", { defaultValue: "Consult With Expert Doctors" })}
               </h2>
             </div>
             <Link
               to="/patient/search-doctors"
-              className="text-sm font-bold text-teal-700 hover:underline dark:text-teal-400"
+              className="self-start text-xs sm:text-sm font-bold text-teal-700 hover:underline dark:text-teal-400 sm:self-auto"
             >
               {t("pages.landing.view_all_doctors", { defaultValue: "View all doctors" })} <ArrowRight className="inline h-4 w-4" />
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {(doctorsLoading && doctors.length === 0
-              ? Array.from({ length: 6 }, (_, index) => ({
-                  id: `loading-${index}`,
-                  loading: true,
-                }))
-              : displayDoctors
-            ).map((item: any, index) => {
-              const isLoadingCard = Boolean(item?.loading);
-              const isApiDoctor =
-                !isLoadingCard &&
-                item &&
-                typeof item === "object" &&
-                "user" in item;
-              const name = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? getDoctorName(item)
-                  : item.name;
-              const specialty = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? (getDoctorSpecialty(item) ??
-                    t("pages.landing.specialty_general_physician", { defaultValue: "General Physician" }))
-                  : t(item.specialtyKey, { defaultValue: item.specialtyDefault });
-              const image = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? getDoctorImage(item)
-                  : item.image;
-              const rating = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? getDoctorRating(item)
-                  : item.rating;
-              const reviews = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? (item.reviews_count ?? 80)
-                  : item.reviews;
-              const facility = isLoadingCard
-                ? ""
-                : isApiDoctor
-                  ? (item.hospitals?.[0]?.name ?? "MediConnect")
-                  : item.facility;
-              return (
-                <article
-                  key={item?.id ?? index}
-                  className="rounded-[8px] border border-border bg-card p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="relative mx-auto h-24 w-24 overflow-hidden rounded-full bg-teal-50 dark:bg-teal-950/40">
-                    {isLoadingCard ? (
-                      <div className="h-full w-full animate-pulse bg-muted" />
-                    ) : (
-                      <img
-                        src={image}
-                        alt={name}
-                        className="h-full w-full object-cover object-top"
-                      />
-                    )}
-                  </div>
-                  {isLoadingCard ? (
-                    <div className="mt-3 space-y-2">
-                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                      <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                      <div className="h-3 w-24 animate-pulse rounded bg-muted" />
-                      <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                      <div className="h-9 w-full animate-pulse rounded-full bg-muted" />
+
+          <div className="relative">
+            <div
+              ref={doctorsScrollRef}
+              className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {(doctorsLoading && doctors.length === 0
+                ? Array.from({ length: 6 }, (_, index) => ({
+                    id: `loading-${index}`,
+                    loading: true,
+                  }))
+                : displayDoctors
+              ).map((item: any, index) => {
+                const isLoadingCard = Boolean(item?.loading);
+                const isApiDoctor =
+                  !isLoadingCard &&
+                  item &&
+                  typeof item === "object" &&
+                  "user" in item;
+                const name = isLoadingCard
+                  ? ""
+                  : isApiDoctor
+                    ? getDoctorName(item)
+                    : item.name;
+                const specialty = isLoadingCard
+                  ? ""
+                  : isApiDoctor
+                    ? (getDoctorSpecialty(item) ??
+                      t("pages.landing.specialty_general_physician", { defaultValue: "General Physician" }))
+                    : t(item.specialtyKey, { defaultValue: item.specialtyDefault });
+                const image = isLoadingCard
+                  ? ""
+                  : isApiDoctor
+                    ? getDoctorImage(item)
+                    : item.image;
+                const rating = isLoadingCard
+                  ? ""
+                  : isApiDoctor
+                    ? getDoctorRating(item)
+                    : item.rating;
+                const reviews = isLoadingCard
+                  ? ""
+                  : isApiDoctor
+                    ? (item.reviews_count ?? 80)
+                    : item.reviews;
+                return (
+                  <article
+                    key={item?.id ?? index}
+                    onClick={() => !isLoadingCard && handleCardClick(item, isApiDoctor)}
+                    className="w-[160px] xs:w-[180px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(20%-0.8rem)] flex-shrink-0 snap-start overflow-hidden rounded-[6px] border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                  >
+                    <div className="h-32 sm:h-44 w-full overflow-hidden bg-teal-50 dark:bg-teal-950/40">
+                      {isLoadingCard ? (
+                        <div className="h-full w-full animate-pulse bg-muted" />
+                      ) : (
+                        <img
+                          src={image}
+                          alt={name}
+                          className="h-full w-full object-cover object-top"
+                        />
+                      )}
                     </div>
-                  ) : (
-                    <>
-                      <div className="mt-3 flex items-center gap-1 text-[10px] font-bold text-teal-700 dark:text-teal-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-teal-600 dark:bg-teal-500" />{" "}
-                        {t("pages.landing.available", { defaultValue: "Available" })}
-                      </div>
-                      <h3 className="mt-1 line-clamp-2 min-h-[40px] text-sm font-black leading-tight text-foreground">
-                        {name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {specialty}
-                      </p>
-                      <p className="mt-2 flex items-center gap-1 text-xs font-bold text-foreground/80">
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />{" "}
-                        {rating}{" "}
-                        <span className="font-medium text-muted-foreground">
-                          ({reviews})
-                        </span>
-                      </p>
-                      <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                        {facility}
-                      </p>
-                      <Button
-                        asChild
-                        className="mt-4 h-9 w-full rounded-full bg-teal-100 text-xs font-black text-teal-900 hover:bg-teal-200 dark:bg-teal-900/50 dark:text-teal-300 dark:hover:bg-teal-900/70"
-                      >
-                        <Link to="/patient/search-doctors">{t("pages.landing.book_now", { defaultValue: "Book Now" })}</Link>
-                      </Button>
-                    </>
-                  )}
-                </article>
-              );
-            })}
+                    <div className="p-2.5 sm:p-4">
+                      {isLoadingCard ? (
+                        <div className="space-y-2">
+                          <div className="h-4 w-full animate-pulse rounded bg-muted" />
+                          <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+                          <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                          <div className="h-10 w-full animate-pulse rounded-[6px] bg-muted" />
+                        </div>
+                      ) : (
+                        <>
+                          <h3 className="line-clamp-1 text-sm sm:text-base font-bold text-foreground">
+                            {name}
+                          </h3>
+                          <p className="mt-0.5 line-clamp-1 text-xs sm:text-sm text-muted-foreground">
+                            {specialty}
+                          </p>
+                          <p className="mt-1.5 sm:mt-2 flex items-center gap-1 text-xs sm:text-sm font-semibold text-foreground/80">
+                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-400" />
+                            {rating}{" "}
+                            <span className="font-medium text-muted-foreground">
+                              ({reviews})
+                            </span>
+                          </p>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBookNow(item, isApiDoctor);
+                            }}
+                            variant="outline"
+                            className="mt-3 sm:mt-4 h-8 sm:h-10 w-full rounded-[6px] border-teal-600 text-xs sm:text-sm font-bold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-teal-950/40"
+                          >
+                            {t("pages.landing.book_now", { defaultValue: "Book Now" })}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollDoctors("left")}
+                aria-label={t("pages.landing.scroll_doctors_left", { defaultValue: "Show previous doctors" })}
+                className="absolute left-0 top-1/2 hidden h-9 w-9 -translate-y-1/2 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card shadow-md hover:bg-muted sm:flex sm:h-11 sm:w-11"
+              >
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
+              </button>
+            )}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollDoctors("right")}
+                aria-label={t("pages.landing.scroll_doctors_right", { defaultValue: "Show more doctors" })}
+                className="absolute right-0 top-1/2 hidden h-9 w-9 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-border bg-card shadow-md hover:bg-muted sm:flex sm:h-11 sm:w-11"
+              >
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
+              </button>
+            )}
           </div>
         </div>
       </section>
-
       <section id="education" className="bg-muted/20 py-8 lg:py-10">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
-          <div className="overflow-hidden rounded-[16px] bg-card shadow-sm ring-1 ring-border">
+          <div className="overflow-hidden rounded-[6px] bg-card shadow-sm ring-1 ring-border">
             <div className="grid min-h-[230px] gap-2 md:grid-cols-[0.9fr_0.78fr_0.52fr]">
               <div className="flex flex-col justify-center p-6 lg:p-7">
                 <h2 className="text-xl font-black tracking-tight text-foreground lg:text-2xl">
@@ -742,7 +872,7 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="rounded-[16px] bg-card p-6 shadow-sm ring-1 ring-border lg:p-7">
+          <div className="rounded-[6px] bg-card p-6 shadow-sm ring-1 ring-border lg:p-7">
             <h2 className="text-xl font-black tracking-tight text-foreground lg:text-2xl">
               {t("pages.landing.testimonials_title", { defaultValue: "What Our Patients Say" })}
             </h2>
@@ -750,7 +880,7 @@ const Index = () => {
               {visibleTestimonials.map((item) => (
                 <article
                   key={item.city}
-                  className="min-h-[150px] rounded-[14px] border border-border bg-background/70 p-5 shadow-sm"
+                  className="min-h-[150px] rounded-[6px] border border-border bg-background/70 p-5 shadow-sm"
                 >
                   <div className="flex gap-0.5 text-amber-400">
                     {Array.from({ length: 5 }).map((_, i) => (
@@ -802,7 +932,7 @@ const Index = () => {
             </Link>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid items-start gap-3 lg:grid-cols-3">
             {faqs.map((faq, index) => {
               const isOpen = openFaq === index;
               const question = t(faq.questionKey, { defaultValue: faq.questionDefault });
@@ -810,7 +940,7 @@ const Index = () => {
               return (
                 <article
                   key={faq.questionKey}
-                  className="overflow-hidden rounded-[10px] border border-border bg-card shadow-sm transition-colors hover:border-teal-500/40"
+                  className="overflow-hidden rounded-[6px] border border-border bg-card shadow-sm transition-colors hover:border-teal-500/40"
                 >
                   <button
                     type="button"
@@ -837,7 +967,7 @@ const Index = () => {
 
       <section className="bg-background pb-10" id="contact">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[16px] bg-teal-800 text-white shadow-xl">
+          <div className="overflow-hidden rounded-[6px] bg-teal-800 text-white shadow-xl">
             <div className="grid min-h-[210px] md:grid-cols-[0.46fr_1fr]">
               <div className="relative min-h-[210px] overflow-hidden bg-teal-50">
                 <img
@@ -895,7 +1025,33 @@ const Index = () => {
         </div>
       </section>
 
-      <Footer />
+<Footer />
+
+{selectedDoctor && selectedCallDoctor && (
+        <UnifiedModal
+          doctor={selectedDoctor}
+          callDoctor={selectedCallDoctor}
+          initialMode="details"
+          open={detailsOpen}
+          onMinimize={() => setDetailsOpen(false)}
+          onCloseCompletely={() => {
+            setDetailsOpen(false);
+            if (isSelectedCallInProgress) call.endCall();
+          }}
+          onBook={() => setBookOpen(true)}
+          canBook={canBookSelected}
+          canConnect={canConnectSelected}
+        />
+      )}
+
+      {selectedDoctor && (
+        <BookingDialog
+          doctor={selectedDoctor as any}
+          open={bookOpen}
+          onOpenChange={setBookOpen}
+          onConfirmed={(updatedDoctor: any) => setSelectedDoctor(updatedDoctor)}
+        />
+      )}
     </main>
   );
 };
