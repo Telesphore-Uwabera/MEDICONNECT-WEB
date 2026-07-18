@@ -39,6 +39,7 @@ function TextInput({
 }
 
 function RichBioEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
 
   const exec = useCallback((command: string, arg?: string) => {
@@ -103,6 +104,8 @@ export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberMod
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+
+  const { t } = useTranslation();
   const photoRef = useRef<HTMLInputElement>(null);
   const iconRef = useRef<HTMLInputElement>(null);
   const create = useCreateTeamMember();

@@ -62,6 +62,7 @@ function TextInput({
 }
 
 function RichBioEditor({ value, onChange, seedKey }: { value: string; onChange: (v: string) => void; seedKey: number | null }) {
+  const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -116,6 +117,7 @@ interface AdminTeamMemberPanelProps {
 }
 
 export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeamMemberPanelProps) {
+  const { t } = useTranslation();
   const open = !!memberId;
   const { data, isLoading } = useGetAdminTeamMember(memberId);
   const member = data?.member;
