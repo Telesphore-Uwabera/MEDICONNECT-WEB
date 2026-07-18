@@ -15,10 +15,31 @@ function getInitials(name: string): string {
     .join("");
 }
 
+function stripHtmlToText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/div>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function getYearsExperience(joinedAt: string): number {
   const diff = Date.now() - new Date(joinedAt).getTime();
   return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24 * 365)));
 }
+
+function sortMembers(a: ApiTeamMember, b: ApiTeamMember): number {
+  const levelDiff = (a.level ?? 999) - (b.level ?? 999);
+  if (levelDiff !== 0) return levelDiff;
+
+  const orderDiff = (a.order ?? 999) - (b.order ?? 999);
+  if (orderDiff !== 0) return orderDiff;
+
+  return a.name.localeCompare(b.name);
+}
+
+ 
 
 // ── Skeleton card ────────────────────────────────────────────
 
@@ -37,7 +58,9 @@ function SkeletonCard() {
 
 // ── Member Modal ─────────────────────────────────────────────
 
-function MemberModal({
+// ── Member Modal ─────────────────────────────────────────────
+
+function OrgCard({
   member,
   onClose,
 }: {
@@ -199,24 +222,108 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
         </h3>
         <p className="mt-1 line-clamp-2 min-h-[40px] text-sm font-medium text-muted-foreground">
           {member.title || t("pages.landing.team_member_fallback")}
-        </p>
-        <span className="mt-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-black text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-          in
-        </span>
+        </p> 
       </button>
 
       {modalOpen && (
-        <MemberModal member={member} onClose={() => setModalOpen(false)} />
+        <OrgCard member={member} onClose={() => setModalOpen(false)} />
       )}
     </>
   );
 }
 
+// ─── Connector primitives ───────────────────────────────────────────────────
+// Lines are black in light mode, white in dark mode.
+
+function TrunkLine({ height, xPercent = 50 }: { height: number; xPercent?: number }) {
+  return (
+    <div
+      className="absolute w-[2px] -translate-x-1/2 bg-black dark:bg-white"
+      style={{ height, left: `${xPercent}%`, top: 0 }}
+    />
+  );
+}
+
+// Renders the connectors for one row of N cards, then the cards themselves.
+// `entryPercent` is where the incoming trunk (coming from whatever is above)
+// attaches — it's supplied by the caller based on the ROW ABOVE's own anchor,
+// so it always lands on a real card up there, never on a gap.
+function ConnectorRow({
+  count,
+  entryPercent = 50,
+  children,
+}: {
+  count: number;
+  entryPercent?: number;
+  children: React.ReactNode[];
+}) {
+  const trunkHeight = 24;
+  const dropHeight = 20;
+  const curveRadius = 12;
+  const inset = count > 1 ? 50 / count : 50;
+  const middleIndices = count > 2 ? Array.from({ length: count - 2 }, (_, i) => i + 1) : [];
+
+  return (
+    <div className="relative" style={{ paddingTop: trunkHeight + dropHeight }}>
+      <TrunkLine height={trunkHeight} xPercent={entryPercent} />
+
+      {count > 1 ? (
+        <>
+          {/* bracket: horizontal bar with rounded corners curving down into the outer columns */}
+          <div
+            className="absolute border-black dark:border-white"
+            style={{
+              top: trunkHeight,
+              left: `${inset}%`,
+              right: `${inset}%`,
+              height: dropHeight,
+              borderStyle: "solid",
+              borderWidth: "2px 2px 0 2px",
+              borderTopLeftRadius: curveRadius,
+              borderTopRightRadius: curveRadius,
+            }}
+          />
+          {/* straight drops for any middle columns */}
+          {middleIndices.map((i) => (
+            <div
+              key={i}
+              className="absolute w-[2px] -translate-x-1/2 bg-black dark:bg-white"
+              style={{
+                top: trunkHeight,
+                left: `${((i + 0.5) / count) * 100}%`,
+                height: dropHeight,
+              }}
+            />
+          ))}
+        </>
+      ) : (
+        <TrunkLine height={trunkHeight + dropHeight} xPercent={entryPercent} />
+      )}
+
+      <div
+        className="grid gap-2 sm:gap-3 md:gap-4"
+        style={{ gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function OurTeam() {
   const { t } = useTranslation();
-  const { data, isLoading, isError, refetch } = useGetOurTeam();
-  const members: ApiTeamMember[] = data?.data ?? [];
-  const visibleMembers = members.slice(0, 4);
+  const { data, isLoading, isError, refetch } = useGetOurTeam({ per_page: 50 });
+  const members = (data?.data ?? []).filter((member) => member.is_active !== false).sort(sortMembers);
+  const [leader, ...rest] = members;
+  const rows = rest.reduce<Record<number, ApiTeamMember[]>>((acc, member) => {
+    const level = member.level ?? 2;
+    if (!acc[level]) acc[level] = [];
+    acc[level].push(member);
+    return acc;
+  }, {});
+  const rowEntries = Object.entries(rows)
+    .map(([level, list]) => [Number(level), list.sort(sortMembers)] as const)
+    .sort(([a], [b]) => a - b);
 
   return (
     <div className="w-full">
@@ -240,13 +347,13 @@ function OurTeam() {
             ? Array(4)
                 .fill(null)
                 .map((_, i) => <SkeletonCard key={i} />)
-            : visibleMembers.length === 0
+            : members.length === 0
               ? (
                 <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
                   {t("pages.landing.team_empty")}
                 </p>
               )
-              : visibleMembers.map((m) => <MemberCard key={m.id} member={m} />)}
+              : members.map((m) => <MemberCard key={m.id} member={m} />)}
         </div>
       )}
     </div>

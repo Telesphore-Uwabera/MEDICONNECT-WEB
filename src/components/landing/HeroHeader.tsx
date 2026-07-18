@@ -59,9 +59,10 @@ export function HeroHeader({
   }, []);
 
   const navLinks = [
+    { href: "#home", label: t("pages.landing.home") },
+    { href: "#services", label: t("pages.landing.our_services") },
     { href: "#doctors", label: t("nav.available_doctors") },
-    { href: "#specialities", label: t("pages.landing.what_we_do") },
-    { href: "#pharmacy", label: t("pages.landing.facilities_pharmacies_nav") },
+    { href: "#education", label: t("nav.health_education") },
     { href: "#team", label: t("nav.team") },
   ];
 
@@ -142,7 +143,7 @@ export function HeroHeader({
 
         {/* Logo */} 
         <div className="flex items-center gap-2 lg:shrink-0">
-          <Link to="/#landing-page" className="flex items-center gap-2">
+          <Link to="/#home" className="flex items-center gap-2">
             <img src={logo} alt={appName} className="h-9 w-auto lg:h-10" />
           </Link>
         </div>
