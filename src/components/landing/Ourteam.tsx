@@ -446,9 +446,9 @@ function OurTeam() {
           </div>
         ) : (
           <div className="relative mx-auto max-w-6xl overflow-x-auto">
-            <div className="mx-auto flex w-full max-w-[260px] sm:max-w-[400px] items-center justify-center gap-3 sm:gap-4 rounded-[6px] bg-[#071F49] px-4 sm:px-7 py-4 sm:py-6 text-white shadow-lg">
-              <Users className="h-7 w-7 sm:h-10 sm:w-10 shrink-0" />
-              <p className="text-sm sm:text-md md:text-lg uppercase tracking-tight">
+<div className="mx-auto flex w-full max-w-[240px] sm:max-w-[360px] items-center justify-center gap-2.5 sm:gap-3.5 rounded-[6px] bg-[#071F49] px-3.5 sm:px-6 py-3 sm:py-5 text-white shadow-lg">
+              <Users className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />
+              <p className="text-sm sm:text-base uppercase tracking-tight">
                 {t("pages.landing.board_of_directors", { defaultValue: "Board of Directors" })}
               </p>
             </div>

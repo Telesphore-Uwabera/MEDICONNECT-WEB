@@ -21,6 +21,9 @@ const Auth = () => {
   const [params] = useSearchParams();
   const initialTab = params.get("mode") === "signup" ? "signup" : "signin";
   const [tab, setTab] = useState<"signin" | "signup">(initialTab);
+  useEffect(() => {
+  setTab(params.get("mode") === "signup" ? "signup" : "signin");
+}, [params]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { resolvedTheme, theme } = useTheme();
   const logo = (resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT;
