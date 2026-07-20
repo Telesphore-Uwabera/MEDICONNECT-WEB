@@ -44,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { toast as sonnerToast } from "sonner";
  
 function getErrorMessage(error: unknown): string {
@@ -92,7 +93,7 @@ function Field({
   );
 }
 
- // --- DisplayField â€” read-only row ---------------------------------------------
+ // --- DisplayField read-only row ---------------------------------------------
 
 function DisplayField({
   label,
@@ -134,7 +135,7 @@ function VerifiedBadge({
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        Verified{date ? ` Â· ${formatDate(date)}` : ""}
+        Verified{date ? ` · ${formatDate(date)}` : ""}
       </span>
     );
   }
@@ -321,7 +322,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
-  fr: "FranÃ§ais",
+  fr: "Français",
   rw: "Kinyarwanda",
 };
  
@@ -814,7 +815,7 @@ function AdminSettings() {
                         className={selectCls}
                       >
                         <option value="en">English</option>
-                        <option value="fr">FranÃ§ais</option>
+                        <option value="fr">Français</option>
                         <option value="rw">Kinyarwanda</option>
                       </select>
                     </Field>
@@ -1122,26 +1123,17 @@ function AdminSettings() {
                       )}
                       <div className="grid grid-cols-[100px_1fr] gap-3">
                         <Field label="Code" required>
-                          <select
+                          <CountryCodeSelect
                             value={phoneForm.country_code}
-                            onChange={(e) =>
+                            onChange={(dialCode) =>
                               setPhoneForm((p) => ({
                                 ...p,
-                                country_code: e.target.value,
+                                country_code: dialCode,
                               }))
                             }
                             className={selectCls}
                             disabled={phoneOtpStep}
-                          >
-                            <option value="+250">+250</option>
-                            <option value="+1">+1</option>
-                            <option value="+33">+33</option>
-                            <option value="+44">+44</option>
-                            <option value="+254">+254</option>
-                            <option value="+255">+255</option>
-                            <option value="+256">+256</option>
-                            <option value="+243">+243</option>
-                          </select>
+                          />
                         </Field>
                         <Field label="Phone number" required>
                           <input

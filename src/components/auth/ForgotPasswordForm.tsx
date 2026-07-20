@@ -8,6 +8,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Smartphone } from "luci
 import { useForgotPassword, useResetPassword, type PasswordResetIdentifier } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 
 type Step = "contact" | "reset";
 type ResetMethod = "email" | "phone";
@@ -187,16 +188,15 @@ const ForgotPasswordForm = ({ onBack }: { onBack: () => void }) => {
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("auth.phone")}
                 </label>
-                <div className="grid grid-cols-1 gap-2">
-                  <Input
-                    value={countryCode}
-                    hidden
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="h-10 rounded-[6px] border-border bg-muted/50 px-3 text-xs text-foreground outline-none transition-all duration-200 focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/20"
-                    placeholder="+250"
-                    required
-                  />
-                  <div className="relative">
+                <div className="flex gap-2">
+                  <div className="w-28">
+                    <CountryCodeSelect
+                      value={countryCode}
+                      onChange={setCountryCode}
+                      className="h-10 text-xs"
+                    />
+                  </div>
+                  <div className="relative flex-1">
                     <Smartphone className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="tel"

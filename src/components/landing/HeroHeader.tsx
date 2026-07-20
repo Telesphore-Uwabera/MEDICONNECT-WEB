@@ -42,7 +42,7 @@ export function HeroHeader({
   const appName = settings?.app_name || "MEDICONNECT";
   const location = useLocation();
   const navigate = useNavigate();
-  const activeHash = activeSection ? `#${activeSection}` : location.hash || "#doctors";
+  const activeHash = activeSection ? `#${activeSection}` : location.hash || "#home";
   const menuRef = useRef<HTMLDivElement>(null);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<SpecializationValue>({ specialization: null, fee: null });
@@ -56,14 +56,17 @@ export function HeroHeader({
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, []); 
 
-  const navLinks = [
-    { href: "#home", label: t("pages.landing.home") },
-    { href: "#services", label: t("pages.landing.our_services") },
-    { href: "#doctors", label: t("nav.available_doctors") },
-    { href: "#education", label: t("nav.health_education") },
-    { href: "#team", label: t("nav.team") },
+  const navLinks: Array<
+    | { kind: "anchor"; href: string; label: string }
+    | { kind: "route"; to: string; label: string }
+  > = [
+    { kind: "anchor", href: "#home", label: t("pages.landing.home") },
+    { kind: "anchor", href: "#specialities", label: t("pages.landing.our_services") },
+    { kind: "anchor", href: "#doctors", label: t("nav.available_doctors") },
+    { kind: "anchor", href: "#hospitals", label: t("nav.hospitals") },
+    { kind: "anchor", href: "#team", label: t("nav.team") },
   ];
 
   // ── Side effects ────────────────────────────────────────────────────────
@@ -151,23 +154,31 @@ export function HeroHeader({
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 text-xs font-medium shrink-0">
           {navLinks.map((l) => {
-            const active = activeHash === l.href;
-            return (
-              <button
-                key={l.href}
-                onClick={() => handleNavClick(l.href)}
-                className={cn(
-                  "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
-                  active
-                    ? "text-foreground bg-accent"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-                )}
-              >
+            const active =
+              l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
+            const key = l.kind === "anchor" ? l.href : l.to;
+            const className = cn(
+              "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
+              active
+                ? "text-foreground bg-accent"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+            );
+            const content = (
+              <>
                 {l.label}
                 {active && (
                   <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary" />
                 )}
+              </>
+            );
+            return l.kind === "anchor" ? (
+              <button key={key} onClick={() => handleNavClick(l.href)} className={className}>
+                {content}
               </button>
+            ) : (
+              <Link key={key} to={l.to} className={className}>
+                {content}
+              </Link>
             );
           })}
         </nav>
@@ -250,9 +261,9 @@ export function HeroHeader({
 
         {/* Mobile/tablet: auth actions + hamburger */}
         <div className="flex lg:hidden items-center gap-1 shrink-0">
+          <ThemeToggle />
           <div className="hidden sm:flex items-center gap-1">
-            <ThemeToggle />
-            <LanguageSwitcher />
+            <LanguageSwitcher compact />
           </div>
 
           {user ? (
@@ -315,32 +326,53 @@ export function HeroHeader({
 
               <nav className="px-4 sm:px-6 py-2 flex flex-col gap-0.5">
                 {navLinks.map((l) => {
-                  const active = activeHash === l.href;
-                  return (
+                  const active =
+                    l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
+                  const key = l.kind === "anchor" ? l.href : l.to;
+                  const className = cn(
+                    "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
+                    active
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                  );
+                  const dot = (
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full shrink-0",
+                        active ? "bg-primary" : "",
+                      )}
+                    />
+                  );
+                  return l.kind === "anchor" ? (
                     <button
-                      key={l.href}
+                      key={key}
                       onClick={() => {
                         setMobileMenuOpen(false);
                         handleNavClick(l.href);
                       }}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
-                        active
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-                      )}
+                      className={className}
                     >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full shrink-0",
-                          active ? "bg-primary" : "",
-                        )}
-                      />
+                      {dot}
                       {l.label}
                     </button>
+                  ) : (
+                    <Link
+                      key={key}
+                      to={l.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      {dot}
+                      {l.label}
+                    </Link>
                   );
                 })}
               </nav>
+
+              {/* Language switcher — top bar only shows it from sm up */}
+              <div className="px-4 sm:px-6 pb-2 flex items-center gap-1 sm:hidden">
+                <LanguageSwitcher />
+              </div>
 
               <div className="border-t border-border mx-4 sm:mx-6" />
 

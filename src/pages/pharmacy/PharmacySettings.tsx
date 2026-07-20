@@ -65,6 +65,7 @@ import {
 } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { cn } from "@/lib/utils";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import { formatDateOnly } from "@/lib/date";
  
 function getErrorMessage(error: unknown): string {
@@ -308,7 +309,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "pages.pharmacy.settings_lang_en",
-  fr: "FranÃƒÂ§ais",
+  fr: "Français",
   rw: "pages.pharmacy.settings_lang_rw",
 };
 
@@ -921,7 +922,7 @@ function PharmacySettings() {
                         className={selectCls}
                       >
                         <option value="en">{t("pages.pharmacy.settings_lang_en")}</option>
-                        <option value="fr">FranÃ§ais</option>
+                        <option value="fr">Français</option>
                         <option value="rw">{t("pages.pharmacy.settings_lang_rw")}</option>
                       </select>
                     </Field>
@@ -1168,21 +1169,12 @@ function PharmacySettings() {
                       )}
                       <div className="grid grid-cols-[100px_1fr] gap-3">
                         <Field label={t("pages.pharmacy.code")} required>
-                          <select
+                          <CountryCodeSelect
                             value={phoneForm.country_code}
-                            onChange={(e) => setPhoneForm((p) => ({ ...p, country_code: e.target.value }))}
+                            onChange={(dialCode) => setPhoneForm((p) => ({ ...p, country_code: dialCode }))}
                             className={selectCls}
                             disabled={phoneOtpStep}
-                          >
-                            <option value="+250">+250</option>
-                            <option value="+1">+1</option>
-                            <option value="+33">+33</option>
-                            <option value="+44">+44</option>
-                            <option value="+254">+254</option>
-                            <option value="+255">+255</option>
-                            <option value="+256">+256</option>
-                            <option value="+243">+243</option>
-                          </select>
+                          />
                         </Field>
                         <Field label={t("pages.pharmacy.phone_number")} required>
                           <input
@@ -1532,7 +1524,7 @@ function PharmacySettings() {
                                   </div>
                                   <p className="mt-1 truncate text-[11px] text-muted-foreground">{provider.api_url}</p>
                                   <p className="mt-1 text-[10px] text-muted-foreground/70">
-                                    {provider.inventory_count ?? 0} inventory items Â· sync every {provider.sync_interval_minutes} min
+                                    {provider.inventory_count ?? 0} inventory items · sync every {provider.sync_interval_minutes} min
                                   </p>
                                 </div>
 
@@ -1643,7 +1635,7 @@ function PharmacySettings() {
                                     </div>
                                     <p className="mt-1 text-[11px] text-muted-foreground">
                                       {log.items_synced ?? 0} items synced
-                                      {log.message ? ` Â· ${log.message}` : ""}
+                                      {log.message ? ` · ${log.message}` : ""}
                                     </p>
                                   </div>
                                 ))}

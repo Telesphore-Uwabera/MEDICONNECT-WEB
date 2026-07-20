@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useRegister } from "@/hooks/useAuth";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 import TermsDrawer from "@/components/auth/TermsDrawer";
 import type { Role } from "@/types/auth";
 import {
@@ -265,12 +266,11 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
             {t("auth.phone")}
           </label>
           <div className="flex gap-2">
-            <div className="w-20">
-              <Input
+            <div className="w-28">
+              <CountryCodeSelect
                 value={form.countryCode}
-                onChange={set("countryCode")}
-                className={`${inputNoIconCls} text-center font-medium`}
-                placeholder="+250"
+                onChange={(dialCode) => setForm((f) => ({ ...f, countryCode: dialCode }))}
+                className={inputNoIconCls}
               />
             </div>
             <div className="relative flex-1">

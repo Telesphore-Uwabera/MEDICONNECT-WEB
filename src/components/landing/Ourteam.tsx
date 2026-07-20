@@ -145,9 +145,9 @@ function OrgCard({
         <div className="px-4 pt-3.5 pb-5">
           {/* Description */}
           {member.bio ? (
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              {member.bio}
-            </p>
+            <div className="text-[13px] text-muted-foreground leading-relaxed" 
+                dangerouslySetInnerHTML={{ __html: member.bio }}
+              /> 
           ) : (
             <p className="text-[13px] text-muted-foreground/40 italic">
               No description provided.
