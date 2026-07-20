@@ -28,6 +28,7 @@ import { useVerifyCertificate } from "@/hooks/public/use-verify-certificate";
 import TopBar from "@/components/landing/TopBar";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import Footer from "@/components/landing/Footer";
 
 function DetailRow({
   icon: Icon,
@@ -213,7 +214,10 @@ const { data: publicSettings } = usePublicSettings();
         <p className="mt-6 text-center text-[11px] text-muted-foreground">
           {t("pages.verify_certificate.powered_by")}</p>
       </div>
-    </div></>
+    </div>
+       <Footer/>
+    
+    </>
     
   );
 }

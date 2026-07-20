@@ -1,30 +1,17 @@
-import { type CSSProperties, useEffect, useState } from "react";
-import { BriefcaseBusiness, Users, UserRound, X } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { createPortal } from "react-dom";
-
+import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { ApiTeamMember, useGetOurTeam } from "@/hooks/use-our-team";
-import { cn } from "@/lib/utils";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 
-const fallbackColors = ["#6D28D9", "#2563EB", "#0F766E", "#D97706", "#16A34A", "#DB2777", "#EA580C"];
-
-function normalizeColor(color: string | null | undefined, index = 0): string {
-  const fallback = fallbackColors[index % fallbackColors.length];
-  if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return fallback;
-  return color;
-}
-
-function colorSurface(color: string): string {
-  return `${color}14`;
-}
+// ── Helpers ──────────────────────────────────────────────────
 
 function getInitials(name: string): string {
   return name
     .replace(/^Dr\.\s*/i, "")
     .split(" ")
-    .filter(Boolean)
     .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
+    .map((w) => w[0].toUpperCase())
     .join("");
 }
 
@@ -43,39 +30,43 @@ function getYearsExperience(joinedAt: string): number {
 }
 
 function sortMembers(a: ApiTeamMember, b: ApiTeamMember): number {
-  const levelA = a.level ?? 99;
-  const levelB = b.level ?? 99;
-  if (levelA !== levelB) return levelA - levelB;
-  const orderA = a.order ?? 999;
-  const orderB = b.order ?? 999;
-  if (orderA !== orderB) return orderA - orderB;
+  const levelDiff = (a.level ?? 999) - (b.level ?? 999);
+  if (levelDiff !== 0) return levelDiff;
+
+  const orderDiff = (a.order ?? 999) - (b.order ?? 999);
+  if (orderDiff !== 0) return orderDiff;
+
   return a.name.localeCompare(b.name);
 }
 
-// Given a row's card count, returns the x-position (in %) of the card that
-// should serve as the "hand-off point" down to the next row. For an odd
-// count this is the true middle card (already correct, unchanged). For an
-// even count there's no true middle card, so we pick the card just right of
-// center — this guarantees the line always lands ON a real card, never on
-// the gap/boundary between two cards.
-function getAnchorPercent(count: number): number {
-  if (count <= 0) return 50;
-  const idx = Math.floor(count / 2);
-  return ((idx + 0.5) / count) * 100;
+ 
+
+// ── Skeleton card ────────────────────────────────────────────
+
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-[6px] border border-border bg-card animate-pulse min-h-[300px] relative">
+      <div className="absolute inset-0 bg-muted" />
+      <div className="relative mt-auto p-4 md:p-5 flex flex-col w-full space-y-2">
+        <div className="h-3 w-1/3 rounded-[6px] bg-muted-foreground/20" />
+        <div className="h-4 w-3/4 rounded-[6px] bg-muted-foreground/30" />
+        <div className="h-3 w-1/2 rounded-[6px] bg-muted-foreground/20" />
+      </div>
+    </div>
+  );
 }
 
-// ─── Member Modal ────────────────────────────────────────────────────────────
-// Same modal used for the photo-grid team view — reused here so clicking any
-// org-chart card opens an identical profile popup.
+// ── Member Modal ─────────────────────────────────────────────
 
-function MemberModal({
+// ── Member Modal ─────────────────────────────────────────────
+
+function OrgCard({
   member,
   onClose,
 }: {
   member: ApiTeamMember;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
   const yrs = getYearsExperience(member.joined_at);
   const joinYear = new Date(member.joined_at).getFullYear();
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -91,57 +82,59 @@ function MemberModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="relative flex max-h-[92vh] sm:max-h-[85vh] w-full sm:max-w-xl md:max-w-2xl flex-col overflow-hidden rounded-t-2xl sm:rounded-[6px] border border-border/80 bg-card shadow-2xl animate-slideUp"
+        className="relative w-full sm:max-w-lg bg-card border border-border/80 rounded-t-2xl sm:rounded-[6px] shadow-2xl overflow-hidden animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+          className="absolute right-3 top-3 z-10 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition-colors"
           aria-label="Close"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="w-3.5 h-3.5" />
         </button>
 
-        {/* Photo area */}
-        <div className="relative aspect-[4/3] sm:aspect-[5/3] w-full shrink-0 overflow-hidden bg-muted">
+        {/* Photo area — changed to portrait-friendly 4/5 ratio */}
+        <div className="relative aspect-[5/3] w-full overflow-hidden bg-muted">
           {member.photo_url && !imgError ? (
             <>
               <img
                 src={member.photo_url}
                 alt={member.name}
-                className={`absolute inset-0 h-full w-full object-contain object-center transition-opacity duration-300 ${
-                  imgLoaded ? "opacity-100" : "opacity-0"
-                }`}
+                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"
+                  }`}
                 onLoad={() => setImgLoaded(true)}
                 onError={() => setImgError(true)}
               />
+              {/* Skeleton loader */}
               {!imgLoaded && (
                 <div className="absolute inset-0 animate-pulse bg-muted-foreground/10" />
               )}
             </>
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-primary/10">
-              <span className="text-4xl sm:text-5xl font-medium text-primary">
+            <div className="h-full w-full flex items-center justify-center bg-primary/10">
+              <span className="text-5xl font-medium text-primary">
                 {getInitials(member.name)}
               </span>
             </div>
           )}
 
+          {/* Bottom gradient for text legibility */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-10">
-            <h3 className="text-base sm:text-lg font-semibold text-white leading-tight drop-shadow-sm">
+          {/* Name + title overlaid on photo */}
+          <div className="absolute bottom-4 left-4 right-10">
+            <h3 className="text-lg font-semibold text-white leading-tight drop-shadow-sm">
               {member.name}
             </h3>
             {member.title && (
-              <span className="inline-block mt-1.5 rounded-[6px] bg-white/15 border border-white/25 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+              <span className="inline-block mt-1.5 rounded-[6px] bg-white/15 border border-white/25 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
                 {member.title}
               </span>
             )}
@@ -149,37 +142,37 @@ function MemberModal({
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-4 sm:px-6 pt-3.5 sm:pt-4 pb-5 sm:pb-6">
+        <div className="px-4 pt-3.5 pb-5">
+          {/* Description */}
           {member.bio ? (
-            <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-              {stripHtmlToText(member.bio)}
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
+              {member.bio}
             </p>
           ) : (
-            <p className="text-[13px] sm:text-sm text-muted-foreground/40 italic">
-              {t("pages.landing.team_no_description", { defaultValue: "No description provided." })}
+            <p className="text-[13px] text-muted-foreground/40 italic">
+              No description provided.
             </p>
           )}
 
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
+          {/* Stats */}
+          <div className="mt-4 grid grid-cols-2 gap-2">
             <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                {t("pages.landing.team_joined", { defaultValue: "Joined" })}
+                Joined
               </p>
-              <p className="text-sm sm:text-base font-medium text-foreground">{joinYear}</p>
+              <p className="text-base font-medium text-foreground">{joinYear}</p>
               <p className="text-[11px] text-muted-foreground">
-                {yrs} {yrs !== 1 ? t("pages.landing.years_ago_plural", { defaultValue: "years ago" }) : t("pages.landing.year_ago", { defaultValue: "year ago" })}
+                {yrs} year{yrs !== 1 ? "s" : ""} ago
               </p>
             </div>
             <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                {t("pages.landing.team_experience", { defaultValue: "Experience" })}
+                Experience
               </p>
-              <p className="text-sm sm:text-base font-medium text-foreground">
-                {yrs} {yrs !== 1 ? t("pages.landing.years", { defaultValue: "yrs" }) : t("pages.landing.year", { defaultValue: "yr" })}
+              <p className="text-base font-medium text-foreground">
+                {yrs} yr{yrs !== 1 ? "s" : ""}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {t("pages.landing.team_experience_at", { defaultValue: "at MediConnect" })}
-              </p>
+              <p className="text-[11px] text-muted-foreground">at MediConnect</p>
             </div>
           </div>
         </div>
@@ -196,113 +189,46 @@ function MemberModal({
   );
 }
 
-function MemberIcon({ member, color, index }: { member: ApiTeamMember; color: string; index: number }) {
-  if (member.icon_url) {
-    return (
-      <span
-        className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white shadow-sm"
-        style={{ borderColor: `${color}55` }}
-      >
-        <img src={member.icon_url} alt="" className="h-full w-full object-cover" loading="lazy" />
-      </span>
-    );
-  }
+// ── Member card ──────────────────────────────────────────────
 
-  return (
-    <span
-      className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm"
-      style={{ backgroundColor: color }}
-    >
-      {index % 3 === 0 ? (
-        <BriefcaseBusiness className="h-4 w-4 sm:h-5 sm:w-5" />
-      ) : (
-        <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-      )}
-    </span>
-  );
-}
-
-function OrgCard({
-  member,
-  index,
-  featured = false,
-}: {
-  member: ApiTeamMember;
-  index: number;
-  featured?: boolean;
-}) {
+function MemberCard({ member }: { member: ApiTeamMember }) {
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
-  const color = normalizeColor(member.color_code, index);
-  const style = featured
-    ? ({ backgroundColor: "#0B3B82", borderColor: "#073E82" } as CSSProperties)
-    : ({ borderColor: `${color}66`, backgroundColor: colorSurface(color) } as CSSProperties);
 
   return (
     <>
-      <article
+      <button
+        type="button"
+        className="group rounded-[10px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
         onClick={() => setModalOpen(true)}
-        role="button"
-        tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && setModalOpen(true)}
-        aria-label={t("pages.landing.view_member_profile", { defaultValue: "View {{name}}'s profile", name: member.name })}
-        className={cn(
-          "mx-auto flex w-full max-w-full sm:max-w-[380px] cursor-pointer items-center gap-2 sm:gap-3 rounded-[6px] border px-2.5 sm:px-4 py-2.5 sm:py-4 text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
-          featured ? "min-h-[72px] sm:min-h-[84px] text-white shadow-lg" : "min-h-[74px] sm:min-h-[86px] bg-card",
-        )}
-        style={style}
+        aria-label={t("pages.landing.team_view_profile", { name: member.name })}
       >
-        {featured ? (
-          <span className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-            <UserRound className="h-5 w-5 sm:h-6 sm:w-6" />
-          </span>
-        ) : (
-          <MemberIcon member={member} color={color} index={index} />
-        )}
-
-        <div className="min-w-0 flex-1">
-          <h3
-            className={cn(
-              "text-[10px] sm:text-xs font-black uppercase leading-snug tracking-tight truncate",
-              featured ? "text-white" : "text-foreground",
-            )}
-          >
-            {member.title || t("pages.landing.team_member_fallback", { defaultValue: "Team Member" })}
-          </h3>
-          <p
-            className={cn(
-              "mt-1 sm:mt-1.5 text-xs sm:text-sm font-black leading-snug truncate",
-              featured ? "text-white" : "text-foreground",
-            )}
-            style={featured ? undefined : { color }}
-          >
-            {member.name}
-          </p>
+        <div className="mx-auto h-28 w-28 overflow-hidden rounded-full bg-primary/10 ring-8 ring-muted/40">
+          {member.photo_url ? (
+            <img
+              src={member.photo_url}
+              alt={member.name}
+              className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-2xl font-black text-primary">
+              {getInitials(member.name)}
+            </div>
+          )}
         </div>
-      </article>
+        <h3 className="mt-5 line-clamp-1 text-base font-black text-foreground">
+          {member.name}
+        </h3>
+        <p className="mt-1 line-clamp-2 min-h-[40px] text-sm font-medium text-muted-foreground">
+          {member.title || t("pages.landing.team_member_fallback")}
+        </p> 
+      </button>
 
       {modalOpen && (
-        <MemberModal member={member} onClose={() => setModalOpen(false)} />
+        <OrgCard member={member} onClose={() => setModalOpen(false)} />
       )}
     </>
-  );
-}
-
-function TeamSkeleton() {
-  return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="mx-auto h-16 sm:h-20 max-w-[280px] sm:max-w-[400px] animate-pulse rounded-[6px] bg-muted" />
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-20 sm:h-24 animate-pulse rounded-[6px] bg-muted" />
-        ))}
-      </div>
-      <div className="mx-auto grid max-w-4xl grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="h-20 sm:h-24 animate-pulse rounded-[6px] bg-muted" />
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -399,72 +325,38 @@ function OurTeam() {
     .map(([level, list]) => [Number(level), list.sort(sortMembers)] as const)
     .sort(([a], [b]) => a - b);
 
-  // Chain each row's hand-off anchor into the next row's entry point.
-  // Starts at 50 since the leader is always a single, centered card.
-  let anchor = 50;
-  const renderedRows = rowEntries.map(([level, list], rowIndex) => {
-    const entryPercent = anchor;
-    anchor = getAnchorPercent(list.length);
-    return (
-      <ConnectorRow key={level} count={list.length} entryPercent={entryPercent}>
-        {list.map((member, index) => (
-          <OrgCard key={member.id} member={member} index={index + rowIndex + 1} />
-        ))}
-      </ConnectorRow>
-    );
-  });
-
   return (
-    <section id="team" className="bg-background py-6 sm:py-8 lg:py-10">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        <div className="mb-5 sm:mb-6 text-center">
-          <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.18em] sm:tracking-[0.22em] text-teal-700 dark:text-teal-400">
-            {t("pages.landing.team_title", { defaultValue: "Meet Our Team" })}
+    <div className="w-full">
+      {isError && (
+        <div className="rounded-[10px] border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
+          <p className="text-sm font-medium text-destructive">
+            {t("pages.landing.team_load_error")}
           </p>
-          <h2 className="mt-2 text-xl sm:text-2xl font-black tracking-tight text-foreground md:text-3xl">
-            {t("pages.landing.team_structure_title", { defaultValue: "Board and Leadership Structure" })}
-          </h2>
+          <button
+            onClick={() => refetch()}
+            className="mt-2 text-xs text-destructive/70 underline underline-offset-2 transition-colors hover:text-destructive"
+          >
+            {t("pages.landing.try_again")}
+          </button>
         </div>
+      )}
 
-        {isError ? (
-          <div className="rounded-[6px] border border-destructive/25 bg-destructive/5 px-4 sm:px-5 py-6 sm:py-8 text-center">
-            <p className="text-sm font-medium text-destructive">
-              {t("pages.landing.team_load_error")}
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="mt-2 text-xs font-semibold text-destructive/80 underline underline-offset-2 transition-colors hover:text-destructive"
-            >
-              {t("pages.landing.try_again", { defaultValue: "Try again" })}
-            </button>
-          </div>
-        ) : isLoading ? (
-          <TeamSkeleton />
-        ) : members.length === 0 ? (
-          <div className="rounded-[6px] border border-dashed border-border px-4 sm:px-5 py-8 sm:py-10 text-center text-sm text-muted-foreground">
-            {t("pages.landing.team_empty")}
-          </div>
-        ) : (
-          <div className="relative mx-auto max-w-6xl overflow-x-auto">
-<div className="mx-auto flex w-full max-w-[240px] sm:max-w-[360px] items-center justify-center gap-2.5 sm:gap-3.5 rounded-[6px] bg-[#071F49] px-3.5 sm:px-6 py-3 sm:py-5 text-white shadow-lg">
-              <Users className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />
-              <p className="text-sm sm:text-base uppercase tracking-tight">
-                {t("pages.landing.board_of_directors", { defaultValue: "Board of Directors" })}
-              </p>
-            </div>
-
-            {leader && (
-              <div className="relative" style={{ paddingTop: 24 }}>
-                <TrunkLine height={24} xPercent={50} />
-                <OrgCard member={leader} index={0} featured />
-              </div>
-            )}
-
-            {renderedRows}
-          </div>
-        )}
-      </div>
-    </section>
+      {!isError && (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {isLoading
+            ? Array(4)
+                .fill(null)
+                .map((_, i) => <SkeletonCard key={i} />)
+            : members.length === 0
+              ? (
+                <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                  {t("pages.landing.team_empty")}
+                </p>
+              )
+              : members.map((m) => <MemberCard key={m.id} member={m} />)}
+        </div>
+      )}
+    </div>
   );
 }
 

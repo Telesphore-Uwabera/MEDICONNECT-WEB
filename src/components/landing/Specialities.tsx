@@ -150,14 +150,14 @@ function Specialities() {
   };
 
   return (
-    <section className="w-full px-6 py-10 md:px-10">
+    <div className="w-full">
       {/* Header */}
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
             {t('pages.landing.spec_eyebrow')}
           </p>
-          <h2 className="mt-1 text-xl font-medium tracking-tight text-foreground">
+          <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl">
             {t('pages.landing.spec_title')}
           </h2>
         </div>
@@ -283,7 +283,7 @@ function Specialities() {
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 

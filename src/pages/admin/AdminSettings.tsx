@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -43,6 +43,7 @@ import {
 } from "@/hooks/admin/use-admin-settings";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { toast as sonnerToast } from "sonner";
  
 function getErrorMessage(error: unknown): string {
@@ -91,7 +92,7 @@ function Field({
   );
 }
 
- // ─── DisplayField — read-only row ─────────────────────────────────────────────
+ // --- DisplayField â€” read-only row ---------------------------------------------
 
 function DisplayField({
   label,
@@ -133,7 +134,7 @@ function VerifiedBadge({
     return (
       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-1.5 py-0.5 rounded-[6px]">
         <BadgeCheck className="w-3 h-3" />
-        Verified{date ? ` · ${formatDate(date)}` : ""}
+        Verified{date ? ` Â· ${formatDate(date)}` : ""}
       </span>
     );
   }
@@ -320,7 +321,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 
 const LANGUAGE_LABELS: Record<string, string> = {
   en: "English",
-  fr: "Français",
+  fr: "FranÃ§ais",
   rw: "Kinyarwanda",
 };
  
@@ -500,8 +501,13 @@ function AdminSettings() {
       sonnerToast.error("All fields are required");
       return;
     }
+    const phoneValidation = validatePhoneForCountry(phoneForm.phone, phoneForm.country_code);
+    if (!phoneValidation.isValid) {
+      sonnerToast.error(phoneValidation.message);
+      return;
+    }
     try {
-      await requestPhone.mutateAsync(phoneForm);
+      await requestPhone.mutateAsync({ ...phoneForm, phone: phoneValidation.normalizedPhone, country_code: phoneValidation.normalizedCountryCode });
       sonnerToast.success("OTP sent to your new phone number.");
       setPhoneOtpStep(true);
     } catch (err) {
@@ -808,7 +814,7 @@ function AdminSettings() {
                         className={selectCls}
                       >
                         <option value="en">English</option>
-                        <option value="fr">Français</option>
+                        <option value="fr">FranÃ§ais</option>
                         <option value="rw">Kinyarwanda</option>
                       </select>
                     </Field>

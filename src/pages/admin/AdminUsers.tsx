@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
@@ -108,6 +108,7 @@ import {
   type PaginatedPharmacies,
 } from "@/hooks/admin/use-admin-pharmacies"; 
 import { cn } from "@/lib/utils";
+import { normalizeCountryCode, validatePhoneForCountry } from "@/lib/phone-validation";
 import { apiFetch } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { DoctorPanel } from "./components/doctor/DoctorPanel";
@@ -115,7 +116,7 @@ import { PatientPanel } from "./components/patients/PatientPanel";
 import { HospitalPanel } from "./components/hospital/Hospitalpanel";
 import { PharmacyPanel } from "./components/Pharmacy/components";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// --- Types --------------------------------------------------------------------
 
 type RoleFilter =
   | "all"
@@ -169,7 +170,7 @@ function getErrorMessage(error: unknown): string {
         const flat = Array.isArray(payload.errors)
           ? payload.errors
           : Object.values(payload.errors).flat();
-        if (flat.length > 0) return flat.join(" · ");
+        if (flat.length > 0) return flat.join(" Ã‚Â· ");
       }
       if (typeof payload.message === "string") return payload.message;
     }
@@ -236,7 +237,7 @@ function isRoleFilter(value: string | null): value is RoleFilter {
   return USER_TABS.some((tab) => tab.value === value);
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// --- Helpers ------------------------------------------------------------------
 
 function getRole(u: ApiUser): string {
   return u.roles?.[0]?.name ?? "patient";
@@ -482,7 +483,7 @@ function SkeletonRows() {
   );
 }
 
-// ─── Right-side User Panel ────────────────────────────────────────────────────
+// --- Right-side User Panel ----------------------------------------------------
 
 function UserPanel({
   user,
@@ -508,7 +509,7 @@ function UserPanel({
   const resendVerification = useResendVerification();
   const [confirmRevoke, setConfirmRevoke] = useState(false);
 
-  // ── Reset credentials form (email / phone / password — any combination) ──
+  // -- Reset credentials form (email / phone / password Ã¢â‚¬â€ any combination) --
   const [credentialsOpen, setCredentialsOpen] = useState(false);
   const [credPassword, setCredPassword] = useState("");
   const [credEmail, setCredEmail] = useState("");
@@ -542,8 +543,13 @@ function UserPanel({
     }
     if (credEmail.trim()) payload.email = credEmail.trim();
     if (credPhone.trim()) {
-      payload.phone = credPhone.trim();
-      payload.country_code = normalizedCountryCode;
+      const phoneValidation = validatePhoneForCountry(credPhone, normalizedCountryCode);
+      if (!phoneValidation.isValid) {
+        sonnerToast.error(phoneValidation.message);
+        return;
+      }
+      payload.phone = phoneValidation.normalizedPhone;
+      payload.country_code = phoneValidation.normalizedCountryCode;
     }
     if (Object.keys(payload).length === 0) {
       sonnerToast.error("Provide at least one of: email, phone, password.");
@@ -635,7 +641,7 @@ function UserPanel({
           "fixed top-0 right-0 z-50 h-full w-full sm:w-[400px] lg:w-[440px]",
           "bg-card border-l border-border/60 flex flex-col",
           "transition-transform duration-300 ease-out",
-          "shadow-[−8px_0_32px_rgba(0,0,0,0.08)]",
+          "shadow-[-8px_0_32px_rgba(0,0,0,0.08)]",
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -1096,11 +1102,20 @@ function CreateUserModal({
     }
     try {
       let profileTarget: CreatedProfileTarget | undefined;
+      const normalizedFormCountryCode = normalizeCountryCode(form.country_code);
+      const phoneValidation = form.phone.trim()
+        ? validatePhoneForCountry(form.phone, normalizedFormCountryCode)
+        : null;
+      if (phoneValidation && !phoneValidation.isValid) {
+        sonnerToast.error(phoneValidation.message);
+        return;
+      }
+
       if (mode === "staff") {
         const res = await createStaff.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim() || undefined,
+          phone: phoneValidation?.normalizedPhone || undefined,
           password: form.password,
           password_confirmation: form.password_confirmation,
           role: form.role as CreateStaffPayload["role"],
@@ -1111,10 +1126,8 @@ function CreateUserModal({
         const res = await createManagedUser.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim(),
-          country_code: form.country_code.trim().startsWith("+")
-            ? form.country_code.trim()
-            : `+${form.country_code.trim() || "250"}`,
+          phone: phoneValidation?.normalizedPhone ?? form.phone.trim(),
+          country_code: phoneValidation?.normalizedCountryCode ?? normalizedFormCountryCode,
           password: form.password,
           role: form.role as ManagedRole,
           gender: form.gender || undefined,
@@ -1126,12 +1139,12 @@ function CreateUserModal({
           name: res.user.name,
         };
       } else {
-        // Admin accounts have no role-specific profile — keep the generic path.
+        // Admin accounts have no role-specific profile Ã¢â‚¬â€ keep the generic path.
         const res = await createUser.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),
-          phone: form.phone.trim() || undefined,
-          country_code: form.country_code.trim() || undefined,
+          phone: phoneValidation?.normalizedPhone || undefined,
+          country_code: phoneValidation?.normalizedCountryCode ?? (form.country_code.trim() || undefined),
           role: form.role,
           gender: form.gender || undefined,
           preferred_language: form.preferred_language || undefined,

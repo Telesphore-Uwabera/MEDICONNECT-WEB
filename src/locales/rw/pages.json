@@ -280,7 +280,21 @@
     "specialty_cardiologist": "Umuganga w umutima",
     "specialty_gynecologist": "Umuganga w abagore",
     "specialty_dermatologist": "Umuganga w uruhu",
-    "specialty_psychiatrist": "Umuganga w indwara zo mu mutwe"
+    "specialty_psychiatrist": "Umuganga w indwara zo mu mutwe",
+    "consult_expert_doctors": "Vugana n abaganga b inzobere",
+    "find_pharmacy": "Shaka farumasi",
+    "order_medicine": "Tumiza imiti",
+    "find_hospital_health_facility": "Ikigo nderabuzima",
+    "health_articles": "Inyandiko z ubuzima",
+    "fitness_certificates_requests": "Icyemezo cy'ubuzima bwiza",
+    "request_now": "Saba ubu",
+    "need_urgent_help": "Ukeneye ubufasha bwihuse?",
+    "call_support_line": "Hamagara umurongo w ubufasha",
+    "order_medicines_registered": "Tumiza imiti muri farumasi zemewe",
+    "order_medicines_registered_sub": "Kukugezaho imiti byihuse, byizewe kandi bifite umutekano.",
+    "pharmacy_shelves_alt": "Ububiko bwa farumasi yemewe",
+    "download_app": "Kuramo app",
+    "choose_store": "Play Store cyangwa App Store"
   },
   "patient": {
     "overview_title": "Murakaza neza",

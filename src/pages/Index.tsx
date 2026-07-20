@@ -1,1069 +1,867 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  FileCheck2,
-  FileText,
-  GraduationCap,
-  HeartPulse,
-  Lock,
-  Menu,
-  Phone,
-  Pill,
-  Play,
-  ShieldCheck,
-  Star,
+  Calendar,
   Stethoscope,
+  Pill,
+  Activity,
+  Shield,
+  Clock,
+  ChevronRight,
+  Zap,
+  X,
+  Mail,
+  MapPin,
+  Phone,
+  Building2,
+  BadgeCheck,
   Truck,
-  UserRound,
-  Video,
+  Navigation,
+  ShoppingBag,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { BookingDialog } from "@/components/BookingDialog";
-import { UnifiedModal } from "@/components/DoctorCard";
-import { useCallStore } from "@/context/CallStore";
-import type { Doctor } from "@/context/CallStore";
-import { dashboardPath } from "@/lib/auth-store";
-import { localizedText } from "@/lib/localized-settings";
-import { useMe } from "@/hooks/useAuth";
-import {
-  useInfiniteSearchDoctors,
-  type ApiDoctor,
-} from "@/hooks/patient/use-patient-doctor";
-import {
-  usePublicSettings,
-  usePublicUserStats,
-} from "@/hooks/use-public-settings";
+import echo from "@/lib/echo";
 
-import LOGOLIGHT from "@/assets/LOGOLIGHT.png"; 
-import docDavid from "@/assets/doc-david.png";
-import docJohn from "@/assets/doc-john.png";
-import docSarah from "@/assets/doc-sarah.png";
+import { Button } from "@/components/ui/button";
+import { DoctorCard } from "@/components/DoctorCard";
+import { HospitalCard } from "@/components/HospitalCard";
+
+import { cn } from "@/lib/utils";
+
+import { useTheme } from "@/context/ThemeContext";
+
+import LOGODARK from "@/assets/LOGODARK.png";
+import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
+
 import TopBar from "@/components/landing/TopBar";
 import Navbar from "@/components/landing/Navbar";
 import HeroCta from "@/components/landing/HeroCta";
-import { HeroHeader } from "@/components/landing/HeroHeader";
-import Footer from "@/components/landing/Footer";
+import {
+  useGetSearchHospitals,
+  useInfiniteSearchHospitals,
+} from "@/hooks/patient/use-patient-search-hospital";
+
+// NOTE: ApiDoctor now imported from the hook file (single source of truth for the type).
+// If your hook file doesn't currently export ApiDoctor, add `export` to its interface
+// declaration there — see the note at the bottom of this file.
+
+import {
+  useGetSearchDoctors,
+  useInfiniteSearchDoctors,
+  ApiDoctor,
+} from "@/hooks/patient/use-patient-doctor";
+import {
+  SpecializationSelect,
+  SpecializationValue,
+} from "./patient/components/SpecializationSelect";
+import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
+import { parseDeliveryMins, useSearchPharmacies } from "@/hooks/patient/use-patient-search-pharmacy";
+import HeroSection from "./doctor/HeroSection";
+import Specialities from "@/components/landing/Specialities";
 import OurTeam from "@/components/landing/Ourteam";
+import { HeroHeader } from "@/components/landing/HeroHeader";
+import { usePublicSettings } from "@/hooks/use-public-settings";
+import Footer from "@/components/landing/Footer";
 
-const fallbackDoctors = [
-  {
-    name: "Dr. Jean Bosco Nsekuye",
-    specialtyKey: "pages.landing.specialty_general_physician",
-    specialtyDefault: "General Physician",
-    image: docDavid,
-    rating: "4.9",
-    reviews: "120",
-    facility: "Rwinkwavu Hospital",
-  },
-  {
-    name: "Dr. Aline Mukamana",
-    specialtyKey: "pages.landing.specialty_pediatrician",
-    specialtyDefault: "Pediatrician",
-    image: docSarah,
-    rating: "4.8",
-    reviews: "98",
-    facility: "Kigali Clinic",
-  },
-  {
-    name: "Dr. Eric Niyonzima",
-    specialtyKey: "pages.landing.specialty_cardiologist",
-    specialtyDefault: "Cardiologist",
-    image: docJohn,
-    rating: "4.9",
-    reviews: "110",
-    facility: "King Faisal Hospital",
-  },
-  {
-    name: "Dr. Solange Uwase",
-    specialtyKey: "pages.landing.specialty_gynecologist",
-    specialtyDefault: "Gynecologist",
-    image: docSarah,
-    rating: "4.8",
-    reviews: "90",
-    facility: "CHUK",
-  },
-  {
-    name: "Dr. Patrick Habimana",
-    specialtyKey: "pages.landing.specialty_dermatologist",
-    specialtyDefault: "Dermatologist",
-    image: docDavid,
-    rating: "4.9",
-    reviews: "88",
-    facility: "Kibagabaga Hospital",
-  },
-  {
-    name: "Dr. Grace Umutoni",
-    specialtyKey: "pages.landing.specialty_psychiatrist",
-    specialtyDefault: "Psychiatrist",
-    image: docSarah,
-    rating: "4.8",
-    reviews: "76",
-    facility: "MediConnect",
-  },
-];
+// ─── Types (inline for self-containment) ──────────────────────────────────────
 
-const services = [
-  {
-    key: "virtual",
-    titleKey: "pages.landing.service_virtual_title",
-    textKey: "pages.landing.service_virtual_text",
-    titleDefault: "Virtual Consultation",
-    textDefault: "Consult licensed doctors instantly by video, voice, or chat from anywhere.",
-  },
-  {
-    key: "delivery",
-    titleKey: "pages.landing.service_delivery_title",
-    textKey: "pages.landing.service_delivery_text",
-    titleDefault: "Home Medical Delivery",
-    textDefault: "Get prescribed medicines delivered safely to your doorstep.",
-  },
-  {
-    key: "prescription",
-    titleKey: "pages.landing.service_prescription_title",
-    textKey: "pages.landing.service_prescription_text",
-    titleDefault: "Electronic Prescriptions",
-    textDefault: "Receive secure digital prescriptions instantly after your consultation.",
-  },
-  {
-    key: "certificate",
-    titleKey: "pages.landing.service_certificate_title",
-    textKey: "pages.landing.service_certificate_text",
-    titleDefault: "Fitness Certificates",
-    textDefault: "Get medical fitness certificates for work, school, sports, or travel.",
-  },
-  {
-    key: "education",
-    titleKey: "pages.landing.service_education_title",
-    textKey: "pages.landing.service_education_text",
-    titleDefault: "Health Education",
-    textDefault: "Access trusted articles, videos, and expert health advice.",
-  },
-];
-
-const faqs = [
-  {
-    questionKey: "pages.landing.faq_consultation_cost_q",
-    questionDefault: "How much is a consultation?",
-    answerKey: "pages.landing.faq_consultation_cost_a",
-    answerDefault:
-      "Consultation fees depend on the doctor and service type. You can see the fee before booking or starting an instant consultation.",
-  },
-  {
-    questionKey: "pages.landing.faq_medicine_home_q",
-    questionDefault: "Can I receive medicine at home?",
-    answerKey: "pages.landing.faq_medicine_home_a",
-    answerDefault:
-      "Yes. Prescriptions can be sent to registered pharmacies, and delivery availability depends on the pharmacy and your location.",
-  },
-  {
-    questionKey: "pages.landing.faq_prescriptions_q",
-    questionDefault: "Are prescriptions accepted by pharmacies?",
-    answerKey: "pages.landing.faq_prescriptions_a",
-    answerDefault:
-      "Digital prescriptions issued through MediConnect can be shared with participating pharmacies for fulfillment.",
-  },
-  {
-    questionKey: "pages.landing.faq_medication_time_q",
-    questionDefault: "How long does it take to receive medication?",
-    answerKey: "pages.landing.faq_medication_time_a",
-    answerDefault:
-      "Delivery time varies by pharmacy, stock availability, and distance. The pharmacy confirms the expected time after receiving your request.",
-  },
-  {
-    questionKey: "pages.landing.faq_specialists_q",
-    questionDefault: "Can I consult specialists?",
-    answerKey: "pages.landing.faq_specialists_a",
-    answerDefault:
-      "Yes. You can browse available specialists and book a scheduled appointment or choose an available instant consultation doctor.",
-  },
-];
-
-function getDoctorImage(doctor: ApiDoctor): string {
-  return (
-    doctor.image ??
-    doctor.user?.avatar ??
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.user?.name ?? "Doctor")}&background=0f9f91&color=fff&size=240`
-  );
+interface DoctorAvailabilityEvent {
+  doctor_id: number;
+  instant_consultation: boolean;
+  bookings_paused: boolean;
 }
 
-function getDoctorName(doctor: ApiDoctor): string {
-  return doctor.designations?.trim() || doctor.user?.name || "Doctor";
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getDoctorSpecialty(doctor: ApiDoctor): string | undefined {
-  return doctor.specializations?.[0]?.name ?? doctor.specialization ?? undefined;
-}
+const getDoctorImage = (d: ApiDoctor): string =>
+  d.image ??
+  d.user.avatar ??
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(d.user.name)}&background=0ea5e9&color=fff&size=600`;
 
-function getDoctorRating(doctor: ApiDoctor): string {
-  const rating = Number.parseFloat(doctor.rating_avg ?? "0");
-  return rating > 0 ? rating.toFixed(1) : "4.8";
-}
+const getDoctorName = (d: ApiDoctor): string =>
+  d.designations?.trim() || d.user.name;
 
-function ServiceIllustration({ type }: { type: string }) {
-  const iconClass = "text-teal-700 dark:text-teal-400";
-  return (
-    <div className="relative mx-auto h-20 w-24">
-      <div className="absolute inset-x-3 bottom-1 h-12 rounded-[10px]  ring-1 ring-teal-100  dark:ring-teal-900/50" />
-      {type === "virtual" && (
-        <>
-          <div className="absolute left-3 top-2 h-12 w-16 rounded-[6px] border-2 border-teal-700 bg-white shadow-sm dark:border-teal-500 dark:bg-card">
-            <UserRound className={`mx-auto mt-2 h-6 w-6 ${iconClass}`} />
-          </div>
-          <Video className="absolute bottom-2 right-3 h-7 w-7 rounded-full bg-teal-700 p-1.5 text-white dark:bg-teal-600" />
-        </>
-      )}
-      {type === "delivery" && (
-        <>
-          <Truck
-            className="absolute left-3 top-5 h-12 w-12 text-teal-700 dark:text-teal-400"
-            strokeWidth={1.8}
-          />
-          <Pill className="absolute right-4 top-2 h-7 w-7 rotate-12 rounded-full bg-white p-1 text-teal-700 shadow-sm dark:bg-card dark:text-teal-400" />
-        </>
-      )}
-      {type === "prescription" && (
-        <>
-          <div className="absolute left-7 top-1 h-16 w-12 rounded-[5px] border-2 border-slate-200 bg-white shadow-sm dark:border-border dark:bg-card">
-            <span className="absolute left-3 top-5 text-xl font-black text-teal-700 dark:text-teal-400">
-              Rx
-            </span>
-            <span className="absolute bottom-3 left-2 h-0.5 w-8 rounded bg-slate-300 dark:bg-slate-600" />
-          </div>
-          <CheckCircle2 className="absolute bottom-2 right-5 h-6 w-6 rounded-full bg-teal-700 p-1 text-white dark:bg-teal-600" />
-        </>
-      )}
-      {type === "certificate" && (
-        <>
-          <FileCheck2
-            className="absolute left-7 top-1 h-16 w-14 text-teal-700 dark:text-teal-400"
-            strokeWidth={1.7}
-          />
-          <HeartPulse className="absolute bottom-2 right-3 h-7 w-7 rounded-full bg-white p-1 text-teal-700 shadow-sm dark:bg-card dark:text-teal-400" />
-        </>
-      )}
-      {type === "education" && (
-        <>
-          <BookOpen
-            className="absolute left-5 top-6 h-12 w-14 text-teal-700 dark:text-teal-400"
-            strokeWidth={1.7}
-          />
-          <GraduationCap className="absolute left-8 top-0 h-9 w-9 text-teal-500 dark:text-teal-400" />
-        </>
-      )}
-    </div>
-  );
-}
+const getDoctorSpecialty = (d: ApiDoctor): string =>
+  d.specializations?.[0]?.name ?? d.specialization ?? "General Practice";
 
-function StoreBadge({ store }: { store: "google" | "apple" }) {
-  const { t } = useTranslation();
+const formatFee = (d: ApiDoctor): string => {
+  const fee = parseFloat(d.consultation_fee);
+  return fee === 0 ? "Free" : `${d.currency} ${fee.toLocaleString()}`;
+};
 
-  return (
-    <span className="inline-flex min-w-[138px] items-center gap-2 rounded-[8px] bg-slate-950 px-3 py-2 text-white shadow-sm">
-      {store === "google" ? (
-        <Play className="h-6 w-6 fill-white" />
-      ) : (
-        <Phone className="h-6 w-6" />
-      )}
-      <span className="leading-tight">
-        <span className="block text-[9px] font-semibold uppercase text-white/70">
-          {store === "google" ? t("pages.landing.store_google_prefix", { defaultValue: "Get it on" }) : t("pages.landing.store_apple_prefix", { defaultValue: "Download on the" })}
-        </span>
-        <span className="block text-sm font-black">
-          {store === "google" ? t("pages.landing.google_play", { defaultValue: "Google Play" }) : t("pages.landing.app_store", { defaultValue: "App Store" })}
-        </span>
-      </span>
-    </span>
-  );
-}
+const formatRating = (d: ApiDoctor): string | null => {
+  const r = parseFloat(d.rating_avg);
+  return r > 0 ? r.toFixed(1) : null;
+};
+
+// ─── Shared section heading classes ────────────────────────────────────────────
+// Reduced one step on every breakpoint (5xl→3xl, 4xl→3xl/2xl, 3xl→2xl)
+// so headings read as section markers rather than competing hero text.
+
+const SECTION_EYEBROW =
+  "text-xs font-black uppercase tracking-[0.18em] text-primary";
+const SECTION_TITLE =
+  "font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl";
+const SECTION_SUBTITLE =
+  "mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground md:text-base";
+
+// ─── Slider Skeleton ──────────────────────────────────────────────────────────
+
+const SliderSkeleton = () => (
+  <div className="absolute inset-0 bg-muted animate-pulse rounded-[6px] flex flex-col justify-end p-4 gap-2">
+    <div className="h-4 w-2/3 rounded bg-muted-foreground/20" />
+    <div className="h-3 w-1/2 rounded bg-muted-foreground/20" />
+    <div className="h-3 w-1/3 rounded bg-muted-foreground/20" />
+  </div>
+);
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const Index = () => {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const location = useLocation();
+  const { resolvedTheme, theme } = useTheme();
+  const { data: publicSettings } = usePublicSettings();
+  const generalSettings = publicSettings?.general;
+  const logo = generalSettings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
+  const appName = generalSettings?.app_name || "MEDICONNECT";
+  const appTagline =
+    generalSettings?.app_tagline || t("pages.landing.footer_desc");
+  const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
+  const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
+  const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
+
+  const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("doctors");
-  const [testimonialPage, setTestimonialPage] = useState(0);
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const { data: user } = useMe();
-  const { data: publicSettings } = usePublicSettings();
-  const { data: userStats } = usePublicUserStats();
-const { data: doctorsData, isLoading: doctorsLoading } =
-    useInfiniteSearchDoctors({ per_page: 6 });
+  const [partnerTab, setPartnerTab] = useState<"facilities" | "pharmacies">("facilities");
 
-
-const [bookOpen, setBookOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState<ApiDoctor | null>(null);
-  const call = useCallStore();
-
-  const handleBookNow = (doctor: any, isApiDoctor: boolean) => {
-    if (isApiDoctor) {
-      setSelectedDoctor(doctor as ApiDoctor);
-      setBookOpen(true);
-    } else {
-      navigate("/patient/search-doctors");
-    }
-  };
-
-  const handleCardClick = (doctor: any, isApiDoctor: boolean) => {
-    if (isApiDoctor) {
-      setSelectedDoctor(doctor as ApiDoctor);
-      setDetailsOpen(true);
-    } else {
-      navigate("/patient/search-doctors");
-    }
-  };
-
-  const selectedCallDoctor: Doctor | null = selectedDoctor
-    ? {
-        id: selectedDoctor.id,
-        user: {
-          id: selectedDoctor.user.id,
-          name: selectedDoctor.user.name,
-          avatar: selectedDoctor.user.avatar,
-        },
-        specialization: selectedDoctor.specialization,
-      }
-    : null;
-
-  const isSelectedCallInProgress =
-    call.doctor?.id === selectedDoctor?.id &&
-    call.phase !== "idle" &&
-    call.phase !== "ended";
-
-  const canBookSelected =
-    !!selectedDoctor &&
-    selectedDoctor.is_available &&
-    !selectedDoctor.bookings_paused;
-
-  const canConnectSelected =
-    !!selectedDoctor &&
-    selectedDoctor.is_available &&
-    !selectedDoctor.bookings_paused &&
-    selectedDoctor.instant_consultation;
-
-const doctorsScrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateDoctorsScrollState = () => {
-    const el = doctorsScrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 4);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  };
-
-const scrollDoctors = (direction: "left" | "right") => {
-    const el = doctorsScrollRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.9;
-    el.scrollBy({ left: direction === "right" ? amount : -amount, behavior: "smooth" });
-  };
-
-  const publicPayload = publicSettings as any;
-  const generalSettings =
-    publicPayload?.general ?? publicPayload?.settings ?? publicPayload ?? {};
-  const logo = generalSettings?.app_logo_url || LOGOLIGHT;
-  const appName = generalSettings?.app_name || "MediConnect";
-  const appTagline = localizedText(
-    generalSettings?.app_tagline,
-    i18n.language,
-    "Rwanda's trusted digital healthcare platform.",
-  );
-
-  const doctors = useMemo(
-    () => doctorsData?.pages.flatMap((page) => page.data).slice(0, 6) ?? [],
-    [doctorsData],
-  );
-  
-  const displayDoctors = doctors.length > 0 ? doctors : fallbackDoctors;
-
-  useEffect(() => {
-    updateDoctorsScrollState();
-    const el = doctorsScrollRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", updateDoctorsScrollState);
-    window.addEventListener("resize", updateDoctorsScrollState);
-    return () => {
-      el.removeEventListener("scroll", updateDoctorsScrollState);
-      window.removeEventListener("resize", updateDoctorsScrollState);
-    };
-  }, [displayDoctors.length]);
-
-
-  useEffect(() => {
-  const sectionIds = ["home", "services", "doctors", "education", "team"];
-  const sections = sectionIds
-    .map((id) => document.getElementById(id))
-    .filter((el): el is HTMLElement => Boolean(el));
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-      if (visible[0]) {
-        setActiveSection(visible[0].target.id);
-      }
-    },
-    { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
-  );
-
-  sections.forEach((section) => observer.observe(section));
-  return () => observer.disconnect();
-}, []);
-
-  const testimonialPages = useMemo(
-    () => [
-      [
-        {
-          quote: t("pages.landing.testimonial_1", { defaultValue: "I consulted a doctor without leaving home and received my prescription in minutes." }),
-          city: "Kigali",
-        },
-        {
-          quote: t("pages.landing.testimonial_2", { defaultValue: "Medication was delivered the same day. Very convenient!" }),
-          city: "Musanze",
-        },
-      ],
-      [
-        {
-          quote: t("pages.landing.testimonial_3", { defaultValue: "The appointment was easy to book and the doctor explained everything clearly." }),
-          city: "Huye",
-        },
-        {
-          quote: t("pages.landing.testimonial_4", { defaultValue: "I received my digital prescription immediately after the consultation." }),
-          city: "Rubavu",
-        },
-      ],
-      [
-        {
-          quote: t("pages.landing.testimonial_5", { defaultValue: "The platform helped me consult quickly while I was at work." }),
-          city: "Kigali",
-        },
-        {
-          quote: t("pages.landing.testimonial_6", { defaultValue: "Finding care and getting medicine delivered felt simple and safe." }),
-          city: "Rwamagana",
-        },
-      ],
-    ],
-    [t],
-  );
-  const visibleTestimonials = testimonialPages[testimonialPage] ?? testimonialPages[0];
+  // ── Doctor filter state ─────────────────────────────────────────────────────
+  const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState<SpecializationValue>({ specialization: null, fee: null });
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
 
   useEffect(() => {
     document.title = appTagline ? `${appName} - ${appTagline}` : appName;
-  }, [appName, appTagline]);
+
+    if (!generalSettings?.app_favicon_url) return;
+
+    let favicon = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+    if (!favicon) {
+      favicon = document.createElement("link");
+      favicon.rel = "icon";
+      document.head.appendChild(favicon);
+    }
+    favicon.href = generalSettings.app_favicon_url;
+  }, [appName, appTagline, generalSettings?.app_favicon_url]);
+
+  // ── Scroll to section on hash present (e.g. navigated from another page) ────
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const scrollToEl = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+          return true;
+        }
+        return false;
+      };
+
+      // try immediately, then retry briefly in case content is still mounting
+      if (!scrollToEl()) {
+        const timeout = setTimeout(scrollToEl, 150);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [location.hash]);
+
+  useEffect(() => {
+    const sectionIds = ["doctors", "specialities", "hospitals", "pharmacy", "team"];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => !!el);
+
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (visible?.target.id) {
+          setActiveSection(visible.target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-30% 0px -55% 0px",
+        threshold: [0.05, 0.15, 0.3, 0.5, 0.75],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
+
+  // ── Build backend params ─────────────────────────────────────────────────────
+  // FIX: useMemo now returns a stable object that changes identity only when
+  // filter values actually change, ensuring useGetSearchDoctors re-fetches.
+
+  const doctorSearchParams = useMemo(() => {
+    const params: {
+      instant?: boolean;
+      language?: string;
+      specialization?: string;
+      specialization_fee_id?: number;
+    } = {};
+
+    if (doctorFilter === "instant") params.instant = true;
+    if (selectedLanguage !== "all") params.language = selectedLanguage;
+
+    if (selectedSpecialization.specialization) {
+      params.specialization = selectedSpecialization.specialization.name;
+      if (selectedSpecialization.fee?.id) {
+        params.specialization_fee_id = selectedSpecialization.fee.id;
+      }
+    }
+
+    return params;
+  }, [doctorFilter, selectedLanguage, selectedSpecialization]);
+
+  const { data: pharmacyStats } = useGetPharmacyStats();
+  const { data: pharmaciesResp, isLoading: pharmaciesLoading } = useSearchPharmacies({ per_page: 4 });
+
+  // ── All doctors (infinite scrolling) ─────────────────────────────────────
+  const {
+    data: doctorsData,
+    isLoading: doctorsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteSearchDoctors({ ...doctorSearchParams, per_page: 6 });
+
+  const allDoctors = useMemo(() => {
+    return doctorsData?.pages.flatMap((page) => page.data) ?? [];
+  }, [doctorsData]);
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastDoctorElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (doctorsLoading || isFetchingNextPage) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage],
+  );
+
+  // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
+  const { data: instantDoctorsData, isLoading: instantLoading } =
+    useGetSearchDoctors({ instant: true, page: 1, per_page: 6 });
+
+  // ── Hospitals (infinite scrolling) ──────────────────────────────────────────
+  const {
+    data: hospitalsData,
+    isLoading: hospitalsLoading,
+    fetchNextPage: fetchNextHospitalsPage,
+    hasNextPage: hasNextHospitalsPage,
+    isFetchingNextPage: isFetchingNextHospitalsPage,
+  } = useInfiniteSearchHospitals({ page: 1, per_page: 6 });
+
+  const allHospitals = useMemo(() => {
+    return hospitalsData?.pages.flatMap((page) => page.data) ?? [];
+  }, [hospitalsData]);
+
+  const homepageHospitals = useMemo(() => allHospitals.slice(0, 4), [allHospitals]);
+  const homepagePharmacies = useMemo(
+    () => pharmaciesResp?.data?.slice(0, 4) ?? [],
+    [pharmaciesResp],
+  );
+
+  const observerHospitals = useRef<IntersectionObserver | null>(null);
+  const lastHospitalElementRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (hospitalsLoading || isFetchingNextHospitalsPage) return;
+      if (observerHospitals.current) observerHospitals.current.disconnect();
+
+      observerHospitals.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextHospitalsPage) {
+          fetchNextHospitalsPage();
+        }
+      });
+
+      if (node) observerHospitals.current.observe(node);
+    },
+    [
+      hospitalsLoading,
+      isFetchingNextHospitalsPage,
+      hasNextHospitalsPage,
+      fetchNextHospitalsPage,
+    ],
+  );
+
+  // Filter to available instant doctors, max 4 slides
+  const instantDoctors = useMemo<ApiDoctor[]>(
+    () =>
+      (instantDoctorsData?.data ?? [])
+        .filter((d) => d.instant_consultation)
+        .slice(0, 4),
+    [instantDoctorsData],
+  );
+
+  // Reset slide index when data changes
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [instantDoctors.length]);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = echo.channel("doctors.availability");
+
+    channel.listen(".availability.changed", (data: DoctorAvailabilityEvent) => {
+      console.log("Doctor availability changed:", data);
+      queryClient.invalidateQueries({ queryKey: ["patient-search-doctors"] });
+    });
+
+    return () => {
+      echo.leaveChannel("doctors.availability");
+    };
+  }, [queryClient]);
+
+  const prevSlide = useCallback(() => {
+    if (!instantDoctors.length) return;
+    setActiveSlide(
+      (p) => (p - 1 + instantDoctors.length) % instantDoctors.length,
+    );
+  }, [instantDoctors.length]);
+
+  const nextSlide = useCallback(() => {
+    if (!instantDoctors.length) return;
+    setActiveSlide((p) => (p + 1) % instantDoctors.length);
+  }, [instantDoctors.length]);
+
+  // Auto-advance only when we have multiple slides
+  useEffect(() => {
+    if (instantDoctors.length <= 1) return;
+    const timer = setInterval(nextSlide, 4000);
+    return () => clearInterval(timer);
+  }, [nextSlide, instantDoctors.length]);
+
+  // ── Clear all filters helper ─────────────────────────────────────────────────
+  const clearFilters = useCallback(() => {
+    setDoctorFilter("all");
+    setSelectedSpecialization({ specialization: null, fee: null });
+    setSelectedLanguage("all");
+  }, []);
+
+  const hasActiveFilters =
+    doctorFilter !== "all" ||
+    !!selectedSpecialization.specialization ||
+    selectedLanguage !== "all";
+
+  // ── Static content ───────────────────────────────────────────────────────────
+
+  const features = [
+    {
+      icon: Calendar,
+      title: t("pages.landing.f_smart_booking_t"),
+      desc: t("pages.landing.f_smart_booking_d"),
+    },
+    {
+      icon: Activity,
+      title: t("pages.landing.f_instant_t"),
+      desc: t("pages.landing.f_instant_d"),
+    },
+    {
+      icon: Stethoscope,
+      title: t("pages.landing.f_records_t"),
+      desc: t("pages.landing.f_records_d"),
+    },
+    {
+      icon: Pill,
+      title: t("pages.landing.f_pharmacy_t"),
+      desc: t("pages.landing.f_pharmacy_d"),
+    },
+  ];
+
+  const footerPlatformLinks = [
+    { label: "Doctors", to: "/patient/search-doctors" },
+    { label: "Hospitals", to: "/patient/search-facilities" },
+    { label: "Pharmacy", to: "/patient/pharmacy" },
+    { label: "Sign in", to: "/auth" },
+  ];
+
+  const footerForLinks = [
+    { label: "Patient", to: "/patient" },
+    { label: "Doctor", to: "/doctor" },
+    { label: "Hospital", to: "/hospital" },
+    { label: "Pharmacy", to: "/pharmacy" },
+    { label: "Admin", to: "/admin" },
+  ];
+
+  const footerLegalLinks = [
+    { label: "Privacy", href: generalSettings?.privacy_url || "#" },
+    { label: "Terms", href: generalSettings?.terms_url || "#" },
+    { label: "Cookies", href: "#" },
+  ];
+
+  const footerSocials = [
+    {
+      label: "Twitter",
+      path: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
+      href: "https://x.com/mediconnectrw?s=11",
+    },
+    {
+      label: "Instagram",
+      path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
+      href: "https://www.instagram.com/mediconnectrw_?igsh=YnM4NTBrbHRoa3N2&utm_source=qr",
+    },
+    {
+      label: "Youtube",
+      path: "M20.5245 6.00694C20.3025 5.81544 20.0333 5.70603 19.836 5.63863C19.6156 5.56337 19.3637 5.50148 19.0989 5.44892C18.5677 5.34348 17.9037 5.26005 17.1675 5.19491C15.6904 5.06419 13.8392 5 12 5C10.1608 5 8.30956 5.06419 6.83246 5.1949C6.09632 5.26005 5.43231 5.34348 4.9011 5.44891C4.63628 5.50147 4.38443 5.56337 4.16403 5.63863C3.96667 5.70603 3.69746 5.81544 3.47552 6.00694C3.26514 6.18846 3.14612 6.41237 3.07941 6.55976C3.00507 6.724 2.94831 6.90201 2.90314 7.07448C2.81255 7.42043 2.74448 7.83867 2.69272 8.28448C2.58852 9.18195 2.53846 10.299 2.53846 11.409C2.53846 12.5198 2.58859 13.6529 2.69218 14.5835C2.74378 15.047 2.81086 15.4809 2.89786 15.8453C2.97306 16.1603 3.09841 16.5895 3.35221 16.9023C3.58757 17.1925 3.92217 17.324 4.08755 17.3836C4.30223 17.461 4.55045 17.5218 4.80667 17.572C5.32337 17.6733 5.98609 17.7527 6.72664 17.8146C8.2145 17.9389 10.1134 18 12 18C13.8865 18 15.7855 17.9389 17.2733 17.8146C18.0139 17.7527 18.6766 17.6733 19.1933 17.572C19.4495 17.5218 19.6978 17.461 19.9124 17.3836C20.0778 17.324 20.4124 17.1925 20.6478 16.9023C20.9016 16.5895 21.0269 16.1603 21.1021 15.8453C21.1891 15.4809 21.2562 15.047 21.3078 14.5835C21.4114 13.6529 21.4615 12.5198 21.4615 11.409C21.4615 10.299 21.4115 9.18195 21.3073 8.28448C21.2555 7.83868 21.1874 7.42043 21.0969 7.07448C21.0517 6.90201 20.9949 6.72401 20.9206 6.55976C20.8539 6.41236 20.7349 6.18846 20.5245 6.00694Z",
+      href: "https://youtube.com/@mediconnectrwanda1?si=zkORxyOOV9Q-jYPd"
+
+    },
+ 
+    {
+      label: "Facebook",
+      path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
+      href: "https://www.facebook.com/share/1PGfL8zefj/?mibextid=wwXIfr",
+    },
+  ];
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <TopBar settings={generalSettings} />
-      <HeroHeader
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-        activeSection={activeSection}
-        settings={generalSettings}
-      />
-      <section
-        id="home"
-        className="relative overflow-hidden bg-gradient-to-br from-background via-background to-teal-50 dark:to-teal-950/20"
-      >
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 md:grid-cols-[0.92fr_1.08fr] lg:px-8 lg:py-14">
-          <div className="max-w-xl">
-            <span className="inline-flex rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-700 ring-1 ring-teal-100 dark:bg-teal-950/40 dark:text-teal-400 dark:ring-teal-900/50">
-              {t("pages.landing.hero_badge", { defaultValue: "#1 Digital Healthcare Platform in Rwanda" })}
-            </span>
-            <h1 className="mt-5 text-4xl font-black leading-[1.04] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              {t("pages.landing.hero_question_prefix", { defaultValue: "Want to talk to" })}{" "}
-              <span className="text-teal-700 dark:text-teal-400">{t("pages.landing.hero_question_highlight", { defaultValue: "doctor?" })}</span>
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-7 text-muted-foreground">
-              {t("pages.landing.hero_description", { defaultValue: "Connect with licensed doctors in seconds, get prescriptions, certificates, and medications delivered to your doorstep." })}
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button
-                asChild
-                className="h-14 rounded-[8px] bg-teal-700 px-6 text-white shadow-lg shadow-teal-900/10 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-500"
-              >
-                <Link to="/patient/search-doctors?type=instant">
-                  <Video className="mr-2 h-5 w-5" />
-                  <span className="text-left leading-tight">
-                    {t("pages.landing.join_instant_consultation", { defaultValue: "Join Instant Consultation" })}
-                    <span className="block text-[11px] font-medium opacity-80">
-                      {t("pages.landing.talk_to_doctor_now", { defaultValue: "Talk to a doctor now" })}
-                    </span>
-                  </span>
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-14 rounded-[8px] border-border bg-card px-6 text-foreground shadow-sm hover:bg-muted"
-              >
-                <Link to="/patient/appointments">
-                  <CalendarDays className="mr-2 h-5 w-5 text-teal-700 dark:text-teal-400" />
-                  <span className="text-left leading-tight">
-                    {t("pages.landing.book_appointment", { defaultValue: "Book Appointment" })}
-                    <span className="block text-[11px] font-medium text-muted-foreground">
-                      {t("pages.landing.schedule_for_later", { defaultValue: "Schedule for later" })}
-                    </span>
-                  </span>
-                </Link>
-              </Button>
-            </div>
-            <div className="mt-7 grid grid-cols-2 gap-3 text-xs font-semibold text-muted-foreground sm:grid-cols-4">
-              {[
-                t("pages.landing.benefit_licensed_doctors", { defaultValue: "Licensed Doctors" }),
-                t("pages.landing.benefit_secure_private", { defaultValue: "Secure & Private" }),
-                t("pages.landing.benefit_affordable", { defaultValue: "Affordable" }),
-                t("pages.landing.benefit_available", { defaultValue: "Available 24/7" }),
-              ].map((item) => (
-                <span key={item} className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-teal-700 dark:text-teal-400" />
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
+    <div className="min-h-dvh bg-background text-md">
+      <div className="sticky top-0 z-50">
+        <TopBar settings={generalSettings} />
+        <HeroHeader
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          activeSection={activeSection}
+          settings={generalSettings}
+        />
+      </div>
 
-          <div className="relative min-h-[360px] lg:min-h-[430px]">
-            <div className="absolute inset-0 rounded-[28px] bg-background/60 blur-3xl" />
-            <div className="relative ml-auto max-w-5xl min-w-4xl">
-              <img
-                src="/images/heroImage.png"
-                alt={t("pages.landing.hero_image_alt", { defaultValue: "Virtual healthcare consultation" })}
-                className="w-full object-contain drop-shadow-2xl"
-              />
-            </div>
-          </div>
-        </div>
+      {/* ── Hero ── */}
+      <section className="relative bg-gradient-hero">
+        <HeroSection />
       </section>
 
-      <section id="services" className="bg-background py-10 lg:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
-              {t("pages.landing.services_eyebrow", { defaultValue: "Our Services" })}
-            </p>
-            <h2 className="mt-2 text-3xl font-black tracking-tight text-foreground">
-              {t("pages.landing.services_title_prefix", { defaultValue: "Everything You Need In" })}{" "}
-              <span className="text-teal-700 dark:text-teal-400">
-                {t("pages.landing.services_title_highlight", { defaultValue: "One Place" })}
-              </span>
-            </h2>
-          </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {services.map((service) => (
-              <article
-                key={service.key}
-                className="rounded-[8px] border border-border b p-5 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <ServiceIllustration type={service.key} />
-                <h3 className="mt-4 text-base font-black text-foreground">
-                  {t(service.titleKey, { defaultValue: service.titleDefault })}
-                </h3>
-                <p className="mt-2 min-h-[70px] text-sm leading-6 text-muted-foreground">
-                  {t(service.textKey, { defaultValue: service.textDefault })}
-                </p>
-                <Link
-                  to="/help"
-                  className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-teal-700 dark:text-teal-400"
-                >
-                  {t("pages.landing.learn_more", { defaultValue: "Learn more" })} <ArrowRight className="h-3 w-3" />
-                </Link>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="bg-muted/30 py-8 lg:py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-[6px] bg-card p-5 shadow-sm ring-1 ring-border">
-            <p className="text-center text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
-              {t("pages.landing.how_it_works", { defaultValue: "How It Works" })}
-            </p>
-            <h2 className="mt-1 text-center text-2xl font-black text-foreground">
-              {t("pages.landing.how_title", { defaultValue: "Healthcare in 3 Simple Steps" })}
-            </h2>
-            <div className="mt-6 grid items-center gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
-              {[
-                [
-                  UserRound,
-                  t("pages.landing.step_create_title", { defaultValue: "Create Your Account" }),
-                  t("pages.landing.step_create_text", { defaultValue: "Sign up in less than one minute." }),
-                ],
-                [
-                  Stethoscope,
-                  t("pages.landing.step_consult_title", { defaultValue: "Consult a Doctor" }),
-                  t("pages.landing.step_consult_text", { defaultValue: "Choose a doctor and connect instantly online." }),
-                ],
-                [
-                  FileText,
-                  t("pages.landing.step_care_title", { defaultValue: "Get Care" }),
-                  t("pages.landing.step_care_text", { defaultValue: "Receive your prescription, certificate, or medication delivery." }),
-                ],
-              ]
-                .map(([Icon, title, text], index) => {
-                  const StepIcon = Icon as typeof UserRound;
-                  return (
-                    <div
-                      key={title as string}
-                      className="flex items-center gap-4 rounded-[10px] bg-muted/30 p-4"
-                    >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-700 text-sm font-black text-white dark:bg-teal-600">
-                        {index + 1}
-                      </span>
-                      <StepIcon className="h-10 w-10 text-teal-700 dark:text-teal-400" />
-                      <div>
-                        <h3 className="font-black text-foreground">
-                          {title as string}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {text as string}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-                .flatMap((node, index, array) =>
-                  index < array.length - 1
-                    ? [
-                        node,
-                        <ArrowRight
-                          key={`arrow-${index}`}
-                          className="mx-auto hidden h-6 w-6 text-muted-foreground/60 md:block"
-                        />,
-                      ]
-                    : [node],
-                )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-background py-8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:items-center px-8 py-2  overflow-hidden rounded-[6px] bg-gradient-to-r from-teal-800 to-teal-600 text-white shadow-xl grid-cols-2 sm:grid-cols-5">
-            <div className="items-center lg:flex hidden">
-              <HeartPulse size={100} className="lg:block hidden"/>
-              <div className="border-white/15  text-center sm:border-r last:border-r-0">
-                <p className="text-2xl font-black">{t("pages.landing.trusted_by_patients", { defaultValue: "Trusted by Patients" })}</p>
-                <p className="mt-1 text-xs font-semibold text-white/80">
-                  {t("pages.landing.across_rwanda", { defaultValue: "Across Rwanda" })}
-                </p>
-              </div>
-            </div>
-
-            {[
-              [`${userStats?.users_served ?? 500}+`, t("pages.landing.stat_patients", { defaultValue: "Patients" })],
-              ["50+", t("pages.landing.stat_doctors", { defaultValue: "Doctors" })],
-              ["16+", t("pages.landing.stat_specialties", { defaultValue: "Medical Specialties" })],
-              ["24/7", t("pages.landing.stat_online_access", { defaultValue: "Online Access" })],
-            ].map(([value, label]) => (
-              <div
-                key={value}
-                className="border-white/15 text-center sm:border-r last:border-r-0"
-              >
-                <p className="text-2xl font-black">{value}</p>
-                <p className="mt-1 text-xs font-semibold text-white/80">
-                  {label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-<section id="doctors" className="bg-background py-8 sm:py-10 lg:py-12">
-        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-          <div className="mb-5 sm:mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      {/* ── Available Doctors Grid ── */}
+      <section id="doctors" className="border-t border-border bg-gradient-soft py-12 md:py-14">
+        <div className="container">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
             <div>
-              <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
-                {t("pages.landing.meet_doctors", { defaultValue: "Meet Our Doctors" })}
-              </p>
-              <h2 className="mt-1 text-xl sm:text-2xl font-black text-foreground">
-                {t("pages.landing.consult_experts", { defaultValue: "Consult With Expert Doctors" })}
-              </h2>
-            </div>
-            <Link
-              to="/patient/search-doctors"
-              className="self-start text-xs sm:text-sm font-bold text-teal-700 hover:underline dark:text-teal-400 sm:self-auto"
-            >
-              {t("pages.landing.view_all_doctors", { defaultValue: "View all doctors" })} <ArrowRight className="inline h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="relative">
-            <div
-              ref={doctorsScrollRef}
-              className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {(doctorsLoading && doctors.length === 0
-                ? Array.from({ length: 6 }, (_, index) => ({
-                    id: `loading-${index}`,
-                    loading: true,
-                  }))
-                : displayDoctors
-              ).map((item: any, index) => {
-                const isLoadingCard = Boolean(item?.loading);
-                const isApiDoctor =
-                  !isLoadingCard &&
-                  item &&
-                  typeof item === "object" &&
-                  "user" in item;
-                const name = isLoadingCard
-                  ? ""
-                  : isApiDoctor
-                    ? getDoctorName(item)
-                    : item.name;
-                const specialty = isLoadingCard
-                  ? ""
-                  : isApiDoctor
-                    ? (getDoctorSpecialty(item) ??
-                      t("pages.landing.specialty_general_physician", { defaultValue: "General Physician" }))
-                    : t(item.specialtyKey, { defaultValue: item.specialtyDefault });
-                const image = isLoadingCard
-                  ? ""
-                  : isApiDoctor
-                    ? getDoctorImage(item)
-                    : item.image;
-                const rating = isLoadingCard
-                  ? ""
-                  : isApiDoctor
-                    ? getDoctorRating(item)
-                    : item.rating;
-                const reviews = isLoadingCard
-                  ? ""
-                  : isApiDoctor
-                    ? (item.reviews_count ?? 80)
-                    : item.reviews;
-                return (
-                  <article
-                    key={item?.id ?? index}
-                    onClick={() => !isLoadingCard && handleCardClick(item, isApiDoctor)}
-                    className="w-[160px] xs:w-[180px] sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)] xl:w-[calc(20%-0.8rem)] flex-shrink-0 snap-start overflow-hidden rounded-[6px] border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl cursor-pointer"
-                  >
-                    <div className="h-32 sm:h-44 w-full overflow-hidden bg-teal-50 dark:bg-teal-950/40">
-                      {isLoadingCard ? (
-                        <div className="h-full w-full animate-pulse bg-muted" />
-                      ) : (
-                        <img
-                          src={image}
-                          alt={name}
-                          className="h-full w-full object-cover object-top"
-                        />
-                      )}
-                    </div>
-                    <div className="p-2.5 sm:p-4">
-                      {isLoadingCard ? (
-                        <div className="space-y-2">
-                          <div className="h-4 w-full animate-pulse rounded bg-muted" />
-                          <div className="h-3 w-24 animate-pulse rounded bg-muted" />
-                          <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-                          <div className="h-10 w-full animate-pulse rounded-[6px] bg-muted" />
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="line-clamp-1 text-sm sm:text-base font-bold text-foreground">
-                            {name}
-                          </h3>
-                          <p className="mt-0.5 line-clamp-1 text-xs sm:text-sm text-muted-foreground">
-                            {specialty}
-                          </p>
-                          <p className="mt-1.5 sm:mt-2 flex items-center gap-1 text-xs sm:text-sm font-semibold text-foreground/80">
-                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-400" />
-                            {rating}{" "}
-                            <span className="font-medium text-muted-foreground">
-                              ({reviews})
-                            </span>
-                          </p>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBookNow(item, isApiDoctor);
-                            }}
-                            variant="outline"
-                            className="mt-3 sm:mt-4 h-8 sm:h-10 w-full rounded-[6px] border-teal-600 text-xs sm:text-sm font-bold text-teal-700 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-teal-950/40"
-                          >
-                            {t("pages.landing.book_now", { defaultValue: "Book Now" })}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-            {canScrollLeft && (
-              <button
-                type="button"
-                onClick={() => scrollDoctors("left")}
-                aria-label={t("pages.landing.scroll_doctors_left", { defaultValue: "Show previous doctors" })}
-                className="absolute left-0 top-1/2 hidden h-9 w-9 -translate-y-1/2 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-card shadow-md hover:bg-muted sm:flex sm:h-11 sm:w-11"
-              >
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
-              </button>
-            )}
-            {canScrollRight && (
-              <button
-                type="button"
-                onClick={() => scrollDoctors("right")}
-                aria-label={t("pages.landing.scroll_doctors_right", { defaultValue: "Show more doctors" })}
-                className="absolute right-0 top-1/2 hidden h-9 w-9 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full border border-border bg-card shadow-md hover:bg-muted sm:flex sm:h-11 sm:w-11"
-              >
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-      <section id="education" className="bg-muted/20 py-8 lg:py-10">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.08fr_0.92fr] lg:px-8">
-          <div className="overflow-hidden rounded-[6px] bg-card shadow-sm ring-1 ring-border">
-            <div className="grid min-h-[230px] gap-2 md:grid-cols-[0.9fr_0.78fr_0.52fr]">
-              <div className="flex flex-col justify-center p-6 lg:p-7">
-                <h2 className="text-xl font-black tracking-tight text-foreground lg:text-2xl">
-                  {t("pages.landing.healthcare_pocket_title", { defaultValue: "Healthcare In Your Pocket" })}
-                </h2>
-                <ul className="mt-5 space-y-3 text-sm font-semibold text-foreground/80">
-                  {[
-                    t("pages.landing.pocket_manage_appointments", { defaultValue: "Manage appointments" }),
-                    t("pages.landing.pocket_consult_doctors", { defaultValue: "Consult doctors instantly" }),
-                    t("pages.landing.pocket_access_prescriptions", { defaultValue: "Access prescriptions" }),
-                    t("pages.landing.pocket_track_history", { defaultValue: "Track medical history" }),
-                    t("pages.landing.pocket_more", { defaultValue: "And much more" }),
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 rounded-full bg-teal-700 text-white dark:bg-teal-500" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="relative hidden min-h-[230px] overflow-hidden md:block">
-                <div className="absolute bottom-[-10px] left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-teal-100/70 blur-2xl dark:bg-teal-900/30" />
-                <img
-                  src="/images/phone.png"
-                  alt={t("pages.landing.mobile_app_alt", { defaultValue: "MediConnect mobile app" })}
-                  className="absolute bottom-[-76px] left-1/2 max-h-[330px] w-auto -translate-x-1/2 rotate-[9deg] object-contain drop-shadow-2xl"
-                />
-              </div>
-
-              <div className="flex flex-row items-center justify-center gap-3 p-5 md:flex-col md:items-start md:justify-center md:pl-0">
-                <img
-                  src="/images/android.png"
-                  alt={t("pages.landing.google_play_alt", { defaultValue: "Get it on Google Play" })}
-                  className="h-10 w-auto rounded-[6px] object-contain shadow-sm lg:h-11"
-                />
-                <img
-                  src="/images/apple.png"
-                  alt={t("pages.landing.app_store_alt", { defaultValue: "Download on the App Store" })}
-                  className="h-10 w-auto rounded-[6px] object-contain shadow-sm lg:h-11"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[6px] bg-card p-6 shadow-sm ring-1 ring-border lg:p-7">
-            <h2 className="text-xl font-black tracking-tight text-foreground lg:text-2xl">
-              {t("pages.landing.testimonials_title", { defaultValue: "What Our Patients Say" })}
-            </h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {visibleTestimonials.map((item) => (
-                <article
-                  key={item.city}
-                  className="min-h-[150px] rounded-[6px] border border-border bg-background/70 p-5 shadow-sm"
-                >
-                  <div className="flex gap-0.5 text-amber-400">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-current" />
-                    ))}
-                  </div>
-                  <p className="mt-4 text-sm font-medium leading-6 text-foreground/80">
-                    {item.quote}
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className={SECTION_EYEBROW}>
+                    {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
                   </p>
-                  <p className="mt-4 text-xs font-semibold text-muted-foreground">
-                    {t("pages.landing.testimonial_patient_city", { defaultValue: "- Patient, {{city}}", city: item.city })}
-                  </p>
-                </article>
-              ))}
-            </div>
-            <div className="mt-5 flex justify-center gap-2">
-              {testimonialPages.map((_, dot) => (
-                <button
-                  key={dot}
-                  type="button"
-                  aria-label={t("pages.landing.show_testimonial_page", { defaultValue: "Show testimonial page {{page}}", page: dot + 1 })}
-                  onClick={() => setTestimonialPage(dot)}
-                  className={dot === testimonialPage ? "h-2.5 w-2.5 rounded-full bg-teal-700 transition-colors dark:bg-teal-400" : "h-2.5 w-2.5 cursor-pointer rounded-full bg-border transition-colors hover:bg-teal-500/60"}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <OurTeam />
-
-      <section className="bg-background py-8 lg:py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-5 flex flex-col gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-700 dark:text-teal-400">
-                {t("pages.landing.faq_title", { defaultValue: "Frequently Asked Questions" })}
-              </p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-foreground">
-                {t("pages.landing.faq_subtitle", { defaultValue: "Need help before you start?" })}
-              </h2>
-            </div> 
-             <Link
-              to="/help"
-              className="text-sm font-bold text-teal-700 hover:underline dark:text-teal-400"
-            >
-               {t("pages.landing.visit_help_center", { defaultValue: "Visit Help Center" })} <ArrowRight className="inline h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="grid items-start gap-3 lg:grid-cols-3">
-            {faqs.map((faq, index) => {
-              const isOpen = openFaq === index;
-              const question = t(faq.questionKey, { defaultValue: faq.questionDefault });
-              const answer = t(faq.answerKey, { defaultValue: faq.answerDefault });
-              return (
-                <article
-                  key={faq.questionKey}
-                  className="overflow-hidden rounded-[6px] border border-border bg-card shadow-sm transition-colors hover:border-teal-500/40"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaq(isOpen ? null : index)}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left text-xs font-black text-foreground/90"
-                    aria-expanded={isOpen}
-                  >
-                    <span>{question}</span>
-                    <ChevronDown
-                      className={isOpen ? "h-4 w-4 shrink-0 rotate-180 text-teal-700 transition-transform dark:text-teal-400" : "h-4 w-4 shrink-0 text-muted-foreground transition-transform"}
-                    />
-                  </button>
-                  {isOpen && (
-                    <p className="border-t border-border px-4 pb-4 pt-3 text-xs font-medium leading-5 text-muted-foreground">
-                      {answer}
-                    </p>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-background pb-10" id="contact">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[6px] bg-teal-800 text-white shadow-xl">
-            <div className="grid min-h-[210px] md:grid-cols-[0.46fr_1fr]">
-              <div className="relative min-h-[210px] overflow-hidden bg-teal-50">
-                <img
-                  src={"images/Jul18202601_47_20AM.png"}
-                  alt={t("pages.landing.patient_using_alt", { defaultValue: "Patient using MediConnect" })}
-                  className="absolute inset-0 h-full w-full object-cover object-top"
-                />
-                <div className="absolute inset-y-0 right-0 hidden w-20 bg-gradient-to-l from-teal-800 to-transparent md:block" />
-              </div>
-
-              <div className="relative flex items-center overflow-hidden bg-gradient-to-r from-teal-800 via-teal-700 to-teal-800 px-6 py-7 md:px-10">
-                <HeartPulse className="pointer-events-none absolute right-8 top-1/2 h-36 w-36 -translate-y-1/2 text-white/10" />
-                <div className="relative max-w-3xl">
-                  <h2 className="text-2xl font-black tracking-tight md:text-3xl">
-                    {t("pages.landing.final_cta_title", { defaultValue: "Your Health Should Never Wait." })}
+                  <h2 className={`${SECTION_TITLE} mt-1`}>
+                    {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
                   </h2>
-                  <p className="mt-2 text-sm font-medium text-white/80">
-                    {t("pages.landing.final_cta_sub", { defaultValue: "Join an instant consultation now and talk to a doctor in seconds." })}
-                  </p>
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                    <Button
-                      asChild
-                      className="h-14 rounded-[8px] bg-white px-5 text-teal-900 shadow-sm hover:bg-teal-50"
-                    >
-                      <Link to="/patient/search-doctors/?type=instant&instant=true">
-                        <Video className="mr-3 h-6 w-6 fill-teal-700 text-teal-700" />
-                        <span className="text-left leading-tight">
-                          {t("pages.landing.join_instant_consultation", { defaultValue: "Join Instant Consultation" })}
-                          <span className="block text-[11px] font-semibold text-teal-900/60">
-                            {t("pages.landing.talk_to_doctor_now", { defaultValue: "Talk to a doctor now" })}
-                          </span>
+                </div>
+                <Link to="/patient/search-doctors" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                  {t("pages.landing.view_all", { defaultValue: "View all" })}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {doctorsLoading
+                  ? Array.from({ length: 4 }).map((_, index) => (
+                      <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
+                    ))
+                  : allDoctors.slice(0, 4).map((doctor) => (
+                      <DoctorCard key={doctor.id} doctor={doctor} />
+                    ))}
+              </div>
+            </div>
+
+            <aside className="space-y-4">
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-base font-black text-foreground">
+                    {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      label: t("pages.landing.book_appointment", { defaultValue: "Book Appointment" }),
+                      sub: t("pages.landing.schedule_for_later", { defaultValue: "Schedule for later" }),
+                      to: "/patient/search-doctors",
+                      icon: Calendar,
+                      color: "text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-900/50",
+                    },
+                    {
+                      label: t("pages.landing.find_pharmacy", { defaultValue: "Find Pharmacy" }),
+                      sub: t("pages.landing.order_medicine", { defaultValue: "Order medicine" }),
+                      to: "/patient/search-pharmacy",
+                      icon: Pill,
+                      color: "text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-900/50",
+                    },
+                    {
+                      label: t("pages.landing.find_hospital_health_facility", { defaultValue: "Find Hospital / Health Facility" }),
+                      sub: t("pages.landing.book_visit", { defaultValue: "Book a visit" }),
+                      to: "/patient/search-facilities",
+                      icon: Building2,
+                      color: "text-violet-700 bg-violet-50 border-violet-100 dark:text-violet-300 dark:bg-violet-950/30 dark:border-violet-900/50",
+                    },
+                    {
+                      label: t("pages.landing.qa_health_articles", { defaultValue: "Health Articles" }),
+                      sub: t("pages.landing.learn_more", { defaultValue: "Learn more" }),
+                      to: "/help",
+                      icon: Activity,
+                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
+                    },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.to}
+                        className="group rounded-[10px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                      >  
+                        <span className="mt-1 inline-flex items-center text-xs font-semibold text-primary">
+                            {item.label}
+                          <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                         </span>
                       </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-14 rounded-[8px] border-white/25 bg-white/5 px-5 text-white hover:bg-white/15 hover:text-white"
-                    >
-                      <Link to="/patient/search-doctors">
-                        <CalendarDays className="mr-3 h-6 w-6" />
-                        <span className="text-left leading-tight">
-                          {t("pages.landing.book_appointment", { defaultValue: "Book Appointment" })}
-                          <span className="block text-[11px] font-semibold text-white/65">
-                            {t("pages.landing.schedule_for_later", { defaultValue: "Schedule for later" })}
-                          </span>
-                        </span>
-                      </Link>
-                    </Button>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
+
+              <Link
+                to="/verify-certificate"
+                className="group flex items-center gap-4 rounded-[12px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+              > 
+                <span className="min-w-0 flex-1"> 
+                  <span className="mt-1 inline-flex items-center text-xs font-semibold text-primary">
+                    {t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" })}
+                    <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </span>
+              </Link>
+
+              <div className="overflow-hidden rounded-[12px] border border-primary/10 bg-primary/10 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-black text-foreground">
+                      {t("pages.landing.need_urgent_help", { defaultValue: "Need urgent help?" })}
+                    </h3>
+                    <p className="mt-1 text-xs font-medium text-muted-foreground">
+                      {t("pages.landing.call_support_line", { defaultValue: "Call our support line" })}
+                    </p>
+                    <a href={`tel:${contactPhone}`} className="mt-2 inline-block text-lg font-black text-primary">
+                      {contactPhone}
+                    </a>
+                  </div>
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                    <Phone className="h-7 w-7" />
+                  </span>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <div className="mt-8 overflow-hidden rounded-[14px] border border-primary/15 bg-[#c9f4ed] shadow-sm dark:bg-primary/15">
+            <div className="grid min-h-[150px] md:grid-cols-[0.85fr_0.55fr_1.25fr]">
+              <div className="relative z-10 flex flex-col justify-center px-6 py-6 md:px-8">
+                <h3 className="max-w-[300px] text-xl font-black leading-tight tracking-tight text-slate-950 md:text-2xl dark:text-foreground">
+                  {t("pages.landing.order_medicines_registered")}
+                </h3>
+                <p className="mt-2 max-w-[290px] text-sm font-medium leading-5 text-slate-700 dark:text-muted-foreground">
+                  {t("pages.landing.order_medicines_registered_sub")}
+                </p>
+                <Button asChild className="mt-4 h-10 w-fit rounded-[6px] bg-teal-700 px-5 text-sm font-black text-white hover:bg-teal-800">
+                  <Link to="/patient/search-pharmacy">
+                    {t("pages.landing.explore_pharmacies")}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="relative hidden min-h-[150px] items-center justify-center md:flex">
+                <div className="absolute left-2 top-8 h-4 w-4 rounded-full bg-teal-300 shadow-sm" />
+                <div className="absolute right-8 top-5 h-3 w-3 rounded-full bg-teal-400 shadow-sm" />
+                <div className="absolute bottom-8 left-8 rotate-[-22deg] rounded-full text-primary shadow-sm ring-1 ring-primary/10">
+                  <Pill className="h-5 w-5" />
+                </div>
+                <div className=" bottom-10  rotate-[18deg]  px-3 py-1 text-rose-500  absolute left-2 top-8">
+                  <Pill className="h-5 w-5" />
+                </div>
+                <div className="relative flex h-24 w-24 items-center justify-center rounded-[20px] bg-teal-600 text-white shadow-xl shadow-teal-900/10">
+                  <ShoppingBag className="h-12 w-12" strokeWidth={2.2} />
+                </div>
+              </div>
+
+              <div className="relative min-h-[150px] overflow-hidden">
+                <img
+                  src="/images/arpad-czapp-tvP6pCnq9iI.jpg"
+                  alt={t("pages.landing.pharmacy_shelves_alt")}
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  loading="lazy"
+                />
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#c9f4ed] to-transparent dark:from-primary/15" />
+              </div>
             </div>
           </div>
         </div>
       </section>
+      {/* Specialities */}
+      <section id="specialities" className="border-t border-border bg-background py-12 md:py-14">
+        <div className="container">
+          <Specialities />
+        </div>
+      </section>
+      {/* Verified facilities and pharmacies */}
+      <section id="hospitals" className="border-t border-border bg-background py-12 md:py-14">
+        <div className="container">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className={SECTION_TITLE}>
+                {t("pages.landing.verified_facilities_title")}
+              </h2>
+              <p className={SECTION_SUBTITLE}>
+                {t("pages.landing.verified_facilities_sub")}
+              </p>
+            </div>
+            <Link
+              to={partnerTab === "facilities" ? "/patient/search-facilities" : "/patient/search-pharmacy"}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+            >
+              {partnerTab === "facilities"
+                ? t("pages.landing.view_all_facilities")
+                : t("pages.landing.view_all_pharmacies")}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
 
-<Footer />
+          <div id="pharmacy" className="mb-7 flex flex-wrap items-center justify-between gap-4 scroll-mt-24">
+            <div className="inline-flex rounded-[6px] bg-muted/60 p-1 ring-1 ring-border">
+              <button
+                type="button"
+                onClick={() => setPartnerTab("facilities")}
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  partnerTab === "facilities"
+                    ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
+                    : "text-muted-foreground hover:bg-background hover:text-foreground",
+                )}
+              >
+                <Building2 className="h-5 w-5" />
+                {t("pages.landing.health_facilities_tab")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPartnerTab("pharmacies")}
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
+                  partnerTab === "pharmacies"
+                    ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
+                    : "text-muted-foreground hover:bg-background hover:text-foreground",
+                )}
+              >
+                <Pill className="h-5 w-3" />
+                {t("pages.landing.pharmacies_tab")}
+              </button>
+            </div>
+            <div className="hidden gap-2 md:flex">
+              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground" aria-label={t("pages.landing.previous_cards")}>
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </button>
+              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground" aria-label={t("pages.landing.next_cards")}>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
 
-{selectedDoctor && selectedCallDoctor && (
-        <UnifiedModal
-          doctor={selectedDoctor}
-          callDoctor={selectedCallDoctor}
-          initialMode="details"
-          open={detailsOpen}
-          onMinimize={() => setDetailsOpen(false)}
-          onCloseCompletely={() => {
-            setDetailsOpen(false);
-            if (isSelectedCallInProgress) call.endCall();
-          }}
-          onBook={() => setBookOpen(true)}
-          canBook={canBookSelected}
-          canConnect={canConnectSelected}
-        />
-      )}
+          {partnerTab === "facilities" ? (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {hospitalsLoading && homepageHospitals.length === 0
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="h-[330px] animate-pulse rounded-[10px] border border-border bg-card" />
+                  ))
+                : homepageHospitals.map((hospital) => (
+                    <HospitalCard key={hospital.id} hospital={hospital} />
+                  ))}
+              {!hospitalsLoading && homepageHospitals.length === 0 && (
+                <div className="col-span-full rounded-[10px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_hospitals_found")}</div>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {pharmaciesLoading && homepagePharmacies.length === 0
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="h-[330px] animate-pulse rounded-[10px] border border-border bg-card" />
+                  ))
+                : homepagePharmacies.map((pharmacy) => {
+                    const deliveryMins = parseDeliveryMins(pharmacy.estimated_delivery_minutes);
+                    const todayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
+                    const todayHours = pharmacy.working_hours?.find((hour) => hour.day_of_week === todayName);
+                    const isClosedToday = todayHours?.is_closed ?? !pharmacy.is_open_24h;
+                    return (
+                      <article
+                        key={pharmacy.id}
+                        className="flex flex-col overflow-hidden rounded-[6px] border border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl"
+                      >
+                        <div className="flex items-center justify-between border-b border-border bg-muted/60 px-4 py-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            {t("pages.patient.pharmacy_label")}
+                          </span>
+                          <span
+                            className={cn(
+                              "text-xs font-bold",
+                              !isClosedToday ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
+                            )}
+                          >
+                            {!isClosedToday ? t("pages.patient.open_today") : t("pages.patient.closed_today")}
+                          </span>
+                        </div>
 
-      {selectedDoctor && (
-        <BookingDialog
-          doctor={selectedDoctor as any}
-          open={bookOpen}
-          onOpenChange={setBookOpen}
-          onConfirmed={(updatedDoctor: any) => setSelectedDoctor(updatedDoctor)}
-        />
-      )}
-    </main>
+                        <div className="flex flex-1 flex-col p-4 sm:p-5">
+                          <div className="flex items-start gap-3.5">
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[6px] border border-primary/15 bg-primary/10 text-primary shadow-sm">
+                              {pharmacy.logo ? (
+                                <img src={pharmacy.logo} alt={pharmacy.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <Pill className="h-6 w-6" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="flex items-center gap-1.5 truncate text-base font-bold leading-tight text-foreground">
+                                {pharmacy.name}
+                                {pharmacy.is_verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
+                              </h3>
+                              <p className="mt-1 flex items-center gap-1 truncate text-[13px] font-medium text-muted-foreground">
+                                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                {pharmacy.city}{pharmacy.address ? `, ${pharmacy.address}` : ""}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-[6px] border border-border">
+                            <div className="flex flex-col items-center bg-muted/20 px-1 py-2">
+                              <div className="mb-0.5 flex items-center gap-1 text-muted-foreground">
+                                <Truck className="h-3.5 w-3.5" />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider">{t("pages.patient.delivery_stat_label")}</span>
+                              </div>
+                              <span className="text-xs font-semibold text-foreground">
+                                {pharmacy.offers_delivery && pharmacy.delivery_fee != null
+                                  ? `${pharmacy.delivery_fee} ${pharmacy.delivery_currency}`
+                                  : pharmacy.offers_delivery
+                                    ? t("pages.patient.yes_label")
+                                    : t("pages.patient.no_label")}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center bg-muted/20 px-1 py-2">
+                              <div className="mb-0.5 flex items-center gap-1 text-muted-foreground">
+                                <Navigation className="h-3.5 w-3.5" />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider">{t("pages.patient.distance_stat_label")}</span>
+                              </div>
+                              <span className="text-xs font-semibold text-foreground">
+                                {pharmacy.distance_km != null ? `${pharmacy.distance_km.toFixed(1)} km` : "-"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center bg-muted/20 px-1 py-2">
+                              <div className="mb-0.5 flex items-center gap-1 text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5" />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider">{t("pages.patient.time_stat_label")}</span>
+                              </div>
+                              <span className="text-xs font-semibold text-foreground">
+                                {deliveryMins != null ? `~${deliveryMins}m` : "-"}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-1">
+                            {pharmacy.offers_delivery && (
+                              <span className="rounded-[6px] border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                {t("pages.patient.delivery_word")}
+                              </span>
+                            )}
+                            {pharmacy.offers_pickup && (
+                              <span className="rounded-[6px] border border-border/60 bg-secondary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                {t("pages.patient.pickup_badge")}
+                              </span>
+                            )}
+                            {pharmacy.is_open_24h && (
+                              <span className="rounded-[6px] border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                {t("pages.patient.open_24h_badge")}
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {todayHours && !isClosedToday
+                              ? t("pages.patient.hours_today", {
+                                  open: todayHours.open_time?.slice(0, 5),
+                                  close: todayHours.close_time?.slice(0, 5),
+                                })
+                              : t("pages.patient.closed_today")}
+                          </p>
+
+                          <div className="mt-auto flex items-center gap-2 border-t border-border/40 pt-4">
+                            <Button asChild size="sm" variant="outline" className="h-8 flex-1 rounded-[6px] border-border/60 px-3 text-xs font-bold hover:bg-muted/50">
+                              <Link to={`/patient/search-pharmacy?pharmacy=${pharmacy.slug}`}>
+                                <Pill className="mr-1.5 h-3.5 w-3.5" />
+                                {t("pages.patient.inventory_action")}
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" className="h-8 flex-1 rounded-[6px] bg-primary px-3 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90">
+                              <Link to={`/patient/search-pharmacy?pharmacy=${pharmacy.slug}`}>
+                                {t("pages.patient.order_now_action")}
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+              {!pharmaciesLoading && homepagePharmacies.length === 0 && (
+                <div className="col-span-full rounded-[10px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_pharmacies_found")}</div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Our Team */}
+      <section id="team" className="bg-background py-12 md:py-14">
+        <div className="container">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className={SECTION_TITLE}>{t("pages.landing.team_heading")}</h2>
+              <p className={SECTION_SUBTITLE}>{t("pages.landing.team_sub")}</p>
+            </div> 
+          </div>
+          <OurTeam />
+        </div>
+      </section>
+
+   <Footer/>
+    </div>
   );
 };
 
 export default Index;
-
-
-
-
-
-
-
-
-
-

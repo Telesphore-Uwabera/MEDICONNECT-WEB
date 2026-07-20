@@ -56,12 +56,13 @@ function TextInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-[6px] border border-border/60 bg-background px-3 py-2 text-[12px] text-foreground outline-none transition-all placeholder:text-muted-foreground/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+      className="w-full rounded-[6px] border border-border/60 bg-background px-2 py-2 text-[12px] text-foreground outline-none transition-all placeholder:text-muted-foreground/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
     />
   );
 }
 
 function RichBioEditor({ value, onChange, seedKey }: { value: string; onChange: (v: string) => void; seedKey: number | null }) {
+  
   const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement>(null);
 

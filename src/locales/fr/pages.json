@@ -280,7 +280,21 @@
     "specialty_cardiologist": "Cardiologue",
     "specialty_gynecologist": "Gynecologue",
     "specialty_dermatologist": "Dermatologue",
-    "specialty_psychiatrist": "Psychiatre"
+    "specialty_psychiatrist": "Psychiatre",
+    "consult_expert_doctors": "Consultez des medecins experts",
+    "find_pharmacy": "Trouver une pharmacie",
+    "order_medicine": "Commander des medicaments",
+    "find_hospital_health_facility": "Établissement de santé",
+    "health_articles": "Articles de sante",
+    "fitness_certificates_requests": "Certificat de forme",
+    "request_now": "Faire une demande",
+    "need_urgent_help": "Besoin d aide urgente ?",
+    "call_support_line": "Appelez notre ligne de support",
+    "order_medicines_registered": "Commandez vos medicaments dans des pharmacies enregistrees",
+    "order_medicines_registered_sub": "Livraison rapide, sure et fiable a votre porte.",
+    "pharmacy_shelves_alt": "Rayons d une pharmacie enregistree",
+    "download_app": "Telecharger l app",
+    "choose_store": "Play Store ou App Store"
   },
   "patient": {
     "overview_title": "Bon retour",
