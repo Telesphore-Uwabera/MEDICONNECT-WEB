@@ -65,8 +65,10 @@ import { parseDeliveryMins, useSearchPharmacies } from "@/hooks/patient/use-pati
 import HeroSection from "./doctor/HeroSection";
 import Specialities from "@/components/landing/Specialities";
 import OurTeam from "@/components/landing/Ourteam";
+import ServicesShowcase from "@/components/landing/ServicesShowcase";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
@@ -131,8 +133,11 @@ const Index = () => {
   const generalSettings = publicSettings?.general;
   const logo = generalSettings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
   const appName = generalSettings?.app_name || "MEDICONNECT";
-  const appTagline =
-    generalSettings?.app_tagline || t("pages.landing.footer_desc");
+  const appTagline = localizedText(
+    generalSettings?.app_tagline,
+    i18n.language,
+    t("pages.landing.footer_desc"),
+  );
   const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
   const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
   const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
@@ -533,6 +538,19 @@ const Index = () => {
                       icon: Activity,
                       color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
                     },
+                     {
+                      label: t("pages.landing.f_instant_t", { defaultValue: "Instants" }),
+                      sub: t("pages.landing.f_instant_t", { defaultValue: "Instant" }),
+                      to: "/patient/search-doctors?instant=true",
+                      icon: Activity,
+                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
+                    }, {
+                      label:  t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
+                      sub:  t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
+                      to: "/verify-certificate",
+                      icon: Activity,
+                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
+                    },
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -549,20 +567,7 @@ const Index = () => {
                     );
                   })}
                 </div>
-              </div>
-
-              <Link
-                to="/verify-certificate"
-                className="group flex items-center gap-4 rounded-[12px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-              > 
-                <span className="min-w-0 flex-1"> 
-                  <span className="mt-1 inline-flex items-center text-xs font-semibold text-primary">
-                    {t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" })}
-                    <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </span>
-              </Link>
-
+              </div> 
               <div className="overflow-hidden rounded-[12px] border border-primary/10 bg-primary/10 p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -576,9 +581,9 @@ const Index = () => {
                       {contactPhone}
                     </a>
                   </div>
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                  <a href={`tel:${contactPhone}`} className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                     <Phone className="h-7 w-7" />
-                  </span>
+                  </a>
                 </div>
               </div>
             </aside>
@@ -626,6 +631,8 @@ const Index = () => {
               </div>
             </div>
           </div>
+
+          <ServicesShowcase />
         </div>
       </section>
       {/* Specialities */}

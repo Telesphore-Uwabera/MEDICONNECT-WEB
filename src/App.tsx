@@ -100,6 +100,8 @@ import ManageSpecializations from "./pages/admin/ManageSpecializations.tsx";
 import ChecklistQuestions from "./pages/admin/ChecklistQuestions.tsx";
 import ManageAdminWallet from "./pages/admin/ManageAdminWallet.tsx";
 import AdminOurTeam from "./pages/admin/AdminOurTeam.tsx";
+import AdminServices from "./pages/admin/AdminServices.tsx";
+import AdminRefunds from "./pages/admin/AdminRefunds.tsx";
 import AdminSystemSettings from "./pages/admin/AdminSystemSettings.tsx";
 import Help from "./pages/Help.tsx";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -813,6 +815,14 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/refunds"
+              element={
+                <RequireAuth>
+                  <AdminRefunds />
+                </RequireAuth>
+              }
+            />
+            <Route
               path="/admin/manage-doctors"
               element={
                 <RequireAuth>
@@ -915,6 +925,14 @@ const App = () => (
               element={
                 <RequireAuth>
                   <AdminOurTeam />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/services"
+              element={
+                <RequireAuth>
+                  <AdminServices />
                 </RequireAuth>
               }
             />

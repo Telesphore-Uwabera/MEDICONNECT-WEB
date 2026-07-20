@@ -965,7 +965,7 @@ function PharmacySettings() {
                 {!editingPassword ? (
                   <div className="-my-1">
                     <div className="flex items-start justify-between py-3 border-b border-border/40 gap-4">
-                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">Password</p>
+                      <p className="text-[11px] text-muted-foreground/60 font-medium shrink-0 w-36">{t("pages.pharmacy.password")}</p>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 8 }).map((_, i) => (
                           <span key={i} className="w-1.5 h-1.5 rounded-full bg-foreground/20" />
@@ -1372,9 +1372,9 @@ function PharmacySettings() {
                           }
                           className={selectCls}
                         >
-                          <option value="api_key">API key</option>
-                          <option value="bearer">Bearer token</option>
-                          <option value="basic">Basic auth</option>
+                          <option value="api_key">{t("pages.pharmacy.api_key")}</option>
+                          <option value="bearer">{t("pages.pharmacy.bearer_token")}</option>
+                          <option value="basic">{t("pages.pharmacy.basic_auth")}</option>
                         </select>
                       </Field>
                       <Field label={t("pages.pharmacy.api_key")} required>

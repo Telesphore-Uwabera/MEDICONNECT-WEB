@@ -20,6 +20,7 @@ import {
   Star,
   Zap,
   AlertTriangle,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,10 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
+import { usePatientPaymentStatus, useVerifyPatientPayment } from "@/hooks/patient/use-patient-payments";
+import { getRefundsFromResponse, useCreatePatientRefund, usePatientRefunds } from "@/hooks/patient/use-patient-refunds";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -308,6 +312,353 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+function formatMoney(amount?: number | string | null, currency = "RWF") {
+  if (amount === null || amount === undefined || amount === "") return "-";
+  const numeric = Number(amount);
+  const value = Number.isFinite(numeric) ? numeric.toLocaleString() : amount;
+  return (currency || "RWF") + " " + value;
+}
+
+function formatPaymentDate(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getPaymentReference(payment?: Record<string, unknown> | null) {
+  if (!payment) return "-";
+  return String(
+    payment.reference_number ??
+      payment.payment_reference ??
+      payment.ref_number ??
+      payment.invoice_number ??
+      payment.uuid ??
+      "-",
+  );
+}
+
+function normalizeNullableText(value: unknown) {
+  return value === null || value === undefined ? "" : String(value).toLowerCase();
+}
+
+function displayNullableText(value: unknown, fallback = "-") {
+  return value === null || value === undefined || value === "" ? fallback : String(value);
+}
+
+function paymentStatusClass(status?: string | null) {
+  const normalized = normalizeNullableText(status);
+  if (normalized === "paid" || normalized === "success") {
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-500";
+  }
+  if (normalized === "failed" || normalized === "cancelled" || normalized === "expired") {
+    return "border-rose-500/30 bg-rose-500/10 text-rose-500";
+  }
+  return "border-amber-500/30 bg-amber-500/10 text-amber-500";
+}
+
+function refundStatusClass(status?: string | null) {
+  const normalized = normalizeNullableText(status);
+  if (normalized === "approved" || normalized === "completed") {
+    return "border-emerald-500/30 bg-emerald-500/10 text-emerald-500";
+  }
+  if (normalized === "rejected") {
+    return "border-rose-500/30 bg-rose-500/10 text-rose-500";
+  }
+  return "border-amber-500/30 bg-amber-500/10 text-amber-500";
+}
+
+function PaymentLookupPanel() {
+  const { t } = useTranslation();
+  const [paymentUuidInput, setPaymentUuidInput] = useState("");
+  const [paymentUuid, setPaymentUuid] = useState<string | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundStatusFilter, setRefundStatusFilter] = useState("all");
+  const paymentStatus = usePatientPaymentStatus(paymentUuid);
+  const verifyPayment = useVerifyPatientPayment();
+  const createRefund = useCreatePatientRefund();
+  const refunds = usePatientRefunds(refundStatusFilter === "all" ? undefined : refundStatusFilter);
+  const payment = paymentStatus.data?.data;
+  const error = paymentStatus.error ?? verifyPayment.error;
+  const refundList = getRefundsFromResponse(refunds.data);
+
+  const submitLookup = () => {
+    const uuid = paymentUuidInput.trim();
+    if (!uuid) return;
+    setPaymentUuid(uuid);
+  };
+
+  const submitVerify = async () => {
+    const uuid = (paymentUuid ?? paymentUuidInput).trim();
+    if (!uuid) return;
+
+    setPaymentUuid(uuid);
+    try {
+      const response = await verifyPayment.mutateAsync(uuid);
+      toast.success(t("pages.patient.payment_verify_success"), {
+        description: t("pages.patient.payment_status_now", {
+          status: response.data?.status ?? "-",
+        }),
+      });
+    } catch (err) {
+      toast.error(t("pages.patient.payment_verify_failed"), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
+  const submitRefund = async () => {
+    const uuid = (paymentUuidInput || paymentUuid || "").trim();
+    const reason = refundReason.trim();
+    if (!uuid || reason.length < 10) return;
+
+    try {
+      await createRefund.mutateAsync({ payment_uuid: uuid, reason });
+      setRefundReason("");
+      toast.success(t("pages.patient.refund_request_success"));
+    } catch (err) {
+      toast.error(t("pages.patient.refund_request_failed"), {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
+  return (
+    <div className="rounded-[6px] border border-border/80 bg-card shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-border/60 bg-muted/20 flex flex-col gap-1">
+        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-primary" />
+          {t("pages.patient.payment_lookup_title")}
+        </h2>
+        <p className="text-xs font-medium text-muted-foreground/70">
+          {t("pages.patient.payment_lookup_sub")}
+        </p>
+      </div>
+
+      <div className="p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            value={paymentUuidInput}
+            onChange={(event) => setPaymentUuidInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") submitLookup();
+            }}
+            placeholder={t("pages.patient.payment_uuid_placeholder")}
+            className="h-10 rounded-[6px] text-sm"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={submitLookup}
+            disabled={!paymentUuidInput.trim() || paymentStatus.isFetching}
+            className="h-10 rounded-[6px] sm:w-36"
+          >
+            {paymentStatus.isFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="mr-2 h-4 w-4" />
+            )}
+            {t("pages.patient.payment_check_status")}
+          </Button>
+          <Button
+            type="button"
+            onClick={submitVerify}
+            disabled={!(paymentUuid ?? paymentUuidInput).trim() || verifyPayment.isPending}
+            className="h-10 rounded-[6px] sm:w-36"
+          >
+            {verifyPayment.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+            )}
+            {t("pages.patient.payment_verify")}
+          </Button>
+        </div>
+
+        {error ? (
+          <div className="rounded-[6px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-500">
+            {error instanceof Error ? error.message : t("pages.patient.payment_not_found")}
+          </div>
+        ) : payment ? (
+          <div className="grid gap-3 rounded-[6px] border border-border/60 bg-secondary/20 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {t("pages.patient.payment_status")}
+              </p>
+              <Badge
+                variant="outline"
+                className={cn("mt-2 rounded-[6px] capitalize", paymentStatusClass(payment.status))}
+              >
+                {displayNullableText(payment.status)}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {t("pages.patient.payment_amount")}
+              </p>
+              <p className="mt-2 text-sm font-bold text-foreground">
+                {formatMoney(payment.amount, payment.currency ?? "RWF")}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {t("pages.patient.payment_invoice")}
+              </p>
+              <p className="mt-2 break-all text-sm font-semibold text-foreground">
+                {getPaymentReference(payment)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {t("pages.patient.paid_at")}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                {formatPaymentDate(payment.paid_at)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[6px] border border-dashed border-border/70 bg-secondary/10 p-5 text-center text-sm text-muted-foreground">
+            {t("pages.patient.payment_lookup_empty")}
+          </div>
+        )}
+
+        <div className="grid gap-4 border-t border-border/60 pt-4 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[6px] border border-border/70 bg-secondary/10 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-foreground">
+                  {t("pages.patient.refund_request_title")}
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {t("pages.patient.refund_request_sub")}
+                </p>
+              </div>
+              <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-500" />
+            </div>
+            <label className="mt-4 block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {t("pages.patient.refund_reason_label")}
+            </label>
+            <textarea
+              value={refundReason}
+              onChange={(event) => setRefundReason(event.target.value)}
+              placeholder={t("pages.patient.refund_reason_placeholder")}
+              rows={4}
+              maxLength={500}
+              className="mt-2 w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-muted-foreground">
+                {t("pages.patient.refund_reason_hint")}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {refundReason.trim().length}/500
+              </span>
+            </div>
+            <Button
+              type="button"
+              onClick={submitRefund}
+              disabled={
+                createRefund.isPending ||
+                !(paymentUuidInput || paymentUuid)?.trim() ||
+                refundReason.trim().length < 10
+              }
+              className="mt-4 h-10 w-full rounded-[6px]"
+            >
+              {createRefund.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CreditCard className="mr-2 h-4 w-4" />
+              )}
+              {t("pages.patient.refund_submit")}
+            </Button>
+          </div>
+
+          <div className="rounded-[6px] border border-border/70 bg-secondary/10 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-sm font-bold text-foreground">
+                {t("pages.patient.refunds_history_title")}
+              </h3>
+              <select
+                value={refundStatusFilter}
+                onChange={(event) => setRefundStatusFilter(event.target.value)}
+                className="h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none"
+              >
+                {["all", "pending", "approved", "rejected", "completed"].map((status) => (
+                  <option key={status} value={status}>
+                    {t(`pages.patient.refund_status_${status}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">
+              {refunds.isLoading ? (
+                <div className="space-y-2">
+                  <div className="h-16 rounded-[6px] bg-muted animate-pulse" />
+                  <div className="h-16 rounded-[6px] bg-muted animate-pulse" />
+                </div>
+              ) : refundList.length ? (
+                refundList.map((refund) => (
+                  <article
+                    key={refund.uuid ?? refund.id}
+                    className="rounded-[6px] border border-border/70 bg-background/70 p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn("rounded-[6px] capitalize", refundStatusClass(refund.status))}
+                      >
+                        {t(`pages.patient.refund_status_${displayNullableText(refund.status, "pending")}`, {
+                          defaultValue: displayNullableText(refund.status, "pending"),
+                        })}
+                      </Badge>
+                      <span className="text-[11px] text-muted-foreground">
+                        {t("pages.patient.refund_requested_on", {
+                          date: formatPaymentDate(refund.created_at),
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm font-medium leading-5 text-foreground">
+                      {refund.reason}
+                    </p>
+                    {refund.payment && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {t("pages.patient.refund_payment")}: {" "}
+                        <span className="font-semibold text-foreground">
+                          {getPaymentReference(refund.payment)}
+                        </span>{" "}
+                        - {formatMoney(refund.payment.amount, refund.payment.currency ?? "RWF")}
+                      </p>
+                    )}
+                    {refund.admin_note && (
+                      <p className="mt-2 rounded-[6px] border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                        <span className="font-semibold text-foreground">
+                          {t("pages.patient.refund_admin_note")}:
+                        </span>{" "}
+                        {refund.admin_note}
+                      </p>
+                    )}
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-[6px] border border-dashed border-border/70 bg-background/60 p-5 text-center text-sm text-muted-foreground">
+                  {t("pages.patient.refund_empty")}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 const PatientStats = ({ activeTab }: { activeTab: string }) => {
   const { t } = useTranslation();
 
@@ -958,7 +1309,7 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
                   {t("pages.patient.appointment_activity")}
                 </h2>
                 <p className="text-xs font-medium text-muted-foreground/70 mt-1">
-                  {PERIOD_LABELS[filters.period]} · {t("pages.patient.grouped_by", { group: GROUP_LABELS[filters.chart_group].toLowerCase() })}
+                  {PERIOD_LABELS[filters.period]} · {t("pages.patient.grouped_by", { group: normalizeNullableText(GROUP_LABELS[filters.chart_group]) })}
                   {filters.appointment_type !== "all" &&
                     ` · ${TYPE_LABELS[filters.appointment_type]}`}
                   {filters.status !== "all" &&
@@ -1207,6 +1558,8 @@ const PatientStats = ({ activeTab }: { activeTab: string }) => {
               />
             </div>
           </div>
+
+          <PaymentLookupPanel />
         </div>
       )}
 
