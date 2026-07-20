@@ -372,7 +372,7 @@
     "insurance_covers": "Ubwishingizi bwishyura",
     "you_pay": "Wishyura",
     "method": "Uburyo",
-    "reference": "Reference",
+    "reference": "Nomero ya referansi",
     "doctor": "Muganga",
     "full_name": "Amazina yose",
     "degree": "Impamyabumenyi",
@@ -403,7 +403,7 @@
       "cash": "Amafaranga",
       "insurance": "Ubwishingizi",
       "card": "Ikarita",
-      "mobile_money": "Mobile money"
+      "mobile_money": "Amafaranga ya telefoni"
     },
     "booking_type_values": {
       "online": "Kumurongo",

@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { CountryCodeSelect } from "@/components/CountryCodeSelect";
+import CountryCodesData from "@/lib/CountryCodes.json";
 import { toast } from "sonner";
 import {
   User,
@@ -198,6 +200,20 @@ const calcAge = (d?: string | null): number | null => {
 const formatAge = (d?: string | null) => {
   const age = calcAge(d);
   return age == null ? EMPTY_VALUE : `${age} yrs`;
+};
+
+const EMERGENCY_DIAL_CODES = (CountryCodesData as { dial_code: string }[])
+  .map((c) => c.dial_code.replace(/\s+/g, ""))
+  .sort((a, b) => b.length - a.length);
+
+/** Emergency contact phone is stored as one free-text string (no separate
+ *  country_code column) - split off a recognized dial code so it can be
+ *  edited with the same CountryCodeSelect used elsewhere. */
+const splitEmergencyPhone = (raw?: string | null): { code: string; digits: string } => {
+  const compact = String(raw ?? "").replace(/\s+/g, "");
+  if (!compact) return { code: "+250", digits: "" };
+  const match = EMERGENCY_DIAL_CODES.find((c) => compact.startsWith(c));
+  return match ? { code: match, digits: compact.slice(match.length) } : { code: "+250", digits: compact };
 };
 
 const formatGender = (gender?: string | null) =>
@@ -743,13 +759,21 @@ function ProfileForm({
   isSaving: boolean;
 }) {
   const { t, i18n } = useTranslation();
+  const [emergencyCountryCode, setEmergencyCountryCode] = useState(
+    () => splitEmergencyPhone(defaultValues?.emergency_contact_phone).code,
+  );
   const {
     register,
     handleSubmit,
     trigger,
     setValue,
     formState: { errors },
-  } = useForm<ProfileFormData>({ defaultValues });
+  } = useForm<ProfileFormData>({
+    defaultValues: {
+      ...defaultValues,
+      emergency_contact_phone: splitEmergencyPhone(defaultValues?.emergency_contact_phone).digits,
+    },
+  });
 
   const step = PROFILE_STEPS[currentStep];
   const isLast = currentStep === PROFILE_STEPS.length - 1;
@@ -760,11 +784,18 @@ function ProfileForm({
     onStepChange(i);
   };
 
+  const onFormSubmit = (data: ProfileFormData) => {
+    onSubmit({
+      ...data,
+      emergency_contact_phone: `${emergencyCountryCode} ${data.emergency_contact_phone}`.trim(),
+    });
+  };
+
   const goNext = async () => {
     const valid = await trigger(step.fields);
     if (!valid) return;
     if (isLast) {
-      handleSubmit(onSubmit)();
+      handleSubmit(onFormSubmit)();
       return;
     }
     goTo(currentStep + 1);
@@ -933,12 +964,21 @@ function ProfileForm({
               error={errors.emergency_contact_phone?.message}
               className="col-span-1 sm:col-span-2"
             >
-              <Input
-                type="tel"
-                {...register("emergency_contact_phone", { required: t("profile.required") })}
-                placeholder="0789999999"
-                className="border-border focus-visible:ring-primary text-xs h-9"
-              />
+              <div className="flex gap-2">
+                <div className="w-28 shrink-0">
+                  <CountryCodeSelect
+                    value={emergencyCountryCode}
+                    onChange={setEmergencyCountryCode}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <Input
+                  type="tel"
+                  {...register("emergency_contact_phone", { required: t("profile.required") })}
+                  placeholder="0789999999"
+                  className="border-border focus-visible:ring-primary text-xs h-9 flex-1"
+                />
+              </div>
             </FormField>
           </div>
         )}

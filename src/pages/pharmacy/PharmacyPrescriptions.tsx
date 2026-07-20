@@ -292,10 +292,10 @@ function DetailDrawer({
   const doctor = rx?.prescription?.doctor;
   const items = rx?.prescription?.items ?? [];
   const detailTabs = [
-    { id: "summary" as const, label: "Summary", icon: FileText },
-    { id: "people" as const, label: "People", icon: User },
-    { id: "medicines" as const, label: `Medicines (${items.length})`, icon: FlaskConical },
-    { id: "documents" as const, label: "Docs & timeline", icon: CalendarDays },
+    { id: "summary" as const, label: t("pages.pharmacy.summary"), icon: FileText },
+    { id: "people" as const, label: t("pages.pharmacy.people"), icon: User },
+    { id: "medicines" as const, label: `${t("pages.pharmacy.medicines")} (${items.length})`, icon: FlaskConical },
+    { id: "documents" as const, label: t("pages.pharmacy.docs_timeline"), icon: CalendarDays },
   ];
 
   return (
@@ -321,10 +321,10 @@ function DetailDrawer({
             </div>
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-foreground truncate">
-                {rx?.prescription?.prescription_number ?? `Request #${String(rx?.id ?? "").padStart(6, "0")}`}
+                {rx?.prescription?.prescription_number ?? `${t("pages.pharmacy.request")} #${String(rx?.id ?? "").padStart(6, "0")}`}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {fmtDate(rx?.created_at)} · {rx?.delivery_type === "pickup" ? "Pickup" : "Delivery"}
+                {fmtDate(rx?.created_at)} · {rx?.delivery_type === "pickup" ? t("pages.pharmacy.pickup") : t("pages.pharmacy.delivery")}
               </p>
             </div>
           </div>
@@ -378,11 +378,11 @@ function DetailDrawer({
               {activeTab === "people" && (
                 <>
               {/* Patient */}
-              <DrawerSection icon={User} title="Patient">
-                <DetailRow label="Name" value={patient?.name} />
-                <DetailRow label="Email" value={patient?.email} />
+              <DrawerSection icon={User} title={t("pages.pharmacy.patient")}>
+                <DetailRow label={t("pages.pharmacy.name")} value={patient?.name} />
+                <DetailRow label={t("pages.pharmacy.email")} value={patient?.email} />
                 <DetailRow
-                  label="Phone"
+                  label={t("pages.pharmacy.phone")}
                   value={patient?.phone
                     ? `${patient.country_code ?? ""} ${patient.phone}`.trim()
                     : null}
@@ -390,11 +390,11 @@ function DetailDrawer({
               </DrawerSection>
 
               {/* Doctor */}
-              <DrawerSection icon={Stethoscope} title="Prescribing Doctor">
-                <DetailRow label="Name" value={doctor?.user?.name} />
-                <DetailRow label="Specialization" value={doctor?.specialization} />
-                <DetailRow label="Degree" value={doctor?.doctor_degree} />
-                <DetailRow label="License" value={doctor?.medical_license} />
+              <DrawerSection icon={Stethoscope} title={t("pages.pharmacy.prescribing_doctor")}>
+                <DetailRow label={t("pages.pharmacy.name")} value={doctor?.user?.name} />
+                <DetailRow label={t("pages.pharmacy.specialization")} value={doctor?.specialization} />
+                <DetailRow label={t("pages.pharmacy.degree")} value={doctor?.doctor_degree} />
+                <DetailRow label={t("pages.pharmacy.license")} value={doctor?.medical_license} />
               </DrawerSection>
                 </>
               )}
@@ -402,13 +402,13 @@ function DetailDrawer({
               {activeTab === "summary" && (
                 <>
               {/* Prescription details */}
-              <DrawerSection icon={FileText} title="Prescription Details">
-                <DetailRow label="Rx #" value={rx.prescription?.prescription_number} />
-                <DetailRow label="Diagnosis" value={rx.prescription?.diagnosis} />
-                <DetailRow label="Notes" value={rx.prescription?.notes} />
-                <DetailRow label="Valid until" value={fmtDate(rx.prescription?.valid_until)} />
+              <DrawerSection icon={FileText} title={t("pages.pharmacy.prescription_details")}>
+                <DetailRow label={t("pages.pharmacy.rx_number")} value={rx.prescription?.prescription_number} />
+                <DetailRow label={t("pages.pharmacy.diagnosis")} value={rx.prescription?.diagnosis} />
+                <DetailRow label={t("pages.pharmacy.notes")} value={rx.prescription?.notes} />
+                <DetailRow label={t("pages.pharmacy.valid_until")} value={fmtDate(rx.prescription?.valid_until)} />
                 <DetailRow
-                  label="Signed"
+                  label={t("pages.pharmacy.signed")}
                   value={
                     rx.prescription?.is_signed ? (
                       <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 justify-end">
@@ -425,14 +425,14 @@ function DetailDrawer({
               {/* Delivery */}
               <DrawerSection
                 icon={rx.delivery_type === "pickup" ? ShoppingBag : Truck}
-                title="Delivery"
+                title={t("pages.pharmacy.delivery")}
               >
                 <DetailRow
-                  label="Type"
-                  value={rx.delivery_type === "pickup" ? "Pickup at pharmacy" : "Home delivery"}
+                  label={t("pages.pharmacy.delivery_type")}
+                  value={rx.delivery_type === "pickup" ? t("pages.pharmacy.pickup_at_pharmacy") : t("pages.pharmacy.home_delivery")}
                 />
-                {rx.delivery_address && <DetailRow label="Address" value={rx.delivery_address} />}
-                {rx.notes && <DetailRow label="Notes" value={rx.notes} />}
+                {rx.delivery_address && <DetailRow label={t("pages.pharmacy.address")} value={rx.delivery_address} />}
+                {rx.notes && <DetailRow label={t("pages.pharmacy.notes")} value={rx.notes} />}
               </DrawerSection>
                 </>
               )}
@@ -441,7 +441,7 @@ function DetailDrawer({
                 <>
               {/* Medicines */}
               {items.length > 0 ? (
-                <DrawerSection icon={FlaskConical} title={`Medicines (${items.length})`}>
+                <DrawerSection icon={FlaskConical} title={`${t("pages.pharmacy.medicines")} (${items.length})`}>
                   {items.map((item, i) => (
                     <MedicineRow key={item.id} item={item} index={i} />
                   ))}
@@ -459,7 +459,7 @@ function DetailDrawer({
                 <>
               {/* Rejection reason */}
               {rx.status === "rejected" && rx.rejection_reason && (
-                <DrawerSection icon={XCircle} title="Rejection Reason">
+                <DrawerSection icon={XCircle} title={t("pages.pharmacy.rejection_reason")}>
                   <div className="py-3">
                     <p className="text-[11px] text-red-600 dark:text-red-400 leading-relaxed">
                       {rx.rejection_reason}
@@ -470,15 +470,15 @@ function DetailDrawer({
 
               {/* Review info */}
               {rx.reviewer && (
-                <DrawerSection icon={Clock} title="Review Info">
-                  <DetailRow label="Reviewed by" value={rx.reviewer.name} />
-                  <DetailRow label="Reviewed at" value={fmtDate(rx.reviewed_at)} />
+                <DrawerSection icon={Clock} title={t("pages.pharmacy.review_info")}>
+                  <DetailRow label={t("pages.pharmacy.reviewed_by")} value={rx.reviewer.name} />
+                  <DetailRow label={t("pages.pharmacy.reviewed_at")} value={fmtDate(rx.reviewed_at)} />
                 </DrawerSection>
               )}
 
               {/* Documents */}
               {(pdfUrl || qrUrl) && (
-                <DrawerSection icon={Hash} title="Documents">
+                <DrawerSection icon={Hash} title={t("pages.pharmacy.documents")}>
                   <div className="py-3 flex flex-col gap-2">
                     {pdfUrl && (
                       <a
@@ -488,7 +488,7 @@ function DetailDrawer({
                         className="flex items-center gap-2 text-[11px] font-medium text-primary hover:underline"
                       >
                         <Download className="w-3 h-3" />
-                        Download PDF
+                        {t("pages.pharmacy.download_pdf")}
                       </a>
                     )}
                     {qrUrl && (
@@ -499,7 +499,7 @@ function DetailDrawer({
                         className="flex items-center gap-2 text-[11px] font-medium text-primary hover:underline"
                       >
                         <QrCode className="w-3 h-3" />
-                        View QR Code
+                        {t("pages.pharmacy.view_qr_code")}
                       </a>
                     )}
                   </div>
@@ -507,9 +507,9 @@ function DetailDrawer({
               )}
 
               {/* Timestamps */}
-              <DrawerSection icon={CalendarDays} title="Timestamps">
-                <DetailRow label="Created" value={`${fmtDate(rx.created_at)} ${fmtTime(rx.created_at)}`} />
-                <DetailRow label="Updated" value={`${fmtDate(rx.updated_at)} ${fmtTime(rx.updated_at)}`} />
+              <DrawerSection icon={CalendarDays} title={t("pages.pharmacy.timestamps")}>
+                <DetailRow label={t("pages.pharmacy.created")} value={`${fmtDate(rx.created_at)} ${fmtTime(rx.created_at)}`} />
+                <DetailRow label={t("pages.pharmacy.updated")} value={`${fmtDate(rx.updated_at)} ${fmtTime(rx.updated_at)}`} />
               </DrawerSection>
                 </>
               )}
@@ -522,7 +522,7 @@ function DetailDrawer({
           <div className="flex-shrink-0 px-5 py-4 border-t border-border/60 bg-card/50">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] text-muted-foreground">
-                Request{" "}
+                {t("pages.pharmacy.request")}{" "}
                 <span className="font-mono font-semibold text-foreground">
                   #{String(rx.id).padStart(6, "0")}
                 </span>
@@ -575,8 +575,8 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
           disabled={busy}
           onClick={() =>
             reject.mutate(
-              { id: rx.id, reason: "Prescription is expired" },
-              { onSuccess: () => sonnerToast.success("Prescription rejected") },
+              { id: rx.id, reason: t("pages.pharmacy.prescription_expired") },
+              { onSuccess: () => sonnerToast.success(t("pages.pharmacy.prescription_rejected")) },
             )
           }
           className="h-7 px-3 text-[10px] rounded-[6px] border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-all duration-200"
@@ -590,7 +590,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
           disabled={busy}
           onClick={() =>
             approve.mutate(rx.id, {
-              onSuccess: () => sonnerToast.success("Prescription approved"),
+              onSuccess: () => sonnerToast.success(t("pages.pharmacy.prescription_approved")),
             })
           }
           className="h-7 px-3 text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
@@ -610,7 +610,7 @@ function PrescriptionActions({ rx }: { rx: PrescriptionRequest }) {
         disabled={busy}
         onClick={() =>
           fulfill.mutate(rx.id, {
-            onSuccess: () => sonnerToast.success("Prescription fulfilled"),
+            onSuccess: () => sonnerToast.success(t("pages.pharmacy.prescription_fulfilled")),
           })
         }
         className="h-7 px-3 text-[10px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-[6px] shadow-sm transition-all duration-200"
@@ -675,6 +675,7 @@ function PrescriptionTableRow({
   onViewDetails: (rx: PrescriptionRequest) => void;
   index: number;
 }) {
+  const { t } = useTranslation();
   const patient = rx.prescription?.patient;
   const items = rx.prescription?.items ?? [];
 
@@ -887,19 +888,19 @@ const PharmacyPrescriptions = () => {
     {
       type: "select" as const,
       key: "status",
-      label: "Status",
+      label: t("pages.pharmacy.status"),
       value: filters.status,
       options: [
-        { value: "all", label: "All statuses" },
-        { value: "pending", label: "Pending" },
-        { value: "reviewing", label: "Reviewing" },
-        { value: "approved", label: "Approved" },
-        { value: "rejected", label: "Rejected" },
-        { value: "fulfilled", label: "Fulfilled" },
+        { value: "all", label: t("pages.pharmacy.all_statuses") },
+        { value: "pending", label: t("pages.pharmacy.pending") },
+        { value: "reviewing", label: t("pages.pharmacy.reviewing") },
+        { value: "approved", label: t("pages.pharmacy.approved") },
+        { value: "rejected", label: t("pages.pharmacy.rejected") },
+        { value: "fulfilled", label: t("pages.pharmacy.fulfilled") },
       ],
       onChange: (v: string) => set("status", v as any)
     }
-  ], [filters.status, set]);
+  ], [filters.status, set, t]);
 
  
   return (
@@ -914,31 +915,31 @@ const PharmacyPrescriptions = () => {
         <main className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-5 gap-2">
             <StatCard
-              label="Total requests"
+              label={t("pages.pharmacy.total_requests")}
               value={isLoading ? "-" : requests.length}
               icon={FileText}
               accent="primary"
             />
             <StatCard
-              label="Pending"
+              label={t("pages.pharmacy.pending")}
               value={isLoading ? "-" : counts.pending}
               icon={Clock}
               accent="warning"
             />
             <StatCard
-              label="Reviewing"
+              label={t("pages.pharmacy.reviewing")}
               value={isLoading ? "-" : counts.reviewing}
               icon={Eye}
               accent="primary"
             />
             <StatCard
-              label="Approved"
+              label={t("pages.pharmacy.approved")}
               value={isLoading ? "-" : counts.approved}
               icon={CheckCircle2}
               accent="success"
             />
             <StatCard
-              label="Fulfilled"
+              label={t("pages.pharmacy.fulfilled")}
               value={isLoading ? "-" : counts.fulfilled}
               icon={PackageCheck}
               accent="success"
@@ -1114,13 +1115,13 @@ const PharmacyPrescriptions = () => {
                   <table className="w-full text-left">
                     <thead>
                       <tr>
-                        <TableHeader label="Rx #" sortKey="date-desc" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
+                        <TableHeader label={t("pages.pharmacy.rx_number")} sortKey="date-desc" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
                         <TableHeader label={t("pages.pharmacy.patient")} sortKey="patient" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
                         <TableHeader label={t("pages.pharmacy.medicines")} currentSort={filters.sort} onSort={() => { }} />
                         <TableHeader label={t("pages.pharmacy.delivery")} currentSort={filters.sort} onSort={() => { }} />
                         <TableHeader label={t("pages.pharmacy.status")} sortKey="status" currentSort={filters.sort} onSort={(s) => set("sort", s)} />
                         <TableHeader
-                          label="Date"
+                          label={t("pages.pharmacy.date")}
                           sortKey="date-desc"
                           currentSort={filters.sort}
                           onSort={(s) => set("sort", filters.sort === "date-desc" ? "date-asc" : "date-desc")}

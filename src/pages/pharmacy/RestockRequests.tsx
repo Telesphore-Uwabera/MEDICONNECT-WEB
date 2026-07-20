@@ -1060,7 +1060,7 @@ const RestockRequests = () => {
           {/* Stat cards */}
           <div className="px-4 pt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <StatCard
-              label="Pending"
+              label={t("pages.pharmacy.pending")}
               value={isLoading ? "-" : counts.pending}
               icon={ClipboardList}
               accent="warning"
