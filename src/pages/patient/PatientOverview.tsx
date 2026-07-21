@@ -195,7 +195,7 @@ const PatientOverview = () => {
                 {
                   label: t("pages.patient.quick_medical_label"),
                   hint: t("pages.patient.quick_medical_hint"),
-                  to: "/patient/service-bookings",
+                  to: "/patient/medical-records",
                   icon: Video,
                   tone: "text-emerald-500 bg-emerald-500/10",
                 },

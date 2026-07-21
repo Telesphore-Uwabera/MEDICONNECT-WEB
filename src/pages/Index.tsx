@@ -67,6 +67,7 @@ import Specialities from "@/components/landing/Specialities";
 import OurTeam from "@/components/landing/Ourteam";
 import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
+import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
@@ -131,8 +132,11 @@ const Index = () => {
   const generalSettings = publicSettings?.general;
   const logo = generalSettings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
   const appName = generalSettings?.app_name || "MEDICONNECT";
-  const appTagline =
-    generalSettings?.app_tagline || t("pages.landing.footer_desc");
+  const appTagline = localizedText(
+    generalSettings?.app_tagline,
+    i18n.language,
+    t("pages.landing.footer_desc"),
+  );
   const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
   const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
   const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
