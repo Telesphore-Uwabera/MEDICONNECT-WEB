@@ -310,7 +310,11 @@ export default function HeroSection() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+const [selectedDate, setSelectedDate] = useState("");
+const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const [searchDropdownPos, setSearchDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
   const { data: publicSettings } = usePublicSettings();
   const heroTagline = localizedText(
     publicSettings?.general?.app_tagline,
@@ -318,10 +322,47 @@ export default function HeroSection() {
     t("pages.landing.hero_intro"),
   );
 
-  useEffect(() => {
+useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchValue), 300);
     return () => clearTimeout(timer);
   }, [searchValue]);
+
+
+  useEffect(() => {
+    if (!searchDropdownOpen) return;
+
+    const updatePos = () => {
+      const el = searchBoxRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setSearchDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updatePos();
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
+  }, [searchDropdownOpen]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const insideBox = searchBoxRef.current?.contains(target);
+      const insideDropdown = searchDropdownRef.current?.contains(target);
+      if (!insideBox && !insideDropdown) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleSearch = () => {
     const query = searchValue.trim();
@@ -341,7 +382,7 @@ export default function HeroSection() {
 
   const call = useCallStore();
 
-  const { data: instantDoctorsData, isLoading: doctorsLoading } =
+const { data: instantDoctorsData, isLoading: doctorsLoading } =
     useGetSearchDoctors({
       instant: true,
       page: 1,
@@ -349,6 +390,16 @@ export default function HeroSection() {
       q: debouncedSearch,
       date: selectedDate,
     });
+
+  const { data: searchResultsData, isLoading: searchResultsLoading } =
+    useGetSearchDoctors({
+      page: 1,
+      per_page: 6,
+      q: debouncedSearch,
+      date: selectedDate,
+    });
+
+  const searchResults: DisplayDoctor[] = (searchResultsData?.data ?? []).map((doc) => toDisplayDoctor(doc, t));
 
   const doctors: DisplayDoctor[] = (instantDoctorsData?.data ?? []).map((doc) => toDisplayDoctor(doc, t));
   const hasDoctors = doctors.length > 0;
@@ -387,12 +438,41 @@ export default function HeroSection() {
     else call.setDialogOpen(v);
   };
 
-  const handleConnect = () => {
+const handleConnect = () => {
     if (!callDoctor || !canConnect) return;
     setPaused(true);
     if (isMinimized) call.setMinimized(false);
     else if (isCallInProgress) call.setDialogOpen(true);
     else call.startCall(callDoctor);
+  };
+
+  const handleSelectSearchDoctor = (doc: DisplayDoctor) => {
+    const doctorForCall: Doctor = {
+      id: doc.raw.id,
+      user: {
+        id: doc.raw.user.id,
+        name: doc.raw.user.name,
+        avatar: doc.raw.user.avatar,
+      },
+      specialization: doc.raw.specialization,
+    };
+
+    const isThisDocInCall = call.doctor?.id === doctorForCall.id;
+    const docCallInProgress = isThisDocInCall && call.phase !== "idle";
+    const docConnected = isThisDocInCall && call.phase === "connected";
+    const docMinimized = docConnected && call.minimized;
+
+    const docCanConnect =
+      doc.raw.is_available && !doc.raw.bookings_paused && doc.raw.instant_consultation;
+
+setSearchDropdownOpen(false);
+    setSearchValue(doc.name);
+
+    if (!docCanConnect && !docCallInProgress) return;
+
+    if (docMinimized) call.setMinimized(false);
+    else if (docCallInProgress) call.setDialogOpen(true);
+    else call.startCall(doctorForCall);
   };
 
   useEffect(() => {
@@ -476,11 +556,63 @@ export default function HeroSection() {
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
+                    onChange={(e) => {
+                      setSearchValue(e.target.value);
+                      setSearchDropdownOpen(e.target.value.trim().length > 0);
+                    }}
+                    onFocus={() => {
+                      if (searchValue.trim().length > 0) setSearchDropdownOpen(true);
+                    }}
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                     className="bg-transparent outline-none text-xs sm:text-sm w-full placeholder:text-muted-foreground text-foreground min-w-0"
                     placeholder={t("pages.landing.search_doctors_placeholder")}
                   />
+
+{searchDropdownOpen &&
+                    debouncedSearch.trim().length > 0 &&
+                    typeof document !== "undefined" &&
+                    createPortal(
+                      <div
+                        ref={searchDropdownRef}
+                        className="fixed z-[9999] bg-card border border-border rounded-[6px] shadow-xl max-h-[280px] overflow-y-auto"
+                        style={{
+                          top: `${searchDropdownPos.top}px`,
+                          left: `${searchDropdownPos.left}px`,
+                          width: `${searchDropdownPos.width}px`,
+                        }}
+                      >
+                        {searchResultsLoading ? (
+                          <div className="px-3 py-3 text-xs text-muted-foreground">
+                            {t("pages.landing.searching", { defaultValue: "Searching..." })}
+                          </div>
+                        ) : searchResults.length === 0 ? (
+                          <div className="px-3 py-3 text-xs text-muted-foreground">
+                            {t("pages.landing.no_doctors_available")}
+                          </div>
+                        ) : (
+                          searchResults.map((doc) => (
+                            <button
+                              key={doc.id}
+                              type="button"
+                              onClick={() => handleSelectSearchDoctor(doc)}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted transition-colors text-left"
+                            >
+                              <img
+                                src={doc.image}
+                                alt={doc.name}
+                                className="w-8 h-8 rounded-full object-cover shrink-0"
+                                onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-semibold text-foreground truncate">{doc.name}</div>
+                                <div className="text-[10px] text-muted-foreground truncate">{doc.role}</div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>,
+                      document.body,
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2.5 px-3 py-2 sm:w-[180px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
