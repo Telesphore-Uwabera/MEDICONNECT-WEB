@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -694,8 +694,11 @@ function Sidebar({
                   )}
                 >
                   <span className="w-1.5 h-1.5 rounded-full inline-block bg-current" />
-                  {profile.status.charAt(0).toUpperCase() +
-                    profile.status.slice(1)}
+                  {t(`pages.pharmacy.${profile.status}`, {
+                    defaultValue:
+                      profile.status.charAt(0).toUpperCase() +
+                      profile.status.slice(1),
+                  })}
                 </span>
               </div>
             </div>
@@ -769,10 +772,10 @@ function Sidebar({
                     isActive && "text-primary",
                   )}
                 >
-                  {section.label}
+                  {t(section.label)}
                 </span>
                 <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5 truncate">
-                  {section.description}
+                  {t(section.description)}
                 </p>
               </div>
               {!isSetup && isActive && (
@@ -798,7 +801,7 @@ function Sidebar({
       {isSetup && (
         <div className="hidden sm:block px-4 py-3 border-t border-border">
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            Jump between sections freely - no order needed
+            {t("pages.pharmacy.jump_sections")}
           </p>
         </div>
       )}
@@ -953,7 +956,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
                       : "bg-amber-500/15 text-amber-500",
                 )}
               >
-                {profile.status}
+                {t(`pages.pharmacy.${profile.status}`, { defaultValue: profile.status })}
               </span>
             </div>
             {(profile.name_fr || p.name_kiny) && (
@@ -2527,7 +2530,7 @@ function SetupWizard({
             </span>
           </div>
           <span className="text-sm font-bold text-foreground">
-            {section.label}
+            {t(section.label)}
           </span>
           <span className="ml-auto text-[11px] text-muted-foreground font-medium">
             {t("pages.pharmacy.step_of", { current: currentIdx + 1, total: SECTIONS.length })}
@@ -2859,7 +2862,7 @@ const PharmacyProfile = () => {
     ? {
       city: profile.city,
       status:
-        profile.status.charAt(0).toUpperCase() + profile.status.slice(1),
+        t(`pages.pharmacy.${profile.status}`, { defaultValue: profile.status.charAt(0).toUpperCase() + profile.status.slice(1) }),
       hours: profile.is_open_24h
         ? "24h"
         : `${formatTime(profile.opens_at)} - ${formatTime(profile.closes_at)}`,
@@ -2956,4 +2959,3 @@ const PharmacyProfile = () => {
 };
 
 export default PharmacyProfile;
-

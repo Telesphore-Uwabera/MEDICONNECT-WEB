@@ -1,29 +1,7 @@
-import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 export function HeroHeadline() {
   const { t } = useTranslation();
-  const slides = [
-    t("pages.landing.hero_dynamic_1"),
-    t("pages.landing.hero_dynamic_2"),
-    t("pages.landing.hero_dynamic_3"),
-    t("pages.landing.hero_dynamic_4"),
-    t("pages.landing.hero_dynamic_5"),
-    t("pages.landing.hero_dynamic_6"),
-  ];
-  const [current, setCurrent] = useState(0);
-  const [animating, setAnimating] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimating(true);
-      setTimeout(() => {
-        setCurrent((prev) => (prev + 1) % slides.length);
-        setAnimating(false);
-      }, 400);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <>
@@ -32,9 +10,9 @@ export function HeroHeadline() {
 
         .hero-headline {
           font-family: 'Bricolage Grotesque', var(--font-display), sans-serif;
-          font-size: clamp(1.55rem, 4.5vw, 3.1rem);
-          font-weight: 650;
-          line-height: 1.13;
+          font-size: clamp(1.9rem, 4.1vw, 3.55rem);
+          font-weight: 700;
+          line-height: 1.08;
           letter-spacing: -0.02em;
           text-align: center;
         }
@@ -45,49 +23,29 @@ export function HeroHeadline() {
           }
         }
 
-        .hero-line2 {
-          display: flex;
-          align-items: baseline;
-          gap: 0.45ch;
-          justify-content: center;
-          margin-top: clamp(0.25rem, 1vw, 0.5rem);
-          flex-wrap: nowrap;
-        }
-
-        @media (min-width: 1024px) {
-          .hero-line2 {
-            justify-content: flex-start;
-          }
-        }
-
-        .hero-static {
+        .hero-line {
+          display: block;
           color: var(--foreground);
-          white-space: nowrap;
-          font-weight: 650;
+          white-space: normal;
         }
 
-        .hero-dynamic {
+        .hero-accent {
           color: hsl(var(--primary));
-          display: inline-block;
-          white-space: nowrap;
-          font-weight: 700; 
         }
       `}</style>
 
       <h1 className="hero-headline">
-        {t("pages.landing.hero_prefix")}
-        <span className="hero-line2">
-          <span className="hero-static">{t("pages.landing.hero_static")}</span>
-          <span
-            className="hero-dynamic"
-            style={{
-              opacity: animating ? 0 : 1,
-              transform: animating ? "translateY(12px)" : "translateY(0px)",
-              transition: "opacity 0.35s ease, transform 0.35s ease",
-            }}
-          >
-            {slides[current]}
-          </span>
+        <span className="hero-line">
+          {t("pages.landing.hero_instant_virtual", { defaultValue: "Instant Virtual" })}
+        </span>
+        <span className="hero-line">
+          {t("pages.landing.hero_consultation", { defaultValue: "Consultation." })}
+        </span>
+        <span className="hero-line">
+          {t("pages.landing.hero_quality_care", { defaultValue: "Quality Care," })}
+        </span>
+        <span className="hero-line hero-accent">
+          {t("pages.landing.hero_anywhere", { defaultValue: "Anywhere." })}
         </span>
       </h1>
     </>

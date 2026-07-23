@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,7 +10,7 @@ import {
   ChevronDown,
   Download,
   LayoutDashboard,
-  ChevronRight,
+  ChevronRight, 
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useMe } from "@/hooks/useAuth";
@@ -54,7 +53,7 @@ const DownloadMobileApp = () => {
       <button
         type="button"
         onClick={() => setAppDownloadOpen((open) => !open)}
-        className="flex w-full items-center justify-between gap-3 rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md transition hover:opacity-90"
+        className="flex w-full items-center justify-between gap-3 rounded-[6px] bg-primary px-3 py-2.5 text-primary-foreground shadow-md transition hover:opacity-90"
         aria-expanded={appDownloadOpen}
         aria-haspopup="menu"
       >
@@ -92,7 +91,7 @@ const DownloadMobileApp = () => {
               href="#"
               role="menuitem"
               onClick={() => setAppDownloadOpen(false)}
-              className="group flex min-h-[72px] items-center gap-3 rounded-[6px] border border-border bg-background px-3 py-2.5 transition-all hover:border-primary/40 hover:bg-muted/60"
+              className="group flex  items-center gap-3 rounded-[6px] border border-border bg-background  px-3 py-2.5  transition-all hover:border-primary/40 hover:bg-muted/60"
             >
               <div className="flex  shrink-0 items-center justify-center rounded-[6px] bg-black">
                 <img
@@ -102,7 +101,7 @@ const DownloadMobileApp = () => {
                 />
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 lg:block hidden">
                 <p className="text-xs text-muted-foreground">
                   Download on
                 </p>
@@ -111,7 +110,7 @@ const DownloadMobileApp = () => {
                 </p>
               </div>
 
-              <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 lg:block hidden" />
             </a>
 
             <a
@@ -128,7 +127,7 @@ const DownloadMobileApp = () => {
                 />
               </div>
 
-              <div className="min-w-0">
+              <div className="min-w-0 lg:block hidden">
                 <p className="text-xs text-muted-foreground">
                   Download on
                 </p>
@@ -137,7 +136,7 @@ const DownloadMobileApp = () => {
                 </p>
               </div>
 
-              <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 lg:block hidden" />
             </a>
           </div>
         </div>
@@ -157,36 +156,15 @@ const StartConsult = () => {
     return (
       <>
         <div
-          className="mt-7 flex flex-col gap-3 
-         w-full"
+          className="mt-5 flex w-full max-w-[620px] flex-col gap-2.5"
         >
-          <div className="grid grid-cols-2 gap-3">
-            {/* /patient/search-doctors instant */}
-            {/* <button onClick={() => setConnectOpen(true)} className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                  <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </span>
-                <div className="text-left min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold leading-none">
-                    {t(
-                      "pages.landing.instant_consultation",
-                      "Instant Consultation",
-                    )}
-                  </p>
-                  <p className="hidden sm:block text-[10px] sm:text-[11px] text-primary-foreground/70 mt-0.5">
-                    {t("pages.landing.title", "connect in under 5 minutes")}
-                  </p>
-                </div>
-              </div>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
-            </button> */}
-
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          
             <Link to="/patient/search-doctors?instant=true">
-              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+              <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 py-2.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                    <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="flex items-center justify-center h-8 w-8 rounded-[6px] bg-white/15 shrink-0">
+                    <LayoutDashboard className="h-3.5 w-3.5" />
                   </span>
                   <div className="text-left min-w-0">
                     <p className="text-xs sm:text-sm font-semibold leading-none">
@@ -200,16 +178,16 @@ const StartConsult = () => {
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
               </button>
             </Link>
             <DownloadMobileApp />
           </div>
           <Link to="/patient/search-doctors">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 py-2.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                  <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="flex items-center justify-center h-8 w-8 rounded-[6px] bg-white/15 shrink-0">
+                  <Stethoscope className="h-3.5 w-3.5" />
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none">
@@ -217,7 +195,7 @@ const StartConsult = () => {
                   </p>
                 </div>
               </div>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </Link>
         </div>
@@ -250,13 +228,13 @@ const StartConsult = () => {
   // ── Guest: show sign up / browse CTAs ───────────────
   return (
     <>
-      <div className="mt-7 flex flex-col gap-3  w-full">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="mt-5 flex w-full max-w-[620px] flex-col gap-2.5">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
           <Link to="/patient/search-doctors?instant=true">
-            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+            <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 py-2.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                  <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="flex items-center justify-center h-8 w-8 rounded-[6px] bg-white/15 shrink-0">
+                  <LayoutDashboard className="h-3.5 w-3.5" />
                 </span>
                 <div className="text-left min-w-0">
                   <p className="text-xs sm:text-sm font-semibold leading-none">
@@ -270,7 +248,7 @@ const StartConsult = () => {
                   </p>
                 </div>
               </div>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           </Link>
 
@@ -278,10 +256,10 @@ const StartConsult = () => {
         </div>
 
         <Link to="/patient/search-doctors">
-          <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
+          <button className="w-full flex items-center justify-between gap-2 sm:gap-3 px-3 py-2.5 rounded-[6px] bg-primary text-primary-foreground hover:opacity-90 transition-smooth group shadow-medium">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <span className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-[6px] bg-white/15 shrink-0">
-                <Stethoscope className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="flex items-center justify-center h-8 w-8 rounded-[6px] bg-white/15 shrink-0">
+                <Stethoscope className="h-3.5 w-3.5" />
               </span>
               <div className="text-left min-w-0">
                 <p className="text-xs sm:text-sm font-semibold leading-none">
@@ -289,7 +267,7 @@ const StartConsult = () => {
                 </p>
               </div>
             </div>
-            <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
+            <ArrowRight className="h-3.5 w-3.5 opacity-60 group-hover:translate-x-0.5 transition-transform shrink-0" />
           </button>
         </Link>
       </div>

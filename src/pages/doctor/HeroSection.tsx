@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -502,7 +502,33 @@ setSearchDropdownOpen(false);
   }, [paused, call.dialogOpen, isAnyCallInProgress, hasDoctors, doctors.length]);
 
   return (
-    <div className="lg:min-h-[67vh] lg:mt-0 mt-12 bg-background overflow-x-hidden relative">
+    <div className="min-h-[540px] lg:min-h-[610px] lg:mt-0 mt-12 bg-background overflow-x-hidden relative">
+      {/* Soft hero lighting */}
+      <div
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_76%_45%,hsl(var(--primary)/0.22),transparent_32%),radial-gradient(circle_at_18%_56%,hsl(var(--primary)/0.1),transparent_34%)]"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 pointer-events-none bg-gradient-to-r from-background via-background/92 to-background/70"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-y-0 left-0 w-[58%] pointer-events-none bg-gradient-to-b from-background via-transparent to-background"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-y-0 right-0 z-0 hidden w-[62vw] pointer-events-none lg:block"
+        aria-hidden="true"
+      >
+        <img
+          src="/images/Jul18202601_47_20AM.png"
+          alt=""
+          className="h-full w-full object-cover object-center opacity-80"
+          loading="eager"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/35 to-background/5" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-transparent to-background/65" />
+      </div>
       {/* Diagonal lines background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.35]"
@@ -512,63 +538,21 @@ setSearchDropdownOpen(false);
         }}
       />
 
-      <div className="relative pt-2 sm:pt-4">
+      <div className="relative">
      
-        <section id="landing-page" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 lg:gap-7 items-center px-4 py-3 sm:px-6 sm:py-4 md:px-8 lg:px-10 lg:py-6 relative">
+        <section id="landing-page" className="relative mx-auto grid min-h-[540px] max-w-7xl grid-cols-1 items-center gap-8 px-4 py-8 sm:px-6 sm:py-10 md:px-8 lg:min-h-[610px] lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.78fr)] lg:px-10 lg:py-12">
 
           
-          <div className="relative z-10 order-2 lg:order-1">
+          <div className="relative z-10 w-full max-w-[680px]">
           <HeroHeadline />
-            <p className="mt-3 sm:mt-4 text-sm sm:text-[15px] text-muted-foreground font-medium text-center lg:text-left max-w-md mx-auto lg:mx-0">
+            <p className="mt-3 sm:mt-4 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:text-[15px] text-center lg:text-left mx-auto lg:mx-0">
               {heroTagline}
-            </p>
-              <div className="hidden sm:flex justify-between py-4 lg:py-5 items-center w-full">
-              {/* <svg
-                width="44" height="50" viewBox="0 0 140 160" fill="none"
-                xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                className="lg:w-[52px] lg:h-[60px] shrink-0"
-              >
-                <style>{`.bob{animation:bob 2.4s ease-in-out infinite;}@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}`}</style>
-                <g className="bob">
-                  <line x1="50" y1="38" x2="35" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
-                  <line x1="80" y1="38" x2="95" y2="58" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
-                  <circle cx="33" cy="60" r="5.5" fill="#18B19A" />
-                  <circle cx="97" cy="60" r="5.5" fill="#18B19A" />
-                  <path d="M35 40 Q65 28 95 40" stroke="#18B19A" strokeWidth="4.5" strokeLinecap="round" />
-                  <path d="M65 40 C65 68, 45 82, 40 102 C34 122, 48 140, 68 140 C88 140, 102 122, 102 105" stroke="#18B19A" strokeWidth="5" strokeLinecap="round" />
-                  <circle cx="102" cy="118" r="22" stroke="#18B19A" strokeWidth="5" />
-                  <circle cx="102" cy="118" r="10" fill="#18B19A" opacity="0.18" />
-                  <circle cx="102" cy="118" r="4" fill="#18B19A" />
-                </g>
-              </svg> */}
-              {/* <svg
-                width="100%" height="50" viewBox="0 0 400 160" fill="none"
-                xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                className="flex-1 ml-4 lg:ml-6 lg:h-[60px]"
-              >
-                <style>{`.pulse-line{animation:dash 2.4s linear infinite;}@keyframes dash{from{stroke-dashoffset:120;}to{stroke-dashoffset:0;}}`}</style>
-                <defs>
-                  <marker id="ecg-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M2 1L8 5L2 9" fill="none" stroke="#18B19A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </marker>
-                </defs>
-                <line x1="0" y1="80" x2="400" y2="80" stroke="#ffff" strokeWidth="1.5" opacity="0.15" />
-                <path stroke="#ffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80" />
-                <path className="pulse-line" stroke="#18B19A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="8 4" opacity="0.55"
-                  d="M0 80 L35 80 L48 58 L55 104 L63 44 L71 112 L80 80 L130 80 L143 58 L150 104 L158 44 L166 112 L175 80 L225 80 L238 58 L245 104 L253 44 L261 112 L270 80 L390 80" />
-                <line x1="386" y1="80" x2="398" y2="80" stroke="#ffff" strokeWidth="2.5" strokeLinecap="round" markerEnd="url(#ecg-arr)" />
-                <circle cx="63" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
-                <circle cx="158" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
-                <circle cx="253" cy="44" r="3.5" fill="#ffff" opacity="0.7" />
-              </svg> */}
-            </div>
-
+            </p> 
             <StartConsult />
  
-            <div className="mt-4 sm:mt-5 bg-card rounded-[6px] border border-border overflow-visible">
+            <div className="mt-4 max-w-[620px] overflow-visible rounded-[8px] border border-border/80 bg-card/95 shadow-lg shadow-black/5 backdrop-blur">
               <div className="flex flex-col sm:flex-row sm:items-center gap-0">
-<div ref={searchBoxRef} className="relative flex items-center gap-2.5 px-3 py-2.5 flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-border">
+                <div className="flex items-center gap-2.5 px-3 py-2 flex-1 min-w-0 border-b sm:border-b-0 sm:border-r border-border">
                   <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     value={searchValue}
@@ -631,14 +615,14 @@ setSearchDropdownOpen(false);
                     )}
                 </div>
 
-                <div className="flex items-center gap-2.5 px-3 py-2.5 sm:w-[200px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
+                <div className="flex items-center gap-2.5 px-3 py-2 sm:w-[180px] shrink-0 border-b sm:border-b-0 sm:border-r border-border">
                   <DatePicker value={selectedDate} onChange={setSelectedDate} />
                 </div>
 
-                <div className="px-1.5 py-1.5 shrink-0">
+                <div className="px-1.5 py-1 shrink-0">
                   <button
                     onClick={handleSearch}
-                    className="w-full sm:w-auto text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-5 py-2 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace-nowrap"
+                    className="w-full sm:w-auto text-primary-foreground font-semibold rounded-[4px] px-3 sm:px-4 py-1.5 text-xs sm:text-sm bg-gradient-primary hover:opacity-90 transition-opacity whitespace-nowrap"
                   >
                     {t("pages.landing.search_action")}
                   </button>
@@ -646,161 +630,9 @@ setSearchDropdownOpen(false);
               </div>
             </div>
           </div>
- 
-          <div
-            className="order-1 lg:order-2 lg:block hidden w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[440px] md:max-w-[500px] mx-auto lg:max-w-none"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-            onFocus={() => setPaused(true)}
-            onBlur={() => setPaused(false)}
-          >
 
-            {/* Visual block */}
-            <div className="relative h-[260px] xs:h-[290px] sm:h-[330px] md:h-[380px] lg:h-[470px]">
-            
-              {/* Active doctor image */}
-              <div
-                className="absolute border-[10px] border-primary  rounded-full overflow-hidden
-                           right-[8px] top-[8px]
-                           w-[224px] h-[224px]
-                           xs:w-[254px] xs:h-[254px]
-                           sm:w-[282px] sm:h-[282px]
-                           md:w-[344px] md:h-[344px]
-                           lg:w-[360px] lg:h-[360px]"
-              >
-                {doctorsLoading ? (
-                  <div className="w-full h-full bg-muted animate-pulse" />
-                ) : activeDoc ? (
-                  <img
-                    key={activeDoc.id}
-                    src={activeDoc.image}
-                    alt={activeDoc.name}
-                    onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
-                    className="w-full h-full object-cover object-bottom transition-opacity duration-500 animate-in fade-in scale-110"
-                  />
-                ) : (
-                  <img
-                    src={doctorPlaceholder}
-                    alt={t("pages.landing.no_doctors_available")}
-                    className="w-full h-full object-cover object-bottom opacity-60"
-                  />
-                )}
-              </div>
- 
-              {/* <div
-                className="absolute left-0 z-10
-                           bg-card rounded-[6px] border border-border shadow-sm
-                           px-2 py-1.5 sm:px-3 sm:py-2
-                           flex items-center gap-1.5 sm:gap-2
-                           top-[110px] xs:top-[130px] sm:top-[140px] md:top-[168px] lg:top-[260px]"
-              >
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-[4px] grid place-items-center text-primary-foreground bg-gradient-primary shrink-0">
-                  <Check className="w-3 h-3" strokeWidth={3} />
-                </div>
-                <span className="font-semibold text-foreground text-[10px] sm:text-xs whitespace-nowrap">
-                  Regular Check-up
-                </span>
-              </div> */}
-
-           
-              {activeDoc && (
-                <div
-                  className="absolute z-10
-                             right-0 translate-x-[22%]
-                             bg-card rounded-[6px] border border-border shadow-md text-center
-                             w-[96px] p-2
-                             xs:w-[100px]
-                             sm:w-[110px] sm:p-2.5
-                             md:w-[120px]
-                             lg:w-[122px] lg:p-2.5 lg:translate-x-[12%]
-                             top-[96px] xs:top-[112px] sm:top-[132px] md:top-[152px] lg:top-[150px]"
-                >
-                  <img
-                    src={activeDoc.image}
-                    alt={activeDoc.name}
-                    onError={(e) => { (e.target as HTMLImageElement).src = doctorPlaceholder; }}
-                    className="w-9 h-9 sm:w-11 sm:h-11 lg:w-14 lg:h-14 rounded-full mx-auto object-cover ring-2 ring-card"
-                    loading="lazy"
-                  />
-                  <div className="mt-1.5 font-semibold text-foreground text-[8px] sm:text-[9px] lg:text-[10px] truncate px-1">
-                    {activeDoc.name}
-                  </div>
-                  <div className="text-[7px] sm:text-[8px] text-muted-foreground truncate px-1 mb-1">
-                    {activeDoc.role}
-                  </div>
-
-                  {/* Connect / Resume / Open button */}
-                  <button
-                    onClick={handleConnect}
-                    disabled={!canConnect && !isCallInProgress}
-                    className={cn(
-                      "w-full mt-1 inline-flex items-center justify-center gap-1",
-                      "text-[8px] sm:text-[9px] lg:text-[10px] font-semibold rounded-[4px] py-1 sm:py-1.5",
-                      "transition-opacity disabled:opacity-40 disabled:cursor-not-allowed",
-                      isMinimized
-                        ? "bg-emerald-500 hover:opacity-90 text-white"
-                        : isCallInProgress
-                          ? "bg-sky-500 hover:opacity-90 text-white"
-                          : "bg-primary hover:opacity-90 text-primary-foreground",
-                    )}
-                  >
-                    {isMinimized ? (
-                      <><Maximize2 className="h-2.5 w-2.5" />{t("pages.landing.resume")}</>
-                    ) : isCallInProgress ? (
-                      <><Wifi className="h-2.5 w-2.5" />{t("pages.landing.open")}</>
-                    ) : (
-                      <><Wifi className="h-2.5 w-2.5" />{t("pages.landing.connect")}</>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Meet Our Doctors  desktop only, floats over circle corner */}
-              {/* <MeetOurDoctorsSlider
-                doctors={doctors}
-                totalDoctors={totalDoctors}
-                index={activeIdx}
-                setIndex={setActiveIdx}
-                setPaused={setPaused}
-                className="hidden lg:block absolute right-2 bottom-2 w-[260px]"
-              /> */}
-            </div>
-
-            {/* Meet Our Doctors  mobile + tablet (below the circle) */}
-            {/* <MeetOurDoctorsSlider
-              doctors={doctors}
-              totalDoctors={totalDoctors}
-              index={activeIdx}
-              setIndex={setActiveIdx}
-              setPaused={setPaused}
-              className="block lg:hidden mt-2 w-full sm:w-[300px] mx-auto"
-            /> */}
-          </div>
         </section>
       </div>
-
-      {/* ConnectDialog portal */}
-      {dialogDoctor &&
-        connectOpen &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto"
-            onClick={(e) => { if (e.target === e.currentTarget) handleOpenChange(false); }}
-          >
-            <div
-              className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[6px] bg-card border border-border shadow-2xl my-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ConnectDialog
-                doctor={dialogDoctor}
-                open={connectOpen}
-                onOpenChange={handleOpenChange}
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
     </div>
   );
 }

@@ -39,13 +39,15 @@ import type {
   ApiDoctorHospital,
   ApiDoctorSpecialization,
 } from "@/hooks/patient/use-patient-doctor";
-import { readConsultSession, pruneIfEnded } from "@/hooks/patient/se-consultation-session";
+import {
+  readConsultSession,
+  pruneIfEnded,
+} from "@/hooks/patient/se-consultation-session";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
- 
 type ModalMode = "details" | "connect";
- 
+
 function DoctorAvatar({
   doctor,
   size = "sm",
@@ -61,7 +63,9 @@ function DoctorAvatar({
     .slice(0, 2)
     .toUpperCase();
   const sizeClass =
-    size === "lg" ? "h-full w-full text-2xl sm:text-3xl" : "h-full w-full text-sm";
+    size === "lg"
+      ? "h-full w-full text-2xl sm:text-3xl"
+      : "h-full w-full text-sm";
   if (!doctor.image || imgError) {
     return (
       <div
@@ -120,7 +124,6 @@ function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
   );
 }
 
- 
 function DetailRow({
   icon: Icon,
   label,
@@ -158,8 +161,8 @@ function DetailRow({
     </div>
   );
 }
-// ─── Quick stat (used in the sidebar) ──────────────────────────────────────────
-// Unchanged — lives inside UnifiedModal, out of scope for this pass.
+// --- Quick stat (used in the sidebar) ------------------------------------------
+// Unchanged  lives inside UnifiedModal, out of scope for this pass.
 
 function QuickStat({
   icon,
@@ -185,8 +188,8 @@ function QuickStat({
   );
 }
 
-// ─── Resume Pill ──────────────────────────────────────────────────────────────
-// Unchanged — out of scope for this pass.
+// --- Resume Pill --------------------------------------------------------------
+// Unchanged  out of scope for this pass.
 
 function ResumePill({
   doctorName,
@@ -223,7 +226,7 @@ function ResumePill({
           <span className="h-2 w-2 rounded-full bg-white animate-pulse shrink-0" />
         )}
         <span className="text-sm font-semibold leading-none truncate max-w-[120px]">
-          {isLive ? `${t("pages.landing.live")} · ` : ""}
+          {isLive ? `${t("pages.landing.live")}  ` : ""}
           {doctorName}
         </span>
         <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
@@ -233,8 +236,8 @@ function ResumePill({
   );
 }
 
-// ─── Saved Session Pill ───────────────────────────────────────────────────────
-// Unchanged — out of scope for this pass.
+// --- Saved Session Pill -------------------------------------------------------
+// Unchanged  out of scope for this pass.
 
 function SavedSessionPill({
   doctorName,
@@ -261,7 +264,7 @@ function SavedSessionPill({
       >
         <RotateCcw className="h-4 w-4 shrink-0" />
         <span className="text-sm font-semibold leading-none truncate max-w-[130px]">
-          {t("pages.landing.resume")} · {doctorName}
+          {t("pages.landing.resume")}  {doctorName}
         </span>
         <ArrowUpRight className="h-4 w-4 shrink-0 opacity-70" />
       </button>
@@ -270,9 +273,8 @@ function SavedSessionPill({
   );
 }
 
-
-// ─── Unified Modal ────────────────────────────────────────────────────────────
-// Unchanged — out of scope for this pass (card-only restyle, per your call).
+// --- Unified Modal ------------------------------------------------------------
+// Unchanged  out of scope for this pass (card-only restyle, per your call).
 
 interface UnifiedModalProps {
   doctor: ApiDoctor;
@@ -317,8 +319,15 @@ export function UnifiedModal({
 
   const fee = parseFloat(doctor.consultation_fee);
   const rating = parseFloat(doctor.rating_avg);
-  const feeLabel =
-    fee === 0 ? t("pages.cards.free") : `${fee.toLocaleString()} ${doctor.currency}`;
+  const numericFee = Number(fee);
+
+ 
+    const feeLabel =
+  Number.isInteger(numericFee) && numericFee === 0
+    ? t("pages.cards.free")
+    : Number.isInteger(numericFee)
+      ? `${numericFee.toLocaleString()} ${doctor.currency}`
+      : t("pages.cards.feeNotAvailable");
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
@@ -357,7 +366,20 @@ export function UnifiedModal({
     kiny: t("pages.landing.lang_rw"),
   };
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
-  const bio = doctor.bio_en || doctor.bio_fr || doctor.bio_kiny || null;
+  const localizedBio = (() => {
+    const clean = (value?: string | null) => value?.trim() || null;
+    const lang = i18n.language.toLowerCase();
+
+    if (lang.startsWith("fr")) {
+      return clean(doctor.bio_fr) || clean(doctor.bio_en) || clean(doctor.bio_kiny);
+    }
+
+    if (lang.startsWith("rw") || lang.startsWith("kiny")) {
+      return clean(doctor.bio_kiny) || clean(doctor.bio_en) || clean(doctor.bio_fr);
+    }
+
+    return clean(doctor.bio_en) || clean(doctor.bio_fr) || clean(doctor.bio_kiny);
+  })();
 
   return createPortal(
     <>
@@ -389,7 +411,9 @@ export function UnifiedModal({
                 </button>
               )}
               <span className="text-sm font-semibold text-foreground/70 truncate">
-                {mode === "details" ? doctor.user.name : t("pages.cards.instant_consultation")}
+                {mode === "details"
+                  ? doctor.user.name
+                  : t("pages.cards.instant_consultation")}
               </span>
             </div>
 
@@ -414,7 +438,9 @@ export function UnifiedModal({
               <button
                 onClick={mode === "connect" ? onMinimize : onCloseCompletely}
                 title={
-                  mode === "connect" ? t("pages.cards.minimize") : t("common.close")
+                  mode === "connect"
+                    ? t("pages.cards.minimize")
+                    : t("common.close")
                 }
                 className={cn(
                   "h-7 w-7 rounded-[6px] flex items-center justify-center transition-all",
@@ -445,14 +471,10 @@ export function UnifiedModal({
                         <BadgeCheck className="h-4 w-4 text-primary flex-shrink-0" />
                       )}
                     </div>
-                    {doctor.is_featured && (
-                      <span className="mt-1 px-1.5 py-px text-[10px] font-semibold rounded-[6px] bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900">
-                        {t("pages.cards.featured")}
-                      </span>
-                    )}
+                    
                     <p className="text-xs text-primary font-medium mt-1">
                       {doctor.specialization}
-                      {doctor.doctor_degree ? ` · ${doctor.doctor_degree}` : ""}
+                      {doctor.doctor_degree ? ` - ${doctor.doctor_degree}` : ""}
                     </p>
                     {doctor.designations && (
                       <p className="text-[11px] text-muted-foreground/70 mt-0.5">
@@ -500,7 +522,9 @@ export function UnifiedModal({
                             )}
                           />
                         }
-                        top={rating > 0 ? rating.toFixed(1) : t("pages.cards.new")}
+                        top={
+                          rating > 0 ? rating.toFixed(1) : t("pages.cards.new")
+                        }
                         bot={t("pages.cards.rating")}
                       />
                       <QuickStat
@@ -510,28 +534,22 @@ export function UnifiedModal({
                         top={feeLabel}
                         bot={t("pages.cards.per_visit")}
                       />
-                      <QuickStat
-                        icon={
-                          <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-                        }
-                        top={
-                          doctor.instant_consultation ? t("pages.cards.instant") : t("pages.cards.scheduled")
-                        }
-                        bot={t("pages.cards.consult")}
-                      />
+                     
                     </div>
                   </div>
                 </div>
 
                 <div className="min-w-0 flex-shrink-0 md:flex-1 px-4 py-4 md:overflow-y-auto">
-                  {bio && (
+                  {localizedBio && (
                     <div className="mb-4 p-3 rounded-[6px] bg-muted/30 border border-border/40">
                       <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">
                         {t("pages.cards.about")}
                       </p>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        <RichTextRenderer value={bio} className="text-xs text-foreground" />
-
+                        <RichTextRenderer
+                          value={localizedBio}
+                          className="text-xs text-foreground"
+                        />
                       </p>
                     </div>
                   )}
@@ -562,44 +580,13 @@ export function UnifiedModal({
                         }
                       />
                     )}
-                    <DetailRow
-                      icon={FileText}
-                      label={t("pages.cards.agreement_status")}
-                      value={
-                        <span
-                          className={cn(
-                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-[6px] border",
-                            doctor.agreement_status === "approved"
-                              ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
-                              : "text-amber-600 bg-amber-500/10 border-amber-500/20",
-                          )}
-                        >
-                          {doctor.agreement_status}
-                        </span>
-                      }
-                    />
-                    <DetailRow
-                      icon={User}
-                      label={t("pages.cards.profile_status")}
-                      value={
-                        <span
-                          className={cn(
-                            "capitalize text-xs font-semibold px-1.5 py-0.5 rounded-[6px] border",
-                            doctor.is_active
-                              ? "text-emerald-600 bg-emerald-500/10 border-emerald-500/20"
-                              : "text-zinc-500 bg-muted border-border",
-                          )}
-                        >
-                          {doctor.is_active ? t("pages.cards.active") : t("pages.cards.inactive")}
-                        </span>
-                      }
-                    />
                     {doctor.verified_at && (
                       <DetailRow
                         icon={BadgeCheck}
                         label={t("pages.cards.verified")}
                         accent
-                        value={formatDateOnly(doctor.verified_at, 
+                        value={formatDateOnly(
+                          doctor.verified_at,
                           i18n.language,
                           { year: "numeric", month: "short", day: "numeric" },
                         )}
@@ -694,12 +681,12 @@ export function UnifiedModal({
   );
 }
 
-// ─── Main DoctorCard ──────────────────────────────────────────────────────────
+// --- Main DoctorCard ----------------------------------------------------------
 // Restyled: the doctor image is now a full-width banner at the top of the
 // card (h-44 / sm:h-52) instead of a small h-12 inline avatar. Status dot and
-// "Featured" badge float on top of the image as pills. Everything else —
+// "Featured" badge float on top of the image as pills. Everything else 
 // name, specialization, location, consult badge, divider, buttons, pills,
-// modal — is unchanged in content, only reflowed to sit below the image.
+// modal  is unchanged in content, only reflowed to sit below the image.
 
 export const DoctorCard = ({
   doctor: doctorProp,
@@ -734,7 +721,7 @@ export const DoctorCard = ({
         return;
       }
       // The doctor may have completed/declined this consultation while the
-      // patient wasn't looking — verify before keeping the resume affordance up.
+      // patient wasn't looking  verify before keeping the resume affordance up.
       const ended = await pruneIfEnded(existing);
       if (cancelled) return;
       setHasSavedSession(!ended);
@@ -758,8 +745,15 @@ export const DoctorCard = ({
 
   const fee = parseFloat(doctor.consultation_fee);
   const rating = parseFloat(doctor.rating_avg);
-  const feeLabel =
-    fee === 0 ? t("pages.cards.free") : `${fee.toLocaleString()} ${doctor.currency}`;
+  
+  const numericFee = Number(fee);
+
+const feeLabel =
+  Number.isInteger(numericFee) && numericFee === 0
+    ? t("pages.cards.free")
+    : Number.isInteger(numericFee)
+      ? `${numericFee.toLocaleString()} ${doctor.currency}`
+      : t("pages.cards.feeNotAvailable");
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
@@ -851,36 +845,46 @@ export const DoctorCard = ({
 
   return (
     <>
-      {/* ── Card ── */}
+      {/* -- Card -- */}
       <Card
         onClick={openDetails}
         className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer"
       >
         <div className="px-3.5 pt-3 pb-3">
-         {/* Top row — avatar enlarged from h-12 to h-20 (h-24 on sm+),
+          {/* Top row  avatar enlarged from h-12 to h-20 (h-24 on sm+),
               same row layout as before, just a bigger image. */}
           <div className="flex items-start gap-3 ">
             <div className="relative shrink-0">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[6px] overflow-hidden border border-border">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-[6px] overflow-hidden border border-border">
                 <DoctorAvatar doctor={doctor} size="lg" />
               </div>
-              <span
+              {
+                doctor.instant_consultation &&( <span
                 className={cn(
                   "absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-card",
                   s.dot,
                   s.pulse,
                 )}
-              />
+              />)
+              }
+             
             </div>
 
-            <div className=" flex flex-col justify-between flex-1 min-w-0  h-[70px]">
-              <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
-                {doctor.user.name}
-              </h3>
-              <p className="text-xs text-primary font-medium mt-0.5 truncate">
+            <div className=" flex flex-col justify- flex-1 min-w-0  h-[70px]">
+              {doctor.user.name && (
+                <>
+                  <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
+                    {doctor.user.name}
+                  </h3>
+                </>
+              )}
+              {doctor.medical_license && (
+                <p className="text-xs text-primary font-medium mt-0.5 truncate">
+                  {t("pages.cards.license")} :{" "}
+                  {doctor.medical_license ? `  ${doctor.medical_license}` : ""}
+                </p>
+              )}
 
-                {doctor.medical_license && (<> {t("pages.cards.license")} : {doctor.medical_license ? `  ${doctor.medical_license}` : ""}</>)}
-              </p>
               {doctor.specialization && (
                 <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">
                   <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
@@ -891,19 +895,20 @@ export const DoctorCard = ({
           </div>
 
           {!compact && (
-            <div className="mt-3 flex  items-center justify-between">
+            <div className={`${doctor.consultation_type? '' : ''} flex  items-center justify-between`}>
               <ConsultBadge type={doctor.consultation_type} />
               <span className="flex cursor-pointer  items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
-                {t("pages.cards.view_details")} <ChevronRight className="h-3.5 w-3.5" />
+                {t("pages.cards.view_details")}{" "}
+                <ChevronRight className="h-3.5 w-3.5" />
               </span>
             </div>
           )}
 
-          <div className="mt-3 border-t border-border" />
+          <div className="mt-2 border-t border-border" />
 
           {/* Bottom actions */}
           <div
-            className="mt-3 flex flex-col sm:flex-row sm:items-center flex-wrap justify-between gap-2.5"
+            className="mt-1 flex flex-col sm:flex-row sm:items-center flex-wrap justify-between gap-2.5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left hint */}
@@ -930,10 +935,28 @@ export const DoctorCard = ({
                   </span>
                 </>
               ) : (
-                <><Zap className={cn("h-4 w-4 shrink-0", doctor.instant_consultation ? "text-emerald-500" : "text-muted-foreground/50")} />
-                  <span className={cn("text-[10px] font-bold tracking-tight", doctor.instant_consultation ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground/70")}>
-                    {doctor.instant_consultation ? t("pages.cards.instant_reply") : t("pages.cards.scheduled_reply")}
-                  </span></>
+                <>
+                  <Zap
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      doctor.instant_consultation
+                        ? "text-emerald-500"
+                        : "text-muted-foreground/50",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold tracking-tight",
+                      doctor.instant_consultation
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground/70",
+                    )}
+                  >
+                    {doctor.instant_consultation
+                      ? t("pages.cards.instant_reply")
+                      : t("pages.cards.scheduled_reply")}
+                  </span>
+                </>
               )}
             </div>
 
@@ -953,9 +976,13 @@ export const DoctorCard = ({
               </Button>
 
               {hasSavedSession && !isCallInProgress ? (
-                <Button size="sm" onClick={openResume}
-                  className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
-                  <Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.join")}
+                <Button
+                  size="sm"
+                  onClick={openResume}
+                  className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all"
+                >
+                  <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                  {t("pages.cards.join")}
                 </Button>
               ) : canConnect ? (
                 <Button
@@ -973,10 +1000,19 @@ export const DoctorCard = ({
                     isConnected || isCallInProgress
                       ? "bg-emerald-500 hover:bg-emerald-600 text-white"
                       : "bg-primary hover:bg-primary/90 text-primary-foreground",
-                  )}>
-                  {isConnected || isCallInProgress
-                    ? <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.join")}</>
-                    : <><Wifi className="h-3.5 w-3.5 mr-1.5" />{t("pages.cards.connect")}</>}
+                  )}
+                >
+                  {isConnected || isCallInProgress ? (
+                    <>
+                      <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                      {t("pages.cards.join")}
+                    </>
+                  ) : (
+                    <>
+                      <Wifi className="h-3.5 w-3.5 mr-1.5" />
+                      {t("pages.cards.connect")}
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button
@@ -993,7 +1029,7 @@ export const DoctorCard = ({
         </div>
       </Card>
 
-       {/* ── Live-call resume pill ── (unchanged) */}
+      {/* -- Live-call resume pill -- (unchanged) */}
       {showResumePill && (
         <ResumePill
           doctorName={doctor.user.name}
@@ -1006,8 +1042,7 @@ export const DoctorCard = ({
         />
       )}
 
-    
-      {/* ── Saved-session pill ── (unchanged) */}
+      {/* -- Saved-session pill -- (unchanged) */}
       {showSavedSessionPill && (
         <SavedSessionPill
           doctorName={doctor.user.name}
@@ -1016,7 +1051,7 @@ export const DoctorCard = ({
         />
       )}
 
-     {/* ── Unified modal ── (unchanged) */}
+      {/* -- Unified modal -- (unchanged) */}
       <UnifiedModal
         doctor={doctor}
         callDoctor={callDoctor}
@@ -1029,7 +1064,7 @@ export const DoctorCard = ({
         canConnect={canConnect}
       />
 
-      {/* ── Booking dialog ── (unchanged) */}
+      {/* -- Booking dialog -- (unchanged) */}
       <BookingDialog
         doctor={doctor}
         open={bookOpen}
@@ -1039,4 +1074,3 @@ export const DoctorCard = ({
     </>
   );
 };
-

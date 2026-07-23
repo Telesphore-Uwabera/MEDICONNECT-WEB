@@ -95,8 +95,8 @@ const FALLBACK_CONFIG: TypeConfigEntry = {
 };
 
 function getTypeConfig(type: string): TypeConfigEntry {
-  const lower = type.toLowerCase();
-  const key = Object.keys(TYPE_CONFIG).find((k) => lower.includes(k));
+  const lower = type?.toLowerCase();
+  const key = Object?.keys(TYPE_CONFIG).find((k) => lower?.includes(k));
   return key ? TYPE_CONFIG[key] : FALLBACK_CONFIG;
 }
 
@@ -107,7 +107,7 @@ function getCategoryLabel(t: (key: string) => string, categoryKey: string): stri
 function getTitle(n: Notification): string {
   return (
     n.title ||
-    n.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    n.type?.replace(/_/g, " ")?.replace(/\b\w/g, (c) => c?.toUpperCase())
   );
 }
 
