@@ -343,12 +343,15 @@ export function HeroHeader({
                       )}
                     />
                   );
-                  return l.kind === "anchor" ? (
+return l.kind === "anchor" ? (
                     <button
                       key={key}
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        handleNavClick(l.href);
+                        // Wait for the drawer's exit animation + body
+                        // scroll-lock release before scrolling, otherwise
+                        // scrollIntoView silently no-ops.
+                        setTimeout(() => handleNavClick(l.href), 260);
                       }}
                       className={className}
                     >

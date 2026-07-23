@@ -39,11 +39,35 @@ export interface PatientRefundsResponse {
 }
 
 export interface CreateRefundPayload {
-  payment_uuid: string;
+  /** At least one of payment_uuid / invoice_number is required. */
+  payment_uuid?: string;
+  invoice_number?: string;
   reason: string;
 }
 
+/** Identify a refund by its own uuid, its payment's invoice_number, or both. */
+export interface RefundLookupParams {
+  uuid?: string | null;
+  invoiceNumber?: string | null;
+}
+
+function hasRefundLookupParams(params: RefundLookupParams | null | undefined): boolean {
+  return !!params && (!!params.uuid?.trim() || !!params.invoiceNumber?.trim());
+}
+
+function buildRefundUrl(base: string, params: RefundLookupParams | null | undefined): string {
+  const uuid = params?.uuid?.trim();
+  const invoiceNumber = params?.invoiceNumber?.trim();
+
+  const path = uuid ? `${base}/${encodeURIComponent(uuid)}` : base;
+  const qs = new URLSearchParams();
+  if (invoiceNumber) qs.set("invoice_number", invoiceNumber);
+  return qs.toString() ? `${path}?${qs}` : path;
+}
+
 const refundsKey = (status?: string) => ["patient-refunds", status ?? "all"] as const;
+const refundKey = (params: RefundLookupParams | null | undefined) =>
+  ["patient-refund", params?.uuid ?? "", params?.invoiceNumber ?? ""] as const;
 
 export function getRefundsFromResponse(response?: PatientRefundsResponse | PatientRefund[]) {
   if (!response) return [];
@@ -96,5 +120,17 @@ export function useCreatePatientRefund() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-refunds"] });
     },
+  });
+}
+
+// ─── GET /patient/refunds/{uuid?}?invoice_number=... ─────────────────────────
+
+export function usePatientRefund(params: RefundLookupParams | null) {
+  return useQuery<{ message?: string; data: PatientRefund }>({
+    queryKey: refundKey(params),
+    queryFn: () =>
+      apiFetch<{ message?: string; data: PatientRefund }>(buildRefundUrl("/patient/refunds", params)),
+    enabled: hasRefundLookupParams(params),
+    retry: false,
   });
 }

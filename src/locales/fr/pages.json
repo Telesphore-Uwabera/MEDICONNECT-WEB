@@ -477,6 +477,8 @@
     "payment_lookup_title": "Vérifier une transaction",
     "payment_lookup_sub": "Saisissez une reference de paiement ou un UUID pour afficher son statut ou le verifier avec IremboPay.",
     "payment_uuid_placeholder": "Coller la reference ou l'UUID...",
+    "payment_invoice_number_placeholder": "Numero de facture (optionnel)",
+    "payment_identifier_placeholder": "Coller l'UUID ou le numero de facture...",
     "payment_check_status": "Voir le statut",
     "payment_verify": "Vérifier",
     "payment_lookup_empty": "Collez un UUID de paiement pour charger les détails de la transaction.",

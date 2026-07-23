@@ -16,32 +16,56 @@ interface PatientPaymentResponse {
   data: PatientPaymentData;
 }
 
-const paymentKey = (uuid: string) => ["patient-payment", uuid] as const;
+/** Identify a payment by its uuid, its invoice_number, or both. At least one is required. */
+export interface PaymentLookupParams {
+  uuid?: string | null;
+  invoiceNumber?: string | null;
+}
 
-export function usePatientPaymentStatus(uuid: string | null) {
+function hasLookupParams(params: PaymentLookupParams | null | undefined): boolean {
+  return !!params && (!!params.uuid?.trim() || !!params.invoiceNumber?.trim());
+}
+
+/** Build `/patient/payments/{uuid?}?invoice_number=...` (or the `verify` variant). */
+function buildPaymentUrl(base: string, params: PaymentLookupParams | null | undefined): string {
+  const uuid = params?.uuid?.trim();
+  const invoiceNumber = params?.invoiceNumber?.trim();
+
+  const path = uuid ? `${base}/${encodeURIComponent(uuid)}` : base;
+  const qs = new URLSearchParams();
+  if (invoiceNumber) qs.set("invoice_number", invoiceNumber);
+  return qs.toString() ? `${path}?${qs}` : path;
+}
+
+const paymentKey = (params: PaymentLookupParams | null | undefined) =>
+  ["patient-payment", params?.uuid ?? "", params?.invoiceNumber ?? ""] as const;
+
+// ─── GET /patient/payments/{uuid?}?invoice_number=... ────────────────────────
+
+export function usePatientPaymentStatus(params: PaymentLookupParams | null) {
   return useQuery({
-    queryKey: paymentKey(uuid ?? ""),
+    queryKey: paymentKey(params),
     queryFn: () =>
-      apiFetch<PatientPaymentResponse>(
-        `/patient/payments/${encodeURIComponent(uuid ?? "")}`,
-      ),
-    enabled: !!uuid,
+      apiFetch<PatientPaymentResponse>(buildPaymentUrl("/patient/payments", params)),
+    enabled: hasLookupParams(params),
     retry: false,
   });
 }
+
+// ─── POST /patient/payments/verify/{uuid?}?invoice_number=... ───────────────
 
 export function useVerifyPatientPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationKey: ["patient-payment-verify"],
-    mutationFn: (uuid: string) =>
+    mutationFn: (params: PaymentLookupParams) =>
       apiFetch<PatientPaymentResponse>(
-        `/patient/payments/${encodeURIComponent(uuid)}/verify`,
+        buildPaymentUrl("/patient/payments/verify", params),
         { method: "POST" },
       ),
-    onSuccess: (response, uuid) => {
-      queryClient.setQueryData(paymentKey(uuid), response);
+    onSuccess: (response, params) => {
+      queryClient.setQueryData(paymentKey(params), response);
     },
   });
 }

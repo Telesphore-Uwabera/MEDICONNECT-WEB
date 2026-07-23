@@ -45,7 +45,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { useGetPatientStats } from "@/hooks/patient/use-patient-dashboard";
-import { usePatientPaymentStatus, useVerifyPatientPayment } from "@/hooks/patient/use-patient-payments";
+import { usePatientPaymentStatus, useVerifyPatientPayment, type PaymentLookupParams } from "@/hooks/patient/use-patient-payments";
 import { getRefundsFromResponse, useCreatePatientRefund, usePatientRefunds } from "@/hooks/patient/use-patient-refunds";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -374,13 +374,22 @@ function refundStatusClass(status?: string | null) {
   return "border-amber-500/30 bg-amber-500/10 text-amber-500";
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** One field, two possible identifiers: send it as a uuid if it looks like one, otherwise as an invoice_number. */
+function identifierToParams(value: string): PaymentLookupParams {
+  const trimmed = value.trim();
+  if (!trimmed) return {};
+  return UUID_RE.test(trimmed) ? { uuid: trimmed } : { invoiceNumber: trimmed };
+}
+
 function PaymentLookupPanel() {
   const { t } = useTranslation();
-  const [paymentUuidInput, setPaymentUuidInput] = useState("");
-  const [paymentUuid, setPaymentUuid] = useState<string | null>(null);
+  const [paymentIdentifierInput, setPaymentIdentifierInput] = useState("");
+  const [paymentParams, setPaymentParams] = useState<PaymentLookupParams | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundStatusFilter, setRefundStatusFilter] = useState("all");
-  const paymentStatus = usePatientPaymentStatus(paymentUuid);
+  const paymentStatus = usePatientPaymentStatus(paymentParams);
   const verifyPayment = useVerifyPatientPayment();
   const createRefund = useCreatePatientRefund();
   const refunds = usePatientRefunds(refundStatusFilter === "all" ? undefined : refundStatusFilter);
@@ -388,19 +397,21 @@ function PaymentLookupPanel() {
   const error = paymentStatus.error ?? verifyPayment.error;
   const refundList = getRefundsFromResponse(refunds.data);
 
+  const hasLookupInput = !!paymentIdentifierInput.trim();
+
   const submitLookup = () => {
-    const uuid = paymentUuidInput.trim();
-    if (!uuid) return;
-    setPaymentUuid(uuid);
+    const params = identifierToParams(paymentIdentifierInput);
+    if (!params.uuid && !params.invoiceNumber) return;
+    setPaymentParams(params);
   };
 
   const submitVerify = async () => {
-    const uuid = (paymentUuid ?? paymentUuidInput).trim();
-    if (!uuid) return;
+    const params = paymentParams ?? identifierToParams(paymentIdentifierInput);
+    if (!params.uuid && !params.invoiceNumber) return;
 
-    setPaymentUuid(uuid);
+    setPaymentParams(params);
     try {
-      const response = await verifyPayment.mutateAsync(uuid);
+      const response = await verifyPayment.mutateAsync(params);
       toast.success(t("pages.patient.payment_verify_success"), {
         description: t("pages.patient.payment_status_now", {
           status: response.data?.status ?? "-",
@@ -414,12 +425,16 @@ function PaymentLookupPanel() {
   };
 
   const submitRefund = async () => {
-    const uuid = (paymentUuidInput || paymentUuid || "").trim();
+    const params = paymentParams ?? identifierToParams(paymentIdentifierInput);
     const reason = refundReason.trim();
-    if (!uuid || reason.length < 10) return;
+    if ((!params.uuid && !params.invoiceNumber) || reason.length < 10) return;
 
     try {
-      await createRefund.mutateAsync({ payment_uuid: uuid, reason });
+      await createRefund.mutateAsync({
+        ...(params.uuid ? { payment_uuid: params.uuid } : {}),
+        ...(params.invoiceNumber ? { invoice_number: params.invoiceNumber } : {}),
+        reason,
+      });
       setRefundReason("");
       toast.success(t("pages.patient.refund_request_success"));
     } catch (err) {
@@ -444,19 +459,19 @@ function PaymentLookupPanel() {
       <div className="p-4 sm:p-5 space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
-            value={paymentUuidInput}
-            onChange={(event) => setPaymentUuidInput(event.target.value)}
+            value={paymentIdentifierInput}
+            onChange={(event) => setPaymentIdentifierInput(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") submitLookup();
             }}
-            placeholder={t("pages.patient.payment_uuid_placeholder")}
+            placeholder={t("pages.patient.payment_identifier_placeholder")}
             className="h-10 rounded-[6px] text-sm"
           />
           <Button
             type="button"
             variant="outline"
             onClick={submitLookup}
-            disabled={!paymentUuidInput.trim() || paymentStatus.isFetching}
+            disabled={!hasLookupInput || paymentStatus.isFetching}
             className="h-10 rounded-[6px] sm:w-36"
           >
             {paymentStatus.isFetching ? (
@@ -469,7 +484,7 @@ function PaymentLookupPanel() {
           <Button
             type="button"
             onClick={submitVerify}
-            disabled={!(paymentUuid ?? paymentUuidInput).trim() || verifyPayment.isPending}
+            disabled={!hasLookupInput || verifyPayment.isPending}
             className="h-10 rounded-[6px] sm:w-36"
           >
             {verifyPayment.isPending ? (
@@ -566,7 +581,7 @@ function PaymentLookupPanel() {
               onClick={submitRefund}
               disabled={
                 createRefund.isPending ||
-                !(paymentUuidInput || paymentUuid)?.trim() ||
+                (!hasLookupInput && !paymentParams?.uuid && !paymentParams?.invoiceNumber) ||
                 refundReason.trim().length < 10
               }
               className="mt-4 h-10 w-full rounded-[6px]"
