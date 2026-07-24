@@ -502,18 +502,28 @@ setSearchDropdownOpen(false);
   }, [paused, call.dialogOpen, isAnyCallInProgress, hasDoctors, doctors.length]);
 
   return (
-    <div className="min-h-[540px] lg:min-h-[610px] lg:mt-0 mt-12 bg-background overflow-x-hidden relative">
+    <div className="min-h-[540px] lg:min-h-[610px] lg:mt-0 lg:pt-0 pt-12 bg-background overflow-x-hidden relative">
+      {/* Mobile-only background image — same artwork used as a full-bleed backdrop instead of a side image */}
+      <div className="absolute inset-0 top-0 pointer-events-none lg:hidden" aria-hidden="true">
+        <img
+          src="/images/Jul18202601_47_20AM.png"
+          alt=""
+          className="h-full w-full object-cover object-center opacity-45"
+          loading="eager"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
+      </div>
       {/* Soft hero lighting */}
       <div
         className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_76%_45%,hsl(var(--primary)/0.22),transparent_32%),radial-gradient(circle_at_18%_56%,hsl(var(--primary)/0.1),transparent_34%)]"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-0 pointer-events-none bg-gradient-to-r from-background via-background/92 to-background/70"
+        className="absolute inset-0 pointer-events-none hidden bg-gradient-to-r from-background via-background/92 to-background/70 lg:block"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-y-0 left-0 w-[58%] pointer-events-none bg-gradient-to-b from-background via-transparent to-background"
+        className="absolute inset-y-0 left-0 w-[58%] pointer-events-none hidden bg-gradient-to-b from-background via-transparent to-background lg:block"
         aria-hidden="true"
       />
       <div

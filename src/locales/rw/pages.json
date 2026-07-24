@@ -477,6 +477,8 @@
     "payment_lookup_title": "Reba ubwishyu",
     "payment_lookup_sub": "Shyiramo nimero y'ubwishyu cyangwa UUID kugira ngo urebe uko bihagaze cyangwa ubusuzume kuri IremboPay.",
     "payment_uuid_placeholder": "Shyiramo nimero y'ubwishyu cyangwa UUID...",
+    "payment_invoice_number_placeholder": "Nimero ya fagitire (bitari ngombwa)",
+    "payment_identifier_placeholder": "Shyiramo UUID cyangwa nimero ya fagitire...",
     "payment_check_status": "Reba uko bihagaze",
     "payment_verify": "Suzuma",
     "payment_lookup_empty": "Shyiramo UUID y'ubwishyu kugira ngo ubone amakuru yabwo.",

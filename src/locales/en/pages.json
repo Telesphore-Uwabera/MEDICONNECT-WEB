@@ -477,6 +477,8 @@
     "payment_lookup_title": "Check payment transaction",
     "payment_lookup_sub": "Enter a payment reference number or UUID to view its latest status or verify it with IremboPay.",
     "payment_uuid_placeholder": "Paste reference number or UUID...",
+    "payment_invoice_number_placeholder": "Invoice number (optional)",
+    "payment_identifier_placeholder": "Paste UUID or invoice number...",
     "payment_check_status": "Check status",
     "payment_verify": "Verify",
     "payment_lookup_empty": "Paste a payment UUID to load transaction details.",
