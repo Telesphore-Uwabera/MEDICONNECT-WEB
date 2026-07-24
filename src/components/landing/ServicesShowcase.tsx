@@ -80,7 +80,7 @@ export default function ServicesShowcase() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading
           ? Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="h-[260px] animate-pulse rounded-[10px] border border-border bg-card" />
+              <div key={index} className="h-[260px] animate-pulse rounded-[6px] border border-border bg-card" />
             ))
           : services.map((service) => {
               const title = fieldForLanguage(service, "title", i18n.language);
@@ -91,7 +91,7 @@ export default function ServicesShowcase() {
                   key={service.id}
                   type="button"
                   onClick={() => setSelected(service)}
-                  className="group overflow-hidden rounded-[10px] border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+                  className="group overflow-hidden rounded-[6px] border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-primary/10">
                     <ServiceImage service={service} title={title} className="transition-transform duration-300 group-hover:scale-105" />
@@ -114,7 +114,7 @@ export default function ServicesShowcase() {
 
       {selected && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-[12px] border border-border bg-card shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-[6px] border border-border bg-card shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
