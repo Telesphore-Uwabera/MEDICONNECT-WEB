@@ -506,7 +506,7 @@ setSearchDropdownOpen(false);
       {/* Mobile-only background image — same artwork used as a full-bleed backdrop instead of a side image */}
       <div className="absolute inset-0 top-0 pointer-events-none lg:hidden" aria-hidden="true">
         <img
-          src="/images/Jul18202601_47_20AM.png"
+          src="/images/Jul18202601_47_20PM.png"
           alt=""
           className="h-full w-full object-cover object-center opacity-45"
           loading="eager"
@@ -531,7 +531,7 @@ setSearchDropdownOpen(false);
         aria-hidden="true"
       >
         <img
-          src="/images/Jul18202601_47_20AM.png"
+          src="/images/Jul18202601_47_20PM.png"
           alt=""
           className="h-full w-full object-cover object-[center_20%] opacity-80"
           loading="eager"
