@@ -767,12 +767,14 @@ function ProfileForm({
     handleSubmit,
     trigger,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<ProfileFormData>({
     defaultValues: {
       ...defaultValues,
       emergency_contact_phone: splitEmergencyPhone(defaultValues?.emergency_contact_phone).digits,
     },
+    shouldUnregister: false,
   });
 
   const step = PROFILE_STEPS[currentStep];
@@ -835,7 +837,7 @@ function ProfileForm({
               />
             </FormField>
             <FormField label={t("profile.field.gender", "Gender")} error={errors.gender?.message}>
-              <Select defaultValue={defaultValues?.gender} onValueChange={(v) => setValue("gender", v)}>
+              <Select value={watch("gender") ?? ""} onValueChange={(v) => setValue("gender", v, { shouldDirty: true, shouldValidate: true })}>
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
                   <SelectValue placeholder={t("profile.select_gender")} />
                 </SelectTrigger>
@@ -871,7 +873,7 @@ function ProfileForm({
         {step.id === "medical" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label={t("profile.field.blood_type", "Blood type")} error={errors.blood_type?.message}>
-              <Select defaultValue={defaultValues?.blood_type} onValueChange={(v) => setValue("blood_type", v)}>
+              <Select value={watch("blood_type") ?? ""} onValueChange={(v) => setValue("blood_type", v, { shouldDirty: true, shouldValidate: true })}>
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
                   <SelectValue placeholder={t("profile.select_blood_type")} />
                 </SelectTrigger>
@@ -946,8 +948,8 @@ function ProfileForm({
               error={errors.emergency_contact_relation?.message}
             >
               <Select
-                defaultValue={defaultValues?.emergency_contact_relation}
-                onValueChange={(v) => setValue("emergency_contact_relation", v)}
+                value={watch("emergency_contact_relation") ?? ""}
+                onValueChange={(v) => setValue("emergency_contact_relation", v, { shouldDirty: true, shouldValidate: true })}
               >
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
                   <SelectValue placeholder={t("profile.field.contact_relation")} />
@@ -1739,10 +1741,9 @@ const PatientProfile = () => {
       <div className="px-3 py-4 sm:px-6 sm:py-8">
         <div className="rounded-[6px] border border-border bg-card overflow-hidden flex flex-col min-h-[540px]">
           <TabBar active={mainTab} onChange={setMainTab} hasProfile={!!profile} />
-          <div className="flex flex-1 flex-col sm:flex-row min-h-0">
-            {mainTab === "profile" && (
-              <>
-                <ProfileSidebar
+          <div className="flex flex-1 flex-col min-h-0">
+            <div className={cn("flex flex-1 flex-col sm:flex-row min-h-0", mainTab !== "profile" && "hidden")}>
+              <ProfileSidebar
                   currentStep={currentStep}
                   visited={visited}
                   onSelect={(i) => {
@@ -1771,8 +1772,7 @@ const PatientProfile = () => {
                 ) : profile ? (
                   <ProfileView profile={profile} onEdit={openEdit} />
                 ) : null}
-              </>
-            )}
+            </div>
             {mainTab === "medical" && <MedicalInfoTab />}
             {mainTab === "insurance" && <InsuranceTab profileInsurance={profile?.insurance} />}
           </div>
@@ -1783,3 +1783,4 @@ const PatientProfile = () => {
 };
 
 export default PatientProfile;
+

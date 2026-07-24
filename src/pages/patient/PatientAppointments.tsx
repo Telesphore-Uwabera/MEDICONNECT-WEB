@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useMutation } from "@tanstack/react-query";
@@ -29,7 +29,7 @@ import {
   AppointmentFilterParams,
 } from "@/hooks/patient/use-patient-appointment";
 import AppointmentDetailModal from "./components/AppointmentDetail";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
@@ -327,6 +327,10 @@ function AppointmentCardItem({
 
 const PatientAppointments = () => {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const autoOpenedAppointmentRef = useRef<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
@@ -338,6 +342,32 @@ const PatientAppointments = () => {
 
   const openDetail = useCallback((id: string | number) => setSelectedId(String(id)), []);
   const closeDetail = useCallback(() => setSelectedId(null), []);
+
+  useEffect(() => {
+    const state = location.state as { openAppointmentId?: string | number } | null;
+    const routeAppointmentId = searchParams.get("appointment_id")
+      ?? searchParams.get("appointmentId")
+      ?? state?.openAppointmentId;
+
+    if (!routeAppointmentId) return;
+
+    const id = String(routeAppointmentId);
+    if (autoOpenedAppointmentRef.current === id) return;
+
+    autoOpenedAppointmentRef.current = id;
+    setSelectedId(id);
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("appointment_id");
+    nextParams.delete("appointmentId");
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextParams.toString() ? `?${nextParams.toString()}` : "",
+      },
+      { replace: true, state: null },
+    );
+  }, [location.pathname, location.state, navigate, searchParams]);
 
   // ── Join (video call) ────────────────────────────────────────────────────────
   const { startCall } = useCallContext();
@@ -858,3 +888,4 @@ const PatientAppointments = () => {
 };
 
 export default PatientAppointments;
+

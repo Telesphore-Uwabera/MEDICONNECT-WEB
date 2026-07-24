@@ -100,6 +100,7 @@
     "spec_carousel_label": "Specialities carousel",
     "spec_doctors_count": "{{count}} doctors",
     "spec_fallback_label": "Specialist",
+    "offline": "Offline",
     "footer_platform": "Platform",
     "footer_workspaces": "Workspaces",
     "footer_pharmacy": "Pharmacy",
@@ -121,6 +122,9 @@
     "hero_consultation": "Consultation.",
     "hero_quality_care": "Quality Care,",
     "hero_anywhere": "Anywhere.",
+    "hero_feature_seconds": "Consult in seconds",
+    "hero_feature_licensed": "Licensed & verified doctors",
+    "hero_feature_privacy": "Your privacy, our priority",
     "hero_dynamic_1": "in expert hands",
     "hero_dynamic_2": "on your screen",
     "hero_dynamic_3": "at your pharmacy",
@@ -304,7 +308,10 @@
     "order_medicines_registered_sub": "Fast, safe and reliable delivery to your door.",
     "pharmacy_shelves_alt": "Registered pharmacy shelves",
     "download_app": "Download App",
-    "choose_store": "Play Store or App Store"
+    "choose_store": "Play Store or App Store",
+    "download_app_sub": "Access healthcare anytime, anywhere.",
+    "instant_consultation_sub": "Connect with a doctor in seconds.",
+    "book_appointment_sub": "Schedule a convenient time with a doctor."
   },
   "patient": {
     "overview_title": "Welcome back",
@@ -1014,6 +1021,7 @@
     "instant_title": "Instant Consultation",
     "instant_visible": "You're visible to patients seeking immediate help",
     "instant_hidden": "You're hidden from the instant pool",
+     "set_availability":"Set availablity",
     "available": "Available",
     "off": "Off",
     "stat_today": "Today",
@@ -3232,5 +3240,13 @@
     "not_found": "We couldn't find a certificate matching this number.",
     "invalid_help": "Double-check the certificate number and try again, or contact the issuing doctor if you believe this is a mistake.",
     "powered_by": "Powered by MediConnect - Bringing care to your fingertips"
+  },
+  "card":{
+    "feeNotAvailable":"Fee Not available"
   }
+
+ 
+ 
+
+ 
 }

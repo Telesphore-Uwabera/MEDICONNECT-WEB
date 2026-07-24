@@ -2707,7 +2707,7 @@ export interface DoctorPanelProps {
   onClose: () => void;
   onApprove: (d: ApiDoctor) => void;
   onReject: (d: ApiDoctor) => void;
-  onSuspend: (d: ApiDoctor) => void;
+  onSuspend: (d: ApiDoctor, reason: string) => void | Promise<void>;
   isActing: boolean;
 }
 
@@ -2727,6 +2727,9 @@ export function DoctorPanel({
   const [actingAction, setActingAction] = useState<
     "approve" | "reject" | "suspend" | "reactivate" | null
   >(null);
+  const [suspendReasonOpen, setSuspendReasonOpen] = useState(false);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendReasonError, setSuspendReasonError] = useState("");
   const open = !!doctor;
 
   const { data: fullDoctor, isLoading: profileLoading } = useGetAdminDoctor(
@@ -2735,7 +2738,12 @@ export function DoctorPanel({
   const d = fullDoctor ?? doctor;
 
   useEffect(() => {
-    if (doctor) setTab("overview");
+    if (doctor) {
+      setTab("overview");
+      setSuspendReasonOpen(false);
+      setSuspendReason("");
+      setSuspendReasonError("");
+    }
   }, [doctor?.id]);
 
   useEffect(() => {
@@ -2767,9 +2775,23 @@ export function DoctorPanel({
     setActingAction("reject");
     onReject(doc);
   };
-  const handleSuspend = (doc: ApiDoctor) => {
+  const handleSuspend = () => {
+    setSuspendReasonOpen(true);
+    setSuspendReasonError("");
+  };
+
+  const confirmSuspend = async (doc: ApiDoctor) => {
+    const reason = suspendReason.trim();
+    if (!reason) {
+      setSuspendReasonError("Please provide a suspension reason.");
+      return;
+    }
+
     setActingAction("suspend");
-    onSuspend(doc);
+    await onSuspend(doc, reason);
+    setSuspendReasonOpen(false);
+    setSuspendReason("");
+    setSuspendReasonError("");
   };
   const handleReactivate = (doc: ApiDoctor) => {
     setActingAction("reactivate");
@@ -2952,7 +2974,7 @@ export function DoctorPanel({
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                     disabled={isActing}
-                    onClick={() => handleSuspend(d)}
+                    onClick={handleSuspend}
                   >
                     {isActing && actingAction === "suspend" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -3006,6 +3028,69 @@ export function DoctorPanel({
           </>
         )}
       </div>
+
+      {d && suspendReasonOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[8px] border border-border bg-background shadow-2xl">
+            <div className="border-b border-border/60 px-5 py-4">
+              <p className="text-sm font-bold text-foreground">Suspend doctor</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Add a clear reason before suspending this doctor profile.
+              </p>
+            </div>
+            <div className="space-y-2 px-5 py-4">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Suspension reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={suspendReason}
+                onChange={(event) => {
+                  setSuspendReason(event.target.value);
+                  if (suspendReasonError) setSuspendReasonError("");
+                }}
+                rows={4}
+                className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder="Example: Missing required credentials or policy violation."
+                disabled={isActing}
+              />
+              {suspendReasonError && (
+                <p className="text-xs font-medium text-red-500">{suspendReasonError}</p>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-border/60 px-5 py-4">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9 rounded-[6px]"
+                disabled={isActing}
+                onClick={() => {
+                  setSuspendReasonOpen(false);
+                  setSuspendReason("");
+                  setSuspendReasonError("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-9 rounded-[6px] bg-red-600 text-white hover:bg-red-700"
+                disabled={isActing || !suspendReason.trim()}
+                onClick={() => confirmSuspend(d)}
+              >
+                {isActing && actingAction === "suspend" ? (
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ShieldOff className="mr-2 h-3.5 w-3.5" />
+                )}
+                Suspend doctor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+

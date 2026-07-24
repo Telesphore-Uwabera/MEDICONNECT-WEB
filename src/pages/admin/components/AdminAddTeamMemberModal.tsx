@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { Bold, Italic, Link, List, Loader2, Palette, Upload, UserPlus, X } from "lucide-react";
+import { Bold, Italic, Link, List, Loader2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import { useTranslation } from "react-i18next";
 import { useCreateTeamMember } from "@/hooks/admin/use-admin-ourteam";
 
@@ -101,24 +102,17 @@ export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberMod
   const [bio, setBio] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [icon, setIcon] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
- 
-  const photoRef = useRef<HTMLInputElement>(null);
-  const iconRef = useRef<HTMLInputElement>(null);
+
   const create = useCreateTeamMember();
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>, kind: "photo" | "icon") {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  function handleFileSelect(value: File | File[] | null, kind: "photo" | "icon") {
+    const file = Array.isArray(value) ? value[0] ?? null : value;
     if (kind === "photo") {
       setPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
     } else {
       setIcon(file);
-      setIconPreview(URL.createObjectURL(file));
     }
   }
 
@@ -133,8 +127,6 @@ export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberMod
     setBio("");
     setPhoto(null);
     setIcon(null);
-    setPhotoPreview(null);
-    setIconPreview(null);
     setErrors({});
     onClose();
   }
@@ -205,39 +197,25 @@ export function AdminAddTeamMemberModal({ open, onClose }: AdminAddTeamMemberMod
 
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex items-center gap-4 rounded-[8px] border border-border/60 bg-secondary/20 p-3">
-              <button
-                type="button"
-                onClick={() => photoRef.current?.click()}
-                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border/60 bg-background transition-colors hover:border-primary/40"
-              >
-                {photoPreview ? <img src={photoPreview} alt="preview" className="h-full w-full object-cover" /> : <Upload className="h-4 w-4 text-muted-foreground/50" />}
-              </button>
-              <div>
-                <p className="text-[11px] font-medium text-foreground">{t("admin.team.profile_photo", { defaultValue: "Profile photo" })}</p>
-                <button type="button" onClick={() => photoRef.current?.click()} className="mt-0.5 text-[11px] font-medium text-primary transition-colors hover:text-primary/80">
-                  {photo ? t("admin.team.change_photo", { defaultValue: "Change photo" }) : t("admin.team.upload_photo", { defaultValue: "Upload photo" })}
-                </button>
-              </div>
-              <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleFileSelect(e, "photo")} />
-            </div>
+            <FileUploader
+              label={photo ? t("admin.team.change_photo", { defaultValue: "Change photo" }) : t("admin.team.upload_photo", { defaultValue: "Upload photo" })}
+              accept="image/jpeg,image/png,image/webp"
+              value={photo}
+              onChange={(value) => handleFileSelect(value, "photo")}
+              maxSizeMb={2}
+              className="min-h-[104px] px-3 py-3"
+              helperText={t("common.fileUploader.imageHelper", { defaultValue: "Drop or browse an image. Max 2 MB." })}
+            />
 
-            <div className="flex items-center gap-4 rounded-[8px] border border-border/60 bg-secondary/20 p-3">
-              <button
-                type="button"
-                onClick={() => iconRef.current?.click()}
-                className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border/60 bg-background transition-colors hover:border-primary/40"
-              >
-                {iconPreview ? <img src={iconPreview} alt="icon preview" className="h-full w-full object-cover" /> : <Palette className="h-4 w-4 text-muted-foreground/50" />}
-              </button>
-              <div>
-                <p className="text-[11px] font-medium text-foreground">{t("admin.team.role_icon", { defaultValue: "Role icon" })}</p>
-                <button type="button" onClick={() => iconRef.current?.click()} className="mt-0.5 text-[11px] font-medium text-primary transition-colors hover:text-primary/80">
-                  {icon ? t("admin.team.change_icon", { defaultValue: "Change icon" }) : t("admin.team.upload_icon", { defaultValue: "Upload icon" })}
-                </button>
-              </div>
-              <input ref={iconRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleFileSelect(e, "icon")} />
-            </div>
+            <FileUploader
+              label={icon ? t("admin.team.change_icon", { defaultValue: "Change icon" }) : t("admin.team.upload_icon", { defaultValue: "Upload icon" })}
+              accept="image/jpeg,image/png,image/webp"
+              value={icon}
+              onChange={(value) => handleFileSelect(value, "icon")}
+              maxSizeMb={1}
+              className="min-h-[104px] px-3 py-3"
+              helperText={t("common.fileUploader.iconHelper", { defaultValue: "Drop or browse an icon. Max 1 MB." })}
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

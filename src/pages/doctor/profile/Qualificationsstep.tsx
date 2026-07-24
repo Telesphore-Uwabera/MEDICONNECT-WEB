@@ -1,11 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
 // QualificationsStep
-// ─────────────────────────────────────────────────────────────────────────────
 import React, { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Plus, Upload } from "lucide-react";
+import { FileUploader } from "@/components/ui/file-uploader";
+import { Plus } from "lucide-react";
 import { FormField, EntryCard } from "./UiPrimitives";
 import type { QualificationEntry } from "./Types";
 
@@ -120,33 +119,19 @@ export const QualificationsStep = React.memo(function QualificationsStep({
               label={t("doctorProfile.certificate_file_optional")}
               className="col-span-1 sm:col-span-2"
             >
-              <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-[6px] px-3 py-2 hover:border-primary hover:bg-primary/5 transition-colors">
-                <input
-                  type="file"
-                  accept=".pdf,image/jpeg,image/png"
-                  className="sr-only"
-                  onChange={(e) =>
-                    updateEntry(entry.id, {
-                      certificate_file: e.target.files?.[0] ?? null,
-                    })
-                  }
-                />
-                {entry.certificate_file ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="text-[11px] text-primary truncate">
-                      {entry.certificate_file.name}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="text-[11px] text-muted-foreground">
-                      {t("doctorProfile.upload_certificate_hint")}
-                    </span>
-                  </>
-                )}
-              </label>
+              <FileUploader
+                label={t("doctorProfile.upload_certificate_hint")}
+                accept=".pdf,image/jpeg,image/png"
+                value={entry.certificate_file ?? null}
+                onChange={(value) =>
+                  updateEntry(entry.id, {
+                    certificate_file: Array.isArray(value) ? value[0] ?? null : value,
+                  })
+                }
+                maxSizeMb={4}
+                className="min-h-[78px] px-3 py-3"
+                helperText={t("common.fileUploader.documentHelper", { defaultValue: "Drop or browse PDF, JPG, or PNG. Max 4 MB." })}
+              />
             </FormField>
           </div>
         </EntryCard>

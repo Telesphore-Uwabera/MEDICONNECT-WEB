@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -267,6 +267,15 @@ export const BookingDialog = ({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const openAppointmentDetails = useCallback((appointmentId: string | number) => {
+    const id = String(appointmentId);
+    onOpenChange(false);
+    queryClient.invalidateQueries({ queryKey: ["patient-appointments"] });
+    navigate(`/patient/appointments?appointment_id=${encodeURIComponent(id)}`, {
+      state: { openAppointmentId: id, paymentPending: true },
+    });
+  }, [navigate, onOpenChange, queryClient]);
+
   // ── Local state ────────────────────────────────────────────────────────────
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState<string | null>(null);
@@ -437,7 +446,7 @@ export const BookingDialog = ({
       // Initiate payment if fee > 0
       if (doctor.consultation_fee && Number(doctor.consultation_fee) > 0) {
         // Handle different response structures
-        const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).appointment?.id;
+        const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).data?.appointment?.id ?? (res as any).appointment?.id;
 
         if (!appointmentId) {
           console.error("Booking succeeded but appointment ID is missing from response:", res);
@@ -447,14 +456,21 @@ export const BookingDialog = ({
 
         try {
           const payRes = await payAppointment.mutateAsync(appointmentId);
-          (window as any).IremboPay?.initiate({
+          const iremboPay = (window as any).IremboPay;
+          if (!iremboPay?.initiate) {
+            toast.error(t("booking.doctorAppointment.paymentNotInitiated"), { description: t("booking.doctorAppointment.payLaterDesc") });
+            openAppointmentDetails(appointmentId);
+            return;
+          }
+          iremboPay.initiate({
             publicKey: payRes.public_key,
             invoiceNumber: payRes.invoice_number,
-            locale: (window as any).IremboPay?.locale?.EN || "en",
+            locale: iremboPay.locale?.EN || "en",
             callback: (err: Error | null) => {
-              (window as any).IremboPay?.closeModal?.();
+              iremboPay.closeModal?.();
               if (err) {
                 toast.error(t("booking.doctorAppointment.paymentFailed"), { description: t("booking.doctorAppointment.payLaterDesc") });
+                openAppointmentDetails(appointmentId);
               } else {
                 setVerifyingPayment(true);
                 invoicePoller.start(
@@ -479,6 +495,7 @@ export const BookingDialog = ({
         } catch (payErr) {
           console.error("Payment initiation failed:", payErr);
           toast.error(t("booking.doctorAppointment.paymentNotInitiated"), { description: t("booking.doctorAppointment.payLaterDesc") });
+          openAppointmentDetails(appointmentId);
         }
       }
 
@@ -763,3 +780,4 @@ export const BookingDialog = ({
     </Dialog>
   );
 };
+

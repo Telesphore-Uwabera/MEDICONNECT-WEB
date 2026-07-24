@@ -84,11 +84,15 @@ export function useGetAdminPatients(params: GetAdminPatientsParams = {}) {
 export function useSuspendPatient() {
   const qc = useQueryClient();
 
-  return useMutation<ApiPatient, Error, number>({
-    mutationFn: (id) =>
-      apiFetch<PatientActionResponse>(`${BASE}/${id}/suspend`, {
+  return useMutation<ApiPatient, Error, number | { id: number; reason?: string }>({
+    mutationFn: (input) => {
+      const id = typeof input === "number" ? input : input.id;
+      const reason = typeof input === "number" ? undefined : input.reason;
+      return apiFetch<PatientActionResponse>(`${BASE}/${id}/suspend`, {
         method: "PUT",
-      }).then((res) => res.patient),
+        body: reason ? { reason } : undefined,
+      }).then((res) => res.patient);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin-patients"] });
     },
@@ -110,3 +114,4 @@ export function useActivatePatient() {
     },
   });
 }
+

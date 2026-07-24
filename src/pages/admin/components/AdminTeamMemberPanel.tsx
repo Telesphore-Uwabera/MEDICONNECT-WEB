@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bold, Italic, Link, List, Loader2, Palette, Save, Trash2, ToggleLeft, ToggleRight, Upload, X } from "lucide-react";
+import { AlertTriangle, Bold, Italic, Link, List, Loader2, Palette, Save, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import { useTranslation } from "react-i18next";
 import {
   useDeleteTeamMember,
@@ -139,8 +140,6 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
-  const photoRef = useRef<HTMLInputElement>(null);
-  const iconRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (member) {
@@ -195,8 +194,8 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
     }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, kind: "photo" | "icon") {
-    const file = e.target.files?.[0];
+  async function handleUpload(value: File | File[] | null, kind: "photo" | "icon") {
+    const file = Array.isArray(value) ? value[0] : value;
     if (!file || !memberId) return;
     const fd = new FormData();
     fd.append(kind, file);
@@ -211,8 +210,6 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
       }
     } catch {
       showToast(t("admin.team.upload_error", { defaultValue: "Failed to upload {{kind}}.", kind }), "error");
-    } finally {
-      e.target.value = "";
     }
   }
 
@@ -285,47 +282,29 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
               ) : (
                 <div className="space-y-6 p-5">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="flex items-center gap-4 rounded-[8px] border border-border/60 bg-secondary/20 p-3">
-                      <div className="relative shrink-0">
-                        {member.photo_url ? (
-                          <img src={member.photo_url} alt={member.name} className="h-16 w-16 rounded-full border border-border/60 object-cover object-top" />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border/40 bg-primary/10 text-base font-semibold text-primary">
-                            {getInitials(member.name)}
-                          </div>
-                        )}
-                        {isUploadingPhoto && <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-foreground">{t("admin.team.profile_photo", { defaultValue: "Profile photo" })}</p>
-                        <button onClick={() => photoRef.current?.click()} disabled={isUploadingPhoto} className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-primary transition-colors hover:text-primary/80 disabled:opacity-50">
-                          <Upload className="h-3 w-3" />
-                          {isUploadingPhoto ? t("admin.team.uploading", { defaultValue: "Uploading..." }) : t("admin.team.change_photo", { defaultValue: "Change photo" })}
-                        </button>
-                        <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleUpload(e, "photo")} />
-                      </div>
-                    </div>
+                    <FileUploader
+                      label={isUploadingPhoto ? t("admin.team.uploading", { defaultValue: "Uploading..." }) : t("admin.team.change_photo", { defaultValue: "Change photo" })}
+                      accept="image/jpeg,image/png,image/webp"
+                      value={null}
+                      onChange={(value) => handleUpload(value, "photo")}
+                      maxSizeMb={2}
+                      existingUrl={member.photo_url}
+                      className="min-h-[112px] px-3 py-3"
+                      helperText={t("common.fileUploader.imageHelper", { defaultValue: "Drop or browse an image. Max 2 MB." })}
+                      disabled={isUploadingPhoto}
+                    />
 
-                    <div className="flex items-center gap-4 rounded-[8px] border border-border/60 bg-secondary/20 p-3">
-                      <div className="relative shrink-0">
-                        {member.icon_url ? (
-                          <img src={member.icon_url} alt={t("admin.team.role_icon", { defaultValue: "Role icon" })} className="h-16 w-16 rounded-full border border-border/60 object-cover" />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border/40 bg-primary/10 text-primary">
-                            <Palette className="h-6 w-6" />
-                          </div>
-                        )}
-                        {isUploadingIcon && <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40"><Loader2 className="h-4 w-4 animate-spin text-white" /></div>}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-foreground">{t("admin.team.role_icon", { defaultValue: "Role icon" })}</p>
-                        <button onClick={() => iconRef.current?.click()} disabled={isUploadingIcon} className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-primary transition-colors hover:text-primary/80 disabled:opacity-50">
-                          <Upload className="h-3 w-3" />
-                          {isUploadingIcon ? t("admin.team.uploading", { defaultValue: "Uploading..." }) : t("admin.team.change_icon", { defaultValue: "Change icon" })}
-                        </button>
-                        <input ref={iconRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => handleUpload(e, "icon")} />
-                      </div>
-                    </div>
+                    <FileUploader
+                      label={isUploadingIcon ? t("admin.team.uploading", { defaultValue: "Uploading..." }) : t("admin.team.change_icon", { defaultValue: "Change icon" })}
+                      accept="image/jpeg,image/png,image/webp"
+                      value={null}
+                      onChange={(value) => handleUpload(value, "icon")}
+                      maxSizeMb={1}
+                      existingUrl={member.icon_url}
+                      className="min-h-[112px] px-3 py-3"
+                      helperText={t("common.fileUploader.iconHelper", { defaultValue: "Drop or browse an icon. Max 1 MB." })}
+                      disabled={isUploadingIcon}
+                    />
                   </div>
 
                   <div className="border-t border-border/60" />
