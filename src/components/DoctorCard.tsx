@@ -90,26 +90,19 @@ function DoctorAvatar({
 
 // Unchanged  shared with UnifiedModal, out of scope for this pass.
 
-function ConsultBadge({ type }: { type: ApiDoctor["consultation_type"] }) {
+function ConsultBadge({ isOnline }: { isOnline: boolean }) {
   const { t } = useTranslation();
-  const map = {
-    online: {
-      label: t("pages.cards.online"),
-      icon: Video,
-      cls: "text-sky-700 bg-sky-500/15 border-sky-500/30 dark:text-sky-400",
-    },
-    in_person: {
-      label: t("pages.cards.in_person"),
-      icon: Building2,
-      cls: "text-violet-700 bg-violet-500/15 border-violet-500/30 dark:text-violet-400",
-    },
-    both: {
-      label: t("pages.cards.both"),
-      icon: Globe,
-      cls: "text-teal-700 bg-teal-500/15 border-teal-500/30 dark:text-teal-400",
-    },
-  };
-  const cfg = map[type] ?? map.both;
+  const cfg = isOnline
+    ? {
+        label: t("pages.cards.online"),
+        icon: Video,
+        cls: "text-sky-700 bg-sky-500/15 border-sky-500/30 dark:text-sky-400",
+      }
+    : {
+        label: t("pages.landing.offline"),
+        icon: Ban,
+        cls: "text-zinc-700 bg-zinc-500/15 border-zinc-500/30 dark:text-zinc-400",
+      };
   const Icon = cfg.icon;
   return (
     <span
@@ -507,7 +500,7 @@ export function UnifiedModal({
                       )}
                     </div>
                     <div className="mt-2">
-                      <ConsultBadge type={doctor.consultation_type} />
+                      <ConsultBadge isOnline={canConnect} />
                     </div>
 
                     <div className="w-full mt-4 space-y-1.5 text-left">
@@ -896,7 +889,7 @@ const feeLabel =
 
           {!compact && (
             <div className={`${doctor.consultation_type? '' : ''} flex  items-center justify-between`}>
-              <ConsultBadge type={doctor.consultation_type} />
+              <ConsultBadge isOnline={canConnect} />
               <span className="flex cursor-pointer  items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
                 {t("pages.cards.view_details")}{" "}
                 <ChevronRight className="h-3.5 w-3.5" />

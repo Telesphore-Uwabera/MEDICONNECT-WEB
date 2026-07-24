@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -550,7 +550,7 @@ setSearchDropdownOpen(false);
 
       <div className="relative">
      
-        <section id="landing-page" className="relative mx-auto grid min-h-[540px] max-w-7xl grid-cols-1 items-center gap-8 px-4 py-8 sm:px-6 sm:py-10 md:px-8 lg:min-h-[610px] lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.78fr)] lg:px-10 lg:py-12">
+        <section id="landing-page" className="container relative grid min-h-[540px] grid-cols-1 items-center gap-8 py-8 sm:py-10 lg:min-h-[610px] lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.78fr)] lg:py-12">
 
           
           <div className="relative z-10 w-full max-w-[680px]">

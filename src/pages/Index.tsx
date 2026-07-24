@@ -189,7 +189,7 @@ const Index = () => {
   }, [location.hash]);
 
   useEffect(() => {
-    const sectionIds = ["home", "doctors", "specialities", "hospitals", "pharmacy", "team"];
+    const sectionIds = ["home", "doctors", "services", "specialities", "hospitals", "pharmacy", "team"];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el);
@@ -589,7 +589,7 @@ const Index = () => {
             </aside>
           </div>
 
-          <div className="mt-8 overflow-hidden rounded-[14px] border border-primary/15 bg-[#c9f4ed] shadow-sm dark:bg-primary/15">
+          <div id="services" className="mt-8 overflow-hidden rounded-[14px] border border-primary/15 bg-[#c9f4ed] shadow-sm dark:bg-primary/15">
             <div className="grid min-h-[150px] md:grid-cols-[0.85fr_0.55fr_1.25fr]">
               <div className="relative z-10 flex flex-col justify-center px-6 py-6 md:px-8">
                 <h3 className="max-w-[300px] text-xl font-black leading-tight tracking-tight text-slate-950 md:text-2xl dark:text-foreground">

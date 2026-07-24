@@ -169,6 +169,7 @@ function Specialities() {
   } = useLandingSpecializationFees();
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isHoveringRef = useRef(false);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
@@ -250,7 +251,7 @@ function Specialities() {
     updateScrollState();
   }, [preparedSpecializations]);
 
-  useEffect(() => {
+useEffect(() => {
     const element = scrollRef.current;
 
     if (!element) {
@@ -283,6 +284,34 @@ function Specialities() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    const element = scrollRef.current;
+
+    if (!element || preparedSpecializations.length === 0) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      if (isHoveringRef.current) {
+        return;
+      }
+
+      const atEnd =
+        element.scrollLeft + element.clientWidth >=
+        element.scrollWidth - 4;
+
+      if (atEnd) {
+        element.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        element.scrollBy({ left: 220, behavior: 'smooth' });
+      }
+    }, 3000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [preparedSpecializations.length]);
 
   useEffect(() => {
     if (!mobileDropdownOpen) {
@@ -728,6 +757,12 @@ function Specialities() {
               <div
                 ref={scrollRef}
                 onScroll={updateScrollState}
+                onMouseEnter={() => {
+                  isHoveringRef.current = true;
+                }}
+                onMouseLeave={() => {
+                  isHoveringRef.current = false;
+                }}
                 onKeyDown={(event) => {
                   if (
                     event.key ===

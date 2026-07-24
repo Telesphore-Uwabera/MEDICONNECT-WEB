@@ -35,7 +35,7 @@ const Navbar = ({ mobileMenuOpen, setMobileMenuOpen }: NavbarProps) => {
   // collision is what made the active-state underline behave oddly).
   const navLinks = [
     { href: "#doctors", label: t("nav.available_doctors") },
-    { href: "#specialities", label: t("pages.landing.what_we_do") },
+    { href: "#services", label: t("pages.landing.what_we_do") },
     { href: "#pharmacy", label: t("pages.landing.facilities_pharmacies_nav") },
     { href: "#team", label: t("nav.our_team", "Our Team") },
   ];
