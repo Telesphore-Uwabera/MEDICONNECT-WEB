@@ -101,7 +101,7 @@ const DownloadMobileApp = () => {
                 />
               </div>
 
-              <div className="min-w-0 lg:block hidden">
+              <div className="min-w-0 lg:block">
                 <p className="text-xs text-muted-foreground">
                   Download on
                 </p>
@@ -127,7 +127,7 @@ const DownloadMobileApp = () => {
                 />
               </div>
 
-              <div className="min-w-0 lg:block hidden">
+              <div className="min-w-0 lg:block">
                 <p className="text-xs text-muted-foreground">
                   Download on
                 </p>
