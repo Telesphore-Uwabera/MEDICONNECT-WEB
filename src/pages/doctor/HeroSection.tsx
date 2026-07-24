@@ -526,14 +526,14 @@ setSearchDropdownOpen(false);
         className="absolute inset-y-0 left-0 w-[58%] pointer-events-none hidden bg-gradient-to-b from-background via-transparent to-background lg:block"
         aria-hidden="true"
       />
-      <div
+    <div
         className="absolute inset-y-0 right-0 z-0 hidden w-[62vw] pointer-events-none lg:block"
         aria-hidden="true"
       >
         <img
           src="/images/Jul18202601_47_20AM.png"
           alt=""
-          className="h-full w-full object-cover object-center opacity-80"
+          className="h-full w-full object-cover object-[center_20%] opacity-80"
           loading="eager"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/35 to-background/5" />
