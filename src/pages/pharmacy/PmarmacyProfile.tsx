@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -28,7 +29,6 @@ import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
   Globe,
   Linkedin,
   Link2,
-  Upload,
   Image as ImageIcon,
   AlertCircle,
   RefreshCw,
@@ -816,8 +816,6 @@ function Sidebar({
 function ProfileHero({ profile }: { profile: PharmacyProfile }) {
   const { t } = useTranslation();
   const p = profile as any;
-  const logoRef = useRef<HTMLInputElement>(null);
-  const coverRef = useRef<HTMLInputElement>(null);
   const uploadLogo = useUploadLogo();
   const uploadCover = useUploadCoverImage();
   const [copied, setCopied] = useState(false);
@@ -826,23 +824,21 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
   const logoUrl = resolveImageUrl(profile.logo);
   const isVerified = !!p.verified_at;
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleLogoChange = (value: File | File[] | null) => {
+    const file = Array.isArray(value) ? value[0] : value;
     if (!file) return;
     uploadLogo.mutate(file, {
       onSuccess: () => toast.success(t("pages.pharmacy.logo_updated")),
       onError: (e) => toast.error(e.message),
     });
-    e.target.value = "";
   };
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleCoverChange = (value: File | File[] | null) => {
+    const file = Array.isArray(value) ? value[0] : value;
     if (!file) return;
     uploadCover.mutate(file, {
       onSuccess: () => toast.success(t("pages.pharmacy.cover_updated")),
       onError: (e) => toast.error(e.message),
     });
-    e.target.value = "";
   };
 
   const handleCopySlug = async () => {
@@ -874,25 +870,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/5" />
-        <button
-          onClick={() => coverRef.current?.click()}
-          disabled={uploadCover.isPending}
-          className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/40 hover:bg-black/60 text-white text-[11px] font-semibold px-3 py-1.5 backdrop-blur-sm transition-colors"
-        >
-          {uploadCover.isPending ? (
-            <RefreshCw size={11} className="animate-spin" />
-          ) : (
-            <Upload size={11} />
-          )}
-          {coverUrl ? t("pages.pharmacy.change_cover") : t("pages.pharmacy.add_cover")}
-        </button>
-        <input
-          ref={coverRef}
-          type="file"
-          accept="image/jpeg,image/png,image/jpg,image/webp"
-          className="hidden"
-          onChange={handleCoverChange}
-        />
+
       </div>
 
       {/* Logo + identity row */}
@@ -910,26 +888,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
                 {getInitials(profile.name_en)}
               </div>
             )}
-            <button
-              onClick={() => logoRef.current?.click()}
-              disabled={uploadLogo.isPending}
-              className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-all"
-              title={t("pages.pharmacy.change_logo")}
-            >
-              {uploadLogo.isPending ? (
-                <RefreshCw size={14} className="animate-spin" />
-              ) : (
-                <Upload size={14} />
-              )}
-            </button>
           </div>
-          <input
-            ref={logoRef}
-            type="file"
-            accept="image/jpeg,image/png,image/jpg,image/webp"
-            className="hidden"
-            onChange={handleLogoChange}
-          />
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3 sm:ml-28">
@@ -961,7 +920,7 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
             </div>
             {(profile.name_fr || p.name_kiny) && (
               <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                {[profile.name_fr, p.name_kiny].filter(Boolean).join(" · ")}
+                {[profile.name_fr, p.name_kiny].filter(Boolean).join(" / ")}
               </p>
             )}
           </div>
@@ -974,6 +933,31 @@ function ProfileHero({ profile }: { profile: PharmacyProfile }) {
               <Link2 size={11} /> {copied ? t("pages.pharmacy.copied") : `/pharmacy/${p.slug}`}
             </button>
           )}
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:ml-28 sm:grid-cols-2">
+          <FileUploader
+            label={coverUrl ? t("pages.pharmacy.change_cover") : t("pages.pharmacy.add_cover")}
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            value={null}
+            onChange={handleCoverChange}
+            maxSizeMb={2}
+            existingUrl={coverUrl}
+            className="min-h-[74px] px-3 py-3"
+            helperText={t("common.fileUploader.imageHelper", { defaultValue: "Drop or browse an image. Max 2 MB." })}
+            disabled={uploadCover.isPending}
+          />
+          <FileUploader
+            label={logoUrl ? t("pages.pharmacy.change_logo") : t("pages.pharmacy.add_logo", { defaultValue: "Add logo" })}
+            accept="image/jpeg,image/png,image/jpg,image/webp"
+            value={null}
+            onChange={handleLogoChange}
+            maxSizeMb={2}
+            existingUrl={logoUrl}
+            className="min-h-[74px] px-3 py-3"
+            helperText={t("common.fileUploader.imageHelper", { defaultValue: "Drop or browse an image. Max 2 MB." })}
+            disabled={uploadLogo.isPending}
+          />
         </div>
       </div>
     </div>

@@ -122,6 +122,9 @@
     "hero_consultation": "kuri interineti.",
     "hero_quality_care": "Ubuvuzi bufite ireme,",
     "hero_anywhere": "aho uri hose.",
+    "hero_feature_seconds": "Vugana n'umuganga mu masegonda",
+    "hero_feature_licensed": "Abaganga bemewe kandi banyuze mu igenzura",
+    "hero_feature_privacy": "Ibanga ryawe ni ryo dushyira imbere",
     "hero_dynamic_1": "mu maboko y'impuguke",
     "hero_dynamic_2": "kuri ecran yawe",
     "hero_dynamic_3": "muri farumasi yawe",
@@ -305,7 +308,10 @@
     "order_medicines_registered_sub": "Kukugezaho imiti byihuse, byizewe kandi bifite umutekano.",
     "pharmacy_shelves_alt": "Ububiko bwa farumasi yemewe",
     "download_app": "Kuramo app",
-    "choose_store": "Play Store cyangwa App Store"
+    "choose_store": "Play Store cyangwa App Store",
+    "download_app_sub": "Bona ubuvuzi aho uri hose, igihe cyose.",
+    "instant_consultation_sub": "Vugana n'umuganga mu masegonda.",
+    "book_appointment_sub": "Fata gahunda yo kubonana n'umuganga."
   },
   "patient": {
     "overview_title": "Murakaza neza",
@@ -1015,6 +1021,7 @@
     "instant_title": "Kwivuza ako kanya",
     "instant_visible": "Urebwa n'abarwayi bashaka ubufasha bwihuse",
     "instant_hidden": "Urahishwe ku rutonde rw'ako kanya",
+    "set_availability":"Shyiraho Iboneka",
     "available": "Uhari",
     "off": "Ntubonetse",
     "stat_today": "Uyu munsi",
@@ -3233,5 +3240,8 @@
     "not_found": "Ntitwabonye icyemezo gihuye n'iyi nomero.",
     "invalid_help": "Ongera urebe neza nomero y'icyemezo hanyuma ugerageze, cyangwa uvugane n'umuganga wagitanze niba ubona ari ikosa.",
     "powered_by": "Bikozwe na MediConnect - Kuzana ubuvuzi mu ntoki zawe"
+  },
+    "card":{
+    "feeNotAvailable":"Amafaranga Ntiyashyizweho"
   }
 }

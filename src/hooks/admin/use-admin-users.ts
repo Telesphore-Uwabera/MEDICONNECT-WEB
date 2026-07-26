@@ -128,8 +128,14 @@ export function useCreateAdminUser() {
 export function useSuspendUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`${BASE}/${id}/suspend`, { method: "PUT" }),
+    mutationFn: (input: number | { id: number; reason?: string }) => {
+      const id = typeof input === "number" ? input : input.id;
+      const reason = typeof input === "number" ? undefined : input.reason;
+      return apiFetch(`${BASE}/${id}/suspend`, {
+        method: "PUT",
+        body: reason ? { reason } : undefined,
+      });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
   });
 }
@@ -285,7 +291,14 @@ export function useUpdateStaffRole() {
 export function useSuspendStaff() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => apiFetch(`/admin/staff/${id}/suspend`, { method: "PUT" }),
+    mutationFn: (input: number | { id: number; reason?: string }) => {
+      const id = typeof input === "number" ? input : input.id;
+      const reason = typeof input === "number" ? undefined : input.reason;
+      return apiFetch(`/admin/staff/${id}/suspend`, {
+        method: "PUT",
+        body: reason ? { reason } : undefined,
+      });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-staff"] }),
   });
 }
@@ -348,3 +361,4 @@ export function useReplaceRolePermissions() {
     },
   });
 }
+

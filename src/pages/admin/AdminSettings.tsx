@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import { formatDateOnly } from "@/lib/date";
 import {  User,
   Lock,
@@ -17,7 +18,6 @@ import {  User,
   ShieldAlert,
   KeyRound,
   UserCog,
-  Upload,
   Pencil,
   X,
   BadgeCheck,
@@ -328,7 +328,6 @@ const LANGUAGE_LABELS: Record<string, string> = {
  
 function AdminSettings() {
   const { t, i18n } = useTranslation(); 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState(false);
 
   const [activeTab, setActiveTab] = useState<TabKey>("profile");
@@ -421,8 +420,8 @@ function AdminSettings() {
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleAvatarChange = async (value: File | File[] | null) => {
+    const file = Array.isArray(value) ? value[0] : value;
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       sonnerToast.error("Avatar must be under 2 MB");
@@ -435,7 +434,6 @@ function AdminSettings() {
     } catch (err) {
       sonnerToast.error(getErrorMessage(err) || "Failed to update avatar.");
     }
-    e.target.value = "";
   };
 
   const handleDeleteAvatar = async () => {
@@ -589,26 +587,6 @@ function AdminSettings() {
                       <User className="w-8 h-8 text-primary/60" />
                     </div>
                   )}
-                  {/* Upload overlay on hover */}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={updateAvatar.isPending}
-                    className="absolute inset-0 rounded-[6px] bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Change photo"
-                  >
-                    {updateAvatar.isPending ? (
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    ) : (
-                      <Camera className="w-5 h-5 text-white" />
-                    )}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
                 </div>
 
                 {/* Name + meta */}
@@ -646,16 +624,16 @@ function AdminSettings() {
 
                 {/* Quick avatar actions */}
                 <div className="shrink-0 flex flex-col gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2.5 text-[11px] rounded-[6px] gap-1.5"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={updateAvatar.isPending}
-                  >
-                    <Upload className="w-3 h-3" />
-                    {showAvatar ? "Change photo" : "Upload photo"}
-                  </Button>
+                  <FileUploader
+                    label={showAvatar ? t("pages.admin.set_change_photo", { defaultValue: "Change photo" }) : t("pages.admin.set_upload_photo", { defaultValue: "Upload photo" })}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    value={null}
+                    onChange={handleAvatarChange}
+                    maxSizeMb={2}
+                    existingUrl={showAvatar ? settings?.avatar : null}
+                    className="w-[220px] min-h-[76px] px-3 py-3"
+                    helperText={t("common.fileUploader.avatarHelper", { defaultValue: "Click or drag a JPG, PNG, or WebP image. Max 2 MB." })}
+                  />
                   {showAvatar && (
                     <Button
                       size="sm"

@@ -122,6 +122,9 @@
     "hero_consultation": "instantanée.",
     "hero_quality_care": "Des soins de qualité,",
     "hero_anywhere": "partout.",
+    "hero_feature_seconds": "Consultez en quelques secondes",
+    "hero_feature_licensed": "Medecins agrees et verifies",
+    "hero_feature_privacy": "Votre vie privee, notre priorite",
     "hero_dynamic_1": "entre des mains expertes",
     "hero_dynamic_2": "sur votre écran",
     "hero_dynamic_3": "à votre pharmacie",
@@ -305,7 +308,10 @@
     "order_medicines_registered_sub": "Livraison rapide, sure et fiable a votre porte.",
     "pharmacy_shelves_alt": "Rayons d une pharmacie enregistree",
     "download_app": "Télécharger application",
-    "choose_store": "Play Store ou App Store"
+    "choose_store": "Play Store ou App Store",
+    "download_app_sub": "Accedez aux soins de sante partout, tout le temps.",
+    "instant_consultation_sub": "Connectez-vous a un medecin en quelques secondes.",
+    "book_appointment_sub": "Planifiez un rendez-vous avec un medecin."
   },
   "patient": {
     "overview_title": "Bon retour",
@@ -1015,6 +1021,7 @@
     "instant_title": "Consultation instantanée",
     "instant_visible": "Vous êtes visible aux patients cherchant une aide immédiate",
     "instant_hidden": "Vous êtes masqué de la file instantanée",
+     "set_availability":"Définir la disponibilité",
     "available": "Disponible",
     "off": "Désactivé",
     "stat_today": "Aujourd'hui",
@@ -3233,5 +3240,9 @@
     "not_found": "We couldn't find a certificate matching this number.",
     "invalid_help": "Double-check the certificate number and try again, or contact the issuing doctor if you believe this is a mistake.",
     "powered_by": "Powered by MediConnect - Bringing care to your fingertips"
+  },
+    "card":{
+    "feeNotAvailable":" Frais non disponibles"
   }
+
 }

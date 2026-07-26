@@ -11,12 +11,13 @@ import {
   type HospitalImage,
   type UpsertProfilePayload,
 } from "@/hooks/hospital/use-hospital-profile";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { FileUploader } from "@/components/ui/file-uploader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +47,6 @@ import {
   Smartphone,
   Link2,
   Images,
-  Upload,
   X,
   ZoomIn,
   ChevronLeft,
@@ -389,14 +389,12 @@ function GalleryStep({
   uploading: boolean;
 }) {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
 
   const totalCount = remoteImages.length + stagedImages.length;
   const canAddMore = totalCount < MAX_GALLERY_IMAGES;
 
-  const processFiles = async (files: FileList | null) => {
+  const processFiles = async (files: FileList | File[] | null) => {
     if (!files) return;
     const remaining = MAX_GALLERY_IMAGES - totalCount;
     const toProcess = Array.from(files).slice(0, remaining);
@@ -428,53 +426,16 @@ function GalleryStep({
 
       {/* Drop zone */}
       {canAddMore && (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={async (e) => {
-            e.preventDefault();
-            setDragging(false);
-            await processFiles(e.dataTransfer.files);
-          }}
-          className={cn(
-            "w-full rounded-[6px] border-2 border-dashed transition-all duration-200 py-8 flex flex-col items-center gap-2 cursor-pointer",
-            dragging
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50 hover:bg-muted/50",
-          )}
-        >
-          <div
-            className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-              dragging
-                ? "bg-primary/15 text-primary"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            <Upload className="h-4 w-4" />
-          </div>
-          <div className="text-center">
-            <p className="text-xs font-medium text-foreground">
-              {dragging ? t("hospital.drop_images") : t("hospital.click_or_drag")}
-            </p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {t("hospital.upload_hint", { count: totalCount, max: MAX_GALLERY_IMAGES })}
-            </p>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-            className="hidden"
-            onChange={(e) => processFiles(e.target.files)}
-          />
-        </button>
+        <FileUploader
+          label={t("hospital.click_or_drag")}
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          value={null}
+          onChange={(value) => processFiles(Array.isArray(value) ? value : value ? [value] : null)}
+          maxSizeMb={4}
+          className="min-h-[132px]"
+          helperText={t("hospital.upload_hint", { count: totalCount, max: MAX_GALLERY_IMAGES })}
+        />
       )}
 
       {/* Thumbnail grid — remote images first, then staged */}

@@ -109,17 +109,6 @@ export function DoctorProfileForm({
     defaultData?.linksSection ?? DEFAULT_SOCIAL_LINKS,
   );
 
-  // Sync when defaultData changes (switching edit → view → edit)
-  useEffect(() => {
-    if (defaultData?.specializations)
-      setSpecializations(defaultData.specializations);
-    if (defaultData?.education) setEducation(defaultData.education);
-    if (defaultData?.experience) setExperience(defaultData.experience);
-    if (defaultData?.qualifications)
-      setQualifications(defaultData.qualifications);
-    if (defaultData?.documents) setDocuments(defaultData.documents);
-    if (defaultData?.linksSection) setLinksSection(defaultData.linksSection);
-  }, [defaultData]);
 
   const {
     register,
@@ -128,7 +117,10 @@ export function DoctorProfileForm({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<PersonalInfo>({ defaultValues: defaultData?.personal });
+  } = useForm<PersonalInfo>({
+    defaultValues: defaultData?.personal,
+    shouldUnregister: false,
+  });
 
   useEffect(() => {
     const requiredRichText = (value?: string) =>
@@ -254,8 +246,8 @@ export function DoctorProfileForm({
 
             <FormField label={t("doctorProfile.preferred_language")}>
               <Select
-                defaultValue={defaultData?.personal?.preferred_language ?? "en"}
-                onValueChange={(v) => setValue("preferred_language", v)}
+                value={watch("preferred_language") ?? "en"}
+                onValueChange={(v) => setValue("preferred_language", v, { shouldDirty: true, shouldValidate: true })}
               >
                 <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
                   <SelectValue />
@@ -356,30 +348,35 @@ export function DoctorProfileForm({
               label={t("doctorProfile.profile_photo")}
               accept="image/jpeg,image/png,image/webp"
               file={documents.profile_image}
+              existingUrl={documents.existing?.profile_image_url}
               onChange={handleProfileImageChange}
             />
             <FileUploadBox
               label={t("doctorProfile.degree_document")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.degree_document}
+              existingUrl={documents.existing?.degree_document_url}
               onChange={handleDegreeDocChange}
             />
             <FileUploadBox
               label={t("doctorProfile.license_scan")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.license_document}
+              existingUrl={documents.existing?.medical_license_document_url}
               onChange={handleLicenseDocChange}
             />
             <FileUploadBox
               label={t("doctorProfile.national_id")}
               accept="image/jpeg,image/png,application/pdf"
               file={documents.national_id_document}
+              existingUrl={documents.existing?.national_id_document_url}
               onChange={handleNationalIdChange}
             />
             <FileUploadBox
               label={t("doctorProfile.signature", "Signature")}
               accept="image/jpeg,image/png,image/webp"
               file={documents.signature_file}
+              existingUrl={documents.existing?.signature_url}
               onChange={handleSignatureChange}
             />
           </div>
@@ -468,3 +465,4 @@ export function DoctorProfileForm({
     </div>
   );
 }
+

@@ -161,8 +161,25 @@ export interface GetAdminDoctorsParams {
 }
 
 interface DoctorActionResponse {
-  message: string;
-  doctor: ApiDoctor;
+  message?: string;
+  doctor?: ApiDoctor;
+  data?: ApiDoctor;
+}
+
+function unwrapDoctorAction(response: DoctorActionResponse | ApiDoctor): ApiDoctor {
+  const maybeWrapped = response as DoctorActionResponse;
+  return maybeWrapped.doctor ?? maybeWrapped.data ?? (response as ApiDoctor);
+}
+
+function syncDoctorCaches(
+  qc: ReturnType<typeof useQueryClient>,
+  doctor: ApiDoctor | undefined,
+  fallbackId: number,
+) {
+  const doctorId = doctor?.id ?? fallbackId;
+  if (doctor) qc.setQueryData(doctorKeys.detail(doctorId), doctor);
+  qc.invalidateQueries({ queryKey: doctorKeys.all() });
+  qc.invalidateQueries({ queryKey: doctorKeys.detail(doctorId) });
 }
 
 // ─── Appointments ─────────────────────────────────────────────────────────────
@@ -378,8 +395,8 @@ export function useApproveDoctor() {
   const qc = useQueryClient();
   return useMutation<ApiDoctor, Error, number>({
     mutationFn: (id) =>
-      apiFetch<DoctorActionResponse>(`${BASE}/${id}/approve`, { method: "PUT" }).then((r) => r.doctor),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.all() }),
+      apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/approve`, { method: "PUT" }).then(unwrapDoctorAction),
+    onSuccess: (doctor, id) => syncDoctorCaches(qc, doctor, id),
   });
 }
 
@@ -387,11 +404,11 @@ export function useRejectDoctor() {
   const qc = useQueryClient();
   return useMutation<ApiDoctor, Error, { id: number; reason?: string }>({
     mutationFn: ({ id, reason }) =>
-      apiFetch<DoctorActionResponse>(`${BASE}/${id}/reject`, {
+      apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/reject`, {
         method: "PUT",
         body: reason ? { reason } : undefined,
-      }).then((r) => r.doctor),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.all() }),
+      }).then(unwrapDoctorAction),
+    onSuccess: (doctor, { id }) => syncDoctorCaches(qc, doctor, id),
   });
 }
 
@@ -399,11 +416,11 @@ export function useSuspendDoctor() {
   const qc = useQueryClient();
   return useMutation<ApiDoctor, Error, { id: number; reason?: string }>({
     mutationFn: ({ id, reason }) =>
-      apiFetch<DoctorActionResponse>(`${BASE}/${id}/suspend`, {
+      apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/suspend`, {
         method: "PUT",
         body: reason ? { reason } : undefined,
-      }).then((r) => r.doctor),
-    onSuccess: () => qc.invalidateQueries({ queryKey: doctorKeys.all() }),
+      }).then(unwrapDoctorAction),
+    onSuccess: (doctor, { id }) => syncDoctorCaches(qc, doctor, id),
   });
 }
 
@@ -948,3 +965,4 @@ export function useTogglePaused(doctorId: number) {
     },
   });
 }
+

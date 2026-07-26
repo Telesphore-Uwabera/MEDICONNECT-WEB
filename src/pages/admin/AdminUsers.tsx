@@ -135,6 +135,12 @@ type CreatedProfileTarget = {
   role: ManagedRole;
   name: string;
 };
+type PendingSuspendAction = {
+  title: string;
+  subject: string;
+  description?: string;
+  onConfirm: (reason: string) => Promise<void>;
+};
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "joined-desc", label: "Joined: Newest first" },
@@ -1306,6 +1312,9 @@ function StaffPasswordModal({
 function StaffManagementPanel({ search }: { search: string }) {
   const [role, setRole] = useState("all");
   const [passwordTarget, setPasswordTarget] = useState<StaffUser | null>(null);
+  const [staffToSuspend, setStaffToSuspend] = useState<StaffUser | null>(null);
+  const [staffSuspendReason, setStaffSuspendReason] = useState("");
+  const [staffSuspendReasonError, setStaffSuspendReasonError] = useState("");
   const { data, isLoading, isError } = useGetAdminStaff({
     role: role !== "all" ? role : undefined,
     search: search || undefined,
@@ -1320,6 +1329,30 @@ function StaffManagementPanel({ search }: { search: string }) {
     try {
       await promise;
       sonnerToast.success(success);
+    } catch (error: unknown) {
+      sonnerToast.error("Staff action failed.", { description: getErrorMessage(error) });
+    }
+  };
+
+  const closeStaffSuspendDialog = () => {
+    if (suspend.isPending) return;
+    setStaffToSuspend(null);
+    setStaffSuspendReason("");
+    setStaffSuspendReasonError("");
+  };
+
+  const confirmStaffSuspend = async () => {
+    if (!staffToSuspend) return;
+    const reason = staffSuspendReason.trim();
+    if (!reason) {
+      setStaffSuspendReasonError("Please provide a suspension reason.");
+      return;
+    }
+
+    try {
+      await suspend.mutateAsync({ id: staffToSuspend.id, reason });
+      sonnerToast.success("Staff suspended.");
+      closeStaffSuspendDialog();
     } catch (error: unknown) {
       sonnerToast.error("Staff action failed.", { description: getErrorMessage(error) });
     }
@@ -1374,7 +1407,14 @@ function StaffManagementPanel({ search }: { search: string }) {
                           <KeyRound className="h-3 w-3" />
                           Password
                         </Button>
-                        <Button variant="outline" size="sm" className="h-7 rounded-[6px] text-[10px]" onClick={() => action(suspended ? activate.mutateAsync(member.id) : suspend.mutateAsync(member.id), suspended ? "Staff activated." : "Staff suspended.")}>{suspended ? "Activate" : "Suspend"}</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 rounded-[6px] text-[10px]"
+                          onClick={() => suspended ? action(activate.mutateAsync(member.id), "Staff activated.") : setStaffToSuspend(member)}
+                        >
+                          {suspended ? "Activate" : "Suspend"}
+                        </Button>
                         <Button variant="outline" size="sm" className="h-7 rounded-[6px] border-red-900/40 text-[10px] text-red-500" onClick={() => action(remove.mutateAsync(member.id), "Staff deleted.")}>Delete</Button>
                       </div>
                     </td>
@@ -1387,6 +1427,63 @@ function StaffManagementPanel({ search }: { search: string }) {
       </div>
 
       <StaffPasswordModal staff={passwordTarget} onClose={() => setPasswordTarget(null)} />
+
+      <AlertDialog
+        open={!!staffToSuspend}
+        onOpenChange={(open) => {
+          if (!open) closeStaffSuspendDialog();
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Suspend staff account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Provide a clear reason before suspending this staff account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-1">
+            <div className="rounded-[6px] border border-border bg-secondary/30 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Account</p>
+              <p className="mt-0.5 text-sm font-semibold text-foreground">{staffToSuspend?.name ?? "Selected staff"}</p>
+            </div>
+            <label className="block space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Suspension reason <span className="text-red-500">*</span>
+              </span>
+              <textarea
+                value={staffSuspendReason}
+                onChange={(event) => {
+                  setStaffSuspendReason(event.target.value);
+                  if (staffSuspendReasonError) setStaffSuspendReasonError("");
+                }}
+                rows={4}
+                className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder="Explain why this account is being suspended."
+                disabled={suspend.isPending}
+              />
+            </label>
+            {staffSuspendReasonError && (
+              <p className="text-xs font-medium text-red-500">{staffSuspendReasonError}</p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={suspend.isPending} onClick={closeStaffSuspendDialog}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={suspend.isPending || !staffSuspendReason.trim()}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmStaffSuspend();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {suspend.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Suspend
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -1471,6 +1568,10 @@ const AdminUsers = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [createdProfileTarget, setCreatedProfileTarget] = useState<CreatedProfileTarget | null>(null);
+  const [pendingSuspend, setPendingSuspend] = useState<PendingSuspendAction | null>(null);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [suspendReasonError, setSuspendReasonError] = useState("");
+  const [isSubmittingSuspend, setIsSubmittingSuspend] = useState(false);
   
 
   // Debounced search
@@ -1659,24 +1760,67 @@ const AdminUsers = () => {
     if (error instanceof Error) return error.message;
     return "Something went wrong";
   } 
+  const openSuspendDialog = useCallback((action: PendingSuspendAction) => {
+    setPendingSuspend(action);
+    setSuspendReason("");
+    setSuspendReasonError("");
+  }, []);
+
+  const closeSuspendDialog = useCallback(() => {
+    if (isSubmittingSuspend) return;
+    setPendingSuspend(null);
+    setSuspendReason("");
+    setSuspendReasonError("");
+  }, [isSubmittingSuspend]);
+
+  const confirmSuspendDialog = useCallback(async () => {
+    if (!pendingSuspend) return;
+    const reason = suspendReason.trim();
+    if (!reason) {
+      setSuspendReasonError("Please provide a suspension reason.");
+      return;
+    }
+
+    try {
+      setIsSubmittingSuspend(true);
+      await pendingSuspend.onConfirm(reason);
+      setPendingSuspend(null);
+      setSuspendReason("");
+      setSuspendReasonError("");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || t("admin.users.status_change_failed"));
+    } finally {
+      setIsSubmittingSuspend(false);
+    }
+  }, [pendingSuspend, suspendReason, sonnerToast, t]);
+
   const toggleStatus = useCallback(
     async (u: ApiUser) => {
+      if (u.status === "active") {
+        openSuspendDialog({
+          title: "Suspend user",
+          subject: u.name,
+          description: "This user will lose access until the account is reactivated.",
+          onConfirm: async (reason) => {
+            await suspendMutation.mutateAsync({ id: u.id, reason });
+            setSelected((prev) =>
+              prev ? { ...prev, status: "suspended" } : null,
+            );
+            sonnerToast.success(t("admin.users.status_changed"));
+          },
+        });
+        return;
+      }
+
       try {
-        if (u.status === "active") {
-          await suspendMutation.mutateAsync(u.id);
-          setSelected((prev) =>
-            prev ? { ...prev, status: "suspended" } : null,
-          );
-        } else {
-          await activateMutation.mutateAsync(u.id);
-          setSelected((prev) => (prev ? { ...prev, status: "active" } : null));
-        } 
+        await activateMutation.mutateAsync(u.id);
+        setSelected((prev) => (prev ? { ...prev, status: "active" } : null));
         sonnerToast.success(t("admin.users.status_changed"));
       } catch (error: unknown) { 
         sonnerToast.error(getErrorMessage(error) || t("admin.users.status_change_failed"));
       }
     },
-    [suspendMutation, activateMutation, t, sonnerToast],
+    [suspendMutation, activateMutation, t, sonnerToast, openSuspendDialog],
   );
 
   const removeUser = useCallback(async () => {
@@ -1691,45 +1835,63 @@ const AdminUsers = () => {
     }
   }, [confirmDelete, deleteMutation, t, sonnerToast]);
 
+  const refreshDoctorProfile = useCallback(async () => {
+    await Promise.all([doctorLookup.refetch(), refetch()]);
+  }, [doctorLookup.refetch, refetch]);
+
   const handleDoctorApprove = useCallback(async (doctor: ApiDoctor) => {
     try {
       await approveDoctorMutation.mutateAsync(doctor.id);
+      await refreshDoctorProfile();
       sonnerToast.success("Doctor approved.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to approve doctor.");
     }
-  }, [approveDoctorMutation, sonnerToast]);
+  }, [approveDoctorMutation, refreshDoctorProfile, sonnerToast]);
 
   const handleDoctorReject = useCallback(async (doctor: ApiDoctor) => {
     try {
       await rejectDoctorMutation.mutateAsync({ id: doctor.id });
-      sonnerToast.error("Doctor rejected.");
+      await refreshDoctorProfile();
+      sonnerToast.success("Doctor rejected.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to reject doctor.");
     }
-  }, [rejectDoctorMutation, sonnerToast]);
+  }, [rejectDoctorMutation, refreshDoctorProfile, sonnerToast]);
 
-  const handleDoctorSuspend = useCallback(async (doctor: ApiDoctor) => {
+  const handleDoctorSuspend = useCallback(async (doctor: ApiDoctor, reason: string) => {
     try {
-      await suspendDoctorMutation.mutateAsync({ id: doctor.id });
+      await suspendDoctorMutation.mutateAsync({ id: doctor.id, reason });
+      await refreshDoctorProfile();
       sonnerToast.success("Doctor suspended.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to suspend doctor.");
     }
-  }, [suspendDoctorMutation, sonnerToast]);
+  }, [suspendDoctorMutation, refreshDoctorProfile, sonnerToast]);
 
   const handlePatientToggle = useCallback(async (patient: ApiPatient) => {
+    if (patient.status === "active") {
+      openSuspendDialog({
+        title: "Suspend patient",
+        subject: patient.name,
+        description: "This patient account will be blocked until it is reactivated.",
+        onConfirm: async (reason) => {
+          await suspendPatientMutation.mutateAsync({ id: patient.id, reason });
+          await Promise.all([patientLookup.refetch(), refetch()]);
+          sonnerToast.success(t("admin.users.status_changed"));
+        },
+      });
+      return;
+    }
+
     try {
-      if (patient.status === "active") {
-        await suspendPatientMutation.mutateAsync(patient.id);
-      } else {
-        await activatePatientMutation.mutateAsync(patient.id);
-      }
+      await activatePatientMutation.mutateAsync(patient.id);
+      await Promise.all([patientLookup.refetch(), refetch()]);
       sonnerToast.success(t("admin.users.status_changed"));
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || t("admin.users.status_change_failed"));
     }
-  }, [activatePatientMutation, suspendPatientMutation, t, sonnerToast]);
+  }, [activatePatientMutation, suspendPatientMutation, patientLookup.refetch, refetch, t, sonnerToast, openSuspendDialog]);
 
   const handleHospitalApprove = useCallback(async (hospital: ApiHospital) => {
     try {
@@ -1750,13 +1912,17 @@ const AdminUsers = () => {
   }, [rejectHospitalMutation, sonnerToast]);
 
   const handleHospitalSuspend = useCallback(async (hospital: ApiHospital) => {
-    try {
-      await suspendHospitalMutation.mutateAsync({ id: hospital.id });
-      sonnerToast.success("Health facility suspended.");
-    } catch (error: unknown) {
-      sonnerToast.error(getErrorMessage(error) || "Failed to suspend hospital.");
-    }
-  }, [suspendHospitalMutation, sonnerToast]);
+    openSuspendDialog({
+      title: "Suspend health facility",
+      subject: hospital.name_en,
+      description: "This health facility will not be available until it is reactivated.",
+      onConfirm: async (reason) => {
+        await suspendHospitalMutation.mutateAsync({ id: hospital.id, reason });
+        await Promise.all([hospitalLookup.refetch(), refetch()]);
+        sonnerToast.success("Health facility suspended.");
+      },
+    });
+  }, [suspendHospitalMutation, hospitalLookup.refetch, refetch, sonnerToast, openSuspendDialog]);
 
   const handlePharmacyApprove = useCallback(async (pharmacy: ApiPharmacy) => {
     try {
@@ -1777,13 +1943,17 @@ const AdminUsers = () => {
   }, [rejectPharmacyMutation, sonnerToast]);
 
   const handlePharmacySuspend = useCallback(async (pharmacy: ApiPharmacy) => {
-    try {
-      await suspendPharmacyMutation.mutateAsync({ id: pharmacy.id });
-      sonnerToast.success("Pharmacy suspended.");
-    } catch (error: unknown) {
-      sonnerToast.error(getErrorMessage(error) || "Failed to suspend pharmacy.");
-    }
-  }, [suspendPharmacyMutation, sonnerToast]);
+    openSuspendDialog({
+      title: "Suspend pharmacy",
+      subject: pharmacy.name_en,
+      description: "This pharmacy will not be available until it is reactivated.",
+      onConfirm: async (reason) => {
+        await suspendPharmacyMutation.mutateAsync({ id: pharmacy.id, reason });
+        await Promise.all([pharmacyLookup.refetch(), refetch()]);
+        sonnerToast.success("Pharmacy suspended.");
+      },
+    });
+  }, [suspendPharmacyMutation, pharmacyLookup.refetch, refetch, sonnerToast, openSuspendDialog]);
 
   const pendingCount = statusCounts["pending"] ?? 0;
   const isActing = suspendMutation.isPending || activateMutation.isPending;
@@ -2237,7 +2407,66 @@ const AdminUsers = () => {
           if (profileTarget) setCreatedProfileTarget(profileTarget);
         }}
       />
-
+      <AlertDialog
+        open={!!pendingSuspend}
+        onOpenChange={(open) => {
+          if (!open) closeSuspendDialog();
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingSuspend?.title ?? "Suspend account"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingSuspend?.description ?? "Provide a clear reason before suspending this account."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-1">
+            <div className="rounded-[6px] border border-border bg-secondary/30 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Account
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-foreground">
+                {pendingSuspend?.subject ?? "Selected user"}
+              </p>
+            </div>
+            <label className="block space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Suspension reason <span className="text-red-500">*</span>
+              </span>
+              <textarea
+                value={suspendReason}
+                onChange={(event) => {
+                  setSuspendReason(event.target.value);
+                  if (suspendReasonError) setSuspendReasonError("");
+                }}
+                rows={4}
+                className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder="Explain why this account is being suspended."
+                disabled={isSubmittingSuspend}
+              />
+            </label>
+            {suspendReasonError && (
+              <p className="text-xs font-medium text-red-500">{suspendReasonError}</p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmittingSuspend} onClick={closeSuspendDialog}>
+              {t("admin.common.cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSubmittingSuspend || !suspendReason.trim()}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmSuspendDialog();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isSubmittingSuspend && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Suspend
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog
         open={!!confirmDelete}
         onOpenChange={(o) => !o && setConfirmDelete(null)}
@@ -2496,4 +2725,8 @@ const InfoTile = ({
 );
 
 export default AdminUsers;
+
+
+
+
 

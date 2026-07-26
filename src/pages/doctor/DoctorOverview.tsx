@@ -60,6 +60,7 @@ import {
   useDoctorWalletEarnings,
   useRequestDoctorWithdrawal,
 } from "@/hooks/doctor/use-doctor-wallet";
+import { NavLink } from "@/components/NavLink";
 
  
 const PERIOD_OPTIONS: { value: Period; labelKey: string }[] = [
@@ -774,12 +775,12 @@ const DoctorOverview = () => {
                             />
                           </div>
                         </div>
-                        <button
+                        <NavLink to={'/doctor/availability'}
                           onClick={() => setActiveTab("financial")}
-                          className="mt-auto h-9 rounded-[6px] border border-primary/30 bg-card/70 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                           className="hidden sm:inline-flex h-8 items-center rounded-[6px] bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                         >
-                          {t("pages.doctor.view_financials")}
-                        </button>
+                          {t("pages.doctor.set_availability")}
+                        </NavLink> 
                       </div>
                     </div>
 
