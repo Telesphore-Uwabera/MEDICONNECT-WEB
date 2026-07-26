@@ -103,8 +103,7 @@ export default function HeroSection() {
                   </span>
                 </li>
               ))}
-            </ul>
-
+            </ul> 
             <StartConsult />
           </div>
 

@@ -148,6 +148,7 @@ function displayText(value: unknown, fallback = "-"): string {
 
 type TabId =
   | "overview"
+  | "documents"
   | "appointments"
   | "quick_consults"
   | "education"
@@ -162,6 +163,11 @@ type TabId =
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <User className="w-3 h-3" /> },
+  {
+    id: "documents",
+    label: "Documents",
+    icon: <FileText className="w-3 h-3" />,
+  },
   {
     id: "appointments",
     label: "Appointments",
@@ -956,44 +962,6 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
           </div>
         )}
 
-        {(doctor.degree_document ||
-          doctor.medical_license_document ||
-          doctor.national_id_document) && (
-            <div>
-              <SectionHeading>Documents</SectionHeading>
-              <div className="flex flex-col gap-1.5">
-                {[
-                  { label: "Degree document", path: doctor.degree_document },
-                  {
-                    label: "Medical license",
-                    path: doctor.medical_license_document,
-                  },
-                  { label: "National ID", path: doctor.national_id_document },
-                ]
-                  .filter((d) => d.path)
-                  .map((doc) => (
-                    <a
-                      key={doc.label}
-                      href={storageUrl(doc.path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 rounded-[6px] border border-border/40 hover:border-primary/30 hover:bg-accent/15 transition-all group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-[6px] bg-accent flex items-center justify-center border border-primary/20">
-                          <FileText className="w-3 h-3 text-primary" />
-                        </div>
-                        <span className="text-[11.5px] font-medium text-foreground/80">
-                          {doc.label}
-                        </span>
-                      </div>
-                      <ExternalLink className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
-                    </a>
-                  ))}
-              </div>
-            </div>
-          )}
-
         {(doctor.instant_consultation ||
           doctor.is_featured ||
           doctor.bookings_paused ||
@@ -1103,6 +1071,75 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
           </div>
         )}
       </div>
+    </ContentWrap>
+  );
+}
+
+// ─── Tab: Documents ───────────────────────────────────────────────────────────
+
+function DocumentTile({
+  label,
+  path,
+}: {
+  label: string;
+  path?: string | null;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const url = storageUrl(path);
+  if (!url) return null;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col overflow-hidden rounded-[6px] border border-border/40 bg-card/60 hover:border-primary/30 hover:bg-accent/10 transition-all duration-150"
+    >
+      <div className="flex h-32 items-center justify-center bg-accent/10 border-b border-border/40 overflow-hidden">
+        {!imageFailed ? (
+          <img
+            src={url}
+            alt={label}
+            className="h-full w-full object-contain"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <FileText className="w-7 h-7 text-primary/30" />
+        )}
+      </div>
+      <div className="flex items-center justify-between p-3">
+        <span className="text-[11.5px] font-medium text-foreground/80">
+          {label}
+        </span>
+        <ExternalLink className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary/60 transition-colors shrink-0" />
+      </div>
+    </a>
+  );
+}
+
+function DocumentsTab({ doctor }: { doctor: ApiDoctor }) {
+  const documents = [
+    { label: "Profile photo", path: doctor.image },
+    { label: "Degree document", path: doctor.degree_document },
+    { label: "Medical license", path: doctor.medical_license_document },
+    { label: "National ID", path: doctor.national_id_document },
+    { label: "Signature", path: doctor.signature },
+  ].filter((d) => d.path);
+
+  return (
+    <ContentWrap>
+      {documents.length === 0 ? (
+        <SectionEmpty label="This doctor hasn't uploaded any documents yet" />
+      ) : (
+        <div>
+          <SectionHeading>Uploaded documents</SectionHeading>
+          <div className="grid grid-cols-2 gap-3">
+            {documents.map((doc) => (
+              <DocumentTile key={doc.label} label={doc.label} path={doc.path} />
+            ))}
+          </div>
+        </div>
+      )}
     </ContentWrap>
   );
 }
@@ -1448,7 +1485,7 @@ function ScheduleTab({ doctor }: { doctor: ApiDoctor }) {
 
         {DAY_ORDER.filter((d) => grouped[d]).map((d) => (
           <div key={d} className="space-y-1">
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-primary/40 px-0.5 capitalize">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-primary/40 px-0.5">
               {d}
             </p>
             {grouped[d].map((a) => {
@@ -2931,6 +2968,7 @@ export function DoctorPanel({
               ) : (
                 <div className="px-6 py-5">
                   {tab === "overview" && <OverviewTab doctor={d} />}
+                  {tab === "documents" && <DocumentsTab doctor={d} />}
                   {tab === "appointments" && (
                     <AppointmentsTab doctorId={d.id} />
                   )}

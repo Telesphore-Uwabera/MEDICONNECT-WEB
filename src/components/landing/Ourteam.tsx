@@ -88,7 +88,7 @@ function OrgCard({
       }}
     >
       <div
-        className="relative w-full sm:max-w-lg bg-card border border-border/80 rounded-t-2xl sm:rounded-[6px] shadow-2xl overflow-hidden animate-slideUp"
+        className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border/80 bg-card shadow-2xl animate-slideUp sm:max-h-[85vh] sm:max-w-lg sm:rounded-[6px]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -101,7 +101,7 @@ function OrgCard({
         </button>
 
         {/* Photo area — changed to portrait-friendly 4/5 ratio */}
-        <div className="relative aspect-[5/3] w-full overflow-hidden bg-muted">
+        <div className="relative aspect-[5/3] w-full shrink-0 overflow-hidden bg-muted">
           {member.photo_url && !imgError ? (
             <>
               <img
@@ -142,7 +142,7 @@ function OrgCard({
         </div>
 
         {/* Content */}
-        <div className="px-4 pt-3.5 pb-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-5">
           {/* Description */}
           {member.bio ? (
             <div className="text-[13px] text-muted-foreground leading-relaxed" 

@@ -106,6 +106,7 @@ export interface ApiDoctor {
   medical_license?: string | null;
   medical_license_document?: string | null;
   national_id_document?: string | null;
+  signature?: string | null;
   designations?: string | null;
   bio_en?: string | null;
   bio_fr?: string | null;
