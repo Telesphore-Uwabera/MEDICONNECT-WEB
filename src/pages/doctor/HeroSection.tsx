@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Zap, ShieldCheck, Lock, Heart } from "lucide-react";
 import { HeroHeadline } from "@/components/landing/HeroHeadline";
@@ -85,14 +85,14 @@ export default function HeroSection() {
           className="container relative grid min-h-[540px] grid-cols-1 items-center gap-10 py-10 md:min-h-[560px] md:grid-cols-[1.05fr_0.95fr] md:gap-8 md:py-14 lg:gap-14 lg:py-16"
         >
           {/* ── Text column ── */}
-          <div className="relative z-10 mx-auto w-full max-w-[560px] text-center md:mx-0 md:max-w-none md:text-left">
+         <div className="relative z-10 mx-auto w-full max-w-[560px] text-left md:mx-0 md:max-w-none">
             <HeroHeadline />
-            <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:mt-4 sm:text-[15px] md:mx-0">
+            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:mt-4 sm:text-[15px]">
               {heroTagline}
             </p>
 
             {/* Feature bullets */}
-            <ul className="mt-5 flex flex-col items-center gap-2.5 sm:mt-6 md:items-start">
+                        <ul className="mt-5 flex flex-col items-start gap-2.5 sm:mt-6">
               {FEATURES.map(({ key, fallback, icon: Icon }) => (
                 <li key={key} className="flex items-center gap-2.5">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">

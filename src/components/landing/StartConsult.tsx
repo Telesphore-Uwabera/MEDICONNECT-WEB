@@ -62,7 +62,7 @@ const StartConsult = () => {
                 <p className="mt-1 truncate text-[11px] text-muted-foreground">
                   {t(
                     "pages.landing.book_appointment_sub",
-                    "Schedule a convenient time with a doctor.",
+                    "Schedule your convenient time.",
                   )}
                 </p>
               </div>
