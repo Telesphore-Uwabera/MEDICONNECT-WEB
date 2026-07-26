@@ -7,7 +7,7 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 
-const HERO_PHOTO = "/images/Jul18202601_47_20AM.png";
+const HERO_PHOTO = "/images/Jul18202601_47_20TM.png";
 const HERO_DOCTOR_ROTATE_MS = 6000;
 
 const FEATURES = [
