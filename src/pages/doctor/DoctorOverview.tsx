@@ -777,10 +777,10 @@ const DoctorOverview = () => {
                         </div>
                         <NavLink to={'/doctor/availability'}
                           onClick={() => setActiveTab("financial")}
-                           className="hidden sm:inline-flex h-8 items-center rounded-[6px] bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                           className="hidden sm:inline-flex h-10 w-full items-center justify-center rounded-[6px] bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                         >
                           {t("pages.doctor.set_availability")}
-                        </NavLink> 
+                        </NavLink>
                       </div>
                     </div>
 
