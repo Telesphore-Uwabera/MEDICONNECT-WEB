@@ -89,11 +89,18 @@ function DocumentCard({
   isDeleting: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onEdit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onEdit();
+        }
+      }}
       className={cn(
-        "w-full rounded-[6px] border p-3 text-left transition-colors",
+        "w-full rounded-[6px] border p-3 text-left transition-colors cursor-pointer",
         active ? "border-primary/40 bg-primary/10" : "border-border/60 bg-background hover:bg-secondary/40",
       )}
     >
@@ -145,7 +152,7 @@ function DocumentCard({
           Delete
         </Button>
       </div>
-    </button>
+    </div>
   );
 }
 

@@ -8,18 +8,27 @@ import {
   Heading1,
   Heading2,
   Highlighter,
-  Image,
+  Image as ImageIcon,
   Italic,
-  Link,
+  Link as LinkIcon,
   List,
   ListOrdered,
   Quote,
   RemoveFormatting,
+  Strikethrough,
   Type,
   Upload,
-  Underline,
+  Underline as UnderlineIcon,
   Unlink,
 } from "lucide-react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
+import StarterKit from "@tiptap/starter-kit";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
+import Highlight from "@tiptap/extension-highlight";
+import TiptapImage from "@tiptap/extension-image";
+import TextAlign from "@tiptap/extension-text-align";
 
 import { cn } from "@/lib/utils";
 
@@ -40,10 +49,29 @@ const ALLOWED_TAGS = new Set([
   "LI",
   "OL",
   "P",
+  "S",
   "SPAN",
+  "STRIKE",
   "STRONG",
   "U",
   "UL",
+]);
+
+// Tags whose entire subtree must be discarded outright (not unwrapped) when
+// sanitizing pasted HTML - unwrapping would leak their raw text content
+// (CSS rules, script source, etc.) into the visible document.
+const DROP_TAGS = new Set([
+  "STYLE",
+  "SCRIPT",
+  "HEAD",
+  "TITLE",
+  "META",
+  "LINK",
+  "NOSCRIPT",
+  "TEMPLATE",
+  "IFRAME",
+  "OBJECT",
+  "EMBED",
 ]);
 
 const ALLOWED_ALIGNMENTS = new Set(["left", "center", "right", "justify"]);
@@ -67,10 +95,13 @@ function isSafeImageSrc(src: string) {
   );
 }
 
+const ALLOWED_TEXT_DECORATIONS = new Set(["line-through", "underline", "none"]);
+
 function copySafeStyles(source: HTMLElement, target: HTMLElement) {
   const color = source.style.color;
   const backgroundColor = source.style.backgroundColor;
   const textAlign = source.style.textAlign;
+  const textDecoration = source.style.textDecorationLine || source.style.textDecoration;
 
   if (color && isSafeColor(color)) target.style.color = color;
   if (backgroundColor && isSafeColor(backgroundColor)) {
@@ -78,6 +109,9 @@ function copySafeStyles(source: HTMLElement, target: HTMLElement) {
   }
   if (textAlign && ALLOWED_ALIGNMENTS.has(textAlign)) {
     target.style.textAlign = textAlign;
+  }
+  if (textDecoration && ALLOWED_TEXT_DECORATIONS.has(textDecoration.trim())) {
+    target.style.textDecoration = textDecoration.trim();
   }
 }
 
@@ -143,6 +177,11 @@ export function sanitizeRichText(value?: string | null) {
 
     const el = node as HTMLElement;
     const tag = el.tagName.toUpperCase();
+
+    if (DROP_TAGS.has(tag)) {
+      return null;
+    }
+
     const children = Array.from(el.childNodes)
       .map(sanitizeNode)
       .filter(Boolean) as Node[];
@@ -228,41 +267,76 @@ export interface RichTextareaProps {
   className?: string;
   editorClassName?: string;
   minHeight?: number;
-  maxHeight?:number
+  maxHeight?: number;
 }
 
-type Command =
-  | "bold"
-  | "italic"
-  | "underline"
-  | "insertUnorderedList"
-  | "insertOrderedList"
-  | "formatBlock"
-  | "foreColor"
-  | "hiliteColor"
-  | "justifyLeft"
-  | "justifyCenter"
-  | "justifyRight"
-  | "createLink"
-  | "unlink"
-  | "removeFormat";
+// Extend the base Image node with the same width/alignment attributes the
+// old execCommand-based editor produced, and reject unsafe `src` values at
+// parse time (covers both paste and programmatic content-setting).
+const ResizableImage = TiptapImage.extend({
+  parseHTML() {
+    return [
+      {
+        tag: "img[src]",
+        getAttrs: (element) => {
+          if (typeof element === "string") return false;
+          const src = element.getAttribute("src") ?? "";
+          if (!isSafeImageSrc(src)) return false;
+          const marginLeft = element.style.marginLeft;
+          const marginRight = element.style.marginRight;
+          const align =
+            marginRight === "0" || marginRight === "0px"
+              ? "right"
+              : marginLeft === "0" || marginLeft === "0px"
+                ? "left"
+                : "center";
+          return {
+            src,
+            alt: element.getAttribute("alt") ?? "",
+            width: element.style.width || element.getAttribute("width") || "100%",
+            align,
+          };
+        },
+      },
+    ];
+  },
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: "100%",
+        renderHTML: (attributes) => ({
+          style: `width:${attributes.width};max-width:100%;`,
+        }),
+      },
+      align: {
+        default: "center",
+        renderHTML: (attributes) => ({
+          style:
+            attributes.align === "left"
+              ? "display:block;margin-left:0;margin-right:auto;"
+              : attributes.align === "right"
+                ? "display:block;margin-left:auto;margin-right:0;"
+                : "display:block;margin-left:auto;margin-right:auto;",
+        }),
+      },
+    };
+  },
+});
 
-const TOOLBAR: Array<{
-  command: Command;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}> = [
-  { command: "bold", label: "Bold", icon: Bold },
-  { command: "italic", label: "Italic", icon: Italic },
-  { command: "underline", label: "Underline", icon: Underline },
-  { command: "insertUnorderedList", label: "Bullet list", icon: List },
-  { command: "insertOrderedList", label: "Numbered list", icon: ListOrdered },
-  { command: "justifyLeft", label: "Align left", icon: AlignLeft },
-  { command: "justifyCenter", label: "Align center", icon: AlignCenter },
-  { command: "justifyRight", label: "Align right", icon: AlignRight },
-  { command: "createLink", label: "Add link", icon: Link },
-  { command: "unlink", label: "Remove link", icon: Unlink },
-  { command: "removeFormat", label: "Clear format", icon: RemoveFormatting },
+const EDITOR_EXTENSIONS = [
+  StarterKit.configure({
+    link: {
+      openOnClick: false,
+      HTMLAttributes: { rel: "noopener noreferrer", target: "_blank" },
+      isAllowedUri: (url) => isSafeHref(url),
+    },
+  }),
+  TextStyle,
+  Color,
+  Highlight.configure({ multicolor: true }),
+  ResizableImage.configure({ allowBase64: true, inline: false }),
+  TextAlign.configure({ types: ["heading", "paragraph"] }),
 ];
 
 const FORMAT_OPTIONS = [
@@ -272,6 +346,13 @@ const FORMAT_OPTIONS = [
   { label: "Heading 3", value: "h3" },
   { label: "Quote", value: "blockquote" },
 ];
+
+const EDITOR_CONTENT_CLASSES =
+  "w-full max-w-none overflow-y-auto px-3 py-2 text-sm text-foreground outline-none " +
+  "[&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 " +
+  "[&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold " +
+  "[&_img]:my-3 [&_img]:max-h-80 [&_img]:rounded-[6px] [&_img.ProseMirror-selectednode]:outline [&_img.ProseMirror-selectednode]:outline-2 [&_img.ProseMirror-selectednode]:outline-primary " +
+  "[&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:ml-5 [&_ul]:list-disc [&_s]:opacity-80";
 
 export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
   (
@@ -283,82 +364,86 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       className,
       editorClassName,
       minHeight = 120,
-      maxHeight
+      maxHeight,
     },
     ref,
   ) => {
-    const editorRef = React.useRef<HTMLDivElement | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-    const [focused, setFocused] = React.useState(false);
     const [imageMenuOpen, setImageMenuOpen] = React.useState(false);
-    const [selectedImage, setSelectedImage] = React.useState<HTMLImageElement | null>(null);
-    const sanitizedValue = React.useMemo(() => sanitizeRichText(value), [value]);
-    const empty = isEmptyHtml(sanitizedValue);
+    const [selectedImageAttrs, setSelectedImageAttrs] = React.useState<
+      { width: string; align: "left" | "center" | "right" } | null
+    >(null);
+    const focusedRef = React.useRef(false);
+    // Marks the very next onUpdate as originating from our own setContent()
+    // sync below, so we don't immediately bounce the sanitized value back up
+    // through onChange as if the user had typed it.
+    const isSyncingRef = React.useRef(false);
 
-    React.useImperativeHandle(ref, () => editorRef.current as HTMLDivElement);
+    const editor = useEditor({
+      extensions: EDITOR_EXTENSIONS,
+      content: sanitizeRichText(value),
+      editable: !disabled,
+      immediatelyRender: false,
+      onUpdate: ({ editor }) => {
+        if (isSyncingRef.current) {
+          isSyncingRef.current = false;
+          return;
+        }
+        onChange(normalizeRichText(editor.getHTML()));
+      },
+      onFocus: () => {
+        focusedRef.current = true;
+      },
+      onBlur: () => {
+        focusedRef.current = false;
+      },
+      onSelectionUpdate: ({ editor }) => {
+        const { selection } = editor.state;
+        if (selection instanceof NodeSelection && selection.node.type.name === "image") {
+          setSelectedImageAttrs({
+            width: selection.node.attrs.width ?? "100%",
+            align: selection.node.attrs.align ?? "center",
+          });
+        } else {
+          setSelectedImageAttrs(null);
+        }
+      },
+      editorProps: {
+        attributes: {
+          role: "textbox",
+          "aria-multiline": "true",
+          class: cn(EDITOR_CONTENT_CLASSES, editorClassName),
+        },
+      },
+    });
+
+    React.useImperativeHandle(ref, () => editor?.view.dom as HTMLDivElement, [editor]);
 
     React.useEffect(() => {
-      const editor = editorRef.current;
-      if (!editor || focused) return;
-      if (editor.innerHTML !== sanitizedValue) {
-        editor.innerHTML = sanitizedValue;
+      if (editor) editor.setEditable(!disabled);
+    }, [editor, disabled]);
+
+    // Sync external value changes (e.g. a parent resetting the form) while
+    // the user isn't actively typing - never fight a live edit in progress.
+    React.useEffect(() => {
+      if (!editor || focusedRef.current) return;
+      const sanitized = sanitizeRichText(value);
+      if (sanitized !== editor.getHTML()) {
+        isSyncingRef.current = true;
+        editor.commands.setContent(sanitized, { emitUpdate: true });
       }
-    }, [focused, sanitizedValue]);
-
-    const emitChange = React.useCallback(() => {
-      const editor = editorRef.current;
-      if (!editor) return;
-      onChange(normalizeRichText(editor.innerHTML));
-    }, [onChange]);
-
-    const selectImage = React.useCallback((image: HTMLImageElement | null) => {
-      editorRef.current
-        ?.querySelectorAll("img[data-rich-selected='true']")
-        .forEach((img) => {
-          img.removeAttribute("data-rich-selected");
-          (img as HTMLImageElement).style.outline = "";
-          (img as HTMLImageElement).style.outlineOffset = "";
-        });
-
-      if (image) {
-        image.setAttribute("data-rich-selected", "true");
-        image.style.outline = "2px solid hsl(var(--primary))";
-        image.style.outlineOffset = "2px";
-      }
-
-      setSelectedImage(image);
-    }, []);
-
-    const runCommand = React.useCallback(
-      (command: Command, commandValue?: string) => {
-        if (disabled) return;
-        editorRef.current?.focus();
-
-        if (command === "createLink") {
-          const url = window.prompt("Paste link URL");
-          if (!url || !isSafeHref(url)) return;
-          document.execCommand(command, false, url);
-        } else {
-          document.execCommand(command, false, commandValue);
-        }
-
-        emitChange();
-      },
-      [disabled, emitChange],
-    );
+    }, [editor, value]);
 
     const insertImage = React.useCallback(
       (src: string) => {
-        if (disabled || !isSafeImageSrc(src)) return;
-        editorRef.current?.focus();
-        document.execCommand(
-          "insertHTML",
-          false,
-          `<img src="${escapeHtml(src)}" alt="" style="width:100%;max-width:100%;display:block;margin-left:auto;margin-right:auto;" />`,
-        );
-        emitChange();
+        if (disabled || !editor || !isSafeImageSrc(src)) return;
+        editor
+          .chain()
+          .focus()
+          .insertContent({ type: "image", attrs: { src, alt: "", width: "100%", align: "center" } })
+          .run();
       },
-      [disabled, emitChange],
+      [disabled, editor],
     );
 
     const insertImageFromUrl = React.useCallback(() => {
@@ -386,34 +471,28 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
     const setImageWidth = React.useCallback(
       (width: string) => {
-        if (!selectedImage || disabled) return;
-        selectedImage.style.width = width;
-        selectedImage.style.maxWidth = "100%";
-        emitChange();
+        if (!editor || disabled) return;
+        editor.chain().focus().updateAttributes("image", { width }).run();
       },
-      [disabled, emitChange, selectedImage],
+      [disabled, editor],
     );
 
     const alignImage = React.useCallback(
       (align: "left" | "center" | "right") => {
-        if (!selectedImage || disabled) return;
-        selectedImage.style.display = "block";
-
-        if (align === "left") {
-          selectedImage.style.marginLeft = "0";
-          selectedImage.style.marginRight = "auto";
-        } else if (align === "center") {
-          selectedImage.style.marginLeft = "auto";
-          selectedImage.style.marginRight = "auto";
-        } else {
-          selectedImage.style.marginLeft = "auto";
-          selectedImage.style.marginRight = "0";
-        }
-
-        emitChange();
+        if (!editor || disabled) return;
+        editor.chain().focus().updateAttributes("image", { align }).run();
       },
-      [disabled, emitChange, selectedImage],
+      [disabled, editor],
     );
+
+    const addLink = React.useCallback(() => {
+      if (!editor || disabled) return;
+      const url = window.prompt("Paste link URL");
+      if (!url || !isSafeHref(url)) return;
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    }, [disabled, editor]);
+
+    const empty = editor?.isEmpty ?? true;
 
     return (
       <div
@@ -427,11 +506,15 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         <div className="flex flex-wrap items-center gap-1 border-b border-border/70 bg-muted/30 p-1.5">
           <select
             disabled={disabled}
-            defaultValue="p"
+            value="p"
             aria-label="Text style"
             onChange={(e) => {
-              runCommand("formatBlock", e.target.value);
-              e.currentTarget.value = "p";
+              if (!editor) return;
+              const v = e.target.value;
+              const chain = editor.chain().focus();
+              if (v === "p") chain.setParagraph().run();
+              else if (v === "blockquote") chain.toggleBlockquote().run();
+              else chain.toggleHeading({ level: Number(v.slice(1)) as 1 | 2 | 3 }).run();
             }}
             className="h-7 rounded-[6px] border border-border bg-background px-2 text-[11px] text-foreground outline-none disabled:opacity-50"
           >
@@ -448,7 +531,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             aria-label="Heading 1"
             disabled={disabled}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runCommand("formatBlock", "h1")}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
             className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
           >
             <Heading1 className="h-3.5 w-3.5" />
@@ -460,7 +543,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             aria-label="Heading 2"
             disabled={disabled}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runCommand("formatBlock", "h2")}
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
             className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
           >
             <Heading2 className="h-3.5 w-3.5" />
@@ -472,26 +555,144 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             aria-label="Quote"
             disabled={disabled}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runCommand("formatBlock", "blockquote")}
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
             className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
           >
             <Quote className="h-3.5 w-3.5" />
           </button>
 
-          {TOOLBAR.map(({ command, label, icon: Icon }) => (
-            <button
-              key={command}
-              type="button"
-              title={label}
-              aria-label={label}
-              disabled={disabled}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => runCommand(command)}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-            >
-              <Icon className="h-3.5 w-3.5" />
-            </button>
-          ))}
+          <button
+            type="button"
+            title="Bold"
+            aria-label="Bold"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <Bold className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Italic"
+            aria-label="Italic"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <Italic className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Underline"
+            aria-label="Underline"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <UnderlineIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Strikethrough"
+            aria-label="Strikethrough"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleStrike().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <Strikethrough className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Bullet list"
+            aria-label="Bullet list"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Numbered list"
+            aria-label="Numbered list"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <ListOrdered className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Align left"
+            aria-label="Align left"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <AlignLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Align center"
+            aria-label="Align center"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <AlignCenter className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Align right"
+            aria-label="Align right"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <AlignRight className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Add link"
+            aria-label="Add link"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={addLink}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <LinkIcon className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Remove link"
+            aria-label="Remove link"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().unsetLink().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <Unlink className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            title="Clear format"
+            aria-label="Clear format"
+            disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+          >
+            <RemoveFormatting className="h-3.5 w-3.5" />
+          </button>
 
           <label
             title="Text color"
@@ -502,7 +703,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               type="color"
               disabled={disabled}
               className="sr-only"
-              onChange={(e) => runCommand("foreColor", e.target.value)}
+              onChange={(e) => editor?.chain().focus().setColor(e.target.value).run()}
             />
           </label>
 
@@ -515,7 +716,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               type="color"
               disabled={disabled}
               className="sr-only"
-              onChange={(e) => runCommand("hiliteColor", e.target.value)}
+              onChange={(e) => editor?.chain().focus().toggleHighlight({ color: e.target.value }).run()}
             />
           </label>
 
@@ -529,7 +730,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               onClick={() => setImageMenuOpen((open) => !open)}
               className="inline-flex h-7 items-center justify-center gap-1 rounded-[6px] px-2 text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
             >
-              <Image className="h-3.5 w-3.5" />
+              <ImageIcon className="h-3.5 w-3.5" />
               <ChevronDown className="h-3 w-3" />
             </button>
 
@@ -544,7 +745,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
                   }}
                   className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[11px] text-popover-foreground hover:bg-accent"
                 >
-                  <Link className="h-3.5 w-3.5" /> From URL
+                  <LinkIcon className="h-3.5 w-3.5" /> From URL
                 </button>
                 <button
                   type="button"
@@ -561,12 +762,16 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             )}
           </div>
 
-          {selectedImage && (
+          {selectedImageAttrs && (
             <div className="ml-1 flex items-center gap-1 border-l border-border pl-2">
               <select
                 aria-label="Image size"
                 disabled={disabled}
-                value={(IMAGE_WIDTHS.find((width) => selectedImage.style.width === width) ?? "100%")}
+                value={
+                  (IMAGE_WIDTHS as readonly string[]).includes(selectedImageAttrs.width)
+                    ? selectedImageAttrs.width
+                    : "100%"
+                }
                 onChange={(e) => setImageWidth(e.target.value)}
                 className="h-7 rounded-[6px] border border-border bg-background px-2 text-[11px] text-foreground outline-none disabled:opacity-50"
               >
@@ -623,36 +828,12 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         </div>
 
         <div className="relative">
-          {empty && !focused && (
+          {empty && (
             <div className="pointer-events-none absolute left-3 top-2 text-sm text-muted-foreground">
               {placeholder}
             </div>
           )}
-          <div
-            ref={editorRef}
-            contentEditable={!disabled}
-            role="textbox"
-            aria-multiline="true"
-            suppressContentEditableWarning
-            onInput={emitChange}
-            onClick={(event) => {
-              const target = event.target;
-              selectImage(target instanceof HTMLImageElement ? target : null);
-            }}
-            onBlur={() => {
-              setFocused(false);
-              emitChange();
-            }}
-            onFocus={() => setFocused(true)}
-            className={cn(
-              "w-full max-w-none overflow-y-auto px-3 py-2 text-sm text-foreground outline-none",
-              "[&_a]:text-primary [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3",
-              "[&_h1]:mb-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold",
-              "[&_img]:my-3 [&_img]:max-h-80 [&_img]:max-w-full [&_img]:rounded-[6px] [&_img]:border [&_img]:border-border [&_ol]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:ml-5 [&_ul]:list-disc",
-              editorClassName,
-            )}
-            style={{ minHeight,maxHeight }}
-          />
+          <EditorContent editor={editor} style={{ minHeight, maxHeight }} />
         </div>
       </div>
     );

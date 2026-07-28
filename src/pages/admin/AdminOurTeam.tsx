@@ -157,11 +157,7 @@ function TeamRow({
         </div>
       </td>
 
-      {/* Experience */}
-      <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {getYears(m.joined_at)} yr{getYears(m.joined_at) !== 1 ? "s" : ""}
-      </td>
-
+       
       {/* Status */}
       <td className="px-4 py-3">
         <StatusBadge active={m.is_active} />
@@ -501,8 +497,7 @@ function AdminOurTeam() {
                       <tr>
                         <th className="text-left px-4 py-3 font-semibold">Member</th>
                         <th className="text-left px-4 py-3 font-semibold">Title</th>
-                        <th className="text-left px-4 py-3 font-semibold">Joined</th>
-                        <th className="text-left px-4 py-3 font-semibold">Hierarchy</th>
+                        <th className="text-left px-4 py-3 font-semibold">Joined</th> 
                         <th className="text-left px-4 py-3 font-semibold">Status</th>
                         <th className="px-4 py-3" />
                       </tr>
