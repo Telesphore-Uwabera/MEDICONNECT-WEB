@@ -10,17 +10,11 @@ export function HeroHeadline() {
 
         .hero-headline {
           font-family: 'Bricolage Grotesque', var(--font-display), sans-serif;
-          font-size: clamp(1.9rem, 4.1vw, 3.55rem);
+          font-size: clamp(1.5rem, 3vw, 2.75rem);
           font-weight: 700;
-          line-height: 1.08;
+          line-height: 1.1;
           letter-spacing: -0.02em;
-          text-align: center;
-        }
-
-        @media (min-width: 1024px) {
-          .hero-headline {
-            text-align: left;
-          }
+          text-align: left;
         }
 
         .hero-line {
@@ -29,16 +23,24 @@ export function HeroHeadline() {
           white-space: normal;
         }
 
+        .hero-line-nowrap {
+          white-space: nowrap;
+        }
+
+        @media (max-width: 380px) {
+          .hero-line-nowrap {
+            white-space: normal;
+          }
+        }
+
         .hero-accent {
           color: hsl(var(--primary));
         }
       `}</style>
 
       <h1 className="hero-headline">
-        <span className="hero-line">
-          {t("pages.landing.hero_instant_virtual", { defaultValue: "Instant Virtual" })}
-        </span>
-        <span className="hero-line">
+        <span className="hero-line hero-line-nowrap">
+          {t("pages.landing.hero_instant_virtual", { defaultValue: "Instant Virtual" })}{" "}
           {t("pages.landing.hero_consultation", { defaultValue: "Consultation." })}
         </span>
         <span className="hero-line">
@@ -51,3 +53,4 @@ export function HeroHeadline() {
     </>
   );
 }
+

@@ -278,7 +278,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               <Input
                 value={form.phone}
                 onChange={set("phone")}
-                placeholder="0781234567"
+                placeholder="781234567"
                 className={inputCls}
                 required
               />
@@ -411,7 +411,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 {t("auth.terms_read_prompt", "Read & accept terms")}
               </p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {t("auth.terms_read_sub", "Role-specific + general terms required")}
+                {t("auth.terms_read_sub", "Terms & Conditions and Privacy Policy")}
               </p>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -437,7 +437,6 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
       <TermsDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        role={form.role}
         onAccept={() => setAcceptedTerms(true)}
       />
     </>
