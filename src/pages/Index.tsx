@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, useLocation } from "react-router-dom"; 
 import { useTranslation } from "react-i18next";
 
 import {
@@ -39,11 +38,8 @@ import { useTheme } from "@/context/ThemeContext";
 import LOGODARK from "@/assets/LOGODARK.png";
 import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
-import TopBar from "@/components/landing/TopBar";
-import Navbar from "@/components/landing/Navbar";
-import HeroCta from "@/components/landing/HeroCta";
-import {
-  useGetSearchHospitals,
+import TopBar from "@/components/landing/TopBar"; 
+import { 
   useInfiniteSearchHospitals,
 } from "@/hooks/patient/use-patient-search-hospital";
 
@@ -56,8 +52,7 @@ import {
   useInfiniteSearchDoctors,
   ApiDoctor,
 } from "@/hooks/patient/use-patient-doctor";
-import {
-  SpecializationSelect,
+import { 
   SpecializationValue,
 } from "./patient/components/SpecializationSelect";
 import { useGetPharmacyStats } from "@/hooks/pharmacy/use-pharmacy-dashboard";
@@ -79,33 +74,7 @@ interface DoctorAvailabilityEvent {
   bookings_paused: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const getDoctorImage = (d: ApiDoctor): string =>
-  d.image ??
-  d.user.avatar ??
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(d.user.name)}&background=0ea5e9&color=fff&size=600`;
-
-const getDoctorName = (d: ApiDoctor): string =>
-  d.designations?.trim() || d.user.name;
-
-const getDoctorSpecialty = (d: ApiDoctor): string =>
-  d.specializations?.[0]?.name ?? d.specialization ?? "General Practice";
-
-const formatFee = (d: ApiDoctor): string => {
-  const fee = parseFloat(d.consultation_fee);
-  return fee === 0 ? "Free" : `${d.currency} ${fee.toLocaleString()}`;
-};
-
-const formatRating = (d: ApiDoctor): string | null => {
-  const r = parseFloat(d.rating_avg);
-  return r > 0 ? r.toFixed(1) : null;
-};
-
-// ─── Shared section heading classes ────────────────────────────────────────────
-// Reduced one step on every breakpoint (5xl→3xl, 4xl→3xl/2xl, 3xl→2xl)
-// so headings read as section markers rather than competing hero text.
-
+ 
 const SECTION_EYEBROW =
   "text-xs font-black uppercase tracking-[0.18em] text-primary";
 const SECTION_TITLE =
@@ -113,15 +82,6 @@ const SECTION_TITLE =
 const SECTION_SUBTITLE =
   "mt-2 max-w-2xl text-sm font-medium leading-6 text-muted-foreground md:text-base";
 
-// ─── Slider Skeleton ──────────────────────────────────────────────────────────
-
-const SliderSkeleton = () => (
-  <div className="absolute inset-0 bg-muted animate-pulse rounded-[6px] flex flex-col justify-end p-4 gap-2">
-    <div className="h-4 w-2/3 rounded bg-muted-foreground/20" />
-    <div className="h-3 w-1/2 rounded bg-muted-foreground/20" />
-    <div className="h-3 w-1/3 rounded bg-muted-foreground/20" />
-  </div>
-);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -130,17 +90,14 @@ const Index = () => {
   const location = useLocation();
   const { resolvedTheme, theme } = useTheme();
   const { data: publicSettings } = usePublicSettings();
-  const generalSettings = publicSettings?.general;
-  const logo = generalSettings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
+  const generalSettings = publicSettings?.general; 
   const appName = generalSettings?.app_name || "MEDICONNECT";
   const appTagline = localizedText(
     generalSettings?.app_tagline,
     i18n.language,
     t("pages.landing.footer_desc"),
-  );
-  const contactEmail = generalSettings?.contact_email || "support@mediconnect.com";
-  const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
-  const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
+  ); 
+  const contactPhone = generalSettings?.contact_phone || "+250 788 123 456"; 
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
