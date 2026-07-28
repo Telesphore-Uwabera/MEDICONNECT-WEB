@@ -98,8 +98,13 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Terms & Conditions and Privacy Policy are two separate admin-managed
+  // documents, so each gets its own modal and its own accepted flag.
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const acceptedTerms = termsAccepted && privacyAccepted;
 
   const register = useRegister();
 
@@ -111,7 +116,8 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const onRoleChange = (v: string) => {
     setForm((f) => ({ ...f, role: v as Role }));
-    setAcceptedTerms(false);
+    setTermsAccepted(false);
+    setPrivacyAccepted(false);
   };
 
   const onGenderChange = (v: string) => {
@@ -380,7 +386,8 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </div>
         </div>
 
-        {/* Terms acceptance row */}
+        {/* Terms acceptance row — Terms & Conditions and Privacy Policy are
+            two separate documents, each opened in its own modal. */}
         {acceptedTerms ? (
           <div className="flex items-center justify-between rounded-[6px] px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20">
             <div className="flex items-center gap-2">
@@ -391,31 +398,65 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
             </div>
             <button
               type="button"
-              onClick={() => setAcceptedTerms(false)}
+              onClick={() => {
+                setTermsAccepted(false);
+                setPrivacyAccepted(false);
+              }}
               className="text-[10px] text-muted-foreground hover:text-foreground underline transition-colors"
             >
               {t("auth.terms_revoke", "Revoke")}
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            className="w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group text-left"
-          >
-            <div className="w-6 h-6 rounded-[6px] bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-              <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-foreground">
-                {t("auth.terms_read_prompt", "Read & accept terms")}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {t("auth.terms_read_sub", "Terms & Conditions and Privacy Policy")}
-              </p>
-            </div>
-            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-          </button>
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => setTermsOpen(true)}
+              className="w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group text-left"
+            >
+              <div className="w-6 h-6 rounded-[6px] bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                <ShieldCheck
+                  className={`w-3.5 h-3.5 transition-colors ${termsAccepted ? "text-emerald-500" : "text-muted-foreground group-hover:text-primary"
+                    }`}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground">
+                  {t("auth.terms_conditions_label", "Terms & Conditions")}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {termsAccepted
+                    ? t("auth.terms_accepted_short", "Accepted")
+                    : t("auth.terms_read_prompt", "Tap to read & accept")}
+                </p>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPrivacyOpen(true)}
+              className="w-full flex items-center gap-2.5 rounded-[6px] px-3 py-2.5 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 group text-left"
+            >
+              <div className="w-6 h-6 rounded-[6px] bg-muted flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                <ShieldCheck
+                  className={`w-3.5 h-3.5 transition-colors ${privacyAccepted ? "text-emerald-500" : "text-muted-foreground group-hover:text-primary"
+                    }`}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground">
+                  {t("auth.privacy_policy_label", "Privacy Policy")}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {privacyAccepted
+                    ? t("auth.terms_accepted_short", "Accepted")
+                    : t("auth.terms_read_prompt", "Tap to read & accept")}
+                </p>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+            </button>
+          </div>
         )}
 
         <button
@@ -435,9 +476,16 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
       </motion.form>
 
       <TermsDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onAccept={() => setAcceptedTerms(true)}
+        open={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        type="terms"
+        onAccept={() => setTermsAccepted(true)}
+      />
+      <TermsDrawer
+        open={privacyOpen}
+        onClose={() => setPrivacyOpen(false)}
+        type="privacy"
+        onAccept={() => setPrivacyAccepted(true)}
       />
     </>
   );
