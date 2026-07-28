@@ -1,7 +1,7 @@
 ﻿import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
 // export default DoctorProfile;
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -1155,13 +1155,19 @@ const DoctorProfile = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [stepSaveStates, setStepSaveStates] = useState<StepSaveStates>({});
 
-  // Seed from API on first load
+  // Seed from API on first load only. Later refetches (a background
+  // window-refocus refetch, or the invalidation that follows a per-step
+  // save) must not force mode back to "view" - that would unmount
+  // DoctorProfileForm mid-edit and wipe out any not-yet-saved step data.
+  const hasSeededProfileRef = useRef(false);
   useEffect(() => {
-    if (apiData?.doctor) {
-      const mapped = mapApiProfileToFormData(apiData.doctor);
-      setProfileData(mapped);
+    if (!apiData?.doctor) return;
+    const mapped = mapApiProfileToFormData(apiData.doctor);
+    setProfileData(mapped);
+    setStepSaveStates(computeInitialSaveStates(mapped));
+    if (!hasSeededProfileRef.current) {
+      hasSeededProfileRef.current = true;
       setMode("view");
-      setStepSaveStates(computeInitialSaveStates(mapped));
     }
   }, [apiData]);
 

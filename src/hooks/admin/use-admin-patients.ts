@@ -5,6 +5,30 @@ const BASE = "/admin/patients";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface ApiPatientInsurance {
+  id: number;
+  name: string;
+  code?: string;
+  logo?: string | null;
+  type?: string;
+  coverage_percentage?: string | number;
+}
+
+export interface ApiPatientMedicalInfo {
+  id?: number;
+  patient_id?: number;
+  allergies?: string[];
+  chronic_conditions?: string[];
+  current_medications?: string[];
+  previous_surgeries?: string[];
+  family_history?: string[];
+  smoking_status?: string | null;
+  alcohol_use?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ApiPatient {
   id: number;
   name: string;
@@ -34,12 +58,14 @@ export interface ApiPatient {
   emergency_contact_relation?: string | null;
   insurance_id?: number | null;
   insurance_number?: string | null;
+  insurance?: ApiPatientInsurance | null;
+  medical_info?: ApiPatientMedicalInfo | null;
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 } | null;
   created_at: string;
-   updated_at?: string;   
+   updated_at?: string;
 }
 
 export interface PaginatedPatients {
@@ -76,6 +102,20 @@ export function useGetAdminPatients(params: GetAdminPatientsParams = {}) {
       const url = qs.toString() ? `${BASE}?${qs}` : BASE;
       return apiFetch<PaginatedPatients>(url);
     },
+  });
+}
+
+// ─── useGetAdminPatient  →  GET /admin/patients/{id} ─────────────────────────
+// The list endpoint above already nests most fields, but not the medical
+// record (allergies, conditions, medications, ...) or the resolved insurance
+// record - those only come back on the single-patient detail route.
+
+export function useGetAdminPatient(id: number | null) {
+  return useQuery<ApiPatient>({
+    queryKey: ["admin-patient", id],
+    queryFn: () =>
+      apiFetch<{ patient: ApiPatient }>(`${BASE}/${id}`).then((r) => r.patient),
+    enabled: !!id,
   });
 }
 

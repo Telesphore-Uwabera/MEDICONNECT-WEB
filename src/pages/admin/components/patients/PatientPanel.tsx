@@ -2,7 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApiPatient } from "@/hooks/admin/use-admin-patients";
+import { useGetAdminPatient, type ApiPatient } from "@/hooks/admin/use-admin-patients";
 import { formatDateOnly } from "@/lib/date";
  import {X, ShieldOff, ShieldCheck, Loader2,
   Phone, Calendar, Globe, Hash, Cake,
@@ -203,15 +203,86 @@ function MedicalTab({ p }: { p: ApiPatient }) {
       </div>
 
       {/* Insurance */}
-      {(profile.insurance_number || profile.insurance_id) && (
+      {(profile.insurance || profile.insurance_number || profile.insurance_id) && (
         <div>
           <SectionHeading>Insurance</SectionHeading>
           <div className="grid grid-cols-2 gap-2">
+            {profile.insurance?.name && (
+              <InfoTile icon={<CreditCard className="w-2.5 h-2.5" />} label="Provider" value={profile.insurance.name} full />
+            )}
+            {profile.insurance?.coverage_percentage != null && (
+              <InfoTile icon={<Activity className="w-2.5 h-2.5" />} label="Coverage" value={`${profile.insurance.coverage_percentage}%`} />
+            )}
             {profile.insurance_number && (
               <InfoTile icon={<FileText className="w-2.5 h-2.5" />} label="Insurance no." value={profile.insurance_number} mono full />
             )}
             {profile.insurance_id && (
               <InfoTile icon={<Hash className="w-2.5 h-2.5" />} label="Insurance ID" value={`#${profile.insurance_id}`} mono />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Medical record */}
+      {profile.medical_info && (
+        <div>
+          <SectionHeading>Medical record</SectionHeading>
+          <div className="space-y-2">
+            {profile.medical_info.allergies?.length ? (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Allergies</p>
+                <div className="flex flex-wrap gap-1">
+                  {profile.medical_info.allergies.map((a) => <Pill key={a} variant="red">{a}</Pill>)}
+                </div>
+              </div>
+            ) : null}
+            {profile.medical_info.chronic_conditions?.length ? (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Chronic conditions</p>
+                <div className="flex flex-wrap gap-1">
+                  {profile.medical_info.chronic_conditions.map((c) => <Pill key={c} variant="amber">{c}</Pill>)}
+                </div>
+              </div>
+            ) : null}
+            {profile.medical_info.current_medications?.length ? (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Current medications</p>
+                <div className="flex flex-wrap gap-1">
+                  {profile.medical_info.current_medications.map((m) => <Pill key={m} variant="teal">{m}</Pill>)}
+                </div>
+              </div>
+            ) : null}
+            {profile.medical_info.previous_surgeries?.length ? (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Previous surgeries</p>
+                <div className="flex flex-wrap gap-1">
+                  {profile.medical_info.previous_surgeries.map((s) => <Pill key={s}>{s}</Pill>)}
+                </div>
+              </div>
+            ) : null}
+            {profile.medical_info.family_history?.length ? (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Family history</p>
+                <div className="flex flex-wrap gap-1">
+                  {profile.medical_info.family_history.map((f) => <Pill key={f}>{f}</Pill>)}
+                </div>
+              </div>
+            ) : null}
+            {(profile.medical_info.smoking_status || profile.medical_info.alcohol_use) && (
+              <div className="grid grid-cols-2 gap-2">
+                {profile.medical_info.smoking_status && (
+                  <InfoTile icon={<Activity className="w-2.5 h-2.5" />} label="Smoking" value={profile.medical_info.smoking_status} />
+                )}
+                {profile.medical_info.alcohol_use && (
+                  <InfoTile icon={<Activity className="w-2.5 h-2.5" />} label="Alcohol use" value={profile.medical_info.alcohol_use} />
+                )}
+              </div>
+            )}
+            {profile.medical_info.notes && (
+              <div className="p-3 rounded-[6px] border border-border/40 bg-card/60">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 mb-1.5">Notes</p>
+                <p className="text-[11.5px] text-foreground/85">{profile.medical_info.notes}</p>
+              </div>
             )}
           </div>
         </div>
@@ -331,6 +402,11 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
   const [tab, setTab] = useState<TabId>("overview");
   const open = !!patient;
 
+  // The list endpoint doesn't include the medical record or resolved
+  // insurance - fetch the single-patient detail route for the full picture.
+  const { data: fullPatient } = useGetAdminPatient(patient?.id ?? null);
+  const p = fullPatient ?? patient;
+
   // Reset tab when a different patient is opened
   useEffect(() => { if (patient) setTab("overview"); }, [patient?.id]);
 
@@ -367,8 +443,8 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
           open ? "translate-x-0" : "translate-x-full",
         )}
       >
-        {patient && (
-          <> 
+        {p && (
+          <>
             <div className="flex-shrink-0 border-b border-primary/10 bg-card/40">
 
               {/* Top bar */}
@@ -390,31 +466,31 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
 
               {/* Identity strip */}
               <div className="px-6 pb-3 flex items-center gap-4">
-                {patient.avatar ? (
+                {p.avatar ? (
                   <img
-                    src={patient.avatar}
-                    alt={patient.name}
+                    src={p.avatar}
+                    alt={p.name}
                     className="h-11 w-11 rounded-full object-cover shrink-0 ring-2 ring-primary/10 border border-primary/20"
                   />
                 ) : (
                   <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[12px] ring-2 ring-primary/10 border border-primary/20 shrink-0">
-                    {getInitials(patient.name)}
+                    {getInitials(p.name)}
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[14px] text-foreground truncate">{patient.name}</p>
-                  <p className="text-[10.5px] text-muted-foreground/45 truncate mt-0.5">{patient.email}</p>
+                  <p className="font-bold text-[14px] text-foreground truncate">{p.name}</p>
+                  <p className="text-[10.5px] text-muted-foreground/45 truncate mt-0.5">{p.email}</p>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                   {/* Status badge */}
                   <span className={cn(
                     "inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full border font-semibold",
-                    STATUS_STYLE[patient.status],
+                    STATUS_STYLE[p.status],
                   )}>
-                    <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[patient.status])} />
-                    {patient.status}
+                    <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[p.status])} />
+                    {p.status}
                   </span>
 
                   {/* Role */}
@@ -423,7 +499,7 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                   </span>
 
                   {/* Verified */}
-                  {patient.is_verified && (
+                  {p.is_verified && (
                     <span className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full border font-medium bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/25 dark:text-emerald-400 dark:border-emerald-800/60">
                       <BadgeCheck className="w-2.5 h-2.5" /> Verified
                     </span>
@@ -450,38 +526,38 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                 ))}
               </div>
             </div>
- 
+
             <div className="flex-1 overflow-y-auto">
               <div className="px-6 py-5">
-                {tab === "overview" && <OverviewTab p={patient} />}
-                {tab === "medical" && <MedicalTab p={patient} />}
-                {tab === "consultations" && <PatientConsultationsTab patientId={patient.id} />}
-                {tab === "verification" && <VerificationTab p={patient} />}
+                {tab === "overview" && <OverviewTab p={p} />}
+                {tab === "medical" && <MedicalTab p={p} />}
+                {tab === "consultations" && <PatientConsultationsTab patientId={p.id} />}
+                {tab === "verification" && <VerificationTab p={p} />}
               </div>
             </div>
- 
+
             <div className="flex-shrink-0 px-6 py-3.5 border-t border-primary/10 bg-card/40">
               <div className="flex gap-2 items-center">
                 <Button
                   size="sm"
-                  variant={patient.status === "active" ? "outline" : "default"}
+                  variant={p.status === "active" ? "outline" : "default"}
                   className={cn(
                     "h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium",
-                    patient.status === "active"
+                    p.status === "active"
                       ? "hover:border-primary/40 hover:text-primary hover:bg-accent/20"
                       : "bg-emerald-600 hover:bg-emerald-700 text-white",
                   )}
                   disabled={isActing}
-                  onClick={() => onToggleStatus(patient)}
+                  onClick={() => onToggleStatus(p)}
                 >
                   {isActing ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : patient.status === "active" ? (
+                  ) : p.status === "active" ? (
                     <ShieldOff className="h-3.5 w-3.5" />
                   ) : (
                     <ShieldCheck className="h-3.5 w-3.5" />
                   )}
-                  {patient.status === "active"
+                  {p.status === "active"
                     ? t("admin.users.suspend")
                     : t("admin.users.reactivate")}
                 </Button>

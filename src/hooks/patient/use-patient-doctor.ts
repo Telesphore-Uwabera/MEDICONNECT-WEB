@@ -56,6 +56,14 @@ export interface ApiDoctor {
   };
   hospitals: ApiDoctorHospital[];
   specializations: ApiDoctorSpecialization[];
+  /** Specialist sub-types the doctor saved under their specialization.
+   *  Field/name shape is read defensively (name / sub_type / sub_specialization). */
+  sub_specializations?: Array<{
+    id: number;
+    name?: string;
+    sub_type?: string;
+    sub_specialization?: string;
+  }>;
 }
 
 export interface ApiDoctorListResponse {

@@ -9,13 +9,13 @@ import {
   Clock,
   Wifi,
   BriefcaseMedical,
+  Stethoscope,
   Zap,
   Maximize2,
   Globe,
   Video,
   Building2,
   X,
-  ShieldCheck,
   Languages,
   BadgeCheck,
   FileText,
@@ -154,6 +154,61 @@ function DetailRow({
     </div>
   );
 }
+// --- Star rating ----------------------------------------------------------------
+// Always renders all 5 stars (unfilled/muted when rating is 0, i.e. no reviews
+// yet) rather than hiding the row, so "no rating" still reads as a rating UI.
+
+function StarRating({
+  rating,
+  size = "sm",
+}: {
+  rating: number;
+  size?: "sm" | "md";
+}) {
+  const starSize = size === "md" ? "h-4 w-4" : "h-3.5 w-3.5";
+  const filled = Math.round(rating);
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }, (_, i) => (
+        <Star
+          key={i}
+          className={cn(
+            starSize,
+            i < filled
+              ? "fill-amber-400 text-amber-400"
+              : "text-muted-foreground/25",
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function RatingDisplay({
+  rating,
+  size = "sm",
+}: {
+  rating: number;
+  size?: "sm" | "md";
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={cn(
+          "rounded-[6px] px-1.5 py-0.5 font-bold leading-none",
+          size === "md" ? "text-sm" : "text-xs",
+          rating > 0
+            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+            : "text-muted-foreground",
+        )}
+      >
+        {(rating || 0).toFixed(1)}
+      </span>
+      <StarRating rating={rating} size={size} />
+    </div>
+  );
+}
+
 // --- Quick stat (used in the sidebar) ------------------------------------------
 // Unchanged  lives inside UnifiedModal, out of scope for this pass.
 
@@ -172,9 +227,9 @@ function QuickStat({
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-foreground leading-tight truncate">
+        <div className="text-sm font-bold text-foreground leading-tight truncate">
           {top}
-        </p>
+        </div>
         <p className="text-[10px] text-muted-foreground leading-tight">{bot}</p>
       </div>
     </div>
@@ -359,6 +414,11 @@ export function UnifiedModal({
     kiny: t("pages.landing.lang_rw"),
   };
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
+  const subSpecialtyLabel =
+    doctor.sub_specializations
+      ?.map((s) => s.name ?? s.sub_type ?? s.sub_specialization)
+      .filter(Boolean)
+      .join(", ") || null;
   const localizedBio = (() => {
     const clean = (value?: string | null) => value?.trim() || null;
     const lang = i18n.language.toLowerCase();
@@ -515,9 +575,7 @@ export function UnifiedModal({
                             )}
                           />
                         }
-                        top={
-                          rating > 0 ? rating.toFixed(1) : t("pages.cards.new")
-                        }
+                        top={<RatingDisplay rating={rating} size="md" />}
                         bot={t("pages.cards.rating")}
                       />
                       <QuickStat
@@ -555,12 +613,11 @@ export function UnifiedModal({
                         value={locationLabel}
                       />
                     )}
-                    {doctor.medical_license && (
+                    {subSpecialtyLabel && (
                       <DetailRow
-                        icon={ShieldCheck}
-                        label={t("pages.cards.medical_license")}
-                        value={doctor.medical_license}
-                        accent
+                        icon={Stethoscope}
+                        label={t("pages.cards.sub_specialties")}
+                        value={subSpecialtyLabel}
                       />
                     )}
                     {doctor.preferred_language && (
@@ -835,7 +892,7 @@ const feeLabel =
   };
 
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
-
+console.log(doctor)
   return (
     <>
       {/* -- Card -- */}
@@ -871,12 +928,9 @@ const feeLabel =
                   </h3>
                 </>
               )}
-              {doctor.medical_license && (
-                <p className="text-xs text-primary font-medium mt-0.5 truncate">
-                  {t("pages.cards.license")} :{" "}
-                  {doctor.medical_license ? `  ${doctor.medical_license}` : ""}
-                </p>
-              )}
+              <div className="mt-0.5">
+                <RatingDisplay rating={rating} />
+              </div>
 
               {doctor.specialization && (
                 <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">
