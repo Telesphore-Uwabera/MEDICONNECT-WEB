@@ -26,10 +26,10 @@ export interface User {
 // ── Register ──────────────────────────────────────────
 export interface RegisterPayload {
   name: string;
-  phone: string;
-  country_code: string;
+  phone?: string;
+  country_code?: string;
   role: Role;
-  email?: string;
+  email: string;
   password: string;
   password_confirmation: string;
   accepted_terms: boolean;

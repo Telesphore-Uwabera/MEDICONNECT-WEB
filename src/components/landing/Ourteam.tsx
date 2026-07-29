@@ -39,8 +39,6 @@ function sortMembers(a: ApiTeamMember, b: ApiTeamMember): number {
   return a.name.localeCompare(b.name);
 }
 
- 
-
 // ── Skeleton card ────────────────────────────────────────────
 
 function SkeletonCard() {
@@ -107,8 +105,9 @@ function OrgCard({
               <img
                 src={member.photo_url}
                 alt={member.name}
-                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"
-                  }`}
+                className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${
+                  imgLoaded ? "opacity-100" : "opacity-0"
+                }`}
                 onLoad={() => setImgLoaded(true)}
                 onError={() => setImgError(true)}
               />
@@ -145,35 +144,30 @@ function OrgCard({
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3.5 pb-5">
           {/* Description */}
           {member.bio ? (
-            <div className="text-[13px] text-muted-foreground leading-relaxed" 
-                dangerouslySetInnerHTML={{ __html: member.bio }}
-              /> 
+            <div
+              className="text-[13px] text-muted-foreground leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: member.bio }}
+            />
           ) : (
-            <p className="text-[13px] text-muted-foreground/40 italic">
-              No description provided.
-            </p>
+            <></>
           )}
 
           {/* Stats */}
+
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                Joined
-              </p>
-              <p className="text-base font-medium text-foreground">{joinYear}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {yrs} year{yrs !== 1 ? "s" : ""} ago
-              </p>
-            </div>
-            <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
-                Experience
-              </p>
-              <p className="text-base font-medium text-foreground">
-                {yrs} yr{yrs !== 1 ? "s" : ""}
-              </p>
-              <p className="text-[11px] text-muted-foreground">at MediConnect</p>
-            </div>
+            {member.joined_at && (
+              <div className="rounded-[6px] bg-muted/60 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">
+                  Joined
+                </p>
+                <p className="text-base font-medium text-foreground">
+                  {joinYear}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {yrs} year{yrs !== 1 ? "s" : ""} ago
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -222,7 +216,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
         </h3>
         <p className="mt-1 line-clamp-2 min-h-[40px] text-sm font-medium text-muted-foreground">
           {member.title || t("pages.landing.team_member_fallback")}
-        </p> 
+        </p>
       </button>
 
       {modalOpen && (
@@ -235,7 +229,13 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
 // ─── Connector primitives ───────────────────────────────────────────────────
 // Lines are black in light mode, white in dark mode.
 
-function TrunkLine({ height, xPercent = 50 }: { height: number; xPercent?: number }) {
+function TrunkLine({
+  height,
+  xPercent = 50,
+}: {
+  height: number;
+  xPercent?: number;
+}) {
   return (
     <div
       className="absolute w-[2px] -translate-x-1/2 bg-black dark:bg-white"
@@ -261,7 +261,8 @@ function ConnectorRow({
   const dropHeight = 20;
   const curveRadius = 12;
   const inset = count > 1 ? 50 / count : 50;
-  const middleIndices = count > 2 ? Array.from({ length: count - 2 }, (_, i) => i + 1) : [];
+  const middleIndices =
+    count > 2 ? Array.from({ length: count - 2 }, (_, i) => i + 1) : [];
 
   return (
     <div className="relative" style={{ paddingTop: trunkHeight + dropHeight }}>
@@ -313,7 +314,9 @@ function ConnectorRow({
 function OurTeam() {
   const { t } = useTranslation();
   const { data, isLoading, isError, refetch } = useGetOurTeam({ per_page: 50 });
-  const members = (data?.data ?? []).filter((member) => member.is_active !== false).sort(sortMembers);
+  const members = (data?.data ?? [])
+    .filter((member) => member.is_active !== false)
+    .sort(sortMembers);
   const [leader, ...rest] = members;
   const rows = rest.reduce<Record<number, ApiTeamMember[]>>((acc, member) => {
     const level = member.level ?? 2;
@@ -343,17 +346,17 @@ function OurTeam() {
 
       {!isError && (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading
-            ? Array(4)
-                .fill(null)
-                .map((_, i) => <SkeletonCard key={i} />)
-            : members.length === 0
-              ? (
-                <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-                  {t("pages.landing.team_empty")}
-                </p>
-              )
-              : members.map((m) => <MemberCard key={m.id} member={m} />)}
+          {isLoading ? (
+            Array(4)
+              .fill(null)
+              .map((_, i) => <SkeletonCard key={i} />)
+          ) : members.length === 0 ? (
+            <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
+              {t("pages.landing.team_empty")}
+            </p>
+          ) : (
+            members.map((m) => <MemberCard key={m.id} member={m} />)
+          )}
         </div>
       )}
     </div>

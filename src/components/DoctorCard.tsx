@@ -147,7 +147,8 @@ function DetailRow({
         <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
           {label}
         </p>
-        <p className="text-sm font-medium text-foreground leading-snug truncate">
+        {}
+        <p className="text-sm font-medium text-foreground leading-snug ">
           {value}
         </p>
       </div>

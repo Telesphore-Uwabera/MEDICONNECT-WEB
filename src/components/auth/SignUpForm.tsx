@@ -68,8 +68,7 @@ const GENDER_CONFIG: Record<Gender, { icon: React.ReactNode; color: string; labe
 };
 
 // Simple, permissive email shape check -- good enough to catch obvious typos
-// without rejecting valid-but-unusual addresses. Only used for non-patient
-// roles, where email is mandatory.
+// without rejecting valid-but-unusual addresses. Email is mandatory for every role.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface FormState {
@@ -108,9 +107,6 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   const register = useRegister();
 
-  // Email is optional for patients, required (and validated) for every other role.
-  const emailRequired = form.role !== "patient";
-
   const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -127,18 +123,20 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Email rules: mandatory + format-checked for everyone except patients.
-    // Patients may submit with email left blank, but if they did type
-    // something in, it still has to look like a real address.
-    if (emailRequired && !form.email.trim()) {
-      return toast.error(t("auth.errors.email_required", "Email is required for this role"));
+    // Email is mandatory and format-checked for every role.
+    if (!form.email.trim()) {
+      return toast.error(t("auth.errors.email_required", "Email is required"));
     }
-    if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) {
+    if (!EMAIL_RE.test(form.email.trim())) {
       return toast.error(t("auth.errors.email_invalid", "Please enter a valid email address"));
     }
 
-    const phoneValidation = validatePhoneForCountry(form.phone, form.countryCode);
-    if (!phoneValidation.isValid) {
+    // Phone is optional -- only validate its shape if the user typed one in.
+    const phoneProvided = Boolean(form.phone.trim());
+    const phoneValidation = phoneProvided
+      ? validatePhoneForCountry(form.phone, form.countryCode)
+      : null;
+    if (phoneValidation && !phoneValidation.isValid) {
       return toast.error(phoneValidation.message);
     }
 
@@ -152,9 +150,9 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
     register.mutate(
       {
         name: form.name,
-        email: form.email.trim() || undefined,
-        phone: phoneValidation.normalizedPhone,
-        country_code: phoneValidation.normalizedCountryCode,
+        email: form.email.trim(),
+        phone: phoneValidation?.normalizedPhone,
+        country_code: phoneValidation?.normalizedCountryCode,
         role: form.role,
         gender: form.gender,
         password: form.password,
@@ -242,15 +240,10 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </div>
         </div>
 
-        {/* Email -- required for every role except patient */}
+        {/* Email -- required for every role */}
         <div className="space-y-1">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.email")}
-            {!emailRequired && (
-              <span className="ml-1 font-normal text-muted-foreground/70 normal-case tracking-normal">
-                ({t("auth.optional", "optional")})
-              </span>
-            )}
           </label>
           <div className="relative">
             <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
@@ -261,15 +254,18 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
               onChange={set("email")}
               className={inputCls}
               placeholder="email@example.com"
-              required={emailRequired}
+              required
             />
           </div>
         </div>
 
-        {/* Phone */}
+        {/* Phone -- optional */}
         <div className="space-y-1">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {t("auth.phone")}
+            <span className="ml-1 font-normal text-muted-foreground/70 normal-case tracking-normal">
+              ({t("auth.optional", "optional")})
+            </span>
           </label>
           <div className="flex gap-2">
             <div className="w-28">
@@ -286,7 +282,6 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
                 onChange={set("phone")}
                 placeholder="781234567"
                 className={inputCls}
-                required
               />
             </div>
           </div>
