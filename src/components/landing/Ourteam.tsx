@@ -193,7 +193,7 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
     <>
       <button
         type="button"
-        className="group rounded-[10px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+      className="group rounded-[6px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
         onClick={() => setModalOpen(true)}
         onKeyDown={(e) => e.key === "Enter" && setModalOpen(true)}
         aria-label={t("pages.landing.team_view_profile", { name: member.name })}
@@ -331,7 +331,7 @@ function OurTeam() {
   return (
     <div className="w-full">
       {isError && (
-        <div className="rounded-[10px] border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
+        <div className="rounded-[6px] border border-destructive/25 bg-destructive/5 px-5 py-8 text-center">
           <p className="text-sm font-medium text-destructive">
             {t("pages.landing.team_load_error")}
           </p>

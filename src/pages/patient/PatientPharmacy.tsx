@@ -835,7 +835,7 @@ const PatientPharmacy = () => {
           />
 
           {/* Meta bar */}
-          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/60 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-3">
               <p className="text-[13px] text-muted-foreground">
                 {isLoading ? (
@@ -869,7 +869,7 @@ const PatientPharmacy = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end w-full xs:w-auto">
               <select
                 value={filters.sort}
                 onChange={(e) => set("sort", e.target.value as SortOption)}
@@ -887,7 +887,7 @@ const PatientPharmacy = () => {
               />
 
               {/* View toggle */}
-              <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm">
+              <div className="flex rounded-[6px] border border-border/60 overflow-hidden bg-card shadow-sm shrink-0">
                 {(["grid", "list"] as const).map((v, i) => (
                   <button
                     key={v}

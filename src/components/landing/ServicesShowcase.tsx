@@ -93,7 +93,7 @@ export default function ServicesShowcase() {
   };
   
   return (
-    <div className="mt-10">
+    <div className="mt-10" id="services">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">

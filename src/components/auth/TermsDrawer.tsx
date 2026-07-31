@@ -115,7 +115,7 @@ const TermsDrawer = ({ open, onClose, type, onAccept }: TermsDrawerProps) => {
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 340, damping: 32 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-[90vw] h-[90vh] max-w-3xl bg-card border border-border rounded-[10px] shadow-2xl flex flex-col overflow-hidden"
+              className="w-[90vw] h-[90vh] max-w-3xl bg-card border border-border rounded-[6px] shadow-2xl flex flex-col overflow-hidden"
             >
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">

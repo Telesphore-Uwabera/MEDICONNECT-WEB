@@ -146,7 +146,7 @@ const Index = () => {
   }, [location.hash]);
 
   useEffect(() => {
-    const sectionIds = ["home", "doctors", "services", "specialities", "hospitals", "pharmacy", "team"];
+   const sectionIds = ["home", "doctors", "specialities","services", "healthfacilities", "pharmacy", "team"]; 
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el);
@@ -452,7 +452,7 @@ const Index = () => {
                   ? Array.from({ length: 4 }).map((_, index) => (
                       <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
                     ))
-                  : allDoctors.slice(0, 4).map((doctor) => (
+                  : allDoctors.slice(0, 6).map((doctor) => (
                       <DoctorCard key={doctor.id} doctor={doctor} />
                     ))}
               </div>
@@ -514,7 +514,7 @@ const Index = () => {
                       <Link
                         key={item.label}
                         to={item.to}
-                        className="group rounded-[10px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                        className="group rounded-[6px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                       >  
                         <span className="mt-1 inline-flex items-center text-xs font-semibold text-primary">
                             {item.label}
@@ -525,7 +525,7 @@ const Index = () => {
                   })}
                 </div>
               </div> 
-              <div className="overflow-hidden rounded-[12px] border border-primary/10 bg-primary/10 p-4 shadow-sm">
+              <div className="overflow-hidden rounded-[6px] border border-primary/10 bg-primary/10 p-4 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h3 className="text-base font-black text-foreground">
@@ -545,50 +545,6 @@ const Index = () => {
               </div>
             </aside>
           </div>
-
-          <div id="services" className="mt-8 overflow-hidden rounded-[14px] border border-primary/15 bg-[#c9f4ed] shadow-sm dark:bg-primary/15">
-            <div className="grid min-h-[150px] md:grid-cols-[0.85fr_0.55fr_1.25fr]">
-              <div className="relative z-10 flex flex-col justify-center px-6 py-6 md:px-8">
-                <h3 className="max-w-[300px] text-xl font-black leading-tight tracking-tight text-slate-950 md:text-2xl dark:text-foreground">
-                  {t("pages.landing.order_medicines_registered")}
-                </h3>
-                <p className="mt-2 max-w-[290px] text-sm font-medium leading-5 text-slate-700 dark:text-muted-foreground">
-                  {t("pages.landing.order_medicines_registered_sub")}
-                </p>
-                <Button asChild className="mt-4 h-10 w-fit rounded-[6px] bg-teal-700 px-5 text-sm font-black text-white hover:bg-teal-800">
-                  <Link to="/patient/search-pharmacy">
-                    {t("pages.landing.explore_pharmacies")}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-
-              <div className="relative hidden min-h-[150px] items-center justify-center md:flex">
-                <div className="absolute left-2 top-8 h-4 w-4 rounded-full bg-teal-300 shadow-sm" />
-                <div className="absolute right-8 top-5 h-3 w-3 rounded-full bg-teal-400 shadow-sm" />
-                <div className="absolute bottom-8 left-8 rotate-[-22deg] rounded-full text-primary shadow-sm ring-1 ring-primary/10">
-                  <Pill className="h-5 w-5" />
-                </div>
-                <div className=" bottom-10  rotate-[18deg]  px-3 py-1 text-rose-500  absolute left-2 top-8">
-                  <Pill className="h-5 w-5" />
-                </div>
-                <div className="relative flex h-24 w-24 items-center justify-center rounded-[20px] bg-teal-600 text-white shadow-xl shadow-teal-900/10">
-                  <ShoppingBag className="h-12 w-12" strokeWidth={2.2} />
-                </div>
-              </div>
-
-              <div className="relative min-h-[150px] overflow-hidden">
-                <img
-                  src="/images/arpad-czapp-tvP6pCnq9iI.jpg"
-                  alt={t("pages.landing.pharmacy_shelves_alt")}
-                  className="absolute inset-0 h-full w-full object-cover object-center"
-                  loading="lazy"
-                />
-                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#c9f4ed] to-transparent dark:from-primary/15" />
-              </div>
-            </div>
-          </div>
-
           <ServicesShowcase />
         </div>
       </section>
@@ -599,7 +555,7 @@ const Index = () => {
         </div>
       </section>
       {/* Verified facilities and pharmacies */}
-      <section id="hospitals" className="border-t border-border bg-background py-12 md:py-14">
+      <section id="healthfacilities" className="border-t border-border bg-background py-12 md:py-14">
         <div className="container">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -664,20 +620,20 @@ const Index = () => {
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {hospitalsLoading && homepageHospitals.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-[330px] animate-pulse rounded-[10px] border border-border bg-card" />
+                    <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
                 : homepageHospitals.map((hospital) => (
                     <HospitalCard key={hospital.id} hospital={hospital} />
                   ))}
               {!hospitalsLoading && homepageHospitals.length === 0 && (
-                <div className="col-span-full rounded-[10px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_hospitals_found")}</div>
+                <div className="col-span-full rounded-[6px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_hospitals_found")}</div>
               )}
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" >
               {pharmaciesLoading && homepagePharmacies.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="h-[330px] animate-pulse rounded-[10px] border border-border bg-card" />
+                    <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
                 : homepagePharmacies.map((pharmacy) => {
                     const deliveryMins = parseDeliveryMins(pharmacy.estimated_delivery_minutes);
@@ -803,7 +759,7 @@ const Index = () => {
                     );
                   })}
               {!pharmaciesLoading && homepagePharmacies.length === 0 && (
-                <div className="col-span-full rounded-[10px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_pharmacies_found")}</div>
+                <div className="col-span-full rounded-[6px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_pharmacies_found")}</div>
               )}
             </div>
           )}
