@@ -42,7 +42,7 @@ function Footer() {
   const footerPlatformLinks = [
     { label: t("pages.landing.doctors"), to: "/patient/search-doctors" },
     { label: t("pages.landing.hospitals"), to: "/patient/search-facilities" },
-    { label: t("pages.landing.footer_pharmacy"), to: "/patient/pharmacy" },
+    { label: t("pages.landing.footer_pharmacy"), to: "/patient/search-pharmacy" },
     { label: t("common.signIn"), to: "/auth" },
   ];
 

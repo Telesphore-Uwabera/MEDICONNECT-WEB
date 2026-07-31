@@ -472,7 +472,7 @@ useEffect(() => {
         <>
           {/* Mobile loading */}
           <div className="md:hidden">
-            <div className="h-12 animate-pulse rounded-lg border border-border bg-muted" />
+            <div className="h-12 animate-pulse rounded-[6px] border border-border bg-muted" />
           </div>
 
           {/* Desktop loading */}
@@ -485,7 +485,7 @@ useEffect(() => {
                 className="
                   relative h-[172px]
                   w-[130px] flex-shrink-0
-                  overflow-hidden rounded-lg
+                  overflow-hidden rounded-[6px]
                   border border-border bg-muted
                 "
               >
@@ -563,7 +563,7 @@ useEffect(() => {
                 className="
                   flex min-h-12 w-full
                   items-center justify-between gap-3
-                  rounded-lg border border-border
+                  rounded-[6px] border border-border
                   bg-card px-4 py-3
                   text-left text-sm
                   text-foreground
@@ -637,7 +637,7 @@ useEffect(() => {
                           }
                         )}
                         className="
-                          h-11 w-full rounded-lg
+                          h-11 w-full rounded-[6px]
                           border border-border
                           bg-background
                           pl-9 pr-3
@@ -670,7 +670,7 @@ useEffect(() => {
                               className="
                                 group flex w-full
                                 items-center gap-3
-                                rounded-lg px-3 py-3
+                                rounded-[6px] px-3 py-3
                                 text-left
                                 transition-colors
                                 hover:bg-muted

@@ -21,7 +21,7 @@ const StartConsult = () => {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             to="/patient/search-doctors?instant=true"
-            className="group flex items-center justify-between gap-3 rounded-[10px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md transition hover:opacity-90"
+            className="group flex items-center justify-between gap-3 rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md transition hover:opacity-90"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-white/15">
@@ -49,7 +49,7 @@ const StartConsult = () => {
 
           <Link
             to="/patient/search-doctors"
-            className="group flex items-center justify-between gap-3 rounded-[10px] border border-border bg-card px-4 py-3.5 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+            className="group flex items-center justify-between gap-3 rounded-[6px] border border-border bg-card px-4 py-3.5 text-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
           >
             <div className="flex min-w-0 items-center gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
@@ -75,7 +75,7 @@ const StartConsult = () => {
         </div>
 
         {/* Download app row */}
-        <div className="flex flex-col items-start justify-between gap-3 rounded-[10px] border border-border bg-card/60 px-4 py-3.5 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start justify-between gap-3 rounded-[6px] border border-border bg-card/60 px-4 py-3.5 sm:flex-row sm:items-center">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary/10 text-primary">
               <Download className="h-4 w-4" />

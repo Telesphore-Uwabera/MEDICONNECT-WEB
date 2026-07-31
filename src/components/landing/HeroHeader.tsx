@@ -65,7 +65,7 @@ export function HeroHeader({
     { kind: "anchor", href: "#home", label: t("pages.landing.home") },
     { kind: "anchor", href: "#doctors", label: t("nav.available_doctors") },
     { kind: "anchor", href: "#services", label: t("pages.landing.our_services") },
-    { kind: "anchor", href: "#hospitals", label: t("nav.hospitals") },
+    { kind: "anchor", href: "#healthfacilities", label: t("nav.hospitals") },
     { kind: "anchor", href: "#team", label: t("nav.team") },
   ];
 
