@@ -11,10 +11,18 @@ import {
   Smartphone,
   ArrowRight,
 } from "lucide-react";
-import { useLogin } from "@/hooks/useAuth";
+import {
+  useLogin,
+} from "@/hooks/useAuth";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
+
+// Simple, permissive email shape check -- good enough to catch obvious typos
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Strips anything that isn't a digit and hard-caps at 13 characters
+const sanitizePhoneInput = (value: string) => value.replace(/\D/g, "").slice(0, 13);
 
 // SignInForm
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
@@ -24,6 +32,8 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
   // email fields
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailInvalid = emailTouched && email.trim().length > 0 && !EMAIL_RE.test(email.trim());
 
   // phone fields
   const [phone, setPhone] = useState("");
@@ -160,11 +170,21 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={inputCls}
+                      onBlur={() => setEmailTouched(true)}
+                      className={`${inputCls} ${
+                        emailInvalid
+                          ? "!border-destructive focus:!border-destructive focus:!ring-destructive/20"
+                          : ""
+                      }`}
                       placeholder="email@example.com"
                       required
                     />
                   </div>
+                  {emailInvalid && (
+                    <p className="text-[10px] font-medium text-destructive">
+                      {t("auth.errors.email_invalid", "Please enter a valid email address")}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -183,7 +203,9 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                       <Input
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+                        inputMode="numeric"
+                        maxLength={13}
                         className={inputCls}
                         placeholder="0781234567"
                         required
