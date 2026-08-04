@@ -3093,7 +3093,7 @@
     "exp": "{{count}} ans d'exp",
     "hide_schedule": "Masquer le calendrier",
     "view_schedule": "Voir le calendrier",
-    "book_spot": "Réserver une place",
+    "book_spot": "Réserver",
     "spots": "{{count}} places",
     "beds": "{{count}} lits",
     "open_days": "{{count}} jours ouverts",
