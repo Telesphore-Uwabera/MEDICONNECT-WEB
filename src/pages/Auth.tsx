@@ -62,7 +62,7 @@ const { data: publicSettings } = usePublicSettings();
       />
 
       {/* ── Main ── */}
-      <main className="flex-1 flex items-center justify-center p-4 md:p-6">
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-5 lg:p-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -71,12 +71,13 @@ const { data: publicSettings } = usePublicSettings();
             w-full max-w-6xl rounded-[6px] overflow-hidden
             bg-card ring-1 ring-border
             flex flex-col
-            md:grid md:grid-cols-[640px_1fr]
-            md:h-[720px] md:max-h-[87vh]
+            lg:grid lg:grid-cols-[minmax(320px,58%)_1fr]
+            xl:grid-cols-[minmax(380px,62%)_1fr]
+            lg:h-[720px] lg:max-h-[87vh]
           "
         >
-          {/* ── LEFT: Hero image panel — hidden on mobile ── */}
-          <div className="relative overflow-hidden hidden md:block">
+          {/* ── LEFT: Hero image panel — hidden until lg (needs room for both columns) ── */}
+          <div className="relative overflow-hidden hidden lg:block">
             <img
               src={doctors}
               alt="Healthcare professionals"
@@ -173,7 +174,7 @@ const { data: publicSettings } = usePublicSettings();
 
           {/* ── RIGHT: Auth form panel ── */}
           <div className="flex flex-col overflow-hidden bg-card">
-            <div className="flex-1 flex flex-col overflow-y-auto px-6 py-6 md:px-8 md:py-8">
+            <div className="flex-1 flex flex-col overflow-y-auto px-5 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8">
               {/* ── Tab Switcher ── */}
               <div className="relative mb-6">
                 <div className="relative flex bg-muted/80 rounded-[6px] p-1.5 border border-border">
@@ -213,7 +214,7 @@ const { data: publicSettings } = usePublicSettings();
                         exit={{ opacity: 0, x: -12 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <div className="mb-14">
+                        <div className="mb-8 lg:mb-14">
                           <h1 className="text-base font-bold text-foreground tracking-tight">
                             {t("auth.signin_title")}
                           </h1>

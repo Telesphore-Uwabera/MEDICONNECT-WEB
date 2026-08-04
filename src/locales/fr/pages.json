@@ -313,6 +313,24 @@
     "instant_consultation_sub": "Connectez-vous a un medecin en quelques secondes.",
     "book_appointment_sub": "Planifiez un rendez-vous avec un medecin."
   },
+  "delete_account": {
+  "how_to_delete_account": "Comment supprimer votre compte",
+  "eyebrow": "Paramètres du compte",
+  "title": "Comment supprimer votre compte {{appName}}",
+  "subtitle": "Suivez ces étapes depuis votre compte pour supprimer définitivement votre profil et vos données.",
+  "warning_title": "Cette action est irréversible",
+  "warning_desc": "Une fois la suppression du compte confirmée, votre profil, vos rendez-vous et vos données personnelles seront définitivement supprimés. Il n'existe aucun moyen de les récupérer une fois l'opération terminée.",
+  "steps_heading": "Étapes de suppression",
+  "step1_t": "Connectez-vous à votre compte",
+  "step1_d": "Connectez-vous avec l'e-mail et le mot de passe associés à votre compte.",
+  "step2_t": "Accédez aux Paramètres",
+  "step2_d": "Ouvrez le menu de votre compte et sélectionnez Paramètres.",
+  "step3_t": "Passez à l'onglet Danger",
+  "step3_d": "Dans les Paramètres, utilisez les onglets de gauche et sélectionnez Danger.",
+  "step4_t": "Cliquez sur Supprimer le compte",
+  "step4_d": "Sélectionnez Supprimer le compte et confirmez lorsque vous y êtes invité.",
+  "final_note": "Une dernière confirmation vous sera demandée avant la finalisation de la suppression. Assurez-vous de ne plus avoir besoin des données associées à ce compte avant de continuer."
+},
   "patient": {
     "overview_title": "Bon retour",
     "overview_sub": "Voici l'actualité de vos soins aujourd'hui",
@@ -3075,7 +3093,7 @@
     "exp": "{{count}} ans d'exp",
     "hide_schedule": "Masquer le calendrier",
     "view_schedule": "Voir le calendrier",
-    "book_spot": "Réserver une place",
+    "book_spot": "Réserver",
     "spots": "{{count}} places",
     "beds": "{{count}} lits",
     "open_days": "{{count}} jours ouverts",

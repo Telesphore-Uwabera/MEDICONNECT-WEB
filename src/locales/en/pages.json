@@ -313,6 +313,25 @@
     "instant_consultation_sub": "Connect with a doctor in seconds.",
     "book_appointment_sub": "Schedule your convenient time."
   },
+
+  "delete_account": {
+  "how_to_delete_account": "How to delete your account",
+  "eyebrow": "Account settings",
+  "title": "How to delete your {{appName}} account",
+  "subtitle": "Follow these steps from your account to permanently delete your profile and data.",
+  "warning_title": "This action cannot be undone",
+  "warning_desc": "Once you confirm account deletion, your profile, appointments, and personal data will be permanently removed. There is no way to recover this after it's completed.",
+  "steps_heading": "Deletion steps",
+  "step1_t": "Log into your account",
+  "step1_d": "Sign in with the email and password linked to your account.",
+  "step2_t": "Go to Settings",
+  "step2_d": "Open your account menu and select Settings.",
+  "step3_t": "Switch to the Danger tab",
+  "step3_d": "Inside Settings, use the left-hand tabs and select Danger.",
+  "step4_t": "Click Delete Account",
+  "step4_d": "Select Delete Account and confirm when prompted.",
+  "final_note": "You'll be asked to confirm one more time before deletion is finalized. Make sure you no longer need any data associated with this account before proceeding."
+},
   "patient": {
     "overview_title": "Welcome back",
     "overview_sub": "Here's what's happening with your care today",

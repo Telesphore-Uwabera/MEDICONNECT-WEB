@@ -56,6 +56,10 @@ function Footer() {
 
   const footerLegalLinks = [
     {
+      label: t("pages.delete_account.how_to_delete_account"),
+      href: "/delete-account",
+    },
+    {
       label: t("pages.landing.footer_legal_privacy"),
       href: generalSettings?.privacy_url || "/privacy",
     },

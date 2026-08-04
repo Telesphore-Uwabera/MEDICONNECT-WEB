@@ -2,11 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import {
   Eye,
@@ -16,11 +11,7 @@ import {
   Smartphone,
   ArrowRight,
 } from "lucide-react";
-import {
-  useLogin,
-  useSendOtp,
-  useVerifyOtp,
-} from "@/hooks/useAuth";
+import { useLogin } from "@/hooks/useAuth";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import { validatePhoneForCountry } from "@/lib/phone-validation";
 import { CountryCodeSelect } from "@/components/CountryCodeSelect";
@@ -28,96 +19,63 @@ import { CountryCodeSelect } from "@/components/CountryCodeSelect";
 // SignInForm
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const { t, i18n } = useTranslation();
-  const [method, setMethod] = useState<"password" | "otp">("password");
+  const [method, setMethod] = useState<"email" | "phone">("email");
   const [showForgot, setShowForgot] = useState(false);
 
-  // password fields
-  const [identifier, setIdentifier] = useState("");
-  const [identifierCountryCode, setIdentifierCountryCode] = useState("+250");
+  // email fields
+  const [email, setEmail] = useState("");
+
+  // phone fields
+  const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+250");
+
+  // shared
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // otp fields
-  const [phone, setPhone] = useState("");
-  const [otpCountryCode, setOtpCountryCode] = useState("+250");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-
   const login = useLogin();
-  const sendOtp = useSendOtp();
-  const verifyOtp = useVerifyOtp();
+  const isLoading = login.isPending;
 
-  const isLoading = login.isPending || sendOtp.isPending || verifyOtp.isPending;
- const onPassword = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isEmail = identifier.includes("@");
-    const phoneValidation = !isEmail ? validatePhoneForCountry(identifier, identifierCountryCode) : null;
-    if (phoneValidation && !phoneValidation.isValid) {
-      toast.error(phoneValidation.message);
+
+    if (method === "email") {
+      login.mutate(
+        { email, auth_method: "password" as const, password },
+        {
+          onSuccess: (_data) => {
+            // token is saved in the hook's onSuccess; navigate is handled by useMe
+          },
+          onError: (err: any) => {
+            const msg = err?.message ?? t("auth.errors.unknown");
+            toast.error(msg);
+          },
+        },
+      );
       return;
     }
-    const payload = isEmail
-      ? { email: identifier, auth_method: "password" as const, password }
-      : {
-        phone: phoneValidation?.normalizedPhone ?? identifier,
-        country_code: phoneValidation?.normalizedCountryCode ?? identifierCountryCode,
-        auth_method: "password" as const,
-        password,
-      };
 
-    login.mutate(payload, {
-      onSuccess: (_data) => {
-        // token is saved in the hook's onSuccess; navigate is handled by useMe
-      },
-      onError: (err: any) => {
-        console.log("Login error:", err);
-        const msg = err?.message ?? t("auth.errors.unknown");
-        toast.error(msg);
-      },
-    });
-  };
- const onSendOtp = () => {
-    const phoneValidation = validatePhoneForCountry(phone, otpCountryCode);
+    // method === "phone"
+    const phoneValidation = validatePhoneForCountry(phone, phoneCountryCode);
     if (!phoneValidation.isValid) {
       toast.error(phoneValidation.message);
       return;
     }
-    sendOtp.mutate(
-      { phone: phoneValidation.normalizedPhone, country_code: phoneValidation.normalizedCountryCode, type: "login" },
-      {
-        onSuccess: () => {
-          setOtpSent(true);
-          toast.success(t("auth.otp_sent"));
-        },
-        onError: (err: any) => {
-          const msg =
-            err?.response?.data?.message ?? t("auth.errors.unknown");
-          toast.error(msg);
-        },
-      },
-    );
-  };
 
-  const onVerify = (e: React.FormEvent) => {
-    e.preventDefault();
-    const verifyPhoneValidation = validatePhoneForCountry(phone, otpCountryCode);
-    if (!verifyPhoneValidation.isValid) {
-      toast.error(verifyPhoneValidation.message);
-      return;
-    }
-    verifyOtp.mutate(
-      { phone: verifyPhoneValidation.normalizedPhone, country_code: verifyPhoneValidation.normalizedCountryCode, code: otp, type: "login" },
+    login.mutate(
       {
-        onSuccess: (data) => {
-          toast.success(data.message ?? t("auth.login_success"));
-          onSuccess();
+        phone: phoneValidation.normalizedPhone,
+        country_code: phoneValidation.normalizedCountryCode,
+        auth_method: "password" as const,
+        password,
+      },
+      {
+        onSuccess: (_data) => {
+          // token is saved in the hook's onSuccess; navigate is handled by useMe
         },
         onError: (err: any) => {
           const msg = err?.message ?? t("auth.errors.unknown");
-          const attemptsLeft = err?.data?.attempts_remaining;
-          toast.error(
-            attemptsLeft ? `${msg} (${attemptsLeft} attempts left)` : msg,
-          );
+          toast.error(msg);
         },
       },
     );
@@ -151,12 +109,12 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
             <motion.div
               className="absolute top-1.5 bottom-1.5 rounded-[6px] bg-card border border-border"
               animate={{
-                left: method === "password" ? "6px" : "50%",
+                left: method === "email" ? "6px" : "50%",
                 width: "calc(50% - 6px)",
               }}
               transition={{ type: "spring", stiffness: 400, damping: 33 }}
             />
-            {(["password", "otp"] as const).map((m) => (
+            {(["email", "phone"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
@@ -166,15 +124,15 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   : "text-muted-foreground hover:text-foreground"
                   }`}
               >
-                {m === "password" ? (
+                {m === "email" ? (
                   <>
-                    <Lock className="w-3 h-3" />
-                    {t("auth.method_password")}
+                    <Mail className="w-3 h-3" />
+                    {t("auth.method_email", "Email")}
                   </>
                 ) : (
                   <>
                     <Smartphone className="w-3 h-3" />
-                    {t("auth.method_otp")}
+                    {t("auth.method_phone", "Phone Number")}
                   </>
                 )}
               </button>
@@ -182,115 +140,33 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
           </div>
 
           <AnimatePresence mode="wait">
-            {method === "password" ? (
-              <motion.form
-                key="password"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.18 }}
-                onSubmit={onPassword}
-                className="space-y-3"
-              >
+            <motion.form
+              key={method}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18 }}
+              onSubmit={onSubmit}
+              className="space-y-3"
+            >
+              {method === "email" ? (
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {t("auth.email")} / {t("auth.phone")}
-                  </label>
-                  <div className="flex gap-2">
-                    {/^[0-9]/.test(identifier.trim()) && (
-                      <div className="w-24">
-                        <CountryCodeSelect
-                          value={identifierCountryCode}
-                          onChange={setIdentifierCountryCode}
-                          className="h-10 text-xs"
-                        />
-                      </div>
-                    )}
-                    <div className="relative flex-1">
-                      <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                      <Input
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        className={inputCls}
-                        placeholder="email@example.com"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {t("auth.password")}
+                    {t("auth.email")}
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                     <Input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className={`${inputCls} pr-9`}
-                      placeholder="Password"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={inputCls}
+                      placeholder="email@example.com"
                       required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-3.5 h-3.5" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 bg-card"
-                    />
-                    <span className="text-[10px] text-muted-foreground">
-                      {t("auth.remember_me", "Remember me")}
-                    </span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgot(true)}
-                    className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    {t("auth.forgot_password", "Forgot password?")}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
-                >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {t("auth.submit_signin")}
-                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </>
-                  )}
-                </button>
-              </motion.form>
-            ) : (
-              <motion.form
-                key="otp"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.18 }}
-                onSubmit={onVerify}
-                className="space-y-3"
-              >
+              ) : (
                 <div className="space-y-1">
                   <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {t("auth.phone")}
@@ -298,8 +174,8 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                   <div className="flex gap-2">
                     <div className="w-24">
                       <CountryCodeSelect
-                        value={otpCountryCode}
-                        onChange={setOtpCountryCode}
+                        value={phoneCountryCode}
+                        onChange={setPhoneCountryCode}
                         className="h-10 text-xs"
                       />
                     </div>
@@ -308,86 +184,77 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
                       <Input
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0781234567"
                         className={inputCls}
+                        placeholder="0781234567"
                         required
                       />
                     </div>
-                    {!otpSent && (
-                      <button
-                        type="button"
-                        onClick={onSendOtp}
-                        disabled={isLoading || !phone}
-                        className="px-3 h-10 rounded-[6px] text-[11px] font-semibold text-primary-foreground whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-primary"
-                      >
-                        {sendOtp.isPending ? (
-                          <div className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        ) : (
-                          t("auth.send_otp")
-                        )}
-                      </button>
-                    )}
                   </div>
                 </div>
+              )}
 
-                <AnimatePresence>
-                  {otpSent && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-3 overflow-hidden"
-                    >
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          {t("auth.otp_label")}
-                        </label>
-                        <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                          <InputOTPGroup className="gap-1.5">
-                            {[0, 1, 2, 3, 4, 5].map((i) => (
-                              <InputOTPSlot
-                                key={i}
-                                index={i}
-                                className="h-10 w-10 rounded-[6px] border-border bg-muted/50 text-sm font-bold focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-foreground"
-                              />
-                            ))}
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  {t("auth.password")}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputCls} pr-9`}
+                    placeholder="Password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">
-                          {t("auth.code_sent_to", "Code sent to")} {phone}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={onSendOtp}
-                          disabled={sendOtp.isPending}
-                          className="font-semibold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
-                        >
-                          {t("auth.resend", "Resend")}
-                        </button>
-                      </div>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary/20 bg-card"
+                  />
+                  <span className="text-[10px] text-muted-foreground">
+                    {t("auth.remember_me", "Remember me")}
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  {t("auth.forgot_password", "Forgot password?")}
+                </button>
+              </div>
 
-                      <button
-                        type="submit"
-                        disabled={isLoading || otp.length !== 6}
-                        className="w-full h-10 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
-                      >
-                        {verifyOtp.isPending ? (
-                          <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            {t("auth.verify_otp")}
-                            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                          </>
-                        )}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.form>
-            )}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-10 mt-1 rounded-[6px] font-semibold text-primary-foreground text-xs transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 group bg-gradient-primary"
+              >
+                {isLoading ? (
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {t("auth.submit_signin")}
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </button>
+            </motion.form>
           </AnimatePresence>
         </motion.div>
       )}
