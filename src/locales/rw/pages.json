@@ -313,6 +313,24 @@
     "instant_consultation_sub": "Vugana n'umuganga mu masegonda.",
     "book_appointment_sub": "Fata gahunda yo kubonana n'umuganga."
   },
+  "delete_account": {
+  "how_to_delete_account": "Uko wasiba konti yawe",
+  "eyebrow": "Igenamiterere rya konti",
+  "title": "Uko wasiba konti yawe ya {{appName}}",
+  "subtitle": "Kurikira intambwe zikurikira uhereye kuri konti yawe kugira ngo usibe burundu umwirondoro n'amakuru yawe.",
+  "warning_title": "Iki gikorwa ntigishobora gusubizwa inyuma",
+  "warning_desc": "Igihe wemeje gusiba konti, umwirondoro wawe, gahunda z'ubuvuzi, n'amakuru yawe bwite bizasibwa burundu. Nta buryo bwo kubigarura nyuma yuko iki gikorwa kirangiye.",
+  "steps_heading": "Intambwe zo gusiba konti",
+  "step1_t": "Injira kuri konti yawe",
+  "step1_d": "Injira ukoresheje email n'ijambobanga bifitanye isano na konti yawe.",
+  "step2_t": "Jya kuri Igenamiterere (Settings)",
+  "step2_d": "Fungura menu ya konti yawe uhitemo Igenamiterere.",
+  "step3_t": "Hindukira kuri tab yitwa Danger",
+  "step3_d": "Muri Igenamiterere, koresha tab zo ku ruhande rw'ibumoso uhitemo Danger.",
+  "step4_t": "Kanda Delete Account",
+  "step4_d": "Hitamo Delete Account hanyuma wemeze igihe ubisabwa.",
+  "final_note": "Uzasabwa kwemeza incuro imwe yiyongera mbere yuko gusiba konti birangira burundu. Menya neza ko udakeneye amakuru ari kuri iyi konti mbere yo gukomeza."
+},
   "patient": {
     "overview_title": "Murakaza neza",
     "overview_sub": "Dore ibibera mu kuvuzwa kwawe uyu munsi",

@@ -25,6 +25,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import ConsultationRoomPage from "./pages/ConsultationRoom.tsx"; 
+import DeleteAccount from "./pages/DeleteAccount.tsx";
 
 /* ── Patient ── */
 import PatientOverview from "./pages/patient/PatientOverview";
@@ -364,6 +365,7 @@ const App = () => (
             <Route path="/help" element={<Help />} /> 
             <Route path="/privacy" element={<Privacy />} /> 
             <Route path="/terms" element={<Terms />} /> 
+            <Route path="/delete-account" element={<DeleteAccount />} />
             <Route path="/onboarding/:role" element={<Onboarding />} />
             <Route
               path="/consultation/:roomName"
