@@ -376,7 +376,7 @@ export function UnifiedModal({
     ? t("pages.cards.free")
     : Number.isInteger(numericFee)
       ? `${numericFee.toLocaleString()} ${doctor.currency}`
-      : t("pages.cards.feeNotAvailable");
+      : t("pages.card.feeNotAvailable");
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
@@ -804,7 +804,7 @@ const feeLabel =
     ? t("pages.cards.free")
     : Number.isInteger(numericFee)
       ? `${numericFee.toLocaleString()} ${doctor.currency}`
-      : t("pages.cards.feeNotAvailable");
+      : t("pages.card.feeNotAvailable");
 
   const status: "online" | "busy" | "offline" =
     doctor.is_available && !doctor.bookings_paused
