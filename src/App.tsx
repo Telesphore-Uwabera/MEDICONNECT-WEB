@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   BrowserRouter,
   Navigate,
@@ -337,16 +336,7 @@ const AccessPromptManager = () => {
   );
 };
 
-/* ─────────────────────────────────────────────────────────────────
-   Query client
-───────────────────────────────────────────────────────────────── */
-const queryClient = new QueryClient();
-
-/* ─────────────────────────────────────────────────────────────────
-   App
-───────────────────────────────────────────────────────────────── */
 const App = () => (
-  <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <BrowserRouter>
         <CallProvider>
@@ -947,7 +937,6 @@ const App = () => (
         </CallProvider>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
 );
 
 export default App;

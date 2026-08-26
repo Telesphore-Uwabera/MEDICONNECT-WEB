@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Netlify CLI
+.netlify/
+
+# Tooling leftovers
+.snapshots/
+.claude/
+vite.config.ts.timestamp-*
+
+# Local documents
+*.docx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
