@@ -95,8 +95,11 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
     password: "",
     confirm: "",
   });
-  const [showPassword, setShowPassword] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailInvalid =
+    emailTouched && form.email.trim().length > 0 && !EMAIL_RE.test(form.email.trim());
   // Terms & Conditions and Privacy Policy are two separate admin-managed
   // documents, so each gets its own modal and its own accepted flag.
 const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -105,8 +108,12 @@ const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const register = useRegister();
 
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
+const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Strips anything that isn't a digit and hard-caps at 13 characters
+  const setPhone = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, phone: e.target.value.replace(/\D/g, "").slice(0, 13) }));
 
 const onRoleChange = (v: string) => {
     setForm((f) => ({ ...f, role: v as Role }));
@@ -252,11 +259,21 @@ if (form.password !== form.confirm)
               inputMode="email"
               value={form.email}
               onChange={set("email")}
-              className={inputCls}
+              onBlur={() => setEmailTouched(true)}
+              className={`${inputCls} ${
+                emailInvalid
+                  ? "!border-destructive focus:!border-destructive focus:!ring-destructive/20"
+                  : ""
+              }`}
               placeholder="email@example.com"
               required
             />
           </div>
+          {emailInvalid && (
+            <p className="text-[10px] font-medium text-destructive">
+              {t("auth.errors.email_invalid", "Please enter a valid email address")}
+            </p>
+          )}
         </div>
 
         {/* Phone -- optional */}
@@ -279,7 +296,9 @@ if (form.password !== form.confirm)
               <Smartphone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 value={form.phone}
-                onChange={set("phone")}
+                onChange={setPhone}
+                inputMode="numeric"
+                maxLength={13}
                 placeholder="781234567"
                 className={inputCls}
               />

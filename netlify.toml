@@ -1,0 +1,24 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  VITE_APP_BASE_URL = "/api/v1"
+  VITE_REVERB_APP_KEY = "mediconnect-staging-key"
+  VITE_REVERB_HOST = "ws.mediconnect.rw"
+  VITE_REVERB_PORT = "443"
+  VITE_REVERB_SCHEME = "wss"
+  VITE_DEV = "false"
+
+# Browser talks to Netlify; Netlify talks to Laravel (avoids VPN/CORS blocking the API host).
+[[redirects]]
+  from = "/api/v1/*"
+  to = "https://staging-api.mediconnect.rw/api/v1/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

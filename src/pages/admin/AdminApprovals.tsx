@@ -1,6 +1,5 @@
 ﻿import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

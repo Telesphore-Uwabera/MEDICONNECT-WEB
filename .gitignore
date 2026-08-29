@@ -12,6 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Compiled output folders inside src (should never be committed)
+src/**/dist/
+
+# Env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Netlify CLI
+.netlify/
+
+# Tooling leftovers
+.snapshots/
+.claude/
+vite.config.ts.timestamp-*
+
+# Local documents — credentials, API docs, Office lock files
+*.docx
+*.pdf
+.~lock.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
