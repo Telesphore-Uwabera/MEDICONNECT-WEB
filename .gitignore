@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Compiled output folders inside src (should never be committed)
+src/**/dist/
+
 # Env (keep .env.example)
 .env
 .env.*
@@ -25,8 +28,10 @@ dist-ssr
 .claude/
 vite.config.ts.timestamp-*
 
-# Local documents
+# Local documents — credentials, API docs, Office lock files
 *.docx
+*.pdf
+.~lock.*
 
 # Editor directories and files
 .vscode/*
