@@ -1,4 +1,4 @@
-# MediConnect — Web Frontend
+# MediConnect — Web
 
 > Telemedicine platform for Rwanda. One React app for patients, doctors, hospitals, pharmacies, and admins — connecting to the MediConnect API for bookings, instant video consults, prescriptions, and pharmacy orders.
 
