@@ -1,10 +1,5 @@
 ﻿name: Trigger teletech-api deploy
 
-# Fires on every push to main and tells teletech-api to redeploy on Render.
-# Required secret in this repo:
-#   GH_PAT  ->  a GitHub Personal Access Token with repo scope
-#               (Settings -> Secrets and variables -> Actions -> New secret)
-
 on:
   push:
     branches: [main]
