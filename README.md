@@ -138,7 +138,7 @@ VITE_REVERB_SCHEME=wss
 # ── WebRTC TURN server ────────────────────────────────────────────
 VITE_TURN_HOST=197.243.29.114
 VITE_TURN_PORT=3478
-VITE_TURN_SECRET=mediconnect-turn-secret
+VITE_TURN_SECRET=your_turn_secret_here
 
 # ── Mode ──────────────────────────────────────────────────────────
 VITE_DEV=true   # set to false for production builds
