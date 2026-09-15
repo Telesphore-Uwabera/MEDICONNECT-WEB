@@ -13,7 +13,7 @@ import {
   useGetAppointment,
 } from "@/hooks/doctor/use-doctor-appointment";
 import { useDebounce } from "@/hooks/use-debounce";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 
 interface Props {
   onClose: () => void;

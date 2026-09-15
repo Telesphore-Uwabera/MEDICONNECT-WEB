@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -537,10 +537,10 @@ const HospitalAnalytics = () => {
 
   const starBreakdown: StarRow[] = reviews
     ? [
-      { label: "5★", value: reviews.five_star ?? 0 },
-      { label: "4★", value: reviews.four_star ?? 0 },
-      { label: "3★", value: reviews.three_star ?? 0 },
-      { label: "1-2★", value: reviews.low_star ?? 0 },
+      { label: "5?", value: reviews.five_star ?? 0 },
+      { label: "4?", value: reviews.four_star ?? 0 },
+      { label: "3?", value: reviews.three_star ?? 0 },
+      { label: "1-2?", value: reviews.low_star ?? 0 },
     ]
     : [];
   const totalReviewsCount = starBreakdown.reduce((s, r) => s + r.value, 0);
@@ -871,7 +871,7 @@ const HospitalAnalytics = () => {
                           <span className="text-sm font-normal ml-1">{t("pages.hospital.minutes_short")}</span>
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {periodAppts?.unique_doctors ?? 0} doctors ·{" "}
+                          {periodAppts?.unique_doctors ?? 0} doctors �{" "}
                           {periodAppts?.unique_patients ?? 0} patients
                         </span>
                       </Card>
@@ -1092,7 +1092,7 @@ const HospitalAnalytics = () => {
                     <SectionTitle>{t("pages.hospital.revenue")}</SectionTitle>
                     {changePercent != null && !isLoading && (
                       <span className="text-[11px] text-muted-foreground">
-                        {changePercent >= 0 ?"▲" : "▼"}{" "}
+                        {changePercent >= 0 ?"?" : "?"}{" "}
                         <span
                           className={
                             changePercent >= 0 ? "text-success" : "text-destructive"
@@ -1316,7 +1316,7 @@ const HospitalAnalytics = () => {
                                   "en-US",
                                   { month: "short", day: "numeric" },
                                 )}{" "}
-                                · {String(a.appointment_time).slice(0, 5)}
+                                � {String(a.appointment_time).slice(0, 5)}
                               </span>
                               <span className="text-[9px] capitalize px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                                 {a.type}

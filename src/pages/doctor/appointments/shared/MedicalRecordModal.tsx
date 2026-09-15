@@ -16,7 +16,7 @@ import {
   type MedicalRecordUpdate,
   type FileType,
 } from "@/hooks/doctor/use-doctor-patient-record";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 import { t } from "i18next";
 
 interface Props {

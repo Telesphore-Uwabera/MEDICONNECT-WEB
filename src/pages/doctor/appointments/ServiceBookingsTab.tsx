@@ -16,7 +16,7 @@ import {
   type ServiceBooking,
   type ServiceBookingStatus,
 } from "@/hooks/doctor/use-doctor-service-booking";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 import { MedicalRecordView, PatientFilesPanel, PatientVisitsList } from "./shared/PatientMedicalPanels";
 
 

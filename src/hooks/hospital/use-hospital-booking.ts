@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

@@ -6,7 +6,7 @@
 // token the same way the join flows do, injecting the consultation id so the
 // in-call chat works.
 
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 import { decodeCallToken } from "@/lib/scheduled-call";
 
 export interface RejoinTarget {

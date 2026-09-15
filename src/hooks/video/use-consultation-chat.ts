@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { apiFetch } from "@/lib/Api";
+import { apiFetch } from "@/lib/api";
 import echo from "@/lib/echo";
 import { useMe } from "@/hooks/useAuth";
 import { toast } from "sonner";

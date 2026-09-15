@@ -21,7 +21,7 @@ import {
   checkServiceBookingAvailability,
   useCreateServiceBooking,
 } from "@/hooks/doctor/use-doctor-service-booking";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 
 interface Props {
   open: boolean;

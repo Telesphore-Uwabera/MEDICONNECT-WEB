@@ -29,7 +29,7 @@ import {
   useSearchPharmacies,
   type Pharmacy,
 } from "@/hooks/patient/use-patient-search-pharmacy";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 
 interface Props {
   /** Provide exactly one of appointmentId / instantConsultationId. */

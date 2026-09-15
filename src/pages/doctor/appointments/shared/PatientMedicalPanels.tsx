@@ -14,7 +14,7 @@ import {
   type PatientVisit,
   type PatientFile,
 } from "@/hooks/doctor/use-doctor-patient-record";
-import type { ApiError } from "@/lib/Api";
+import type { ApiError } from "@/lib/api";
 import { t } from "i18next";
 
 const FILE_TYPES: FileType[] = ["lab_result", "scan", "report", "prescription", "other"];
