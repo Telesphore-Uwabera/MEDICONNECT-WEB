@@ -12,6 +12,15 @@ export default defineConfig({
     watch: {
       usePolling: process.env.CHOKIDAR_USEPOLLING === "true",
     },
+    // Proxy API requests to the backend (mirrors Netlify redirects).
+    // The Host header must be set so Nginx routes to the Laravel vhost.
+    proxy: {
+      "/api/v1": {
+        target: "http://197.243.29.114",
+        changeOrigin: true,
+        headers: { Host: "api.mediconnect.rw" },
+      },
+    },
   },
 
   plugins: [react()],

@@ -11,12 +11,14 @@
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# Browser talks to Netlify; Netlify talks to Laravel (avoids VPN/CORS blocking the API host).
+# Browser talks to Netlify; Netlify proxies to the Laravel backend.
+# Using HTTP via public IP until SSL certs are issued on the new server.
 [[redirects]]
   from = "/api/v1/*"
-  to = "https://staging-api.mediconnect.rw/api/v1/:splat"
+  to = "http://197.243.29.114/api/v1/:splat"
   status = 200
   force = true
+  host = "api.mediconnect.rw"
 
 [[redirects]]
   from = "/*"
