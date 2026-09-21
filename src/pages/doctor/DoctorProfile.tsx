@@ -1,4 +1,4 @@
-﻿import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
+import { formatDateOnly, toLocalDateInputValue } from "@/lib/date";
 // export default DoctorProfile;
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -82,14 +82,14 @@ const toDateInputValue = (isoOrDate: string | null | undefined): string => {
   return toLocalDateInputValue(d);
 };
 
-const BASE_URL = import.meta.env.VITE_APP_STORAGE_URL ?? "";
-
+const BASE_URL = import.meta.env.VITE_APP_BASE_URL?.replace(/\/api\/v1\/?$/, "") ?? "";
 
 const resolveStorageUrl = (value?: string | null): string | null => {
   if (!value) return null;
   if (/^(https?:|blob:|data:)/i.test(value)) return value;
   return BASE_URL ? `${BASE_URL}/${value.replace(/^\/+/, "")}` : value;
 };
+
 const getStepLabel = (stepId: string) =>
   i18n.t(`doctorProfile.steps.${stepId}.label`, i18n.t("doctorProfile.section_fallback"));
 

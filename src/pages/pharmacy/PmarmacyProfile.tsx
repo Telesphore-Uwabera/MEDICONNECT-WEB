@@ -292,11 +292,10 @@ const formatDeliveryFee = (fee: string | number, currency: string) =>
 // env var below for whatever your `apiFetch` utility already uses to know
 // the API base URL, so this stays in sync automatically.
 const STORAGE_BASE_URL =
-  (import.meta as any)?.env?.VITE_API_BASE_URL?.replace(/\/api\/?$/, "") ?? "";
+  import.meta.env.VITE_APP_BASE_URL?.replace(/\/api\/v1\/?$/, "") ?? "";
 function resolveImageUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
   if (/^https?:\/\//i.test(path)) return path;
-  if (!STORAGE_BASE_URL) return path; // fallback so something still renders in dev
   return `${STORAGE_BASE_URL}/storage/${path.replace(/^\/+/, "")}`;
 }
 

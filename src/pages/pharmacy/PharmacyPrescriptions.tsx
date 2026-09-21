@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
@@ -135,12 +135,13 @@ function fmtTime(iso?: string | null) {
   });
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://staging-api.mediconnect.rw";
+const BASE_URL = import.meta.env.VITE_APP_BASE_URL?.replace(/\/api\/v1\/?$/, "") ?? "";
 
 function resolveUrl(path?: string | null) {
   if (!path) return null;
   if (path.startsWith("http")) return path;
-  return `${BASE_URL}${path}`;
+  // Paths like "storage/..." are served via the /storage Netlify proxy rule.
+  return `${BASE_URL}/${path.replace(/^\/+/, "")}`;
 }
  
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {

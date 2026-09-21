@@ -11,15 +11,22 @@
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# Browser talks to Netlify; Netlify proxies to the Laravel backend.
-# Using HTTP via public IP until SSL certs are issued on the new server.
+# Forward /api/v1/* to the Laravel backend on api.mediconnect.rw.
+# Netlify rewrites the path so the backend receives /api/v1/:splat.
 [[redirects]]
   from = "/api/v1/*"
-  to = "http://197.243.29.114/api/v1/:splat"
+  to = "https://api.mediconnect.rw/api/v1/:splat"
   status = 200
   force = true
-  host = "api.mediconnect.rw"
 
+# Forward /storage/* to the backend so uploaded files (images, docs) are served.
+[[redirects]]
+  from = "/storage/*"
+  to = "https://api.mediconnect.rw/storage/:splat"
+  status = 200
+  force = true
+
+# SPA fallback – must be last.
 [[redirects]]
   from = "/*"
   to = "/index.html"

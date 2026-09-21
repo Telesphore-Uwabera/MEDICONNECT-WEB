@@ -403,7 +403,7 @@ export function useDownloadCertificate() {
         "";
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL ?? ""}/api/v1/doctor/certificates/${id}/download`,
+        `/api/v1/doctor/certificates/${id}/download`,
         {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
