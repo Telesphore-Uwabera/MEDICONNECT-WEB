@@ -1,4 +1,5 @@
 import { getAccessErrorMessage, notifyAccessPrompt } from "@/lib/access-events";
+import { sanitizePayloadUrls } from "@/lib/image-url";
 
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
@@ -127,5 +128,5 @@ export async function apiFetch<T>(
     throw error;
   }
 
-  return data as T;
+  return sanitizePayloadUrls(data) as T;
 }

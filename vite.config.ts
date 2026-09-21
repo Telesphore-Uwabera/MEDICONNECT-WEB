@@ -12,6 +12,23 @@ export default defineConfig({
     watch: {
       usePolling: process.env.CHOKIDAR_USEPOLLING === "true",
     },
+    proxy: {
+      "/api/v1": {
+        target: "http://10.10.141.149",
+        changeOrigin: true,
+        headers: { Host: "api.mediconnect.rw" },
+      },
+      "/storage": {
+        target: "http://10.10.141.149",
+        changeOrigin: true,
+        headers: { Host: "api.mediconnect.rw" },
+      },
+      "/minio": {
+        target: "http://10.10.141.149",
+        changeOrigin: true,
+        headers: { Host: "api.mediconnect.rw" },
+      },
+    },
   },
 
   plugins: [react()],

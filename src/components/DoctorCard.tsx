@@ -1,4 +1,4 @@
-﻿import { formatDateOnly } from "@/lib/date";
+import { formatDateOnly } from "@/lib/date";
 // components/DoctorCard.tsx
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";

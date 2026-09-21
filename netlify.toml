@@ -26,6 +26,13 @@
   status = 200
   force = true
 
+# Forward /minio/* to MinIO so avatars and doctor images are served.
+[[redirects]]
+  from = "/minio/*"
+  to = "http://api.mediconnect.rw/minio/:splat"
+  status = 200
+  force = true
+
 # SPA fallback – must be last.
 [[redirects]]
   from = "/*"
