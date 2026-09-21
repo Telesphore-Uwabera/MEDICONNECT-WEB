@@ -15,14 +15,14 @@
 # Netlify rewrites the path so the backend receives /api/v1/:splat.
 [[redirects]]
   from = "/api/v1/*"
-  to = "https://api.mediconnect.rw/api/v1/:splat"
+  to = "http://api.mediconnect.rw/api/v1/:splat"
   status = 200
   force = true
 
 # Forward /storage/* to the backend so uploaded files (images, docs) are served.
 [[redirects]]
   from = "/storage/*"
-  to = "https://api.mediconnect.rw/storage/:splat"
+  to = "http://api.mediconnect.rw/storage/:splat"
   status = 200
   force = true
 
