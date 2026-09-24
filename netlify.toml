@@ -15,21 +15,21 @@
 # Netlify rewrites the path so the backend receives /api/v1/:splat.
 [[redirects]]
   from = "/api/v1/*"
-  to = "http://api.mediconnect.rw/api/v1/:splat"
+  to = "https://api.mediconnect.rw/api/v1/:splat"
   status = 200
   force = true
 
 # Forward /storage/* to the backend so uploaded files (images, docs) are served.
 [[redirects]]
   from = "/storage/*"
-  to = "http://api.mediconnect.rw/storage/:splat"
+  to = "https://api.mediconnect.rw/storage/:splat"
   status = 200
   force = true
 
 # Forward /minio/* to MinIO so avatars and doctor images are served.
 [[redirects]]
   from = "/minio/*"
-  to = "http://api.mediconnect.rw/minio/:splat"
+  to = "https://api.mediconnect.rw/minio/:splat"
   status = 200
   force = true
 

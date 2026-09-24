@@ -54,7 +54,7 @@ const Index = () => {
         generalSettings?.contact_email || "support@mediconnect.com";
 
     const contactPhone =
-        generalSettings?.contact_phone || "+250 788 123 456";
+        generalSettings?.contact_phone || "+250 782 168 650";
 
     const contactAddress =
         generalSettings?.contact_address || "Kigali, Rwanda";

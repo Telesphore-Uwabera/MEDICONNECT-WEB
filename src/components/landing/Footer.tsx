@@ -31,7 +31,7 @@ function Footer() {
     ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
   const contactEmail =
     generalSettings?.contact_email || "support@mediconnect.com";
-  const contactPhone = generalSettings?.contact_phone || "+250 788 123 456";
+  const contactPhone = generalSettings?.contact_phone || "+250 782 168 650";
   const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
   const heroTagline = localizedText(
     publicSettings?.general?.app_tagline,
