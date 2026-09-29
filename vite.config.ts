@@ -4,7 +4,11 @@ import path from "path";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiTarget = env.VITE_DEV_API_TARGET || "https://staging-api.mediconnect.rw";
+
+  // Use IP directly so local dev bypasses DNS (which may point to Netlify/gateway).
+  // The Host header tells the server which virtual host to use.
+  const apiTarget = env.VITE_DEV_API_TARGET || "https://10.10.141.149";
+  const apiHost   = env.VITE_DEV_API_HOST   || "api.mediconnect.rw";
 
   return {
     server: {
@@ -20,17 +24,20 @@ export default defineConfig(({ mode }) => {
         "/api/v1": {
           target: apiTarget,
           changeOrigin: true,
-          secure: false,        // skip SSL cert check for local dev proxy
+          secure: false,
+          headers: { Host: apiHost },
         },
         "/storage": {
           target: apiTarget,
           changeOrigin: true,
           secure: false,
+          headers: { Host: apiHost },
         },
         "/minio": {
           target: apiTarget,
           changeOrigin: true,
           secure: false,
+          headers: { Host: apiHost },
         },
       },
     },
