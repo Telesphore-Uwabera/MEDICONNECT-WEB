@@ -20,14 +20,17 @@ export default defineConfig(({ mode }) => {
         "/api/v1": {
           target: apiTarget,
           changeOrigin: true,
+          secure: false,        // skip SSL cert check for local dev proxy
         },
         "/storage": {
           target: apiTarget,
           changeOrigin: true,
+          secure: false,
         },
         "/minio": {
           target: apiTarget,
           changeOrigin: true,
+          secure: false,
         },
       },
     },
