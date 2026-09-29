@@ -61,14 +61,22 @@
   },
   "analytics": {
     "title": "System analytics",
-    "subtitle": "Trends across the entire platform",
+    "subtitle": "Live totals from across the platform",
+    "total_users": "Total users",
+    "active_consultations": "Active consultations",
     "signups": "New signups",
     "appointments": "Appointments",
     "prescriptions": "Prescriptions",
     "orders": "Pharmacy orders",
     "revenue": "Revenue",
-    "growth": "Growth (last 6 months)",
-    "role_distribution": "Role distribution"
+    "role_distribution": "Role distribution",
+    "operational_summary": "Appointment summary",
+    "appointments_total": "Total",
+    "appointments_today": "Today",
+    "appointments_pending": "Pending",
+    "revenue_summary": "Revenue summary",
+    "revenue_total": "Total revenue",
+    "revenue_today": "Today"
   },
   "moderation": {
     "title": "Content moderation",

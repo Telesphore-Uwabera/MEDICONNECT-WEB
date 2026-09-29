@@ -128,6 +128,8 @@ All `VITE_` variables are baked into the JS bundle at build time.
 # ── API ───────────────────────────────────────────────────────────
 # Use staging for local dev, switch to production for live deploys
 VITE_APP_BASE_URL=https://staging-api.mediconnect.rw/api/v1
+# Used when VITE_APP_BASE_URL is relative (for example, /api/v1)
+VITE_DEV_API_TARGET=https://staging-api.mediconnect.rw
 
 # ── WebSockets (Laravel Reverb) ───────────────────────────────────
 VITE_REVERB_APP_KEY=mediconnect-staging-key
@@ -213,8 +215,12 @@ Use Cisco AnyConnect or any OpenConnect client.
 Once VPN is connected:
 
 ```bash
-ssh root@10.10.141.148
+ssh root@10.10.141.149
 ```
+
+- **Active server:** `10.10.141.149`
+- **Username:** `root`
+- **Legacy server:** `10.10.141.148` — SSH port 22 is closed, no longer in use
 
 The server runs **Ubuntu** with **Nginx** as the web server.
 
@@ -248,8 +254,8 @@ Username: medi.connect
 **Option 2 — Desktop tool via SSH tunnel** (TablePlus, DBeaver, MySQL Workbench)
 
 ```bash
-# Open tunnel — keep this terminal open
-ssh -L 3307:127.0.0.1:3306 root@10.10.141.148
+# Open tunnel — keep this terminal open (VPN required)
+ssh -L 3307:127.0.0.1:3306 root@10.10.141.149
 ```
 
 Then connect your tool to:
@@ -264,9 +270,39 @@ Then connect your tool to:
 **Option 3 — CLI directly on server**
 
 ```bash
-ssh root@10.10.141.148
+ssh root@10.10.141.149
 mysql -u root mediconnect
 ```
+
+---
+
+### Local Dev — Access Live Data
+
+When running `npm run dev`, the Vite proxy forwards all `/api/v1/*` requests to the production API so localhost uses real live data.
+
+This is controlled by `VITE_DEV_API_TARGET` in your `.env`:
+
+```env
+# Points to production — localhost gets live data
+VITE_DEV_API_TARGET=https://api.mediconnect.rw
+
+# Or point to staging for safer testing
+# VITE_DEV_API_TARGET=https://staging-api.mediconnect.rw
+```
+
+How it works:
+
+```
+Browser (localhost:3000)
+    ↓  /api/v1/...
+Vite dev server proxy
+    ↓  forwards to VITE_DEV_API_TARGET
+https://api.mediconnect.rw/api/v1/...
+    ↓
+Laravel API → MySQL database
+```
+
+No VPN needed for this — the production API is publicly accessible over HTTPS.
 
 ---
 

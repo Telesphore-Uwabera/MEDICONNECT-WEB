@@ -3,67 +3,60 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
-import { Users, Calendar, FileText, Package } from "lucide-react";
-import { adminStats } from "@/lib/admin-store";
-import { revenueData } from "@/lib/mock-data";
+import { Users, Calendar, Activity, DollarSign, AlertCircle } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-
-const signupTrend = [
-  { month: "Nov", signups: 38, appts: 240 },
-  { month: "Dec", signups: 45, appts: 280 },
-  { month: "Jan", signups: 52, appts: 320 },
-  { month: "Feb", signups: 49, appts: 305 },
-  { month: "Mar", signups: 71, appts: 410 },
-  { month: "Apr", signups: 88, appts: 478 },
-];
+import { useGetAdminDashboard } from "@/hooks/admin/use-admin-overview";
 
 const AdminAnalytics = () => {
   const { t, i18n } = useTranslation();
-  const stats = adminStats();
+  const { data: response, isLoading, isError, error, refetch, isFetching } = useGetAdminDashboard({}, { live: true });
+  const dashboard = response?.data;
+  const currency = dashboard?.payments.currency || "RWF";
+  const totalRevenue = Number(dashboard?.payments.total_revenue ?? 0) || 0;
+  const revenueToday = Number(dashboard?.payments.revenue_today ?? 0) || 0;
+
   const roleData = [
-    { name: t("admin.roles.doctor"), value: stats.byRole.doctor, color: "hsl(172 76% 36%)" },
-    { name: t("admin.roles.hospital"), value: stats.byRole.hospital, color: "hsl(168 76% 50%)" },
-    { name: t("admin.roles.pharmacy"), value: stats.byRole.pharmacy, color: "hsl(199 89% 48%)" },
-    { name: t("admin.roles.patient"), value: stats.byRole.patient, color: "hsl(215 35% 45%)" },
+    { name: t("admin.roles.doctor"), value: dashboard?.users.doctors ?? 0, color: "hsl(172 76% 36%)" },
+    { name: t("admin.roles.hospital"), value: dashboard?.users.hospitals ?? 0, color: "hsl(168 76% 50%)" },
+    { name: t("admin.roles.pharmacy"), value: dashboard?.users.pharmacies ?? 0, color: "hsl(199 89% 48%)" },
+    { name: t("admin.roles.patient"), value: dashboard?.users.patients ?? 0, color: "hsl(215 35% 45%)" },
   ];
+  const appointmentData = [
+    { name: t("admin.analytics.appointments_total"), value: dashboard?.appointments.total ?? 0 },
+    { name: t("admin.analytics.appointments_today"), value: dashboard?.appointments.today ?? 0 },
+    { name: t("admin.analytics.appointments_pending"), value: dashboard?.appointments.pending ?? 0 },
+  ];
+  const revenueData = [
+    { name: t("admin.analytics.revenue_total"), value: totalRevenue },
+    { name: t("admin.analytics.revenue_today"), value: revenueToday },
+  ];
+  const formatMoney = (amount: number) =>
+    `${currency} ${new Intl.NumberFormat(i18n.language).format(amount)}`;
 
   return (
     <DashboardLayout role="admin">
       <PageHeader title={t("admin.analytics.title")} subtitle={t("admin.analytics.subtitle")} />
       <div className="p-8 space-y-8">
+        {isError && (
+          <div className="flex items-center justify-between gap-3 rounded-[6px] border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            <span className="flex items-center gap-2"><AlertCircle className="h-4 w-4 shrink-0" />{error instanceof Error ? error.message : t("common.error")}</span>
+            <button onClick={() => refetch()} disabled={isFetching} className="font-semibold underline underline-offset-2 disabled:opacity-50">
+              {t("common.retry")}
+            </button>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard label={t("admin.analytics.signups")} value="+88" delta="+24%" trend="up" icon={Users} />
-          <StatCard label={t("admin.analytics.appointments")} value="478" delta="+16%" trend="up" icon={Calendar} accent="info" />
-          <StatCard label={t("admin.analytics.prescriptions")} value="312" delta="+9%" trend="up" icon={FileText} accent="success" />
-          <StatCard label={t("admin.analytics.orders")} value="194" delta="-3%" trend="down" icon={Package} accent="warning" />
+          <StatCard label={t("admin.analytics.total_users")} value={isError ? "—" : isLoading ? "…" : dashboard?.users.total ?? 0} icon={Users} />
+          <StatCard label={t("admin.analytics.appointments")} value={isError ? "—" : isLoading ? "…" : dashboard?.appointments.total ?? 0} icon={Calendar} accent="info" />
+          <StatCard label={t("admin.analytics.active_consultations")} value={isError ? "—" : isLoading ? "…" : dashboard?.quick_consultations.active ?? 0} icon={Activity} accent="success" />
+          <StatCard label={t("admin.analytics.revenue")} value={isError ? "—" : isLoading ? "…" : formatMoney(totalRevenue)} icon={DollarSign} accent="warning" />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-5">
-          <Card className="lg:col-span-2">
-            <CardHeader><CardTitle className="text-base">{t("admin.analytics.growth")}</CardTitle></CardHeader>
-            <CardContent style={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={signupTrend}>
-                  <defs>
-                    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                  <Area type="monotone" dataKey="signups" stroke="hsl(var(--primary))" fill="url(#g1)" />
-                  <Area type="monotone" dataKey="appts" stroke="hsl(199 89% 48%)" fill="hsl(199 89% 48% / 0.1)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
+        {!isError && dashboard && (
+        <div className="grid lg:grid-cols-2 gap-5">
           <Card>
             <CardHeader><CardTitle className="text-base">{t("admin.analytics.role_distribution")}</CardTitle></CardHeader>
             <CardContent style={{ height: 300 }}>
@@ -78,22 +71,39 @@ const AdminAnalytics = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">{t("admin.analytics.revenue")}</CardTitle></CardHeader>
-          <CardContent style={{ height: 260 }}>
+          <CardHeader><CardTitle className="text-base">{t("admin.analytics.operational_summary")}</CardTitle></CardHeader>
+          <CardContent style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
+              <BarChart data={appointmentData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.15)" />
-              </AreaChart>
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle className="text-base">{t("admin.analytics.revenue_summary")}</CardTitle></CardHeader>
+          <CardContent style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip formatter={(value: number) => formatMoney(value)} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                <Bar dataKey="value" fill="hsl(199 89% 48%)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        </div>
+        )}
+        {isLoading && <div className="py-8 text-center text-sm text-muted-foreground">{t("common.loading")}</div>}
       </div>
     </DashboardLayout>
   );

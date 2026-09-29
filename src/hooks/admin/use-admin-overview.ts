@@ -8,6 +8,7 @@ export interface AdminDashboardData {
     patients: number;
     doctors: number;
     pharmacies: number;
+    hospitals?: number;
     total: number;
   };
   appointments: {
@@ -50,7 +51,10 @@ export interface AdminDashboardFilters {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useGetAdminDashboard(filters: AdminDashboardFilters = {}) {
+export function useGetAdminDashboard(
+  filters: AdminDashboardFilters = {},
+  options: { live?: boolean } = {},
+) {
   // Strip empty/undefined values so we don't send ?q=&date= etc.
   const cleanFilters = Object.fromEntries(
     Object.entries(filters).filter(([, v]) => v !== undefined && v !== ""),
@@ -61,6 +65,9 @@ export function useGetAdminDashboard(filters: AdminDashboardFilters = {}) {
 
   return useQuery<AdminDashboardResponse>({
     queryKey: ["admin-dashboard", cleanFilters],
+    staleTime: options.live ? 0 : undefined,
+    refetchOnMount: options.live,
+    refetchInterval: options.live ? 30_000 : false,
     queryFn: () =>
       apiFetch(url).then((res) => {
         console.log("admin dashboard fetched:", res);

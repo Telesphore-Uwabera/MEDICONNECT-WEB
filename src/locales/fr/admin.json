@@ -61,14 +61,22 @@
   },
   "analytics": {
     "title": "Analytique système",
-    "subtitle": "Tendances sur toute la plateforme",
+    "subtitle": "Totaux en direct sur toute la plateforme",
+    "total_users": "Utilisateurs au total",
+    "active_consultations": "Consultations actives",
     "signups": "Nouvelles inscriptions",
     "appointments": "Rendez-vous",
     "prescriptions": "Ordonnances",
     "orders": "Commandes pharmacie",
     "revenue": "Revenus",
-    "growth": "Croissance (6 derniers mois)",
-    "role_distribution": "Répartition par rôle"
+    "role_distribution": "Répartition par rôle",
+    "operational_summary": "Résumé des rendez-vous",
+    "appointments_total": "Total",
+    "appointments_today": "Aujourd'hui",
+    "appointments_pending": "En attente",
+    "revenue_summary": "Résumé des revenus",
+    "revenue_total": "Revenu total",
+    "revenue_today": "Aujourd'hui"
   },
   "moderation": {
     "title": "Modération du contenu",

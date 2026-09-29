@@ -61,14 +61,22 @@
   },
   "analytics": {
     "title": "Imibare ya sisitemu",
-    "subtitle": "Imigendekere muri sisitemu yose",
+    "subtitle": "Imibare nyakuri yo muri sisitemu yose",
+    "total_users": "Abakoresha bose",
+    "active_consultations": "Ibiganiro biri gukorwa",
     "signups": "Iyandikisha rishya",
     "appointments": "Gahunda",
     "prescriptions": "Imiti yanditswe",
     "orders": "Ibyatumijwe muri farumasi",
     "revenue": "Inyungu",
-    "growth": "Iterambere (amezi 6 ashize)",
-    "role_distribution": "Igabanya ry'inshingano"
+    "role_distribution": "Igabanya ry'inshingano",
+    "operational_summary": "Incamake ya gahunda",
+    "appointments_total": "Zose hamwe",
+    "appointments_today": "Uyu munsi",
+    "appointments_pending": "Zitegereje",
+    "revenue_summary": "Incamake y'amafaranga",
+    "revenue_total": "Amafaranga yose",
+    "revenue_today": "Uyu munsi"
   },
   "moderation": {
     "title": "Igenzura ry'ibikubiyemo",
