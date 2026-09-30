@@ -431,7 +431,7 @@ const Index = () => {
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
         <RevealSection direction="up" delay={0} className="container">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
             <div>
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
@@ -448,7 +448,7 @@ const Index = () => {
                 </Link>
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2">
                 {doctorsLoading
                   ? Array.from({ length: 4 }).map((_, index) => (
                       <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
@@ -466,48 +466,43 @@ const Index = () => {
                     {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
                   </h3>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-2">
                   {[
                     {
                       label: t("pages.landing.book_appointment", { defaultValue: "Book Appointment" }),
-                      sub: t("pages.landing.schedule_for_later", { defaultValue: "Schedule for later" }),
                       to: "/patient/search-doctors",
                       icon: Calendar,
                       color: "text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-900/50",
                     },
                     {
                       label: t("pages.landing.find_pharmacy", { defaultValue: "Find Pharmacy" }),
-                      sub: t("pages.landing.order_medicine", { defaultValue: "Order medicine" }),
                       to: "/patient/search-pharmacy",
                       icon: Pill,
                       color: "text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-900/50",
                     },
                     {
-                      label: t("pages.landing.find_hospital_health_facility", { defaultValue: "Find Hospital / Health Facility" }),
-                      sub: t("pages.landing.book_visit", { defaultValue: "Book a visit" }),
+                      label: t("pages.landing.find_hospital_health_facility", { defaultValue: "Health Facility" }),
                       to: "/patient/search-facilities",
                       icon: Building2,
                       color: "text-violet-700 bg-violet-50 border-violet-100 dark:text-violet-300 dark:bg-violet-950/30 dark:border-violet-900/50",
                     },
                     {
-                      label: t("pages.landing.qa_health_articles", { defaultValue: "Health Articles" }),
-                      sub: t("pages.landing.learn_more", { defaultValue: "Learn more" }),
+                      label: t("pages.landing.qa_health_articles", { defaultValue: "Need help?" }),
                       to: "/help",
                       icon: Activity,
                       color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
                     },
-                     {
-                      label: t("pages.landing.f_instant_t", { defaultValue: "Instants" }),
-                      sub: t("pages.landing.f_instant_t", { defaultValue: "Instant" }),
+                    {
+                      label: t("pages.landing.f_instant_t", { defaultValue: "Instant Consult" }),
                       to: "/patient/search-doctors?instant=true",
-                      icon: Activity,
-                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
-                    }, {
-                      label:  t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
-                      sub:  t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
+                      icon: Zap,
+                      color: "text-primary bg-primary/5 border-primary/20",
+                    },
+                    {
+                      label: t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
                       to: "/verify-certificate",
-                      icon: Activity,
-                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
+                      icon: Shield,
+                      color: "text-teal-700 bg-teal-50 border-teal-100 dark:text-teal-300 dark:bg-teal-950/30 dark:border-teal-900/50",
                     },
                   ].map((item) => {
                     const Icon = item.icon;
@@ -515,12 +510,17 @@ const Index = () => {
                       <Link
                         key={item.label}
                         to={item.to}
-                        className="group rounded-[6px] border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-                      >  
-                        <span className="mt-1 inline-flex items-center text-xs font-semibold text-primary">
+                        className="group flex items-center justify-between rounded-[6px] border border-border bg-card px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${item.color}`}>
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span className="text-sm font-semibold text-foreground">
                             {item.label}
-                          <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </span>
+                          </span>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                       </Link>
                     );
                   })}
