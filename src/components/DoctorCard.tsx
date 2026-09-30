@@ -378,32 +378,41 @@ export function UnifiedModal({
       ? `${numericFee.toLocaleString()} ${doctor.currency}`
       : t("pages.card.feeNotAvailable");
 
-  const status: "online" | "busy" | "offline" =
-    doctor.is_available && !doctor.bookings_paused
+  const status: "online" | "bookable" | "busy" | "offline" =
+    doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation
       ? "online"
-      : doctor.bookings_paused
-        ? "busy"
-        : "offline";
+      : doctor.is_available && !doctor.bookings_paused
+        ? "bookable"
+        : doctor.bookings_paused
+          ? "busy"
+          : "offline";
 
   const statusStyles = {
     online: {
       dot: "bg-emerald-500",
       pulse: "animate-pulse",
-      label: t("pages.cards.available"),
+      label: t("pages.cards.online", "Online"),
       text: "text-emerald-600",
       bg: "bg-emerald-500/10 border-emerald-500/20",
+    },
+    bookable: {
+      dot: "bg-sky-500",
+      pulse: "",
+      label: t("pages.cards.available", "Available for Booking"),
+      text: "text-sky-600",
+      bg: "bg-sky-500/10 border-sky-500/20",
     },
     busy: {
       dot: "bg-amber-500",
       pulse: "",
-      label: t("pages.cards.paused"),
+      label: t("pages.cards.paused", "Busy"),
       text: "text-amber-600",
       bg: "bg-amber-500/10 border-amber-500/20",
     },
     offline: {
       dot: "bg-zinc-400",
       pulse: "",
-      label: t("pages.cards.unavailable"),
+      label: t("pages.cards.offline", "Offline"),
       text: "text-muted-foreground",
       bg: "bg-muted border-border",
     },
@@ -537,6 +546,7 @@ export function UnifiedModal({
                     )}
 
                     <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
+                      {/* Single unified status — never show two conflicting badges */}
                       <span
                         className={cn(
                           "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[6px] border",
@@ -544,49 +554,33 @@ export function UnifiedModal({
                           s.bg,
                         )}
                       >
-                        <span
-                          className={cn(
-                            "h-1.5 w-1.5 rounded-full flex-shrink-0",
-                            s.dot,
-                            s.pulse,
-                          )}
-                        />
+                        <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", s.dot, s.pulse)} />
                         {s.label}
                       </span>
-                      {doctor.instant_consultation && (
+                      {doctor.instant_consultation && status === "online" && (
                         <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
                           <Zap className="h-3 w-3" />
                           {t("pages.cards.instant")}
                         </span>
                       )}
                     </div>
-                    <div className="mt-2">
-                      <ConsultBadge isOnline={canConnect} />
-                    </div>
 
                     <div className="w-full mt-4 space-y-1.5 text-left">
+                      {/* Only show rating when doctor has actual reviews (rating > 0) */}
+                      {rating > 0 && (
+                        <QuickStat
+                          icon={
+                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                          }
+                          top={<RatingDisplay rating={rating} size="md" />}
+                          bot={t("pages.cards.rating")}
+                        />
+                      )}
                       <QuickStat
-                        icon={
-                          <Star
-                            className={cn(
-                              "h-4 w-4",
-                              rating > 0
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground/40",
-                            )}
-                          />
-                        }
-                        top={<RatingDisplay rating={rating} size="md" />}
-                        bot={t("pages.cards.rating")}
-                      />
-                      <QuickStat
-                        icon={
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                        }
+                        icon={<Clock className="h-4 w-4 text-muted-foreground" />}
                         top={feeLabel}
                         bot={t("pages.cards.per_visit")}
                       />
-                     
                     </div>
                   </div>
                 </div>
@@ -806,32 +800,41 @@ const feeLabel =
       ? `${numericFee.toLocaleString()} ${doctor.currency}`
       : t("pages.card.feeNotAvailable");
 
-  const status: "online" | "busy" | "offline" =
-    doctor.is_available && !doctor.bookings_paused
+  const status: "online" | "bookable" | "busy" | "offline" =
+    doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation
       ? "online"
-      : doctor.bookings_paused
-        ? "busy"
-        : "offline";
+      : doctor.is_available && !doctor.bookings_paused
+        ? "bookable"
+        : doctor.bookings_paused
+          ? "busy"
+          : "offline";
 
   const statusStyles = {
     online: {
       dot: "bg-emerald-500",
       pulse: "animate-pulse",
-      label: t("pages.cards.available"),
+      label: t("pages.cards.online", "Online"),
       text: "text-emerald-600",
       bg: "bg-emerald-500/10 border-emerald-500/20",
+    },
+    bookable: {
+      dot: "bg-sky-500",
+      pulse: "",
+      label: t("pages.cards.available", "Available for Booking"),
+      text: "text-sky-600",
+      bg: "bg-sky-500/10 border-sky-500/20",
     },
     busy: {
       dot: "bg-amber-500",
       pulse: "",
-      label: t("pages.cards.paused"),
+      label: t("pages.cards.paused", "Busy"),
       text: "text-amber-600",
       bg: "bg-amber-500/10 border-amber-500/20",
     },
     offline: {
       dot: "bg-zinc-400",
       pulse: "",
-      label: t("pages.cards.unavailable"),
+      label: t("pages.cards.offline", "Offline"),
       text: "text-muted-foreground",
       bg: "bg-muted border-border",
     },
