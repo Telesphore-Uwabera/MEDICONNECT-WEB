@@ -5,9 +5,11 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  // Use IP directly so local dev bypasses DNS (which may point to Netlify/gateway).
-  // The Host header tells the server which virtual host to use.
-  const apiTarget = env.VITE_DEV_API_TARGET || "https://10.10.141.149";
+  // Proxy strategy:
+  // - On VPN: use http://10.10.141.149 (port 80) with Host header → direct to Nginx
+  // - Off VPN: set VITE_DEV_API_TARGET=https://staging-api.mediconnect.rw in .env
+  //   to fall back to the public staging API (no VPN needed)
+  const apiTarget = env.VITE_DEV_API_TARGET || "http://10.10.141.149";
   const apiHost   = env.VITE_DEV_API_HOST   || "api.mediconnect.rw";
 
   return {
