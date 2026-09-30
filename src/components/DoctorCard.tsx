@@ -893,190 +893,133 @@ const feeLabel =
   };
 
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
-console.log(doctor)
+
+  // Single status label — online takes priority, then busy, then offline
+  const statusConfig = status === "online"
+    ? { label: t("pages.cards.available"), dot: "bg-emerald-500", pulse: "animate-pulse", textCls: "text-emerald-600 dark:text-emerald-400", bgCls: "bg-emerald-500/10 border-emerald-500/20" }
+    : status === "busy"
+    ? { label: t("pages.cards.paused"),     dot: "bg-amber-500",  pulse: "",              textCls: "text-amber-600 dark:text-amber-400",     bgCls: "bg-amber-500/10 border-amber-500/20" }
+    : { label: t("pages.cards.unavailable"),dot: "bg-zinc-400",   pulse: "",              textCls: "text-zinc-500 dark:text-zinc-400",       bgCls: "bg-zinc-500/10 border-zinc-500/20" };
+
   return (
     <>
-      {/* -- Card -- */}
+      {/* ── Card ── */}
       <Card
+        className="group rounded-xl overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
         onClick={openDetails}
-        className="rounded-[6px] overflow-hidden border-border/60 hover:shadow-md hover:-translate-y-1 hover:border-primary/30 transition-all duration-300 cursor-pointer"
       >
-        <div className="px-3.5 pt-3 pb-3">
-          {/* Top row  avatar enlarged from h-12 to h-20 (h-24 on sm+),
-              same row layout as before, just a bigger image. */}
-          <div className="flex items-start gap-3 ">
-            <div className="relative shrink-0">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-[6px] overflow-hidden border border-border">
-                <DoctorAvatar doctor={doctor} size="lg" />
-              </div>
-              {
-                doctor.instant_consultation &&( <span
-                className={cn(
-                  "absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-card",
-                  s.dot,
-                  s.pulse,
-                )}
-              />)
-              }
-             
-            </div>
+        {/* Full-width photo banner */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40"
+             style={{ aspectRatio: "4/3" }}>
+          <DoctorAvatar doctor={doctor} size="lg" />
 
-            <div className=" flex flex-col justify- flex-1 min-w-0  h-[70px]">
-              {doctor.user.name && (
-                <>
-                  <h3 className="text-sm font-semibold text-foreground leading-tight truncate">
-                    {doctor.user.name}
-                  </h3>
-                </>
-              )}
-              <div className="mt-0.5">
-                <RatingDisplay rating={rating} />
-              </div>
-
-              {doctor.specialization && (
-                <p className="mt-1 capitalize text-xs text-muted-foreground flex items-center gap-1 truncate">
-                  <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
-                  {doctor.specialization}
-                </p>
-              )}
-            </div>
+          {/* Hover overlay — blur + "View Profile" prompt */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
+            <span className="translate-y-2 scale-95 rounded-xl bg-white/90 px-4 py-2 text-xs font-bold text-foreground shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
+              {t("pages.cards.view_details", "View Profile")}
+            </span>
           </div>
 
-          {!compact && (
-            <div className={`${doctor.consultation_type? '' : ''} flex  items-center justify-between`}>
-              <ConsultBadge isOnline={canConnect} />
-              <span className="flex cursor-pointer  items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors">
-                {t("pages.cards.view_details")}{" "}
-                <ChevronRight className="h-3.5 w-3.5" />
+          {/* Single status badge — top left */}
+          <div className="absolute top-2.5 left-2.5">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm",
+              statusConfig.textCls, statusConfig.bgCls,
+            )}>
+              <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", statusConfig.dot, statusConfig.pulse)} />
+              {statusConfig.label}
+            </span>
+          </div>
+
+          {/* Instant badge — top right */}
+          {doctor.instant_consultation && (
+            <div className="absolute top-2.5 right-2.5">
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100/90 px-2 py-1 text-[10px] font-bold text-emerald-700 backdrop-blur-sm dark:border-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400">
+                <Zap className="h-3 w-3" />
+                {t("pages.cards.instant", "Instant")}
               </span>
             </div>
           )}
+        </div>
 
-          <div className="mt-2 border-t border-border" />
+        {/* Card body */}
+        <div className="p-4">
+          {/* Name + specialization */}
+          <div className="mb-3">
+            <h3 className="text-base font-bold text-foreground leading-tight truncate">
+              {doctor.user.name}
+            </h3>
+            <p className="mt-0.5 flex items-center gap-1 truncate text-xs font-medium text-primary">
+              <BriefcaseMedical className="h-3.5 w-3.5 shrink-0" />
+              {doctor.specialization || t("pages.landing.general_practitioner", "General Practitioner")}
+            </p>
+            {locationLabel && (
+              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {locationLabel}
+              </p>
+            )}
+          </div>
 
-          {/* Bottom actions */}
+          {/* Buttons — conditional on availability */}
           <div
-            className="mt-1 flex flex-col sm:flex-row sm:items-center flex-wrap justify-between gap-2.5"
+            className="flex flex-col gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Left hint */}
-            <div className="flex items-center gap-1.5">
-              {isConnected ? (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    {t("pages.cards.call_in_progress")}
-                  </span>
-                </>
-              ) : isCallInProgress ? (
-                <>
-                  <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse shrink-0" />
-                  <span className="text-xs font-semibold text-sky-600 dark:text-sky-400">
-                    {t("pages.cards.connecting")}
-                  </span>
-                </>
-              ) : hasSavedSession ? (
-                <>
-                  <RotateCcw className="h-3.5 w-3.5 text-violet-500 shrink-0" />
-                  <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
-                    {t("pages.cards.queue_saved")}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Zap
-                    className={cn(
-                      "h-4 w-4 shrink-0",
-                      doctor.instant_consultation
-                        ? "text-emerald-500"
-                        : "text-muted-foreground/50",
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-[10px] font-bold tracking-tight",
-                      doctor.instant_consultation
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-muted-foreground/70",
-                    )}
-                  >
-                    {doctor.instant_consultation
-                      ? t("pages.cards.instant_reply")
-                      : t("pages.cards.scheduled_reply")}
-                  </span>
-                </>
-              )}
-            </div>
-
-            {/* Right buttons - rounded-[6px] + h-8 to match the
-                Book / Connect button sizing used on HospitalCard */}
-            <div className="flex items-center gap-2">
+            {/* Online: Join Instantly (primary) + Book Appointment (outline) */}
+            {(canConnect || isCallInProgress || hasSavedSession) ? (
+              <>
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (hasSavedSession) openResume();
+                    else if (isCallInProgress || isConnected) { setInitialMode("connect"); setModalOpen(true); }
+                    else openConnect();
+                  }}
+                  className="h-9 w-full gap-2 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90"
+                >
+                  <Wifi className="h-4 w-4" />
+                  {hasSavedSession || isCallInProgress || isConnected
+                    ? t("pages.cards.join", "Join Session")
+                    : t("pages.cards.instant_consult", "Join Instantly")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!canBook || isCallInProgress}
+                  onClick={(e) => { e.stopPropagation(); canBook && !isCallInProgress && setBookOpen(true); }}
+                  className="h-9 w-full rounded-lg border-border text-xs font-semibold"
+                >
+                  <CalendarCheck className="h-4 w-4 mr-1.5" />
+                  {t("pages.cards.book", "Book Appointment")}
+                </Button>
+              </>
+            ) : canBook ? (
+              /* Offline but bookable: only Book Appointment */
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!canBook || isCallInProgress}
-                onClick={() =>
-                  canBook && !isCallInProgress && setBookOpen(true)
-                }
-                className="h-9 px-10 text-xs font-medium rounded-[6px] border-border"
+                onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
+                className="h-9 w-full rounded-lg border-primary/40 text-xs font-semibold text-primary hover:bg-primary/5"
               >
-                {t("pages.cards.book")}
+                <CalendarCheck className="h-4 w-4 mr-1.5" />
+                {t("pages.cards.book", "Book Appointment")}
               </Button>
-
-              {hasSavedSession && !isCallInProgress ? (
-                <Button
-                  size="sm"
-                  onClick={openResume}
-                  className="h-8 px-3 text-xs font-bold rounded-[6px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all"
-                >
-                  <Wifi className="h-3.5 w-3.5 mr-1.5" />
-                  {t("pages.cards.join")}
-                </Button>
-              ) : canConnect ? (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    if (isCallInProgress || isConnected) {
-                      setInitialMode("connect");
-                      setModalOpen(true);
-                    } else {
-                      openConnect();
-                    }
-                  }}
-                  className={cn(
-                    "h-8 px-3 text-xs font-bold rounded-[6px] shadow-sm hover:shadow transition-all",
-                    isConnected || isCallInProgress
-                      ? "bg-emerald-500 hover:bg-emerald-600 text-white"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground",
-                  )}
-                >
-                  {isConnected || isCallInProgress ? (
-                    <>
-                      <Wifi className="h-3.5 w-3.5 mr-1.5" />
-                      {t("pages.cards.join")}
-                    </>
-                  ) : (
-                    <>
-                      <Wifi className="h-3.5 w-3.5 mr-1.5" />
-                      {t("pages.cards.connect")}
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled
-                  className="h-8 px-3 text-xs font-semibold rounded-[6px] opacity-50 cursor-not-allowed border border-border bg-muted"
-                >
-                  {s.label}
-                </Button>
-              )}
-            </div>
+            ) : (
+              /* Fully unavailable */
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled
+                className="h-9 w-full rounded-lg text-xs font-semibold opacity-50 cursor-not-allowed"
+              >
+                {t("pages.cards.unavailable", "Unavailable")}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
-
       {/* -- Live-call resume pill -- (unchanged) */}
       {showResumePill && (
         <ResumePill

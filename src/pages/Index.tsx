@@ -448,7 +448,7 @@ const Index = () => {
                 </Link>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {doctorsLoading
                   ? Array.from({ length: 4 }).map((_, index) => (
                       <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
