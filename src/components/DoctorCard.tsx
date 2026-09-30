@@ -916,23 +916,23 @@ const feeLabel =
         onClick={openDetails}
       >
         {/* Full-width photo banner — image fills the frame completely */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40"
+        <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40 p-3"
              style={{ aspectRatio: "4/3" }}>
-          {/* Absolutely positioned so it fills 100% of the banner */}
-          <div className="absolute inset-0">
+          {/* Image with padding — sits inside the card with rounded corners */}
+          <div className="group/img relative h-full w-full overflow-hidden rounded-xl shadow-sm">
             <DoctorAvatar doctor={doctor} size="lg" />
+
+            {/* Hover overlay — inside the rounded image */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
+              <span className="translate-y-2 scale-95 rounded-xl bg-white/90 px-4 py-2 text-xs font-bold text-foreground shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
+                {t("pages.cards.view_details", "View Profile")}
+              </span>
+            </div>
           </div>
 
-          {/* Hover overlay — blur + "View Profile" prompt */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
-            <span className="translate-y-2 scale-95 rounded-xl bg-white/90 px-4 py-2 text-xs font-bold text-foreground shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100">
-              {t("pages.cards.view_details", "View Profile")}
-            </span>
-          </div>
-
-          {/* Status badge — only shown when meaningful (available / instant / busy) */}
+          {/* Status badge — top left, sits over the padding area */}
           {statusConfig && (
-            <div className="absolute top-2.5 left-2.5">
+            <div className="absolute top-5 left-5">
               <span className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm",
                 statusConfig.textCls, statusConfig.bgCls,
@@ -945,7 +945,7 @@ const feeLabel =
 
           {/* Instant badge — top right */}
           {doctor.instant_consultation && (
-            <div className="absolute top-2.5 right-2.5">
+            <div className="absolute top-5 right-5">
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100/90 px-2 py-1 text-[10px] font-bold text-emerald-700 backdrop-blur-sm dark:border-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400">
                 <Zap className="h-3 w-3" />
                 {t("pages.cards.instant", "Instant")}
