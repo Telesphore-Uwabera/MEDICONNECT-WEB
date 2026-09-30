@@ -894,12 +894,16 @@ const feeLabel =
 
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
 
-  // Single status label — online takes priority, then busy, then offline
-  const statusConfig = status === "online"
-    ? { label: t("pages.cards.available"), dot: "bg-emerald-500", pulse: "animate-pulse", textCls: "text-emerald-600 dark:text-emerald-400", bgCls: "bg-emerald-500/10 border-emerald-500/20" }
-    : status === "busy"
-    ? { label: t("pages.cards.paused"),     dot: "bg-amber-500",  pulse: "",              textCls: "text-amber-600 dark:text-amber-400",     bgCls: "bg-amber-500/10 border-amber-500/20" }
-    : { label: t("pages.cards.unavailable"),dot: "bg-zinc-400",   pulse: "",              textCls: "text-zinc-500 dark:text-zinc-400",       bgCls: "bg-zinc-500/10 border-zinc-500/20" };
+  // Status: only "Available" if is_available=true AND not paused.
+  // Show nothing (no badge) if completely unavailable — no need to advertise it.
+  const isActuallyAvailable = doctor.is_available && !doctor.bookings_paused;
+  const statusConfig = isActuallyAvailable && doctor.instant_consultation
+    ? { label: t("pages.cards.online", "Online"), dot: "bg-emerald-500", pulse: "animate-pulse", textCls: "text-emerald-600 dark:text-emerald-400", bgCls: "bg-emerald-500/10 border-emerald-500/20" }
+    : isActuallyAvailable
+    ? { label: t("pages.cards.available", "Available"), dot: "bg-sky-500", pulse: "", textCls: "text-sky-600 dark:text-sky-400", bgCls: "bg-sky-500/10 border-sky-500/20" }
+    : doctor.bookings_paused
+    ? { label: t("pages.cards.paused", "Busy"), dot: "bg-amber-500", pulse: "", textCls: "text-amber-600 dark:text-amber-400", bgCls: "bg-amber-500/10 border-amber-500/20" }
+    : null; // fully offline — show no badge
 
   return (
     <>
@@ -908,10 +912,13 @@ const feeLabel =
         className="group rounded-xl overflow-hidden border-border/50 hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
         onClick={openDetails}
       >
-        {/* Full-width photo banner */}
+        {/* Full-width photo banner — image fills the frame completely */}
         <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-muted/40"
              style={{ aspectRatio: "4/3" }}>
-          <DoctorAvatar doctor={doctor} size="lg" />
+          {/* Absolutely positioned so it fills 100% of the banner */}
+          <div className="absolute inset-0">
+            <DoctorAvatar doctor={doctor} size="lg" />
+          </div>
 
           {/* Hover overlay — blur + "View Profile" prompt */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
@@ -920,16 +927,18 @@ const feeLabel =
             </span>
           </div>
 
-          {/* Single status badge — top left */}
-          <div className="absolute top-2.5 left-2.5">
-            <span className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm",
-              statusConfig.textCls, statusConfig.bgCls,
-            )}>
-              <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", statusConfig.dot, statusConfig.pulse)} />
-              {statusConfig.label}
-            </span>
-          </div>
+          {/* Status badge — only shown when meaningful (available / instant / busy) */}
+          {statusConfig && (
+            <div className="absolute top-2.5 left-2.5">
+              <span className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm",
+                statusConfig.textCls, statusConfig.bgCls,
+              )}>
+                <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", statusConfig.dot, statusConfig.pulse)} />
+                {statusConfig.label}
+              </span>
+            </div>
+          )}
 
           {/* Instant badge — top right */}
           {doctor.instant_consultation && (
