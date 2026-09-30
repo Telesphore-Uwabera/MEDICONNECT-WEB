@@ -65,6 +65,7 @@ import { HeroHeader } from "@/components/landing/HeroHeader";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import Footer from "@/components/landing/Footer";
+import { RevealSection } from "@/components/RevealSection";
 
 // ─── Types (inline for self-containment) ──────────────────────────────────────
 
@@ -428,8 +429,8 @@ const Index = () => {
       </section>
 
       {/* ── Available Doctors Grid ── */}
-      <section id="doctors" className="border-t border-border bg-gradient-soft py-12 md:py-14">
-        <div className="container">
+      <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
+        <RevealSection direction="up" delay={0} className="container">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px]">
             <div>
               <div className="mb-4 flex items-center justify-between gap-4">
@@ -546,17 +547,17 @@ const Index = () => {
             </aside>
           </div>
           <ServicesShowcase />
-        </div>
+        </RevealSection>
       </section>
       {/* Specialities */}
-      <section id="specialities" className="border-t border-border bg-background py-12 md:py-14">
-        <div className="container">
+      <section id="specialities" className="bg-background py-12 md:py-14">
+        <RevealSection direction="up" delay={0} className="container">
           <Specialities />
-        </div>
+        </RevealSection>
       </section>
       {/* Verified facilities and pharmacies */}
-      <section id="healthfacilities" className="border-t border-border bg-background py-12 md:py-14">
-        <div className="container">
+      <section id="healthfacilities" className="bg-background py-12 md:py-14">
+        <RevealSection direction="up" delay={0} className="container">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>
@@ -763,12 +764,12 @@ const Index = () => {
               )}
             </div>
           )}
-        </div>
+        </RevealSection>
       </section>
 
       {/* Our Team */}
       <section id="team" className="bg-background py-12 md:py-14">
-        <div className="container">
+        <RevealSection direction="up" delay={0} className="container">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>{t("pages.landing.team_heading")}</h2>
@@ -776,7 +777,7 @@ const Index = () => {
             </div> 
           </div>
           <OurTeam />
-        </div>
+        </RevealSection>
       </section>
 
    <Footer/>

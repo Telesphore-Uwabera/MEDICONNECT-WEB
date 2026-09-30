@@ -18,36 +18,6 @@ export function HeroHeadline() {
           max-width: 100%;
         }
 
-        .hero-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 0.7rem;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: hsl(var(--primary));
-          margin-bottom: 0.85rem;
-          padding: 4px 10px;
-          border-radius: 99px;
-          background: hsl(var(--primary) / 0.1);
-          border: 1px solid hsl(var(--primary) / 0.2);
-        }
-
-        .hero-eyebrow-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: hsl(var(--primary));
-          animation: hero-eyebrow-pulse 2s ease-in-out infinite;
-          flex-shrink: 0;
-        }
-
-        @keyframes hero-eyebrow-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.75); }
-        }
-
         .hero-line {
           display: block;
           color: var(--foreground);
@@ -55,13 +25,9 @@ export function HeroHeadline() {
           word-break: break-word;
         }
 
-        .hero-line-nowrap {
-          white-space: nowrap;
-        }
+        .hero-line-nowrap { white-space: nowrap; }
 
-        .hero-line + .hero-line {
-          margin-top: 0.05em;
-        }
+        .hero-line + .hero-line { margin-top: 0.05em; }
 
         .hero-accent {
           color: hsl(var(--primary));
@@ -69,7 +35,6 @@ export function HeroHeadline() {
           display: inline-block;
         }
 
-        /* Animated underline on accent word */
         .hero-accent::after {
           content: '';
           position: absolute;
@@ -88,34 +53,17 @@ export function HeroHeadline() {
           50% { transform: scaleX(0.6); opacity: 0.5; }
         }
 
-        @media (min-width: 768px) {
-          .hero-headline {
-            line-height: 1.06;
-          }
-        }
+        @media (min-width: 768px) { .hero-headline { line-height: 1.06; } }
 
         @media (max-width: 480px) {
-          .hero-line-nowrap {
-            white-space: normal;
-          }
-          .hero-headline {
-            font-size: clamp(1.5rem, 7vw, 2rem);
-          }
+          .hero-line-nowrap { white-space: normal; }
+          .hero-headline { font-size: clamp(1.5rem, 7vw, 2rem); }
         }
 
         @media (max-width: 340px) {
-          .hero-headline {
-            font-size: clamp(1.25rem, 6.5vw, 1.6rem);
-            letter-spacing: -0.02em;
-          }
+          .hero-headline { font-size: clamp(1.25rem, 6.5vw, 1.6rem); letter-spacing: -0.02em; }
         }
       `}</style>
-
-      {/* Eyebrow pill */}
-      <p className="hero-eyebrow" aria-hidden="true">
-        <span className="hero-eyebrow-dot" />
-        Healthcare, Redefined
-      </p>
 
       <h1 className="hero-headline">
         <span className="hero-line hero-line-nowrap">

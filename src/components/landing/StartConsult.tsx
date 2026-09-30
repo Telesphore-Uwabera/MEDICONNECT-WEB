@@ -60,8 +60,26 @@ const StartConsult = () => {
               </div>
             </div>
 
-            <div className="relative bg-white dark:bg-gray-100 p-2 rounded-full text-primary transition-transform duration-300 group-hover:scale-110">
-              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            <div className="relative flex-shrink-0" aria-hidden="true">
+              {/* WiFi-style wave icon — 3 arcs radiating outward */}
+              <style>{`
+                @keyframes wifi-arc1 { 0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.4;transform:scale(.85)} }
+                @keyframes wifi-arc2 { 0%,100%{opacity:.7;transform:scale(1)}50%{opacity:.3;transform:scale(.8)} }
+                @keyframes wifi-arc3 { 0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.15;transform:scale(.75)} }
+              `}</style>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-primary-foreground">
+                {/* Center dot */}
+                <circle cx="16" cy="24" r="2.5" fill="currentColor" />
+                {/* Arc 1 — innermost */}
+                <path d="M10.5 19.5 Q16 13.5 21.5 19.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
+                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc1 1.6s ease-in-out infinite" }} />
+                {/* Arc 2 — middle */}
+                <path d="M6 15.5 Q16 6.5 26 15.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
+                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc2 1.6s ease-in-out infinite 0.3s" }} />
+                {/* Arc 3 — outermost */}
+                <path d="M2 11.5 Q16 -0.5 30 11.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
+                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc3 1.6s ease-in-out infinite 0.6s" }} />
+              </svg>
             </div>
 
             {/* Keyframes */}

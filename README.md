@@ -742,7 +742,119 @@ curl -s https://api.mediconnect.rw/api/v1/public/instant-consultations/doctors
 
 ---
 
-## 🔑 Test Credentials
+## � WebP Image Strategy
+
+All images served through the platform should be in **WebP format** — it is 25–35% smaller than JPEG/PNG at the same quality, which directly improves page load speed and Core Web Vitals scores.
+
+---
+
+### Frontend — lazy loading images
+
+All `<img>` tags in the app already use `loading="lazy"` (added by default in new components). For images that need to display above the fold (hero, avatars), use `loading="eager"`.
+
+```tsx
+// lazy (default for everything below the fold)
+<img src={doctor.image} loading="lazy" alt={doctor.name} />
+
+// eager (hero images only)
+<img src={heroPhoto} loading="eager" alt="" />
+```
+
+---
+
+### Backend — convert existing images to WebP
+
+SSH into the server (VPN required), then run this in the Laravel API directory:
+
+```bash
+cd /var/www/mediconnect-api
+
+# Install cwebp if not available
+apt-get install -y webp
+
+# Convert all uploaded images in storage to WebP
+find storage/app/public -type f \( -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" \) | while read f; do
+  output="${f%.*}.webp"
+  cwebp -q 82 "$f" -o "$output" && echo "✅ $output"
+done
+```
+
+After converting, update image URLs in the database to point to `.webp` files:
+
+```sql
+-- In MySQL (run via phpMyAdmin or CLI)
+UPDATE users      SET avatar = REPLACE(avatar, '.jpg', '.webp')    WHERE avatar LIKE '%.jpg';
+UPDATE users      SET avatar = REPLACE(avatar, '.jpeg', '.webp')   WHERE avatar LIKE '%.jpeg';
+UPDATE users      SET avatar = REPLACE(avatar, '.png', '.webp')    WHERE avatar LIKE '%.png';
+UPDATE doctors    SET image  = REPLACE(image,  '.jpg', '.webp')    WHERE image  LIKE '%.jpg';
+UPDATE doctors    SET image  = REPLACE(image,  '.jpeg', '.webp')   WHERE image  LIKE '%.jpeg';
+UPDATE doctors    SET image  = REPLACE(image,  '.png', '.webp')    WHERE image  LIKE '%.png';
+UPDATE pharmacies SET logo   = REPLACE(logo,   '.jpg', '.webp')    WHERE logo   LIKE '%.jpg';
+UPDATE pharmacies SET logo   = REPLACE(logo,   '.jpeg', '.webp')   WHERE logo   LIKE '%.jpeg';
+UPDATE pharmacies SET logo   = REPLACE(logo,   '.png', '.webp')    WHERE logo   LIKE '%.png';
+UPDATE hospitals  SET logo   = REPLACE(logo,   '.jpg', '.webp')    WHERE logo   LIKE '%.jpg';
+UPDATE hospitals  SET logo   = REPLACE(logo,   '.jpeg', '.webp')   WHERE logo   LIKE '%.jpeg';
+UPDATE hospitals  SET logo   = REPLACE(logo,   '.png', '.webp')    WHERE logo   LIKE '%.png';
+```
+
+---
+
+### Backend — auto-convert on upload (Laravel)
+
+Add this to your image upload handler in the Laravel API. It converts any uploaded file to WebP before storing it.
+
+Install the Intervention Image package if not already present:
+
+```bash
+composer require intervention/image
+```
+
+Then in your upload controller/service:
+
+```php
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
+public function uploadImage(Request $request, string $field = 'image'): string
+{
+    $request->validate([
+        $field => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
+    ]);
+
+    $manager = new ImageManager(new Driver());
+    $image   = $manager->read($request->file($field));
+
+    // Resize if too large (optional — keeps file sizes small)
+    if ($image->width() > 1200) {
+        $image->scale(width: 1200);
+    }
+
+    // Encode to WebP at quality 82
+    $encoded  = $image->toWebp(quality: 82);
+    $filename = uniqid() . '.webp';
+    $path     = "uploads/{$filename}";
+
+    Storage::disk('public')->put($path, $encoded);
+
+    return Storage::disk('public')->url($path);
+}
+```
+
+This means **every image uploaded going forward** — avatars, doctor photos, hospital logos, pharmacy logos — is automatically stored as WebP. No manual conversion needed.
+
+---
+
+### Summary
+
+| Step | Who | What |
+|---|---|---|
+| Convert existing DB images | Backend dev | Run `cwebp` script on server + SQL UPDATE |
+| Auto-convert new uploads | Backend dev | Add Intervention Image to upload handlers |
+| Frontend lazy loading | Already done | `loading="lazy"` on all below-fold images |
+
+---
+
+## �🔑 Test Credentials
 
 Use these accounts on the **staging** environment only.
 
