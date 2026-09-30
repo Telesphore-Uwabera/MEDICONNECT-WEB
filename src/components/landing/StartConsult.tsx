@@ -19,32 +19,66 @@ const StartConsult = () => {
       <div className="mt-6 flex w-full flex-col gap-3">
         {/* Primary CTAs */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* ── Instant Consultation — continuous wave CTA ── */}
           <Link
             to="/patient/search-doctors?instant=true"
-            className="group flex items-center justify-between gap-3 rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md transition hover:opacity-90"
+            className="group relative flex items-center justify-between gap-3 overflow-hidden rounded-[6px] bg-primary px-4 py-3.5 text-primary-foreground shadow-md"
+            style={{ isolation: "isolate" }}
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-white/15">
+            {/* Wave rings — three expanding rings */}
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+              <span className="absolute h-full w-full rounded-[6px] bg-white/10"
+                    style={{ animation: "cta-wave 2.4s ease-out infinite" }} />
+              <span className="absolute h-full w-full rounded-[6px] bg-white/7"
+                    style={{ animation: "cta-wave 2.4s ease-out infinite 0.7s" }} />
+              <span className="absolute h-full w-full rounded-[6px] bg-white/5"
+                    style={{ animation: "cta-wave 2.4s ease-out infinite 1.4s" }} />
+            </span>
+
+            {/* Shimmer sweep */}
+            <span
+              className="pointer-events-none absolute inset-0 -translate-x-full skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/20 to-transparent"
+              style={{ animation: "cta-shimmer 3s ease-in-out infinite" }}
+              aria-hidden="true"
+            />
+
+            {/* Content */}
+            <div className="relative flex min-w-0 items-center gap-3">
+              <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-white/15">
                 <Video className="h-4 w-4" />
+                {/* Pulsing dot on icon */}
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-primary"
+                      style={{ animation: "cta-dot-pulse 1.8s ease-in-out infinite" }} />
               </span>
-              <div className="min-w-0 text-left">
+              <div className="relative min-w-0 text-left">
                 <p className="truncate text-sm font-semibold leading-none">
-                  {t(
-                    "pages.landing.instant_consultation",
-                    "Instant Consultation",
-                  )}
+                  {t("pages.landing.instant_consultation", "Instant Consultation")}
                 </p>
                 <p className="mt-1 truncate text-[11px] text-primary-foreground/70">
-                  {t(
-                    "pages.landing.instant_consultation_sub",
-                    "Connect with a doctor in seconds.",
-                  )}
+                  {t("pages.landing.instant_consultation_sub", "Connect with a doctor in seconds.")}
                 </p>
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-100 p-2 rounded-full text-primary">
-              <ArrowRight className="h-4 w-4 shrink-0  transition-transform group-hover:translate-x-0.5" />
+
+            <div className="relative bg-white dark:bg-gray-100 p-2 rounded-full text-primary transition-transform duration-300 group-hover:scale-110">
+              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
             </div>
+
+            {/* Keyframes */}
+            <style>{`
+              @keyframes cta-wave {
+                0%   { transform: scale(1);    opacity: 0.6; }
+                100% { transform: scale(1.18); opacity: 0; }
+              }
+              @keyframes cta-shimmer {
+                0%   { transform: translateX(-100%) skewX(-18deg); }
+                60%, 100% { transform: translateX(200%) skewX(-18deg); }
+              }
+              @keyframes cta-dot-pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6); }
+                50%       { box-shadow: 0 0 0 4px rgba(52,211,153,0); }
+              }
+            `}</style>
           </Link>
 
           <Link

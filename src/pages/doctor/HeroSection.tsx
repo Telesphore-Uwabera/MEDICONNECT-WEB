@@ -123,92 +123,165 @@ export default function HeroSection() {
           {/* ── Text column ── */}
          <div className="relative z-10 mx-auto w-full max-w-[560px] text-left md:mx-0 md:max-w-none">
             <HeroHeadline />
-            <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-muted-foreground sm:mt-4 sm:text-[15px]">
+            <p className="mt-5 max-w-lg text-[15px] font-medium leading-7 text-muted-foreground sm:mt-6 sm:text-base">
               {heroTagline}
             </p>
 
             {/* Feature bullets */}
-                        <ul className="mt-5 flex flex-col items-start gap-2.5 sm:mt-6">
+            <ul className="mt-6 flex flex-col items-start gap-3 sm:mt-7">
               {FEATURES.map(({ key, fallback, icon: Icon }) => (
-                <li key={key} className="flex items-center gap-2.5">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-3.5 w-3.5" />
+                <li key={key} className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                    <Icon className="h-4 w-4" />
                   </span>
                   <span className="text-sm font-semibold text-foreground">
                     {t(`pages.landing.${key}`, fallback)}
                   </span>
                 </li>
               ))}
-            </ul> 
+            </ul>
             <StartConsult />
           </div>
 
           {/* ── Photo column ── */}
-          <div className="relative mx-auto hidden aspect-square w-full max-w-[380px] items-center justify-center md:flex lg:max-w-[440px]">
-            <div className="absolute inset-0 rounded-full bg-primary/10" aria-hidden="true" />
+          <div className="relative mx-auto hidden w-full max-w-[380px] items-end justify-center md:flex lg:max-w-[420px]">
+
+            {/* Floating background blobs */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+              <div
+                className="absolute -top-8 -right-8 h-64 w-64 rounded-full bg-primary/10"
+                style={{ animation: "hero-blob1 7s ease-in-out infinite" }}
+              />
+              <div
+                className="absolute -bottom-4 -left-4 h-44 w-44 rounded-full bg-primary/8"
+                style={{ animation: "hero-blob2 9s ease-in-out infinite" }}
+              />
+            </div>
+
+            {/* Portrait card */}
             <div
-              className="group relative z-10 h-[90%] w-[90%] rounded-full"
+              className="group relative z-10 w-full cursor-pointer"
+              style={{ animation: "hero-float 5s ease-in-out infinite" }}
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
             >
-              <img
-                key={activeDoctor?.id ?? "static"}
-                src={heroPhotoSrc}
-                alt={activeDoctor ? activeDoctor.user?.name ?? "" : ""}
-                className="h-full w-full rounded-full object-cover object-top shadow-xl ring-4 ring-background animate-in fade-in duration-500"
-                loading="eager"
-                onError={() => setDoctorImgError(true)}
-              />
+              {/* Card frame — tall portrait, rounded corners, NO circle */}
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl ring-1 ring-border/40"
+                   style={{ aspectRatio: "3/4" }}>
 
-              {/* Connect / Book overlay — shown on hover, also pauses rotation */}
-              {activeDoctor && (canConnect || canBook) && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/45 group-hover:opacity-100">
-                  <button
-                    type="button"
-                    onClick={handleHeroCta}
-                    className="inline-flex scale-95 items-center gap-1.5 rounded-[6px] bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-lg transition-transform duration-200 group-hover:scale-100 hover:bg-primary/90"
-                  >
-                    {canConnect ? (
-                      <>
-                        <Wifi className="h-3.5 w-3.5" />
-                        {t("pages.cards.connect", { defaultValue: "Connect" })}
-                      </>
-                    ) : (
-                      <>
-                        <CalendarCheck className="h-3.5 w-3.5" />
-                        {t("pages.cards.book", { defaultValue: "Book" })}
-                      </>
+                {/* Doctor image */}
+                <img
+                  key={activeDoctor?.id ?? "static"}
+                  src={heroPhotoSrc}
+                  alt={activeDoctor ? activeDoctor.user?.name ?? "" : ""}
+                  className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  style={{ animation: "hero-fade-in 0.6s ease forwards" }}
+                  loading="eager"
+                  onError={() => setDoctorImgError(true)}
+                />
+
+                {/* Bottom gradient overlay — always visible */}
+                <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+
+                {/* Doctor name chip — bottom of card */}
+                {activeDoctor && (
+                  <div className="absolute bottom-0 inset-x-0 px-4 pb-4 pt-2 flex items-end justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold leading-tight text-white drop-shadow">
+                        {activeDoctor.user?.name ?? ""}
+                      </p>
+                      {activeDoctor.specialization && (
+                        <p className="mt-0.5 truncate text-[11px] font-medium leading-none text-white/75">
+                          {activeDoctor.specialization}
+                        </p>
+                      )}
+                    </div>
+                    {/* Availability dot */}
+                    {activeDoctor.is_available && (
+                      <span className="flex h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 ring-2 ring-white/30 mb-0.5"
+                            style={{ animation: "hero-pulse 2s ease-in-out infinite" }} />
                     )}
-                  </button>
+                  </div>
+                )}
+
+                {/* Connect / Book hover overlay */}
+                {activeDoctor && (canConnect || canBook) && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={handleHeroCta}
+                      className="inline-flex translate-y-2 scale-95 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-xl transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100 hover:bg-primary/90"
+                    >
+                      {canConnect ? (
+                        <>
+                          <Wifi className="h-4 w-4" />
+                          {t("pages.cards.connect", { defaultValue: "Connect" })}
+                        </>
+                      ) : (
+                        <>
+                          <CalendarCheck className="h-4 w-4" />
+                          {t("pages.cards.book", { defaultValue: "Book" })}
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Slide indicator dots */}
+              {heroDoctors.length > 1 && (
+                <div className="mt-3 flex items-center justify-center gap-1.5">
+                  {heroDoctors.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveDoctorIdx(i)}
+                      className={`transition-all duration-300 rounded-full ${
+                        i === activeDoctorIdx
+                          ? "w-5 h-1.5 bg-primary"
+                          : "w-1.5 h-1.5 bg-muted-foreground/30"
+                      }`}
+                      aria-label={`Doctor ${i + 1}`}
+                    />
+                  ))}
                 </div>
               )}
             </div>
+
             {/* Decorative dot grid */}
             <div
-              className="absolute -top-2 right-2 z-20 h-16 w-16 opacity-40 lg:right-6"
+              className="absolute -top-4 -right-4 z-20 h-20 w-20 opacity-30 lg:-right-2"
               style={{
-                backgroundImage:
-                  "radial-gradient(hsl(var(--primary)) 1.5px, transparent 1.5px)",
+                backgroundImage: "radial-gradient(hsl(var(--primary)) 1.5px, transparent 1.5px)",
                 backgroundSize: "10px 10px",
               }}
               aria-hidden="true"
             />
-            
-            {/* Active doctor info chip */}
-            {activeDoctor && (
-              <div className="absolute bottom-2 left-1/2 z-20 flex max-w-[85%] -translate-x-1/2 items-center gap-2 rounded-[6px] border border-border bg-card/95 px-3.5 py-2 shadow-lg backdrop-blur">
-                <div className="min-w-0 text-left">
-                  <p className="truncate text-xs font-semibold leading-none text-foreground">
-                    {activeDoctor.user?.name ?? ""}
-                  </p>
-                  {activeDoctor.specialization && (
-                    <p className="mt-0.5 truncate text-[10px] leading-none text-muted-foreground">
-                      {activeDoctor.specialization}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+
+            {/* Keyframe animations injected inline */}
+            <style>{`
+              @keyframes hero-float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+              }
+              @keyframes hero-blob1 {
+                0%, 100% { transform: scale(1) translate(0, 0); }
+                33% { transform: scale(1.08) translate(6px, -8px); }
+                66% { transform: scale(0.96) translate(-4px, 6px); }
+              }
+              @keyframes hero-blob2 {
+                0%, 100% { transform: scale(1) translate(0, 0); }
+                40% { transform: scale(1.1) translate(-6px, 8px); }
+                70% { transform: scale(0.94) translate(4px, -4px); }
+              }
+              @keyframes hero-fade-in {
+                from { opacity: 0; transform: scale(1.03); }
+                to   { opacity: 1; transform: scale(1); }
+              }
+              @keyframes hero-pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+                50% { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+              }
+            `}</style>
           </div>
         </section>
       </div>
