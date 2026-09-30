@@ -61,25 +61,25 @@ const StartConsult = () => {
             </div>
 
             <div className="relative flex-shrink-0" aria-hidden="true">
-              {/* WiFi-style wave icon — 3 arcs radiating outward */}
+              {/* Arrow surrounded by expanding wave rings — like a signal/send icon */}
               <style>{`
-                @keyframes wifi-arc1 { 0%,100%{opacity:.9;transform:scale(1)}50%{opacity:.4;transform:scale(.85)} }
-                @keyframes wifi-arc2 { 0%,100%{opacity:.7;transform:scale(1)}50%{opacity:.3;transform:scale(.8)} }
-                @keyframes wifi-arc3 { 0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.15;transform:scale(.75)} }
+                @keyframes send-ring1 { 0%{transform:scale(0.5);opacity:0.9} 100%{transform:scale(1.6);opacity:0} }
+                @keyframes send-ring2 { 0%{transform:scale(0.5);opacity:0.7} 100%{transform:scale(1.6);opacity:0} }
+                @keyframes send-ring3 { 0%{transform:scale(0.5);opacity:0.5} 100%{transform:scale(1.6);opacity:0} }
               `}</style>
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" className="text-primary-foreground">
-                {/* Center dot */}
-                <circle cx="16" cy="24" r="2.5" fill="currentColor" />
-                {/* Arc 1 — innermost */}
-                <path d="M10.5 19.5 Q16 13.5 21.5 19.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
-                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc1 1.6s ease-in-out infinite" }} />
-                {/* Arc 2 — middle */}
-                <path d="M6 15.5 Q16 6.5 26 15.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
-                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc2 1.6s ease-in-out infinite 0.3s" }} />
-                {/* Arc 3 — outermost */}
-                <path d="M2 11.5 Q16 -0.5 30 11.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" fill="none"
-                      style={{ transformOrigin: "16px 24px", animation: "wifi-arc3 1.6s ease-in-out infinite 0.6s" }} />
-              </svg>
+              <span className="relative flex h-9 w-9 items-center justify-center">
+                {/* Expanding rings behind the arrow */}
+                <span className="absolute inset-0 rounded-full border-2 border-white/60"
+                      style={{ animation: "send-ring1 1.8s ease-out infinite" }} />
+                <span className="absolute inset-0 rounded-full border-2 border-white/40"
+                      style={{ animation: "send-ring2 1.8s ease-out infinite 0.5s" }} />
+                <span className="absolute inset-0 rounded-full border-2 border-white/25"
+                      style={{ animation: "send-ring3 1.8s ease-out infinite 1s" }} />
+                {/* Arrow icon in center */}
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="relative z-10 text-primary-foreground">
+                  <path d="M3 9h12M10 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
             </div>
 
             {/* Keyframes */}

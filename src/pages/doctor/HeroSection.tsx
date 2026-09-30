@@ -236,12 +236,6 @@ export default function HeroSection() {
                           {activeDoctor.specialization
                             || t("pages.landing.general_practitioner", "General Practitioner")}
                         </p>
-                        {/* Degree badge if stored in DB */}
-                        {activeDoctor.doctor_degree && (
-                          <span className="mt-1.5 inline-block rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-sm">
-                            {activeDoctor.doctor_degree}
-                          </span>
-                        )}
                       </div>
 
                       {/* Availability indicator */}
