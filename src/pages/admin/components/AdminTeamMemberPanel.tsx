@@ -287,10 +287,17 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
                       accept="image/jpeg,image/png,image/webp"
                       value={null}
                       onChange={(value) => handleUpload(value, "photo")}
-                      maxSizeMb={2}
+                      cropToCard={{
+                        aspectRatio: 4 / 3,
+                        targetWidth: 800,
+                        targetHeight: 600,
+                        title: t("admin.team.fit_photo_card", { defaultValue: "Fit Doctor Photo to Card" }),
+                        subtitle: t("admin.team.fit_photo_sub", { defaultValue: "Cut to 800 × 600 px (4:3) so the image fits the card and is fully displayed." }),
+                      }}
+                      maxSizeMb={10}
                       existingUrl={member.photo_url}
                       className="min-h-[112px] px-3 py-3"
-                      helperText={t("common.fileUploader.imageHelper", { defaultValue: "Drop or browse an image. Max 2 MB." })}
+                      helperText={t("admin.team.photo_card_hint", { defaultValue: "Card fit: 800 × 600 px (4:3). Large images are cut to fit cards." })}
                       disabled={isUploadingPhoto}
                     />
 

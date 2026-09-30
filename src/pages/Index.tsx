@@ -386,8 +386,8 @@ const Index = () => {
 
   const footerSocials = [
     {
-      label: "Twitter",
-      path: "M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z",
+      label: "X",
+      path: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z",
       href: "https://x.com/mediconnectrw?s=11",
     },
     {
@@ -402,6 +402,11 @@ const Index = () => {
 
     },
  
+    {
+      label: "LinkedIn",
+      path: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z",
+      href: "https://www.linkedin.com/company/mediconnect-rwanda",
+    },
     {
       label: "Facebook",
       path: "M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",
@@ -431,120 +436,53 @@ const Index = () => {
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
         <RevealSection direction="up" delay={0} className="container">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]">
-            <div>
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className={SECTION_EYEBROW}>
-                    {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
-                  </p>
-                  <h2 className={`${SECTION_TITLE} mt-1`}>
-                    {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
-                  </h2>
-                </div>
-                <Link to="/patient/search-doctors" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                  {t("pages.landing.view_all", { defaultValue: "View all" })}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+          <div>
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <p className={SECTION_EYEBROW}>
+                  {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
+                </p>
+                <h2 className={`${SECTION_TITLE} mt-1`}>
+                  {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
+                </h2>
               </div>
-
-              <div className="grid gap-6 sm:grid-cols-2">
-                {doctorsLoading
-                  ? Array.from({ length: 4 }).map((_, index) => (
-                      <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
-                    ))
-                  : allDoctors.slice(0, 6).map((doctor) => (
-                      <DoctorCard key={doctor.id} doctor={doctor} />
-                    ))}
-              </div>
+              <Link to="/patient/search-doctors" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                {t("pages.landing.view_all", { defaultValue: "View all" })}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
 
-            <aside className="space-y-4">
-              <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-base font-black text-foreground">
-                    {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {[
-                    {
-                      label: t("pages.landing.book_appointment", { defaultValue: "Book Appointment" }),
-                      to: "/patient/search-doctors",
-                      icon: Calendar,
-                      color: "text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-900/50",
-                    },
-                    {
-                      label: t("pages.landing.find_pharmacy", { defaultValue: "Find Pharmacy" }),
-                      to: "/patient/search-pharmacy",
-                      icon: Pill,
-                      color: "text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-900/50",
-                    },
-                    {
-                      label: t("pages.landing.find_hospital_health_facility", { defaultValue: "Health Facility" }),
-                      to: "/patient/search-facilities",
-                      icon: Building2,
-                      color: "text-violet-700 bg-violet-50 border-violet-100 dark:text-violet-300 dark:bg-violet-950/30 dark:border-violet-900/50",
-                    },
-                    {
-                      label: t("pages.landing.qa_health_articles", { defaultValue: "Need help?" }),
-                      to: "/help",
-                      icon: Activity,
-                      color: "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
-                    },
-                    {
-                      label: t("pages.landing.f_instant_t", { defaultValue: "Instant Consult" }),
-                      to: "/patient/search-doctors?instant=true",
-                      icon: Zap,
-                      color: "text-primary bg-primary/5 border-primary/20",
-                    },
-                    {
-                      label: t("pages.landing.fitness_certificates_requests", { defaultValue: "Fitness Certificate" }),
-                      to: "/verify-certificate",
-                      icon: Shield,
-                      color: "text-teal-700 bg-teal-50 border-teal-100 dark:text-teal-300 dark:bg-teal-950/30 dark:border-teal-900/50",
-                    },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.label}
-                        to={item.to}
-                        className="group flex items-center justify-between rounded-[6px] border border-border bg-card px-4 py-3 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${item.color}`}>
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <span className="text-sm font-semibold text-foreground">
-                            {item.label}
-                          </span>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div> 
-              <div className="overflow-hidden rounded-[6px] border border-primary/10 bg-primary/10 p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {doctorsLoading
+                ? Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
+                  ))
+                : allDoctors.slice(0, 6).map((doctor) => (
+                    <DoctorCard key={doctor.id} doctor={doctor} />
+                  ))}
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-[8px] border border-primary/20 bg-primary/10 p-4 sm:p-5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <a href={`tel:${contactPhone}`} className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                    <Phone className="h-6 w-6" />
+                  </a>
                   <div>
                     <h3 className="text-base font-black text-foreground">
                       {t("pages.landing.need_urgent_help", { defaultValue: "Need urgent help?" })}
                     </h3>
-                    <p className="mt-1 text-xs font-medium text-muted-foreground">
+                    <p className="mt-0.5 text-xs font-medium text-muted-foreground">
                       {t("pages.landing.call_support_line", { defaultValue: "Call our support line" })}
                     </p>
-                    <a href={`tel:${contactPhone}`} className="mt-2 inline-block text-lg font-black text-primary">
-                      {contactPhone}
-                    </a>
                   </div>
-                  <a href={`tel:${contactPhone}`} className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                    <Phone className="h-7 w-7" />
-                  </a>
                 </div>
+                <a href={`tel:${contactPhone}`} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <Phone className="h-4 w-4" />
+                  {contactPhone}
+                </a>
               </div>
-            </aside>
+            </div>
           </div>
           <ServicesShowcase />
         </RevealSection>

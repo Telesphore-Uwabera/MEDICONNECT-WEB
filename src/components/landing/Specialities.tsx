@@ -7,14 +7,18 @@ import {
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Award,
-  Check,
+  Baby,
+  Bone,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Heart,
+  HeartPulse,
   Scissors,
   Search,
+  Smile,
+  Sparkles,
   Stethoscope,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,7 +29,7 @@ interface LandingSpecializationFee {
   id: number;
   slug?: string | null;
   name?: string | null;
-  specialization?: string | null;
+  specialization?: string | { id?: number; name?: string; slug?: string } | null;
   sub_specialization?: string | null;
   sub_specialization_en?: string | null;
   tier_name?: string | null;
@@ -41,28 +45,107 @@ type SpecializationFeesResponse =
       specialization_fees?: LandingSpecializationFee[];
     };
 
-interface PreparedSpecialization extends LandingSpecializationFee {
+interface ServiceDefinition {
+  key: string;
   label: string;
+  subSpecializationName?: string;
+  specializationName?: string;
+  feeId?: number;
+  slug: string;
+  fallbackIcon: LucideIcon;
+  fallbackSvg?: string;
+  searchUrl?: string;
+}
+
+// Exactly the 9 services requested from the screen
+const TARGET_SERVICES: ServiceDefinition[] = [
+  {
+    key: 'internal-medicine',
+    label: 'Internal medicine',
+    subSpecializationName: 'Internal Medicine',
+    feeId: 2,
+    slug: 'internal-medicine-standard',
+    fallbackIcon: HeartPulse,
+  },
+  {
+    key: 'pediatrics',
+    label: 'Pediatrics',
+    subSpecializationName: 'Pediatrics',
+    feeId: 4,
+    slug: 'pediatrics-standard',
+    fallbackIcon: Baby,
+  },
+  {
+    key: 'gynecology-and-obstetrics',
+    label: 'Gynecology and obstetrics',
+    subSpecializationName: 'Obstetrics & Gynecology',
+    feeId: 5,
+    slug: 'obstetrics-gynecology-standard',
+    fallbackIcon: Heart,
+  },
+  {
+    key: 'general-surgery',
+    label: 'General Surgery',
+    subSpecializationName: 'Surgery',
+    feeId: 3,
+    slug: 'surgery-standard',
+    fallbackIcon: Scissors,
+  },
+  {
+    key: 'stomatology-dental-surgery',
+    label: 'Stomatology/\u200bdental surgery',
+    slug: 'stomatology-dental-surgery',
+    fallbackIcon: Smile,
+    fallbackSvg:
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.5 2 6 4.5 6 8c0 3 1.5 5.5 2 8 .6 3 1.5 5 2.5 5s1.5-2.5 1.5-5c0-1.5.5-2 0-3-.5 1 0 1.5 0 3 0 2.5.5 5 1.5 5s1.9-2 2.5-5c.5-2.5 2-5 2-8 0-3.5-2.5-6-6-6z"/></svg>',
+    searchUrl: '/patient/search-doctors?type=booking&search=Dental',
+  },
+  {
+    key: 'dermatology',
+    label: 'Dermatology',
+    subSpecializationName: 'Dermatology',
+    feeId: 12,
+    slug: 'dermatology-standard',
+    fallbackIcon: Sparkles,
+  },
+  {
+    key: 'ophthalmology',
+    label: 'Ophthalmology',
+    subSpecializationName: 'Ophthalmology',
+    feeId: 10,
+    slug: 'ophthalmology-standard',
+    fallbackIcon: Eye,
+  },
+  {
+    key: 'general-medicine-consultations',
+    label: 'General Medicine Consultations',
+    specializationName: 'General Practitioner',
+    feeId: 1,
+    slug: 'general-practitioner-standard',
+    fallbackIcon: Stethoscope,
+    searchUrl:
+      '/patient/search-doctors?type=booking&specialization=General+Practitioner&specialization_fee_id=1',
+  },
+  {
+    key: 'orthopedics',
+    label: 'Orthopedics',
+    subSpecializationName: 'Orthopedics',
+    feeId: 9,
+    slug: 'orthopedics-standard',
+    fallbackIcon: Bone,
+  },
+];
+
+interface PreparedSpecialization {
+  id: number;
+  key: string;
+  label: string;
+  href: string;
   resolvedSlug: string;
   doctorCount?: number;
   Icon: LucideIcon;
+  icon_svg?: string | null;
 }
-
-const SPECIALTY_ICONS: Record<string, LucideIcon> = {
-  cardiology: Heart,
-  'general-practitioner': Stethoscope,
-  specialist: Award,
-  surgery: Scissors,
-  surgeon: Scissors,
-  sugerylist: Scissors,
-};
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 
 const sanitizeSvg = (svg?: string | null): string | null => {
   const raw = svg?.trim();
@@ -141,10 +224,10 @@ function SpecialtyIcon({
 
 function useLandingSpecializationFees() {
   return useQuery({
-    queryKey: ['landing-specialization-fees', 'specialist'],
+    queryKey: ['landing-specialization-fees'],
     queryFn: async () => {
       const response = await apiFetch<SpecializationFeesResponse>(
-        '/public/specialization-fees?type=specialist'
+        '/public/specialization-fees'
       );
 
       return Array.isArray(response)
@@ -175,75 +258,72 @@ function Specialities() {
 
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const [mobileDropdownOpen, setMobileDropdownOpen] =
-    useState(false);
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
 
-  const preparedSpecializations =
-    useMemo<PreparedSpecialization[]>(() => {
-      return data.map((item) => {
-        const label =
-          item.sub_specialization ??
-          item.sub_specialization_en ??
-          item.name ??
-          item.specialization ??
-          t('pages.landing.spec_fallback_label');
-
-        const resolvedSlug =
-          item.slug || slugify(label);
-
-        return {
-          ...item,
-          label,
-          resolvedSlug,
-          doctorCount:
-            item.doctorCount ?? item.doctors_count,
-          Icon:
-            SPECIALTY_ICONS[resolvedSlug] ??
-            Stethoscope,
-        };
+  // Map only the 9 specified services, enriching with API fee/doctor data when loaded
+  const preparedSpecializations = useMemo<PreparedSpecialization[]>(() => {
+    return TARGET_SERVICES.map((def, idx) => {
+      const matched = data.find((item) => {
+        if (def.feeId && item.id === def.feeId) return true;
+        if (
+          def.subSpecializationName &&
+          item.sub_specialization?.toLowerCase() === def.subSpecializationName.toLowerCase()
+        ) {
+          return true;
+        }
+        const specName =
+          typeof item.specialization === 'string'
+            ? item.specialization
+            : item.specialization?.name;
+        if (
+          def.specializationName &&
+          (specName?.toLowerCase() === def.specializationName.toLowerCase() ||
+            item.name?.toLowerCase() === def.specializationName.toLowerCase())
+        ) {
+          return true;
+        }
+        return false;
       });
-    }, [data, t]);
+
+      const href =
+        def.searchUrl ||
+        (matched?.id || def.feeId
+          ? `/patient/search-doctors?type=booking&specialization=Specialist&specialization_fee_id=${matched?.id ?? def.feeId}`
+          : `/patient/search-doctors?type=booking&search=${encodeURIComponent(def.label)}`);
+
+      return {
+        id: matched?.id ?? (100 + idx),
+        key: def.key,
+        label: def.label,
+        href,
+        resolvedSlug: def.slug,
+        doctorCount: matched?.doctorCount ?? matched?.doctors_count,
+        Icon: def.fallbackIcon,
+        icon_svg: matched?.icon_svg || def.fallbackSvg || null,
+      };
+    });
+  }, [data]);
 
   const filteredSpecializations = useMemo(() => {
-    const query = mobileSearch
-      .trim()
-      .toLowerCase();
+    const query = mobileSearch.trim().toLowerCase();
 
     if (!query) {
       return preparedSpecializations;
     }
 
-    return preparedSpecializations.filter((item) => {
-      const searchableText = [
-        item.label,
-        item.specialization,
-        item.tier_name,
-        item.resolvedSlug,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-
-      return searchableText.includes(query);
-    });
-  }, [
-    mobileSearch,
-    preparedSpecializations,
-  ]);
+    return preparedSpecializations.filter((item) =>
+      item.label.toLowerCase().includes(query)
+    );
+  }, [mobileSearch, preparedSpecializations]);
 
   const updateScrollState = () => {
     const element = scrollRef.current;
-
-    if (!element) {
-      return;
-    }
+    if (!element) return;
 
     setCanScrollLeft(element.scrollLeft > 4);
-
     setCanScrollRight(
-      element.scrollLeft + element.clientWidth <
-        element.scrollWidth - 4
+      element.scrollLeft + element.clientWidth < element.scrollWidth - 4
     );
   };
 
@@ -251,62 +331,37 @@ function Specialities() {
     updateScrollState();
   }, [preparedSpecializations]);
 
-useEffect(() => {
+  useEffect(() => {
     const element = scrollRef.current;
+    if (!element) return;
 
-    if (!element) {
-      return;
-    }
-
-    const handleScroll = () =>
-      updateScrollState();
-
-    element.addEventListener(
-      'scroll',
-      handleScroll,
-      { passive: true }
-    );
-
-    window.addEventListener(
-      'resize',
-      handleScroll
-    );
+    const handleScroll = () => updateScrollState();
+    element.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
 
     return () => {
-      element.removeEventListener(
-        'scroll',
-        handleScroll
-      );
-
-      window.removeEventListener(
-        'resize',
-        handleScroll
-      );
+      element.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
   }, []);
 
+  // Subtle auto-scroll loop
   useEffect(() => {
     const element = scrollRef.current;
-
-    if (!element || preparedSpecializations.length === 0) {
-      return;
-    }
+    if (!element || preparedSpecializations.length === 0) return;
 
     const interval = window.setInterval(() => {
-      if (isHoveringRef.current) {
-        return;
-      }
+      if (isHoveringRef.current) return;
 
       const atEnd =
-        element.scrollLeft + element.clientWidth >=
-        element.scrollWidth - 4;
+        element.scrollLeft + element.clientWidth >= element.scrollWidth - 4;
 
       if (atEnd) {
         element.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
         element.scrollBy({ left: 220, behavior: 'smooth' });
       }
-    }, 3000);
+    }, 3500);
 
     return () => {
       window.clearInterval(interval);
@@ -314,60 +369,35 @@ useEffect(() => {
   }, [preparedSpecializations.length]);
 
   useEffect(() => {
-    if (!mobileDropdownOpen) {
-      return;
-    }
+    if (!mobileDropdownOpen) return;
 
-    const handleOutsideClick = (
-      event: MouseEvent
-    ) => {
+    const handleOutsideClick = (event: MouseEvent) => {
       const target = event.target as Node;
-
       if (
         mobileDropdownRef.current &&
-        !mobileDropdownRef.current.contains(
-          target
-        )
+        !mobileDropdownRef.current.contains(target)
       ) {
         setMobileDropdownOpen(false);
       }
     };
 
-    const handleEscape = (
-      event: KeyboardEvent
-    ) => {
+    const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMobileDropdownOpen(false);
       }
     };
 
-    document.addEventListener(
-      'mousedown',
-      handleOutsideClick
-    );
-
-    document.addEventListener(
-      'keydown',
-      handleEscape
-    );
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener(
-        'mousedown',
-        handleOutsideClick
-      );
-
-      document.removeEventListener(
-        'keydown',
-        handleEscape
-      );
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [mobileDropdownOpen]);
 
   useEffect(() => {
-    if (!mobileDropdownOpen) {
-      return;
-    }
+    if (!mobileDropdownOpen) return;
 
     const timeout = window.setTimeout(() => {
       mobileSearchInputRef.current?.focus();
@@ -378,20 +408,12 @@ useEffect(() => {
     };
   }, [mobileDropdownOpen]);
 
-  const scroll = (
-    direction: 'left' | 'right'
-  ) => {
+  const scroll = (direction: 'left' | 'right') => {
     const element = scrollRef.current;
-
-    if (!element) {
-      return;
-    }
+    if (!element) return;
 
     element.scrollBy({
-      left:
-        direction === 'left'
-          ? -320
-          : 320,
+      left: direction === 'left' ? -320 : 320,
       behavior: 'smooth',
     });
   };
@@ -407,15 +429,15 @@ useEffect(() => {
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
-            {t(
-              'pages.landing.spec_eyebrow'
-            )}
+            {t('pages.landing.spec_eyebrow', {
+              defaultValue: 'Browse by specialty',
+            })}
           </p>
 
           <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-            {t(
-              'pages.landing.spec_title'
-            )}
+            {t('pages.landing.spec_title', {
+              defaultValue: 'Specialities',
+            })}
           </h2>
         </div>
 
@@ -425,17 +447,16 @@ useEffect(() => {
             type="button"
             onClick={() => scroll('left')}
             disabled={!canScrollLeft}
-            aria-label={t(
-              'pages.landing.spec_scroll_left'
-            )}
+            aria-label={t('pages.landing.spec_scroll_left')}
             className="
-              flex h-[30px] w-[30px]
+              box-border flex h-[30px] w-[30px]
               items-center justify-center
-              rounded-[var(--radius)]
-              border border-border
+              rounded-sm border border-border
               bg-card text-muted-foreground
+              shadow-none
               transition-colors
-              enabled:hover:bg-muted
+              hover:shadow-none
+              enabled:hover:bg-muted enabled:hover:border-primary/40
               disabled:cursor-not-allowed
               disabled:opacity-30
             "
@@ -447,17 +468,16 @@ useEffect(() => {
             type="button"
             onClick={() => scroll('right')}
             disabled={!canScrollRight}
-            aria-label={t(
-              'pages.landing.spec_scroll_right'
-            )}
+            aria-label={t('pages.landing.spec_scroll_right')}
             className="
-              flex h-[30px] w-[30px]
+              box-border flex h-[30px] w-[30px]
               items-center justify-center
-              rounded-[var(--radius)]
-              border border-border
+              rounded-sm border border-border
               bg-card text-muted-foreground
+              shadow-none
               transition-colors
-              enabled:hover:bg-muted
+              hover:shadow-none
+              enabled:hover:bg-muted enabled:hover:border-primary/40
               disabled:cursor-not-allowed
               disabled:opacity-30
             "
@@ -467,42 +487,32 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Loading state */}
+      {/* Loading state: skeleton with shadow-none */}
       {isLoading && (
-        <>
-          {/* Mobile loading */}
-          <div className="md:hidden">
-            <div className="h-12 animate-pulse rounded-[6px] border border-border bg-muted" />
-          </div>
-
-          {/* Desktop loading */}
-          <div className="hidden gap-3 overflow-hidden md:flex">
-            {Array.from({
-              length: 6,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="
-                  relative h-[172px]
-                  w-[130px] flex-shrink-0
-                  overflow-hidden rounded-[6px]
-                  border border-border bg-muted
-                "
-              >
-                <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-              </div>
-            ))}
-          </div>
-        </>
+        <div className="hidden gap-3 overflow-hidden md:flex">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="
+                box-border relative h-[140px]
+                w-[140px] flex-shrink-0
+                overflow-hidden rounded-sm
+                border border-border bg-muted/40 shadow-none
+              "
+            >
+              <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+          ))}
+        </div>
       )}
 
       {/* Error state */}
       {isError && !isLoading && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-card py-8 text-center">
+        <div className="box-border flex flex-col items-center gap-3 rounded-sm border border-border bg-card py-8 text-center shadow-none">
           <p className="text-sm text-muted-foreground">
-            {t(
-              'pages.landing.spec_load_error'
-            )}
+            {t('pages.landing.spec_load_error', {
+              defaultValue: 'Failed to load specialties',
+            })}
           </p>
 
           <button
@@ -510,341 +520,251 @@ useEffect(() => {
             onClick={() => refetch()}
             disabled={isFetching}
             className="
-              rounded-[var(--radius)]
+              box-border rounded-sm
               bg-primary px-4 py-1.5
               text-xs font-medium
-              text-primary-foreground
+              text-primary-foreground shadow-none
               transition-opacity
+              hover:shadow-none
               disabled:opacity-60
             "
           >
             {isFetching
-              ? t(
-                  'pages.landing.spec_retrying'
-                )
-              : t(
-                  'pages.landing.try_again'
-                )}
+              ? t('pages.landing.spec_retrying', { defaultValue: 'Retrying...' })
+              : t('pages.landing.try_again', { defaultValue: 'Try again' })}
           </button>
         </div>
       )}
 
-      {/* Empty state */}
-      {!isLoading &&
-        !isError &&
-        preparedSpecializations.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            {t(
-              'pages.landing.spec_empty'
-            )}
-          </p>
-        )}
+      {/* Mobile searchable dropdown (box-border, shadow-none) */}
+      <div ref={mobileDropdownRef} className="relative md:hidden">
+        <button
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={mobileDropdownOpen}
+          onClick={() => setMobileDropdownOpen((current) => !current)}
+          className="
+            box-border flex min-h-12 w-full
+            items-center justify-between gap-3
+            rounded-sm border border-border
+            bg-card px-4 py-3
+            text-left text-sm
+            text-foreground shadow-none
+            transition-colors
+            hover:border-primary/40
+            hover:shadow-none
+            focus-visible:outline-none
+            focus-visible:ring-1
+            focus-visible:ring-primary/40
+          "
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Search className="h-4 w-4" />
+            </span>
 
-      {!isLoading &&
-        !isError &&
-        preparedSpecializations.length > 0 && (
-          <>
-            {/* Mobile searchable dropdown */}
-            <div
-              ref={mobileDropdownRef}
-              className="relative md:hidden"
-            >
-              <button
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded={
-                  mobileDropdownOpen
-                }
-                onClick={() =>
-                  setMobileDropdownOpen(
-                    (current) => !current
-                  )
-                }
-                className="
-                  flex min-h-12 w-full
-                  items-center justify-between gap-3
-                  rounded-[6px] border border-border
-                  bg-card px-4 py-3
-                  text-left text-sm
-                  text-foreground
-                  transition-colors
-                  hover:border-primary/40
-                  focus-visible:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-primary/30
-                "
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Search className="h-4 w-4" />
-                  </span>
+            <span className="truncate font-medium">
+              {t('pages.landing.spec_choose', {
+                defaultValue: 'Find a specialization',
+              })}
+            </span>
+          </span>
 
-                  <span className="truncate font-medium">
-                    {t(
-                      'pages.landing.spec_choose',
-                      {
-                        defaultValue:
-                          'Find a specialization',
-                      }
-                    )}
-                  </span>
-                </span>
+          <ChevronDown
+            className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${
+              mobileDropdownOpen ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
 
-                <ChevronDown
-                  className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${
-                    mobileDropdownOpen
-                      ? 'rotate-180'
-                      : ''
-                  }`}
-                />
-              </button>
+        {mobileDropdownOpen && (
+          <div
+            role="listbox"
+            aria-label={t('pages.landing.spec_carousel_label', {
+              defaultValue: 'Specialities',
+            })}
+            className="
+              box-border absolute left-0 right-0
+              top-[calc(100%+0.5rem)]
+              z-50 overflow-hidden
+              rounded-sm border border-border
+              bg-popover shadow-none
+            "
+          >
+            {/* Search input */}
+            <div className="border-b border-border bg-popover p-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 
-              {mobileDropdownOpen && (
-                <div
-                  role="listbox"
-                  aria-label={t(
-                    'pages.landing.spec_carousel_label'
-                  )}
+                <input
+                  ref={mobileSearchInputRef}
+                  type="search"
+                  value={mobileSearch}
+                  onChange={(event) => setMobileSearch(event.target.value)}
+                  placeholder={t('pages.landing.spec_search_placeholder', {
+                    defaultValue: 'Search specializations...',
+                  })}
                   className="
-                    absolute left-0 right-0
-                    top-[calc(100%+0.5rem)]
-                    z-50 overflow-hidden
-                    rounded-xl border border-border
-                    bg-popover shadow-xl
+                    box-border h-11 w-full rounded-sm
+                    border border-border
+                    bg-background
+                    pl-9 pr-3
+                    text-sm text-foreground shadow-none
+                    outline-none
+                    placeholder:text-muted-foreground
+                    focus:border-primary
                   "
-                >
-                  {/* Search input */}
-                  <div className="border-b border-border bg-popover p-3">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-
-                      <input
-                        ref={
-                          mobileSearchInputRef
-                        }
-                        type="search"
-                        value={mobileSearch}
-                        onChange={(event) =>
-                          setMobileSearch(
-                            event.target.value
-                          )
-                        }
-                        placeholder={t(
-                          'pages.landing.spec_search_placeholder',
-                          {
-                            defaultValue:
-                              'Search specializations...',
-                          }
-                        )}
-                        className="
-                          h-11 w-full rounded-[6px]
-                          border border-border
-                          bg-background
-                          pl-9 pr-3
-                          text-sm text-foreground
-                          outline-none
-                          placeholder:text-muted-foreground
-                          focus:border-primary
-                          focus:ring-2
-                          focus:ring-primary/20
-                        "
-                      />
-                    </div>
-                  </div>
-
-                  {/* Vertical results */}
-                  <div className="max-h-[320px] overflow-y-auto p-2">
-                    {filteredSpecializations.length >
-                    0 ? (
-                      <div className="flex flex-col gap-1">
-                        {filteredSpecializations.map(
-                          (item) => (
-                            <Link
-                              key={item.id}
-                              role="option"
-                              aria-selected={false}
-                              to={`/patient/search-doctors?type=booking&specialization=Specialist&specialization_fee_id=${item.id}`}
-                              onClick={
-                                closeMobileDropdown
-                              }
-                              className="
-                                group flex w-full
-                                items-center gap-3
-                                rounded-[6px] px-3 py-3
-                                text-left
-                                transition-colors
-                                hover:bg-muted
-                                focus-visible:outline-none
-                                focus-visible:ring-2
-                                focus-visible:ring-primary/30
-                              "
-                            >
-                              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                                <SpecialtyIcon
-                                  svg={
-                                    item.icon_svg
-                                  }
-                                  fallback={
-                                    item.Icon
-                                  }
-                                />
-                              </span>
-
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium text-foreground">
-                                  {item.label}
-                                </span>
-
-                                {typeof item.doctorCount ===
-                                  'number' && (
-                                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                                    {t(
-                                      'pages.landing.spec_doctors_count',
-                                      {
-                                        count:
-                                          item.doctorCount,
-                                      }
-                                    )}
-                                  </span>
-                                )}
-                              </span>
-
-                              <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                            </Link>
-                          )
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
-                        <Search className="mb-3 h-8 w-8 text-muted-foreground/50" />
-
-                        <p className="text-sm font-medium text-foreground">
-                          {t(
-                            'pages.landing.spec_no_results',
-                            {
-                              defaultValue:
-                                'No specialization found',
-                            }
-                          )}
-                        </p>
-
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {t(
-                            'pages.landing.spec_try_another_search',
-                            {
-                              defaultValue:
-                                'Try using another search term.',
-                            }
-                          )}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                />
+              </div>
             </div>
 
-            {/* Desktop cards */}
-            <div className="relative hidden md:block">
-              {canScrollLeft && (
-                <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-background to-transparent" />
-              )}
-
-              {canScrollRight && (
-                <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-background to-transparent" />
-              )}
-
-              <div
-                ref={scrollRef}
-                onScroll={updateScrollState}
-                onMouseEnter={() => {
-                  isHoveringRef.current = true;
-                }}
-                onMouseLeave={() => {
-                  isHoveringRef.current = false;
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key ===
-                    'ArrowLeft'
-                  ) {
-                    event.preventDefault();
-                    scroll('left');
-                  }
-
-                  if (
-                    event.key ===
-                    'ArrowRight'
-                  ) {
-                    event.preventDefault();
-                    scroll('right');
-                  }
-                }}
-                tabIndex={0}
-                role="region"
-                aria-label={t(
-                  'pages.landing.spec_carousel_label'
-                )}
-                className="
-                  flex gap-3 overflow-x-auto
-                  pb-1 scroll-smooth
-                  [-ms-overflow-style:none]
-                  [scrollbar-width:none]
-                  [&::-webkit-scrollbar]:hidden
-                  focus-visible:outline-none
-                "
-              >
-                {preparedSpecializations.map(
-                  (item) => (
+            {/* Vertical results */}
+            <div className="max-h-[320px] overflow-y-auto p-2">
+              {filteredSpecializations.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  {filteredSpecializations.map((item) => (
                     <Link
-                      key={item.id}
-                      to={`/patient/search-doctors?type=booking&specialization=Specialist&specialization_fee_id=${item.id}`}
-                      title={item.label}
+                      key={item.key}
+                      role="option"
+                      aria-selected={false}
+                      to={item.href}
+                      onClick={closeMobileDropdown}
                       className="
-                        group flex h-[172px]
-                        w-[130px] flex-shrink-0
-                        flex-col items-center
-                        justify-center gap-2.5
-                        rounded-sm
-                        border border-border
-                        bg-card px-2.5 py-4
-                        text-center shadow-none
-                        transition-all duration-200
-                        hover:-translate-y-px
-                        hover:border-primary/40
-                        hover:shadow-md
+                        group box-border flex w-full
+                        items-center gap-3
+                        rounded-sm px-3 py-3
+                        text-left shadow-none
+                        transition-colors
+                        hover:bg-muted/60
+                        hover:shadow-none
+                        focus-visible:outline-none
                       "
                     >
-                      <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                         <SpecialtyIcon
                           svg={item.icon_svg}
                           fallback={item.Icon}
                         />
                       </span>
 
-                      <span className="line-clamp-2 w-full text-[13px] font-medium leading-snug text-foreground">
-                        {item.label}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {item.label}
+                        </span>
+
+                        {typeof item.doctorCount === 'number' && (
+                          <span className="mt-0.5 block text-xs text-muted-foreground">
+                            {t('pages.landing.spec_doctors_count', {
+                              count: item.doctorCount,
+                            })}
+                          </span>
+                        )}
                       </span>
 
-                      {typeof item.doctorCount ===
-                        'number' && (
-                        <span className="text-[11px] text-muted-foreground">
-                          {t(
-                            'pages.landing.spec_doctors_count',
-                            {
-                              count:
-                                item.doctorCount,
-                            }
-                          )}
-                        </span>
-                      )}
+                      <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                     </Link>
-                  )
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center px-4 py-8 text-center">
+                  <Search className="mb-2 h-7 w-7 text-muted-foreground/50" />
+                  <p className="text-sm font-medium text-foreground">
+                    {t('pages.landing.spec_no_results', {
+                      defaultValue: 'No specialization found',
+                    })}
+                  </p>
+                </div>
+              )}
             </div>
-          </>
+          </div>
         )}
+      </div>
+
+      {/* Desktop cards (pure borderbox, shadow-none, only the 9 services) */}
+      <div className="relative hidden md:block">
+        {canScrollLeft && (
+          <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-background to-transparent" />
+        )}
+
+        {canScrollRight && (
+          <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-background to-transparent" />
+        )}
+
+        <div
+          ref={scrollRef}
+          onScroll={updateScrollState}
+          onMouseEnter={() => {
+            isHoveringRef.current = true;
+          }}
+          onMouseLeave={() => {
+            isHoveringRef.current = false;
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              scroll('left');
+            }
+            if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              scroll('right');
+            }
+          }}
+          tabIndex={0}
+          role="region"
+          aria-label={t('pages.landing.spec_carousel_label', {
+            defaultValue: 'Specialities carousel',
+          })}
+          className="
+            flex gap-3 overflow-x-auto
+            pb-1 scroll-smooth
+            [-ms-overflow-style:none]
+            [scrollbar-width:none]
+            [&::-webkit-scrollbar]:hidden
+            focus-visible:outline-none
+          "
+        >
+          {preparedSpecializations.map((item) => (
+            <Link
+              key={item.key}
+              to={item.href}
+              title={item.label}
+              className="
+                group box-border flex h-[140px]
+                w-[140px] flex-shrink-0
+                flex-col items-center
+                justify-center gap-2.5
+                rounded-sm
+                border border-border
+                bg-card px-2.5
+                text-center shadow-none
+                transition-all duration-200
+                hover:-translate-y-px
+                hover:border-primary/50
+                hover:shadow-none
+              "
+            >
+              <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <SpecialtyIcon
+                  svg={item.icon_svg}
+                  fallback={item.Icon}
+                />
+              </span>
+
+              <span className="line-clamp-3 w-full text-[12px] font-medium leading-tight text-foreground break-words px-1">
+                {item.label}
+              </span>
+
+              {typeof item.doctorCount === 'number' && (
+                <span className="text-[11px] text-muted-foreground">
+                  {t('pages.landing.spec_doctors_count', {
+                    count: item.doctorCount,
+                  })}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

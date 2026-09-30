@@ -7,6 +7,7 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { RichTextarea, RichTextRenderer } from "@/components/ui/rich-textarea";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   usePatientMedicalRecord,
   useUpdatePatientMedicalRecord,
@@ -210,16 +211,15 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
               )}
               <div className="space-y-1.5">
                 <label className={label}>{t("consult.record.blood_type")}</label>
-                <select
+                <CustomSelect
                   value={form.blood_type ?? ""}
-                  onChange={(e) => set("blood_type", e.target.value)}
-                  className={cn(inputCls, "appearance-none")}
-                >
-                  <option value="">{t("consult.record.unknown")}</option>
-                  {BLOOD_TYPES.map((b) => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
+                  onChange={(val) => set("blood_type", val)}
+                  options={[
+                    { value: "", label: t("consult.record.unknown") },
+                    ...BLOOD_TYPES.map((b) => ({ value: b, label: b })),
+                  ]}
+                  className="w-full"
+                />
               </div>
               {RECORD_FIELDS.map((f) => (
                 <div key={f.key} className="space-y-1.5">
@@ -289,11 +289,15 @@ export function MedicalRecordModal({ patientId, patientName, sourceId, onClose, 
                   className="block w-full text-[11px] text-muted-foreground file:mr-3 file:h-7 file:px-3 file:rounded-[5px] file:border-0 file:bg-primary file:text-primary-foreground file:text-[11px] file:font-medium hover:file:bg-primary/90" required
                 />
                 <div className="grid grid-cols-2 gap-2">
-                  <select value={fileType} onChange={(e) => setFileType(e.target.value as FileType)} className={cn(inputCls, "appearance-none")}>
-                    {FILE_TYPES.map((t) => (
-                      <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={fileType}
+                    onChange={(val) => setFileType(val as FileType)}
+                    options={FILE_TYPES.map((t) => ({
+                      value: t,
+                      label: t.replace(/_/g, " "),
+                    }))}
+                    className="w-full"
+                  />
                   <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} placeholder={t("consult.record.title")} className={inputCls} required />
                 </div>
                 <input value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} placeholder={t("consult.record.notes")} className={inputCls} />

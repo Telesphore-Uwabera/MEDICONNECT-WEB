@@ -34,6 +34,7 @@ import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -570,15 +571,18 @@ const PatientAppointments = () => {
 
             <div className="flex items-center gap-2">
               {/* Sort */}
-              <select
+              <CustomSelect
                 value={filters.sort}
-                onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-              >
-                <option value="date-asc">{t("pages.patient.appt_sort_soonest")}</option>
-                <option value="date-desc">{t("pages.patient.appt_sort_latest")}</option>
-                <option value="doctor">{t("pages.patient.appt_sort_doctor")}</option>
-              </select>
+                options={[
+                  { value: "date-asc", label: t("pages.patient.appt_sort_soonest") },
+                  { value: "date-desc", label: t("pages.patient.appt_sort_latest") },
+                  { value: "doctor", label: t("pages.patient.appt_sort_doctor") },
+                ]}
+                onChange={(v) => set("sort", v as SortOption)}
+                label={t("pages.patient.sort_label", { defaultValue: "Sort" })}
+                compact
+                className="hidden sm:block w-[140px]"
+              />
 
               <FilterToggleButton
                 open={filterOpen}

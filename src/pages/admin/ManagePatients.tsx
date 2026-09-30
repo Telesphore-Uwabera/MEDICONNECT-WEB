@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Users, CheckCircle2, Clock, XCircle, RefreshCw
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import { SORT_OPTIONS, type StatusFilter } from "./components/patients/Types";
 import { PatientRow, PatientCard, SkeletonRows } from "./components/patients/Components";
@@ -134,18 +135,13 @@ export default function ManagePatients() {
                 <RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />
               </button>
 
-              <div className="relative">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as typeof filters.sort)}
-                  className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={filters.sort}
+                options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                onChange={(val) => set("sort", val as typeof filters.sort)}
+                compact
+                className="w-[140px]"
+              />
 
               <FilterToggleButton
                 open={filterOpen}

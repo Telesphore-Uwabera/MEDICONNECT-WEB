@@ -1,9 +1,10 @@
-﻿import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { toast as sonnerToast } from "sonner";
 import { formatDateOnly } from "@/lib/date";
 import{ Wallet,
@@ -924,15 +925,16 @@ function ActionPanel({
                     </div>
                   </Field>
                   <Field label="Payment method" required>
-                    <select
+                    <CustomSelect
                       value={payoutForm.payment_method}
-                      onChange={(e) => setPayoutForm((p) => ({ ...p, payment_method: e.target.value }))}
-                      className={selectCls}
-                    >
-                      <option value="momo">Mobile Money</option>
-                      <option value="bank">Bank Transfer</option>
-                      <option value="cash">Cash</option>
-                    </select>
+                      onChange={(val) => setPayoutForm((p) => ({ ...p, payment_method: val }))}
+                      options={[
+                        { value: "momo", label: "Mobile Money" },
+                        { value: "bank", label: "Bank Transfer" },
+                        { value: "cash", label: "Cash" },
+                      ]}
+                      className="w-full"
+                    />
                   </Field>
                   <Field label="Payment reference">
                     <input
@@ -1462,18 +1464,19 @@ function ManageAdminWallet() {
                     )}
 
                     {activeTab === "withdrawals" && (
-                      <select
+                      <CustomSelect
                         value={withdrawalStatus}
-                        onChange={(e) => {
-                          setWithdrawalStatus(e.target.value);
+                        onChange={(val) => {
+                          setWithdrawalStatus(val);
                           setPage(1);
                         }}
-                        className="h-9 px-3 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
-                      >
-                        {["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => (
-                          <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
-                        ))}
-                      </select>
+                        options={["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => ({
+                          value: status,
+                          label: status.replace(/_/g, " "),
+                        }))}
+                        compact
+                        className="w-[140px]"
+                      />
                     )}
                   </div>
                 </div>
@@ -1582,18 +1585,19 @@ function ManageAdminWallet() {
                   )}
 
                   {activeTab === "withdrawals" && (
-                    <select
+                    <CustomSelect
                       value={withdrawalStatus}
-                      onChange={(e) => {
-                        setWithdrawalStatus(e.target.value);
+                      onChange={(val) => {
+                        setWithdrawalStatus(val);
                         setPage(1);
                       }}
-                      className="h-8 px-3 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
-                    >
-                      {["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => (
-                        <option key={status} value={status}>{status.replace(/_/g, " ")}</option>
-                      ))}
-                    </select>
+                      options={["all", "pending", "processing", "approved", "completed", "failed", "cancelled"].map((status) => ({
+                        value: status,
+                        label: status.replace(/_/g, " "),
+                      }))}
+                      compact
+                      className="w-[140px]"
+                    />
                   )}
                 </div>
               </div>

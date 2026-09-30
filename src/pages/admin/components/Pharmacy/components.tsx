@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatDateOnly } from "@/lib/date";
 import {X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
   ShieldCheck, ShieldOff, Ban, Loader2, MapPin, Calendar, Hash, BadgeCheck,
@@ -9,6 +9,7 @@ import {X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import {
   SORT_OPTIONS, STATUS_STYLE, STATUS_DOT, getInitials,
@@ -198,13 +199,13 @@ export function MetaBar({ total, isLoading, pendingCount, hasActiveFilters, sear
             placeholder="Search name, phone, email..."
             className="w-48 pl-8 pr-3 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all" />
         </div>
-        <div className="relative">
-          <select value={sort} onChange={(e) => onSort(e.target.value as SortOption)}
-            className="appearance-none pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer max-w-[120px] sm:max-w-none">
-            {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <ChevronDown className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-        </div>
+        <CustomSelect
+          value={sort}
+          options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+          onChange={(val) => onSort(val as SortOption)}
+          compact
+          className="w-[140px]"
+        />
         <button onClick={onFilterOpen}
           className={cn("md:hidden flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-[6px] border text-[11px] transition-colors",
             hasActiveFilters ? "bg-primary text-white border-primary" : "border-border/60 text-muted-foreground bg-card")}>

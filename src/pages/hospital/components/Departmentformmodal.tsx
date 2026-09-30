@@ -4,6 +4,7 @@ import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Department, DepartmentPayload } from "@/types/Hospital";
 import { t } from "i18next";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Icon options supported by the API ────────────────────────────────────────
 const ICON_OPTIONS = [
@@ -210,17 +211,15 @@ export function DepartmentFormModal({
           {/* Icon + Color */}
           <div className="grid grid-cols-2 gap-3">
             <Field label={t("pages.hospital.icon")}>
-              <select
+              <CustomSelect
                 value={form.icon ?? "stethoscope"}
-                onChange={(e) => set("icon", e.target.value)}
-                className={selectCls}
-              >
-                {ICON_OPTIONS.map((ic) => (
-                  <option key={ic} value={ic}>
-                    {ic.charAt(0).toUpperCase() + ic.slice(1)}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => set("icon", val)}
+                options={ICON_OPTIONS.map((ic) => ({
+                  value: ic,
+                  label: ic.charAt(0).toUpperCase() + ic.slice(1),
+                }))}
+                className="w-full"
+              />
             </Field>
             <Field label={t("pages.hospital.color")}>
               <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-﻿import { formatDateOnly } from "@/lib/date";
+import { formatDateOnly } from "@/lib/date";
 
 // export default PatientPrescriptions;
 
@@ -62,6 +62,7 @@ import {
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { HeartPulse } from "lucide-react";
+import { CustomSelect } from "@/components/ui/custom-select";
  
 const PatientPrescriptions = () => {
   const { t, i18n } = useTranslation();
@@ -292,14 +293,16 @@ const PatientPrescriptions = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              <select
+              <CustomSelect
                 value={filters.sort}
-                onChange={(e) => set("sort", e.target.value as "date-asc" | "date-desc")}
-                className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-              >
-                <option value="date-desc">{t("pages.patient.sort_newest_first")}</option>
-                <option value="date-asc">{t("pages.patient.sort_oldest_first")}</option>
-              </select>
+                options={[
+                  { value: "date-desc", label: t("pages.patient.sort_newest_first") },
+                  { value: "date-asc", label: t("pages.patient.sort_oldest_first") },
+                ]}
+                onChange={(val) => set("sort", val as "date-asc" | "date-desc")}
+                compact
+                className="hidden sm:block w-[130px]"
+              />
 
               <FilterToggleButton
                 open={filterOpen}

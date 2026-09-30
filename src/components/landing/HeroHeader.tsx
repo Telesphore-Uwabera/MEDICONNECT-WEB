@@ -7,6 +7,14 @@ import {
   X,
   LogOut,
   LayoutDashboard,
+  ChevronDown,
+  Calendar,
+  Zap,
+  Pill,
+  Building2,
+  Shield,
+  Activity,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -44,6 +52,9 @@ export function HeroHeader({
   const navigate = useNavigate();
   const activeHash = activeSection ? `#${activeSection}` : location.hash || "#home";
   const menuRef = useRef<HTMLDivElement>(null);
+  const quickAccessRef = useRef<HTMLDivElement>(null);
+  const [quickAccessOpen, setQuickAccessOpen] = useState(false);
+  const [mobileQuickAccessOpen, setMobileQuickAccessOpen] = useState(false);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<SpecializationValue>({ specialization: null, fee: null });
   const { data: user } = useMe();
@@ -69,6 +80,80 @@ export function HeroHeader({
     { kind: "anchor", href: "#team", label: t("nav.team") },
   ];
 
+  const quickAccessItems = [
+    {
+      label: t("pages.landing.book_appointment", {
+        defaultValue: "Book Appointment",
+      }),
+      to: "/patient/search-doctors",
+      icon: Calendar,
+      color:
+        "text-emerald-700 bg-emerald-50 border-emerald-100 dark:text-emerald-300 dark:bg-emerald-950/30 dark:border-emerald-900/50",
+      description: t("pages.landing.book_appointment_desc", {
+        defaultValue: "Find doctors and schedule a visit",
+      }),
+    },
+    {
+      label: t("pages.landing.f_instant_t", {
+        defaultValue: "Instant Consult",
+      }),
+      to: "/patient/search-doctors?instant=true",
+      icon: Zap,
+      color: "text-primary bg-primary/5 border-primary/20",
+      description: t("pages.landing.instant_consult_desc", {
+        defaultValue: "Connect with available doctors now",
+      }),
+    },
+    {
+      label: t("pages.landing.find_pharmacy", {
+        defaultValue: "Find Pharmacy",
+      }),
+      to: "/patient/search-pharmacy",
+      icon: Pill,
+      color:
+        "text-blue-700 bg-blue-50 border-blue-100 dark:text-blue-300 dark:bg-blue-950/30 dark:border-blue-900/50",
+      description: t("pages.landing.find_pharmacy_desc", {
+        defaultValue: "Verified pharmacies & medicines",
+      }),
+    },
+    {
+      label: t("pages.landing.find_hospital_health_facility", {
+        defaultValue: "Health Facility",
+      }),
+      to: "/patient/search-facilities",
+      icon: Building2,
+      color:
+        "text-violet-700 bg-violet-50 border-violet-100 dark:text-violet-300 dark:bg-violet-950/30 dark:border-violet-900/50",
+      description: t("pages.landing.find_hospital_desc", {
+        defaultValue: "Hospitals, clinics & centers",
+      }),
+    },
+    {
+      label: t("pages.landing.fitness_certificates_requests", {
+        defaultValue: "Fitness Certificate",
+      }),
+      to: "/verify-certificate",
+      icon: Shield,
+      color:
+        "text-teal-700 bg-teal-50 border-teal-100 dark:text-teal-300 dark:bg-teal-950/30 dark:border-teal-900/50",
+      description: t("pages.landing.fitness_certificate_desc", {
+        defaultValue: "Medical fitness certification",
+      }),
+    },
+    {
+      label: t("pages.landing.qa_health_articles", {
+        defaultValue: "Need help?",
+      }),
+      to: "/help",
+      icon: Activity,
+      color:
+        "text-orange-700 bg-orange-50 border-orange-100 dark:text-orange-300 dark:bg-orange-950/30 dark:border-orange-900/50",
+      description: t("pages.landing.need_help_desc", {
+        defaultValue: "Help center, guidance & support",
+      }),
+    },
+  ];
+
   // ── Side effects ────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -76,15 +161,32 @@ export function HeroHeader({
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
       }
+      if (
+        quickAccessRef.current &&
+        !quickAccessRef.current.contains(e.target as Node)
+      ) {
+        setQuickAccessOpen(false);
+      }
     };
-    if (mobileMenuOpen)
-      document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [mobileMenuOpen, setMobileMenuOpen]);
+  }, [setMobileMenuOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setQuickAccessOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [setMobileMenuOpen]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
-  }, [location.hash, setMobileMenuOpen]);
+    setQuickAccessOpen(false);
+  }, [location.pathname, location.hash, setMobileMenuOpen]);
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
@@ -153,7 +255,105 @@ export function HeroHeader({
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 text-xs font-medium shrink-0">
-          {navLinks.map((l) => {
+          {navLinks.slice(0, 2).map((l) => {
+            const active =
+              l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
+            const key = l.kind === "anchor" ? l.href : l.to;
+            const className = cn(
+              "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap",
+              active
+                ? "text-foreground bg-accent"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+            );
+            const content = (
+              <>
+                {l.label}
+                {active && (
+                  <span className="absolute left-3 right-3 -bottom-0.5 h-0.5 rounded-full bg-primary" />
+                )}
+              </>
+            );
+            return l.kind === "anchor" ? (
+              <button key={key} onClick={() => handleNavClick(l.href)} className={className}>
+                {content}
+              </button>
+            ) : (
+              <Link key={key} to={l.to} className={className}>
+                {content}
+              </Link>
+            );
+          })}
+
+          {/* Quick Access Dropdown */}
+          <div ref={quickAccessRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setQuickAccessOpen((prev) => !prev)}
+              aria-expanded={quickAccessOpen}
+              className={cn(
+                "relative px-2.5 py-1.5 rounded-[6px] transition-smooth cursor-pointer whitespace-nowrap flex items-center gap-1",
+                quickAccessOpen
+                  ? "text-foreground bg-accent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+              )}
+            >
+              <span>{t("pages.landing.quick_access", { defaultValue: "Quick Access" })}</span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform duration-200",
+                  quickAccessOpen && "rotate-180 text-primary",
+                )}
+              />
+            </button>
+
+            {quickAccessOpen && (
+              <div
+                role="menu"
+                className="absolute top-[calc(100%+8px)] left-0 w-[300px] rounded-xl border border-border bg-popover/95 backdrop-blur-md shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+              >
+                <div className="px-2.5 py-1.5 mb-1 border-b border-border/50">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {t("pages.landing.quick_access", { defaultValue: "Quick Access" })}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {quickAccessItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        to={item.to}
+                        onClick={() => setQuickAccessOpen(false)}
+                        className="group flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/70 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={cn(
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                              item.color,
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                              {item.label}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {item.description}
+                            </p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary shrink-0" />
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {navLinks.slice(2).map((l) => {
             const active =
               l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
             const key = l.kind === "anchor" ? l.href : l.to;
@@ -325,7 +525,7 @@ export function HeroHeader({
               </div>
 
               <nav className="px-4 sm:px-6 py-2 flex flex-col gap-0.5">
-                {navLinks.map((l) => {
+                {navLinks.slice(0, 2).map((l) => {
                   const active =
                     l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
                   const key = l.kind === "anchor" ? l.href : l.to;
@@ -343,14 +543,108 @@ export function HeroHeader({
                       )}
                     />
                   );
-return l.kind === "anchor" ? (
+                  return l.kind === "anchor" ? (
                     <button
                       key={key}
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        // Wait for the drawer's exit animation + body
-                        // scroll-lock release before scrolling, otherwise
-                        // scrollIntoView silently no-ops.
+                        setTimeout(() => handleNavClick(l.href), 260);
+                      }}
+                      className={className}
+                    >
+                      {dot}
+                      {l.label}
+                    </button>
+                  ) : (
+                    <Link
+                      key={key}
+                      to={l.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      {dot}
+                      {l.label}
+                    </Link>
+                  );
+                })}
+
+                {/* Mobile Quick Access */}
+                <div className="py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setMobileQuickAccessOpen((prev) => !prev)}
+                    className="flex w-full items-center justify-between px-3 py-3 rounded-[6px] text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-smooth text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-primary/40" />
+                      <span>{t("pages.landing.quick_access", { defaultValue: "Quick Access" })}</span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                        mobileQuickAccessOpen && "rotate-180 text-primary",
+                      )}
+                    />
+                  </button>
+
+                  {mobileQuickAccessOpen && (
+                    <div className="ml-4 pl-3 border-l border-border/60 my-1 flex flex-col gap-1">
+                      {quickAccessItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.label}
+                            to={item.to}
+                            onClick={() => {
+                              setMobileMenuOpen(false);
+                              setMobileQuickAccessOpen(false);
+                            }}
+                            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md hover:bg-muted/70 transition-colors text-left"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={cn(
+                                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
+                                  item.color,
+                                )}
+                              >
+                                <Icon className="h-3.5 w-3.5" />
+                              </span>
+                              <span className="text-xs font-medium text-foreground truncate">
+                                {item.label}
+                              </span>
+                            </div>
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {navLinks.slice(2).map((l) => {
+                  const active =
+                    l.kind === "anchor" ? activeHash === l.href : location.pathname === l.to;
+                  const key = l.kind === "anchor" ? l.href : l.to;
+                  const className = cn(
+                    "flex items-center gap-3 px-3 py-3 rounded-[6px] text-sm font-medium transition-smooth text-left",
+                    active
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                  );
+                  const dot = (
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full shrink-0",
+                        active ? "bg-primary" : "",
+                      )}
+                    />
+                  );
+                  return l.kind === "anchor" ? (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
                         setTimeout(() => handleNavClick(l.href), 260);
                       }}
                       className={className}

@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 import { toast as sonnerToast } from "sonner";
 import {
@@ -678,16 +679,17 @@ function InsurancePanel({
 
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Type">
-                    <select
+                    <CustomSelect
                       value={form.type}
-                      onChange={(e) => set("type", e.target.value)}
-                      className={selectCls}
-                    >
-                      <option value="">Select type</option>
-                      <option value="public">Public</option>
-                      <option value="private">Private</option>
-                      <option value="mutual">Mutual</option>
-                    </select>
+                      onChange={(val) => set("type", val)}
+                      options={[
+                        { value: "public", label: "Public" },
+                        { value: "private", label: "Private" },
+                        { value: "mutual", label: "Mutual" },
+                      ]}
+                      placeholder="Select type"
+                      className="w-full"
+                    />
                   </Field>
 
                   <Field label="Code">

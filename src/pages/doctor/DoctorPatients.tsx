@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -295,32 +296,14 @@ const DoctorPatients = () => {
               className="w-full h-10 pl-10 pr-4 text-sm bg-background border border-border rounded-[6px] outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 placeholder:text-muted-foreground/60 transition-all"
             />
           </div>
-          <div className="relative flex-shrink-0">
-            <select
-              value={filters.sort}
-              onChange={(e) => set("sort", e.target.value as SortOption)}
-              className="appearance-none h-10 pl-4 pr-10 text-sm bg-background border border-border rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 cursor-pointer"
-            >
-              {SORT_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {t(o.labelKey)}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m6 9 6 6 6-6"
-              />
-            </svg>
-          </div>
+          <CustomSelect
+            value={filters.sort}
+            options={SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
+            onChange={(v) => set("sort", v as SortOption)}
+            label={t("pages.doctor.sort_label", { defaultValue: "Sort" })}
+            compact
+            className="w-[150px]"
+          />
         </div>
       </div>
 

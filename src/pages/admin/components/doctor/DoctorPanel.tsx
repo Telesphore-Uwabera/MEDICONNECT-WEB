@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import type {
   ApiDoctor,
@@ -2250,37 +2251,34 @@ function FeesTab({ doctor }: { doctor: ApiDoctor }) {
                           <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
                             Fee tier
                           </label>
-                          <select
+                          <CustomSelect
                             value={editFeeId}
-                            onChange={(e) => setEditFeeId(e.target.value)}
-                            className={inputCls}
-                          >
-                            <option value="">Select…</option>
-                            {feeOptions
-                              ?.filter((f) => f.is_active)
-                              .map((f) => (
-                                <option key={f.id} value={f.id}>
-                                  {f.specialization} —{" "}
-                                  {Number(f.online_fee).toLocaleString()} /{" "}
-                                  {Number(f.in_person_fee).toLocaleString()} RWF
-                                </option>
-                              ))}
-                          </select>
+                            onChange={(val) => setEditFeeId(val)}
+                            options={[
+                              ...(feeOptions
+                                ?.filter((f) => f.is_active)
+                                .map((f) => ({
+                                  value: f.id,
+                                  label: `${f.specialization} — ${Number(f.online_fee).toLocaleString()} / ${Number(f.in_person_fee).toLocaleString()} RWF`,
+                                })) ?? []),
+                            ]}
+                            placeholder="Select…"
+                            className="w-full"
+                          />
                         </div>
                         <div>
                           <label className="block text-[9px] font-bold uppercase tracking-[0.08em] text-primary/40 mb-1.5">
                             Status
                           </label>
-                          <select
+                          <CustomSelect
                             value={editIsActive ? "1" : "0"}
-                            onChange={(e) =>
-                              setEditIsActive(e.target.value === "1")
-                            }
-                            className={inputCls}
-                          >
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
-                          </select>
+                            onChange={(val) => setEditIsActive(val === "1")}
+                            options={[
+                              { value: "1", label: "Active" },
+                              { value: "0", label: "Inactive" },
+                            ]}
+                            className="w-full"
+                          />
                         </div>
                       </div>
 

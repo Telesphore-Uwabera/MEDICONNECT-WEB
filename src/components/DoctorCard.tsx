@@ -43,6 +43,7 @@ import {
   readConsultSession,
   pruneIfEnded,
 } from "@/hooks/patient/se-consultation-session";
+import { resolveMediaUrl } from "@/lib/image-url";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
@@ -66,7 +67,11 @@ function DoctorAvatar({
     size === "lg"
       ? "h-full w-full text-2xl sm:text-3xl"
       : "h-full w-full text-sm";
-  if (!doctor.image || imgError) {
+
+  const rawImage = doctor.image || doctor.user?.avatar;
+  const imageSrc = resolveMediaUrl(rawImage);
+
+  if (!imageSrc || imgError) {
     return (
       <div
         className={cn(
@@ -80,9 +85,9 @@ function DoctorAvatar({
   }
   return (
     <img
-      src={doctor.image}
+      src={imageSrc}
       alt={doctor.user.name}
-      className="h-full w-full object-cover rounded-[inherit]"
+      className="h-full w-full object-cover object-top sm:object-center rounded-[inherit] transition-transform duration-500 group-hover/img:scale-105"
       onError={() => setImgError(true)}
     />
   );

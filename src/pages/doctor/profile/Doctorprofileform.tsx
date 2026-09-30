@@ -350,6 +350,14 @@ export function DoctorProfileForm({
               file={documents.profile_image}
               existingUrl={documents.existing?.profile_image_url}
               onChange={handleProfileImageChange}
+              cropToCard={{
+                aspectRatio: 4 / 3,
+                targetWidth: 800,
+                targetHeight: 600,
+                title: t("doctorProfile.fit_card_photo", { defaultValue: "Fit Doctor Photo to Card" }),
+                subtitle: t("doctorProfile.fit_card_sub", { defaultValue: "Cut to 800 × 600 px (4:3) so the image fits the card and is fully displayed." }),
+              }}
+              helperText={t("doctorProfile.crop_helper", { defaultValue: "Card fit: 800 × 600 px (4:3). Large images are cut to fit doctor cards." })}
             />
             <FileUploadBox
               label={t("doctorProfile.degree_document")}

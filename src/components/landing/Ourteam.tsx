@@ -317,16 +317,6 @@ function OurTeam() {
   const members = (data?.data ?? [])
     .filter((member) => member.is_active !== false)
     .sort(sortMembers);
-  const [leader, ...rest] = members;
-  const rows = rest.reduce<Record<number, ApiTeamMember[]>>((acc, member) => {
-    const level = member.level ?? 2;
-    if (!acc[level]) acc[level] = [];
-    acc[level].push(member);
-    return acc;
-  }, {});
-  const rowEntries = Object.entries(rows)
-    .map(([level, list]) => [Number(level), list.sort(sortMembers)] as const)
-    .sort(([a], [b]) => a - b);
 
   return (
     <div className="w-full">
@@ -345,19 +335,61 @@ function OurTeam() {
       )}
 
       {!isError && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading ? (
-            Array(4)
-              .fill(null)
-              .map((_, i) => <SkeletonCard key={i} />)
-          ) : members.length === 0 ? (
-            <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-              {t("pages.landing.team_empty")}
-            </p>
-          ) : (
-            members.map((m) => <MemberCard key={m.id} member={m} />)
-          )}
-        </div>
+        <>
+          {/* Inject marquee keyframes once */}
+          <style>{`
+            @keyframes marquee-scroll {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .marquee-track {
+              animation: marquee-scroll 30s linear infinite;
+            }
+            .marquee-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+
+          {/* Overflow mask */}
+          <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent_0%,black_8%,black_92%,transparent_100%)]">
+            {/* Track — duplicated list for seamless loop */}
+            <div className="marquee-track flex w-max gap-4">
+              {isLoading
+                ? Array(8).fill(null).map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-48 shrink-0 flex flex-col items-center gap-3 rounded-[6px] border border-border bg-card p-5 animate-pulse"
+                    >
+                      <div className="h-24 w-24 rounded-full bg-muted" />
+                      <div className="h-3 w-28 rounded bg-muted" />
+                      <div className="h-3 w-20 rounded bg-muted" />
+                    </div>
+                  ))
+                : members.length === 0
+                  ? (
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      {t("pages.landing.team_empty")}
+                    </p>
+                  )
+                  : (
+                    <>
+                      {/* First copy */}
+                      {members.map((m) => (
+                        <div key={`a-${m.id}`} className="shrink-0 w-52">
+                          <MemberCard member={m} />
+                        </div>
+                      ))}
+                      {/* Duplicate copy for seamless wrap */}
+                      {members.map((m) => (
+                        <div key={`b-${m.id}`} className="shrink-0 w-52" aria-hidden="true">
+                          <MemberCard member={m} />
+                        </div>
+                      ))}
+                    </>
+                  )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

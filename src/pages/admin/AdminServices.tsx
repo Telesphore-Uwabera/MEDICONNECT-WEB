@@ -18,6 +18,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   RichTextarea,
   RichTextRenderer,
@@ -544,29 +545,17 @@ export default function AdminServices() {
                     className="h-9 w-full rounded-[6px] border border-border bg-background pl-9 pr-3 text-[12px] outline-none focus:border-primary"
                   />
                 </div>
-                <select
+                <CustomSelect
                   value={status}
-                  onChange={(event) =>
-                    setStatus(event.target.value as StatusFilter)
-                  }
-                  className="h-9 rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary"
-                >
-                  <option value="all">
-                    {t("admin.services.all_statuses", {
-                      defaultValue: "All statuses",
-                    })}
-                  </option>
-                  <option value="active">
-                    {t("admin.services.active_status", {
-                      defaultValue: "Active",
-                    })}
-                  </option>
-                  <option value="inactive">
-                    {t("admin.services.inactive_status", {
-                      defaultValue: "Inactive",
-                    })}
-                  </option>
-                </select>
+                  onChange={(val) => setStatus(val as StatusFilter)}
+                  options={[
+                    { value: "all", label: t("admin.services.all_statuses", { defaultValue: "All statuses" }) },
+                    { value: "active", label: t("admin.services.active_status", { defaultValue: "Active" }) },
+                    { value: "inactive", label: t("admin.services.inactive_status", { defaultValue: "Inactive" }) },
+                  ]}
+                  compact
+                  className="w-[130px]"
+                />
                 <Button onClick={openCreate} className="rounded-[6px] h-8">
                   <Plus className="mr-2 h-4 w-4" />
                   {t("admin.services.new_service", {

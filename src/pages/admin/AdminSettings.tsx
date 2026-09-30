@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { formatDateOnly } from "@/lib/date";
 import {  User,
   Lock,
@@ -779,23 +780,21 @@ function AdminSettings() {
                       />
                     </Field>
                     <Field label="Preferred language" required>
-                      <select
+                      <CustomSelect
                         value={profileForm.preferred_language}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setProfileForm((p) => ({
                             ...p,
-                            preferred_language: e.target.value as
-                              | "en"
-                              | "fr"
-                              | "rw",
+                            preferred_language: val as "en" | "fr" | "rw",
                           }))
                         }
-                        className={selectCls}
-                      >
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                        <option value="rw">Kinyarwanda</option>
-                      </select>
+                        options={[
+                          { value: "en", label: "English" },
+                          { value: "fr", label: "Français" },
+                          { value: "rw", label: "Kinyarwanda" },
+                        ]}
+                        className="w-full"
+                      />
                     </Field>
                     <div className="flex gap-2">
                       <Button

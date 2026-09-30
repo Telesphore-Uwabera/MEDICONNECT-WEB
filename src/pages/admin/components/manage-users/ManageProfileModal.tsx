@@ -32,6 +32,7 @@ import {
   useUploadHospitalGallery,
 } from "@/hooks/admin/use-admin-manage-users";
 import { useGetPublicInsurances } from "@/hooks/use-patient-profile";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -268,12 +269,17 @@ function DoctorProfileForm({ userId }: { userId: number }) {
         />
         <div className="space-y-1">
           <Field label="Document type">
-            <select value={docType} onChange={(e) => setDocType(e.target.value as DoctorDocumentType)} className={inputCls}>
-              <option value="degree_document">Degree document</option>
-              <option value="medical_license_document">Medical license</option>
-              <option value="national_id_document">National ID</option>
-              <option value="cv_document">CV</option>
-            </select>
+            <CustomSelect
+              value={docType}
+              onChange={(val) => setDocType(val as DoctorDocumentType)}
+              options={[
+                { value: "degree_document", label: "Degree document" },
+                { value: "medical_license_document", label: "Medical license" },
+                { value: "national_id_document", label: "National ID" },
+                { value: "cv_document", label: "CV" },
+              ]}
+              className="w-full"
+            />
           </Field>
           <FileField
             label="Upload document"
@@ -374,21 +380,27 @@ function PatientProfileForm({ userId }: { userId: number }) {
       <div className="grid grid-cols-2 gap-3">
         <Field label="Date of birth"><Text type="date" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} /></Field>
         <Field label="Gender">
-          <select value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))} className={inputCls}>
-            <option value="">Select</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+          <CustomSelect
+            value={form.gender}
+            onChange={(val) => setForm((f) => ({ ...f, gender: val }))}
+            options={[
+              { value: "male", label: "Male" },
+              { value: "female", label: "Female" },
+              { value: "other", label: "Other" },
+            ]}
+            placeholder="Select gender"
+            className="w-full"
+          />
         </Field>
         <Field label="National ID"><Text value={form.national_id} onChange={(v) => setForm((f) => ({ ...f, national_id: v }))} /></Field>
         <Field label="Blood type">
-          <select value={form.blood_type} onChange={(e) => setForm((f) => ({ ...f, blood_type: e.target.value }))} className={inputCls}>
-            <option value="">Select blood type</option>
-            {BLOOD_TYPES.map((blood) => (
-              <option key={blood} value={blood}>{blood}</option>
-            ))}
-          </select>
+          <CustomSelect
+            value={form.blood_type}
+            onChange={(val) => setForm((f) => ({ ...f, blood_type: val }))}
+            options={BLOOD_TYPES.map((blood) => ({ value: blood, label: blood }))}
+            placeholder="Select blood type"
+            className="w-full"
+          />
         </Field>
         <Field label="City"><Text value={form.city} onChange={(v) => setForm((f) => ({ ...f, city: v }))} /></Field>
         <Field label="Province"><Text value={form.province} onChange={(v) => setForm((f) => ({ ...f, province: v }))} /></Field>
@@ -398,13 +410,18 @@ function PatientProfileForm({ userId }: { userId: number }) {
         <Field label="Emergency contact phone"><Text value={form.emergency_contact_phone} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_phone: v }))} /></Field>
         <Field label="Emergency relation"><Text value={form.emergency_contact_relation} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_relation: v }))} /></Field>
         <Field label="Preferred language">
-          <select value={form.preferred_language} onChange={(e) => setForm((f) => ({ ...f, preferred_language: e.target.value }))} className={inputCls}>
-            <option value="">Select</option>
-            <option value="en">English</option>
-            <option value="fr">French</option>
-            <option value="kiny">Kinyarwanda</option>
-            <option value="rw">Kinyarwanda (rw)</option>
-          </select>
+          <CustomSelect
+            value={form.preferred_language}
+            onChange={(val) => setForm((f) => ({ ...f, preferred_language: val }))}
+            options={[
+              { value: "en", label: "English" },
+              { value: "fr", label: "French" },
+              { value: "kiny", label: "Kinyarwanda" },
+              { value: "rw", label: "Kinyarwanda (rw)" },
+            ]}
+            placeholder="Select language"
+            className="w-full"
+          />
         </Field>
       </div>
       <SaveBar
@@ -472,14 +489,16 @@ function PatientProfileForm({ userId }: { userId: number }) {
       )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Insurance provider">
-          <select value={insuranceId} onChange={(e) => setInsuranceId(e.target.value)} className={inputCls} disabled={isLoadingPublicInsurances}>
-            <option value="">{isLoadingPublicInsurances ? "Loading providers..." : "Select provider"}</option>
-            {publicInsurances.map((ins) => (
-              <option key={ins.id} value={String(ins.id)}>
-                {ins.name} ({ins.code}) - {parseFloat(ins.coverage_percentage)}%
-              </option>
-            ))}
-          </select>
+          <CustomSelect
+            value={insuranceId}
+            onChange={(val) => setInsuranceId(val)}
+            options={publicInsurances.map((ins) => ({
+              value: String(ins.id),
+              label: `${ins.name} (${ins.code}) - ${parseFloat(ins.coverage_percentage)}%`,
+            }))}
+            placeholder={isLoadingPublicInsurances ? "Loading providers..." : "Select provider"}
+            className="w-full"
+          />
         </Field>
         <Field label="Insurance number"><Text value={insuranceNumber} onChange={setInsuranceNumber} placeholder="RSSB-2024-88213" /></Field>
       </div>

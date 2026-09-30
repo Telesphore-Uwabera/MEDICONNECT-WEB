@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api";
 import { useCreatePrescription } from "@/hooks/doctor/use-doctor-prescriptions";
 import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
+import { CustomSelect } from "@/components/ui/custom-select";
 // import { useGetAppointments, type Appointment } from "@/hooks/useDoctorAppointments";
 // import { useCreatePrescription } from "@/hooks/useDoctorPrescriptions";
  
@@ -524,19 +525,22 @@ function MedicationRow({
       {/* Frequency + duration */}
       <div className="grid grid-cols-2 gap-2">
         <Field label={t("pages.doctor.frequency")} required>
-          <select
-            value={FREQUENCY_PRESETS.includes(item.frequency) ? item.frequency : "__custom"}
-            onChange={(e) => {
-              if (e.target.value !== "__custom") onChange(index, "frequency", e.target.value);
+          <CustomSelect
+            value={FREQUENCY_PRESETS.includes(item.frequency) ? item.frequency : (item.frequency ? "__custom" : "")}
+            onChange={(val) => {
+              if (val !== "__custom") onChange(index, "frequency", val);
+              else if (FREQUENCY_PRESETS.includes(item.frequency)) onChange(index, "frequency", "");
             }}
-            className={inputCls}
-          >
-            <option value="" disabled>{t("pages.doctor.select")}</option>
-            {FREQUENCY_PRESETS.map((f) => (
-              <option key={f} value={f}>{t(`pages.doctor.rx_frequency_${FREQUENCY_PRESETS.indexOf(f)}`)}</option>
-            ))}
-            <option value="__custom">{t("pages.doctor.custom")}</option>
-          </select>
+            options={[
+              ...FREQUENCY_PRESETS.map((f) => ({
+                value: f,
+                label: t(`pages.doctor.rx_frequency_${FREQUENCY_PRESETS.indexOf(f)}`),
+              })),
+              { value: "__custom", label: t("pages.doctor.custom") },
+            ]}
+            placeholder={t("pages.doctor.select")}
+            className="w-full"
+          />
           {(!FREQUENCY_PRESETS.includes(item.frequency) || item.frequency === "") && (
             <input
               value={item.frequency}
@@ -547,19 +551,22 @@ function MedicationRow({
           )}
         </Field>
         <Field label={t("pages.doctor.duration")} required>
-          <select
-            value={DURATION_PRESETS.includes(item.duration) ? item.duration : "__custom"}
-            onChange={(e) => {
-              if (e.target.value !== "__custom") onChange(index, "duration", e.target.value);
+          <CustomSelect
+            value={DURATION_PRESETS.includes(item.duration) ? item.duration : (item.duration ? "__custom" : "")}
+            onChange={(val) => {
+              if (val !== "__custom") onChange(index, "duration", val);
+              else if (DURATION_PRESETS.includes(item.duration)) onChange(index, "duration", "");
             }}
-            className={inputCls}
-          >
-            <option value="" disabled>{t("pages.doctor.select")}</option>
-            {DURATION_PRESETS.map((d) => (
-              <option key={d} value={d}>{t(`pages.doctor.rx_duration_${DURATION_PRESETS.indexOf(d)}`)}</option>
-            ))}
-            <option value="__custom">{t("pages.doctor.custom")}</option>
-          </select>
+            options={[
+              ...DURATION_PRESETS.map((d) => ({
+                value: d,
+                label: t(`pages.doctor.rx_duration_${DURATION_PRESETS.indexOf(d)}`),
+              })),
+              { value: "__custom", label: t("pages.doctor.custom") },
+            ]}
+            placeholder={t("pages.doctor.select")}
+            className="w-full"
+          />
           {(!DURATION_PRESETS.includes(item.duration) || item.duration === "") && (
             <input
               value={item.duration}

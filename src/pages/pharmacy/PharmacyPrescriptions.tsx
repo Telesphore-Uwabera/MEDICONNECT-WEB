@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 import {
   useGetPrescriptionRequests,
@@ -1025,18 +1026,16 @@ const PharmacyPrescriptions = () => {
                 />
               </div>
 
-              <div className="relative">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{t(o.label)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={filters.sort}
+                options={SORT_OPTIONS.map((o) => ({
+                  value: o.value,
+                  label: t(o.label),
+                }))}
+                onChange={(val) => set("sort", val as SortOption)}
+                compact
+                className="w-[140px]"
+              />
 
               <FilterToggleButton
                 open={filterOpen}
@@ -1157,15 +1156,13 @@ const PharmacyPrescriptions = () => {
                       </span>
                       <div className="flex items-center gap-1 ml-2">
                         <span className="text-[10px] text-muted-foreground">{t("pages.pharmacy.rows")}</span>
-                        <select
-                          value={pageSize}
-                          onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                          className="text-[10px] bg-background border border-border/60 rounded-[6px] px-1.5 py-0.5 outline-none focus:border-primary/50"
-                        >
-                          {[10, 25, 50, 100].map((n) => (
-                            <option key={n} value={n}>{n}</option>
-                          ))}
-                        </select>
+                        <CustomSelect
+                          value={String(pageSize)}
+                          options={[10, 25, 50, 100].map((n) => ({ value: String(n), label: String(n) }))}
+                          onChange={(val) => { setPageSize(Number(val)); setPage(1); }}
+                          compact
+                          className="w-[70px]"
+                        />
                       </div>
                     </div>
 

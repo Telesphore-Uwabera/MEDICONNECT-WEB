@@ -53,6 +53,7 @@ import {
   Check,
 } from "lucide-react";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   useGetAdminUsers,
   useSuspendUser,
@@ -1034,13 +1035,14 @@ function FormSelect({
   compact?: boolean;
 }) {
   return (
-    <label className={cn("space-y-1", compact && "min-w-[180px]")}>
+    <label className={cn("space-y-1 block", compact && "min-w-[180px]")}>
       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50">
-        {options.map((option) => (
-          <option key={option} value={option}>{option || "Select"}</option>
-        ))}
-      </select>
+      <CustomSelect
+        value={value}
+        onChange={(val) => onChange(val)}
+        options={options.map((option) => ({ value: option, label: option || "Select" }))}
+        className="w-full"
+      />
     </label>
   );
 }
@@ -1394,9 +1396,13 @@ function StaffManagementPanel({ search }: { search: string }) {
                     <td className="px-4 py-3 font-semibold text-foreground">{member.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
                     <td className="px-4 py-3">
-                      <select value={currentRole} onChange={(e) => action(updateRole.mutateAsync({ id: member.id, role: e.target.value as CreateStaffPayload["role"] }), "Staff role updated.")} className="h-8 rounded-[6px] border border-border bg-background px-2 text-[11px]">
-                        {["moderator", "finance", "help_desk"].map((r) => <option key={r} value={r}>{r}</option>)}
-                      </select>
+                      <CustomSelect
+                        value={currentRole}
+                        onChange={(val) => action(updateRole.mutateAsync({ id: member.id, role: val as CreateStaffPayload["role"] }), "Staff role updated.")}
+                        options={["moderator", "finance", "help_desk"].map((r) => ({ value: r, label: r }))}
+                        compact
+                        className="w-[110px]"
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="outline" className={cn("text-[9px] capitalize", statusStyle[member.status ?? "active"])}>{member.status ?? "active"}</Badge>
@@ -2165,20 +2171,13 @@ const AdminUsers = () => {
             </button>
 
             {/* Sort */}
-            <div className="relative shrink-0">
-              <select
-                value={filters.sort}
-                onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="h-8 appearance-none pl-2.5 pr-7 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer w-[170px] sm:w-[190px]"
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-            </div>
+            <CustomSelect
+              value={filters.sort}
+              options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+              onChange={(val) => set("sort", val as SortOption)}
+              compact
+              className="w-[170px] sm:w-[190px]"
+            />
 
             <FilterToggleButton
               open={filterOpen}
@@ -2659,12 +2658,15 @@ function AdminUserEditModal({
     </label>
   );
   const select = (key: string, label: string, options: string[]) => (
-    <label className="space-y-1">
+    <label className="space-y-1 block">
       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">{label}</span>
-      <select value={String(form[key] ?? "")} onChange={(e) => setValue(key, e.target.value)} className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50">
-        <option value="">Select</option>
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
-      </select>
+      <CustomSelect
+        value={String(form[key] ?? "")}
+        onChange={(val) => setValue(key, val)}
+        options={options.map((option) => ({ value: option, label: option }))}
+        placeholder="Select"
+        className="w-full"
+      />
     </label>
   );
   const checkbox = (key: string, label: string) => (

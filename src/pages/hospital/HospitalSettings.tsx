@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 import { toast as sonnerToast } from "sonner";
 import {
@@ -731,20 +732,21 @@ function HospitalSettings() {
                       />
                     </Field>
                     <Field label={t("pages.hospital.settings_preferred_language")} required>
-                      <select
+                      <CustomSelect
                         value={profileForm.preferred_language}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setProfileForm((p) => ({
                             ...p,
-                            preferred_language: e.target.value as "en" | "fr" | "rw",
+                            preferred_language: val as "en" | "fr" | "rw",
                           }))
                         }
-                        className={selectCls}
-                      >
-                        <option value="en">{t("pages.hospital.settings_lang_en")}</option>
-                        <option value="fr">{t("pages.hospital.settings_lang_fr")}</option>
-                        <option value="rw">{t("pages.hospital.settings_lang_rw")}</option>
-                      </select>
+                        options={[
+                          { value: "en", label: t("pages.hospital.settings_lang_en") },
+                          { value: "fr", label: t("pages.hospital.settings_lang_fr") },
+                          { value: "rw", label: t("pages.hospital.settings_lang_rw") },
+                        ]}
+                        className="w-full"
+                      />
                     </Field>
                     <div className="flex gap-2">
                       <Button

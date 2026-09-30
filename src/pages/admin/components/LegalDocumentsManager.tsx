@@ -5,6 +5,7 @@ import { CheckCircle2, ExternalLink, FileText, Loader2, Plus, RefreshCw, Save, T
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/getErrorMessage";
@@ -360,10 +361,15 @@ export function LegalDocumentsManager() {
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <Field label="Document type">
-              <select value={type} onChange={(event) => setType(event.target.value as LegalDocumentType)} className={inputClass}>
-                <option value="terms">Terms</option>
-                <option value="privacy">Privacy</option>
-              </select>
+              <CustomSelect
+                value={type}
+                onChange={(val) => setType(val as LegalDocumentType)}
+                options={[
+                  { value: "terms", label: "Terms" },
+                  { value: "privacy", label: "Privacy" },
+                ]}
+                className="w-full"
+              />
             </Field>
             <Field label="Version">
               <input value={form.version} onChange={(event) => setField("version", event.target.value)} className={inputClass} placeholder="1.0" />

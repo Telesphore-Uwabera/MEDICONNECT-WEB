@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
@@ -367,14 +368,15 @@ const handleSend = async () => {
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                       Target
                     </span>
-                    <select
+                    <CustomSelect
                       value={target}
-                      onChange={(e) => setTarget(e.target.value as MultiNotificationTarget)}
-                      className={INPUT_CLASS}
-                    >
-                      <option value="roles">Roles</option>
-                      <option value="users">Specific users</option>
-                    </select>
+                      onChange={(val) => setTarget(val as MultiNotificationTarget)}
+                      options={[
+                        { value: "roles", label: "Roles" },
+                        { value: "users", label: "Specific users" },
+                      ]}
+                      className="w-full"
+                    />
                   </label>
 
                   {target === "users" ? (

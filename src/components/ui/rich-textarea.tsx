@@ -31,6 +31,7 @@ import TiptapImage from "@tiptap/extension-image";
 import TextAlign from "@tiptap/extension-text-align";
 
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 const ALLOWED_TAGS = new Set([
   "A",
@@ -504,26 +505,25 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         )}
       >
         <div className="flex flex-wrap items-center gap-1 border-b border-border/70 bg-muted/30 p-1.5">
-          <select
+          <CustomSelect
             disabled={disabled}
             value="p"
             aria-label="Text style"
-            onChange={(e) => {
+            onChange={(val) => {
               if (!editor) return;
-              const v = e.target.value;
+              const v = val;
               const chain = editor.chain().focus();
               if (v === "p") chain.setParagraph().run();
               else if (v === "blockquote") chain.toggleBlockquote().run();
               else chain.toggleHeading({ level: Number(v.slice(1)) as 1 | 2 | 3 }).run();
             }}
-            className="h-7 rounded-[6px] border border-border bg-background px-2 text-[11px] text-foreground outline-none disabled:opacity-50"
-          >
-            {FORMAT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            options={FORMAT_OPTIONS.map((option) => ({
+              value: option.value,
+              label: option.label,
+            }))}
+            compact
+            className="w-[95px]"
+          />
 
           <button
             type="button"
@@ -764,7 +764,7 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
           {selectedImageAttrs && (
             <div className="ml-1 flex items-center gap-1 border-l border-border pl-2">
-              <select
+              <CustomSelect
                 aria-label="Image size"
                 disabled={disabled}
                 value={
@@ -772,15 +772,14 @@ export const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
                     ? selectedImageAttrs.width
                     : "100%"
                 }
-                onChange={(e) => setImageWidth(e.target.value)}
-                className="h-7 rounded-[6px] border border-border bg-background px-2 text-[11px] text-foreground outline-none disabled:opacity-50"
-              >
-                {IMAGE_WIDTHS.map((width) => (
-                  <option key={width} value={width}>
-                    {width}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setImageWidth(val)}
+                options={IMAGE_WIDTHS.map((width) => ({
+                  value: width,
+                  label: width,
+                }))}
+                compact
+                className="w-[80px]"
+              />
 
               <button
                 type="button"

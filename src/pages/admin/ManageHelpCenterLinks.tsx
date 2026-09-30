@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -173,17 +174,15 @@ function LinkPanel({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Category *</label>
-              <select
-                className={inputCls}
+              <CustomSelect
                 value={form.category}
-                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value as HelpCenterCategory }))}
-              >
-                {CATEGORY_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setForm((p) => ({ ...p, category: val as HelpCenterCategory }))}
+                options={CATEGORY_OPTIONS.map((c) => ({
+                  value: c.value,
+                  label: c.label,
+                }))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className={labelCls}>Order</label>
@@ -382,21 +381,19 @@ function ManageHelpCenterLinks() {
                   className="w-52 pl-8 pr-3 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 placeholder:text-muted-foreground/40 transition-all"
                 />
               </div>
-              <div className="relative">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value as HelpCenterCategory | "")}
-                  className="appearance-none pl-3 pr-7 py-2 text-[12px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-                >
-                  <option value="">All categories</option>
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={categoryFilter}
+                onChange={(val) => setCategoryFilter(val as HelpCenterCategory | "")}
+                options={[
+                  { value: "", label: "All categories" },
+                  ...CATEGORY_OPTIONS.map((c) => ({
+                    value: c.value,
+                    label: c.label,
+                  })),
+                ]}
+                compact
+                className="w-[140px]"
+              />
             </div>
             <Button
               className="h-9 px-4 text-[12px] rounded-[6px] gap-1.5"

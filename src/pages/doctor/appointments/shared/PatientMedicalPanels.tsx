@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   usePatientMedicalRecord,
   usePatientVisits,
@@ -209,11 +210,15 @@ export function PatientFilesPanel({
             className="block w-full text-[11px] text-muted-foreground file:mr-3 file:h-7 file:px-3 file:rounded-[5px] file:border-0 file:bg-primary file:text-primary-foreground file:text-[11px] file:font-medium hover:file:bg-primary/90"
           />
           <div className="grid grid-cols-2 gap-2">
-            <select value={fileType} onChange={(e) => setFileType(e.target.value as FileType)} className={cn(inputCls, "appearance-none")}>
-              {FILE_TYPES.map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
-              ))}
-            </select>
+            <CustomSelect
+              value={fileType}
+              onChange={(val) => setFileType(val as FileType)}
+              options={FILE_TYPES.map((t) => ({
+                value: t,
+                label: t.replace(/_/g, " "),
+              }))}
+              className="w-full"
+            />
             <input value={fileTitle} onChange={(e) => setFileTitle(e.target.value)} placeholder={t("consult.files.title_field")} className={inputCls} />
           </div>
           <input value={fileNotes} onChange={(e) => setFileNotes(e.target.value)} placeholder={t("consult.files.notes_optional")} className={inputCls} />

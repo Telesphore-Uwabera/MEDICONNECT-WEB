@@ -1,12 +1,14 @@
 import { ReactNode } from "react";
 import { SlidersHorizontal, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CustomSelect } from "./ui/custom-select";
 
 /* ─── Types ──────────────────────────────────────────────────────────── */
 
 export interface FilterOption<T extends string = string> {
   value: T;
   label: string;
+  icon?: React.ReactNode | React.ComponentType<{ className?: string }>;
 }
 
 export type FilterFieldDef =
@@ -55,10 +57,7 @@ export interface FilterBarProps {
   };
 }
 
-/* ─── Select className ───────────────────────────────────────────────── */
-
-const selectCls =
-  "w-full h-8 px-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all";
+/* ─── Shared classNames ──────────────────────────────────────────────── */
 
 const inputCls =
   "w-full h-8 pl-7 pr-2.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all";
@@ -109,22 +108,13 @@ function FilterField({
       )}
 
       {field.type === "select" && (
-        <select
+        <CustomSelect
           value={field.value}
-          onChange={(e) => field.onChange(e.target.value)}
-          aria-label={field.label}
-          className={cn(
-            selectCls,
-            compact &&
-              "h-9 rounded-[6px] bg-secondary/70 px-3 pr-7 text-[12px] font-semibold shadow-sm",
-          )}
-        >
-          {field.options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={field.options}
+          onChange={field.onChange}
+          label={field.label}
+          compact={compact}
+        />
       )}
 
       {field.type === "custom" && field.render()}

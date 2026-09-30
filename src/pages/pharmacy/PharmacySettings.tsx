@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { CustomSelect } from "@/components/ui/custom-select";
 import {
   User,
   Lock,
@@ -890,20 +891,21 @@ function PharmacySettings() {
                       />
                     </Field>
                     <Field label={t("pages.pharmacy.preferred_language")} required>
-                      <select
+                      <CustomSelect
                         value={profileForm.preferred_language}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setProfileForm((p) => ({
                             ...p,
-                            preferred_language: e.target.value as "en" | "fr" | "rw",
+                            preferred_language: val as "en" | "fr" | "rw",
                           }))
                         }
-                        className={selectCls}
-                      >
-                        <option value="en">{t("pages.pharmacy.settings_lang_en")}</option>
-                        <option value="fr">Français</option>
-                        <option value="rw">{t("pages.pharmacy.settings_lang_rw")}</option>
-                      </select>
+                        options={[
+                          { value: "en", label: t("pages.pharmacy.settings_lang_en") },
+                          { value: "fr", label: "Français" },
+                          { value: "rw", label: t("pages.pharmacy.settings_lang_rw") },
+                        ]}
+                        className="w-full"
+                      />
                     </Field>
                     <div className="flex gap-2">
                       <Button
@@ -1341,20 +1343,21 @@ function PharmacySettings() {
                         />
                       </Field>
                       <Field label={t("pages.pharmacy.auth_type")} required>
-                        <select
+                        <CustomSelect
                           value={externalProviderForm.auth_type}
-                          onChange={(e) =>
+                          onChange={(val) =>
                             setExternalProviderForm((prev) => ({
                               ...prev,
-                              auth_type: e.target.value as PharmacyExternalAuthType,
+                              auth_type: val as PharmacyExternalAuthType,
                             }))
                           }
-                          className={selectCls}
-                        >
-                          <option value="api_key">{t("pages.pharmacy.api_key")}</option>
-                          <option value="bearer">{t("pages.pharmacy.bearer_token")}</option>
-                          <option value="basic">{t("pages.pharmacy.basic_auth")}</option>
-                        </select>
+                          options={[
+                            { value: "api_key", label: t("pages.pharmacy.api_key") },
+                            { value: "bearer", label: t("pages.pharmacy.bearer_token") },
+                            { value: "basic", label: t("pages.pharmacy.basic_auth") },
+                          ]}
+                          className="w-full"
+                        />
                       </Field>
                       <Field label={t("pages.pharmacy.api_key")} required>
                         <input
@@ -1553,19 +1556,20 @@ function PharmacySettings() {
                                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
                                   {t("pages.pharmacy.interval")}
                                 </span>
-                                <select
-                                  value={provider.sync_interval_minutes}
-                                  onClick={(event) => event.stopPropagation()}
-                                  onChange={(event) =>
-                                    handleUpdateProviderInterval(provider.id, Number(event.target.value))
+                                <CustomSelect
+                                  value={String(provider.sync_interval_minutes)}
+                                  onChange={(val) =>
+                                    handleUpdateProviderInterval(provider.id, Number(val))
                                   }
-                                  className="h-7 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] text-foreground"
-                                >
-                                  <option value={15}>15 min</option>
-                                  <option value={30}>30 min</option>
-                                  <option value={60}>60 min</option>
-                                  <option value={120}>2 hours</option>
-                                </select>
+                                  options={[
+                                    { value: "15", label: "15 min" },
+                                    { value: "30", label: "30 min" },
+                                    { value: "60", label: "60 min" },
+                                    { value: "120", label: "2 hours" },
+                                  ]}
+                                  compact
+                                  className="w-[95px]"
+                                />
                               </div>
                             </button>
                           ))}

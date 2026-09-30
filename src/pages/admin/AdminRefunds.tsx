@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/StatCard";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { cn } from "@/lib/utils";
 import {
   useAdminRefunds,
@@ -234,21 +235,20 @@ export default function AdminRefunds() {
                 className="h-10 rounded-[6px] pl-9"
               />
             </div>
-            <select
+            <CustomSelect
               value={filters.status}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, status: event.target.value }))
+              onChange={(val) =>
+                setFilters((current) => ({ ...current, status: val }))
               }
-              className="h-10 rounded-[6px] border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none"
-            >
-              {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {t(`pages.admin.refunds.status_${status}`, {
-                    defaultValue: status === "all" ? "All statuses" : status,
-                  })}
-                </option>
-              ))}
-            </select>
+              options={STATUSES.map((status) => ({
+                value: status,
+                label: t(`pages.admin.refunds.status_${status}`, {
+                  defaultValue: status === "all" ? "All statuses" : status,
+                }),
+              }))}
+              compact
+              className="w-[140px]"
+            />
             <Input
               type="date"
               value={filters.from}

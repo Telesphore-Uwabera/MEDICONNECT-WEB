@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ import {
   useRequestDoctorWithdrawal,
 } from "@/hooks/doctor/use-doctor-wallet";
 import { NavLink } from "@/components/NavLink";
+import { CustomSelect } from "@/components/ui/custom-select";
 
  
 const PERIOD_OPTIONS: { value: Period; labelKey: string }[] = [
@@ -1496,16 +1497,17 @@ const DoctorOverview = () => {
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                               {t("pages.doctor.method")}
                             </span>
-                            <select
+                            <CustomSelect
                               value={withdrawalForm.method}
-                              onChange={(event) =>
-                                setWithdrawalForm((prev) => ({ ...prev, method: event.target.value }))
+                              onChange={(val) =>
+                                setWithdrawalForm((prev) => ({ ...prev, method: val }))
                               }
-                              className="h-9 w-full rounded-[6px] border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
-                            >
-                              <option value="bank_transfer">{t("pages.doctor.payout_method.bank_transfer")}</option>
-                              <option value="mobile_money">{t("pages.doctor.payout_method.mobile_money")}</option>
-                            </select>
+                              options={[
+                                { value: "bank_transfer", label: t("pages.doctor.payout_method.bank_transfer") },
+                                { value: "mobile_money", label: t("pages.doctor.payout_method.mobile_money") },
+                              ]}
+                              className="w-full"
+                            />
                           </label>
                         </div>
 
@@ -1805,16 +1807,17 @@ const DoctorOverview = () => {
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {t("pages.doctor.method")}
                 </span>
-                <select
+                <CustomSelect
                   value={withdrawalForm.method}
-                  onChange={(event) =>
-                    setWithdrawalForm((prev) => ({ ...prev, method: event.target.value }))
+                  onChange={(val) =>
+                    setWithdrawalForm((prev) => ({ ...prev, method: val }))
                   }
-                  className="h-10 w-full rounded-[6px] border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
-                >
-                  <option value="bank_transfer">{t("pages.doctor.payout_method.bank_transfer")}</option>
-                  <option value="mobile_money">{t("pages.doctor.payout_method.mobile_money")}</option>
-                </select>
+                  options={[
+                    { value: "bank_transfer", label: t("pages.doctor.payout_method.bank_transfer") },
+                    { value: "mobile_money", label: t("pages.doctor.payout_method.mobile_money") },
+                  ]}
+                  className="w-full"
+                />
               </label>
             </div>
 

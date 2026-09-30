@@ -49,6 +49,7 @@ import { usePatientPaymentStatus, useVerifyPatientPayment, type PaymentLookupPar
 import { getRefundsFromResponse, useCreatePatientRefund, usePatientRefunds } from "@/hooks/patient/use-patient-refunds";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -600,17 +601,16 @@ function PaymentLookupPanel() {
               <h3 className="text-sm font-bold text-foreground">
                 {t("pages.patient.refunds_history_title")}
               </h3>
-              <select
+              <CustomSelect
                 value={refundStatusFilter}
-                onChange={(event) => setRefundStatusFilter(event.target.value)}
-                className="h-9 rounded-[6px] border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none"
-              >
-                {["all", "pending", "approved", "rejected", "completed"].map((status) => (
-                  <option key={status} value={status}>
-                    {t(`pages.patient.refund_status_${status}`)}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setRefundStatusFilter(val)}
+                options={["all", "pending", "approved", "rejected", "completed"].map((status) => ({
+                  value: status,
+                  label: t(`pages.patient.refund_status_${status}`),
+                }))}
+                compact
+                className="w-[140px]"
+              />
             </div>
 
             <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">

@@ -26,6 +26,7 @@ import {
 } from "@/hooks/patient/use-patient-search-hospital";
 import { HospitalCard } from "@/components/HospitalCard";
 import HospitalListItem from "../hospital/HospitalListItem";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -538,15 +539,14 @@ const PatientHospitals = () => {
 
               <div className="flex items-center gap-2">
                 {/* Sort */}
-                <select
+                <CustomSelect
                   value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[13px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                  options={SORT_OPTIONS}
+                  onChange={(v) => set("sort", v as SortOption)}
+                  label={t("pages.patient.sort_label", { defaultValue: "Sort" })}
+                  compact
+                  className="hidden sm:block w-[160px]"
+                />
 
                 <FilterToggleButton
                   open={filterOpen}

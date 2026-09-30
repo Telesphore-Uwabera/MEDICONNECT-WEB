@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 import { toast as sonnerToast } from "sonner";
 import {
@@ -607,10 +608,17 @@ function DoctorSettings() {
                     accept=".jpg,.jpeg,.png,.webp"
                     value={null}
                     onChange={handleAvatarChange}
-                    maxSizeMb={2}
+                    cropToCard={{
+                      aspectRatio: 4 / 3,
+                      targetWidth: 800,
+                      targetHeight: 600,
+                      title: t("pages.doctor.fit_avatar_card", { defaultValue: "Fit Doctor Photo to Card" }),
+                      subtitle: t("pages.doctor.fit_avatar_sub", { defaultValue: "Cut to 800 × 600 px (4:3) so the image fits the card and is fully displayed." }),
+                    }}
+                    maxSizeMb={10}
                     existingUrl={showAvatar ? settings?.avatar : null}
                     className="w-[220px] min-h-[76px] px-3 py-3"
-                    helperText={t("common.fileUploader.avatarHelper", { defaultValue: "Click or drag a JPG, PNG, or WebP image. Max 2 MB." })}
+                    helperText={t("pages.doctor.photo_card_hint", { defaultValue: "Card fit: 800 × 600 px (4:3). Large images are cut to fit cards." })}
                   />
                   {showAvatar && (
                     <Button
@@ -730,20 +738,21 @@ function DoctorSettings() {
                       />
                     </Field>
                     <Field label={t("pages.doctor.settings_preferred_language")} required>
-                      <select
+                      <CustomSelect
                         value={profileForm.preferred_language}
-                        onChange={(e) =>
+                        options={[
+                          { value: "en", label: t("pages.doctor.settings_lang_en") },
+                          { value: "fr", label: t("pages.doctor.settings_lang_fr") },
+                          { value: "rw", label: t("pages.doctor.settings_lang_rw") },
+                        ]}
+                        onChange={(v) =>
                           setProfileForm((p) => ({
                             ...p,
-                            preferred_language: e.target.value as "en" | "fr" | "rw",
+                            preferred_language: v as "en" | "fr" | "rw",
                           }))
                         }
-                        className={selectCls}
-                      >
-                        <option value="en">{t("pages.doctor.settings_lang_en")}</option>
-                        <option value="fr">{t("pages.doctor.settings_lang_fr")}</option>
-                        <option value="rw">{t("pages.doctor.settings_lang_rw")}</option>
-                      </select>
+                        label={t("pages.doctor.settings_preferred_language")}
+                      />
                     </Field>
                     <div className="flex gap-2">
                       <Button

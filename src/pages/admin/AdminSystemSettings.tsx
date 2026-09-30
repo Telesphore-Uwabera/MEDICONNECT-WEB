@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { LegalDocumentsManager } from "@/pages/admin/components/LegalDocumentsManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch"; 
+import { Switch } from "@/components/ui/switch";
+import { CustomSelect } from "@/components/ui/custom-select"; 
 import { cn } from "@/lib/utils";
 import { parseLocalizedText, stringifyLocalizedText } from "@/lib/localized-settings";
 import {
@@ -592,14 +593,13 @@ function FieldEditor({
       </div>
 
       {field.kind === "select" ? (
-        <select value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} className={INPUT_CLASS}>
-          <option value="">Select</option>
-          {field.options?.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <CustomSelect
+          value={String(value ?? "")}
+          onChange={(val) => onChange(val)}
+          options={field.options?.map((option) => ({ value: option.value, label: option.label })) ?? []}
+          placeholder="Select"
+          className="w-full"
+        />
       ) : field.secret || field.kind === "password" ? (
         <SecretInput value={String(value ?? "")} onChange={onChange as (v: string) => void} />
       ) : field.kind === "multilingual-text" ? (
@@ -899,38 +899,42 @@ function AdminSystemSettings() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 border-b border-border/60 px-4 py-3">
-                  <select
+                  <CustomSelect
                     value={auditGroup}
-                    onChange={(e) => setAuditGroup(e.target.value as "all" | SettingsGroup)}
-                    className="h-8 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/50"
-                  >
-                    <option value="all">All groups</option>
-                    {SETTINGS_GROUPS.map((item) => (
-                      <option key={item.group} value={item.group}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                  <select
+                    onChange={(val) => setAuditGroup(val as "all" | SettingsGroup)}
+                    options={[
+                      { value: "all", label: "All groups" },
+                      ...SETTINGS_GROUPS.map((item) => ({ value: item.group, label: item.label })),
+                    ]}
+                    compact
+                    className="w-full"
+                  />
+                  <CustomSelect
                     value={auditAction}
-                    onChange={(e) => setAuditAction(e.target.value)}
-                    className="h-8 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/50"
-                  >
-                    <option value="updated">Updated</option>
-                    <option value="created">Created</option>
-                    <option value="deleted">Deleted</option>
-                    <option value="">All actions</option>
-                  </select>
-                  <select
-                    value={auditPerPage}
-                    onChange={(e) => setAuditPerPage(Number(e.target.value))}
-                    className="col-span-2 h-8 rounded-[6px] border border-border/60 bg-background px-2 text-[11px] outline-none focus:border-primary/50"
-                  >
-                    <option value={10}>10 logs per page</option>
-                    <option value={25}>25 logs per page</option>
-                    <option value={50}>50 logs per page</option>
-                    <option value={100}>100 logs per page</option>
-                  </select>
+                    onChange={(val) => setAuditAction(val)}
+                    options={[
+                      { value: "updated", label: "Updated" },
+                      { value: "created", label: "Created" },
+                      { value: "deleted", label: "Deleted" },
+                      { value: "", label: "All actions" },
+                    ]}
+                    compact
+                    className="w-full"
+                  />
+                  <div className="col-span-2">
+                    <CustomSelect
+                      value={String(auditPerPage)}
+                      onChange={(val) => setAuditPerPage(Number(val))}
+                      options={[
+                        { value: "10", label: "10 logs per page" },
+                        { value: "25", label: "25 logs per page" },
+                        { value: "50", label: "50 logs per page" },
+                        { value: "100", label: "100 logs per page" },
+                      ]}
+                      compact
+                      className="w-full"
+                    />
+                  </div>
                 </div>
 
                 <div className=" overflow-y-auto">

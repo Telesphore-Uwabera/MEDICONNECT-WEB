@@ -48,6 +48,7 @@ import { PharmacyDrawer } from "./components/Pharmacydrawer";
 import { PharmacyCart } from "./components/PharmacyCart";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { Card } from "@/components/ui/card";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Rwanda regions ───────────────────────────────────────────────────────────
 
@@ -870,15 +871,14 @@ const PatientPharmacy = () => {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end w-full xs:w-auto">
-              <select
+              <CustomSelect
                 value={filters.sort}
-                onChange={(e) => set("sort", e.target.value as SortOption)}
-                className="hidden sm:block px-2 py-1.5 text-[13px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+                options={SORT_OPTIONS}
+                onChange={(v) => set("sort", v as SortOption)}
+                label={t("pages.patient.sort_label", { defaultValue: "Sort" })}
+                compact
+                className="hidden sm:block w-[160px]"
+              />
 
               <FilterToggleButton
                 open={filterOpen}

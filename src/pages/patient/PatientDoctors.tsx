@@ -28,6 +28,7 @@ import {
 } from "@/hooks/patient/use-patient-doctor";
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { SpecializationSelect, type SpecializationValue } from "./components/SpecializationSelect";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -697,9 +698,9 @@ const PatientDoctors = () => {
   const [filters, setFilters] = useState<FilterState>(() => readInitialFilters(searchParams));
 
   const CONSULTATION_OPTIONS = [
-    { value: "all" as const, label: t("pages.patient.consultation_type_all"), icon: Globe },
-    { value: "booking" as const, label: t("pages.patient.consultation_type_booking"), icon: Video },
-    { value: "instant" as const, label: t("pages.patient.consultation_type_instant"), icon: Zap },
+    { value: "all" as const, label: t("pages.patient.consultation_type_all"), icon: <Globe className="w-3.5 h-3.5" /> },
+    { value: "booking" as const, label: t("pages.patient.consultation_type_booking"), icon: <Video className="w-3.5 h-3.5" /> },
+    { value: "instant" as const, label: t("pages.patient.consultation_type_instant"), icon: <Zap className="w-3.5 h-3.5" /> },
   ];
 
   const GENDER_OPTIONS = [
@@ -879,17 +880,14 @@ const PatientDoctors = () => {
 
               <div className="flex items-center gap-2">
                 {/* Sort */}
-                <select
+                <CustomSelect
                   value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  options={SORT_OPTIONS}
+                  onChange={(v) => set("sort", v as SortOption)}
+                  label={t("pages.patient.sort_label", { defaultValue: "Sort" })}
+                  compact
+                  className="hidden sm:block w-[140px]"
+                />
 
                 <FilterToggleButton
                   open={filterOpen}

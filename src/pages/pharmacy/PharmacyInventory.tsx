@@ -1,8 +1,9 @@
-﻿import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/date";
@@ -474,22 +475,24 @@ function MedicineFormDrawer({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>{t("pages.pharmacy.category")}</label>
-              <select value={form.category_id} onChange={(e) => set("category_id", e.target.value)}
-                className={inputCls}>
-                <option value="">{t("pages.pharmacy.none")}</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+              <CustomSelect
+                value={form.category_id}
+                onChange={(val) => set("category_id", val)}
+                options={[
+                  { value: "", label: t("pages.pharmacy.none") },
+                  ...categories.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                className="w-full"
+              />
             </div>
             <div>
               <label className={labelCls}>{t("pages.pharmacy.unit")} <span className="text-red-500">*</span></label>
-              <select required value={form.unit} onChange={(e) => set("unit", e.target.value as MedicineUnit)}
-                className={inputCls}>
-                {UNIT_OPTIONS.map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
+              <CustomSelect
+                value={form.unit}
+                onChange={(val) => set("unit", val as MedicineUnit)}
+                options={UNIT_OPTIONS.map((u) => ({ value: u, label: u }))}
+                className="w-full"
+              />
             </div>
           </div>
 
@@ -1053,18 +1056,13 @@ const PharmacyInventory = () => {
               </div>
 
               {/* Sort */}
-              <div className="relative">
-                <select
-                  value={filters.sort}
-                  onChange={(e) => set("sort", e.target.value as SortOption)}
-                  className="appearance-none pl-2.5 pr-7 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
-                >
-                  {SORT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{t(o.label)}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/50 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={filters.sort}
+                options={SORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.label) }))}
+                onChange={(val) => set("sort", val as SortOption)}
+                compact
+                className="w-[140px]"
+              />
 
               <Button
                 size="sm"

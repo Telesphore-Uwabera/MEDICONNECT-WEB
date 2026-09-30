@@ -31,6 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAssignDoctorConsultation,
@@ -1366,24 +1367,18 @@ export function AssignPanel({
             </div>
           ) : (
             <>
-              <div className="relative">
-                <select
-                  value={selectedFeeId ?? ""}
-                  onChange={(e) =>
-                    setSelectedFeeId(Number(e.target.value) || null)
-                  }
-                  className="w-full appearance-none px-3 pr-8 py-2 text-[12px] bg-background border border-border/60 rounded-[5px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
-                >
-                  <option value="">Select fee tier…</option>
-                  {activeFees.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.specialization} — {f.online_fee.toLocaleString()} /{" "}
-                      {f.in_person_fee.toLocaleString()} {f.currency}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={selectedFeeId ? String(selectedFeeId) : ""}
+                onChange={(val) =>
+                  setSelectedFeeId(Number(val) || null)
+                }
+                options={activeFees.map((f) => ({
+                  value: String(f.id),
+                  label: `${f.specialization} — ${f.online_fee.toLocaleString()} / ${f.in_person_fee.toLocaleString()} ${f.currency}`,
+                }))}
+                placeholder="Select fee tier…"
+                className="w-full"
+              />
               {selectedFee && (
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   <div className="p-2.5 rounded-[5px] border border-border/60 bg-secondary/30">

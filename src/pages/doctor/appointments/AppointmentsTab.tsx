@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toLocalDateInputValue } from "@/lib/date";
 import{ Video, MapPin, Calendar, Clock, SlidersHorizontal, X,
@@ -24,6 +24,7 @@ import { startInAppCallFromJoin } from "@/lib/scheduled-call";
 import { doctors } from "@/lib/mock-data";
 
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { AppointmentCard } from "./shared/AppointmentCard";
 import { RunningLateModal } from "./shared/RunningLateModal";
 import { RescheduleModal } from "./shared/RescheduleModal";
@@ -464,15 +465,17 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <select
+            <CustomSelect
               value={filters.sort}
-              onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as any }))}
-              className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-            >
-              <option value="date-asc">{t("pages.doctor.oldest_first")}</option>
-              <option value="date-desc">{t("pages.doctor.latest_first")}</option>
-              <option value="name">{t("pages.doctor.patient_name_az")}</option>
-            </select>
+              options={[
+                { value: "date-asc", label: t("pages.doctor.oldest_first") },
+                { value: "date-desc", label: t("pages.doctor.latest_first") },
+                { value: "name", label: t("pages.doctor.patient_name_az") },
+              ]}
+              onChange={(val) => setFilters((f) => ({ ...f, sort: val as any }))}
+              compact
+              className="hidden sm:block w-[140px]"
+            />
 
             <FilterToggleButton
               open={filterOpen}

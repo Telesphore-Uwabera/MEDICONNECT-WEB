@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ import {
 } from "@/hooks/doctor/use-doctor-prescriptions";
 import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
+import { CustomSelect } from "@/components/ui/custom-select";
 
  
 type ViewMode = "table" | "cards";
@@ -625,20 +626,22 @@ const DoctorPrescriptions = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <select
+                <CustomSelect
                   value={`${filters.sort_by}|${filters.sort_order}`}
-                  onChange={(e) => {
-                    const [by, order] = e.target.value.split("|");
+                  options={[
+                    { value: "created_at|desc", label: t("pages.doctor.latest_first") },
+                    { value: "created_at|asc", label: t("pages.doctor.oldest_first") },
+                    { value: "valid_until|asc", label: t("pages.doctor.rx_expiring_soon") },
+                    { value: "status|asc", label: t("pages.doctor.rx_status_az") },
+                  ]}
+                  onChange={(val) => {
+                    const [by, order] = val.split("|");
                     set("sort_by", by as any);
                     set("sort_order", order as any);
                   }}
-                  className="hidden sm:block px-2 py-1.5 text-[11px] font-medium bg-card border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer transition-all"
-                >
-                  <option value="created_at|desc">{t("pages.doctor.latest_first")}</option>
-                  <option value="created_at|asc">{t("pages.doctor.oldest_first")}</option>
-                  <option value="valid_until|asc">{t("pages.doctor.rx_expiring_soon")}</option>
-                  <option value="status|asc">{t("pages.doctor.rx_status_az")}</option>
-                </select>
+                  compact
+                  className="hidden sm:block w-[140px]"
+                />
 
                 <FilterToggleButton
                   open={filterOpen}

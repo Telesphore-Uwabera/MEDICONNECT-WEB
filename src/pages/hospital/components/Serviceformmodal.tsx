@@ -4,6 +4,7 @@ import { X, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Service, ServicePayload } from "@/types/Hospital";
 import { t } from "i18next";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 interface ServiceFormModalProps {
   open: boolean;
@@ -142,16 +143,17 @@ export function ServiceFormModal({
           {/* Price section */}
           <div className="grid grid-cols-3 gap-3">
             <Field label={t("pages.hospital.price_type_required")}>
-              <select
+              <CustomSelect
                 value={form.price_type}
-                onChange={(e) => set("price_type", e.target.value as ServicePayload["price_type"])}
-                className={selectCls}
-              >
-                <option value="fixed">{t("pages.hospital.price_fixed")}</option>
-                <option value="from">{t("pages.hospital.price_from")}</option>
-                <option value="negotiable">{t("pages.hospital.price_negotiable")}</option>
-                <option value="free">{t("pages.hospital.price_free")}</option>
-              </select>
+                onChange={(val) => set("price_type", val as ServicePayload["price_type"])}
+                options={[
+                  { value: "fixed", label: t("pages.hospital.price_fixed") },
+                  { value: "from", label: t("pages.hospital.price_from") },
+                  { value: "negotiable", label: t("pages.hospital.price_negotiable") },
+                  { value: "free", label: t("pages.hospital.price_free") },
+                ]}
+                className="w-full"
+              />
             </Field>
             <Field label={t("pages.hospital.price_rwf")}>
               <Input
@@ -169,15 +171,16 @@ export function ServiceFormModal({
           {/* Type + Duration */}
           <div className="grid grid-cols-2 gap-3">
             <Field label={t("pages.hospital.service_type_required")}>
-              <select
+              <CustomSelect
                 value={form.type}
-                onChange={(e) => set("type", e.target.value as ServicePayload["type"])}
-                className={selectCls}
-              >
-                <option value="in_person">{t("pages.hospital.service_type_in_person")}</option>
-                <option value="online">{t("pages.hospital.service_type_online")}</option>
-                <option value="both">{t("pages.hospital.service_type_both")}</option>
-              </select>
+                onChange={(val) => set("type", val as ServicePayload["type"])}
+                options={[
+                  { value: "in_person", label: t("pages.hospital.service_type_in_person") },
+                  { value: "online", label: t("pages.hospital.service_type_online") },
+                  { value: "both", label: t("pages.hospital.service_type_both") },
+                ]}
+                className="w-full"
+              />
             </Field>
             <Field label={t("pages.hospital.duration_min")}>
               <Input

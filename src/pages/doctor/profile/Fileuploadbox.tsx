@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { FileUploader } from "@/components/ui/file-uploader";
+import { CropToCardConfig, FileUploader } from "@/components/ui/file-uploader";
 
 interface FileUploadBoxProps {
   label: string;
@@ -9,6 +9,8 @@ interface FileUploadBoxProps {
   onChange: (f: File | null) => void;
   maxSizeMb?: number;
   existingUrl?: string | null;
+  cropToCard?: boolean | CropToCardConfig;
+  helperText?: string;
 }
 
 export const FileUploadBox = React.memo(function FileUploadBox({
@@ -16,8 +18,10 @@ export const FileUploadBox = React.memo(function FileUploadBox({
   accept,
   file,
   onChange,
-  maxSizeMb = 4,
+  maxSizeMb = 10,
   existingUrl,
+  cropToCard,
+  helperText,
 }: FileUploadBoxProps) {
   const { t } = useTranslation();
 
@@ -29,7 +33,8 @@ export const FileUploadBox = React.memo(function FileUploadBox({
       onChange={(value) => onChange(Array.isArray(value) ? value[0] ?? null : value)}
       maxSizeMb={maxSizeMb}
       existingUrl={existingUrl}
-      helperText={t("doctorProfile.file_hint_image")}
+      cropToCard={cropToCard}
+      helperText={helperText ?? t("doctorProfile.file_hint_image")}
     />
   );
 });

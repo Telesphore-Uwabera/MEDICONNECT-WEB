@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { prepareRichTextForSave, RichTextarea } from "@/components/ui/rich-textarea";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useGetSearchHospitals, type ApiHospital } from "@/hooks/patient/use-patient-search-hospital";
 import {
@@ -367,19 +368,19 @@ export function BookPhysicalModal({
                     {departments.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground py-1">{t("consult.booking.no_departments")}</p>
                     ) : (
-                      <select
+                      <CustomSelect
                         value={selectedDepartment}
-                        onChange={(e) => {
-                          setSelectedDepartment(e.target.value);
+                        onChange={(val) => {
+                          setSelectedDepartment(val);
                           setSelectedService("");
                         }}
-                        className={selectCls}
-                      >
-                        <option value="">{t("consult.booking.select_department")}</option>
-                        {departments.map((d) => (
-                          <option key={d.id} value={String(d.id)}>{d.name_en}</option>
-                        ))}
-                      </select>
+                        options={departments.map((d) => ({
+                          value: String(d.id),
+                          label: d.name_en,
+                        }))}
+                        placeholder={t("consult.booking.select_department")}
+                        className="w-full"
+                      />
                     )}
                   </div>
 
@@ -391,16 +392,16 @@ export function BookPhysicalModal({
                     ) : filteredServices.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground py-1">{t("consult.booking.no_services")}</p>
                     ) : (
-                      <select
+                      <CustomSelect
                         value={selectedService}
-                        onChange={(e) => setSelectedService(e.target.value)}
-                        className={selectCls}
-                      >
-                        <option value="">{t("consult.booking.select_service")}</option>
-                        {filteredServices.map((s) => (
-                          <option key={s.id} value={String(s.id)}>{s.name_en}</option>
-                        ))}
-                      </select>
+                        onChange={(val) => setSelectedService(val)}
+                        options={filteredServices.map((s) => ({
+                          value: String(s.id),
+                          label: s.name_en,
+                        }))}
+                        placeholder={t("consult.booking.select_service")}
+                        className="w-full"
+                      />
                     )}
                   </div>
                 </>
