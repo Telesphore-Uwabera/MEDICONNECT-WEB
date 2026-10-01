@@ -12,8 +12,15 @@ import LOGOLIGHT from "@/assets/LOGOLIGHT.png";
 
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
+import { cn } from "@/lib/utils";
 
-function Footer() {
+interface FooterProps {
+  className?: string;
+  hideTopBorder?: boolean;
+  containerClassName?: string;
+}
+
+function Footer({ className, hideTopBorder, containerClassName }: FooterProps = {}) {
   const { t, i18n } = useTranslation();
   const { data: publicSettings } = usePublicSettings();
   const generalSettings = publicSettings?.general;
@@ -98,9 +105,14 @@ function Footer() {
     },
   ];
   return (
-    <footer className="border-t border-border bg-background">
-      <div className="container py-12 lg:py-16">
-        <div className="grid gap-10 border-b border-border pb-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(150px,0.65fr)_minmax(150px,0.65fr)_minmax(0,1fr)]">
+    <footer
+      className={cn(
+        "box-border bg-background border-t-0 border-none shadow-none outline-none",
+        className
+      )}
+    >
+      <div className={cn("w-full px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24 py-12 lg:py-16 mx-auto", containerClassName)}>
+        <div className="grid gap-10 border-b border-border/40 dark:border-border/20 pb-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.35fr)_minmax(150px,0.65fr)_minmax(150px,0.65fr)_minmax(0,1fr)]">
           <div className="space-y-5">
             <img
               src={logo}
@@ -216,7 +228,7 @@ function Footer() {
             </div>
           </div>
 
-          <div className="lg:border-l lg:border-border lg:pl-8">
+          <div className="lg:border-l lg:border-border/40 dark:border-border/20 lg:pl-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               {t("pages.landing.footer_start_care")}
             </p>

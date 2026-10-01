@@ -435,7 +435,7 @@ const Index = () => {
 
       {/* ── Available Doctors Grid ── */}
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="container">
+        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div>
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
@@ -489,13 +489,13 @@ const Index = () => {
       </section>
       {/* Specialities */}
       <section id="specialities" className="bg-background py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="container">
+        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <Specialities />
         </RevealSection>
       </section>
       {/* Verified facilities and pharmacies */}
       <section id="healthfacilities" className="bg-background py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="container">
+        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>
@@ -556,7 +556,7 @@ const Index = () => {
           </div>
 
           {partnerTab === "facilities" ? (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {hospitalsLoading && homepageHospitals.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
@@ -569,7 +569,7 @@ const Index = () => {
               )}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" >
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {pharmaciesLoading && homepagePharmacies.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
@@ -707,7 +707,7 @@ const Index = () => {
 
       {/* Our Team */}
       <section id="team" className="bg-background py-12 md:py-14">
-        <RevealSection direction="up" delay={0} className="container">
+        <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className={SECTION_TITLE}>{t("pages.landing.team_heading")}</h2>
@@ -718,7 +718,7 @@ const Index = () => {
         </RevealSection>
       </section>
 
-   <Footer/>
+   <Footer hideTopBorder className="border-t-0 border-none shadow-none" />
     </div>
   );
 };

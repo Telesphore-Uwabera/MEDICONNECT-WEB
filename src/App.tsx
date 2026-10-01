@@ -353,6 +353,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/register" element={<Auth />} />
             <Route path="/help" element={<Help />} /> 
+            <Route path="/contact" element={<Help />} /> 
             <Route path="/privacy" element={<Privacy />} /> 
             <Route path="/terms" element={<Terms />} /> 
             <Route path="/delete-account" element={<DeleteAccount />} />
