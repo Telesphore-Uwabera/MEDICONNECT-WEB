@@ -98,7 +98,7 @@ const Index = () => {
     i18n.language,
     t("pages.landing.footer_desc"),
   ); 
-  const contactPhone = generalSettings?.contact_phone || "+250 782 168 650";
+  const contactPhone = generalSettings?.contact_phone || "+250 792 353 501";
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

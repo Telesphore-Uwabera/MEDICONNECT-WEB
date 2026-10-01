@@ -37,8 +37,8 @@ function Footer({ className, hideTopBorder, containerClassName }: FooterProps = 
     generalSettings?.app_logo_url ||
     ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
   const contactEmail =
-    generalSettings?.contact_email || "support@mediconnect.com";
-  const contactPhone = generalSettings?.contact_phone || "+250 782 168 650";
+    generalSettings?.contact_email || "admin@mediconnect.rw";
+  const contactPhone = generalSettings?.contact_phone || "+250 792 353 501";
   const contactAddress = generalSettings?.contact_address || "Kigali, Rwanda";
   const heroTagline = localizedText(
     publicSettings?.general?.app_tagline,

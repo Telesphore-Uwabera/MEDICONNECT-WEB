@@ -104,7 +104,7 @@ function resolveBrand(settings?: DocumentBrandSettings): ResolvedBrand {
     tagline: localized(general.app_tagline) || "Bringing care to your fingertips",
     logoUrl: String(general.app_logo_url ?? LOGOLIGHT),
     email: String(general.contact_email ?? "admin@mediconnect.rw"),
-    phone: String(general.contact_phone ?? "+250 782 168 650"),
+    phone: String(general.contact_phone ?? "+250 792 353 501"),
     address: String(general.contact_address ?? "Kigali, Rwanda"),
     website: String(general.app_url ?? "mediconnect.rw"),
   };

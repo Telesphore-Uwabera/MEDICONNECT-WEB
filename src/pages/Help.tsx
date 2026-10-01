@@ -162,9 +162,9 @@ const Help = () => {
 
   const appName = generalSettings?.app_name || "MEDICONNECT";
   const contactEmail =
-    generalSettings?.contact_email || "support@mediconnect.com";
+    generalSettings?.contact_email || "admin@mediconnect.rw";
   const contactPhone =
-    generalSettings?.contact_phone || "+250 782 168 650";
+    generalSettings?.contact_phone || "+250 792 353 501";
   const contactAddress =
     generalSettings?.contact_address || "Kigali, Rwanda";
 

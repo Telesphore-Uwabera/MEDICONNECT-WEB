@@ -199,10 +199,10 @@ export default function ErrorPage({
         localizedText(generalSettings?.app_tagline, i18n.language, t("pages.landing.footer_desc"));
 
     const contactEmail =
-        generalSettings?.contact_email || "support@mediconnect.com";
+        generalSettings?.contact_email || "admin@mediconnect.rw";
 
     const contactPhone =
-        generalSettings?.contact_phone || "+250 782 168 650";
+        generalSettings?.contact_phone || "+250 792 353 501";
 
     const contactAddress =
         generalSettings?.contact_address || "Kigali, Rwanda";
