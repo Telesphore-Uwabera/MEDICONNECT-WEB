@@ -135,8 +135,12 @@ export default function HeroSection() {
             </p>
 
             <ul className="mt-6 flex flex-col items-start gap-3 sm:mt-7">
-              {FEATURES.map(({ key, fallback, icon: Icon }) => (
-                <li key={key} className="flex items-center gap-3">
+              {FEATURES.map(({ key, fallback, icon: Icon }, index) => (
+                <li
+                  key={key}
+                  className="hero-feature flex items-center gap-3"
+                  style={{ animationDelay: `${140 + index * 90}ms` }}
+                >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
                     <Icon className="h-4 w-4" />
                   </span>
@@ -317,6 +321,8 @@ export default function HeroSection() {
             />
 
             <style>{`
+              @keyframes hero-feature-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+              .hero-feature { animation: hero-feature-in 520ms cubic-bezier(0.22,1,0.36,1) both; }
               @keyframes hero-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
               @keyframes hero-blob1 { 0%,100%{transform:scale(1) translate(0,0)} 33%{transform:scale(1.08) translate(6px,-8px)} 66%{transform:scale(0.96) translate(-4px,6px)} }
               @keyframes hero-blob2 { 0%,100%{transform:scale(1) translate(0,0)} 40%{transform:scale(1.1) translate(-6px,8px)} 70%{transform:scale(0.94) translate(4px,-4px)} }

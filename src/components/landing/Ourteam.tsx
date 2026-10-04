@@ -99,7 +99,7 @@ function OrgCard({
         </button>
 
         {/* Photo area — changed to portrait-friendly 4/5 ratio */}
-        <div className="relative aspect-[5/3] w-full shrink-0 overflow-hidden bg-muted">
+        <div className="relative h-28 w-full shrink-0 overflow-hidden bg-muted sm:h-44 sm:max-h-[32vh]">
           {member.photo_url && !imgError ? (
             <>
               <img
@@ -185,7 +185,13 @@ function OrgCard({
 
 // ── Member card ──────────────────────────────────────────────
 
-function MemberCard({ member }: { member: ApiTeamMember }) {
+function MemberCard({
+  member,
+  interactive = true,
+}: {
+  member: ApiTeamMember;
+  interactive?: boolean;
+}) {
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -193,9 +199,10 @@ function MemberCard({ member }: { member: ApiTeamMember }) {
     <>
       <button
         type="button"
-      className="group rounded-[6px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
-        onClick={() => setModalOpen(true)}
-        onKeyDown={(e) => e.key === "Enter" && setModalOpen(true)}
+        className="group rounded-[6px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+        onClick={interactive ? () => setModalOpen(true) : undefined}
+        tabIndex={interactive ? 0 : -1}
+        aria-hidden={interactive ? undefined : true}
         aria-label={t("pages.landing.team_view_profile", { name: member.name })}
       >
         <div className="mx-auto h-28 w-28 overflow-hidden rounded-full bg-primary/10 ring-8 ring-muted/40">
@@ -348,6 +355,9 @@ function OurTeam() {
             .marquee-track:hover {
               animation-play-state: paused;
             }
+            @media (prefers-reduced-motion: reduce) {
+              .marquee-track { animation: none; }
+            }
           `}</style>
 
           {/* Overflow mask */}
@@ -382,7 +392,7 @@ function OurTeam() {
                       {/* Duplicate copy for seamless wrap */}
                       {members.map((m) => (
                         <div key={`b-${m.id}`} className="shrink-0 w-52" aria-hidden="true">
-                          <MemberCard member={m} />
+                          <MemberCard member={m} interactive={false} />
                         </div>
                       ))}
                     </>

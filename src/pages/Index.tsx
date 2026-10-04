@@ -104,6 +104,9 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
   const [partnerTab, setPartnerTab] = useState<"facilities" | "pharmacies">("facilities");
+  const [partnerPage, setPartnerPage] = useState(0);
+  const [pageDir, setPageDir] = useState<1 | -1>(1);
+  const partnerPageSize = 4;
 
   // ── Doctor filter state ─────────────────────────────────────────────────────
   const [doctorFilter, setDoctorFilter] = useState<"all" | "instant">("all");
@@ -201,7 +204,7 @@ const Index = () => {
   }, [doctorFilter, selectedLanguage, selectedSpecialization]);
 
   const { data: pharmacyStats } = useGetPharmacyStats();
-  const { data: pharmaciesResp, isLoading: pharmaciesLoading } = useSearchPharmacies({ per_page: 4 });
+  const { data: pharmaciesResp, isLoading: pharmaciesLoading } = useSearchPharmacies({ per_page: 12 });
 
   // ── All doctors (infinite scrolling) ─────────────────────────────────────
   const {
@@ -244,17 +247,21 @@ const Index = () => {
     fetchNextPage: fetchNextHospitalsPage,
     hasNextPage: hasNextHospitalsPage,
     isFetchingNextPage: isFetchingNextHospitalsPage,
-  } = useInfiniteSearchHospitals({ page: 1, per_page: 6 });
+  } = useInfiniteSearchHospitals({ page: 1, per_page: 12 });
 
   const allHospitals = useMemo(() => {
     return hospitalsData?.pages.flatMap((page) => page.data) ?? [];
   }, [hospitalsData]);
 
-  const homepageHospitals = useMemo(() => allHospitals.slice(0, 4), [allHospitals]);
   const homepagePharmacies = useMemo(
-    () => pharmaciesResp?.data?.slice(0, 4) ?? [],
+    () => pharmaciesResp?.data ?? [],
     [pharmaciesResp],
   );
+  const partnerCount = partnerTab === "facilities" ? allHospitals.length : homepagePharmacies.length;
+  const partnerPageCount = Math.max(1, Math.ceil(partnerCount / partnerPageSize));
+  const pageStart = partnerPage * partnerPageSize;
+  const visibleHospitals = allHospitals.slice(pageStart, pageStart + partnerPageSize);
+  const visiblePharmacies = homepagePharmacies.slice(pageStart, pageStart + partnerPageSize);
 
   const observerHospitals = useRef<IntersectionObserver | null>(null);
   const lastHospitalElementRef = useCallback(
@@ -457,8 +464,14 @@ const Index = () => {
                 ? Array.from({ length: 6 }).map((_, index) => (
                     <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
-                : allDoctors.slice(0, 6).map((doctor) => (
-                    <DoctorCard key={doctor.id} doctor={doctor} />
+                : allDoctors.slice(0, 6).map((doctor, index) => (
+                    <div
+                      key={doctor.id}
+                      className="landing-card-in"
+                      style={{ animationDelay: `${index * 70}ms` }}
+                    >
+                      <DoctorCard doctor={doctor} />
+                    </div>
                   ))}
             </div>
 
@@ -520,7 +533,11 @@ const Index = () => {
             <div className="inline-flex rounded-[6px] bg-muted/60 p-1 ring-1 ring-border">
               <button
                 type="button"
-                onClick={() => setPartnerTab("facilities")}
+                onClick={() => {
+                  setPageDir(1);
+                  setPartnerPage(0);
+                  setPartnerTab("facilities");
+                }}
                 className={cn(
                   "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
                   partnerTab === "facilities"
@@ -533,7 +550,11 @@ const Index = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setPartnerTab("pharmacies")}
+                onClick={() => {
+                  setPageDir(1);
+                  setPartnerPage(0);
+                  setPartnerTab("pharmacies");
+                }}
                 className={cn(
                   "inline-flex h-8 items-center gap-2 rounded-[6px] px-5 text-xs font-bold transition-all",
                   partnerTab === "pharmacies"
@@ -545,36 +566,64 @@ const Index = () => {
                 {t("pages.landing.pharmacies_tab")}
               </button>
             </div>
-            <div className="hidden gap-2 md:flex">
-              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground" aria-label={t("pages.landing.previous_cards")}>
+            {partnerPageCount > 1 && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={partnerPage === 0}
+                onClick={() => {
+                  setPageDir(-1);
+                  setPartnerPage((page) => Math.max(0, page - 1));
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                aria-label={t("pages.landing.previous_cards")}
+              >
                 <ChevronRight className="h-4 w-4 rotate-180" />
               </button>
-              <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-foreground" aria-label={t("pages.landing.next_cards")}>
+              <button
+                type="button"
+                disabled={partnerPage >= partnerPageCount - 1}
+                onClick={() => {
+                  setPageDir(1);
+                  setPartnerPage((page) => Math.min(partnerPageCount - 1, page + 1));
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                aria-label={t("pages.landing.next_cards")}
+              >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+            )}
           </div>
 
           {partnerTab === "facilities" ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {hospitalsLoading && homepageHospitals.length === 0
+            <div
+              key={`facilities-${partnerPage}`}
+              className="landing-page-in grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+              style={{ ["--page-x" as string]: pageDir > 0 ? "18px" : "-18px" }}
+            >
+              {hospitalsLoading && visibleHospitals.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
-                : homepageHospitals.map((hospital) => (
+                : visibleHospitals.map((hospital) => (
                     <HospitalCard key={hospital.id} hospital={hospital} />
                   ))}
-              {!hospitalsLoading && homepageHospitals.length === 0 && (
+              {!hospitalsLoading && visibleHospitals.length === 0 && (
                 <div className="col-span-full rounded-[6px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_hospitals_found")}</div>
               )}
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {pharmaciesLoading && homepagePharmacies.length === 0
+            <div
+              key={`pharmacies-${partnerPage}`}
+              className="landing-page-in grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+              style={{ ["--page-x" as string]: pageDir > 0 ? "18px" : "-18px" }}
+            >
+              {pharmaciesLoading && visiblePharmacies.length === 0
                 ? Array.from({ length: 4 }).map((_, index) => (
                     <div key={index} className="h-[330px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
-                : homepagePharmacies.map((pharmacy) => {
+                : visiblePharmacies.map((pharmacy) => {
                     const deliveryMins = parseDeliveryMins(pharmacy.estimated_delivery_minutes);
                     const todayName = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][new Date().getDay()];
                     const todayHours = pharmacy.working_hours?.find((hour) => hour.day_of_week === todayName);
@@ -697,7 +746,7 @@ const Index = () => {
                       </article>
                     );
                   })}
-              {!pharmaciesLoading && homepagePharmacies.length === 0 && (
+              {!pharmaciesLoading && visiblePharmacies.length === 0 && (
                 <div className="col-span-full rounded-[6px] border border-dashed border-border p-10 text-center text-sm text-muted-foreground">{t("pages.landing.no_pharmacies_found")}</div>
               )}
             </div>

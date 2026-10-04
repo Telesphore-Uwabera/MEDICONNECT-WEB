@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, ExternalLink, ImageIcon, X } from "lucide-react";
@@ -91,6 +92,15 @@ export default function ServicesShowcase() {
   const onClose = () => {
     setSelected(null);
   };
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
   
   return (
     <div className="mt-10" id="services">
@@ -123,18 +133,22 @@ export default function ServicesShowcase() {
                 className="h-[260px] animate-pulse rounded-[6px] border border-border bg-card"
               />
             ))
-          : services.map((service) => {
+          : services.map((service, index) => {
               const title = fieldForLanguage(service, "title", i18n.language);
               const description = richTextToPlainText(
                 fieldForLanguage(service, "description", i18n.language),
               );
 
               return (
-                <button
+                <div
                   key={service.id}
+                  className="landing-card-in"
+                  style={{ animationDelay: `${index * 70}ms` }}
+                >
+                <button
                   type="button"
                   onClick={() => setSelected(service)}
-                  className="group overflow-hidden rounded-[6px] border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+                  className="group h-full w-full overflow-hidden rounded-[6px] border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
                 >
                   <div className="aspect-[16/10] overflow-hidden bg-primary/10">
                     <ServiceImage
@@ -148,8 +162,8 @@ export default function ServicesShowcase() {
                       <h3 className="line-clamp-2 text-base font-black leading-snug text-foreground">
                         {title}
                       </h3>
-                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-primary/10 text-primary">
-                        <ArrowRight className="h-4 w-4" />
+                      <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] bg-primary/10 text-primary transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-primary group-hover:text-primary-foreground">
+                        <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-px" />
                       </span>
                     </div>
                     <p className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
@@ -160,11 +174,12 @@ export default function ServicesShowcase() {
                     </p>
                   </div>
                 </button>
+                </div>
               );
             })}
       </div>
 
-      {selected && (
+      {selected && createPortal(
         <div
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm animate-fadeIn"
           onClick={(e) => {
@@ -185,7 +200,7 @@ export default function ServicesShowcase() {
             </button>
 
             {/* Photo area — changed to portrait-friendly 4/5 ratio */}
-            <div className="relative aspect-[5/3] w-full shrink-0 overflow-hidden bg-muted">
+            <div className="relative h-28 w-full shrink-0 overflow-hidden bg-muted sm:h-44 sm:max-h-[32vh]">
               {selected.image_url ? (
                 <>
                   <img
@@ -268,7 +283,8 @@ export default function ServicesShowcase() {
         .animate-fadeIn { animation: fadeIn 0.15s ease; }
         .animate-slideUp { animation: slideUp 0.2s ease; }
       `}</style>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
