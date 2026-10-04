@@ -11,11 +11,12 @@
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# Forward /api/v1/* to the Laravel backend on api.mediconnect.rw.
-# Netlify rewrites the path so the backend receives /api/v1/:splat.
+# Forward /api/v1/* to the Node API on 10.10.141.149.
+# The public api.mediconnect.rw address still arrives at the old server, so the
+# live site uses the tunnel that reaches Node directly.
 [[redirects]]
   from = "/api/v1/*"
-  to = "http://api.mediconnect.rw/api/v1/:splat"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"
   status = 200
   force = true
 
