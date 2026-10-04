@@ -13,7 +13,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "20mb" }));
-app.use("/storage", express.static(process.env.UPLOAD_DIR || path.join(root, "storage")));
+const uploadDir = process.env.UPLOAD_DIR || path.join(root, "storage");
+app.use("/storage", express.static(uploadDir));
+app.use("/api/v1/media", express.static(path.join(uploadDir, "doctors-webp")));
 
 const api = express.Router();
 api.use(auth);

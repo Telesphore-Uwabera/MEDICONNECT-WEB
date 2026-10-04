@@ -8,6 +8,7 @@ import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { apiFetch } from "@/lib/api";
+import { resolveMediaUrl } from "@/lib/image-url";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
@@ -115,7 +116,7 @@ export default function HeroSection() {
     : null;
 
   const getPhotoSrc = (d: ApiDoctor | null) =>
-    d ? (d.image || d.user?.avatar || HERO_PHOTO) : HERO_PHOTO;
+    resolveMediaUrl(d?.image || d?.user?.avatar) || HERO_PHOTO;
 
   const { data: activeSchedule } = useQuery({
     queryKey: ["doctor-availability", activeDoctor?.slug],
