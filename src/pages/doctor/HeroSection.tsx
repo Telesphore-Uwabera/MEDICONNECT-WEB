@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Zap, ShieldCheck, Lock, Wifi, CalendarCheck } from "lucide-react";
 import { HeroHeadline } from "@/components/landing/HeroHeadline";
@@ -33,13 +33,34 @@ export default function HeroSection() {
     t("pages.landing.hero_intro"),
   );
 
-  const { data: doctorsData } = useGetSearchDoctors({ per_page: 6 });
-  const heroDoctors = useMemo(() => {
-    const list = doctorsData?.data ?? [];
-    const withPhoto = (d: ApiDoctor) => Boolean(d.image || d.user?.avatar);
-    const featured = list.filter((d) => (d.is_featured || d.show_homepage) && withPhoto(d));
-    return (featured.length ? featured : list.filter(withPhoto)).slice(0, 5);
-  }, [doctorsData]);
+  const { data: doctorsData } = useGetSearchDoctors({ per_page: 20 });
+  const doctorList = doctorsData?.data ?? [];
+  const scheduleQueries = useQueries({
+    queries: doctorList.map((doctor) => ({
+      queryKey: ["doctor-availability", doctor.slug],
+      queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
+      enabled: !!doctor.slug,
+      staleTime: 60_000,
+    })),
+  });
+  const schedulesReady = doctorList.length === 0 || scheduleQueries.every((query) => query.isFetched);
+
+  const { heroDoctors, showingOnline } = useMemo(() => {
+    const withPhoto = (doctor: ApiDoctor) => Boolean(doctor.image || doctor.user?.avatar);
+    const featured = doctorList.filter((doctor) => (doctor.is_featured || doctor.show_homepage) && withPhoto(doctor));
+    const fallback = (featured.length ? featured : doctorList.filter(withPhoto)).slice(0, 5);
+    if (!schedulesReady) return { heroDoctors: [] as ApiDoctor[], showingOnline: false };
+
+    const online = doctorList.filter((doctor, index) =>
+      doctorOffersInstant(doctor, scheduleQueries[index]?.data),
+    );
+    const onlineWithPhoto = online.filter(withPhoto);
+    const chosen = (onlineWithPhoto.length ? onlineWithPhoto : online).slice(0, 5);
+
+    return chosen.length
+      ? { heroDoctors: chosen, showingOnline: true }
+      : { heroDoctors: fallback, showingOnline: false };
+  }, [doctorList, scheduleQueries, schedulesReady]);
 
   const [activeDoctorIdx, setActiveDoctorIdx] = useState(0);
   const [prevDoctorIdx,   setPrevDoctorIdx]   = useState<number | null>(null);
@@ -49,6 +70,12 @@ export default function HeroSection() {
   const [modalMode, setModalMode] = useState<"details" | "connect">("details");
   const [bookOpen,  setBookOpen]  = useState(false);
   const [progress,  setProgress]  = useState(0);
+  const heroKey = heroDoctors.map((doctor) => doctor.id).join("|");
+
+  useEffect(() => {
+    setActiveDoctorIdx(0);
+    setPrevDoctorIdx(null);
+  }, [heroKey]);
 
   // ── 5-second crossfade rotation ─────────────────────────────────────────
   useEffect(() => {
@@ -251,7 +278,7 @@ export default function HeroSection() {
                       </div>
 
                       {/* Availability indicator */}
-                      {activeDoctor.is_available && (
+                      {showingOnline && (
                         <div className="flex flex-col items-center gap-0.5 flex-shrink-0 mb-0.5">
                           <span
                             className="h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white/30"

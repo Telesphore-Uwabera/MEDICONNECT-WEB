@@ -634,6 +634,16 @@ export function UnifiedModal({
               </div>
 
               <div className="flex-shrink-0 border-t border-border/50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 bg-card/80">
+                {canConnect && (
+                  <Button
+                    size="sm"
+                    onClick={() => setMode("connect")}
+                    className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Wifi className="h-4 w-4 mr-1.5" />
+                    {t("pages.cards.instant_consultation", "Instant Consultation")}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -647,16 +657,6 @@ export function UnifiedModal({
                   <CalendarCheck className="h-4 w-4 mr-1.5" />
                   {t("pages.landing.book_appointment")}
                 </Button>
-                {canConnect && (
-                  <Button
-                    size="sm"
-                    onClick={() => setMode("connect")}
-                    className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    <Wifi className="h-4 w-4 mr-1.5" />
-                    {t("pages.cards.instant_consultation", "Instant Consultation")}
-                  </Button>
-                )}
               </div>
             </>
           ) : (
@@ -839,20 +839,11 @@ export const DoctorCard = ({
             )}
           </div>
 
-          {/* Buttons — conditional on availability */}
+          {/* One row: Instant Consultation first when the schedule says the doctor is present, then Book Appointment */}
           <div
-            className="flex flex-col gap-2"
+            className="flex flex-row items-stretch gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
-              className="h-9 w-full rounded-lg border-primary/40 text-xs font-semibold text-primary hover:bg-primary/5"
-            >
-              <CalendarCheck className="h-4 w-4 mr-1.5" />
-              {t("pages.cards.book", "Book Appointment")}
-            </Button>
             {canConnect && (
               <Button
                 size="sm"
@@ -862,14 +853,23 @@ export const DoctorCard = ({
                   else if (isCallInProgress || isConnected) { setInitialMode("connect"); setModalOpen(true); }
                   else openConnect();
                 }}
-                className="h-9 w-full gap-2 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90"
+                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg bg-primary px-2 py-2 text-center text-[11px] font-bold leading-tight text-primary-foreground hover:bg-primary/90"
               >
-                <Wifi className="h-4 w-4" />
+                <Wifi className="shrink-0" />
                 {hasSavedSession || isCallInProgress || isConnected
                   ? t("pages.cards.join", "Join Session")
                   : t("pages.cards.instant_consultation", "Instant Consultation")}
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
+              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal rounded-lg border-primary/40 px-2 py-2 text-center text-[11px] font-semibold leading-tight text-primary hover:bg-primary/5"
+            >
+              <CalendarCheck className="shrink-0" />
+              {t("pages.cards.book", "Book Appointment")}
+            </Button>
           </div>
         </div>
       </Card>

@@ -67,35 +67,33 @@ function onDate(window: ScheduleWindow, date: string, weekday: string) {
   return (window.day_of_week ?? "").toLowerCase() === weekday;
 }
 
-/** Instant Consultation is offered only while the doctor is online and free. */
+function isOnlineVisit(window: ScheduleWindow) {
+  const type = (window.type ?? "").toLowerCase();
+  return type === "online" || type === "both";
+}
+
+function isBusy(window: ScheduleWindow) {
+  const status = (window.status ?? "").toLowerCase();
+  return status === "booked" || status === "reserved" || status === "blocked";
+}
+
+/** Both card buttons show only while a schedule window says the doctor is present and free. */
 export function doctorOffersInstant(
-  doctor: Pick<ApiDoctor, "is_available" | "bookings_paused" | "instant_consultation" | "consultation_type">,
+  doctor: Pick<ApiDoctor, "bookings_paused">,
   schedule: PublicDoctorSchedule | undefined,
   now = new Date(),
 ) {
-  if (doctor.bookings_paused) return false;
+  if (doctor.bookings_paused || !schedule) return false;
 
   const { weekday, date, minutes } = kigaliNow(now);
   const windows = [
-    ...(schedule?.recurring_availability ?? []),
-    ...(schedule?.availability_periods ?? []),
-    ...(schedule?.slots_for_date ?? []),
+    ...(schedule.recurring_availability ?? []),
+    ...(schedule.availability_periods ?? []),
+    ...(schedule.slots_for_date ?? []),
   ];
-  const hasSchedule = windows.length > 0;
-
-  if (hasSchedule) {
-    const active = windows.filter(
-      (window) => onDate(window, date, weekday) && coversNow(window.start_time, window.end_time, minutes),
-    );
-    const inMeeting = active.some((window) => {
-      const status = (window.status ?? "").toLowerCase();
-      return status === "booked" || status === "reserved" || status === "blocked";
-    });
-    if (inMeeting) return false;
-    return active.some((window) => (window.type ?? "").toLowerCase() === "online");
-  }
-
-  if (!doctor.is_available) return false;
-  const type = (doctor.consultation_type ?? "").toLowerCase();
-  return type === "online" || type === "both" || doctor.instant_consultation === true;
+  const active = windows.filter(
+    (window) => onDate(window, date, weekday) && coversNow(window.start_time, window.end_time, minutes),
+  );
+  if (active.length === 0 || active.some(isBusy)) return false;
+  return active.some(isOnlineVisit);
 }

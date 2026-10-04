@@ -1,5 +1,6 @@
 import { getAccessErrorMessage, notifyAccessPrompt } from "@/lib/access-events";
 import { sanitizePayloadUrls } from "@/lib/image-url";
+import { formDataToWebp } from "@/lib/webp-image";
 
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
@@ -39,7 +40,8 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const token = localStorage.getItem("auth_token");
   const { body, headers: extraHeaders, ...restOptions } = options ?? {};
-  const isFormData = body instanceof FormData;
+  const payload = body instanceof FormData ? await formDataToWebp(body) : body;
+  const isFormData = payload instanceof FormData;
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -52,11 +54,11 @@ export async function apiFetch<T>(
     ...restOptions,
     headers,
     body:
-      body === undefined
+      payload === undefined
         ? undefined
         : isFormData
-          ? (body as FormData)
-          : JSON.stringify(body),
+          ? payload
+          : JSON.stringify(payload),
   });
 
   // if (res.status === 401) {

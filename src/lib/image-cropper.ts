@@ -147,8 +147,8 @@ export async function cropAndResizeImage(
   ctx.restore();
 
   // Output as File
-  const mimeType = "image/jpeg";
-  const finalName = fileName.replace(/\.[^/.]+$/, "") + "-card-fit.jpg";
+  const mimeType = "image/webp";
+  const finalName = fileName.replace(/\.[^/.]+$/, "") + "-card-fit.webp";
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
