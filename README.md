@@ -218,9 +218,8 @@ Once VPN is connected:
 ssh root@10.10.141.149
 ```
 
-- **Active server:** `10.10.141.149`
+- **Server:** `10.10.141.149`
 - **Username:** `root`
-- **Legacy server:** `10.10.141.148` — SSH port 22 is closed, no longer in use
 
 The server runs **Ubuntu** with **Nginx** as the web server.
 
@@ -491,8 +490,8 @@ netlify deploy --dir=dist --prod
 **Option C — Direct to server** (VPN required)
 
 ```bash
-scp -r dist/* root@10.10.141.148:/var/www/mediconnect/
-ssh root@10.10.141.148 "nginx -t && systemctl reload nginx"
+scp -r dist/* root@10.10.141.149:/var/www/mediconnect/
+ssh root@10.10.141.149 "nginx -t && systemctl reload nginx"
 ```
 
 ---
@@ -570,7 +569,7 @@ server {
 
 The backend is a **Laravel PHP API** at `/var/www/mediconnect-api` on the server.
 
-> **Requires SSH access.** Connect VPN first, then `ssh root@10.10.141.148`.
+> **Requires SSH access.** Connect VPN first, then `ssh root@10.10.141.149`.
 
 ---
 
