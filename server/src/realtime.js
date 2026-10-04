@@ -10,8 +10,8 @@ function send(socket, event, data) {
   }));
 }
 
-export function startRealtime(port) {
-  const wss = new WebSocketServer({ host: "127.0.0.1", port });
+export function startRealtime(target) {
+  const wss = new WebSocketServer(typeof target === "number" ? { host: "127.0.0.1", port: target } : { server: target });
   wss.on("connection", (socket) => {
     const socketId = `${Date.now()}.${Math.floor(Math.random() * 100000)}`;
     socket.channels = new Set();

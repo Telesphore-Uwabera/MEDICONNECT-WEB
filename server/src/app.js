@@ -1,4 +1,9 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import multer from "multer";
+import { registerActions } from "./actions.js";
+import { withTeamPhoto } from "./public.js";
 import {
   countWhere,
   hasColumn,
@@ -90,7 +95,8 @@ async function listTable(req, table, scope) {
   }
   const where = `WHERE ${filters.join(" AND ")}`;
   const total = await countWhere(table, where, params);
-  const data = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
+  let data = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
+  if (table === "team_members") data = data.map(withTeamPhoto);
   const path = `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
   return laravelPage({ data, total, page, perPage, path });
 }
@@ -374,6 +380,51 @@ export function appRoutes(router) {
     res.json({ auth: `${process.env.REVERB_APP_KEY || "mediconnect-staging-key"}:local` });
   });
 
+  router.post("/auth/guest", async (req, res, next) => {
+    try {
+      const email = `guest-${Date.now()}@mediconnect.local`;
+      const userId = await insert("users", {
+        name: "Guest",
+        email,
+        phone: `07${String(Date.now()).slice(-8)}`,
+        password: await hashPassword(crypto.randomUUID()),
+        status: "active",
+        active_role: "patient",
+        is_verified: 0,
+      });
+      await ensureRole(userId, "patient");
+      const token = await issueToken(userId, "patient");
+      res.status(201).json({
+        message: "Guest session started.",
+        guest_token: token,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/auth/guest/convert", async (req, res, next) => {
+    try {
+      const plain = String(req.body?.guest_token || "").split("|")[1];
+      const row = plain
+        ? await one("SELECT tokenable_id FROM personal_access_tokens WHERE token = ? LIMIT 1", [crypto.createHash("sha256").update(plain).digest("hex")])
+        : null;
+      if (!row) return res.status(422).json({ message: "Guest session was not found." });
+      await update("users", row.tokenable_id, {
+        name: req.body?.name,
+        phone: req.body?.phone,
+        email: req.body?.email,
+        country_code: req.body?.country_code,
+        active_role: req.body?.role || "patient",
+      });
+      if (req.body?.role) await ensureRole(row.tokenable_id, req.body.role);
+      res.json({ message: "Guest account saved.", user_id: Number(row.tokenable_id) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/patient/dashboard", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
       const dashboard = emptyDashboard(req.query);
@@ -532,6 +583,89 @@ export function appRoutes(router) {
     return requireAuth(req, res, next);
   }
 
+  const teamUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 12 * 1024 * 1024 } });
+
+  function saveTeamImage(file, prefix) {
+    const dir = path.join(process.env.UPLOAD_DIR || path.join(path.dirname(new URL(import.meta.url).pathname), "..", "storage"), "doctors-webp");
+    fs.mkdirSync(dir, { recursive: true });
+    const name = `${prefix}_${Date.now()}.webp`;
+    fs.writeFileSync(path.join(dir, name), file.buffer);
+    return `https://mediconnect.rw/api/v1/media/${name}`;
+  }
+
+  function teamFields(body, files) {
+    const payload = { ...(body ?? {}) };
+    delete payload.photo;
+    delete payload.icon;
+    if (payload.joined_at === "") payload.joined_at = null;
+    if (files?.photo?.[0]) payload.photo = saveTeamImage(files.photo[0], "team");
+    if (files?.icon?.[0]) payload.icon = saveTeamImage(files.icon[0], "team_icon");
+    return payload;
+  }
+
+  async function teamMember(id) {
+    return withTeamPhoto(await presentRow("team_members", await one("SELECT * FROM team_members WHERE id = ?", [id])));
+  }
+
+  router.post("/admin/team", requireAuth, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
+    try {
+      const id = await insert("team_members", teamFields(req.body, req.files));
+      const member = await teamMember(id);
+      res.status(201).json({ message: "Saved.", member, data: member });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/team/:id/photo", requireAuth, teamUpload.single("photo"), async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(422).json({ message: "Photo is required." });
+      const photo = saveTeamImage(req.file, `team_${req.params.id}`);
+      await update("team_members", req.params.id, { photo });
+      const member = await teamMember(req.params.id);
+      if (!member) return res.status(404).json({ message: "Member not found." });
+      res.json({ message: "Photo uploaded.", photo_url: member.photo_url, member });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/team/:id/icon", requireAuth, teamUpload.single("icon"), async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(422).json({ message: "Icon is required." });
+      const icon = saveTeamImage(req.file, `team_icon_${req.params.id}`);
+      await update("team_members", req.params.id, { icon });
+      const member = await teamMember(req.params.id);
+      if (!member) return res.status(404).json({ message: "Member not found." });
+      res.json({ message: "Icon uploaded.", icon_url: member.icon_url, member });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.patch("/admin/team/:id/toggle-active", requireAuth, async (req, res, next) => {
+    try {
+      const row = await one("SELECT id, is_active FROM team_members WHERE id = ?", [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Member not found." });
+      const isActive = !(row.is_active === 1 || row.is_active === true);
+      await update("team_members", req.params.id, { is_active: isActive ? 1 : 0 });
+      res.json({ message: "Updated.", is_active: isActive });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/team/:id", requireAuth, teamUpload.fields([{ name: "photo", maxCount: 1 }, { name: "icon", maxCount: 1 }]), async (req, res, next) => {
+    try {
+      await update("team_members", req.params.id, teamFields(req.body, req.files));
+      const member = await teamMember(req.params.id);
+      if (!member) return res.status(404).json({ message: "Member not found." });
+      res.json({ message: "Updated.", member, data: member });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/:scope/profile", allowPublic, async (req, res, next) => {
     try {
       const table = PROFILE_TABLE[req.params.scope];
@@ -572,6 +706,10 @@ export function appRoutes(router) {
       if (!table || !(await tableExists(table))) return next();
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));
       if (!row) return res.status(404).json({ message: "Record not found." });
+      if (table === "team_members") {
+        const member = withTeamPhoto(row);
+        return res.json({ member, data: member, ...member });
+      }
       res.json({ data: row, ...row });
     } catch (error) {
       next(error);
@@ -609,6 +747,8 @@ export function appRoutes(router) {
       next(error);
     }
   });
+
+  registerActions(router, RESOURCES);
 }
 
 async function updateResource(req, res, next) {

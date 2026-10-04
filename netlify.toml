@@ -6,14 +6,51 @@
   NODE_VERSION = "20"
   VITE_APP_BASE_URL = "/api/v1"
   VITE_REVERB_APP_KEY = "mediconnect-staging-key"
-  VITE_REVERB_HOST = "ws.mediconnect.rw"
+  VITE_REVERB_HOST = "makers-chip-laboratories-maintains.trycloudflare.com"
   VITE_REVERB_PORT = "443"
   VITE_REVERB_SCHEME = "wss"
   VITE_DEV = "false"
 
-# Forward /api/v1/* to the Node API on 10.10.141.149.
-# The public api.mediconnect.rw address still arrives at the old server, so the
-# live site uses the tunnel that reaches Node directly.
+# The public addresses for the API, database console, and WebSocket are served
+# by this site and forwarded to Node on 10.10.141.149. Node then shows the API,
+# phpMyAdmin, or the WebSocket page based on the original hostname.
+[[redirects]]
+  from = "https://api.mediconnect.rw/*"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://api.mediconnect.rw/"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://ws.mediconnect.rw/*"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://ws.mediconnect.rw/"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/ws/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://db.mediconnect.rw/*"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/db/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://db.mediconnect.rw/"
+  to = "https://makers-chip-laboratories-maintains.trycloudflare.com/__host/db/"
+  status = 200
+  force = true
+
+# Same-origin API used by the website.
 [[redirects]]
   from = "/api/v1/*"
   to = "https://makers-chip-laboratories-maintains.trycloudflare.com/api/v1/:splat"

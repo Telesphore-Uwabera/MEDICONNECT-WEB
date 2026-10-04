@@ -6,6 +6,22 @@ function pathOf(req) {
   return `${req.protocol}://${req.get("host")}${req.baseUrl}${req.path}`;
 }
 
+export function teamPhotoUrl(photo) {
+  if (!photo) return null;
+  if (/^https?:\/\//i.test(photo) || photo.startsWith("/")) return photo;
+  if (!/\.(webp|jpe?g|png|gif|bmp|tiff?)$/i.test(String(photo))) return null;
+  return `/minio/mediconnect-avatars/${String(photo).replace(/^\/+/, "")}`;
+}
+
+export function withTeamPhoto(member) {
+  if (!member) return member;
+  return {
+    ...member,
+    photo_url: member.photo_url || teamPhotoUrl(member.photo),
+    icon_url: member.icon_url || teamPhotoUrl(member.icon),
+  };
+}
+
 async function whereActive(table, alias = "") {
   const prefix = alias ? `${alias}.` : "";
   const parts = [];
@@ -307,7 +323,7 @@ export function publicRoutes(router) {
         params.push(`%${req.query.search}%`);
       }
       const total = await countWhere("team_members", where, params);
-      const data = await presentRows("team_members", await q(`SELECT * FROM team_members ${where} ORDER BY \`order\` ASC, id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(async () => q(`SELECT * FROM team_members ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset])));
+      const data = (await presentRows("team_members", await q(`SELECT * FROM team_members ${where} ORDER BY \`order\` ASC, id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(async () => q(`SELECT * FROM team_members ${where} ORDER BY id ASC LIMIT ? OFFSET ?`, [...params, perPage, offset])))).map(withTeamPhoto);
       res.json(laravelPage({ data, total, page, perPage, path: pathOf(req) }));
     } catch (error) {
       next(error);
@@ -316,7 +332,7 @@ export function publicRoutes(router) {
 
   router.get("/public/team/:id", async (req, res, next) => {
     try {
-      const member = await presentRow("team_members", await one("SELECT * FROM team_members WHERE id = ?", [req.params.id]));
+      const member = withTeamPhoto(await presentRow("team_members", await one("SELECT * FROM team_members WHERE id = ?", [req.params.id])));
       if (!member) return res.status(404).json({ message: "Team member not found." });
       res.json({ member });
     } catch (error) {
@@ -355,9 +371,24 @@ export function publicRoutes(router) {
 
   router.get("/public/stats/pharmacies", async (req, res, next) => {
     try {
-      const pharmacies = await one("SELECT COUNT(*) AS total FROM pharmacies");
-      const orders = await one("SELECT COUNT(*) AS total FROM pharmacy_orders").catch(() => ({ total: 0 }));
-      res.json({ total: Number(pharmacies?.total ?? 0), orders: Number(orders?.total ?? 0) });
+      const totals = await one("SELECT COUNT(*) AS total FROM pharmacies");
+      const medicines = await one("SELECT COUNT(*) AS total FROM medicines").catch(() => ({ total: 0 }));
+      const active = await one("SELECT COUNT(*) AS total FROM medicines WHERE is_active = 1").catch(() => medicines);
+      const rows = await q("SELECT * FROM pharmacies ORDER BY id DESC LIMIT 50").catch(() => []);
+      res.json({
+        summary: {
+          total_pharmacies: Number(totals?.total ?? 0),
+          total_medicines: Number(medicines?.total ?? 0),
+          active_medicines: Number(active?.total ?? 0),
+        },
+        pharmacies: rows.map((row) => ({
+          id: row.id,
+          name: row.name_en || row.name || row.slug || "Pharmacy",
+          slug: row.slug || String(row.id),
+          total_medicines: 0,
+          active_medicines: 0,
+        })),
+      });
     } catch (error) {
       next(error);
     }

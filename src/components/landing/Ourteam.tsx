@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { ApiTeamMember, useGetOurTeam } from "@/hooks/use-our-team";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { resolveMediaUrl } from "@/lib/image-url";
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -100,10 +101,10 @@ function OrgCard({
 
         {/* Photo area — changed to portrait-friendly 4/5 ratio */}
         <div className="relative h-28 w-full shrink-0 overflow-hidden bg-muted sm:h-44 sm:max-h-[32vh]">
-          {member.photo_url && !imgError ? (
+          {(resolveMediaUrl(member.photo_url || member.photo)) && !imgError ? (
             <>
               <img
-                src={member.photo_url}
+                src={resolveMediaUrl(member.photo_url || member.photo)}
                 alt={member.name}
                 className={`absolute inset-0 h-full w-full object-contain  object-center transition-opacity duration-300 ${
                   imgLoaded ? "opacity-100" : "opacity-0"
@@ -199,16 +200,16 @@ function MemberCard({
     <>
       <button
         type="button"
-        className="group rounded-[6px] border border-border bg-card p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+        className="group w-full rounded-[6px] border border-border bg-card px-3 py-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
         onClick={interactive ? () => setModalOpen(true) : undefined}
         tabIndex={interactive ? 0 : -1}
         aria-hidden={interactive ? undefined : true}
         aria-label={t("pages.landing.team_view_profile", { name: member.name })}
       >
         <div className="mx-auto h-28 w-28 overflow-hidden rounded-full bg-primary/10 ring-8 ring-muted/40">
-          {member.photo_url ? (
+          {resolveMediaUrl(member.photo_url || member.photo) ? (
             <img
-              src={member.photo_url}
+              src={resolveMediaUrl(member.photo_url || member.photo)}
               alt={member.name}
               className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             />
@@ -218,10 +219,10 @@ function MemberCard({
             </div>
           )}
         </div>
-        <h3 className="mt-5 line-clamp-1 text-base font-black text-foreground">
+        <h3 className="mt-3 line-clamp-2 text-[13px] font-bold leading-tight text-foreground">
           {member.name}
         </h3>
-        <p className="mt-1 line-clamp-2 min-h-[40px] text-sm font-medium text-muted-foreground">
+        <p className="mt-1 line-clamp-3 text-[11px] font-medium leading-snug text-muted-foreground">
           {member.title || t("pages.landing.team_member_fallback")}
         </p>
       </button>

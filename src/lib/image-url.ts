@@ -58,7 +58,10 @@ export function resolveMediaUrl(url?: string | null): string | undefined {
     cleanPath.startsWith("doctors/") ||
     cleanPath.startsWith("hospitals/") ||
     cleanPath.startsWith("users/") ||
-    cleanPath.startsWith("pharmacies/")
+    cleanPath.startsWith("pharmacies/") ||
+    cleanPath.startsWith("team/") ||
+    cleanPath.startsWith("patients/") ||
+    cleanPath.startsWith("services/")
   ) {
     return `/minio/mediconnect-avatars/${cleanPath.split("?")[0]}`;
   }

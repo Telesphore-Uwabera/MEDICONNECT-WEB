@@ -122,7 +122,7 @@ export function AdminTeamMemberPanel({ memberId, onClose, onDeleted }: AdminTeam
   const { t } = useTranslation();
   const open = !!memberId;
   const { data, isLoading } = useGetAdminTeamMember(memberId);
-  const member = data?.member;
+  const member = data?.member ?? data?.data ?? (data?.id ? data : undefined);
 
   const updateMutation = useUpdateTeamMember(memberId ?? 0);
   const uploadPhoto = useUploadTeamPhoto(memberId ?? 0);
