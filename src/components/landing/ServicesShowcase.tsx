@@ -80,6 +80,15 @@ export default function ServicesShowcase() {
     [data],
   );
 
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
+
   if (!isLoading && services.length === 0) return null;
 
   const selectedTitle = selected
@@ -93,15 +102,6 @@ export default function ServicesShowcase() {
     setSelected(null);
   };
 
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelected(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [selected]);
-  
   return (
     <div className="mt-10" id="services">
       <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

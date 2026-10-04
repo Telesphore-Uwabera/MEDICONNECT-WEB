@@ -403,7 +403,7 @@ export function publicRoutes(router) {
     }
   });
 
-  router.get("/public/dropdowns/specialization-fees", async (req, res, next) => {
+  router.get(["/public/specialization-fees", "/public/dropdowns/specialization-fees"], async (req, res, next) => {
     try {
       const params = [];
       const filters = [];

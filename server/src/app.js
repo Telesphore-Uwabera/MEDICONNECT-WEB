@@ -527,7 +527,12 @@ export function appRoutes(router) {
     }
   });
 
-  router.get("/:scope/profile", requireAuth, async (req, res, next) => {
+  function allowPublic(req, res, next) {
+    if (req.params.scope === "public") return next("router");
+    return requireAuth(req, res, next);
+  }
+
+  router.get("/:scope/profile", allowPublic, async (req, res, next) => {
     try {
       const table = PROFILE_TABLE[req.params.scope];
       if (!table) return next();
@@ -539,7 +544,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.get("/:scope/:resource", requireAuth, async (req, res, next) => {
+  router.get("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
       const table = RESOURCES[req.params.resource];
       if (!table || !(await tableExists(table))) return next();
@@ -555,7 +560,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.get("/:scope/:resource/:id", requireAuth, async (req, res, next) => {
+  router.get("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
       if (req.params.resource === "profile") {
         const table = PROFILE_TABLE[req.params.scope];
@@ -573,7 +578,7 @@ export function appRoutes(router) {
     }
   });
 
-  router.post("/:scope/:resource", requireAuth, async (req, res, next) => {
+  router.post("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
       const table = RESOURCES[req.params.resource];
       if (!table || !(await tableExists(table))) return next();
@@ -588,11 +593,11 @@ export function appRoutes(router) {
     }
   });
 
-  router.put("/:scope/:resource/:id", requireAuth, updateResource);
-  router.patch("/:scope/:resource/:id", requireAuth, updateResource);
-  router.post("/:scope/:resource/:id", requireAuth, updateResource);
+  router.put("/:scope/:resource/:id", allowPublic, updateResource);
+  router.patch("/:scope/:resource/:id", allowPublic, updateResource);
+  router.post("/:scope/:resource/:id", allowPublic, updateResource);
 
-  router.delete("/:scope/:resource/:id", requireAuth, async (req, res, next) => {
+  router.delete("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
       const table = RESOURCES[req.params.resource];
       if (!table || !(await tableExists(table))) return next();
