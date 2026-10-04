@@ -1837,7 +1837,14 @@ const AdminUsers = () => {
       setConfirmDelete(null);
       setSelected(null);
     } catch (error: unknown) {
-      sonnerToast.error(getErrorMessage(error) || t("admin.users.delete_failed"));
+      const status = error && typeof error === "object" && "status" in error
+        ? Number((error as { status?: number }).status)
+        : 0;
+      sonnerToast.error(
+        status === 504
+          ? "The server timed out before it could delete this user. The account is still there."
+          : getErrorMessage(error) || t("admin.users.delete_failed"),
+      );
     }
   }, [confirmDelete, deleteMutation, t, sonnerToast]);
 
@@ -2327,6 +2334,7 @@ const AdminUsers = () => {
         onApprove={handleDoctorApprove}
         onReject={handleDoctorReject}
         onSuspend={handleDoctorSuspend}
+        onDelete={selected ? () => setConfirmDelete(selected) : undefined}
         isActing={isDoctorActing}
       />
 
@@ -2334,6 +2342,7 @@ const AdminUsers = () => {
         patient={selectedRole === "patient" ? (patientLookup.data ?? null) : null}
         onClose={() => setSelected(null)}
         onToggleStatus={handlePatientToggle}
+        onDelete={selected ? () => setConfirmDelete(selected) : undefined}
         isActing={isPatientActing}
       />
 
@@ -2343,6 +2352,7 @@ const AdminUsers = () => {
         onApprove={handleHospitalApprove}
         onReject={handleHospitalReject}
         onSuspend={handleHospitalSuspend}
+        onDelete={selected ? () => setConfirmDelete(selected) : undefined}
         isActing={isHospitalActing}
       />
 
@@ -2352,6 +2362,7 @@ const AdminUsers = () => {
         onApprove={handlePharmacyApprove}
         onReject={handlePharmacyReject}
         onSuspend={handlePharmacySuspend}
+        onDelete={selected ? () => setConfirmDelete(selected) : undefined}
         isActing={isPharmacyActing}
       />
 
@@ -2474,13 +2485,23 @@ const AdminUsers = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("admin.users.delete_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("admin.users.delete_desc")}
+              {confirmDelete
+                ? `${t("admin.users.delete_desc")} ${confirmDelete.name} will lose access.`
+                : t("admin.users.delete_desc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("admin.common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={removeUser}>
-              {t("admin.common.confirm")}
+            <AlertDialogCancel disabled={deleteMutation.isPending}>{t("admin.common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                void removeUser();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t("admin.users.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

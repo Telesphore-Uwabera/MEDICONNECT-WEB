@@ -434,7 +434,7 @@ function DoctorListItem({ doctor: doctorProp }: { doctor: ApiDoctor }) {
                 )}
               >
                 <Zap className="w-3.5 h-3.5" />
-                {a.isConnected || a.isCallInProgress ? t("pages.cards.join") : t("pages.cards.connect")}
+                {a.isConnected || a.isCallInProgress ? t("pages.cards.join") : t("pages.cards.instant_consultation", "Instant Consultation")}
               </button>
             )}
           </div>

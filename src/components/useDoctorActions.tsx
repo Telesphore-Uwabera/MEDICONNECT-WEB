@@ -7,11 +7,14 @@
 // buttons function the same.
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import type { ApiDoctor } from "@/hooks/patient/use-patient-doctor";
+import { apiFetch } from "@/lib/api";
+import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 
 type ModalMode = "details" | "connect";
 
@@ -39,8 +42,15 @@ export function useDoctorActions(doctorProp: ApiDoctor) {
   const isCallInProgress = isThisDoctor && call.phase !== "idle" && call.phase !== "ended";
   const isConnected = isThisDoctor && call.phase === "connected";
 
-  const canConnect = doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation;
-  const canBook = doctor.is_available && !doctor.bookings_paused;
+  const { data: schedule } = useQuery({
+    queryKey: ["doctor-availability", doctor.slug],
+    queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
+    enabled: !!doctor.slug,
+    staleTime: 60_000,
+  });
+
+  const canConnect = doctorOffersInstant(doctor, schedule) || isCallInProgress;
+  const canBook = true;
 
   const openDetails = () => { setInitialMode("details"); setModalOpen(true); };
   const openConnect = () => {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatDateOnly } from "@/lib/date";
 import {X, SlidersHorizontal, Search, ChevronDown, ChevronLeft, ChevronRight,
-  ShieldCheck, ShieldOff, Ban, Loader2, MapPin, Calendar, Hash, BadgeCheck,
+  ShieldCheck, ShieldOff, Ban, Loader2, Trash2, MapPin, Calendar, Hash, BadgeCheck,
   FlaskConical, Building2, Phone, Mail, Globe, Clock, Truck, Package,
   AlertCircle, ExternalLink, FileText, Activity, Pill as PillIcon,
   CheckCircle2, Wallet, User, CalendarDays, Image as ImageIcon,
@@ -965,12 +965,13 @@ const PANEL_TABS: { id: PanelTabId; label: string; icon: React.ReactNode }[] = [
 
 type ActingAction = "approve" | "reject" | "suspend" | null;
 
-export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspend, isActing }: {
+export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspend, onDelete, isActing }: {
   pharmacy: ApiPharmacy | null;
   onClose: () => void;
   onApprove: (p: ApiPharmacy) => void;
   onReject: (p: ApiPharmacy) => void;
   onSuspend: (p: ApiPharmacy) => void;
+  onDelete?: () => void;
   isActing: boolean;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -1131,6 +1132,15 @@ export function PharmacyPanel({ pharmacy, onClose, onApprove, onReject, onSuspen
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       : <ShieldCheck className="h-3.5 w-3.5" />}
                     Reactivate
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button size="sm" variant="outline"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    disabled={!!actingAction}
+                    onClick={onDelete}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
                 )}
                 <Button size="sm" variant="ghost"

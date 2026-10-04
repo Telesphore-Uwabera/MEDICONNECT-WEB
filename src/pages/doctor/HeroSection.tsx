@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Zap, ShieldCheck, Lock, Wifi, CalendarCheck } from "lucide-react";
 import { HeroHeadline } from "@/components/landing/HeroHeadline";
@@ -6,6 +7,8 @@ import StartConsult from "@/components/landing/StartConsult";
 import { usePublicSettings } from "@/hooks/use-public-settings";
 import { localizedText } from "@/lib/localized-settings";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
+import { apiFetch } from "@/lib/api";
+import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { UnifiedModal } from "@/components/DoctorCard";
 import { BookingDialog } from "@/components/BookingDialog";
 import type { Doctor as CallDoctor } from "@/context/CallStore";
@@ -87,10 +90,15 @@ export default function HeroSection() {
   const getPhotoSrc = (d: ApiDoctor | null) =>
     d ? (d.image || d.user?.avatar || HERO_PHOTO) : HERO_PHOTO;
 
-  const canConnect = Boolean(
-    activeDoctor?.is_available && !activeDoctor?.bookings_paused && activeDoctor?.instant_consultation,
-  );
-  const canBook = Boolean(activeDoctor?.is_available && !activeDoctor?.bookings_paused);
+  const { data: activeSchedule } = useQuery({
+    queryKey: ["doctor-availability", activeDoctor?.slug],
+    queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${activeDoctor?.slug}/availability`),
+    enabled: !!activeDoctor?.slug,
+    staleTime: 60_000,
+  });
+
+  const canConnect = Boolean(activeDoctor && doctorOffersInstant(activeDoctor, activeSchedule));
+  const canBook = Boolean(activeDoctor);
 
   const callDoctor: CallDoctor | null = activeDoctor
     ? {

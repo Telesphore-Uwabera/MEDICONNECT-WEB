@@ -11,7 +11,7 @@ export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export const CONSULTATION_LABELS: Record<string, string> = {
-  online:    "Online",
+  online:    "Online visits",
   in_person: "In-person",
   both:      "Both",
 };

@@ -3089,7 +3089,7 @@
   },
   "cards": {
     "from": "From",
-    "book": "Book",
+    "book": "Book Appointment",
     "connect": "Connect",
     "instant": "Instant",
     "exp": "{{count}}y exp",

@@ -2,6 +2,7 @@ import { formatDateOnly } from "@/lib/date";
 // components/DoctorCard.tsx
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
   Star,
@@ -44,6 +45,8 @@ import {
   pruneIfEnded,
 } from "@/hooks/patient/se-consultation-session";
 import { resolveMediaUrl } from "@/lib/image-url";
+import { apiFetch } from "@/lib/api";
+import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 import { Card } from "./ui/card";
 import { RichTextRenderer } from "./ui/rich-textarea";
 
@@ -383,46 +386,6 @@ export function UnifiedModal({
       ? `${numericFee.toLocaleString()} ${doctor.currency}`
       : t("pages.card.feeNotAvailable");
 
-  const status: "online" | "bookable" | "busy" | "offline" =
-    doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation
-      ? "online"
-      : doctor.is_available && !doctor.bookings_paused
-        ? "bookable"
-        : doctor.bookings_paused
-          ? "busy"
-          : "offline";
-
-  const statusStyles = {
-    online: {
-      dot: "bg-emerald-500",
-      pulse: "animate-pulse",
-      label: t("pages.cards.online", "Online"),
-      text: "text-emerald-600",
-      bg: "bg-emerald-500/10 border-emerald-500/20",
-    },
-    bookable: {
-      dot: "bg-sky-500",
-      pulse: "",
-      label: t("pages.cards.available", "Available for Booking"),
-      text: "text-sky-600",
-      bg: "bg-sky-500/10 border-sky-500/20",
-    },
-    busy: {
-      dot: "bg-amber-500",
-      pulse: "",
-      label: t("pages.cards.paused", "Busy"),
-      text: "text-amber-600",
-      bg: "bg-amber-500/10 border-amber-500/20",
-    },
-    offline: {
-      dot: "bg-zinc-400",
-      pulse: "",
-      label: t("pages.cards.offline", "Offline"),
-      text: "text-muted-foreground",
-      bg: "bg-muted border-border",
-    },
-  };
-  const s = statusStyles[status];
   const langMap: Record<string, string> = {
     en: t("pages.landing.lang_en"),
     fr: t("pages.landing.lang_fr"),
@@ -549,26 +512,6 @@ export function UnifiedModal({
                         {doctor.designations}
                       </p>
                     )}
-
-                    <div className="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
-                      {/* Single unified status — never show two conflicting badges */}
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-[6px] border",
-                          s.text,
-                          s.bg,
-                        )}
-                      >
-                        <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", s.dot, s.pulse)} />
-                        {s.label}
-                      </span>
-                      {doctor.instant_consultation && status === "online" && (
-                        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-[10px] font-bold rounded-[6px] bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900">
-                          <Zap className="h-3 w-3" />
-                          {t("pages.cards.instant")}
-                        </span>
-                      )}
-                    </div>
 
                     <div className="w-full mt-4 space-y-1.5 text-left">
                       {/* Only show rating when doctor has actual reviews (rating > 0) */}
@@ -711,7 +654,7 @@ export function UnifiedModal({
                     className="w-full sm:w-auto sm:px-6 h-9 text-xs font-semibold rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Wifi className="h-4 w-4 mr-1.5" />
-                    {t("pages.cards.connect_now")}
+                    {t("pages.cards.instant_consultation", "Instant Consultation")}
                   </Button>
                 )}
               </div>
@@ -793,58 +736,12 @@ export const DoctorCard = ({
   const handleDoctorUpdated = (updatedDoctor: ApiDoctor) =>
     setDoctor(updatedDoctor);
 
-  const fee = parseFloat(doctor.consultation_fee);
-  const rating = parseFloat(doctor.rating_avg);
-  
-  const numericFee = Number(fee);
-
-const feeLabel =
-  Number.isInteger(numericFee) && numericFee === 0
-    ? t("pages.cards.free")
-    : Number.isInteger(numericFee)
-      ? `${numericFee.toLocaleString()} ${doctor.currency}`
-      : t("pages.card.feeNotAvailable");
-
-  const status: "online" | "bookable" | "busy" | "offline" =
-    doctor.is_available && !doctor.bookings_paused && doctor.instant_consultation
-      ? "online"
-      : doctor.is_available && !doctor.bookings_paused
-        ? "bookable"
-        : doctor.bookings_paused
-          ? "busy"
-          : "offline";
-
-  const statusStyles = {
-    online: {
-      dot: "bg-emerald-500",
-      pulse: "animate-pulse",
-      label: t("pages.cards.online", "Online"),
-      text: "text-emerald-600",
-      bg: "bg-emerald-500/10 border-emerald-500/20",
-    },
-    bookable: {
-      dot: "bg-sky-500",
-      pulse: "",
-      label: t("pages.cards.available", "Available for Booking"),
-      text: "text-sky-600",
-      bg: "bg-sky-500/10 border-sky-500/20",
-    },
-    busy: {
-      dot: "bg-amber-500",
-      pulse: "",
-      label: t("pages.cards.paused", "Busy"),
-      text: "text-amber-600",
-      bg: "bg-amber-500/10 border-amber-500/20",
-    },
-    offline: {
-      dot: "bg-zinc-400",
-      pulse: "",
-      label: t("pages.cards.offline", "Offline"),
-      text: "text-muted-foreground",
-      bg: "bg-muted border-border",
-    },
-  };
-  const s = statusStyles[status];
+  const { data: schedule } = useQuery({
+    queryKey: ["doctor-availability", doctor.slug],
+    queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
+    enabled: !!doctor.slug,
+    staleTime: 60_000,
+  });
 
   const callDoctor: Doctor = {
     id: doctor.id,
@@ -861,11 +758,8 @@ const feeLabel =
     isThisDoctor && call.phase !== "idle" && call.phase !== "ended";
   const isConnected = isThisDoctor && call.phase === "connected";
 
-  const canConnect =
-    doctor.is_available &&
-    !doctor.bookings_paused &&
-    doctor.instant_consultation;
-  const canBook = doctor.is_available && !doctor.bookings_paused;
+  const canConnect = doctorOffersInstant(doctor, schedule) || isCallInProgress || hasSavedSession;
+  const canBook = true;
 
   const showResumePill = isCallInProgress && !modalOpen && !bookOpen;
 
@@ -902,17 +796,6 @@ const feeLabel =
 
   const locationLabel = doctor.hospitals?.[0]?.name ?? doctor.city ?? null;
 
-  // Status: only "Available" if is_available=true AND not paused.
-  // Show nothing (no badge) if completely unavailable — no need to advertise it.
-  const isActuallyAvailable = doctor.is_available && !doctor.bookings_paused;
-  const statusConfig = isActuallyAvailable && doctor.instant_consultation
-    ? { label: t("pages.cards.online", "Online"), dot: "bg-emerald-500", pulse: "animate-pulse", textCls: "text-emerald-600 dark:text-emerald-400", bgCls: "bg-emerald-500/10 border-emerald-500/20" }
-    : isActuallyAvailable
-    ? { label: t("pages.cards.available", "Available"), dot: "bg-sky-500", pulse: "", textCls: "text-sky-600 dark:text-sky-400", bgCls: "bg-sky-500/10 border-sky-500/20" }
-    : doctor.bookings_paused
-    ? { label: t("pages.cards.paused", "Busy"), dot: "bg-amber-500", pulse: "", textCls: "text-amber-600 dark:text-amber-400", bgCls: "bg-amber-500/10 border-amber-500/20" }
-    : null; // fully offline — show no badge
-
   return (
     <>
       {/* ── Card ── */}
@@ -935,28 +818,6 @@ const feeLabel =
             </div>
           </div>
 
-          {/* Status badge — top left, sits over the padding area */}
-          {statusConfig && (
-            <div className="absolute top-5 left-5">
-              <span className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold backdrop-blur-sm",
-                statusConfig.textCls, statusConfig.bgCls,
-              )}>
-                <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", statusConfig.dot, statusConfig.pulse)} />
-                {statusConfig.label}
-              </span>
-            </div>
-          )}
-
-          {/* Instant badge — top right */}
-          {doctor.instant_consultation && (
-            <div className="absolute top-5 right-5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100/90 px-2 py-1 text-[10px] font-bold text-emerald-700 backdrop-blur-sm dark:border-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400">
-                <Zap className="h-3 w-3" />
-                {t("pages.cards.instant", "Instant")}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Card body */}
@@ -983,55 +844,30 @@ const feeLabel =
             className="flex flex-col gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Online: Join Instantly (primary) + Book Appointment (outline) */}
-            {(canConnect || isCallInProgress || hasSavedSession) ? (
-              <>
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (hasSavedSession) openResume();
-                    else if (isCallInProgress || isConnected) { setInitialMode("connect"); setModalOpen(true); }
-                    else openConnect();
-                  }}
-                  className="h-9 w-full gap-2 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90"
-                >
-                  <Wifi className="h-4 w-4" />
-                  {hasSavedSession || isCallInProgress || isConnected
-                    ? t("pages.cards.join", "Join Session")
-                    : t("pages.cards.instant_consult", "Join Instantly")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!canBook || isCallInProgress}
-                  onClick={(e) => { e.stopPropagation(); canBook && !isCallInProgress && setBookOpen(true); }}
-                  className="h-9 w-full rounded-lg border-border text-xs font-semibold"
-                >
-                  <CalendarCheck className="h-4 w-4 mr-1.5" />
-                  {t("pages.cards.book", "Book Appointment")}
-                </Button>
-              </>
-            ) : canBook ? (
-              /* Offline but bookable: only Book Appointment */
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
+              className="h-9 w-full rounded-lg border-primary/40 text-xs font-semibold text-primary hover:bg-primary/5"
+            >
+              <CalendarCheck className="h-4 w-4 mr-1.5" />
+              {t("pages.cards.book", "Book Appointment")}
+            </Button>
+            {canConnect && (
               <Button
-                variant="outline"
                 size="sm"
-                onClick={(e) => { e.stopPropagation(); setBookOpen(true); }}
-                className="h-9 w-full rounded-lg border-primary/40 text-xs font-semibold text-primary hover:bg-primary/5"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasSavedSession) openResume();
+                  else if (isCallInProgress || isConnected) { setInitialMode("connect"); setModalOpen(true); }
+                  else openConnect();
+                }}
+                className="h-9 w-full gap-2 rounded-lg bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/90"
               >
-                <CalendarCheck className="h-4 w-4 mr-1.5" />
-                {t("pages.cards.book", "Book Appointment")}
-              </Button>
-            ) : (
-              /* Fully unavailable */
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled
-                className="h-9 w-full rounded-lg text-xs font-semibold opacity-50 cursor-not-allowed"
-              >
-                {t("pages.cards.unavailable", "Unavailable")}
+                <Wifi className="h-4 w-4" />
+                {hasSavedSession || isCallInProgress || isConnected
+                  ? t("pages.cards.join", "Join Session")
+                  : t("pages.cards.instant_consultation", "Instant Consultation")}
               </Button>
             )}
           </div>

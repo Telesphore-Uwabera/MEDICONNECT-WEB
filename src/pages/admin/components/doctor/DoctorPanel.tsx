@@ -2743,6 +2743,7 @@ export interface DoctorPanelProps {
   onApprove: (d: ApiDoctor) => void;
   onReject: (d: ApiDoctor) => void;
   onSuspend: (d: ApiDoctor, reason: string) => void | Promise<void>;
+  onDelete?: () => void;
   isActing: boolean;
 }
 
@@ -2752,6 +2753,7 @@ export function DoctorPanel({
   onApprove,
   onReject,
   onSuspend,
+  onDelete,
   isActing,
 }: DoctorPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -2936,6 +2938,17 @@ export function DoctorPanel({
                         d.consultation_type}
                     </span>
                   )}
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full border font-medium",
+                      d.instant_consultation
+                        ? "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/30 dark:text-teal-300 dark:border-teal-800"
+                        : "bg-muted text-muted-foreground border-border",
+                    )}
+                  >
+                    <Zap className="w-2.5 h-2.5" />
+                    {d.instant_consultation ? "Instant on" : "Instant off"}
+                  </span>
                 </div>
               </div>
 
@@ -3049,6 +3062,18 @@ export function DoctorPanel({
                       <ShieldCheck className="h-3.5 w-3.5" />
                     )}
                     Reactivate
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    disabled={isActing}
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
                 )}
                 <Button

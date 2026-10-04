@@ -1,8 +1,8 @@
-﻿import { formatDateOnly } from "@/lib/date";
+import { formatDateOnly } from "@/lib/date";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  ShieldOff, ShieldCheck, X, Loader2, Ban,
+  ShieldOff, ShieldCheck, X, Loader2, Ban, Trash2,
   Building2, MapPin, Phone, Mail, Globe, Hash,
   Calendar, BadgeCheck, Clock, Stethoscope,
   LayoutGrid, Users, AlertCircle, ChevronRight,
@@ -25,6 +25,7 @@ export interface HospitalPanelProps {
   onApprove: (h: ApiHospital) => void;
   onReject: (h: ApiHospital) => void;
   onSuspend: (h: ApiHospital) => void;
+  onDelete?: () => void;
   isActing: boolean;
 }
 
@@ -577,7 +578,7 @@ function BookingsTab({ hospitalId }: { hospitalId: number }) {
 
  
 export function HospitalPanel({
-  hospital, onClose, onApprove, onReject, onSuspend, isActing,
+  hospital, onClose, onApprove, onReject, onSuspend, onDelete, isActing,
 }: HospitalPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("overview");
@@ -739,6 +740,14 @@ export function HospitalPanel({
                     disabled={isActing} onClick={() => onApprove(h)}>
                     {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                     Reactivate
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button size="sm" variant="outline"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    disabled={isActing} onClick={onDelete}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
                 )}
                 <Button size="sm" variant="ghost"

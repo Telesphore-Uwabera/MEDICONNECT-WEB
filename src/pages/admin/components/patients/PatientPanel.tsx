@@ -1,10 +1,10 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGetAdminPatient, type ApiPatient } from "@/hooks/admin/use-admin-patients";
 import { formatDateOnly } from "@/lib/date";
- import {X, ShieldOff, ShieldCheck, Loader2,
+ import {X, ShieldOff, ShieldCheck, Loader2, Trash2,
   Phone, Calendar, Globe, Hash, Cake,
   UserCircle, CheckCircle2, BadgeCheck,
   User, MapPin, Droplets, CreditCard,
@@ -19,6 +19,7 @@ export interface PatientPanelProps {
   patient: ApiPatient | null;
   onClose: () => void;
   onToggleStatus: (p: ApiPatient) => void;
+  onDelete?: () => void;
   isActing: boolean;
 }
 
@@ -396,7 +397,7 @@ function VerificationTab({ p }: { p: ApiPatient }) {
 }
 
  
-export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: PatientPanelProps) {
+export function PatientPanel({ patient, onClose, onToggleStatus, onDelete, isActing }: PatientPanelProps) {
   const { t, i18n } = useTranslation();
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<TabId>("overview");
@@ -562,6 +563,18 @@ export function PatientPanel({ patient, onClose, onToggleStatus, isActing }: Pat
                     : t("admin.users.reactivate")}
                 </Button>
 
+                {onDelete && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
+                    disabled={isActing}
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    {t("admin.users.delete")}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
