@@ -484,7 +484,7 @@ const Help = () => {
                   to="/patient/search-doctors?instant=true"
                   className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline inline-flex items-center gap-1"
                 >
-                  Start Instant Consult <ArrowRight className="h-3.5 w-3.5" />
+                  Instant Consultation <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>

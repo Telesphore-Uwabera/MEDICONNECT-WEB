@@ -86,9 +86,38 @@ export function publicRoutes(router) {
         const like = `%${req.query.q}%`;
         params.push(like, like, like, like);
       }
-      if (req.query.specialization) {
-        filters.push("(d.specialization = ? OR EXISTS (SELECT 1 FROM doctor_specialization ds JOIN specializations s ON s.id = ds.specialization_id WHERE ds.doctor_id = d.id AND (s.slug = ? OR s.name = ?)))");
-        params.push(req.query.specialization, req.query.specialization, req.query.specialization);
+      const specialtyName = String(req.query.specialization || "").trim();
+      const subName = String(req.query.sub_specialization || "").trim();
+      const feeId = Number(req.query.specialization_fee_id);
+      if (specialtyName || subName || (Number.isFinite(feeId) && feeId > 0)) {
+        const clauses = [];
+        if (Number.isFinite(feeId) && feeId > 0) {
+          clauses.push("d.specialization_fee_id = ?");
+          params.push(feeId);
+        }
+        for (const name of [...new Set([specialtyName, subName].filter(Boolean))]) {
+          const like = `%${name}%`;
+          clauses.push("(d.specialization = ? OR d.specialization LIKE ?)");
+          params.push(name, like);
+          clauses.push(`EXISTS (
+            SELECT 1 FROM specialization_fees sf
+            WHERE sf.id = d.specialization_fee_id
+              AND (
+                sf.sub_specialization = ? OR sf.sub_specialization LIKE ?
+                OR sf.sub_specialization_fr = ? OR sf.sub_specialization_fr LIKE ?
+                OR sf.sub_specialization_kiny = ? OR sf.sub_specialization_kiny LIKE ?
+                OR sf.slug = ?
+              )
+          )`);
+          params.push(name, like, name, like, name, like, name);
+          clauses.push(`EXISTS (
+            SELECT 1 FROM doctor_specialization ds
+            JOIN specializations s ON s.id = ds.specialization_id
+            WHERE ds.doctor_id = d.id AND (s.name = ? OR s.name LIKE ? OR s.slug = ?)
+          )`);
+          params.push(name, like, name);
+        }
+        if (clauses.length) filters.push(`(${clauses.join(" OR ")})`);
       }
       if (req.query.type) {
         filters.push("d.consultation_type = ?");
@@ -177,13 +206,19 @@ export function publicRoutes(router) {
         const like = `%${req.query.q}%`;
         const parts = ["h.city LIKE ?", "h.slug LIKE ?"];
         params.push(like, like);
-        if (await hasColumn("hospitals", "name")) {
-          parts.push("h.name LIKE ?");
-          params.push(like);
+        for (const column of ["name", "name_en", "name_fr", "name_kiny", "address"]) {
+          if (await hasColumn("hospitals", column)) {
+            parts.push(`h.${column} LIKE ?`);
+            params.push(like);
+          }
         }
-        if (await hasColumn("hospitals", "name_en")) {
-          parts.push("h.name_en LIKE ?");
-          params.push(like);
+        const departmentColumns = [];
+        for (const column of ["name_en", "name_fr", "name_kiny", "name"]) {
+          if (await hasColumn("hospital_departments", column)) departmentColumns.push(column);
+        }
+        if (departmentColumns.length) {
+          parts.push(`EXISTS (SELECT 1 FROM hospital_departments hd WHERE hd.hospital_id = h.id AND (${departmentColumns.map((column) => `hd.${column} LIKE ?`).join(" OR ")}))`);
+          departmentColumns.forEach(() => params.push(like));
         }
         filters.push(`(${parts.join(" OR ")})`);
       }

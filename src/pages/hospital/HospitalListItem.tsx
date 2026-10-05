@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useHospitalSchedule } from "@/lib/hospital-store";
 import { HospitalBookingDialog } from "@/components/HospitalBookingDialog";
 import type { ApiHospital } from "@/hooks/patient/use-patient-search-hospital";
+import { localizedHospitalName } from "@/components/HospitalCard";
 import HospitalViewDrawer from "@/components/hospital/HospitalViewDrawer";
 
 const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
@@ -16,7 +17,8 @@ const TYPE_BADGE_STYLE: Record<ApiHospital["type"], string> = {
 };
 
 function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const hospitalName = localizedHospitalName(hospital, i18n.language);
   const TYPE_LABEL: Record<ApiHospital["type"], string> = {
     hospital: t("pages.patient.facility_type_hospital"),
     clinic: t("pages.patient.facility_type_clinic"),
@@ -34,7 +36,7 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
     return { openSpots };
   }, [schedule]);
 
-  const initial = hospital.name_en?.charAt(0).toUpperCase() ?? "H";
+  const initial = hospitalName.charAt(0).toUpperCase() || "H";
 
   return (
     <>
@@ -48,7 +50,7 @@ function HospitalListItem({ hospital }: { hospital: ApiHospital }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[12px] font-semibold text-foreground leading-tight">
-              {hospital.name_en}
+              {hospitalName}
             </span>
             {hospital.type && (
               <span className={cn(

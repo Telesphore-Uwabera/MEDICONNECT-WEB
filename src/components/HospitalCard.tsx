@@ -20,8 +20,19 @@ import { Card } from "@/components/ui/card";
 // Everything else (insurances, full department list, schedule table) lives in
 // HospitalViewDrawer behind "View details" so the grid stays scannable.
 // ─────────────────────────────────────────────────────────────────────────────
+export function localizedHospitalName(
+  hospital: { name_en?: string | null; name_fr?: string | null; name_kiny?: string | null },
+  language: string,
+) {
+  const lang = language.toLowerCase();
+  if (lang.startsWith("fr") && hospital.name_fr) return hospital.name_fr;
+  if ((lang.startsWith("rw") || lang.startsWith("kiny")) && hospital.name_kiny) return hospital.name_kiny;
+  return hospital.name_en || hospital.name_fr || hospital.name_kiny || "";
+}
+
 export const HospitalCard = ({ hospital }) => {
   const { t, i18n } = useTranslation();
+  const hospitalName = localizedHospitalName(hospital, i18n.language);
   const [bookOpen, setBookOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const schedule = useHospitalSchedule(hospital.name_en);
@@ -36,7 +47,7 @@ export const HospitalCard = ({ hospital }) => {
     return { activeDays: active.length, openSpots };
   }, [schedule]);
 
-  const initial = hospital.name_en?.charAt(0).toUpperCase() ?? "H";
+  const initial = hospitalName.charAt(0).toUpperCase() || "H";
   const topDepartments = hospital.departments?.slice(0, 2) ?? [];
   const extraDepartments = Math.max(0, (hospital.departments?.length ?? 0) - 2);
 
@@ -77,7 +88,7 @@ export const HospitalCard = ({ hospital }) => {
             </div>
             <div className="min-w-0 flex-1">
               <h3 className="text-base font-bold text-foreground leading-tight truncate">
-                {hospital.name_en}
+                {hospitalName}
               </h3>
               <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1 mt-1 truncate">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />

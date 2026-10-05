@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
@@ -396,6 +397,8 @@ function PaginationV2({
 
 const PatientHospitals = () => {
   const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const queryFromUrl = searchParams.get("q") ?? "";
 
   const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
     { value: "name", label: t("pages.patient.sort_name_az") },
@@ -411,12 +414,18 @@ const PatientHospitals = () => {
     { value: "pharmacy_clinic", label: t("pages.patient.facility_type_pharmacy_clinic"), icon: Shield },
   ];
 
-  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
-  const [debouncedQ, setDebouncedQ] = useState("");
+  const [filters, setFilters] = useState<FilterState>({ ...INITIAL_FILTERS, q: queryFromUrl });
+  const [debouncedQ, setDebouncedQ] = useState(queryFromUrl);
   const [view, setView] = useState<ViewMode>("grid");
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    setFilters((prev) => (prev.q === q ? prev : { ...prev, q }));
+    setDebouncedQ(q);
+  }, [searchParams]);
 
   // Debounce search query
   useEffect(() => {

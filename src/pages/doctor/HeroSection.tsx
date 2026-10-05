@@ -304,7 +304,7 @@ export default function HeroSection() {
                       className="inline-flex translate-y-2 scale-95 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-xl transition-all duration-300 group-hover:translate-y-0 group-hover:scale-100 hover:bg-primary/90"
                     >
                       {canConnect ? (
-                        <><Wifi className="h-4 w-4" />{t("pages.cards.connect", { defaultValue: "Connect" })}</>
+                        <><Wifi className="h-4 w-4" />{t("pages.cards.instant_consultation", { defaultValue: "Instant Consultation" })}</>
                       ) : (
                         <><CalendarCheck className="h-4 w-4" />{t("pages.cards.book", { defaultValue: "Book" })}</>
                       )}

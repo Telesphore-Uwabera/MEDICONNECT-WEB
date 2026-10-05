@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
+  Search,
   X,
   LogOut,
   LayoutDashboard,
@@ -30,6 +31,7 @@ import {
   SpecializationSelect,
   SpecializationValue,
 } from "@/pages/patient/components/SpecializationSelect";
+import { doctorSearchForDisease } from "@/lib/disease-search";
 
 interface HeroHeaderProps {
   mobileMenuOpen: boolean;
@@ -53,7 +55,11 @@ export function HeroHeader({
   const activeHash = activeSection ? `#${activeSection}` : location.hash || "#home";
   const menuRef = useRef<HTMLDivElement>(null);
   const quickAccessRef = useRef<HTMLDivElement>(null);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
   const [quickAccessOpen, setQuickAccessOpen] = useState(false);
+  const [facilitySearchOpen, setFacilitySearchOpen] = useState(false);
+  const [facilityQuery, setFacilityQuery] = useState("");
   const [mobileQuickAccessOpen, setMobileQuickAccessOpen] = useState(false);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<SpecializationValue>({ specialization: null, fee: null });
@@ -95,7 +101,7 @@ export function HeroHeader({
     },
     {
       label: t("pages.landing.f_instant_t", {
-        defaultValue: "Instant Consult",
+        defaultValue: "Instant Consultation",
       }),
       to: "/patient/search-doctors?instant=true",
       icon: Zap,
@@ -167,6 +173,13 @@ export function HeroHeader({
       ) {
         setQuickAccessOpen(false);
       }
+      const target = e.target as Node;
+      const insideSearch =
+        desktopSearchRef.current?.contains(target) ||
+        mobileSearchRef.current?.contains(target);
+      if (!insideSearch) {
+        setFacilitySearchOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -176,6 +189,7 @@ export function HeroHeader({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setQuickAccessOpen(false);
+        setFacilitySearchOpen(false);
         setMobileMenuOpen(false);
       }
     };
@@ -186,6 +200,7 @@ export function HeroHeader({
   useEffect(() => {
     setMobileMenuOpen(false);
     setQuickAccessOpen(false);
+    setFacilitySearchOpen(false);
   }, [location.pathname, location.hash, setMobileMenuOpen]);
 
   useEffect(() => {
@@ -202,6 +217,65 @@ export function HeroHeader({
       onSuccess: () => navigate("/auth"),
     });
   };
+
+  const submitFacilitySearch = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const q = facilityQuery.trim();
+    const diseasePath = q ? doctorSearchForDisease(q) : null;
+    navigate(
+      diseasePath
+        ? diseasePath
+        : q
+          ? `/patient/search-facilities?q=${encodeURIComponent(q)}`
+          : "/patient/search-facilities",
+    );
+    setFacilitySearchOpen(false);
+    setMobileMenuOpen(false);
+  };
+
+  const facilitySearch = (searchRef: React.RefObject<HTMLDivElement>) => (
+    <div ref={searchRef} className="relative">
+      <button
+        type="button"
+        aria-label={t("nav.search_facilities")}
+        aria-expanded={facilitySearchOpen}
+        onClick={() => setFacilitySearchOpen((open) => !open)}
+        className={cn(
+          "flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium transition-smooth",
+          facilitySearchOpen
+            ? "bg-accent text-foreground"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+        )}
+      >
+        <Search className="h-4 w-4" />
+        <span>{t("nav.search")}</span>
+      </button>
+      {facilitySearchOpen && (
+        <form
+          onSubmit={submitFacilitySearch}
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(320px,80vw)] rounded-xl border border-border bg-popover p-2 shadow-xl"
+        >
+          <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
+            {t("nav.search_hint")}
+          </p>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              ref={(node) => {
+                if (node && node.offsetParent !== null) node.focus();
+              }}
+              type="search"
+              value={facilityQuery}
+              onChange={(event) => setFacilityQuery(event.target.value)}
+              placeholder={t("pages.patient.hospitals_search_placeholder")}
+              aria-label={t("nav.search_facilities")}
+              className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+        </form>
+      )}
+    </div>
+  );
 
   const handleNavClick = (hash: string) => {
     const sectionId = hash.replace("#", "");
@@ -381,6 +455,7 @@ export function HeroHeader({
               </Link>
             );
           })}
+          {facilitySearch(desktopSearchRef)}
         </nav>
 
         {/* Specialization search — desktop */}
@@ -461,6 +536,7 @@ export function HeroHeader({
 
         {/* Mobile/tablet: auth actions + hamburger */}
         <div className="flex lg:hidden items-center gap-1 shrink-0">
+          {facilitySearch(mobileSearchRef)}
           <ThemeToggle />
           <div className="hidden sm:flex items-center gap-1">
             <LanguageSwitcher compact />

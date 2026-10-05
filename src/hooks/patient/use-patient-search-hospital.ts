@@ -28,6 +28,8 @@ export interface ApiWorkingHour {
 export interface ApiHospital {
   id: number;
   name_en: string;
+  name_fr?: string | null;
+  name_kiny?: string | null;
   slug: string;
   type: "hospital" | "clinic" | "health_center" | "pharmacy_clinic";
   city: string;

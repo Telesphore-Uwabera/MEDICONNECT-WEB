@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Baby,
   Bone,
+  Brain,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,8 @@ interface LandingSpecializationFee {
   specialization?: string | { id?: number; name?: string; slug?: string } | null;
   sub_specialization?: string | null;
   sub_specialization_en?: string | null;
+  sub_specialization_fr?: string | null;
+  sub_specialization_kiny?: string | null;
   tier_name?: string | null;
   doctorCount?: number;
   doctors_count?: number;
@@ -50,6 +53,7 @@ interface ServiceDefinition {
   label: string;
   subSpecializationName?: string;
   specializationName?: string;
+  alsoMatch?: string;
   feeId?: number;
   slug: string;
   fallbackIcon: LucideIcon;
@@ -57,7 +61,7 @@ interface ServiceDefinition {
   searchUrl?: string;
 }
 
-// Exactly the 9 services requested from the screen
+// Landing services. Each card opens doctors in that specialization.
 const TARGET_SERVICES: ServiceDefinition[] = [
   {
     key: 'internal-medicine',
@@ -94,6 +98,8 @@ const TARGET_SERVICES: ServiceDefinition[] = [
   {
     key: 'stomatology-dental-surgery',
     label: 'Stomatology/\u200bdental surgery',
+    subSpecializationName: 'Stomatology/dental surgery',
+    alsoMatch: 'Dental',
     slug: 'stomatology-dental-surgery',
     fallbackIcon: Smile,
     fallbackSvg:
@@ -133,6 +139,15 @@ const TARGET_SERVICES: ServiceDefinition[] = [
     feeId: 9,
     slug: 'orthopedics-standard',
     fallbackIcon: Bone,
+  },
+  {
+    key: 'mental-counseling',
+    label: 'Mental Counseling',
+    subSpecializationName: 'Mental Counseling',
+    alsoMatch: 'Psychiatry',
+    feeId: 7,
+    slug: 'mental-counseling',
+    fallbackIcon: Brain,
   },
 ];
 
@@ -240,8 +255,40 @@ function useLandingSpecializationFees() {
   });
 }
 
+function specialtyHref(def: ServiceDefinition, matched?: LandingSpecializationFee) {
+  const name =
+    def.subSpecializationName ||
+    def.specializationName ||
+    matched?.sub_specialization ||
+    def.label;
+  const params = new URLSearchParams();
+  params.set("specialization", name);
+  const feeId = matched?.id ?? def.feeId;
+  if (feeId) params.set("specialization_fee_id", String(feeId));
+  if (def.alsoMatch) params.set("sub_specialization", def.alsoMatch);
+  else if (matched?.sub_specialization && matched.sub_specialization !== name) {
+    params.set("sub_specialization", matched.sub_specialization);
+  }
+  return `/patient/search-doctors?${params.toString()}`;
+}
+
+function specialtyLabel(
+  def: ServiceDefinition,
+  matched: LandingSpecializationFee | undefined,
+  language: string,
+  translatedMental: string,
+) {
+  if (def.key === "mental-counseling") return translatedMental;
+  const lang = language.toLowerCase();
+  if (lang.startsWith("fr") && matched?.sub_specialization_fr) return matched.sub_specialization_fr;
+  if ((lang.startsWith("rw") || lang.startsWith("kiny")) && matched?.sub_specialization_kiny) {
+    return matched.sub_specialization_kiny;
+  }
+  return matched?.sub_specialization || def.label;
+}
+
 function Specialities() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const {
     data = [],
@@ -261,8 +308,10 @@ function Specialities() {
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
 
-  // Map only the 9 specified services, enriching with API fee/doctor data when loaded
   const preparedSpecializations = useMemo<PreparedSpecialization[]>(() => {
+    const mentalLabel = t("pages.landing.spec_mental_counseling", {
+      defaultValue: "Mental Counseling",
+    });
     return TARGET_SERVICES.map((def, idx) => {
       const matched = data.find((item) => {
         if (def.feeId && item.id === def.feeId) return true;
@@ -286,24 +335,18 @@ function Specialities() {
         return false;
       });
 
-      const href =
-        def.searchUrl ||
-        (matched?.id || def.feeId
-          ? `/patient/search-doctors?type=booking&specialization=Specialist&specialization_fee_id=${matched?.id ?? def.feeId}`
-          : `/patient/search-doctors?type=booking&search=${encodeURIComponent(def.label)}`);
-
       return {
         id: matched?.id ?? (100 + idx),
         key: def.key,
-        label: def.label,
-        href,
+        label: specialtyLabel(def, matched, i18n.language, mentalLabel),
+        href: specialtyHref(def, matched),
         resolvedSlug: def.slug,
         doctorCount: matched?.doctorCount ?? matched?.doctors_count,
         Icon: def.fallbackIcon,
         icon_svg: matched?.icon_svg || def.fallbackSvg || null,
       };
     });
-  }, [data]);
+  }, [data, i18n.language, t]);
 
   const filteredSpecializations = useMemo(() => {
     const query = mobileSearch.trim().toLowerCase();

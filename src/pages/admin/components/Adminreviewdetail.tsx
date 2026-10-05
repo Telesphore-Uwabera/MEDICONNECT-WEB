@@ -665,7 +665,7 @@ export default function AdminReviewDetail({
         )}
         {doctor.instant_consultation !== undefined && (
           <BoolRow
-            label="Instant Consult"
+            label="Instant Consultation"
             icon={Activity}
             value={doctor.instant_consultation}
           />

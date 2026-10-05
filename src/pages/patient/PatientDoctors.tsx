@@ -66,6 +66,28 @@ const INITIAL_FILTERS: FilterState = {
 
 const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 
+const GENERAL_PRACTITIONER_SPEC: SpecializationValue = {
+  specialization: {
+    id: 0,
+    name: "General Practitioner",
+    name_fr: "Médecin Généraliste",
+    name_kiny: "Umuganga Rusange",
+    slug: "general-practitioner",
+  },
+  fee: {
+    id: 1,
+    specialization_id: 0,
+    sub_specialization: "General Practitioner",
+    sub_specialization_fr: "Médecin Généraliste",
+    sub_specialization_kiny: "Umuganga Rusange",
+    tier_name: "Standard",
+    slug: "general-practitioner-standard",
+    online_fee: "",
+    in_person_fee: "",
+    currency: "RWF",
+  },
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildApiParams(
@@ -768,6 +790,8 @@ const PatientDoctors = () => {
       if (spec.specialization.id) params.set("specialization_id", String(spec.specialization.id));
     }
     if (spec.fee?.id) params.set("specialization_fee_id", String(spec.fee.id));
+    if (searchParams.get("disease") === "1") params.set("disease", "1");
+    if (searchParams.get("concern")) params.set("concern", searchParams.get("concern") || "");
     if (page > 1) params.set("page", String(page));
 
     setSearchParams(params, { replace: true });
@@ -779,6 +803,18 @@ const PatientDoctors = () => {
   );
 
   const { data, isLoading, isError, refetch } = useGetSearchDoctors(apiParams);
+  const diseaseSearch = searchParams.get("disease") === "1";
+  const [fellBackToGp, setFellBackToGp] = useState(false);
+  const showingGeneralPractitioner =
+    spec.fee?.id === 1 || spec.specialization?.name === "General Practitioner";
+
+  useEffect(() => {
+    if (!diseaseSearch || isLoading || fellBackToGp || showingGeneralPractitioner) return;
+    if (!isError && !data) return;
+    if (!isError && (data?.total ?? 0) > 0) return;
+    setFellBackToGp(true);
+    setSpec(GENERAL_PRACTITIONER_SPEC);
+  }, [data, diseaseSearch, fellBackToGp, isError, isLoading, showingGeneralPractitioner]);
 
   const doctors = useMemo(() => {
     if (!data?.data) return [];
@@ -844,6 +880,11 @@ const PatientDoctors = () => {
 
           {/* ── Results ── */}
           <main className="flex-1 overflow-y-auto flex flex-col" data-doctor-results>
+            {fellBackToGp && (data?.total ?? 0) > 0 && (
+              <p className="mx-4 mt-3 rounded-[6px] border border-primary/20 bg-primary/5 px-3 py-2 text-[12px] text-foreground">
+                {t("pages.patient.disease_gp_fallback")}
+              </p>
+            )}
             <SearchStats
               isLoading={isLoading}
               total={data?.total ?? 0}
@@ -1048,7 +1089,9 @@ const PatientDoctors = () => {
                   <div className="mt-1 flex flex-wrap gap-1">
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-primary/10 text-primary text-[10px] font-medium border border-primary/20">
                       {spec.specialization.name}
-                      {spec.fee && (
+                      {spec.fee?.sub_specialization &&
+                        spec.fee.sub_specialization !== spec.specialization.name &&
+                        spec.fee.sub_specialization !== "Selected sub-specialization" && (
                         <span className="text-primary/70">· {spec.fee.sub_specialization}</span>
                       )}
                       <button

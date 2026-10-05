@@ -14,6 +14,7 @@ import { CallProvider } from "./context/CallContext.tsx";
 import { GlobalCallOverlay } from "./components/consultatioRoom/GlobalCallOverlay.tsx";
 import { AppointmentCompletionGate } from "./components/consultatioRoom/AppointmentCompletionGate.tsx";
 import { GlobalInstantPill } from "./components/GlobalInstantPill.tsx";
+import { WhatsAppFloat } from "./components/WhatsAppFloat.tsx";
 import { RoleSwitcher } from "@/components/RoleSwitcher";
 import {
   ACCESS_PROMPT_EVENT,
@@ -345,6 +346,7 @@ const App = () => (
           <GlobalCallOverlay />
           <AppointmentCompletionGate />
           <GlobalInstantPill />
+          <WhatsAppFloat />
           <AccessPromptManager />
           <ErrorBoundary>
           <Routes>
