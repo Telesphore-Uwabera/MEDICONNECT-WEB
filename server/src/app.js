@@ -478,6 +478,410 @@ export function appRoutes(router) {
     }
   });
 
+  async function currentDoctor(req) {
+    const doctorId = await loadOwnedId(req.user.id, "doctors");
+    const doctor = doctorId ? await one("SELECT * FROM doctors WHERE id = ?", [doctorId]).catch(() => null) : null;
+    return { doctorId: doctorId ?? 0, doctor };
+  }
+
+  function periodWhere(column, period, start, end) {
+    const date = `DATE(\`${column}\`)`;
+    if (period === "custom" && start && end) return { sql: `${date} BETWEEN ? AND ?`, params: [String(start).slice(0, 10), String(end).slice(0, 10)] };
+    if (period === "today" || period === "day") return { sql: `${date} = CURDATE()`, params: [] };
+    if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
+    if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
+    return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
+  }
+
+  function previousWhere(column, period) {
+    const date = `DATE(\`${column}\`)`;
+    if (period === "today" || period === "day") return { sql: `${date} = DATE_SUB(CURDATE(), INTERVAL 1 DAY)`, params: [] };
+    if (period === "week") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 13 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 6 DAY)`, params: [] };
+    if (period === "year") return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 728 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 364 DAY)`, params: [] };
+    return { sql: `${date} >= DATE_SUB(CURDATE(), INTERVAL 59 DAY) AND ${date} < DATE_SUB(CURDATE(), INTERVAL 29 DAY)`, params: [] };
+  }
+
+  async function firstColumn(table, names) {
+    for (const name of names) {
+      if (await hasColumn(table, name)) return name;
+    }
+    return null;
+  }
+
+  function tallyStatuses(rows) {
+    const out = { total: 0, completed: 0, pending: 0, confirmed: 0, cancelled: 0 };
+    for (const row of rows) {
+      const count = Number(row.total ?? 0);
+      out.total += count;
+      const status = String(row.status || "").toLowerCase();
+      if (["completed", "done", "complete"].includes(status)) out.completed += count;
+      else if (status === "pending") out.pending += count;
+      else if (["confirmed", "accepted", "approved"].includes(status)) out.confirmed += count;
+      else if (["cancelled", "canceled", "declined", "rejected"].includes(status)) out.cancelled += count;
+    }
+    return out;
+  }
+
+  async function doctorWalletRow(doctorId, userId) {
+    if (!(await tableExists("doctor_wallets"))) return null;
+    const column = await firstColumn("doctor_wallets", ["doctor_id", "user_id"]);
+    if (!column) return null;
+    return one(`SELECT * FROM doctor_wallets WHERE \`${column}\` = ? ORDER BY id DESC LIMIT 1`, [column === "user_id" ? userId : doctorId]).catch(() => null);
+  }
+
+  router.get("/doctor/toggle/mystatus", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctor } = await currentDoctor(req);
+      res.json({
+        instant_consultation: Boolean(Number(doctor?.instant_consultation ?? 0)),
+        bookings_paused: Boolean(Number(doctor?.bookings_paused ?? doctor?.pause_bookings ?? 0)),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  async function setDoctorFlag(req, res, next, column, value) {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      if (await hasColumn("doctors", column)) await update("doctors", doctorId, { [column]: value ? 1 : 0 });
+      const doctor = await one("SELECT * FROM doctors WHERE id = ?", [doctorId]);
+      res.json({
+        message: "Updated.",
+        instant_consultation: Boolean(Number(doctor?.instant_consultation ?? 0)),
+        bookings_paused: Boolean(Number(doctor?.bookings_paused ?? doctor?.pause_bookings ?? 0)),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  function flagValue(body, keys, current) {
+    for (const key of keys) {
+      if (body && Object.prototype.hasOwnProperty.call(body, key)) {
+        const value = body[key];
+        return value === true || value === 1 || value === "1";
+      }
+    }
+    return !current;
+  }
+
+  router.patch("/doctor/toggle/instant", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    const { doctor } = await currentDoctor(req);
+    const current = Boolean(Number(doctor?.instant_consultation ?? 0));
+    return setDoctorFlag(req, res, next, "instant_consultation", flagValue(req.body, ["instant_consultation", "enabled", "status"], current));
+  });
+
+  router.patch("/doctor/toggle/pause", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    const { doctor } = await currentDoctor(req);
+    const column = (await hasColumn("doctors", "bookings_paused")) ? "bookings_paused" : "pause_bookings";
+    const current = Boolean(Number(doctor?.bookings_paused ?? doctor?.pause_bookings ?? 0));
+    return setDoctorFlag(req, res, next, column, flagValue(req.body, ["bookings_paused", "paused", "enabled"], current));
+  });
+
+  router.get("/doctor/dashboard", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const period = String(req.query.period || "week");
+      const chartGroup = String(req.query.chart_group || "day");
+      const count = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
+      const dateColumn = await firstColumn("appointments", ["appointment_date", "scheduled_at", "date", "created_at"]);
+      const amountColumn = await firstColumn("appointments", ["fee", "amount", "consultation_fee", "price", "total_amount"]);
+      const typeColumn = await firstColumn("appointments", ["appointment_type", "type", "consultation_type"]);
+      const alive = (await hasColumn("appointments", "deleted_at")) ? "deleted_at IS NULL" : "1=1";
+      const owned = `doctor_id = ? AND ${alive}`;
+      const window = dateColumn ? periodWhere(dateColumn, period, req.query.start_date, req.query.end_date) : { sql: "1=1", params: [] };
+      const previous = dateColumn ? previousWhere(dateColumn, period) : { sql: "1=0", params: [] };
+      const todaySql = dateColumn ? `DATE(\`${dateColumn}\`) = CURDATE()` : "1=0";
+      const statuses = await q(
+        `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} GROUP BY status`,
+        [doctorId, ...window.params],
+      ).catch(() => []);
+      const todayRows = await q(
+        `SELECT status, COUNT(*) AS total FROM appointments WHERE ${owned} AND ${todaySql} GROUP BY status`,
+        [doctorId],
+      ).catch(() => []);
+      const periodStats = tallyStatuses(statuses);
+      const today = tallyStatuses(todayRows);
+      const typeCount = async (likeSql, params) => {
+        if (!typeColumn) return 0;
+        return count(`SELECT COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} AND ${likeSql}`, [doctorId, ...window.params, ...params]);
+      };
+      const onlineCount = typeColumn ? await typeCount(`\`${typeColumn}\` NOT LIKE '%person%' AND \`${typeColumn}\` NOT LIKE '%instant%' AND \`${typeColumn}\` NOT LIKE '%clinic%'`, []) : periodStats.total;
+      const inPersonCount = typeColumn ? await typeCount(`(\`${typeColumn}\` LIKE '%person%' OR \`${typeColumn}\` LIKE '%clinic%' OR \`${typeColumn}\` LIKE '%hospital%')`, []) : 0;
+      const instantCount = typeColumn ? await typeCount(`\`${typeColumn}\` LIKE '%instant%'`, []) : 0;
+      const sumAmount = async (extraSql, params) => {
+        if (!amountColumn) return 0;
+        return Number((await one(
+          `SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM appointments WHERE ${owned} AND ${extraSql}`,
+          [doctorId, ...params],
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
+      };
+      const completedSql = "status IN ('completed','done','complete','paid')";
+      const revenueTotal = await sumAmount(`${window.sql} AND ${completedSql}`, window.params);
+      const previousTotal = await sumAmount(`${previous.sql} AND ${completedSql}`, previous.params);
+      const revenueCount = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${owned} AND ${window.sql} AND ${completedSql}`, [doctorId, ...window.params]);
+      const onlineRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND \`${typeColumn}\` NOT LIKE '%person%' AND \`${typeColumn}\` NOT LIKE '%instant%'`, window.params) : revenueTotal;
+      const inPersonRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND (\`${typeColumn}\` LIKE '%person%' OR \`${typeColumn}\` LIKE '%clinic%')`, window.params) : 0;
+      const instantRevenue = typeColumn ? await sumAmount(`${window.sql} AND ${completedSql} AND \`${typeColumn}\` LIKE '%instant%'`, window.params) : 0;
+      const change = previousTotal > 0 ? Math.round(((revenueTotal - previousTotal) / previousTotal) * 1000) / 10 : null;
+      const labelExpr = !dateColumn
+        ? "CURDATE()"
+        : chartGroup === "month"
+          ? `DATE_FORMAT(\`${dateColumn}\`, '%Y-%m-01')`
+          : `DATE(\`${dateColumn}\`)`;
+      const flow = dateColumn ? await q(
+        `SELECT ${labelExpr} AS label, COUNT(*) AS patients, SUM(CASE WHEN status IN ('completed','done','complete') THEN 1 ELSE 0 END) AS completed
+         FROM appointments WHERE ${owned} AND ${window.sql} GROUP BY label ORDER BY label`,
+        [doctorId, ...window.params],
+      ).catch(() => []) : [];
+      const prescriptionAlive = (await hasColumn("prescriptions", "deleted_at")) ? "deleted_at IS NULL" : "1=1";
+      const prescriptionCount = async (extra = "1=1") => count(
+        `SELECT COUNT(*) AS total FROM prescriptions WHERE doctor_id = ? AND ${prescriptionAlive} AND ${extra}`,
+        [doctorId],
+      );
+      const reviewAlive = (await hasColumn("reviews", "deleted_at")) ? "r.deleted_at IS NULL" : "1=1";
+      const ratingColumn = await firstColumn("reviews", ["rating", "stars", "score"]);
+      const reviewStats = ratingColumn ? await one(
+        `SELECT COUNT(*) AS total,
+                AVG(\`${ratingColumn}\`) AS avg_rating,
+                SUM(CASE WHEN \`${ratingColumn}\` >= 5 THEN 1 ELSE 0 END) AS five_star,
+                SUM(CASE WHEN \`${ratingColumn}\` >= 4 AND \`${ratingColumn}\` < 5 THEN 1 ELSE 0 END) AS four_star,
+                SUM(CASE WHEN \`${ratingColumn}\` >= 3 AND \`${ratingColumn}\` < 4 THEN 1 ELSE 0 END) AS three_star,
+                SUM(CASE WHEN \`${ratingColumn}\` < 3 THEN 1 ELSE 0 END) AS low_star
+         FROM reviews r WHERE r.doctor_id = ? AND ${reviewAlive}`,
+        [doctorId],
+      ).catch(() => null) : null;
+      const recentReviews = ratingColumn ? await q(
+        `SELECT r.id, r.\`${ratingColumn}\` AS rating, r.comment, r.created_at, u.name AS patient_name
+         FROM reviews r
+         LEFT JOIN patients p ON p.id = r.patient_id
+         LEFT JOIN users u ON u.id = p.user_id
+         WHERE r.doctor_id = ? AND ${reviewAlive}
+         ORDER BY r.id DESC LIMIT 5`,
+        [doctorId],
+      ).catch(() => []) : [];
+      const instantTable = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
+      const instantOwned = instantTable && (await hasColumn(instantTable, "doctor_id")) ? "doctor_id = ?" : "1=0";
+      const instantParams = instantOwned === "1=0" ? [] : [doctorId];
+      const instantStatus = async (extra) => instantTable
+        ? count(`SELECT COUNT(*) AS total FROM \`${instantTable}\` WHERE ${instantOwned} AND ${extra}`, instantParams)
+        : 0;
+
+      res.json({
+        filters_applied: {
+          period,
+          from: req.query.start_date || null,
+          to: req.query.end_date || null,
+          appointment_type: req.query.appointment_type || "all",
+          search: req.query.search || null,
+          chart_group: chartGroup,
+        },
+        today: { ...today, instant_queue: await instantStatus("status IN ('pending','queued','waiting')") },
+        period_stats: {
+          total_appointments: periodStats.total,
+          completed: periodStats.completed,
+          cancelled: periodStats.cancelled,
+          pending: periodStats.pending,
+          confirmed: periodStats.confirmed,
+          online_count: onlineCount,
+          in_person_count: inPersonCount,
+          instant_total: instantCount,
+          instant_completed: await instantStatus("status IN ('completed','done')"),
+          avg_duration_minutes: 0,
+        },
+        revenue: {
+          total: revenueTotal,
+          previous_period_total: previousTotal,
+          change_percent: change,
+          appointment_count: revenueCount,
+          avg_per_appointment: revenueCount > 0 ? Math.round(revenueTotal / revenueCount) : 0,
+          breakdown: {
+            online: { total: onlineRevenue, count: onlineCount },
+            in_person: { total: inPersonRevenue, count: inPersonCount },
+            instant: { total: instantRevenue, count: instantCount },
+          },
+        },
+        patient_flow: flow.map((row) => ({
+          label: String(row.label).slice(0, 10),
+          patients: Number(row.patients ?? 0),
+        })),
+        completion_rate: flow.map((row) => {
+          const patients = Number(row.patients ?? 0);
+          const completed = Number(row.completed ?? 0);
+          return { label: String(row.label).slice(0, 10), rate: patients > 0 ? Math.round((completed / patients) * 100) : 0 };
+        }),
+        instant: {
+          total: await instantStatus("1=1"),
+          completed: await instantStatus("status IN ('completed','done')"),
+          declined: await instantStatus("status IN ('declined','rejected','cancelled','canceled')"),
+          pending: await instantStatus("status IN ('pending','queued','waiting')"),
+          current_queue: await instantStatus("status IN ('pending','queued','waiting')"),
+          avg_duration_min: 0,
+        },
+        prescriptions: {
+          total: await prescriptionCount(),
+          issued: await prescriptionCount("status IN ('issued','signed','completed','active')"),
+          draft: await prescriptionCount("status IN ('draft','pending')"),
+          signed: await prescriptionCount("status IN ('signed','issued')"),
+        },
+        reviews: {
+          all_time_avg: reviewStats?.avg_rating == null ? null : Math.round(Number(reviewStats.avg_rating) * 10) / 10,
+          period: {
+            total: Number(reviewStats?.total ?? 0),
+            avg: reviewStats?.avg_rating == null ? null : Math.round(Number(reviewStats.avg_rating) * 10) / 10,
+            five_star: Number(reviewStats?.five_star ?? 0),
+            four_star: Number(reviewStats?.four_star ?? 0),
+            three_star: Number(reviewStats?.three_star ?? 0),
+            low_star: Number(reviewStats?.low_star ?? 0),
+          },
+          recent: recentReviews.map((row) => ({
+            id: row.id,
+            rating: Number(row.rating ?? 0),
+            comment: row.comment ?? "",
+            created_at: row.created_at,
+            patient_name: row.patient_name || "Patient",
+          })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/wallet", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const row = await doctorWalletRow(doctorId, req.user.id);
+      res.json({
+        wallet: {
+          balance: Number(row?.balance ?? row?.available_balance ?? 0),
+          currency: row?.currency || "RWF",
+          last_topup: row?.last_topup ?? row?.last_topup_at ?? null,
+          last_withdrawn: row?.last_withdrawn ?? row?.last_withdrawn_at ?? null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/wallet/earnings", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const { page, perPage, offset } = pageArgs(req);
+      const amountColumn = await firstColumn("appointments", ["fee", "amount", "consultation_fee", "price", "total_amount"]);
+      const dateColumn = await firstColumn("appointments", ["appointment_date", "scheduled_at", "completed_at", "created_at"]);
+      const alive = (await hasColumn("appointments", "deleted_at")) ? "deleted_at IS NULL" : "1=1";
+      const where = `doctor_id = ? AND ${alive} AND status IN ('completed','done','complete','paid')`;
+      const summary = await one(
+        `SELECT COUNT(*) AS total_appointments, COALESCE(SUM(${amountColumn ? `\`${amountColumn}\`` : "0"}), 0) AS total_earned, MAX(${dateColumn ? `\`${dateColumn}\`` : "NULL"}) AS last_appointment_at FROM appointments WHERE ${where}`,
+        [doctorId],
+      ).catch(() => null);
+      const total = Number(summary?.total_appointments ?? 0);
+      const rows = await q(
+        `SELECT * FROM appointments WHERE ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
+        [doctorId, perPage, offset],
+      ).catch(() => []);
+      res.json({
+        summary: {
+          total_appointments: total,
+          total_earned: Number(summary?.total_earned ?? 0),
+          average_per_appointment: total > 0 ? Math.round(Number(summary.total_earned) / total) : 0,
+          last_appointment_at: summary?.last_appointment_at ?? null,
+        },
+        breakdown: laravelPage({
+          data: await presentRows("appointments", rows),
+          total,
+          page,
+          perPage,
+          path: "/api/v1/doctor/wallet/earnings",
+        }),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/wallet/withdrawals", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const { page, perPage, offset } = pageArgs(req);
+      const table = (await tableExists("doctor_withdrawals"))
+        ? "doctor_withdrawals"
+        : (await tableExists("wallet_withdrawals"))
+          ? "wallet_withdrawals"
+          : (await tableExists("withdrawals"))
+            ? "withdrawals"
+            : null;
+      if (!table) {
+        return res.json(laravelPage({ data: [], total: 0, page, perPage, path: "/api/v1/doctor/wallet/withdrawals" }));
+      }
+      const column = await firstColumn(table, ["doctor_id", "user_id"]);
+      const where = column ? `\`${column}\` = ?` : "1=0";
+      const params = column ? [column === "user_id" ? req.user.id : doctorId] : [];
+      const total = Number((await one(`SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${where}`, params).catch(() => ({ total: 0 })))?.total ?? 0);
+      const rows = await q(`SELECT * FROM \`${table}\` WHERE ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]).catch(() => []);
+      res.json(laravelPage({
+        data: await presentRows(table, rows),
+        total,
+        page,
+        perPage,
+        path: "/api/v1/doctor/wallet/withdrawals",
+      }));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/instant-consultations/queue", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId, doctor } = await currentDoctor(req);
+      const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
+      let queue = [];
+      let seenToday = 0;
+      let resolved = 0;
+      if (table) {
+        const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
+        const params = owner.includes("?") ? [doctorId] : [];
+        const rows = await q(
+          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed') ORDER BY id ASC LIMIT 50`,
+          params,
+        ).catch(() => []);
+        queue = rows.map((row, index) => ({
+          id: row.id,
+          guest_phone: row.guest_phone || row.phone || "",
+          description: row.description || row.reason || null,
+          status: row.status || "pending",
+          queue_position: index + 1,
+          waiting_seconds: 0,
+          waiting_label: "Waiting",
+        }));
+        seenToday = Number((await one(
+          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done','in_progress') AND DATE(created_at) = CURDATE()`,
+          owner.includes("?") ? [doctorId] : [],
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
+        resolved = Number((await one(
+          `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done')`,
+          owner.includes("?") ? [doctorId] : [],
+        ).catch(() => ({ total: 0 })))?.total ?? 0);
+      }
+      res.json({
+        queue,
+        stats: {
+          in_queue: queue.length,
+          seen_today: seenToday,
+          avg_duration: "0 min",
+          resolved,
+          is_online: Boolean(Number(doctor?.instant_consultation ?? 0)),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/patient/appointments/:id/pay", requireAuth, requireRole("patient"), async (req, res, next) => {
     try {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
