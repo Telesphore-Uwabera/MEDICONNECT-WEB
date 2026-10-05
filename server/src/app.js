@@ -536,6 +536,96 @@ export function appRoutes(router) {
     }
   });
 
+  router.get("/admin/dashboard", requireAuth, requireRole("admin", "moderator", "finance", "help_desk"), async (req, res, next) => {
+    try {
+      const alive = async (table) => (await hasColumn(table, "deleted_at")) ? "deleted_at IS NULL" : "1=1";
+      const count = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
+      const sum = async (sql, params = []) => Number((await one(sql, params).catch(() => ({ total: 0 })))?.total ?? 0);
+      const like = req.query.q ? `%${req.query.q}%` : null;
+      const userFilter = like ? " AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)" : "";
+      const userParams = like ? [like, like, like] : [];
+      const roleCount = async (table) => {
+        if (!(await tableExists(table))) return 0;
+        if (!like || !(await hasColumn(table, "user_id"))) return count(`SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${await alive(table)}`);
+        const deleted = (await hasColumn(table, "deleted_at")) ? "t.deleted_at IS NULL" : "1=1";
+        return count(
+          `SELECT COUNT(*) AS total FROM \`${table}\` t JOIN users u ON u.id = t.user_id WHERE ${deleted} AND (u.name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?)`,
+          userParams,
+        );
+      };
+      const dateColumn = async (table) => {
+        for (const column of ["appointment_date", "scheduled_at", "date", "paid_at", "created_at"]) {
+          if (await hasColumn(table, column)) return column;
+        }
+        return null;
+      };
+      const dateClause = async (table) => {
+        const column = await dateColumn(table);
+        if (!column) return { sql: "", params: [] };
+        if (req.query.date) return { sql: ` AND DATE(\`${column}\`) = ?`, params: [req.query.date] };
+        const params = [];
+        let sql = "";
+        if (req.query.date_from) { sql += ` AND DATE(\`${column}\`) >= ?`; params.push(req.query.date_from); }
+        if (req.query.date_to) { sql += ` AND DATE(\`${column}\`) <= ?`; params.push(req.query.date_to); }
+        return { sql, params };
+      };
+
+      const appointmentDates = await dateClause("appointments");
+      const paymentDates = await dateClause("payments");
+      const appointmentAlive = await alive("appointments");
+      const patients = await roleCount("patients");
+      const doctors = await roleCount("doctors");
+      const pharmacies = await roleCount("pharmacies");
+      const hospitals = await roleCount("hospitals");
+      const users = await count(`SELECT COUNT(*) AS total FROM users WHERE ${await alive("users")}${userFilter}`, userParams);
+      const appointmentsTotal = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive}${appointmentDates.sql}`, appointmentDates.params);
+      const appointmentsPending = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('pending','confirmed')${appointmentDates.sql}`, appointmentDates.params);
+      const appointmentDay = await dateColumn("appointments");
+      const appointmentsToday = appointmentDay
+        ? await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND DATE(\`${appointmentDay}\`) = CURDATE()`)
+        : 0;
+      const amountColumn = (await hasColumn("payments", "amount")) ? "amount" : (await hasColumn("payments", "total_amount")) ? "total_amount" : null;
+      const paid = "status IN ('paid','completed','success','successful')";
+      const paymentAlive = await alive("payments");
+      const revenue = amountColumn
+        ? await sum(`SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments WHERE ${paymentAlive} AND ${paid}${paymentDates.sql}`, paymentDates.params)
+        : 0;
+      const paymentDay = await dateColumn("payments");
+      const revenueToday = amountColumn && paymentDay
+        ? await sum(`SELECT COALESCE(SUM(\`${amountColumn}\`), 0) AS total FROM payments WHERE ${paymentAlive} AND ${paid} AND DATE(\`${paymentDay}\`) = CURDATE()`)
+        : 0;
+      const pendingPayments = await count(`SELECT COUNT(*) AS total FROM payments WHERE ${paymentAlive} AND status = 'pending'`);
+      const certificateAlive = await alive("fitness_certificates");
+      const certificatesPending = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status IN ('pending','submitted','review')`);
+      const certificatesApproved = await count(`SELECT COUNT(*) AS total FROM fitness_certificates WHERE ${certificateAlive} AND status IN ('approved','issued','signed','completed')`);
+      const activeConsultations = await count(`SELECT COUNT(*) AS total FROM appointments WHERE ${appointmentAlive} AND status IN ('in_progress','active','ongoing')`);
+
+      res.json({
+        status: true,
+        data: {
+          users: { patients, doctors, pharmacies, hospitals, total: users },
+          appointments: { today: appointmentsToday, pending: appointmentsPending, total: appointmentsTotal },
+          payments: {
+            total_revenue: String(revenue),
+            revenue_today: String(revenueToday),
+            pending_count: pendingPayments,
+            currency: "RWF",
+          },
+          certificates: { pending: certificatesPending, approved: certificatesApproved },
+          quick_consultations: { active: activeConsultations },
+        },
+        filters_applied: {
+          q: req.query.q || undefined,
+          date: req.query.date || undefined,
+          date_from: req.query.date_from || undefined,
+          date_to: req.query.date_to || undefined,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/admin/users", requireAuth, requireRole("admin", "moderator", "finance", "help_desk"), async (req, res, next) => {
     try {
       const page = await listTable(req, "users", "admin");
