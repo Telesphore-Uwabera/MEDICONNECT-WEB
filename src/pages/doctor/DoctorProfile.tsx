@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { doctorIsApproved, doctorProfileReady } from "@/lib/doctor-profile-ready";
 import i18n from "@/lib/i18n";
 
 import {
@@ -1122,7 +1123,75 @@ const UnifiedSidebar = React.memo(function UnifiedSidebar({
     </div>
   );
 });
- 
+
+function ProfileReviewNotice({
+  doctor,
+}: {
+  doctor?: {
+    status?: string | null;
+    review_message?: string | null;
+    license_expires_at?: string | null;
+    doctor_degree?: string | null;
+    medical_license?: string | null;
+    bio_en?: string | null;
+    bio_fr?: string | null;
+    bio_kiny?: string | null;
+  } | null;
+}) {
+  const { t } = useTranslation();
+  if (!doctor) return null;
+  const approved = doctorIsApproved(doctor.status);
+  const ready = doctorProfileReady(doctor);
+  const message = doctor.review_message?.trim();
+  const expiry = doctor.license_expires_at ? String(doctor.license_expires_at).slice(0, 10) : "";
+  const expiryDays = expiry
+    ? Math.round((new Date(`${expiry}T00:00:00`).getTime() - new Date(new Date().toDateString()).getTime()) / 86400000)
+    : null;
+  const expirySoon = expiryDays !== null && expiryDays <= 30;
+  const needsAction = String(doctor.status || "").toLowerCase() === "rejected"
+    || String(doctor.status || "").toLowerCase() === "action_requested";
+  if (approved && !message && !expirySoon) return null;
+  const title = expirySoon && approved && !needsAction
+    ? t("doctorProfile.license_renew_title", { defaultValue: "Renew your medical license" })
+    : needsAction
+    ? t("doctorProfile.review_action_title", { defaultValue: "The admin sent you a message" })
+    : !ready
+      ? t("doctorProfile.review_incomplete_title", { defaultValue: "Finish the required profile fields" })
+      : t("doctorProfile.review_pending_title", { defaultValue: "Your profile is with the admin" });
+  const body = expirySoon && approved && !needsAction
+    ? ""
+    : needsAction
+    ? (message || t("doctorProfile.review_action_body", { defaultValue: "Update the requested details and save the profile again." }))
+    : !ready
+      ? t("doctorProfile.review_incomplete_body", { defaultValue: "Add your degree, medical license number, and biography in English, French, and Kinyarwanda, then save. Scheduling opens after that, and an admin is emailed to review the profile." })
+      : t("doctorProfile.review_pending_body", { defaultValue: "You can set your schedule now. Appointments and the rest of your tools open after the admin approves your profile." });
+  return (
+    <div className={cn(
+      "rounded-[6px] border px-4 py-3 text-sm",
+      needsAction
+        ? "border-amber-400/40 bg-amber-500/10 text-amber-950 dark:text-amber-100"
+        : "border-primary/20 bg-primary/5 text-foreground",
+    )}>
+      <p className="font-semibold">{title}</p>
+      {body ? <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{body}</p> : null}
+      {expirySoon && (
+        <p className="mt-2 text-[13px] leading-relaxed">
+          {expiryDays !== null && expiryDays < 0
+            ? t("doctorProfile.license_expired_notice", {
+              date: expiry,
+              defaultValue: "Your license expired on {{date}}. Ask an admin to upload the renewal and set the new expiry date.",
+            })
+            : t("doctorProfile.license_expiring_notice", {
+              date: expiry,
+              days: expiryDays,
+              defaultValue: "Your license expires on {{date}} ({{days}} days left). Ask an admin to renew it. You cannot change the expiry date.",
+            })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // Main page 
 type Mode = "view" | "create" | "edit";
 
@@ -1351,7 +1420,7 @@ const DoctorProfile = () => {
 
         switch (stepId) {
           case "personal": {
-            await upsertProfile.mutateAsync(withRequiredProfileFields({
+            const saved = await upsertProfile.mutateAsync(withRequiredProfileFields({
               doctor_degree: data.personal!.doctor_degree,
               medical_license: data.personal!.medical_license,
               bio_en: sanitizeRichText(data.personal!.bio_en),
@@ -1360,6 +1429,11 @@ const DoctorProfile = () => {
               bio_fr: sanitizeRichText(data.personal!.bio_fr),
               bio_kiny: sanitizeRichText(data.personal!.bio_kiny),
             }));
+            if ((saved as { review_submitted?: boolean }).review_submitted) {
+              toast.success(t("doctorProfile.sent_for_review", {
+                defaultValue: "Profile saved. An admin has been emailed to review it.",
+              }));
+            }
             setProfileData((prev) =>
               prev
                 ? { ...prev, personal: data.personal! }
@@ -1431,7 +1505,7 @@ const DoctorProfile = () => {
                 type: "degree_document",
                 file: d.degree_document,
               });
-            if (d.license_document)
+            if (d.license_document && !d.existing?.medical_license_document_url)
               await uploadDocument.mutateAsync({
                 type: "medical_license_document",
                 file: d.license_document,
@@ -1552,6 +1626,7 @@ const DoctorProfile = () => {
       />
 
       <div className="px-3 py-4 sm:px-6 sm:py-8 space-y-4 sm:space-y-5">
+        <ProfileReviewNotice doctor={apiData?.doctor} />
         {/* Stats bar - view mode only */}
         {!isForm &&
           (isFetchingProfile && !profileData ? (
@@ -1620,6 +1695,7 @@ const DoctorProfile = () => {
               onCancel={handleCancel}
               stepSaveStates={stepSaveStates}
               onSaveStep={handleSaveStep}
+              licenseExpiresAt={apiData?.doctor?.license_expires_at}
             />
           ) : isFetchingProfile && !profileData ? (
             <ContentSkeleton />

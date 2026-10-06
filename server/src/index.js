@@ -8,6 +8,7 @@ import { pool } from "./db.js";
 import { publicRoutes } from "./public.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
+import { remindExpiringLicenses } from "./doctor-review.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -109,6 +110,11 @@ pool.query("SELECT 1").then(() => {
   startRealtime(server);
   startRealtime(wsPort);
   console.log(`Realtime listening on ${port} and ${wsPort}`);
+  const remind = () => remindExpiringLicenses().catch((error) => {
+    console.error("License reminder failed:", error?.message || error);
+  });
+  remind();
+  setInterval(remind, 12 * 60 * 60 * 1000);
 }).catch((error) => {
   console.error("Database connection failed", error.message);
   process.exit(1);

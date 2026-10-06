@@ -3,6 +3,15 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { registerActions } from "./actions.js";
+import {
+  assertScheduleAllowed,
+  doctorIsApproved,
+  remindExpiringLicenses,
+  reviewDoctor,
+  saveUploadedFile,
+  setLicenseExpiry,
+  submitProfileForReview,
+} from "./doctor-review.js";
 import { withTeamPhoto } from "./public.js";
 import {
   countWhere,
@@ -293,7 +302,40 @@ async function generatePeriodSlots(doctorId, period) {
   return created;
 }
 
+const licenseUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+
+const DOCTOR_PROFILE_PREFIXES = [
+  "/doctor/profile",
+  "/doctor/education",
+  "/doctor/experience",
+  "/doctor/qualifications",
+  "/doctor/social-links",
+];
+const DOCTOR_SCHEDULE_PREFIXES = ["/doctor/availability", "/doctor/slots"];
+
 export function appRoutes(router) {
+  router.use(async (req, res, next) => {
+    try {
+      if (!req.user || req.user.active_role !== "doctor" || !req.path.startsWith("/doctor")) return next();
+      if (DOCTOR_PROFILE_PREFIXES.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`))) return next();
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      if (!doctorId) return next();
+      const doctor = await one("SELECT status, doctor_degree, medical_license, bio_en, bio_fr, bio_kiny FROM doctors WHERE id = ?", [doctorId]);
+      if (doctorIsApproved(doctor?.status)) return next();
+      const scheduling = DOCTOR_SCHEDULE_PREFIXES.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`));
+      if (scheduling) {
+        if (req.method === "GET") return next();
+        await assertScheduleAllowed(doctorId);
+        return next();
+      }
+      return res.status(403).json({
+        message: "An admin still needs to approve your profile before you can use this.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/auth/login", async (req, res, next) => {
     try {
       const row = await findUserByLogin(req.body ?? {});
@@ -570,6 +612,7 @@ export function appRoutes(router) {
     try {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
       if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      await assertScheduleAllowed(doctorId);
       const from = String(req.body.from_date || "").slice(0, 10);
       const to = String(req.body.to_date || "").slice(0, 10);
       const days = [...new Set((Array.isArray(req.body.days_of_week) ? req.body.days_of_week : []).map((day) => String(day).toLowerCase()))]
@@ -1525,9 +1568,18 @@ export function appRoutes(router) {
       for (const key of PROFILE_WRITABLE) {
         if (Object.prototype.hasOwnProperty.call(body, key)) fields[key] = body[key];
       }
+      delete fields.license_expires_at;
+      delete fields.license_expiry_reminded_for;
       if (Object.keys(fields).length) await update("doctors", doctorId, fields);
+      const review = await submitProfileForReview(doctorId);
       const doctor = await doctorProfileFor(req);
-      res.json({ message: "Profile saved.", doctor });
+      res.json({
+        message: review.review_submitted
+          ? "Profile saved and sent to an admin for review."
+          : "Profile saved.",
+        review_submitted: review.review_submitted,
+        doctor,
+      });
     } catch (error) {
       next(error);
     }
@@ -1746,6 +1798,64 @@ export function appRoutes(router) {
       else if (await hasColumn(table, "status")) await update(table, req.params.id, { status: "cancelled" });
       else await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       res.json({ message: "Deleted." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctors/:id/approve", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const doctor = await reviewDoctor(req.params.id, "approve");
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      res.json({ message: "Doctor approved.", doctor: await presentRow("doctors", doctor) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctors/:id/reject", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const doctor = await reviewDoctor(req.params.id, "reject", req.body?.message || req.body?.reason);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      res.json({ message: "Doctor rejected.", doctor: await presentRow("doctors", doctor) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctors/:id/request-action", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const doctor = await reviewDoctor(req.params.id, "request", req.body?.message || req.body?.reason);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      res.json({ message: "The doctor was asked to update their profile.", doctor: await presentRow("doctors", doctor) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/admin/doctors/:id/license-expiry", requireAuth, requireRole("admin"), async (req, res, next) => {
+    try {
+      const doctor = await setLicenseExpiry(req.params.id, req.body?.license_expires_at ?? req.body?.expires_at);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      res.json({
+        message: "License expiry updated.",
+        license_expires_at: doctor.license_expires_at,
+        doctor: await presentRow("doctors", doctor),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/doctors/:id/license", requireAuth, requireRole("admin"), licenseUpload.single("file"), async (req, res, next) => {
+    try {
+      const doctor = await one("SELECT id FROM doctors WHERE id = ?", [req.params.id]);
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      if (!req.file) return res.status(422).json({ message: "Choose the renewed license file." });
+      const url = saveUploadedFile(req.file, `doctor_license_${doctor.id}`);
+      await update("doctors", doctor.id, { medical_license_document: url });
+      const row = await presentRow("doctors", await one("SELECT * FROM doctors WHERE id = ?", [doctor.id]));
+      res.json({ message: "Renewed license saved.", medical_license_document: url, doctor: row });
     } catch (error) {
       next(error);
     }

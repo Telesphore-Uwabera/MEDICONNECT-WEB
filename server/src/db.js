@@ -34,6 +34,10 @@ export async function columns(table) {
   return map;
 }
 
+export function forgetColumns(table) {
+  columnsByTable.delete(table);
+}
+
 export async function hasColumn(table, name) {
   const cols = await columns(table);
   return cols.has(name);

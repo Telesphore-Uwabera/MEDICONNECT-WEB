@@ -260,8 +260,11 @@ export function RoleApprovalGate({
   const isProfilePage =
     !!profilePath && location.pathname.startsWith(profilePath);
 
+  const isDoctorSchedule =
+    role === "doctor" && location.pathname.startsWith("/doctor/availability");
+
   const shouldProtectRoute =
-    guardedRole !== null && !isProfilePage;
+    guardedRole !== null && !isProfilePage && !isDoctorSchedule;
 
   const activeUserRole =
     user?.active_role ?? user?.role ?? undefined;

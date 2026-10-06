@@ -25,6 +25,7 @@ import {
   useGetAdminDoctors,
   useApproveDoctor,
   useRejectDoctor,
+  useRequestDoctorAction,
   useSuspendDoctor,
   type ApiDoctor,
 } from "@/hooks/admin/use-admin-doctors"; 
@@ -85,6 +86,7 @@ function ManageDoctors() {
 
   const approveMutation = useApproveDoctor();
   const rejectMutation = useRejectDoctor();
+  const requestActionMutation = useRequestDoctorAction();
   const suspendMutation = useSuspendDoctor();
 
   const doctors = data?.data ?? [];
@@ -169,18 +171,33 @@ function ManageDoctors() {
   );
 
   const handleReject = useCallback(
-    async (d: ApiDoctor) => {
+    async (d: ApiDoctor, message: string) => {
       try {
-        await rejectMutation.mutateAsync({ id: d.id });
+        await rejectMutation.mutateAsync({ id: d.id, reason: message });
         setSelected((prev) =>
-          prev ? { ...prev, status: "rejected", is_active: false } : null,
+          prev ? { ...prev, status: "rejected", is_active: false, review_message: message } : null,
         );
-        sonnerToast.success("Doctor rejected.");
+        sonnerToast.success("Doctor rejected. They have been emailed.");
       } catch (error: unknown) {
         sonnerToast.error(getErrorMessage(error));
       }
     },
     [rejectMutation, sonnerToast],
+  );
+
+  const handleRequestAction = useCallback(
+    async (d: ApiDoctor, message: string) => {
+      try {
+        await requestActionMutation.mutateAsync({ id: d.id, message });
+        setSelected((prev) =>
+          prev ? { ...prev, status: "action_requested", is_active: false, review_message: message } : null,
+        );
+        sonnerToast.success("The doctor has been asked to update their profile.");
+      } catch (error: unknown) {
+        sonnerToast.error(getErrorMessage(error));
+      }
+    },
+    [requestActionMutation, sonnerToast],
   );
 
   const handleSuspend = useCallback(
@@ -201,6 +218,7 @@ function ManageDoctors() {
   const isActing =
     approveMutation.isPending ||
     rejectMutation.isPending ||
+    requestActionMutation.isPending ||
     suspendMutation.isPending;
 
   const pendingCount = statusCounts["pending"] ?? 0;
@@ -494,6 +512,7 @@ function ManageDoctors() {
         onClose={() => setSelected(null)}
         onApprove={handleApprove}
         onReject={handleReject}
+        onRequestAction={handleRequestAction}
         onSuspend={handleSuspend}
         isActing={isActing}
       />

@@ -74,6 +74,7 @@ interface DoctorProfileFormProps {
     stepId: string,
     data: Partial<DoctorProfileData>,
   ) => Promise<void>;
+  licenseExpiresAt?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ export function DoctorProfileForm({
   onCancel,
   stepSaveStates,
   onSaveStep,
+  licenseExpiresAt,
 }: DoctorProfileFormProps) {
   const { t } = useTranslation();
   const [specializations, setSpecializations] = useState<SpecializationsInfo>(
@@ -236,6 +238,21 @@ export function DoctorProfileForm({
               />
             </FormField>
 
+            <FormField label={t("doctorProfile.license_expires", { defaultValue: "License expires" })}>
+              <Input
+                type="date"
+                value={licenseExpiresAt ? String(licenseExpiresAt).slice(0, 10) : ""}
+                readOnly
+                disabled
+                className="border-border text-xs h-9"
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {t("doctorProfile.license_expires_admin", {
+                  defaultValue: "Only an admin can set or change this date. You and the admin are emailed when 30 days or fewer remain.",
+                })}
+              </p>
+            </FormField>
+
             <FormField label={t("doctorProfile.designations")}>
               <Input
                 {...register("designations")}
@@ -366,13 +383,32 @@ export function DoctorProfileForm({
               existingUrl={documents.existing?.degree_document_url}
               onChange={handleDegreeDocChange}
             />
-            <FileUploadBox
-              label={t("doctorProfile.license_scan")}
-              accept="image/jpeg,image/png,application/pdf"
-              file={documents.license_document}
-              existingUrl={documents.existing?.medical_license_document_url}
-              onChange={handleLicenseDocChange}
-            />
+            {documents.existing?.medical_license_document_url ? (
+              <div className="rounded-[6px] border border-border bg-muted/30 px-4 py-3">
+                <p className="text-[12px] font-semibold text-foreground">{t("doctorProfile.license_scan")}</p>
+                <a
+                  href={documents.existing.medical_license_document_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-block text-[12px] text-primary underline"
+                >
+                  {t("doctorProfile.view_license", { defaultValue: "View uploaded license" })}
+                </a>
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  {t("doctorProfile.license_renewal_admin", {
+                    defaultValue: "A renewed license is uploaded by an admin, so the document cannot be replaced from this profile.",
+                  })}
+                </p>
+              </div>
+            ) : (
+              <FileUploadBox
+                label={t("doctorProfile.license_scan")}
+                accept="image/jpeg,image/png,application/pdf"
+                file={documents.license_document}
+                existingUrl={documents.existing?.medical_license_document_url}
+                onChange={handleLicenseDocChange}
+              />
+            )}
             <FileUploadBox
               label={t("doctorProfile.national_id")}
               accept="image/jpeg,image/png,application/pdf"

@@ -1,5 +1,6 @@
 // export default DoctorAvailability;
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -51,6 +52,8 @@ import {
   type SlotStatus,
   type Slot,
 } from "@/hooks/doctor/use-doctor-availability";
+import { useGetDoctorProfile } from "@/hooks/doctor/use-doctor-profile";
+import { doctorIsApproved, doctorProfileReady } from "@/lib/doctor-profile-ready";
 
 /* ─────────────────────────────────────────────
    Constants
@@ -570,6 +573,10 @@ function DayPickerByMonth({
 
 const DoctorAvailability = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { data: profilePayload, isLoading: profileGateLoading } = useGetDoctorProfile();
+  const profileReady = doctorProfileReady(profilePayload?.doctor);
+  const profileApproved = doctorIsApproved(profilePayload?.doctor?.status);
 
   /* ── Date range & form state ── */
   const today = useMemo(() => moment().startOf("day").toDate(), []);
@@ -873,6 +880,34 @@ const DoctorAvailability = () => {
   const isBulkUpdating = bulkUpdateMutation.isPending;
   const isResetting = deleteAllScheduleMutation.isPending;
 
+  if (!profileGateLoading && !profileReady) {
+    return (
+      <DashboardLayout role="doctor">
+        <div className="flex flex-col h-full">
+          <PageHeader
+            title={t("pages.doctor.availability_title")}
+            subtitle={t("pages.doctor.availability_sub")}
+          />
+          <main className="min-w-0 flex-1 overflow-y-auto p-4">
+            <div className="max-w-xl rounded-[6px] border border-primary/20 bg-primary/5 px-5 py-5">
+              <p className="text-sm font-semibold text-foreground">
+                {t("doctorProfile.review_incomplete_title", { defaultValue: "Finish the required profile fields" })}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {t("doctorProfile.schedule_locked", {
+                  defaultValue: "Scheduling opens after you save your degree, medical license number, and biography in English, French, and Kinyarwanda.",
+                })}
+              </p>
+              <Button className="mt-4" onClick={() => navigate("/doctor/profile")}>
+                {t("doctorProfile.open_profile", { defaultValue: "Open profile" })}
+              </Button>
+            </div>
+          </main>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   /* ─────────────────────────────────────────
      Render
   ───────────────────────────────────────── */
@@ -887,6 +922,13 @@ const DoctorAvailability = () => {
 
         <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div className="min-w-0 max-w-full overflow-x-hidden p-3 sm:p-4 space-y-4">
+            {profileReady && !profileApproved && (
+              <div className="rounded-[6px] border border-primary/20 bg-primary/5 px-5 py-4 text-sm text-foreground">
+                {t("doctorProfile.review_pending_body", {
+                  defaultValue: "You can set your schedule now. Appointments and the rest of your tools open after the admin approves your profile.",
+                })}
+              </div>
+            )}
             {/* ── Disable schedule banner ── */}
             {scheduleDisabled && (
               <div className="flex items-center gap-3 rounded-[6px] border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 px-5 py-4 text-sm text-red-700 dark:text-red-400">
@@ -920,13 +962,15 @@ const DoctorAvailability = () => {
                       {t("pages.doctor.instant_consultation")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      {instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
+                      {!profileApproved
+                        ? t("doctorProfile.after_approval", { defaultValue: "Opens after admin approval" })
+                        : instant ? t("pages.doctor.visible_to_patients") : t("pages.doctor.hidden")}
                     </p>
                   </div>
                   <Switch
                     checked={instant ?? false}
                     onCheckedChange={handleToggleInstant}
-                    disabled={toggleInstantMutation.isPending}
+                    disabled={toggleInstantMutation.isPending || !profileApproved}
                     className="data-[state=checked]:bg-primary"
                   />
                 </div>
@@ -948,13 +992,15 @@ const DoctorAvailability = () => {
                       {t("pages.doctor.disable_schedule")}
                     </p>
                     <p className="text-xs text-muted-foreground/70 mt-0.5">
-                      {scheduleDisabled ? t("pages.doctor.paused") : t("pages.doctor.active")}
+                      {!profileApproved
+                        ? t("doctorProfile.after_approval", { defaultValue: "Opens after admin approval" })
+                        : scheduleDisabled ? t("pages.doctor.paused") : t("pages.doctor.active")}
                     </p>
                   </div>
                   <Switch
                     checked={scheduleDisabled ?? false}
                     onCheckedChange={handleTogglePause}
-                    disabled={togglePauseMutation.isPending}
+                    disabled={togglePauseMutation.isPending || !profileApproved}
                     className="data-[state=checked]:bg-red-500"
                   />
                 </div>

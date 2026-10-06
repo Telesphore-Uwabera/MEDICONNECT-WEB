@@ -99,12 +99,14 @@ export interface ApiDoctor {
   id: number;
   user_id?: number;
   slug?: string | null;
-  status: "active" | "pending" | "suspended" | "rejected";
+  status: "active" | "pending" | "suspended" | "rejected" | "approved" | "action_requested";
   specialization?: string | ApiLocalizedName | null;
   doctor_degree?: string | null;
   degree_document?: string | null;
   medical_license?: string | null;
   medical_license_document?: string | null;
+  review_message?: string | null;
+  license_expires_at?: string | null;
   national_id_document?: string | null;
   signature?: string | null;
   designations?: string | null;
@@ -407,9 +409,48 @@ export function useRejectDoctor() {
     mutationFn: ({ id, reason }) =>
       apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/reject`, {
         method: "PUT",
-        body: reason ? { reason } : undefined,
+        body: reason ? { reason, message: reason } : undefined,
       }).then(unwrapDoctorAction),
     onSuccess: (doctor, { id }) => syncDoctorCaches(qc, doctor, id),
+  });
+}
+
+export function useRequestDoctorAction() {
+  const qc = useQueryClient();
+  return useMutation<ApiDoctor, Error, { id: number; message: string }>({
+    mutationFn: ({ id, message }) =>
+      apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/request-action`, {
+        method: "PUT",
+        body: { message },
+      }).then(unwrapDoctorAction),
+    onSuccess: (doctor, { id }) => syncDoctorCaches(qc, doctor, id),
+  });
+}
+
+export function useSetDoctorLicenseExpiry() {
+  const qc = useQueryClient();
+  return useMutation<ApiDoctor, Error, { id: number; license_expires_at: string }>({
+    mutationFn: ({ id, license_expires_at }) =>
+      apiFetch<DoctorActionResponse | ApiDoctor>(`${BASE}/${id}/license-expiry`, {
+        method: "PUT",
+        body: { license_expires_at },
+      }).then(unwrapDoctorAction),
+    onSuccess: (doctor, { id }) => syncDoctorCaches(qc, doctor, id),
+  });
+}
+
+export function useUploadRenewedLicense() {
+  const qc = useQueryClient();
+  return useMutation<{ medical_license_document?: string }, Error, { id: number; file: File }>({
+    mutationFn: ({ id, file }) => {
+      const body = new FormData();
+      body.append("file", file);
+      return apiFetch(`${BASE}/${id}/license`, { method: "POST", body });
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: doctorKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: doctorKeys.all });
+    },
   });
 }
 

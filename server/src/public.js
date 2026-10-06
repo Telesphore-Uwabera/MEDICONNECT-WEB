@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists } from "./db.js";
+import { doctorIsApproved } from "./doctor-review.js";
 import { broadcast } from "./realtime.js";
 
 function pathOf(req) {
@@ -165,6 +166,13 @@ export function publicRoutes(router) {
     try {
       const doctor = await one("SELECT * FROM doctors WHERE slug = ? LIMIT 1", [req.params.slug]);
       if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      if (!doctorIsApproved(doctor.status)) {
+        return res.json({
+          recurring_availability: [],
+          availability_periods: [],
+          slots_for_date: [],
+        });
+      }
       const recurring = await q("SELECT * FROM doctor_availabilities WHERE doctor_id = ?", [doctor.id]).catch(() => []);
       const periods = await q("SELECT * FROM doctor_availability_periods WHERE doctor_id = ?", [doctor.id]).catch(() => []);
       const slots = await q(
@@ -184,12 +192,20 @@ export function publicRoutes(router) {
   router.get("/public/doctors/:slug/slots", async (req, res, next) => {
     try {
       const doctor = await one(
-        `SELECT d.id, d.slug, u.name AS user_name
+        `SELECT d.id, d.slug, d.status, u.name AS user_name
          FROM doctors d LEFT JOIN users u ON u.id = d.user_id
          WHERE d.slug = ? OR d.id = ? LIMIT 1`,
         [req.params.slug, req.params.slug],
       );
       if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      if (!doctorIsApproved(doctor.status)) {
+        return res.json({
+          doctor: { id: doctor.id, name: doctor.user_name, slug: doctor.slug },
+          slots: {},
+          dates: [],
+          total: 0,
+        });
+      }
       const params = [doctor.id];
       let sql = "SELECT * FROM appointment_slots WHERE doctor_id = ?";
       if (req.query.date) {
@@ -224,6 +240,7 @@ export function publicRoutes(router) {
         [req.params.slug],
       );
       if (!rows.length) return res.status(404).json({ message: "Doctor not found." });
+      if (!doctorIsApproved(rows[0].status)) return res.status(404).json({ message: "Doctor not found." });
       const [doctor] = await attachDoctorRelations(await presentRows("doctors", rows));
       res.json({ data: doctor, ...doctor });
     } catch (error) {
@@ -587,6 +604,13 @@ export function publicRoutes(router) {
 
   router.post(["/public/instant-consultations/request", "/public/instant-consultations/request-any"], async (req, res, next) => {
     try {
+      const doctorId = req.body?.doctor_id;
+      if (doctorId) {
+        const doctor = await one("SELECT status FROM doctors WHERE id = ?", [doctorId]);
+        if (doctor && !doctorIsApproved(doctor.status)) {
+          return res.status(422).json({ message: "This doctor is not available for consultations yet." });
+        }
+      }
       const id = await insert("instant_consultation_requests", {
         ...req.body,
         guest_name: req.body?.name || req.body?.guest_name,

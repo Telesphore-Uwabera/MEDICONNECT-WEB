@@ -84,6 +84,7 @@ import { ManageProfileModal } from "./components/manage-users/ManageProfileModal
 import {
   useApproveDoctor,
   useRejectDoctor,
+  useRequestDoctorAction,
   useSuspendDoctor,
   type ApiDoctor,
   type PaginatedDoctors,
@@ -1601,6 +1602,7 @@ const AdminUsers = () => {
   const deleteMutation = useDeleteUser();
   const approveDoctorMutation = useApproveDoctor();
   const rejectDoctorMutation = useRejectDoctor();
+  const requestDoctorActionMutation = useRequestDoctorAction();
   const suspendDoctorMutation = useSuspendDoctor();
   const activatePatientMutation = useActivatePatient();
   const suspendPatientMutation = useSuspendPatient();
@@ -1862,15 +1864,25 @@ const AdminUsers = () => {
     }
   }, [approveDoctorMutation, refreshDoctorProfile, sonnerToast]);
 
-  const handleDoctorReject = useCallback(async (doctor: ApiDoctor) => {
+  const handleDoctorReject = useCallback(async (doctor: ApiDoctor, message: string) => {
     try {
-      await rejectDoctorMutation.mutateAsync({ id: doctor.id });
+      await rejectDoctorMutation.mutateAsync({ id: doctor.id, reason: message });
       await refreshDoctorProfile();
-      sonnerToast.success("Doctor rejected.");
+      sonnerToast.success("Doctor rejected. They have been emailed.");
     } catch (error: unknown) {
       sonnerToast.error(getErrorMessage(error) || "Failed to reject doctor.");
     }
   }, [rejectDoctorMutation, refreshDoctorProfile, sonnerToast]);
+
+  const handleDoctorRequestAction = useCallback(async (doctor: ApiDoctor, message: string) => {
+    try {
+      await requestDoctorActionMutation.mutateAsync({ id: doctor.id, message });
+      await refreshDoctorProfile();
+      sonnerToast.success("The doctor has been asked to update their profile.");
+    } catch (error: unknown) {
+      sonnerToast.error(getErrorMessage(error) || "Failed to request changes.");
+    }
+  }, [requestDoctorActionMutation, refreshDoctorProfile, sonnerToast]);
 
   const handleDoctorSuspend = useCallback(async (doctor: ApiDoctor, reason: string) => {
     try {
@@ -1973,6 +1985,7 @@ const AdminUsers = () => {
   const isDoctorActing =
     approveDoctorMutation.isPending ||
     rejectDoctorMutation.isPending ||
+    requestDoctorActionMutation.isPending ||
     suspendDoctorMutation.isPending;
   const isPatientActing = activatePatientMutation.isPending || suspendPatientMutation.isPending;
   const isHospitalActing =
@@ -2333,6 +2346,7 @@ const AdminUsers = () => {
         onClose={() => setSelected(null)}
         onApprove={handleDoctorApprove}
         onReject={handleDoctorReject}
+        onRequestAction={handleDoctorRequestAction}
         onSuspend={handleDoctorSuspend}
         onDelete={selected ? () => setConfirmDelete(selected) : undefined}
         isActing={isDoctorActing}

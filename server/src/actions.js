@@ -387,6 +387,15 @@ async function fillGap(req, res, parts) {
     if (file && id) {
       const url = saveUpload(file, `${parts[0]}_${parts[2]}`);
       const column = parts[2] === "documents" ? (req.body?.type || "document") : parts[2] === "avatar" ? "avatar" : parts[2];
+      if (parts[0] === "doctor" && column === "medical_license_document") {
+        const current = await one("SELECT medical_license_document FROM doctors WHERE id = ?", [id]);
+        if (current?.medical_license_document) {
+          res.status(403).json({
+            message: "A renewed medical license can only be uploaded by an admin.",
+          });
+          return true;
+        }
+      }
       if (await hasColumn(table, column)) await update(table, id, { [column]: url });
       else if (await hasColumn(table, "image")) await update(table, id, { image: url });
       res.json({ message: "Saved.", image: url, logo: url, signature: url, avatar: url, url });
@@ -395,6 +404,10 @@ async function fillGap(req, res, parts) {
     if (id && ["POST", "PUT", "PATCH"].includes(req.method)) {
       const body = { ...(req.body ?? {}) };
       delete body.password;
+      if (parts[0] === "doctor") {
+        delete body.license_expires_at;
+        delete body.license_expiry_reminded_for;
+      }
       await update(table, id, body);
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
       res.json({

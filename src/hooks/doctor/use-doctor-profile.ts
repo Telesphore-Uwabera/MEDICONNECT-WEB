@@ -13,7 +13,9 @@ export interface DoctorProfile {
   designations?: string;                          // ← add
   consultation_type: "online" | "in_person" | "both";
   preferred_language: string;
-  status: "approved" | "pending" | "rejected";
+  status: "approved" | "pending" | "rejected" | "active" | "action_requested" | "suspended";
+  review_message?: string | null;
+  license_expires_at?: string | null;
   is_available: boolean;
   slug: string;
   image: string | null;

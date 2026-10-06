@@ -444,19 +444,19 @@ const Index = () => {
       <section id="doctors" className="bg-gradient-soft py-12 md:py-14">
         <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <div>
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
-                <p className={SECTION_EYEBROW}>
-                  {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
-                </p>
-                <h2 className={`${SECTION_TITLE} mt-1`}>
+            <div className="mb-6">
+              <p className={SECTION_EYEBROW}>
+                {t("pages.landing.top_rated_doctors", { defaultValue: "Top Rated Doctors" })}
+              </p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <h2 className="min-w-0 flex-1 whitespace-nowrap font-display text-[13px] font-bold leading-tight tracking-tight text-foreground min-[380px]:text-sm sm:text-2xl md:text-3xl">
                   {t("pages.landing.consult_expert_doctors", { defaultValue: "Consult With Expert Doctors" })}
                 </h2>
+                <Link to="/patient/search-doctors" className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-primary hover:underline sm:text-sm">
+                  {t("pages.landing.view_all", { defaultValue: "View all" })}
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Link>
               </div>
-              <Link to="/patient/search-doctors" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-                {t("pages.landing.view_all", { defaultValue: "View all" })}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

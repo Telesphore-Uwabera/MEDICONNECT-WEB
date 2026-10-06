@@ -63,6 +63,8 @@ import type {
 } from "@/hooks/admin/use-admin-doctors";
 import {
   useGetAdminDoctor,
+  useSetDoctorLicenseExpiry,
+  useUploadRenewedLicense,
   useGetDoctorWallet,
   useTopupDoctorWallet,
   useDeductDoctorWallet,
@@ -861,6 +863,16 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
   return (
     <ContentWrap>
       <div className="space-y-5">
+        {doctor.review_message && (
+          <div className="p-4 rounded-[6px] border border-amber-400/40 bg-amber-500/10">
+            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-amber-700 dark:text-amber-300 mb-1">
+              Message to the doctor
+            </p>
+            <p className="text-[12px] text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              {doctor.review_message}
+            </p>
+          </div>
+        )}
         {doctor.bio_en && (
           <div className="p-4 rounded-[6px] border border-primary/15 bg-accent/15">
             <div className="flex items-center gap-1.5 mb-2">
@@ -898,6 +910,13 @@ function OverviewTab({ doctor }: { doctor: ApiDoctor }) {
                 label="License"
                 value={doctor.medical_license}
                 mono
+              />
+            )}
+            {doctor.license_expires_at && (
+              <InfoTile
+                icon={<Calendar className="w-2.5 h-2.5" />}
+                label="License expires"
+                value={String(doctor.license_expires_at).slice(0, 10)}
               />
             )}
             {doctor.consultation_fee !== undefined &&
@@ -1118,7 +1137,50 @@ function DocumentTile({
   );
 }
 
+function LicenseExpiryEditor({ doctor }: { doctor: ApiDoctor }) {
+  const saveExpiry = useSetDoctorLicenseExpiry();
+  const [date, setDate] = useState(() => String(doctor.license_expires_at || "").slice(0, 10));
+  useEffect(() => {
+    setDate(String(doctor.license_expires_at || "").slice(0, 10));
+  }, [doctor.id, doctor.license_expires_at]);
+
+  return (
+    <div className="mt-4 rounded-[6px] border border-primary/15 bg-accent/10 p-4">
+      <SectionHeading>License expiry</SectionHeading>
+      <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
+        Only an admin can change this date. The doctor and admins are emailed when 30 days or fewer remain.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="date"
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+          className="h-9 rounded-[6px] border border-border bg-background px-3 text-[12px]"
+        />
+        <Button
+          type="button"
+          size="sm"
+          className="h-9 rounded-[6px]"
+          disabled={!date || saveExpiry.isPending}
+          onClick={() => saveExpiry.mutate({ id: doctor.id, license_expires_at: date })}
+        >
+          {saveExpiry.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+          Save expiry
+        </Button>
+      </div>
+      {saveExpiry.isError && (
+        <p className="mt-2 text-[12px] text-red-600">{saveExpiry.error.message}</p>
+      )}
+      {saveExpiry.isSuccess && (
+        <p className="mt-2 text-[12px] text-emerald-700">Expiry date saved.</p>
+      )}
+    </div>
+  );
+}
+
 function DocumentsTab({ doctor }: { doctor: ApiDoctor }) {
+  const uploadLicense = useUploadRenewedLicense();
+  const [licenseName, setLicenseName] = useState("");
   const documents = [
     { label: "Profile photo", path: doctor.image },
     { label: "Degree document", path: doctor.degree_document },
@@ -1141,6 +1203,36 @@ function DocumentsTab({ doctor }: { doctor: ApiDoctor }) {
           </div>
         </div>
       )}
+      <div className="mt-5 rounded-[6px] border border-primary/15 bg-accent/10 p-4">
+        <SectionHeading>Renewed medical license</SectionHeading>
+        <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
+          The doctor uploads a license during first registration. After that, only an admin can upload a renewal.
+        </p>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-[6px] border border-primary/30 px-3 py-2 text-[12px] font-medium text-primary hover:bg-primary/5">
+          {uploadLicense.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+          {licenseName || "Upload renewed license"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            className="sr-only"
+            disabled={uploadLicense.isPending}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (!file) return;
+              setLicenseName(file.name);
+              uploadLicense.mutate({ id: doctor.id, file });
+            }}
+          />
+        </label>
+        {uploadLicense.isError && (
+          <p className="mt-2 text-[12px] text-red-600">{uploadLicense.error.message}</p>
+        )}
+        {uploadLicense.isSuccess && (
+          <p className="mt-2 text-[12px] text-emerald-700">Renewed license saved.</p>
+        )}
+      </div>
+      <LicenseExpiryEditor doctor={doctor} />
     </ContentWrap>
   );
 }
@@ -2741,7 +2833,8 @@ export interface DoctorPanelProps {
   doctor: ApiDoctor | null;
   onClose: () => void;
   onApprove: (d: ApiDoctor) => void;
-  onReject: (d: ApiDoctor) => void;
+  onReject: (d: ApiDoctor, message: string) => void | Promise<void>;
+  onRequestAction: (d: ApiDoctor, message: string) => void | Promise<void>;
   onSuspend: (d: ApiDoctor, reason: string) => void | Promise<void>;
   onDelete?: () => void;
   isActing: boolean;
@@ -2752,6 +2845,7 @@ export function DoctorPanel({
   onClose,
   onApprove,
   onReject,
+  onRequestAction,
   onSuspend,
   onDelete,
   isActing,
@@ -2762,11 +2856,14 @@ export function DoctorPanel({
   // a loading spinner while `isActing` is true — the other buttons stay
   // disabled but keep their normal icon instead of also spinning.
   const [actingAction, setActingAction] = useState<
-    "approve" | "reject" | "suspend" | "reactivate" | null
+    "approve" | "reject" | "request" | "suspend" | "reactivate" | null
   >(null);
   const [suspendReasonOpen, setSuspendReasonOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
   const [suspendReasonError, setSuspendReasonError] = useState("");
+  const [decisionMode, setDecisionMode] = useState<"reject" | "request" | null>(null);
+  const [decisionMessage, setDecisionMessage] = useState("");
+  const [decisionError, setDecisionError] = useState("");
   const open = !!doctor;
 
   const { data: fullDoctor, isLoading: profileLoading } = useGetAdminDoctor(
@@ -2780,6 +2877,9 @@ export function DoctorPanel({
       setSuspendReasonOpen(false);
       setSuspendReason("");
       setSuspendReasonError("");
+      setDecisionMode(null);
+      setDecisionMessage("");
+      setDecisionError("");
     }
   }, [doctor?.id]);
 
@@ -2808,9 +2908,32 @@ export function DoctorPanel({
     setActingAction("approve");
     onApprove(doc);
   };
-  const handleReject = (doc: ApiDoctor) => {
-    setActingAction("reject");
-    onReject(doc);
+  const handleReject = () => {
+    setDecisionMode("reject");
+    setDecisionMessage("");
+    setDecisionError("");
+  };
+  const handleRequestAction = () => {
+    setDecisionMode("request");
+    setDecisionMessage("");
+    setDecisionError("");
+  };
+  const confirmDecision = async (doc: ApiDoctor) => {
+    const message = decisionMessage.trim();
+    if (!message) {
+      setDecisionError("Add a message for the doctor.");
+      return;
+    }
+    if (decisionMode === "reject") {
+      setActingAction("reject");
+      await onReject(doc, message);
+    } else if (decisionMode === "request") {
+      setActingAction("request");
+      await onRequestAction(doc, message);
+    }
+    setDecisionMode(null);
+    setDecisionMessage("");
+    setDecisionError("");
   };
   const handleSuspend = () => {
     setSuspendReasonOpen(true);
@@ -3002,7 +3125,7 @@ export function DoctorPanel({
             {/* ── Footer ── */}
             <div className="flex-shrink-0 px-6 py-3.5 border-t border-primary/10 bg-card/40">
               <div className="flex gap-2 items-center max-w-[640px]">
-                {(d.status === "pending" || d.status === "rejected") && (
+                {(d.status === "pending" || d.status === "rejected" || d.status === "action_requested") && (
                   <Button
                     size="sm"
                     className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
@@ -3033,13 +3156,13 @@ export function DoctorPanel({
                     Suspend
                   </Button>
                 )}
-                {d.status === "pending" && (
+                {(d.status === "pending" || d.status === "action_requested") && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 border-red-300/70 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-950/20 font-medium"
                     disabled={isActing}
-                    onClick={() => handleReject(d)}
+                    onClick={handleReject}
                   >
                     {isActing && actingAction === "reject" ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -3047,6 +3170,22 @@ export function DoctorPanel({
                       <Ban className="h-3.5 w-3.5" />
                     )}
                     Reject
+                  </Button>
+                )}
+                {(d.status === "pending" || d.status === "rejected" || d.status === "action_requested") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-5 text-[11.5px] rounded-[6px] gap-2 font-medium"
+                    disabled={isActing}
+                    onClick={handleRequestAction}
+                  >
+                    {isActing && actingAction === "request" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <MessageSquare className="h-3.5 w-3.5" />
+                    )}
+                    Request changes
                   </Button>
                 )}
                 {d.status === "suspended" && (
@@ -3146,6 +3285,66 @@ export function DoctorPanel({
                   <ShieldOff className="mr-2 h-3.5 w-3.5" />
                 )}
                 Suspend doctor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {d && decisionMode && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[8px] border border-border bg-background shadow-2xl">
+            <div className="border-b border-border/60 px-5 py-4">
+              <p className="text-sm font-bold text-foreground">
+                {decisionMode === "reject" ? "Reject doctor" : "Request changes"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                This message is emailed to the doctor and shown on their profile.
+              </p>
+            </div>
+            <div className="space-y-2 px-5 py-4">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Message <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={decisionMessage}
+                onChange={(event) => {
+                  setDecisionMessage(event.target.value);
+                  if (decisionError) setDecisionError("");
+                }}
+                rows={4}
+                className="w-full resize-none rounded-[6px] border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                placeholder={decisionMode === "reject" ? "Explain why this profile cannot be approved." : "Tell the doctor what to correct."}
+                disabled={isActing}
+              />
+              {decisionError && (
+                <p className="text-xs font-medium text-red-500">{decisionError}</p>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-border/60 px-5 py-4">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-9 rounded-[6px]"
+                disabled={isActing}
+                onClick={() => {
+                  setDecisionMode(null);
+                  setDecisionMessage("");
+                  setDecisionError("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-9 rounded-[6px]"
+                disabled={isActing || !decisionMessage.trim()}
+                onClick={() => confirmDecision(d)}
+              >
+                {isActing ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                Send to doctor
               </Button>
             </div>
           </div>

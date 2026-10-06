@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api';
+import { BROWSE_SPECIALTIES, type BrowseSpecialty } from '@/lib/browse-specialties';
 
 interface LandingSpecializationFee {
   id: number;
@@ -48,108 +49,40 @@ type SpecializationFeesResponse =
       specialization_fees?: LandingSpecializationFee[];
     };
 
-interface ServiceDefinition {
-  key: string;
-  label: string;
-  subSpecializationName?: string;
-  specializationName?: string;
-  alsoMatch?: string;
-  feeId?: number;
-  slug: string;
+interface ServiceDefinition extends BrowseSpecialty {
   fallbackIcon: LucideIcon;
   fallbackSvg?: string;
   searchUrl?: string;
 }
 
-// Landing services. Each card opens doctors in that specialization.
-const TARGET_SERVICES: ServiceDefinition[] = [
-  {
-    key: 'internal-medicine',
-    label: 'Internal medicine',
-    subSpecializationName: 'Internal Medicine',
-    feeId: 2,
-    slug: 'internal-medicine-standard',
-    fallbackIcon: HeartPulse,
-  },
-  {
-    key: 'pediatrics',
-    label: 'Pediatrics',
-    subSpecializationName: 'Pediatrics',
-    feeId: 4,
-    slug: 'pediatrics-standard',
-    fallbackIcon: Baby,
-  },
-  {
-    key: 'gynecology-and-obstetrics',
-    label: 'Gynecology and obstetrics',
-    subSpecializationName: 'Obstetrics & Gynecology',
-    feeId: 5,
-    slug: 'obstetrics-gynecology-standard',
-    fallbackIcon: Heart,
-  },
-  {
-    key: 'general-surgery',
-    label: 'General Surgery',
-    subSpecializationName: 'Surgery',
-    feeId: 3,
-    slug: 'surgery-standard',
-    fallbackIcon: Scissors,
-  },
-  {
-    key: 'stomatology-dental-surgery',
-    label: 'Stomatology/\u200bdental surgery',
-    subSpecializationName: 'Stomatology/dental surgery',
-    alsoMatch: 'Dental',
-    slug: 'stomatology-dental-surgery',
+const SPECIALTY_ICONS: Record<string, Pick<ServiceDefinition, "fallbackIcon" | "fallbackSvg" | "searchUrl">> = {
+  "internal-medicine": { fallbackIcon: HeartPulse },
+  pediatrics: { fallbackIcon: Baby },
+  "gynecology-and-obstetrics": { fallbackIcon: Heart },
+  "general-surgery": { fallbackIcon: Scissors },
+  "stomatology-dental-surgery": {
     fallbackIcon: Smile,
     fallbackSvg:
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.5 2 6 4.5 6 8c0 3 1.5 5.5 2 8 .6 3 1.5 5 2.5 5s1.5-2.5 1.5-5c0-1.5.5-2 0-3-.5 1 0 1.5 0 3 0 2.5.5 5 1.5 5s1.9-2 2.5-5c.5-2.5 2-5 2-8 0-3.5-2.5-6-6-6z"/></svg>',
     searchUrl: '/patient/search-doctors?type=booking&search=Dental',
   },
-  {
-    key: 'dermatology',
-    label: 'Dermatology',
-    subSpecializationName: 'Dermatology',
-    feeId: 12,
-    slug: 'dermatology-standard',
-    fallbackIcon: Sparkles,
-  },
-  {
-    key: 'ophthalmology',
-    label: 'Ophthalmology',
-    subSpecializationName: 'Ophthalmology',
-    feeId: 10,
-    slug: 'ophthalmology-standard',
-    fallbackIcon: Eye,
-  },
-  {
-    key: 'general-medicine-consultations',
-    label: 'General Medicine Consultations',
-    specializationName: 'General Practitioner',
-    feeId: 1,
-    slug: 'general-practitioner-standard',
+  dermatology: { fallbackIcon: Sparkles },
+  ophthalmology: { fallbackIcon: Eye },
+  "general-medicine-consultations": {
     fallbackIcon: Stethoscope,
     searchUrl:
       '/patient/search-doctors?type=booking&specialization=General+Practitioner&specialization_fee_id=1',
   },
-  {
-    key: 'orthopedics',
-    label: 'Orthopedics',
-    subSpecializationName: 'Orthopedics',
-    feeId: 9,
-    slug: 'orthopedics-standard',
-    fallbackIcon: Bone,
-  },
-  {
-    key: 'mental-counseling',
-    label: 'Mental Counseling',
-    subSpecializationName: 'Mental Counseling',
-    alsoMatch: 'Psychiatry',
-    feeId: 7,
-    slug: 'mental-counseling',
-    fallbackIcon: Brain,
-  },
-];
+  orthopedics: { fallbackIcon: Bone },
+  "mental-counseling": { fallbackIcon: Brain },
+};
+
+const TARGET_SERVICES: ServiceDefinition[] = BROWSE_SPECIALTIES.map((item) => ({
+  ...item,
+  fallbackIcon: SPECIALTY_ICONS[item.key]?.fallbackIcon ?? Stethoscope,
+  fallbackSvg: SPECIALTY_ICONS[item.key]?.fallbackSvg,
+  searchUrl: SPECIALTY_ICONS[item.key]?.searchUrl,
+}));
 
 interface PreparedSpecialization {
   id: number;
