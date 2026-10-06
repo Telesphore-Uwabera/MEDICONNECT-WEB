@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
@@ -26,8 +26,6 @@ import {
   CalendarDays,
   Loader2,
   Building2,
-  Clock,
-  ShieldAlert,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -36,7 +34,6 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useMe } from "@/hooks/useAuth";
-import { useGoToRole } from "@/hooks/useRoleManagement";
 import {
   useHospitalDetail,
   useCreateBooking,
@@ -88,20 +85,6 @@ export const HospitalBookingDialog = ({
   const createBooking = useCreateBooking();
   const navigate = useNavigate();
   const { data: me } = useMe();
-  const { go: goToRole } = useGoToRole();
-  // Resume the booking after a stay-and-switch to patient.
-  const [resumeBooking, setResumeBooking] = useState(false);
-  // Inline "switch to patient" prompt (a toast button is unclickable behind the
-  // modal sheet, so we show it inside the dialog). Holds the current role.
-  const [switchPrompt, setSwitchPrompt] = useState<string | null>(null);
-  useEffect(() => {
-    if (!resumeBooking) return;
-    if ((me?.active_role ?? me?.role) === "patient") {
-      setResumeBooking(false);
-      handleConfirm();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeBooking, me]);
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -204,7 +187,11 @@ export const HospitalBookingDialog = ({
     }
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
     if (activeRole && activeRole !== "patient") {
-      setSwitchPrompt(activeRole);
+      toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+        description: t("header.login_as_patient_hint", {
+          defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+        }),
+      });
       return;
     }
 
@@ -250,7 +237,11 @@ export const HospitalBookingDialog = ({
 
         // Authenticated but the wrong kind of account.
         if (status === 403) {
-          setSwitchPrompt((me?.active_role ?? me?.role ?? "another role") as string);
+          toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+            description: t("header.login_as_patient_hint", {
+              defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+            }),
+          });
           return;
         }
 
@@ -637,37 +628,6 @@ export const HospitalBookingDialog = ({
             </div>
           )}
         </div>
-
-        {/* ── Switch-to-patient prompt (inline, so it's clickable over the sheet) ── */}
-        {!confirmed && !isLoading && switchPrompt && (
-          <div className="px-4 sm:px-5 py-3 border-t border-amber-400/30 bg-amber-500/10 shrink-0">
-            <div className="flex items-start gap-2.5">
-              <ShieldAlert className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-foreground">
-                  {t("booking.doctorAppointment.switchToPatientTitle")}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {t("booking.hospitalAppointment.switchToPatientDesc", { role: switchPrompt })}
-                </p>
-              </div>
-              <button
-                onClick={() =>
-                  goToRole("patient", {
-                    stay: true,
-                    onSwitched: () => {
-                      setSwitchPrompt(null);
-                      setResumeBooking(true);
-                    },
-                  })
-                }
-                className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
-              >
-                {t("booking.doctorAppointment.switchToPatient")}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ── Footer ── */}
         {!confirmed && !isLoading && (

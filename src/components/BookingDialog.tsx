@@ -28,7 +28,6 @@ import {
 } from "@/hooks/patient/use-patient-booking";
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
 import { useMe } from "@/hooks/useAuth";
-import { useGoToRole } from "@/hooks/useRoleManagement";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -315,20 +314,6 @@ export const BookingDialog = ({
   const payAppointment = usePayAppointment();
   const invoicePoller = useInvoicePoller();
   const { data: me } = useMe();
-  const { go: goToRole } = useGoToRole();
-  // After a stay-and-switch to patient, resume the booking automatically once
-  // the session reflects the new role.
-  const [resumeBooking, setResumeBooking] = useState(false);
-  // Inline switch prompt (a toast button is unclickable behind the modal).
-  const [switchPrompt, setSwitchPrompt] = useState<string | null>(null);
-  useEffect(() => {
-    if (!resumeBooking) return;
-    if ((me?.active_role ?? me?.role) === "patient") {
-      setResumeBooking(false);
-      void handleConfirm();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeBooking, me]);
 
   // Fresh doctor query (only active after a successful booking) ─────────────────────────────
   const { data: freshDoctorData } = useGetDoctorBySlug(
@@ -405,8 +390,11 @@ export const BookingDialog = ({
     }
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
     if (activeRole && activeRole !== "patient") {
-      // Signed in, but acting as doctor/hospital/etc. Show an inline switch CTA.
-      setSwitchPrompt(activeRole);
+      toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+        description: t("header.login_as_patient_hint", {
+          defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+        }),
+      });
       return;
     }
 
@@ -515,7 +503,11 @@ export const BookingDialog = ({
 
       // Authenticated but the wrong kind of account (e.g. a doctor).
       if (status === 403) {
-        setSwitchPrompt((me?.active_role ?? me?.role ?? "another role") as string);
+        toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+          description: t("header.login_as_patient_hint", {
+            defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+          }),
+        });
         return;
       }
 
@@ -710,35 +702,6 @@ export const BookingDialog = ({
               </div>
               </div>
             </div>
-
-            {/* Switch-to-patient prompt (inline, clickable over the modal) */}
-            {switchPrompt && (
-              <div className="px-4 sm:px-6 py-3 border-t border-amber-400/30 bg-amber-500/10 flex items-start gap-2.5 flex-shrink-0">
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-foreground">
-                    {t("booking.doctorAppointment.switchToPatientTitle")}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {t("booking.doctorAppointment.switchToPatientDesc", { role: switchPrompt })}
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    goToRole("patient", {
-                      stay: true,
-                      onSwitched: () => {
-                        setSwitchPrompt(null);
-                        setResumeBooking(true);
-                      },
-                    })
-                  }
-                  className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
-                >
-                  {t("booking.doctorAppointment.switchToPatient")}
-                </button>
-              </div>
-            )}
 
             {/* Footer */}
             <div className="px-4 sm:px-6 py-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 flex-shrink-0">

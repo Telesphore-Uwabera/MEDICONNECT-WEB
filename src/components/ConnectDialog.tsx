@@ -12,7 +12,6 @@ import {
   type RejoinTarget,
 } from "@/lib/rejoin";
 import { useMe } from "@/hooks/useAuth";
-import { useGoToRole } from "@/hooks/useRoleManagement";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import {
   useInstantConsultationRequest,
@@ -341,16 +340,11 @@ export const ConnectDialogContent = ({
   };
 
   const { data: me } = useMe();
-  const { go: goToRole } = useGoToRole();
   const isLoggedIn = !!me;
   const signedInRef = useRef(isLoggedIn);
   useEffect(() => {
     signedInRef.current = isLoggedIn;
   }, [isLoggedIn]);
-  // Resume the instant request after a stay-and-switch to patient.
-  const [resumeRequest, setResumeRequest] = useState(false);
-  // Inline switch prompt (a toast button is unclickable behind the modal).
-  const [switchPromptRole, setSwitchPromptRole] = useState<string | null>(null);
   const isProfileComplete = isLoggedIn && !!me?.name && !!me?.phone;
 
   const [phase, setPhase] = useState<CallPhase>("idle");
@@ -707,7 +701,11 @@ export const ConnectDialogContent = ({
     // role, offer a one-click switch instead of failing with "unauthorized". ──
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
     if (isLoggedIn && activeRole && activeRole !== "patient") {
-      setSwitchPromptRole(activeRole);
+      toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+        description: t("header.login_as_patient_hint", {
+          defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+        }),
+      });
       return;
     }
 
@@ -797,7 +795,11 @@ export const ConnectDialogContent = ({
     } catch (err: unknown) {
       // Wrong-role rejection → offer a one-click switch to patient.
       if ((err as { status?: number })?.status === 403) {
-        setSwitchPromptRole((me?.active_role ?? me?.role ?? t("consult.connect.unknown_role_fallback")) as string);
+        toast.message(t("header.login_as_patient", { defaultValue: "Log in as patient" }), {
+          description: t("header.login_as_patient_hint", {
+            defaultValue: "Use Log in as patient next to your profile, then book from Search doctors.",
+          }),
+        });
         setPhase("idle");
         return;
       }
@@ -809,16 +811,6 @@ export const ConnectDialogContent = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultationToken, paymentInfo, doctor?.id, guestName, guestPhone, guestCountryCode, guestEmail, me, guestDescription, guestPassword]);
-
-  // Once the session reflects the patient role after a stay-and-switch, retry.
-  useEffect(() => {
-    if (!resumeRequest) return;
-    if ((me?.active_role ?? me?.role) === "patient") {
-      setResumeRequest(false);
-      void handleRequest();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resumeRequest, me]);
 
   // ── Pay ───────────────────────────────────────────────────────────────────
   const handlePay = useCallback(async () => {
@@ -1213,32 +1205,6 @@ export const ConnectDialogContent = ({
   // ── Pre-call / post-call panel ────────────────────────────────────────────
   return (
     <div className="min-h-0 flex-1 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-5 space-y-4">
-      {switchPromptRole && (
-        <div className="rounded-[6px] border border-amber-400/30 bg-amber-500/10 p-3 flex items-start gap-2.5">
-          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-foreground">{t("consult.connect.switch_role_title")}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {t("consult.connect.switch_role_body", { role: switchPromptRole })}
-            </p>
-          </div>
-          <button
-            onClick={() =>
-              goToRole("patient", {
-                stay: true,
-                onSwitched: () => {
-                  setSwitchPromptRole(null);
-                  setResumeRequest(true);
-                },
-              })
-            }
-            className="h-8 px-3 rounded-[6px] bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary/90 transition-colors shrink-0"
-          >
-            {t("consult.connect.switch_role_button")}
-          </button>
-        </div>
-      )}
-
       {/* Title */}
       <div className="flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary" />

@@ -63,6 +63,8 @@ export interface GoToRoleOptions {
   /** Called after a successful `stay` switch — use it to resume what the user
    *  was doing (e.g. retry the booking). */
   onSwitched?: () => void;
+  /** Open this path after a full switch, instead of the role home. */
+  to?: string;
 }
 
 /** One-shot "go to this role": adds it to the account if missing, then switches.
@@ -104,7 +106,7 @@ export function useGoToRole() {
         // Full switch: reload into the role's workspace.
         toast.success(res.message || `Switching to ${role}…`);
         window.setTimeout(
-          () => window.location.assign(ROLE_HOME[res.active_role] ?? "/"),
+          () => window.location.assign(opts?.to ?? ROLE_HOME[res.active_role] ?? "/"),
           400,
         );
       }
