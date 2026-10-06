@@ -216,6 +216,7 @@ const Index = () => {
   }, [homepageDoctorsData]);
 
   const visibleDoctorCount = 6;
+  const doctorRotateMs = 10 * 60 * 1000;
   const [doctorOffset, setDoctorOffset] = useState(0);
   const [doctorRotationPaused, setDoctorRotationPaused] = useState(false);
 
@@ -227,9 +228,9 @@ const Index = () => {
     if (orderedDoctors.length <= visibleDoctorCount || doctorRotationPaused) return;
     const timer = window.setInterval(() => {
       setDoctorOffset((offset) => (offset + 1) % orderedDoctors.length);
-    }, 5000);
+    }, doctorRotateMs);
     return () => window.clearInterval(timer);
-  }, [orderedDoctors.length, doctorRotationPaused]);
+  }, [orderedDoctors.length, doctorRotationPaused, doctorRotateMs]);
 
   const visibleDoctors = useMemo(() => {
     if (orderedDoctors.length <= visibleDoctorCount) return orderedDoctors;
