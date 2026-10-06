@@ -39,6 +39,7 @@ import {
   type OutOfStockItem,
   type ExpiringSoonItem,
 } from "@/hooks/pharmacy/use-pharmacy-dashboard";
+import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
 import { t } from "i18next";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -549,24 +550,60 @@ function RevenueBreakdownCard({ revenue, loading }: {
 
 // ─── Status banner ────────────────────────────────────────────────────────────
 
+function clockLabel(value?: string | null) {
+  if (!value) return null;
+  const [hourText, minuteText] = value.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText ?? 0);
+  if (Number.isNaN(hour)) return null;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${String(minute).padStart(2, "0")} ${suffix}`;
+}
+
+function pharmacyIsOpen(profile: { is_open_24h?: boolean; opens_at?: string | null; closes_at?: string | null } | null | undefined) {
+  if (!profile) return false;
+  if (profile.is_open_24h) return true;
+  if (!profile.opens_at || !profile.closes_at) return false;
+  const toMinutes = (value: string) => {
+    const [hour, minute] = value.split(":").map(Number);
+    return hour * 60 + (minute || 0);
+  };
+  const now = new Date();
+  const current = now.getHours() * 60 + now.getMinutes();
+  return current >= toMinutes(profile.opens_at) && current < toMinutes(profile.closes_at);
+}
+
 function StatusBanner({
   todayOrders, loading,
 }: { todayOrders: { total: number; pending: number; completed: number } | undefined; loading: boolean }) {
   const { t } = useTranslation();
+  const { data: profile } = useGetPharmacyProfile();
+  const open = pharmacyIsOpen(profile);
+  const openLabel = clockLabel(profile?.opens_at);
+  const closeLabel = clockLabel(profile?.closes_at);
   return (
-    <div className="flex items-center gap-3 rounded-[6px] border border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/30 px-4 py-2.5">
-      <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+    <div className={`flex items-center gap-3 rounded-[6px] border px-4 py-2.5 ${open ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/30" : "border-border bg-muted/40"}`}>
+      <div className={`flex items-center gap-1.5 ${open ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          {open && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
+          <span className={`relative inline-flex rounded-full h-2 w-2 ${open ? "bg-emerald-500" : "bg-muted-foreground/50"}`} />
         </span>
         <CheckCircle2 size={13} />
-        <span className="text-[11px] font-semibold">{t("pages.pharmacy.pharmacy_open")}</span>
+        <span className="text-[11px] font-semibold">
+          {open ? t("pages.pharmacy.pharmacy_open") : t("pages.cards.closed")}
+        </span>
       </div>
-      <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/60">·</span>
-      <div className="flex items-center gap-1 text-[11px] text-emerald-700/70 dark:text-emerald-400/70">
+      <span className="text-[10px] text-muted-foreground">·</span>
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
         <Clock size={11} />
-        <span>{t("pages.pharmacy.closes_at_time", { time: "6:00 PM" })}</span>
+        <span>
+          {open && closeLabel
+            ? t("pages.pharmacy.closes_at_time", { time: closeLabel })
+            : openLabel && closeLabel
+              ? `${openLabel} – ${closeLabel}`
+              : t("pages.pharmacy.hours_not_set", { defaultValue: "Hours not set" })}
+        </span>
       </div>
       <div className="ml-auto flex items-center gap-3">
         {loading

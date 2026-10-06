@@ -65,10 +65,50 @@ export const settingsKeys = {
 
 // ─── 1. GET /api/v1/settings ──────────────────────────────────────────────────
 
+function settingsFromUser(user: Record<string, unknown>): MySettings {
+  const available = Array.isArray(user.available_roles) ? user.available_roles.map(String) : [];
+  const roles = Array.isArray(user.roles)
+    ? user.roles.map((role) => (typeof role === "string" ? role : String((role as { name?: string }).name ?? "")))
+    : available.length
+      ? available
+      : user.role
+        ? [String(user.role)]
+        : [];
+  const language = user.preferred_language;
+  return {
+    id: Number(user.id ?? 0),
+    name: String(user.name ?? ""),
+    email: String(user.email ?? ""),
+    phone: user.phone == null ? null : String(user.phone),
+    country_code: user.country_code == null ? null : String(user.country_code),
+    preferred_language: language === "fr" || language === "rw" ? language : "en",
+    avatar: user.avatar == null ? null : String(user.avatar),
+    roles: roles.filter(Boolean),
+    is_verified: Boolean(user.is_verified),
+    email_verified_at: user.email_verified_at == null ? null : String(user.email_verified_at),
+    phone_verified_at: user.phone_verified_at == null ? null : String(user.phone_verified_at),
+    created_at: user.created_at == null ? "" : String(user.created_at),
+    updated_at: user.updated_at == null ? "" : String(user.updated_at),
+  };
+}
+
+function withData(settings: MySettings) {
+  return { ...settings, data: settings };
+}
+
 export function useGetMySettings() {
   return useQuery({
     queryKey: settingsKeys.me(),
-    queryFn:  () => apiFetch<MySettings>(BASE),
+    queryFn: async () => {
+      const body = await apiFetch<Partial<MySettings> & { message?: string; data?: Partial<MySettings> }>(BASE);
+      if (body?.data?.email || body?.data?.id) return body;
+      if (body?.email || body?.id) return withData(body as MySettings);
+      const me = await apiFetch<{ user?: Record<string, unknown> } | Record<string, unknown>>("/auth/me");
+      const user = me && typeof me === "object" && "user" in me && me.user
+        ? me.user
+        : (me as Record<string, unknown>);
+      return withData(settingsFromUser(user ?? {}));
+    },
   });
 }
 

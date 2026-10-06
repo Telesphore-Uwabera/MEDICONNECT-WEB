@@ -142,12 +142,28 @@ function getErrorMessage(error: unknown): string {
   return "Something went wrong";
 }
 
+function patientName(a: { patient?: { name?: string } | null }) {
+  return a.patient?.name || "Patient";
+}
+
+function patientAvatar(a: { patient?: { avatar?: string | null } | null }) {
+  return a.patient?.avatar || "";
+}
+
+function patientEmail(a: { patient?: { email?: string | null } | null }) {
+  return a.patient?.email || "";
+}
+
+function doctorName(a: { doctor?: { user?: { name?: string } | null } | null }) {
+  return a.doctor?.user?.name || "Doctor";
+}
+
 function matchesSearch(a: ApiAppointment, q: string): boolean {
   if (!q) return true;
   const lower = q.toLowerCase();
   return (
-    a.patient.name.toLowerCase().includes(lower) ||
-    a.doctor.user.name.toLowerCase().includes(lower) ||
+    patientName(a).toLowerCase().includes(lower) ||
+    doctorName(a).toLowerCase().includes(lower) ||
     (a.hospital?.name_en ?? "").toLowerCase().includes(lower) ||
     String(a.id).includes(lower)
   );
@@ -167,20 +183,20 @@ function AppointmentRow({
       {/* Patient */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          {a.patient.avatar ? (
+          {patientAvatar(a) ? (
             <img
-              src={a.patient.avatar}
-              alt={a.patient.name}
+              src={patientAvatar(a)}
+              alt={patientName(a)}
               className="h-9 w-9 rounded-full object-cover flex-shrink-0 border border-border/40"
             />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0">
-              {getInitials(a.patient.name)}
+              {getInitials(patientName(a))}
             </div>
           )}
           <div className="min-w-0">
             <p className="font-semibold text-[11px] text-foreground truncate">
-              {a.patient.name}
+              {patientName(a)}
             </p>
             <p className="text-[10px] text-muted-foreground/60 truncate">
               #{a.id}
@@ -191,7 +207,7 @@ function AppointmentRow({
 
       {/* Doctor */}
       <td className="px-4 py-3 text-[11px] text-muted-foreground/80 whitespace-nowrap">
-        {a.doctor.user.name}
+        {doctorName(a)}
       </td>
 
       {/* Date & time */}
@@ -265,15 +281,15 @@ function AppointmentCard({
 }) {
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-[6px] border border-border/60 bg-card hover:bg-secondary/20 transition-colors">
-      {a.patient.avatar ? (
+      {patientAvatar(a) ? (
         <img
-          src={a.patient.avatar}
-          alt={a.patient.name}
+          src={patientAvatar(a)}
+          alt={patientName(a)}
           className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5 border border-border/40"
         />
       ) : (
         <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-xs shrink-0 mt-0.5">
-          {getInitials(a.patient.name)}
+          {getInitials(patientName(a))}
         </div>
       )}
 
@@ -281,10 +297,10 @@ function AppointmentCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="font-semibold text-[12px] text-foreground truncate">
-              {a.patient.name}
+              {patientName(a)}
             </p>
             <p className="text-[10px] text-muted-foreground/60 truncate">
-              {a.doctor.user.name}{a.hospital ? ` · ${a.hospital.name_en}` : ""}
+              {doctorName(a)}{a.hospital ? ` · ${a.hospital.name_en}` : ""}
             </p>
           </div>
           <Badge
@@ -649,24 +665,24 @@ function AppointmentPanel({
                   <div className="rounded-[6px] border border-border/60 bg-secondary/20 overflow-hidden">
                     <div className="h-1 w-full bg-primary/40" />
                     <div className="p-4 flex items-start gap-4">
-                      {appt.patient.avatar ? (
+                      {patientAvatar(appt) ? (
                         <img
-                          src={appt.patient.avatar}
-                          alt={appt.patient.name}
+                          src={patientAvatar(appt)}
+                          alt={patientName(appt)}
                           className="h-16 w-16 rounded-full object-cover flex-shrink-0 border-2 border-background ring-1 ring-border/40"
                         />
                       ) : (
                         <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg flex-shrink-0 border-2 border-background ring-1 ring-border/40">
-                          {getInitials(appt.patient.name)}
+                          {getInitials(patientName(appt))}
                         </div>
                       )}
                       <div className="min-w-0 flex-1 pt-0.5">
                         <p className="font-semibold text-[15px] text-foreground leading-tight truncate">
-                          {appt.patient.name}
+                          {patientName(appt)}
                         </p>
-                        {appt.patient.email && (
+                        {patientEmail(appt) && (
                           <p className="text-[12px] text-muted-foreground truncate mt-0.5">
-                            {appt.patient.email}
+                            {patientEmail(appt)}
                           </p>
                         )}
                         <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
@@ -746,7 +762,7 @@ function AppointmentPanel({
                     <InfoTile
                       icon={<Stethoscope className="w-3.5 h-3.5" />}
                       label="Doctor"
-                      value={appt.doctor.user.name}
+                      value={doctorName(appt)}
                     />
                     <InfoTile
                       icon={<Building2 className="w-3.5 h-3.5" />}
@@ -887,7 +903,7 @@ function ManageAppointments() {
             new Date(`${b.appointment_date}T${b.appointment_time}`).getTime()
           );
         case "patient":
-          return a.patient.name.localeCompare(b.patient.name);
+          return patientName(a).localeCompare(patientName(b));
         default:
           return (
             new Date(`${b.appointment_date}T${b.appointment_time}`).getTime() -

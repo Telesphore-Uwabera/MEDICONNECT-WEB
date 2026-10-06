@@ -1,4 +1,5 @@
-﻿import { useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -23,11 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  useAdminUsers,
-  setUserStatus,
-  type AdminUser,
-} from "@/lib/admin-store";
+import { useGetAdminUsers, useActivateUser, useSuspendUser } from "@/hooks/admin/use-admin-users";
+import { useGetAdminDoctors, useApproveDoctor, useRejectDoctor } from "@/hooks/admin/use-admin-doctors";
+import { useGetAdminHospitals, useApproveHospital, useRejectHospital } from "@/hooks/admin/use-admin-hospitals";
+import { useGetAdminPharmacies, useApprovePharmacy, useRejectPharmacy } from "@/hooks/admin/use-admin-pharmacies";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Eye, Stethoscope, Hospital, Pill } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -39,31 +39,130 @@ const roleIcon = {
   patient: Stethoscope,
 } as const;
 
+type QueueUser = {
+  id: number;
+  kind: "doctor" | "hospital" | "pharmacy" | "user";
+  name: string;
+  email: string;
+  phone: string;
+  role: keyof typeof roleIcon;
+  status: string;
+  createdAt: string;
+  meta?: Record<string, string>;
+};
+
+const PENDING = new Set(["pending", "action_requested"]);
+
 const AdminApprovals = () => {
-  const { t, i18n } = useTranslation();
-  const users = useAdminUsers();
-  const pending = users.filter((u) => u.status === "pending");
-  const [selected, setSelected] = useState<AdminUser | null>(null);
+  const { t } = useTranslation();
+  const doctors = useGetAdminDoctors({ status: "pending" });
+  const hospitals = useGetAdminHospitals({ status: "pending" });
+  const pharmacies = useGetAdminPharmacies({ status: "pending" });
+  const users = useGetAdminUsers({ status: "pending" });
+  const approveDoctor = useApproveDoctor();
+  const rejectDoctor = useRejectDoctor();
+  const approveHospital = useApproveHospital();
+  const rejectHospital = useRejectHospital();
+  const approvePharmacy = useApprovePharmacy();
+  const rejectPharmacy = useRejectPharmacy();
+  const activateUser = useActivateUser();
+  const suspendUser = useSuspendUser();
+  const pending: QueueUser[] = [
+    ...(doctors.data?.data ?? [])
+      .filter((doctor) => PENDING.has(doctor.status))
+      .map((doctor) => ({
+        id: doctor.id,
+        kind: "doctor" as const,
+        name: doctor.user?.name || "Doctor",
+        email: doctor.user?.email || "",
+        phone: doctor.user?.phone || "",
+        role: "doctor" as const,
+        status: doctor.status,
+        createdAt: doctor.created_at || "",
+        meta: doctor.specialization
+          ? { specialty: typeof doctor.specialization === "string" ? doctor.specialization : doctor.specialization.name_en || "" }
+          : undefined,
+      })),
+    ...(hospitals.data?.data ?? [])
+      .filter((hospital) => PENDING.has(hospital.status))
+      .map((hospital) => ({
+        id: hospital.id,
+        kind: "hospital" as const,
+        name: hospital.name_en || "Health facility",
+        email: hospital.email || hospital.user?.email || "",
+        phone: hospital.phone || "",
+        role: "hospital" as const,
+        status: hospital.status,
+        createdAt: hospital.created_at || "",
+        meta: hospital.city ? { city: hospital.city } : undefined,
+      })),
+    ...(pharmacies.data?.data ?? [])
+      .filter((pharmacy) => PENDING.has(pharmacy.status))
+      .map((pharmacy) => ({
+        id: pharmacy.id,
+        kind: "pharmacy" as const,
+        name: pharmacy.name_en || "Pharmacy",
+        email: pharmacy.email || pharmacy.user?.email || "",
+        phone: pharmacy.phone || "",
+        role: "pharmacy" as const,
+        status: pharmacy.status,
+        createdAt: pharmacy.created_at || "",
+        meta: pharmacy.city ? { city: pharmacy.city } : undefined,
+      })),
+    ...(users.data?.data ?? [])
+      .filter((user) => user.status === "pending")
+      .map((user) => ({
+        id: user.id,
+        kind: "user" as const,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        role: (user.roles?.find((role) => role.name === "doctor" || role.name === "hospital" || role.name === "pharmacy" || role.name === "patient")?.name || "patient") as QueueUser["role"],
+        status: user.status,
+        createdAt: user.created_at,
+      })),
+  ];
+  const isLoading = doctors.isLoading || hospitals.isLoading || pharmacies.isLoading || users.isLoading;
+  const [selected, setSelected] = useState<QueueUser | null>(null);
   const [confirm, setConfirm] = useState<{
-    user: AdminUser;
+    user: QueueUser;
     action: "approve" | "reject";
   } | null>(null);
   const { toast } = useToast();
 
   const apply = () => {
     if (!confirm) return;
-    setUserStatus(
-      confirm.user.id,
-      confirm.action === "approve" ? "active" : "rejected",
-    );
-    toast({
-      title:
-        confirm.action === "approve"
-          ? t("admin.approvals.approved_toast", { name: confirm.user.name })
-          : t("admin.approvals.rejected_toast", { name: confirm.user.name }),
-    });
-    setConfirm(null);
-    setSelected(null);
+    const { user, action } = confirm;
+    const onSuccess = () => {
+      toast({
+        title:
+          action === "approve"
+            ? t("admin.approvals.approved_toast", { name: user.name })
+            : t("admin.approvals.rejected_toast", { name: user.name }),
+      });
+      setConfirm(null);
+      setSelected(null);
+    };
+    const onError = (error: Error) => {
+      toast({ title: error.message || "Could not update this account." });
+    };
+    if (user.kind === "doctor") {
+      if (action === "approve") approveDoctor.mutate(user.id, { onSuccess, onError });
+      else rejectDoctor.mutate({ id: user.id }, { onSuccess, onError });
+      return;
+    }
+    if (user.kind === "hospital") {
+      if (action === "approve") approveHospital.mutate(user.id, { onSuccess, onError });
+      else rejectHospital.mutate({ id: user.id }, { onSuccess, onError });
+      return;
+    }
+    if (user.kind === "pharmacy") {
+      if (action === "approve") approvePharmacy.mutate(user.id, { onSuccess, onError });
+      else rejectPharmacy.mutate({ id: user.id }, { onSuccess, onError });
+      return;
+    }
+    if (action === "approve") activateUser.mutate(user.id, { onSuccess, onError });
+    else suspendUser.mutate(user.id, { onSuccess, onError });
   };
 
   return (
@@ -78,7 +177,13 @@ const AdminApprovals = () => {
         })}
       />
       <div className="p-8">
-        {pending.length === 0 ? (
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-16 text-center text-muted-foreground">
+              {t("common.loading")}
+            </CardContent>
+          </Card>
+        ) : pending.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center text-muted-foreground">
               {t("admin.approvals.empty")}

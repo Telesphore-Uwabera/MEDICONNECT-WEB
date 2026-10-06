@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Zap, ShieldCheck, Lock, Wifi, CalendarCheck } from "lucide-react";
 import { HeroHeadline } from "@/components/landing/HeroHeadline";
@@ -34,34 +34,18 @@ export default function HeroSection() {
     t("pages.landing.hero_intro"),
   );
 
-  const { data: doctorsData } = useGetSearchDoctors({ per_page: 20 });
+  const { data: doctorsData } = useGetSearchDoctors({ per_page: 100 });
   const doctorList = doctorsData?.data ?? [];
-  const scheduleQueries = useQueries({
-    queries: doctorList.map((doctor) => ({
-      queryKey: ["doctor-availability", doctor.slug],
-      queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
-      enabled: !!doctor.slug,
-      staleTime: 60_000,
-    })),
-  });
-  const schedulesReady = doctorList.length === 0 || scheduleQueries.every((query) => query.isFetched);
 
   const { heroDoctors, showingOnline } = useMemo(() => {
     const withPhoto = (doctor: ApiDoctor) => Boolean(doctor.image || doctor.user?.avatar);
+    const instant = doctorList.filter((doctor) => doctor.instant_consultation);
+    if (instant.length) return { heroDoctors: instant, showingOnline: true };
+
     const featured = doctorList.filter((doctor) => (doctor.is_featured || doctor.show_homepage) && withPhoto(doctor));
     const fallback = (featured.length ? featured : doctorList.filter(withPhoto)).slice(0, 5);
-    if (!schedulesReady) return { heroDoctors: [] as ApiDoctor[], showingOnline: false };
-
-    const online = doctorList.filter((doctor, index) =>
-      doctorOffersInstant(doctor, scheduleQueries[index]?.data),
-    );
-    const onlineWithPhoto = online.filter(withPhoto);
-    const chosen = (onlineWithPhoto.length ? onlineWithPhoto : online).slice(0, 5);
-
-    return chosen.length
-      ? { heroDoctors: chosen, showingOnline: true }
-      : { heroDoctors: fallback, showingOnline: false };
-  }, [doctorList, scheduleQueries, schedulesReady]);
+    return { heroDoctors: fallback, showingOnline: false };
+  }, [doctorList]);
 
   const [activeDoctorIdx, setActiveDoctorIdx] = useState(0);
   const [prevDoctorIdx,   setPrevDoctorIdx]   = useState<number | null>(null);
@@ -72,6 +56,11 @@ export default function HeroSection() {
   const [bookOpen,  setBookOpen]  = useState(false);
   const [progress,  setProgress]  = useState(0);
   const heroKey = heroDoctors.map((doctor) => doctor.id).join("|");
+  const activeIndexRef = useRef(0);
+
+  useEffect(() => {
+    activeIndexRef.current = activeDoctorIdx;
+  }, [activeDoctorIdx]);
 
   useEffect(() => {
     setActiveDoctorIdx(0);
@@ -81,18 +70,21 @@ export default function HeroSection() {
   // ── 5-second crossfade rotation ─────────────────────────────────────────
   useEffect(() => {
     if (heroDoctors.length < 2 || isPaused || modalOpen || bookOpen) return;
+    let swapTimer = 0;
     const id = window.setInterval(() => {
       setIsTransitioning(true);
-      // After 700 ms (half transition) swap the active doctor
-      setTimeout(() => {
-        setActiveDoctorIdx((i) => {
-          setPrevDoctorIdx(i);
-          return (i + 1) % heroDoctors.length;
-        });
+      swapTimer = window.setTimeout(() => {
+        const current = activeIndexRef.current;
+        const next = (current + 1) % heroDoctors.length;
+        setPrevDoctorIdx(current);
+        setActiveDoctorIdx(next);
         setIsTransitioning(false);
       }, 700);
     }, HERO_DOCTOR_ROTATE_MS);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(swapTimer);
+    };
   }, [heroDoctors.length, isPaused, modalOpen, bookOpen]);
 
   // ── Progress bar ─────────────────────────────────────────────────────────
@@ -192,7 +184,7 @@ export default function HeroSection() {
 
           {/* ── Photo column ── */}
           <div
-            className="relative mx-auto hidden w-full max-w-[380px] items-end justify-center md:flex lg:max-w-[420px]"
+            className="relative mx-auto flex w-full max-w-[320px] items-end justify-center sm:max-w-[380px] lg:max-w-[420px]"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
@@ -324,7 +316,7 @@ export default function HeroSection() {
                     />
                   </div>
                   {/* Dot indicators */}
-                  <div className="flex items-center justify-center gap-1.5">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
                     {heroDoctors.map((_, i) => (
                       <button
                         key={i}

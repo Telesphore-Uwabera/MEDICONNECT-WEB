@@ -1033,15 +1033,15 @@ const RestockRequests = () => {
       label: t("pages.pharmacy.status"),
       value: filters.status,
       options: [
-        { value: "all", label: "pages.pharmacy.all_statuses" },
-        { value: "pending", label: "pages.pharmacy.pending" },
-        { value: "approved", label: "pages.pharmacy.approved" },
-        { value: "received", label: "pages.pharmacy.received" },
-        { value: "rejected", label: "pages.pharmacy.rejected" },
+        { value: "all", label: t("pages.pharmacy.all_statuses") },
+        { value: "pending", label: t("pages.pharmacy.pending") },
+        { value: "approved", label: t("pages.pharmacy.approved") },
+        { value: "received", label: t("pages.pharmacy.received") },
+        { value: "rejected", label: t("pages.pharmacy.rejected") },
       ],
       onChange: (v: string) => set("status", v as any)
     }
-  ], [filters.status, set]);
+  ], [filters.status, set, t]);
 
   // Render
 

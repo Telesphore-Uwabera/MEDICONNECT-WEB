@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { listFrom } from "@/lib/list-payload";
 
 const BASE = "/pharmacy/inventory/categories";
 const QK = ["inventory-categories"] as const;
@@ -36,7 +37,7 @@ export function useGetInventoryCategories() {
   return useQuery({
     queryKey: QK,
     queryFn: () =>
-      apiFetch<{ categories: Category[] }>(BASE).then((r) => r.categories),
+      apiFetch<unknown>(BASE).then((r) => listFrom<Category>(r, "categories")),
   });
 }
 

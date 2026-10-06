@@ -53,8 +53,16 @@ export const orderKeys = {
 export function useDraftOrder(pharmacyId: number | null) {
   return useQuery<DraftOrderResponse>({
     queryKey: orderKeys.draft(pharmacyId),
-    queryFn: () =>
-      apiFetch(`/patient/pharmacy-orders/draft?pharmacy_id=${pharmacyId}`),
+    queryFn: async () => {
+      try {
+        return await apiFetch<DraftOrderResponse>(
+          `/patient/pharmacy-orders/draft?pharmacy_id=${pharmacyId}`,
+        );
+      } catch (error) {
+        if ((error as { status?: number }).status === 404) return { order: null };
+        throw error;
+      }
+    },
     enabled: pharmacyId != null,
     staleTime: 0, // always fresh — cart state must be authoritative
   });

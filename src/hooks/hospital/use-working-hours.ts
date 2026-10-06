@@ -194,7 +194,24 @@ export function useResetWorkingHours() {
 export function useGetHospitalStatus() {
   return useQuery({
     queryKey: hospitalStatusKeys.all,
-    queryFn: () => apiFetch<HospitalStatus>("/hospital/status"),
+    queryFn: async () => {
+      try {
+        return await apiFetch<HospitalStatus>("/hospital/status");
+      } catch (error) {
+        if ((error as { status?: number }).status !== 404) throw error;
+        try {
+          const body = await apiFetch<{ hospital?: { is_active?: boolean | number; is_accepting_bookings?: boolean | number }; is_active?: boolean | number; is_accepting_bookings?: boolean | number }>("/hospital/profile");
+          const row = body.hospital ?? body;
+          const off = (value: boolean | number | undefined) => value === false || value === 0;
+          return {
+            is_active: !off(row.is_active),
+            is_accepting_bookings: !off(row.is_accepting_bookings),
+          } satisfies HospitalStatus;
+        } catch {
+          return { is_active: true, is_accepting_bookings: true };
+        }
+      }
+    },
   });
 }
 

@@ -320,9 +320,16 @@ export function useGetCertificate(id: number | null) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function useGetCurrentRequest() {
-  return useQuery<{ certificate: Certificate }>({
+  return useQuery<{ certificate: Certificate | null }>({
     queryKey: certKeys.request(),
-    queryFn: () => apiFetch(`${BASE}/request`),
+    queryFn: async () => {
+      try {
+        return await apiFetch<{ certificate: Certificate | null }>(`${BASE}/request`);
+      } catch (error) {
+        if ((error as ApiError).status === 404) return { certificate: null };
+        throw error;
+      }
+    },
     retry: (failureCount, error) => {
       if ((error as ApiError).status === 404) return false;
       return failureCount < 2;
@@ -337,7 +344,16 @@ export function useGetCurrentRequest() {
 export function useGetStepData(step: number, enabled = true) {
   return useQuery<StepDataResponse>({
     queryKey: certKeys.step(step),
-    queryFn: () => apiFetch(`${BASE}/request/step/${step}`),
+    queryFn: async () => {
+      try {
+        return await apiFetch<StepDataResponse>(`${BASE}/request/step/${step}`);
+      } catch (error) {
+        if ((error as ApiError).status === 404) {
+          return { certificate_id: 0, current_step: 0, step, answers: [] };
+        }
+        throw error;
+      }
+    },
     enabled,
     retry: (failureCount, error) => {
       if ((error as ApiError).status === 404) return false;

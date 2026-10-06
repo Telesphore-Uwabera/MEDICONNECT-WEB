@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import multer from "multer";
 import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
-import { hashPassword, loadOwnedId } from "./auth.js";
+import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -316,6 +316,80 @@ async function fillGap(req, res, parts) {
     return true;
   }
 
+  if (req.method === "GET" && parts[0] === "settings" && !parts[1]) {
+    const row = await one("SELECT * FROM users WHERE id = ?", [req.user.id]);
+    const roles = await roleNames(req.user.id);
+    const payload = {
+      id: row?.id,
+      name: row?.name ?? "",
+      email: row?.email ?? "",
+      phone: row?.phone ?? null,
+      country_code: row?.country_code ?? null,
+      preferred_language: row?.preferred_language || "en",
+      avatar: row?.avatar ?? null,
+      roles: roles.length ? roles : [req.user.role].filter(Boolean),
+      is_verified: Boolean(row?.is_verified || row?.email_verified_at || row?.phone_verified_at),
+      email_verified_at: row?.email_verified_at ?? null,
+      phone_verified_at: row?.phone_verified_at ?? null,
+      created_at: row?.created_at ?? null,
+      updated_at: row?.updated_at ?? null,
+    };
+    res.json({ ...payload, data: payload });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "hospital" && parts[1] === "status" && !parts[2]) {
+    const hospitalId = await loadOwnedId(req.user.id, "hospitals");
+    const row = hospitalId ? await one("SELECT * FROM hospitals WHERE id = ?", [hospitalId]) : null;
+    res.json({
+      is_active: row?.is_active !== 0 && row?.is_active !== false,
+      is_accepting_bookings: row?.is_accepting_bookings !== 0 && row?.is_accepting_bookings !== false,
+    });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "hospital" && parts[1] === "images") {
+    res.json({ images: [], data: [] });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "patient" && parts[1] === "my-record") {
+    res.json({ record: null });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "patient" && parts[1] === "my-files") {
+    res.json({ data: [], files: [] });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "patient" && parts[1] === "certificates" && parts[2] === "request") {
+    res.json({ certificate: null });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "wallets" && parts[2] === "main" && !parts[3]) {
+    res.json({
+      wallet: { id: 0, balance: "0", currency: "RWF", last_withdrawn: null, last_topup: null },
+    });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "public") {
+    res.json({ settings: {} });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2] === "audit-logs") {
+    res.json({ data: [], current_page: 1, per_page: 15, total: 0 });
+    return true;
+  }
+
+  if (req.method === "GET" && parts[0] === "admin" && parts[1] === "settings" && parts[2]) {
+    res.json({ group: parts[2], settings: {} });
+    return true;
+  }
+
   if (parts[0] === "doctor" && parts[1] === "wallet" && parts[2] === "withdraw" && req.method === "POST") {
     const table = await firstTable(["doctor_withdrawals", "withdrawals"]);
     if (!table) return res.status(422).json({ message: "Withdrawals are not available yet." }) || true;
@@ -363,6 +437,7 @@ async function fillGap(req, res, parts) {
   }
 
   if (parts[0] === "settings") {
+    if (req.method === "GET" && !parts[1]) return false;
     if (parts[1] === "password" && req.body?.password) {
       await update("users", req.user.id, { password: await hashPassword(req.body.password) });
       res.json({ message: "Password updated." });

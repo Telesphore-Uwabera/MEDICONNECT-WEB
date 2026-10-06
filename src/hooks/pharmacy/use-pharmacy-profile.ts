@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { listFrom } from "@/lib/list-payload";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types (matching API response shapes)
@@ -245,8 +246,12 @@ export function useGetPharmacyProfile() {
   return useQuery({
     queryKey: pharmacyKeys.profile,
     queryFn: () =>
-      apiFetch<{ pharmacy: PharmacyProfile }>("/pharmacy/profile").then(
-        (r) => r.pharmacy
+      apiFetch<{ pharmacy?: PharmacyProfile } & Partial<PharmacyProfile>>("/pharmacy/profile").then(
+        (r) => {
+          if (r.pharmacy?.id || r.pharmacy?.name_en) return r.pharmacy;
+          if (r.name_en || r.id) return r as PharmacyProfile;
+          return null;
+        },
       ),
     retry: false, // 404 = "no profile yet", don't retry
   });
@@ -344,8 +349,8 @@ export function useGetWorkingHours() {
   return useQuery({
     queryKey: pharmacyKeys.workingHours,
     queryFn: () =>
-      apiFetch<{ working_hours: WorkingHourRecord[] }>("/pharmacy/working-hours").then(
-        (r) => r.working_hours
+      apiFetch<unknown>("/pharmacy/working-hours").then((r) =>
+        listFrom<WorkingHourRecord>(r, "working_hours"),
       ),
   });
 }

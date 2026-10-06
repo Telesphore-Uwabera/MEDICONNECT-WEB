@@ -87,10 +87,19 @@ function toQueryString(params?: SettingsAuditLogParams) {
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
+async function readOrEmpty<T>(path: string, fallback: T): Promise<T> {
+  try {
+    return await apiFetch<T>(path);
+  } catch (error) {
+    if ((error as { status?: number }).status === 404) return fallback;
+    throw error;
+  }
+}
+
 export function useGetPublicSettings() {
   return useQuery({
     queryKey: ["admin-settings", "public"],
-    queryFn: () => apiFetch<PublicSettingsResponse>(`${BASE}/public`),
+    queryFn: () => readOrEmpty<PublicSettingsResponse>(`${BASE}/public`, { settings: {} }),
     staleTime: 60_000,
   });
 }
@@ -98,7 +107,8 @@ export function useGetPublicSettings() {
 export function useGetSettingsGroup(group: SettingsGroup) {
   return useQuery({
     queryKey: ["admin-settings", group],
-    queryFn: () => apiFetch<SettingsGroupResponse>(`${BASE}/${group}`),
+    queryFn: () =>
+      readOrEmpty<SettingsGroupResponse>(`${BASE}/${group}`, { group, settings: {} }),
     placeholderData: (prev) => prev,
   });
 }
@@ -126,8 +136,9 @@ export function useGetSettingsAuditLogs(params?: SettingsAuditLogParams) {
   return useQuery({
     queryKey: ["admin-settings", "audit-logs", params],
     queryFn: () =>
-      apiFetch<SettingsAuditLogsResponse>(
+      readOrEmpty<SettingsAuditLogsResponse>(
         `${BASE}/audit-logs${queryString ? `?${queryString}` : ""}`,
+        { data: [], current_page: 1, per_page: 15, total: 0 },
       ),
     placeholderData: (prev) => prev,
   });

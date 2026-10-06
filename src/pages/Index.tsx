@@ -49,7 +49,6 @@ import {
 
 import {
   useGetSearchDoctors,
-  useInfiniteSearchDoctors,
   ApiDoctor,
 } from "@/hooks/patient/use-patient-doctor";
 import { 
@@ -206,35 +205,38 @@ const Index = () => {
   const { data: pharmacyStats } = useGetPharmacyStats();
   const { data: pharmaciesResp, isLoading: pharmaciesLoading } = useSearchPharmacies({ per_page: 12 });
 
-  // ── All doctors (infinite scrolling) ─────────────────────────────────────
-  const {
-    data: doctorsData,
-    isLoading: doctorsLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteSearchDoctors({ ...doctorSearchParams, per_page: 6 });
+  const { data: homepageDoctorsData, isLoading: doctorsLoading } =
+    useGetSearchDoctors({ per_page: 100 });
 
-  const allDoctors = useMemo(() => {
-    return doctorsData?.pages.flatMap((page) => page.data) ?? [];
-  }, [doctorsData]);
+  const orderedDoctors = useMemo(() => {
+    const list = homepageDoctorsData?.data ?? [];
+    const instant = list.filter((doctor) => doctor.instant_consultation);
+    const booking = list.filter((doctor) => !doctor.instant_consultation);
+    return [...instant, ...booking];
+  }, [homepageDoctorsData]);
 
-  const observer = useRef<IntersectionObserver | null>(null);
-  const lastDoctorElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (doctorsLoading || isFetchingNextPage) return;
-      if (observer.current) observer.current.disconnect();
+  const visibleDoctorCount = 6;
+  const [doctorOffset, setDoctorOffset] = useState(0);
+  const [doctorRotationPaused, setDoctorRotationPaused] = useState(false);
 
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
-          fetchNextPage();
-        }
-      });
+  useEffect(() => {
+    setDoctorOffset(0);
+  }, [orderedDoctors.length]);
 
-      if (node) observer.current.observe(node);
-    },
-    [doctorsLoading, isFetchingNextPage, hasNextPage, fetchNextPage],
-  );
+  useEffect(() => {
+    if (orderedDoctors.length <= visibleDoctorCount || doctorRotationPaused) return;
+    const timer = window.setInterval(() => {
+      setDoctorOffset((offset) => (offset + 1) % orderedDoctors.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [orderedDoctors.length, doctorRotationPaused]);
+
+  const visibleDoctors = useMemo(() => {
+    if (orderedDoctors.length <= visibleDoctorCount) return orderedDoctors;
+    return Array.from({ length: visibleDoctorCount }, (_, index) =>
+      orderedDoctors[(doctorOffset + index) % orderedDoctors.length],
+    );
+  }, [orderedDoctors, doctorOffset]);
 
   // ── Instant-only doctors (for the Quick Consult slider) ─────────────────────
   const { data: instantDoctorsData, isLoading: instantLoading } =
@@ -459,14 +461,18 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              onMouseEnter={() => setDoctorRotationPaused(true)}
+              onMouseLeave={() => setDoctorRotationPaused(false)}
+            >
               {doctorsLoading
                 ? Array.from({ length: 6 }).map((_, index) => (
                     <div key={index} className="h-[320px] animate-pulse rounded-[6px] border border-border bg-card" />
                   ))
-                : allDoctors.slice(0, 6).map((doctor, index) => (
+                : visibleDoctors.map((doctor, index) => (
                     <div
-                      key={doctor.id}
+                      key={`${doctor.id}-${doctorOffset}`}
                       className="landing-card-in"
                       style={{ animationDelay: `${index * 70}ms` }}
                     >

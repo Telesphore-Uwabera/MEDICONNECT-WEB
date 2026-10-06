@@ -345,7 +345,7 @@ const AdminOverview = () => {
                       </div>
                       <p className="text-sm font-bold tabular-nums text-foreground leading-none">{count}</p>
                       <p className="text-[9px] text-muted-foreground mt-0.5 capitalize">
-                        {t(`admin.roles.${key.slice(0, -1)}`) /* patients→patient etc */}
+                        {t(`admin.roles.${({ patients: "patient", doctors: "doctor", hospitals: "hospital", pharmacies: "pharmacy", admins: "admin" } as Record<string, string>)[key] ?? key}`)}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <MiniBar pct={pct} className={roleBarColor[key]} />

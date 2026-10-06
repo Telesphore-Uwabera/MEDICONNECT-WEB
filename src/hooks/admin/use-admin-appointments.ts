@@ -145,7 +145,72 @@ export function useGetAdminAppointments(params: GetAdminAppointmentsParams = {})
 
   return useQuery<AppointmentsResponse>({
     queryKey: ["admin-appointments", params],
-    queryFn: () => apiFetch(`${BASE}${qs ? `?${qs}` : ""}`),
+    queryFn: async () => {
+      const page = await apiFetch<AppointmentsResponse>(`${BASE}${qs ? `?${qs}` : ""}`);
+      const rows = (page.data ?? []) as Array<ApiAppointment & {
+        patient_id?: number;
+        doctor_id?: number;
+        guest_name?: string | null;
+        patient?: ApiAppointmentPatient | null;
+        doctor?: ApiAppointmentDoctor | null;
+      }>;
+      const missingPatients = [...new Set(rows.filter((row) => !row.patient?.name && row.patient_id).map((row) => row.patient_id as number))];
+      const missingDoctors = [...new Set(rows.filter((row) => !row.doctor?.user?.name && row.doctor_id).map((row) => row.doctor_id as number))];
+      const read = async (path: string) => {
+        try {
+          const body = await apiFetch<Record<string, any>>(path);
+          return (body.patient || body.doctor || body.user || body.data || body) as Record<string, any> | null;
+        } catch {
+          return null;
+        }
+      };
+      const withUserName = async (path: string) => {
+        const record = await read(path);
+        if (!record) return null;
+        if (!record.user?.name && !record.name && record.user_id) {
+          const user = await read(`/admin/users/${record.user_id}`);
+          if (user?.name) {
+            record.name = record.name || user.name;
+            record.email = record.email || user.email;
+            record.avatar = record.avatar || user.avatar;
+            record.user = { ...(record.user || {}), name: user.name, email: user.email, avatar: user.avatar };
+          }
+        }
+        return record;
+      };
+      const [patients, doctors] = await Promise.all([
+        Promise.all(missingPatients.map(async (id) => [id, await withUserName(`/admin/patients/${id}`)] as const)),
+        Promise.all(missingDoctors.map(async (id) => [id, await withUserName(`/admin/doctors/${id}`)] as const)),
+      ]);
+      const patientById = new Map(patients);
+      const doctorById = new Map(doctors);
+      return {
+        ...page,
+        data: rows.map((row) => {
+          const patientRow = row.patient?.name ? row.patient : patientById.get(row.patient_id ?? -1);
+          const doctorRow = row.doctor?.user?.name ? row.doctor : doctorById.get(row.doctor_id ?? -1);
+          const patient = patientRow as { id?: number; name?: string; email?: string; avatar?: string; user?: { name?: string; email?: string; avatar?: string } } | null;
+          const doctor = doctorRow as { id?: number; name?: string; user?: { name?: string; email?: string; avatar?: string } } | null;
+          return {
+            ...row,
+            patient: {
+              id: patient?.id ?? row.patient_id ?? 0,
+              name: patient?.name || patient?.user?.name || row.guest_name || "Patient",
+              email: patient?.email || patient?.user?.email,
+              avatar: patient?.avatar || patient?.user?.avatar,
+            },
+            doctor: {
+              id: doctor?.id ?? row.doctor_id ?? 0,
+              user: {
+                name: doctor?.user?.name || doctor?.name || "Doctor",
+                email: doctor?.user?.email,
+                avatar: doctor?.user?.avatar,
+              },
+            },
+          };
+        }),
+      };
+    },
   });
 }
 

@@ -301,8 +301,15 @@ export function useGetMainWallet() {
   return useQuery<MainWallet>({
     queryKey: ["admin-wallet-main"],
     queryFn: async () => {
-      const res = await apiFetch<{ wallet: MainWallet }>(MAIN_BASE);
-      return { ...res.wallet, currency: res.wallet.currency ?? "RWF" };
+      try {
+        const res = await apiFetch<{ wallet: MainWallet }>(MAIN_BASE);
+        return { ...res.wallet, currency: res.wallet.currency ?? "RWF" };
+      } catch (error) {
+        if ((error as { status?: number }).status === 404) {
+          return { id: 0, balance: "0", currency: "RWF", last_withdrawn: null, last_topup: null };
+        }
+        throw error;
+      }
     },
   });
 }

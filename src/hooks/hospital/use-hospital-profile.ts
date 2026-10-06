@@ -145,11 +145,17 @@ export function useGetHospitalImages(
 ) {
   return useQuery<{ images: HospitalImage[] }>({
     queryKey: ["hospital-images", type ?? "all"],
-    queryFn: () => {
+    queryFn: async () => {
       const url = type
         ? `${IMAGES_BASE}?type=${type}`
         : IMAGES_BASE;
-      return apiFetch<{ images: HospitalImage[] }>(url);
+      try {
+        const body = await apiFetch<{ images?: HospitalImage[]; data?: HospitalImage[] }>(url);
+        return { images: body.images ?? body.data ?? [] };
+      } catch (error) {
+        if ((error as { status?: number }).status === 404) return { images: [] };
+        throw error;
+      }
     },
   });
 }

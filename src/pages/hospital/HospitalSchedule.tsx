@@ -58,8 +58,7 @@ import {
   useToggleHospitalActive,
   useToggleAcceptingBookings,
 } from "@/hooks/hospital/use-working-hours";
-
-const HOSPITAL_NAME = "King Faisal Hospital";
+import { useGetHospitalProfile } from "@/hooks/hospital/use-hospital-profile";
 
 const DAY_ORDER: WorkingHour["day_of_week"][] = [
   "monday",
@@ -256,6 +255,9 @@ const HospitalSchedule = () => {
   const { data: workingHours = [], isLoading: hoursLoading } =
     useGetWorkingHours();
   const { data: status, isLoading: statusLoading } = useGetHospitalStatus();
+  const { data: hospitalProfile } = useGetHospitalProfile();
+  const hospitalRecord = hospitalProfile?.hospital;
+  const hospitalName = hospitalRecord?.name_en || hospitalRecord?.name_fr || "";
 
   /* ─── Mutations ─── */
   const setSchedule = useSetWorkingHours();
@@ -504,7 +506,7 @@ const HospitalSchedule = () => {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-foreground leading-tight">
-                      {HOSPITAL_NAME}
+                      {hospitalName || t("pages.hospital.schedule_title")}
                     </p>
                     <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                       {hoursLoading

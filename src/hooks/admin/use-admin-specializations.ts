@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { listFrom } from "@/lib/list-payload";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,9 +150,9 @@ export function useGetSpecializationFees() {
   return useQuery({
     queryKey: FEES_KEY,
     queryFn: () =>
-      apiFetch<{ specialization_fees: ApiSpecializationFee[] }>(
-        "/admin/specialization-fees"
-      ).then((res) => res.specialization_fees),
+      apiFetch<unknown>("/admin/specialization-fees").then((res) =>
+        listFrom<ApiSpecializationFee>(res, "specialization_fees"),
+      ),
   });
 }
 

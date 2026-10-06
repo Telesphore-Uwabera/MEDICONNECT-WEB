@@ -949,9 +949,9 @@ function ServiceBookings() {
     {
       type: "search" as const,
       key: "q",
-      label: t("pages.patient.search"),
+      label: t("pages.patient.search_label"),
       value: filters.q,
-      placeholder: t("pages.patient.search_service_facility"),
+      placeholder: t("pages.patient.search_label"),
       onChange: (v: string) => set("q", v)
     }
   ], [filters, set]);

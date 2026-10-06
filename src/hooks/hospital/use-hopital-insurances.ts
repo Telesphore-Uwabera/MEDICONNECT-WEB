@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { listFrom } from "@/lib/list-payload";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,8 +71,8 @@ export function useGetPublicInsurances() {
   return useQuery({
     queryKey: ["public-insurances"],
     queryFn: () =>
-      apiFetch<{ insurances: PublicInsurance[] }>("/public/insurances").then(
-        (r) => r.insurances,
+      apiFetch<unknown>("/public/insurances").then((r) =>
+        listFrom<PublicInsurance>(r, "insurances"),
       ),
     staleTime: 5 * 60 * 1000,
   });
@@ -85,8 +86,8 @@ export function useGetInsurances() {
   return useQuery({
     queryKey: insuranceKeys.list(),
     queryFn: () =>
-      apiFetch<{ insurances: HospitalInsurance[] }>(BASE).then(
-        (r) => r.insurances,
+      apiFetch<unknown>(BASE).then((r) =>
+        listFrom<HospitalInsurance>(r, "insurances"),
       ),
   });
 }

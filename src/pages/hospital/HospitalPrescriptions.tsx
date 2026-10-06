@@ -25,12 +25,12 @@ import {
 } from "lucide-react";
 import { PrescriptionWizard } from "@/components/PrescriptionWizard";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
+import { useGetHospitalProfile } from "@/hooks/hospital/use-hospital-profile";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
 const channelIcon = { app: User, email: Mail, sms: Smartphone } as const;
-const HOSPITAL = "King Faisal Hospital";
 
 type SortOption = "date-desc" | "date-asc" | "patient";
 type ViewMode = "grid" | "list";
@@ -81,7 +81,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-07",
     status: "sent-to-patient" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: ["app", "sms"] as ("app" | "email" | "sms")[],
     pharmacyName: null,
     medications: [
@@ -96,7 +96,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-06",
     status: "sent-to-pharmacy" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: ["email"] as ("app" | "email" | "sms")[],
     pharmacyName: "Kigali Central Pharmacy",
     medications: [
@@ -110,7 +110,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-05",
     status: "filled" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: ["app", "email"] as ("app" | "email" | "sms")[],
     pharmacyName: "Nyarugenge Pharmacy",
     medications: [
@@ -125,7 +125,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-04",
     status: "draft" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: [] as ("app" | "email" | "sms")[],
     pharmacyName: null,
     medications: [
@@ -139,7 +139,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-03",
     status: "cancelled" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: ["sms"] as ("app" | "email" | "sms")[],
     pharmacyName: null,
     medications: [
@@ -153,7 +153,7 @@ const DUMMY_PRESCRIPTIONS = [
     date: "2025-05-02",
     status: "sent-to-pharmacy" as RxStatus,
     issuer: "hospital",
-    issuerOrg: HOSPITAL,
+    issuerOrg: "Health facility",
     channels: ["app"] as ("app" | "email" | "sms")[],
     pharmacyName: "Remera Health Pharmacy",
     medications: [
@@ -364,17 +364,14 @@ const HospitalPrescriptions = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  const stored = usePrescriptions().filter(
-    (p) => p.issuer === "hospital" && p.issuerOrg === HOSPITAL,
-  );
+  const { data: hospitalProfile } = useGetHospitalProfile();
+  const facilityName =
+    hospitalProfile?.hospital?.name_en ||
+    hospitalProfile?.hospital?.name_fr ||
+    "Health facility";
 
-  const allPrescriptions = useMemo(() => {
-    const storeIds = new Set(stored.map((p) => p.id));
-    return [
-      ...stored,
-      ...DUMMY_PRESCRIPTIONS.filter((p) => !storeIds.has(p.id)),
-    ];
-  }, [stored]);
+  const stored = usePrescriptions().filter((p) => p.issuer === "hospital");
+  const allPrescriptions = stored;
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -507,7 +504,7 @@ const HospitalPrescriptions = () => {
       <div className="flex flex-col h-full">
         <PageHeader
           title={t("pages.hospital.rx_title")}
-          subtitle={t("pages.hospital.rx_sub", { name: HOSPITAL })}
+          subtitle={t("pages.hospital.rx_sub", { name: facilityName })}
         />
 
    
@@ -722,7 +719,7 @@ const HospitalPrescriptions = () => {
         onOpenChange={setOpen}
         doctorName="Health Facility Clinician"
         issuer="hospital"
-        issuerOrg={HOSPITAL}
+        issuerOrg={facilityName}
       />
     </DashboardLayout>
   );
