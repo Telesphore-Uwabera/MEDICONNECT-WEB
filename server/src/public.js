@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q } from "./db.js";
+import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists } from "./db.js";
 import { broadcast } from "./realtime.js";
 
 function pathOf(req) {
@@ -175,6 +175,40 @@ export function publicRoutes(router) {
         recurring_availability: await presentRows("doctor_availabilities", recurring),
         availability_periods: await presentRows("doctor_availability_periods", periods),
         slots_for_date: await presentRows("appointment_slots", slots),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/doctors/:slug/slots", async (req, res, next) => {
+    try {
+      const doctor = await one(
+        `SELECT d.id, d.slug, u.name AS user_name
+         FROM doctors d LEFT JOIN users u ON u.id = d.user_id
+         WHERE d.slug = ? OR d.id = ? LIMIT 1`,
+        [req.params.slug, req.params.slug],
+      );
+      if (!doctor) return res.status(404).json({ message: "Doctor not found." });
+      const params = [doctor.id];
+      let sql = "SELECT * FROM appointment_slots WHERE doctor_id = ?";
+      if (req.query.date) {
+        sql += " AND slot_date = ?";
+        params.push(String(req.query.date).slice(0, 10));
+      }
+      sql += " ORDER BY slot_date, start_time LIMIT 500";
+      const rows = await presentRows("appointment_slots", await q(sql, params).catch(() => []));
+      const grouped = {};
+      for (const row of rows) {
+        const key = String(row.slot_date || "").slice(0, 10);
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(row);
+      }
+      res.json({
+        doctor: { id: doctor.id, name: doctor.user_name, slug: doctor.slug },
+        slots: grouped,
+        dates: Object.keys(grouped),
+        total: rows.length,
       });
     } catch (error) {
       next(error);
@@ -576,6 +610,163 @@ export function publicRoutes(router) {
       broadcast(`consultation.${room}`, "webrtc.signal", req.body);
     }
     res.json({ message: "Signal sent." });
+  });
+
+  router.get("/public/instant-consultations/:token/status", async (req, res, next) => {
+    try {
+      const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
+      const row = await one(
+        `SELECT * FROM \`${table}\` WHERE guest_token = ? OR id = ? ORDER BY id DESC LIMIT 1`,
+        [req.params.token, req.params.token],
+      ).catch(() => null);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      res.json({
+        id: row.id,
+        status: row.status || "pending",
+        payment_status: row.payment_status || null,
+        queue_position: Number(row.queue_position || 1),
+        people_ahead: Number(row.people_ahead || 0),
+        room_url: row.daily_room_url || row.room_url || null,
+        daily_guest_token: row.daily_guest_token || null,
+        amount: Number(row.amount || 0),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/public/instant-consultations/pay/:id", async (req, res, next) => {
+    try {
+      const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      const paymentUuid = crypto.randomUUID();
+      const amount = Number(row.amount || row.fee || 0);
+      if (await tableExists("payments")) {
+        await insert("payments", {
+          amount,
+          currency: row.currency || "RWF",
+          status: "pending",
+          uuid: paymentUuid,
+          payment_uuid: paymentUuid,
+          payable_id: row.id,
+          payable_type: "instant_consultation",
+        });
+      }
+      res.json({
+        message: "Payment started.",
+        invoice_number: row.invoice_number || `MC-${row.id}`,
+        public_key: process.env.PAYMENT_PUBLIC_KEY || "",
+        amount,
+        currency: row.currency || "RWF",
+        payment_uuid: paymentUuid,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/public/payments/check-invoice/:invoice", async (req, res, next) => {
+    try {
+      const invoice = decodeURIComponent(req.params.invoice);
+      const payment = await one(
+        "SELECT * FROM payments WHERE invoice_number = ? OR uuid = ? OR payment_uuid = ? OR id = ? ORDER BY id DESC LIMIT 1",
+        [invoice, invoice, invoice, invoice],
+      ).catch(() => null);
+      res.json({ status: payment?.status || "pending", payment: payment ? await presentRow("payments", payment) : null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get(["/public/medicines", "/public/medicines/all"], async (req, res, next) => {
+    try {
+      const table = (await tableExists("pharmacy_medicines")) ? "pharmacy_medicines" : "medicines";
+      if (!(await tableExists(table))) return res.json({ data: [] });
+      const params = [];
+      let where = "WHERE 1=1";
+      if (req.query.search || req.query.q) {
+        where += " AND (name LIKE ? OR generic_name LIKE ?)";
+        const like = `%${req.query.search || req.query.q}%`;
+        params.push(like, like);
+      }
+      const rows = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY name LIMIT 200`, params).catch(() => []));
+      res.json({ data: rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/medicines/pharmacy/:slug", async (req, res, next) => {
+    try {
+      const pharmacy = await one("SELECT id FROM pharmacies WHERE slug = ? OR id = ? LIMIT 1", [req.params.slug, req.params.slug]);
+      if (!pharmacy) return res.status(404).json({ message: "Pharmacy not found." });
+      const rows = await presentRows("pharmacy_medicines", await q(
+        "SELECT * FROM pharmacy_medicines WHERE pharmacy_id = ? ORDER BY name LIMIT 200",
+        [pharmacy.id],
+      ).catch(() => []));
+      res.json({ data: rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/medicines/availability", async (req, res, next) => {
+    try {
+      const medicine = await one("SELECT * FROM pharmacy_medicines WHERE id = ? LIMIT 1", [req.query.medicine_id]).catch(() => null);
+      res.json({ available: Boolean(medicine && Number(medicine.quantity ?? medicine.stock ?? 1) > 0), medicine });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get(["/public/dropdowns/specialization-fees", "/public/specialization-fees"], async (req, res, next) => {
+    try {
+      const params = [];
+      let where = "WHERE 1=1";
+      if (req.query.specialization_id) {
+        where += " AND (specialization_id = ? OR id = ?)";
+        params.push(req.query.specialization_id, req.query.specialization_id);
+      }
+      if (req.query.search) {
+        where += " AND (sub_specialization LIKE ? OR sub_specialization_fr LIKE ? OR sub_specialization_kiny LIKE ?)";
+        const like = `%${req.query.search}%`;
+        params.push(like, like, like);
+      }
+      const rows = await presentRows("specialization_fees", await q(`SELECT * FROM specialization_fees ${where} ORDER BY id LIMIT 200`, params).catch(() => []));
+      res.json({ data: rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/legal-documents/:type", async (req, res, next) => {
+    try {
+      const row = await one(
+        "SELECT * FROM legal_documents WHERE type = ? OR slug = ? OR id = ? ORDER BY id DESC LIMIT 1",
+        [req.params.type, req.params.type, req.params.type],
+      ).catch(() => null);
+      if (!row) return res.status(404).json({ message: "Document not found." });
+      res.json(await presentRow("legal_documents", row));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/public/page-setup/terms/:type", async (req, res, next) => {
+    try {
+      const row = await one(
+        "SELECT * FROM legal_documents WHERE type = ? OR slug = ? ORDER BY id DESC LIMIT 1",
+        [req.params.type, req.params.type],
+      ).catch(() => null);
+      res.json({
+        title: row?.title || row?.title_en || req.params.type,
+        content: row?.content || row?.content_en || row?.body || "",
+        data: row ? await presentRow("legal_documents", row) : null,
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.get("/health", async (_req, res) => {

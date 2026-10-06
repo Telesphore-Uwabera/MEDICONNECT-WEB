@@ -1339,6 +1339,7 @@ const DoctorProfile = () => {
           return {
             doctor_degree: personal.doctor_degree,
             medical_license: personal.medical_license,
+            designations: personal.designations,
             bio_en: sanitizeRichText(personal.bio_en),
             bio_fr: sanitizeRichText(personal.bio_fr),
             bio_kiny: sanitizeRichText(personal.bio_kiny),

@@ -202,8 +202,32 @@ const RESOURCES = {
   "multi-notifications": "notification_batches",
   staff: "users",
   wallet: "doctor_wallets",
+  "specialization-fees": "specialization_fees",
+  specializations: "specializations",
+  "doctor-consultations": "doctors",
+  "prescription-requests": "prescriptions",
   profile: null,
 };
+
+async function resolveResourceTable(scope, resource) {
+  const scoped = {
+    "pharmacy:working-hours": ["pharmacy_working_hours", "working_hours"],
+    "hospital:working-hours": ["hospital_working_hours"],
+    "pharmacy:closures": ["pharmacy_closures", "closures"],
+    "hospital:closures": ["hospital_closures", "closures"],
+    "pharmacy:prescription-requests": ["pharmacy_prescription_requests", "prescription_requests", "prescriptions"],
+    "doctor:instant-consultations": ["instant_consultation_requests", "instant_consultations"],
+    "patient:instant-consultations": ["instant_consultation_requests", "instant_consultations"],
+  }[`${scope}:${resource}`];
+  const candidates = [];
+  if (scoped) candidates.push(...scoped);
+  else if (RESOURCES[resource]) candidates.push(RESOURCES[resource]);
+  else if (resource && resource !== "profile") candidates.push(String(resource).replace(/-/g, "_"));
+  for (const name of candidates) {
+    if (name && await tableExists(name)) return name;
+  }
+  return null;
+}
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
@@ -1410,13 +1434,227 @@ export function appRoutes(router) {
     }
   });
 
+  const PROFILE_WRITABLE = [
+    "specialization", "doctor_degree", "medical_license", "designations",
+    "consultation_type", "preferred_language", "bio_en", "bio_fr", "bio_kiny",
+    "consultation_fee", "currency", "specialization_fee_id", "sub_specialization",
+    "sub_specializations", "years_of_experience", "is_available",
+  ];
+
+  async function firstExistingTable(names) {
+    for (const name of names) {
+      if (await tableExists(name)) return name;
+    }
+    return null;
+  }
+
+  async function rowsForDoctor(doctorId, tables) {
+    const table = await firstExistingTable(tables);
+    if (!table || !(await hasColumn(table, "doctor_id"))) return [];
+    const rows = await q(`SELECT * FROM \`${table}\` WHERE doctor_id = ? ORDER BY id ASC`, [doctorId]).catch(() => []);
+    return presentRows(table, rows);
+  }
+
+  function fileRef(value) {
+    if (!value) return { path: null, url: null };
+    const stored = String(value);
+    return { path: stored, url: stored.startsWith("http") ? stored : null };
+  }
+
+  async function readSocialLinks(doctor) {
+    const fromRow = {};
+    for (const key of ["facebook", "twitter", "linkedin", "instagram"]) {
+      if (doctor?.[key]) fromRow[key] = doctor[key];
+    }
+    if (Object.keys(fromRow).length) return fromRow;
+    const table = await firstExistingTable(["doctor_social_links", "social_links"]);
+    if (!table || !(await hasColumn(table, "doctor_id"))) return null;
+    const row = await one(`SELECT * FROM \`${table}\` WHERE doctor_id = ? ORDER BY id DESC LIMIT 1`, [doctor.id]).catch(() => null);
+    return row ? presentRow(table, row) : null;
+  }
+
+  async function doctorProfileFor(req) {
+    const { doctorId } = await currentDoctor(req);
+    if (!doctorId) return null;
+    const row = await one(
+      `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar
+       FROM doctors d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ?`,
+      [doctorId],
+    );
+    if (!row) return null;
+    const doctor = await presentRow("doctors", row);
+    doctor.user = { id: row.user_id, name: row.user_name, avatar: row.user_avatar ?? null };
+    doctor.educations = await rowsForDoctor(doctorId, ["doctor_educations", "educations"]);
+    doctor.experiences = await rowsForDoctor(doctorId, ["doctor_experiences", "experiences"]);
+    doctor.qualifications = await rowsForDoctor(doctorId, ["doctor_qualifications", "qualifications"]);
+    doctor.availabilities = await rowsForDoctor(doctorId, ["doctor_availabilities"]);
+    doctor.hospitals = [];
+    doctor.social_links = await readSocialLinks(doctor);
+    doctor.documents = {
+      degree_document: fileRef(doctor.degree_document),
+      medical_license_document: fileRef(doctor.medical_license_document),
+      national_id_document: fileRef(doctor.national_id_document),
+      signature: fileRef(doctor.signature),
+    };
+    if (!Array.isArray(doctor.sub_specializations)) doctor.sub_specializations = [];
+    if (doctor.specialization_fee_id && await tableExists("specialization_fees")) {
+      doctor.specialization_fee = await presentRow(
+        "specialization_fees",
+        await one("SELECT * FROM specialization_fees WHERE id = ?", [doctor.specialization_fee_id]).catch(() => null),
+      );
+    }
+    return doctor;
+  }
+
+  router.get("/doctor/profile", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctor = await doctorProfileFor(req);
+      if (!doctor) return res.status(404).json({ message: "Doctor profile not found." });
+      res.json({ doctor });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/profile", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      const body = req.body ?? {};
+      const fields = {};
+      for (const key of PROFILE_WRITABLE) {
+        if (Object.prototype.hasOwnProperty.call(body, key)) fields[key] = body[key];
+      }
+      if (Object.keys(fields).length) await update("doctors", doctorId, fields);
+      const doctor = await doctorProfileFor(req);
+      res.json({ message: "Profile saved.", doctor });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  function mountDoctorCollection(urlPath, tables, singular) {
+    router.get(`/doctor/${urlPath}`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+      try {
+        const { doctorId } = await currentDoctor(req);
+        const rows = await rowsForDoctor(doctorId, tables);
+        res.json({ [urlPath]: rows, [`${singular}s`]: rows, data: rows });
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    router.post(`/doctor/${urlPath}`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+      try {
+        const { doctorId } = await currentDoctor(req);
+        const table = await firstExistingTable(tables);
+        if (!table || !(await hasColumn(table, "doctor_id"))) {
+          return res.status(422).json({ message: "This section cannot be saved yet." });
+        }
+        const id = await insert(table, { ...(req.body ?? {}), doctor_id: doctorId });
+        const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+        res.status(201).json({ message: "Saved.", [singular]: row, data: row });
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    router.put(`/doctor/${urlPath}/:id`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+      try {
+        const { doctorId } = await currentDoctor(req);
+        const table = await firstExistingTable(tables);
+        if (!table || !(await hasColumn(table, "doctor_id"))) {
+          return res.status(422).json({ message: "This section cannot be saved yet." });
+        }
+        const existing = await one(`SELECT id FROM \`${table}\` WHERE id = ? AND doctor_id = ?`, [req.params.id, doctorId]);
+        if (!existing) return res.status(404).json({ message: "Record not found." });
+        const body = { ...(req.body ?? {}) };
+        delete body.doctor_id;
+        await update(table, existing.id, body);
+        const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [existing.id]));
+        res.json({ message: "Updated.", [singular]: row, data: row });
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    router.delete(`/doctor/${urlPath}/:id`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+      try {
+        const { doctorId } = await currentDoctor(req);
+        const table = await firstExistingTable(tables);
+        if (!table || !(await hasColumn(table, "doctor_id"))) {
+          return res.status(422).json({ message: "This section cannot be saved yet." });
+        }
+        await pool.query(`DELETE FROM \`${table}\` WHERE id = ? AND doctor_id = ?`, [req.params.id, doctorId]);
+        res.json({ message: "Deleted." });
+      } catch (error) {
+        next(error);
+      }
+    });
+  }
+
+  mountDoctorCollection("education", ["doctor_educations", "educations"], "education");
+  mountDoctorCollection("experience", ["doctor_experiences", "experiences"], "experience");
+  mountDoctorCollection("qualifications", ["doctor_qualifications", "qualifications"], "qualification");
+
+  router.get("/doctor/social-links", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctor = await doctorProfileFor(req);
+      res.json({ social_links: doctor?.social_links ?? null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/social-links", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      const body = req.body ?? {};
+      const fields = {};
+      for (const key of ["facebook", "twitter", "linkedin", "instagram"]) {
+        if (Object.prototype.hasOwnProperty.call(body, key)) fields[key] = body[key] || null;
+      }
+      const onDoctor = {};
+      for (const [key, value] of Object.entries(fields)) {
+        if (await hasColumn("doctors", key)) onDoctor[key] = value;
+      }
+      if (Object.keys(onDoctor).length) await update("doctors", doctorId, onDoctor);
+      const table = await firstExistingTable(["doctor_social_links", "social_links"]);
+      if (table && await hasColumn(table, "doctor_id")) {
+        const existing = await one(`SELECT id FROM \`${table}\` WHERE doctor_id = ? LIMIT 1`, [doctorId]);
+        if (existing) await update(table, existing.id, fields);
+        else await insert(table, { doctor_id: doctorId, ...fields });
+      }
+      const doctor = await doctorProfileFor(req);
+      res.json({ message: "Saved.", social_links: doctor?.social_links ?? fields });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/instant-consultations/live-session", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const table = await firstExistingTable(["instant_consultation_requests", "instant_consultations"]);
+      if (!table || !(await hasColumn(table, "doctor_id"))) return res.json({ data: null });
+      const row = await one(
+        `SELECT * FROM \`${table}\` WHERE doctor_id = ? AND status IN ('in_progress','accepted') ORDER BY id DESC LIMIT 1`,
+        [doctorId],
+      ).catch(() => null);
+      res.json(row ? await presentRow(table, row) : { data: null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/:scope/profile", allowPublic, async (req, res, next) => {
     try {
       const table = PROFILE_TABLE[req.params.scope];
       if (!table) return next();
       const row = await one(`SELECT * FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [req.user.id]);
       const data = await presentRow(table, row);
-      res.json({ data, ...(data ?? {}) });
+      res.json({ data, [req.params.scope]: data, ...(data ?? {}) });
     } catch (error) {
       next(error);
     }
@@ -1424,8 +1662,8 @@ export function appRoutes(router) {
 
   router.get("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
-      const table = RESOURCES[req.params.resource];
-      if (!table || !(await tableExists(table))) return next();
+      const table = await resolveResourceTable(req.params.scope, req.params.resource);
+      if (!table) return next();
       if (req.params.scope !== "admin" && req.user.active_role !== req.params.scope) {
         return res.status(403).json({ message: "You do not have access to this area." });
       }
@@ -1446,8 +1684,8 @@ export function appRoutes(router) {
         const row = await one(`SELECT * FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [req.user.id]);
         return res.json({ data: await presentRow(table, row), ...(await presentRow(table, row)) });
       }
-      const table = RESOURCES[req.params.resource];
-      if (!table || !(await tableExists(table))) return next();
+      const table = await resolveResourceTable(req.params.scope, req.params.resource);
+      if (!table) return next();
       const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));
       if (!row) return res.status(404).json({ message: "Record not found." });
       if (table === "team_members") {
@@ -1460,10 +1698,31 @@ export function appRoutes(router) {
     }
   });
 
+  router.post("/:scope/profile", allowPublic, async (req, res, next) => {
+    try {
+      const table = PROFILE_TABLE[req.params.scope];
+      if (!table) return next();
+      let id = await loadOwnedId(req.user.id, table);
+      if (!id) {
+        await createProfile(req.user, req.params.scope);
+        id = await loadOwnedId(req.user.id, table);
+      }
+      if (!id) return res.status(404).json({ message: "Profile not found." });
+      const body = { ...(req.body ?? {}) };
+      delete body.password;
+      delete body.id;
+      await update(table, id, body);
+      const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      res.json({ message: "Profile saved.", data: row, [req.params.scope]: row, ...(row ?? {}) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/:scope/:resource", allowPublic, async (req, res, next) => {
     try {
-      const table = RESOURCES[req.params.resource];
-      if (!table || !(await tableExists(table))) return next();
+      const table = await resolveResourceTable(req.params.scope, req.params.resource);
+      if (!table) return next();
       const owned = await ownedFilter(req, table, req.params.scope);
       const extra = {};
       if (owned.sql.includes("_id")) extra[owned.sql.split("`")[1]] = owned.params[0];
@@ -1481,8 +1740,8 @@ export function appRoutes(router) {
 
   router.delete("/:scope/:resource/:id", allowPublic, async (req, res, next) => {
     try {
-      const table = RESOURCES[req.params.resource];
-      if (!table || !(await tableExists(table))) return next();
+      const table = await resolveResourceTable(req.params.scope, req.params.resource);
+      if (!table) return next();
       if (await hasColumn(table, "deleted_at")) await update(table, req.params.id, { deleted_at: new Date() });
       else if (await hasColumn(table, "status")) await update(table, req.params.id, { status: "cancelled" });
       else await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [req.params.id]);
@@ -1497,8 +1756,8 @@ export function appRoutes(router) {
 
 async function updateResource(req, res, next) {
   try {
-    const table = RESOURCES[req.params.resource];
-    if (!table || !(await tableExists(table))) return next();
+    const table = await resolveResourceTable(req.params.scope, req.params.resource);
+    if (!table) return next();
     const body = { ...(req.body ?? {}) };
     delete body.password;
     await update(table, req.params.id, body);

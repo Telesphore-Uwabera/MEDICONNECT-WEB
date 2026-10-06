@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import multer from "multer";
-import { loadOwnedId } from "./auth.js";
-import { hasColumn, insert, one, pool, presentRow, q, tableExists, update } from "./db.js";
+import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import { hashPassword, loadOwnedId } from "./auth.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -221,6 +221,285 @@ async function handlePharmacyOrders(req, res, parts) {
   return res.status(404).json({ message: "Order action was not found." });
 }
 
+const EXTRA_STATUS = {
+  decline: "declined",
+  fulfill: "fulfilled",
+  review: "reviewing",
+  issue: "issued",
+  "send-to-pharmacy": "sent_to_pharmacy",
+  "running-late": "running_late",
+  "ready-next": "confirmed",
+  restore: "active",
+  "set-current": "current",
+};
+
+const NESTED_TABLES = {
+  "pharmacy/inventory/medicines": ["pharmacy_medicines", "medicines"],
+  "pharmacy/inventory/categories": ["pharmacy_medicine_categories", "medicine_categories"],
+  "pharmacy/inventory/stock-requests": ["pharmacy_stock_requests", "stock_requests"],
+  "pharmacy/inventory/external/providers": ["pharmacy_external_providers", "external_inventory_providers"],
+  "pharmacy/prescription-requests": ["pharmacy_prescription_requests", "prescription_requests", "prescriptions"],
+  "pharmacy/working-hours": ["pharmacy_working_hours"],
+  "pharmacy/closures": ["pharmacy_closures"],
+  "hospital/working-hours": ["hospital_working_hours"],
+  "hospital/closures": ["hospital_closures"],
+  "doctor/instant-consultations": ["instant_consultation_requests", "instant_consultations"],
+  "patient/instant-consultations": ["instant_consultation_requests", "instant_consultations"],
+  "patient/quick": ["appointments"],
+  "patient/records/appointments": ["appointments"],
+  "patient/records/instant-consultations": ["instant_consultation_requests", "instant_consultations"],
+  "admin/specialization-fees": ["specialization_fees"],
+  "admin/specializations": ["specializations"],
+  "admin/doctor-consultations": ["doctors"],
+  "admin/roles": ["roles"],
+  "admin/permissions": ["permissions"],
+  "doctor/wallet/withdrawals": ["doctor_withdrawals", "withdrawals"],
+  "doctor/certificates": ["fitness_certificates"],
+  "patient/certificates": ["fitness_certificates"],
+  "doctor/consultation-summaries": ["consultation_summaries"],
+  "doctor/service-bookings": ["service_bookings"],
+  "patient/service-bookings": ["service_bookings"],
+  "patient/my-visits": ["appointments"],
+  "patient/my-files": ["patient_files", "medical_files"],
+};
+
+const PROFILE_TABLES = { patient: "patients", doctor: "doctors", hospital: "hospitals", pharmacy: "pharmacies" };
+
+async function firstTable(names) {
+  for (const name of names) {
+    if (name && await tableExists(name)) return name;
+  }
+  return null;
+}
+
+function parseParts(parts) {
+  const ids = [];
+  let action = null;
+  const staticParts = [];
+  for (let i = 0; i < parts.length; i += 1) {
+    if (/^\d+$/.test(parts[i])) {
+      ids.push(parts[i]);
+      if (parts[i + 1] && !/^\d+$/.test(parts[i + 1])) {
+        action = parts[i + 1];
+        i += 1;
+      }
+    } else staticParts.push(parts[i]);
+  }
+  return { key: staticParts.join("/"), ids, action };
+}
+
+async function tableFromKey(key) {
+  if (NESTED_TABLES[key]) return firstTable(NESTED_TABLES[key]);
+  const last = key.split("/").pop();
+  return firstTable([last?.replace(/-/g, "_")]);
+}
+
+async function ownedExtra(scope, userId, table) {
+  const extra = {};
+  const ownerTable = PROFILE_TABLES[scope];
+  const ownerId = ownerTable ? await loadOwnedId(userId, ownerTable) : null;
+  const ownerCol = `${scope}_id`;
+  if (ownerId && await hasColumn(table, ownerCol)) extra[ownerCol] = ownerId;
+  if (await hasColumn(table, "user_id")) extra.user_id = userId;
+  return extra;
+}
+
+async function fillGap(req, res, parts) {
+  if (!parts.length || parts[0] === "public") return false;
+
+  if (req.method === "GET" && parts.length === 2 && parts[1] === "dashboard") {
+    res.json(parts[0] === "pharmacy" ? emptyDashboard(req.query) : {
+      stats: { total: 0, pending: 0, completed: 0, cancelled: 0 },
+      appointments: [],
+      data: [],
+    });
+    return true;
+  }
+
+  if (parts[0] === "doctor" && parts[1] === "wallet" && parts[2] === "withdraw" && req.method === "POST") {
+    const table = await firstTable(["doctor_withdrawals", "withdrawals"]);
+    if (!table) return res.status(422).json({ message: "Withdrawals are not available yet." }) || true;
+    const doctorId = await loadOwnedId(req.user.id, "doctors");
+    const id = await insert(table, {
+      doctor_id: doctorId,
+      user_id: req.user.id,
+      amount: req.body?.amount,
+      currency: req.body?.currency || "RWF",
+      status: "pending",
+    });
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.status(201).json({ message: "Withdrawal requested.", withdrawal: row, data: row });
+    return true;
+  }
+
+  if (parts[0] === "doctor" && parts[1] === "wallet" && parts[2] === "cancel-withdrawal" && parts[3]) {
+    const table = await firstTable(["doctor_withdrawals", "withdrawals"]);
+    if (!table) return res.status(422).json({ message: "Withdrawals are not available yet." }) || true;
+    if (await hasColumn(table, "status")) await update(table, parts[3], { status: "cancelled" });
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [parts[3]]));
+    res.json({ message: "Withdrawal cancelled.", withdrawal: row, data: row });
+    return true;
+  }
+
+  if (parts[2] === "reset" && parts[1] === "working-hours" && req.method === "DELETE") {
+    const table = await firstTable(parts[0] === "pharmacy" ? ["pharmacy_working_hours"] : ["hospital_working_hours"]);
+    const ownerCol = parts[0] === "pharmacy" ? "pharmacy_id" : "hospital_id";
+    const ownerId = await loadOwnedId(req.user.id, parts[0] === "pharmacy" ? "pharmacies" : "hospitals");
+    if (table && ownerId && await hasColumn(table, ownerCol)) {
+      await pool.query(`DELETE FROM \`${table}\` WHERE \`${ownerCol}\` = ?`, [ownerId]);
+    }
+    res.json({ message: "Working hours reset." });
+    return true;
+  }
+
+  if (parts[1] === "closures" && parts[2] === "check-date") {
+    res.json({ closed: false, closure: null });
+    return true;
+  }
+
+  if (parts[0] === "pharmacy" && parts[1] === "inventory" && parts[2] === "mode") {
+    res.json({ mode: req.body?.mode || "internal", inventory_mode: req.body?.mode || "internal" });
+    return true;
+  }
+
+  if (parts[0] === "settings") {
+    if (parts[1] === "password" && req.body?.password) {
+      await update("users", req.user.id, { password: await hashPassword(req.body.password) });
+      res.json({ message: "Password updated." });
+      return true;
+    }
+    if (parts[1] === "profile") {
+      const body = { ...(req.body ?? {}) };
+      delete body.password;
+      await update("users", req.user.id, body);
+      res.json({ message: "Profile updated." });
+      return true;
+    }
+    res.json({ message: parts[2] === "request" ? "Code sent." : "Saved." });
+    return true;
+  }
+
+  if (parts[1] === "profile" && parts[2]) {
+    const table = PROFILE_TABLES[parts[0]];
+    if (!table) return false;
+    const id = await loadOwnedId(req.user.id, table);
+    const file = req.files?.[0];
+    if (file && id) {
+      const url = saveUpload(file, `${parts[0]}_${parts[2]}`);
+      const column = parts[2] === "documents" ? (req.body?.type || "document") : parts[2] === "avatar" ? "avatar" : parts[2];
+      if (await hasColumn(table, column)) await update(table, id, { [column]: url });
+      else if (await hasColumn(table, "image")) await update(table, id, { image: url });
+      res.json({ message: "Saved.", image: url, logo: url, signature: url, avatar: url, url });
+      return true;
+    }
+    if (id && ["POST", "PUT", "PATCH"].includes(req.method)) {
+      const body = { ...(req.body ?? {}) };
+      delete body.password;
+      await update(table, id, body);
+      const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+      res.json({
+        message: "Saved.",
+        [parts[2]]: row,
+        medical_info: row,
+        insurance: row,
+        data: row,
+        [parts[0]]: row,
+      });
+      return true;
+    }
+    if (req.method === "GET") {
+      const row = id ? await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id])) : null;
+      res.json({ [parts[2]]: row, data: row, [parts[0]]: row });
+      return true;
+    }
+  }
+
+  const parsed = parseParts(parts);
+  const table = await tableFromKey(parsed.key);
+  if (!table) return false;
+  const id = parsed.ids[0];
+  const action = parsed.action;
+
+  if (action === "join" && id) {
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.json({
+      message: "Join ready.",
+      data: row,
+      room_url: row?.daily_room_url || row?.room_url || null,
+      room_name: row?.daily_room_name || row?.room_name || null,
+      token: row?.daily_doctor_token || row?.daily_guest_token || row?.token || null,
+      can_join: Boolean(row?.daily_room_name || row?.room_name || row?.daily_room_url || row?.room_url),
+    });
+    return true;
+  }
+
+  if (action === "notes" && id) {
+    if (await hasColumn(table, "notes")) await update(table, id, { notes: req.body?.notes ?? req.body?.note ?? "" });
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.json({ message: "Notes saved.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
+  if (action === "reschedule" && id) {
+    await update(table, id, req.body ?? {});
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.json({ message: "Rescheduled.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
+  const status = action ? (EXTRA_STATUS[action] || STATUS_ACTIONS[action]) : null;
+  if (action && id && status && await hasColumn(table, "status")) {
+    await update(table, id, { status });
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
+  if (!id && req.method === "GET") {
+    const extra = await ownedExtra(parts[0], req.user.id, table);
+    const column = Object.keys(extra)[0];
+    const rows = await presentRows(table, await q(
+      column ? `SELECT * FROM \`${table}\` WHERE \`${column}\` = ? ORDER BY id DESC LIMIT 50` : `SELECT * FROM \`${table}\` ORDER BY id DESC LIMIT 50`,
+      column ? [extra[column]] : [],
+    ).catch(() => []));
+    res.json({ data: rows, current_page: 1, last_page: 1, per_page: 50, total: rows.length });
+    return true;
+  }
+
+  if (!id && req.method === "POST") {
+    const extra = await ownedExtra(parts[0], req.user.id, table);
+    const newId = await insert(table, { ...(req.body ?? {}), ...extra });
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [newId]));
+    res.status(201).json({ message: "Saved.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
+  if (id && req.method === "DELETE") {
+    await pool.query(`DELETE FROM \`${table}\` WHERE id = ?`, [id]);
+    res.json({ message: "Deleted." });
+    return true;
+  }
+
+  if (id && ["PUT", "PATCH", "POST"].includes(req.method)) {
+    await update(table, id, req.body ?? {});
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    res.json({ message: "Updated.", data: row, ...(row ?? {}) });
+    return true;
+  }
+
+  if (id && req.method === "GET") {
+    const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
+    if (!row) {
+      res.status(404).json({ message: "Record not found." });
+      return true;
+    }
+    res.json({ data: row, ...row });
+    return true;
+  }
+
+  return false;
+}
+
 export function registerActions(router, RESOURCES) {
   router.use(upload.any(), async (req, res, next) => {
     try {
@@ -252,19 +531,28 @@ export function registerActions(router, RESOURCES) {
       }
 
       const idIndex = parts.findIndex((part) => /^\d+$/.test(part));
-      if (idIndex < 1) return next();
+      if (idIndex < 1) {
+        if (await fillGap(req, res, parts)) return;
+        return next();
+      }
       const action = parts[idIndex + 1];
       const resource = parts[idIndex - 1];
       const table = tableFor(resource, RESOURCES);
       const id = parts[idIndex];
-      if (!table || !(await tableExists(table))) return next();
+      if (!table || !(await tableExists(table))) {
+        if (await fillGap(req, res, parts)) return;
+        return next();
+      }
 
       if (req.method === "GET" && !action) {
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
         if (!row) return res.status(404).json({ message: "Record not found." });
         return res.json({ data: row, ...row });
       }
-      if (!action) return next();
+      if (!action) {
+        if (await fillGap(req, res, parts)) return;
+        return next();
+      }
 
       const file = req.files?.[0];
       const column = FILE_COLUMNS[action];
@@ -288,6 +576,7 @@ export function registerActions(router, RESOURCES) {
         const rows = await q(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => []);
         return res.json({ data: await presentRow(table, rows[0]), items: [] });
       }
+      if (await fillGap(req, res, parts)) return;
       return next();
     } catch (error) {
       next(error);

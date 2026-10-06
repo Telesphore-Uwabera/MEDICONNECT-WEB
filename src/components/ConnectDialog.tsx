@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label";
 import { useCallStore } from "@/context/CallStore";
 import type { Doctor } from "@/context/CallStore";
 import { useConsultationSession, pruneIfEnded } from "@/hooks/patient/se-consultation-session";
-import { useLogin } from "@/hooks/useAuth";
+import { useLogin, useRegister } from "@/hooks/useAuth";
 import { useCallContext } from "@/context/CallContext";
 import { useNavigate } from "react-router-dom";
 import { ChatPanel } from "./consultatioRoom/ChatPanel";
@@ -78,6 +78,7 @@ type CallPhase =
   | "requesting"
   | "payment"
   | "payment_verifying"
+  | "create_account"
   | "polling"
   | "accepted"
   | "in_progress"
@@ -342,6 +343,10 @@ export const ConnectDialogContent = ({
   const { data: me } = useMe();
   const { go: goToRole } = useGoToRole();
   const isLoggedIn = !!me;
+  const signedInRef = useRef(isLoggedIn);
+  useEffect(() => {
+    signedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
   // Resume the instant request after a stay-and-switch to patient.
   const [resumeRequest, setResumeRequest] = useState(false);
   // Inline switch prompt (a toast button is unclickable behind the modal).
@@ -377,6 +382,7 @@ export const ConnectDialogContent = ({
   const [guestPhone, setGuestPhone] = useState("");
   const [guestCountryCode, setGuestCountryCode] = useState("+250");
   const [guestPassword, setGuestPassword] = useState("");
+  const [guestPasswordConfirm, setGuestPasswordConfirm] = useState("");
   const [authMode, setAuthMode] = useState<"register" | "login">("register");
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginCountryCode, setLoginCountryCode] = useState("+250");
@@ -409,6 +415,7 @@ export const ConnectDialogContent = ({
   const requestAnyMutation = useInstantConsultationRequestAny();
   const payMutation = useInstantConsultationPay();
   const loginMutation = useLogin();
+  const registerMutation = useRegister();
 
   // Polling is active only when phase === "polling" AND token is set
   const { data: statusData } = useInstantConsultationStatus(
@@ -688,12 +695,10 @@ export const ConnectDialogContent = ({
     // ── Fast-path: token already exists, skip re-requesting ────────────────
     if (consultationToken) {
       if (paymentInfo) {
-        // Request succeeded before, payment still pending — jump to payment
         setPhase("payment");
       } else {
-        // Payment was confirmed (or free) — jump straight to polling
         session.save(consultationToken, name, phone);
-        setPhase("polling");
+        setPhase(signedInRef.current ? "polling" : "create_account");
       }
       return;
     }
@@ -777,9 +782,9 @@ export const ConnectDialogContent = ({
         res.status === "accepted" ||
         res.status === "in_progress"
       ) {
-        // Free or already paid — save session and start polling immediately
         session.save(res.guest_token, name, phone, extractedId);
-        setPhase("polling");
+        setAuthMode("register");
+        setPhase(signedInRef.current ? "polling" : "create_account");
         return;
       }
 
@@ -846,7 +851,8 @@ export const ConnectDialogContent = ({
               // Payment confirmed — upgrade session: remove pendingPayment block
               // so that if the user closes during polling, resume goes to polling
               if (consultationToken) session.save(consultationToken, name, phone, consultationId);
-              setPhase("polling");
+              setAuthMode("register");
+              setPhase(signedInRef.current ? "polling" : "create_account");
             },
             (msg) => { setErrorMsg(msg); setPhase("payment"); },
           );
@@ -885,9 +891,6 @@ export const ConnectDialogContent = ({
       return;
     }
 
-    if (!isLoggedIn && !guestPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
-    if (!isLoggedIn && guestPassword.length < 6) { setGuestError(t("consult.connect.err_password_min_length")); return; }
-
     setGuestError(null);
     setGuestName(name);
     handleRequest({
@@ -895,7 +898,7 @@ export const ConnectDialogContent = ({
       phone: phoneValidation.normalizedPhone,
       countryCode: phoneValidation.normalizedCountryCode,
       email,
-      password: isLoggedIn ? undefined : guestPassword.trim(),
+      password: undefined,
     });
   };
 
@@ -936,6 +939,11 @@ export const ConnectDialogContent = ({
       setGuestPhone(data.user.phone ?? "");
       setGuestCountryCode(data.user.country_code ?? "+250");
       setLoginCountryCode(data.user.country_code ?? "+250");
+      if (phase === "create_account") {
+        onCloseCompletely();
+        navigate("/patient");
+        return;
+      }
       await handleRequest({
         name: data.user.name,
         phone: data.user.phone,
@@ -944,6 +952,40 @@ export const ConnectDialogContent = ({
       });
     } catch (err: any) {
       setGuestError(err?.message || t("consult.connect.err_login_failed"));
+    }
+  };
+
+  const handleCreateAccount = async () => {
+    const name = guestName || joinName(guestFirstName, guestLastName);
+    const email = guestEmail.trim();
+    if (!guestPassword.trim()) { setGuestError(t("consult.connect.err_password_required")); return; }
+    if (guestPassword.length < 6) { setGuestError(t("consult.connect.err_password_min_length")); return; }
+    if (guestPassword !== guestPasswordConfirm) {
+      setGuestError(t("consult.connect.err_password_mismatch", "Passwords do not match."));
+      return;
+    }
+    setGuestError(null);
+    try {
+      await registerMutation.mutateAsync({
+        name,
+        email,
+        phone: guestPhone,
+        country_code: guestCountryCode,
+        role: "patient",
+        password: guestPassword,
+        password_confirmation: guestPasswordConfirm,
+        accepted_terms: true,
+        gender: "",
+      });
+      await loginMutation.mutateAsync({
+        email,
+        auth_method: "password",
+        password: guestPassword,
+      });
+      onCloseCompletely();
+      navigate("/patient");
+    } catch (err: unknown) {
+      setGuestError(err instanceof Error ? err.message : t("consult.connect.err_request_failed"));
     }
   };
 
@@ -1040,6 +1082,7 @@ export const ConnectDialogContent = ({
     if (phase === "requesting") return t("consult.connect.title_requesting");
     if (phase === "payment") return t("consult.connect.title_payment");
     if (phase === "payment_verifying") return t("consult.connect.title_payment_verifying");
+    if (phase === "create_account") return t("consult.connect.create_account", "Create account");
     if (phase === "polling") return t("consult.connect.title_polling");
     if (phase === "accepted") return t("consult.connect.title_accepted");
     if (phase === "in_progress") return t("consult.connect.title_in_progress");
@@ -1054,13 +1097,14 @@ export const ConnectDialogContent = ({
     if (phase === "requesting") return 25;
     if (phase === "payment") return 40;
     if (phase === "payment_verifying") return 55;
+    if (phase === "create_account") return 62;
     if (phase === "polling") return 70;
     if (phase === "accepted") return 85;
     if (phase === "in_progress") return 100;
     return 0;
   };
 
-  const showProgress = ["requesting", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase);
+  const showProgress = ["requesting", "payment_verifying", "create_account", "polling", "accepted", "in_progress"].includes(phase);
   const isInFlight = ["requesting", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase);
 
   // ── Register cancel handler with parent (UnifiedModal header) ────────────
@@ -1221,7 +1265,7 @@ export const ConnectDialogContent = ({
       )}
 
       {/* Doctor card — hidden while resume banner or spinner is active */}
-      {phase !== "guest_form" && !savedSession && !isResuming && (
+      {phase !== "guest_form" && phase !== "create_account" && !savedSession && !isResuming && (
         <div className={cn(
           "flex items-center gap-3.5 p-3.5 rounded-[6px] border transition-all",
           showProgress ? "border-primary/20 bg-primary/5" : "border-border bg-muted/50",
@@ -1260,6 +1304,7 @@ export const ConnectDialogContent = ({
           <p className="text-xs text-muted-foreground text-center">
             {phase === "requesting" && t("consult.connect.progress_requesting")}
             {phase === "payment_verifying" && t("consult.connect.progress_payment_verifying")}
+            {phase === "create_account" && t("consult.connect.progress_create_account", "Create your account to open the dashboard")}
             {phase === "polling" && t("consult.connect.progress_polling")}
             {phase === "accepted" && t("consult.connect.progress_accepted")}
             {phase === "in_progress" && t("consult.connect.progress_in_progress")}
@@ -1276,8 +1321,11 @@ export const ConnectDialogContent = ({
               <div className=" flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
                 <User className="h-4 w-4 text-muted-foreground shrink-0" />
                 <p className="text-sm text-muted-foreground">
-                  {isLoggedIn ? t("consult.connect.confirm_details")
-                    : t("consult.connect.signin_or_create")}
+                  {isLoggedIn
+                    ? t("consult.connect.confirm_details")
+                    : authMode === "login"
+                      ? t("consult.connect.signin_to_continue")
+                      : t("consult.connect.guest_details")}
                 </p>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-[6px] border border-border bg-muted/30">
@@ -1285,35 +1333,15 @@ export const ConnectDialogContent = ({
                   {doctorInitial}
                 </div>
                 <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {t("consult.connect.chosen_doctor")}
+                  </p>
                   <p className="text-sm font-semibold text-foreground truncate">{doctorName}</p>
                   {doctor?.specialization && (
                     <p className="text-xs text-muted-foreground truncate">{doctor.specialization}</p>
                   )}
                 </div>
               </div>
-
-              {!isLoggedIn && (
-                <div className="grid grid-cols-2 gap-1 rounded-[6px] border border-border bg-muted/40 p-1">
-                  {(["register", "login"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => {
-                        setAuthMode(mode);
-                        setGuestError(null);
-                      }}
-                      className={cn(
-                        "h-8 rounded-[6px] text-xs font-semibold transition-colors",
-                        authMode === mode
-                          ? "bg-card text-foreground shadow-sm border border-border"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {mode === "register" ? t("consult.connect.create_account") : t("consult.connect.sign_in")}
-                    </button>
-                  ))}
-                </div>
-              )}
 
               <div className="space-y-3">
                 {isLoggedIn || authMode === "register" ? (
@@ -1373,19 +1401,6 @@ export const ConnectDialogContent = ({
                         />
                       </div>
                     </div>
-                    {!isLoggedIn && (
-                      <div className="space-y-1.5">
-                        <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
-                        <Input
-                          placeholder={t("consult.connect.password_placeholder")}
-                          type="password"
-                          value={guestPassword}
-                          onChange={(e) => setGuestPassword(e.target.value)}
-                          className="h-9 text-sm"
-                          onKeyDown={(e) => e.key === "Enter" && handleGuestSubmit()}
-                        />
-                      </div>
-                    )}
                   </>
                 ) : (
                   <>
@@ -1457,6 +1472,130 @@ export const ConnectDialogContent = ({
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">
                   {t("consult.connect.minimize")}
                 </Button>
+                {!isLoggedIn && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode(authMode === "login" ? "register" : "login");
+                      setGuestError(null);
+                    }}
+                    className="w-full text-xs font-medium text-primary hover:underline"
+                  >
+                    {authMode === "login"
+                      ? t("consult.connect.back_to_details")
+                      : t("consult.connect.already_have_account")}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {phase === "create_account" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 rounded-[6px] bg-primary/20 border border-border">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  {authMode === "login"
+                    ? t("consult.connect.signin_to_continue")
+                    : t("consult.connect.account_after_payment")}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-[6px] border border-border bg-muted/30">
+                <div className="h-9 w-9 rounded-[6px] bg-primary/15 text-primary flex items-center justify-center text-sm font-bold select-none shrink-0">
+                  {doctorInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {t("consult.connect.chosen_doctor")}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground truncate">{doctorName}</p>
+                </div>
+              </div>
+              {authMode === "login" ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">{t("consult.connect.email_or_phone")}</Label>
+                    <Input
+                      placeholder={t("consult.connect.email_or_phone_placeholder")}
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
+                      className="h-9 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
+                    <Input
+                      type="password"
+                      placeholder={t("consult.connect.password_placeholder")}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="h-9 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">{t("consult.connect.email_address")}</Label>
+                    <Input value={guestEmail} readOnly className="h-9 text-sm bg-muted/40" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">{t("consult.connect.password")}</Label>
+                    <Input
+                      type="password"
+                      placeholder={t("consult.connect.password_placeholder")}
+                      value={guestPassword}
+                      onChange={(e) => setGuestPassword(e.target.value)}
+                      className="h-9 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">{t("consult.connect.confirm_password")}</Label>
+                    <Input
+                      type="password"
+                      placeholder={t("consult.connect.password_placeholder")}
+                      value={guestPasswordConfirm}
+                      onChange={(e) => setGuestPasswordConfirm(e.target.value)}
+                      className="h-9 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
+                    />
+                  </div>
+                </div>
+              )}
+              {guestError && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-4 w-4" /> {guestError}
+                </p>
+              )}
+              <div className="space-y-2">
+                <Button
+                  onClick={authMode === "login" ? handleLoginSubmit : handleCreateAccount}
+                  disabled={registerMutation.isPending || loginMutation.isPending}
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]"
+                >
+                  {(registerMutation.isPending || loginMutation.isPending) ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
+                  {authMode === "login"
+                    ? t("consult.connect.sign_in")
+                    : t("consult.connect.create_and_join")}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === "login" ? "register" : "login");
+                    setGuestError(null);
+                  }}
+                  className="w-full text-xs font-medium text-primary hover:underline"
+                >
+                  {authMode === "login"
+                    ? t("consult.connect.create_account")
+                    : t("consult.connect.already_have_account")}
+                </button>
               </div>
             </div>
           )}
@@ -1697,7 +1836,7 @@ export const ConnectDialogContent = ({
       )}
 
       {/* Trust footer */}
-      {["idle", "guest_form", "payment", "payment_verifying", "polling", "accepted", "in_progress"].includes(phase) && (
+      {["idle", "guest_form", "payment", "payment_verifying", "create_account", "polling", "accepted", "in_progress"].includes(phase) && (
         <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground/50 pt-1">
           <ShieldCheck className="h-4 w-4" />{t("consult.connect.hipaa_footer")}
         </div>
