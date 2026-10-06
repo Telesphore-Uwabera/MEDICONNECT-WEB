@@ -205,6 +205,70 @@ const RESOURCES = {
   profile: null,
 };
 
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function minutesOf(value) {
+  const [hour, minute] = String(value || "").split(":");
+  const h = Number(hour);
+  const m = Number(minute);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
+function clock(minutes) {
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
+function eachDate(from, to) {
+  const dates = [];
+  const cursor = new Date(`${String(from).slice(0, 10)}T00:00:00Z`);
+  const end = new Date(`${String(to).slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(cursor.getTime()) || Number.isNaN(end.getTime()) || cursor > end) return dates;
+  while (cursor <= end && dates.length < 92) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+async function generatePeriodSlots(doctorId, period) {
+  const duration = Math.max(5, Number(period.slot_duration_minutes) || 30);
+  const step = duration + Math.max(0, Number(period.buffer_minutes) || 0);
+  const start = minutesOf(period.start_time);
+  const end = minutesOf(period.end_time);
+  if (start == null || end == null || end <= start) return 0;
+  const days = new Set((Array.isArray(period.days_of_week) ? period.days_of_week : []).map((day) => String(day).toLowerCase()));
+  let created = 0;
+  for (const date of eachDate(period.from_date, period.to_date)) {
+    if (days.size && !days.has(WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()])) continue;
+    for (let minute = start; minute + duration <= end; minute += step) {
+      const startTime = clock(minute);
+      const existing = await one(
+        "SELECT id FROM appointment_slots WHERE doctor_id = ? AND slot_date = ? AND start_time = ? LIMIT 1",
+        [doctorId, date, startTime],
+      ).catch(() => null);
+      if (existing) continue;
+      await insert("appointment_slots", {
+        doctor_id: doctorId,
+        hospital_id: period.hospital_id ?? null,
+        doctor_availability_period_id: period.id,
+        availability_period_id: period.id,
+        period_id: period.id,
+        slot_date: date,
+        start_time: startTime,
+        end_time: clock(minute + duration),
+        duration_minutes: duration,
+        type: period.type || "online",
+        status: "available",
+      });
+      created += 1;
+    }
+  }
+  return created;
+}
+
 export function appRoutes(router) {
   router.post("/auth/login", async (req, res, next) => {
     try {
@@ -473,6 +537,192 @@ export function appRoutes(router) {
       const doctorId = await loadOwnedId(req.user.id, "doctors");
       const id = await insert("doctor_availabilities", { ...req.body, doctor_id: doctorId });
       res.status(201).json({ message: "Availability saved.", data: await presentRow("doctor_availabilities", await one("SELECT * FROM doctor_availabilities WHERE id = ?", [id])) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/availability/periods", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      const from = String(req.body.from_date || "").slice(0, 10);
+      const to = String(req.body.to_date || "").slice(0, 10);
+      const days = [...new Set((Array.isArray(req.body.days_of_week) ? req.body.days_of_week : []).map((day) => String(day).toLowerCase()))]
+        .filter((day) => WEEKDAYS.includes(day));
+      if (!from || !to || from > to) return res.status(422).json({ message: "Choose a valid date range." });
+      if (!days.length) return res.status(422).json({ message: "Choose at least one day." });
+      if (eachDate(from, to).length >= 92) return res.status(422).json({ message: "Choose a range of 90 days or less." });
+      const saved = [];
+      for (const day of days) {
+        const id = await insert("doctor_availability_periods", {
+          doctor_id: doctorId,
+          hospital_id: req.body.hospital_id ?? null,
+          from_date: from,
+          to_date: to,
+          days_of_week: [day],
+          start_time: req.body.start_time,
+          end_time: req.body.end_time,
+          slot_duration_minutes: Number(req.body.slot_duration_minutes) || 30,
+          buffer_minutes: Number(req.body.buffer_minutes) || 0,
+          type: req.body.type || "online",
+          label: req.body.label ?? null,
+          is_active: 1,
+        });
+        const period = await presentRow("doctor_availability_periods", await one("SELECT * FROM doctor_availability_periods WHERE id = ?", [id]));
+        const slotsGenerated = await generatePeriodSlots(doctorId, period);
+        saved.push({
+          day,
+          from_date: from,
+          to_date: to,
+          slots_generated: slotsGenerated,
+          note: "",
+        });
+      }
+      res.status(201).json({ message: "Schedule generated.", saved, skipped_days: [] });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/doctor/availability/periods/:id", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const period = await one("SELECT * FROM doctor_availability_periods WHERE id = ? AND doctor_id = ?", [req.params.id, doctorId ?? 0]);
+      if (!period) return res.status(404).json({ message: "Schedule period not found." });
+      await update("doctor_availability_periods", period.id, req.body);
+      const nextPeriod = await presentRow("doctor_availability_periods", await one("SELECT * FROM doctor_availability_periods WHERE id = ?", [period.id]));
+      res.json({ message: "Schedule updated.", period: nextPeriod, available_dates: eachDate(nextPeriod.from_date, nextPeriod.to_date) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/doctor/availability/periods/:id", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const period = await one("SELECT * FROM doctor_availability_periods WHERE id = ? AND doctor_id = ?", [req.params.id, doctorId ?? 0]);
+      if (!period) return res.status(404).json({ message: "Schedule period not found." });
+      await update("doctor_availability_periods", period.id, { is_active: 0, deleted_at: new Date().toISOString().slice(0, 19).replace("T", " ") });
+      res.json({ message: "Schedule period removed." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.delete("/doctor/availability/all", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      if (doctorId) {
+        await pool.query(
+          "UPDATE doctor_availability_periods SET is_active = 0, deleted_at = NOW() WHERE doctor_id = ? AND deleted_at IS NULL",
+          [doctorId],
+        ).catch(() => {});
+        await pool.query(
+          "DELETE FROM appointment_slots WHERE doctor_id = ? AND (status IS NULL OR status <> 'booked')",
+          [doctorId],
+        ).catch(() => {});
+      }
+      res.json({ message: "Schedule reset." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/doctor/slots", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const doctor = doctorId ? await one("SELECT * FROM doctors WHERE id = ?", [doctorId]).catch(() => null) : null;
+      const filters = ["doctor_id = ?"];
+      const params = [doctorId ?? 0];
+      if (await hasColumn("appointment_slots", "deleted_at")) filters.push("deleted_at IS NULL");
+      if (req.query.date) {
+        filters.push("slot_date = ?");
+        params.push(String(req.query.date).slice(0, 10));
+      }
+      if (req.query.from) {
+        filters.push("slot_date >= ?");
+        params.push(String(req.query.from).slice(0, 10));
+      }
+      if (req.query.to) {
+        filters.push("slot_date <= ?");
+        params.push(String(req.query.to).slice(0, 10));
+      }
+      if (req.query.status) {
+        filters.push("status = ?");
+        params.push(req.query.status);
+      }
+      if (req.query.type) {
+        filters.push("type = ?");
+        params.push(req.query.type);
+      }
+      const rows = await presentRows(
+        "appointment_slots",
+        await q(`SELECT * FROM appointment_slots WHERE ${filters.join(" AND ")} ORDER BY slot_date, start_time`, params).catch(() => []),
+      );
+      const slots = {};
+      for (const row of rows) {
+        const key = String(row.slot_date || "").slice(0, 10);
+        if (!key) continue;
+        if (!slots[key]) slots[key] = [];
+        slots[key].push(row);
+      }
+      res.json({
+        slots,
+        dates: Object.keys(slots),
+        total: rows.length,
+        doctor: {
+          id: doctorId,
+          instant_consultation: Boolean(Number(doctor?.instant_consultation ?? 0)),
+          bookings_paused: Boolean(Number(doctor?.bookings_paused ?? 0)),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.patch("/doctor/slots/:id", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const slot = await one("SELECT * FROM appointment_slots WHERE id = ? AND doctor_id = ?", [req.params.id, doctorId ?? 0]);
+      if (!slot) return res.status(404).json({ message: "Slot not found." });
+      if (String(slot.status || "").toLowerCase() === "booked") return res.status(422).json({ message: "A booked slot cannot be changed." });
+      await update("appointment_slots", slot.id, { status: req.body.status });
+      const nextSlot = await presentRow("appointment_slots", await one("SELECT * FROM appointment_slots WHERE id = ?", [slot.id]));
+      res.json({ message: "Slot updated.", slot: nextSlot });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/slots/bulk", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const date = String(req.body.date || "").slice(0, 10);
+      const status = String(req.body.status || "");
+      if (!date || !["available", "blocked", "reserved"].includes(status)) {
+        return res.status(422).json({ message: "Choose a date and a valid status." });
+      }
+      const [result] = await pool.query(
+        "UPDATE appointment_slots SET status = ? WHERE doctor_id = ? AND slot_date = ? AND (status IS NULL OR status <> 'booked')",
+        [status, doctorId ?? 0, date],
+      );
+      res.json({ message: "Slots updated.", updated: Number(result?.affectedRows ?? 0) });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/slots/generate", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const doctorId = await loadOwnedId(req.user.id, "doctors");
+      const sourceId = Number(req.body.source_id);
+      const period = await one("SELECT * FROM doctor_availability_periods WHERE id = ? AND doctor_id = ?", [sourceId, doctorId ?? 0]);
+      if (!period) return res.status(404).json({ message: "Schedule period not found." });
+      const presented = await presentRow("doctor_availability_periods", period);
+      const slotsGenerated = await generatePeriodSlots(doctorId, presented);
+      res.json({ message: "Slots generated.", slots_generated: slotsGenerated });
     } catch (error) {
       next(error);
     }

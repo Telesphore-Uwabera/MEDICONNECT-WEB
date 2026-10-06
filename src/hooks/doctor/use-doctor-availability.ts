@@ -284,7 +284,7 @@ export function useGetSlots(params?: GetSlotsParams) {
   return useQuery({
     queryKey: availabilityKeys.slots(params as Record<string, string>),
     queryFn: () =>
-      apiFetch<SlotsResponse>(`/doctor/slots`),
+      apiFetch<SlotsResponse>(`/doctor/slots${query ? `?${query}` : ""}`),
     enabled: true,
   });
 }
