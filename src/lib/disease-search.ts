@@ -178,3 +178,32 @@ export function doctorSearchForDisease(query: string) {
   });
   return `/patient/search-doctors?${params.toString()}`;
 }
+
+export type DiseaseSuggestion = DiseaseMatch & { term: string };
+
+export function suggestDiseases(query: string, limit = 5): DiseaseSuggestion[] {
+  const folded = fold(query);
+  if (folded.length < 2) return [];
+
+  const hits: Array<{ suggestion: DiseaseSuggestion; rank: number }> = [];
+  const seen = new Set<string>();
+  for (const entry of DISEASES) {
+    for (const term of entry.terms) {
+      const foldedTerm = fold(term);
+      if (foldedTerm.length < 3 || seen.has(foldedTerm)) continue;
+      const starts = foldedTerm.startsWith(folded);
+      const includes = foldedTerm.includes(folded);
+      if (!starts && !includes) continue;
+      seen.add(foldedTerm);
+      hits.push({
+        suggestion: { term, specialization: entry.specialization, feeId: entry.feeId },
+        rank: (starts ? 1000 : 0) - foldedTerm.length,
+      });
+    }
+  }
+
+  return hits
+    .sort((a, b) => b.rank - a.rank)
+    .slice(0, limit)
+    .map((hit) => hit.suggestion);
+}

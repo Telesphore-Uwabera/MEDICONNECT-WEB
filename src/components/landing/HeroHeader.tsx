@@ -31,7 +31,10 @@ import {
   SpecializationSelect,
   SpecializationValue,
 } from "@/pages/patient/components/SpecializationSelect";
-import { doctorSearchForDisease } from "@/lib/disease-search";
+import { doctorSearchForDisease, suggestDiseases } from "@/lib/disease-search";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useGetSearchHospitals } from "@/hooks/patient/use-patient-search-hospital";
+import { localizedHospitalName } from "@/components/HospitalCard";
 
 interface HeroHeaderProps {
   mobileMenuOpen: boolean;
@@ -46,7 +49,7 @@ export function HeroHeader({
   activeSection,
   settings,
 }: HeroHeaderProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { resolvedTheme, theme } = useTheme();
   const logo = settings?.app_logo_url || ((resolvedTheme ?? theme) === "dark" ? LOGODARK : LOGOLIGHT);
   const appName = settings?.app_name || "MEDICONNECT";
@@ -60,6 +63,37 @@ export function HeroHeader({
   const [quickAccessOpen, setQuickAccessOpen] = useState(false);
   const [facilitySearchOpen, setFacilitySearchOpen] = useState(false);
   const [facilityQuery, setFacilityQuery] = useState("");
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const debouncedFacilityQuery = useDebounce(facilityQuery.trim(), 200);
+  const hospitalSuggestions = useGetSearchHospitals(
+    { q: debouncedFacilityQuery, per_page: 5 },
+    facilitySearchOpen && debouncedFacilityQuery.length >= 2,
+  );
+  const searchSuggestions = [
+    ...suggestDiseases(facilityQuery).flatMap((item) => {
+      const path = doctorSearchForDisease(item.term);
+      if (!path) return [];
+      return [{
+        key: `disease-${item.term}`,
+        label: item.term,
+        hint: `${item.specialization} · ${t("nav.doctors")}`,
+        path,
+      }];
+    }),
+    ...(hospitalSuggestions.data?.data ?? []).map((hospital) => {
+      const label = localizedHospitalName(hospital, i18n.language);
+      return {
+        key: `facility-${hospital.id}`,
+        label,
+        hint: t("nav.hospitals"),
+        path: `/patient/search-facilities?q=${encodeURIComponent(label)}`,
+      };
+    }),
+  ];
+
+  useEffect(() => {
+    setActiveSuggestion(-1);
+  }, [facilityQuery]);
   const [mobileQuickAccessOpen, setMobileQuickAccessOpen] = useState(false);
   const [selectedSpecialization, setSelectedSpecialization] =
     useState<SpecializationValue>({ specialization: null, fee: null });
@@ -218,8 +252,25 @@ export function HeroHeader({
     });
   };
 
+  const closeFacilitySearch = () => {
+    setFacilitySearchOpen(false);
+    setFacilityQuery("");
+    setActiveSuggestion(-1);
+    setMobileMenuOpen(false);
+  };
+
+  const openSuggestion = (path: string) => {
+    navigate(path);
+    closeFacilitySearch();
+  };
+
   const submitFacilitySearch = (event?: React.FormEvent) => {
     event?.preventDefault();
+    const chosen = searchSuggestions[activeSuggestion];
+    if (chosen) {
+      openSuggestion(chosen.path);
+      return;
+    }
     const q = facilityQuery.trim();
     const diseasePath = q ? doctorSearchForDisease(q) : null;
     navigate(
@@ -229,8 +280,7 @@ export function HeroHeader({
           ? `/patient/search-facilities?q=${encodeURIComponent(q)}`
           : "/patient/search-facilities",
     );
-    setFacilitySearchOpen(false);
-    setMobileMenuOpen(false);
+    closeFacilitySearch();
   };
 
   const facilitySearch = (searchRef: React.RefObject<HTMLDivElement>) => (
@@ -239,7 +289,13 @@ export function HeroHeader({
         type="button"
         aria-label={t("nav.search_facilities")}
         aria-expanded={facilitySearchOpen}
-        onClick={() => setFacilitySearchOpen((open) => !open)}
+        onClick={() => {
+          if (facilitySearchOpen && facilityQuery.trim()) {
+            submitFacilitySearch();
+            return;
+          }
+          setFacilitySearchOpen((open) => !open);
+        }}
         className={cn(
           "flex h-8 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium transition-smooth",
           facilitySearchOpen
@@ -258,20 +314,65 @@ export function HeroHeader({
           <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
             {t("nav.search_hint")}
           </p>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              ref={(node) => {
-                if (node && node.offsetParent !== null) node.focus();
-              }}
-              type="search"
-              value={facilityQuery}
-              onChange={(event) => setFacilityQuery(event.target.value)}
-              placeholder={t("pages.patient.hospitals_search_placeholder")}
-              aria-label={t("nav.search_facilities")}
-              className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
-            />
+          <div className="flex items-center gap-1.5">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={(node) => {
+                  if (node && node.offsetParent !== null) node.focus();
+                }}
+                type="search"
+                value={facilityQuery}
+                onChange={(event) => setFacilityQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setActiveSuggestion((index) => Math.min(searchSuggestions.length - 1, index + 1));
+                    return;
+                  }
+                  if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setActiveSuggestion((index) => Math.max(-1, index - 1));
+                    return;
+                  }
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  submitFacilitySearch();
+                }}
+                placeholder={t("pages.patient.hospitals_search_placeholder")}
+                aria-label={t("nav.search_facilities")}
+                aria-autocomplete="list"
+                aria-expanded={searchSuggestions.length > 0}
+                className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+              />
+            </div>
+            <button
+              type="submit"
+              className="h-10 shrink-0 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+            >
+              {t("nav.search")}
+            </button>
           </div>
+          {searchSuggestions.length > 0 && (
+            <ul className="mt-1.5 max-h-64 overflow-y-auto rounded-lg border border-border bg-background">
+              {searchSuggestions.map((item, index) => (
+                <li key={item.key}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveSuggestion(index)}
+                    onClick={() => openSuggestion(item.path)}
+                    className={cn(
+                      "flex w-full flex-col items-start px-3 py-2 text-left",
+                      index === activeSuggestion ? "bg-accent" : "hover:bg-accent/70",
+                    )}
+                  >
+                    <span className="text-sm font-medium text-foreground">{item.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{item.hint}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </form>
       )}
     </div>

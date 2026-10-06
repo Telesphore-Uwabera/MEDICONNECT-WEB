@@ -80,10 +80,17 @@ export function SpecializationSelect({
     };
   }, [open]);
 
-  // Sync internal hook value → parent onChange
-  // (hook owns local state; parent gets notified on each selection)
-  // If you need controlled behaviour (parent drives value), lift
-  // value/setValue out of the hook and pass them as props instead.
+  const feeName = value.fee?.sub_specialization?.trim();
+  const specializationName = value.specialization?.name?.trim();
+  const showFee =
+    Boolean(feeName) &&
+    feeName !== "Selected sub-specialization" &&
+    feeName !== specializationName;
+  const controlledLabel = specializationName
+    ? showFee
+      ? `${specializationName} › ${feeName}${value.fee?.tier_name ? ` (${value.fee.tier_name})` : ""}`
+      : specializationName
+    : null;
 
   const handleOpen = () => {
     openDropdown(!!value.specialization);
@@ -142,13 +149,13 @@ export function SpecializationSelect({
           open
             ? "border-primary dark:border-border ring-2 ring-primary/20"
             : "border-primary dark:border-border hover:border-primary/80 dark:hover:border-border/80",
-          triggerLabel ? "text-foreground" : "text-muted-foreground/40",
+          (controlledLabel ?? triggerLabel) ? "text-foreground" : "text-muted-foreground/40",
           className
         )}
       >
-        <span className="truncate">{triggerLabel ?? t("common.specSelect.anySpecializationPlaceholder")}</span>
+        <span className="truncate">{controlledLabel ?? triggerLabel ?? t("common.specSelect.anySpecializationPlaceholder")}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {triggerLabel && (
+          {(controlledLabel ?? triggerLabel) && (
             <span
               role="button"
               onClick={handleClear}

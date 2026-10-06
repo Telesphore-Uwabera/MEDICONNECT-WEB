@@ -64,7 +64,7 @@ export interface HospitalSearchParams {
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
-export function useGetSearchHospitals(params: HospitalSearchParams = {}) {
+export function useGetSearchHospitals(params: HospitalSearchParams = {}, enabled = true) {
   const searchParams = new URLSearchParams();
 
   if (params.q && params.q.trim().length >= 2)
@@ -87,6 +87,7 @@ export function useGetSearchHospitals(params: HospitalSearchParams = {}) {
     queryFn: (): Promise<ApiHospitalListResponse> =>
       apiFetch(url).then((res) => res as ApiHospitalListResponse),
     staleTime: 30_000,
+    enabled,
   });
 }
 
