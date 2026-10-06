@@ -803,18 +803,41 @@ const PatientDoctors = () => {
   );
 
   const { data, isLoading, isError, refetch } = useGetSearchDoctors(apiParams);
-  const diseaseSearch = searchParams.get("disease") === "1";
+  const requestedSpecialization = searchParams.get("specialization") || "";
+  const [fellBackFrom, setFellBackFrom] = useState("");
   const [fellBackToGp, setFellBackToGp] = useState(false);
   const showingGeneralPractitioner =
     spec.fee?.id === 1 || spec.specialization?.name === "General Practitioner";
+  const hasSpecialty = Boolean(spec.specialization || spec.fee);
 
   useEffect(() => {
-    if (!diseaseSearch || isLoading || fellBackToGp || showingGeneralPractitioner) return;
+    if (
+      requestedSpecialization &&
+      requestedSpecialization !== "General Practitioner" &&
+      requestedSpecialization !== fellBackFrom
+    ) {
+      setFellBackFrom(requestedSpecialization);
+      setFellBackToGp(false);
+    }
+  }, [fellBackFrom, requestedSpecialization]);
+
+  useEffect(() => {
+    if (!hasSpecialty || isLoading || fellBackToGp || showingGeneralPractitioner) return;
     if (!isError && !data) return;
     if (!isError && (data?.total ?? 0) > 0) return;
+    setFellBackFrom(spec.specialization?.name || requestedSpecialization);
     setFellBackToGp(true);
     setSpec(GENERAL_PRACTITIONER_SPEC);
-  }, [data, diseaseSearch, fellBackToGp, isError, isLoading, showingGeneralPractitioner]);
+  }, [
+    data,
+    fellBackToGp,
+    hasSpecialty,
+    isError,
+    isLoading,
+    requestedSpecialization,
+    showingGeneralPractitioner,
+    spec.specialization?.name,
+  ]);
 
   const doctors = useMemo(() => {
     if (!data?.data) return [];
@@ -837,6 +860,8 @@ const PatientDoctors = () => {
   const clearAll = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setSpec(INITIAL_SPEC);
+    setFellBackToGp(false);
+    setFellBackFrom("");
     setDebouncedQ("");
     setPage(1);
     setSearchParams({}, { replace: true });

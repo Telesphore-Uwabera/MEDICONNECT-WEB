@@ -115,7 +115,7 @@ export function HeroHeader({
   > = [
     { kind: "anchor", href: "#home", label: t("pages.landing.home") },
     { kind: "anchor", href: "#doctors", label: t("nav.available_doctors") },
-    { kind: "anchor", href: "#services", label: t("pages.landing.our_services") },
+    { kind: "anchor", href: "#specialities", label: t("pages.landing.our_services") },
     { kind: "anchor", href: "#healthfacilities", label: t("nav.hospitals") },
     { kind: "anchor", href: "#team", label: t("nav.team") },
   ];
@@ -354,7 +354,7 @@ export function HeroHeader({
             </button>
           </div>
           {searchSuggestions.length > 0 && (
-            <ul className="mt-1.5 max-h-64 overflow-y-auto rounded-lg border border-border bg-background">
+            <ul className="mt-1.5 max-h-80 overflow-y-auto rounded-lg border border-border bg-background">
               {searchSuggestions.map((item, index) => (
                 <li key={item.key}>
                   <button

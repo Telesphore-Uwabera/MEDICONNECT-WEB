@@ -501,7 +501,7 @@ const Index = () => {
         </RevealSection>
       </section>
       {/* Specialities */}
-      <section id="specialities" className="bg-background py-12 md:py-14">
+      <section id="specialities" className="scroll-mt-24 bg-background py-12 md:py-14">
         <RevealSection direction="up" delay={0} className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24">
           <Specialities />
         </RevealSection>
