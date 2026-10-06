@@ -10,6 +10,8 @@ export interface ScheduleWindow {
   type?: string;
   status?: string;
   slot_date?: string;
+  is_active?: boolean | number;
+  deleted_at?: string | null;
 }
 
 export interface PublicDoctorSchedule {
@@ -77,6 +79,12 @@ function isBusy(window: ScheduleWindow) {
   return status === "booked" || status === "reserved" || status === "blocked";
 }
 
+function isCurrentWindow(window: ScheduleWindow) {
+  if (window.deleted_at) return false;
+  if (window.is_active === false || window.is_active === 0) return false;
+  return true;
+}
+
 /** Both card buttons show only while a schedule window says the doctor is present and free. */
 export function doctorOffersInstant(
   doctor: Pick<ApiDoctor, "bookings_paused">,
@@ -92,7 +100,10 @@ export function doctorOffersInstant(
     ...(schedule.slots_for_date ?? []),
   ];
   const active = windows.filter(
-    (window) => onDate(window, date, weekday) && coversNow(window.start_time, window.end_time, minutes),
+    (window) =>
+      isCurrentWindow(window) &&
+      onDate(window, date, weekday) &&
+      coversNow(window.start_time, window.end_time, minutes),
   );
   if (active.length === 0 || active.some(isBusy)) return false;
   return active.some(isOnlineVisit);

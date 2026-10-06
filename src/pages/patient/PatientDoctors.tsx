@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useQueries } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/PageHeader";
@@ -29,6 +30,8 @@ import {
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { SpecializationSelect, type SpecializationValue } from "./components/SpecializationSelect";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { apiFetch } from "@/lib/api";
+import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -877,7 +880,17 @@ const PatientDoctors = () => {
 
   // (no body overflow lock needed — filters are inline top panel)
 
-  const instantCount = doctors.filter((d) => d.instant_consultation).length;
+  const scheduleQueries = useQueries({
+    queries: doctors.map((doctor) => ({
+      queryKey: ["doctor-availability", doctor.slug],
+      queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
+      enabled: !!doctor.slug,
+      staleTime: 60_000,
+    })),
+  });
+  const instantCount = doctors.filter((doctor, index) =>
+    doctorOffersInstant(doctor, scheduleQueries[index]?.data),
+  ).length;
   const availableCount = doctors.filter((d) => d.is_available).length;
   const featuredCount = doctors.filter((d) => d.is_featured).length;
 
