@@ -85,13 +85,15 @@ function isCurrentWindow(window: ScheduleWindow) {
   return true;
 }
 
-/** Both card buttons show only while a schedule window says the doctor is present and free. */
+/** Both card buttons show when Instant Consultation is on, or while an online schedule window says the doctor is present. */
 export function doctorOffersInstant(
-  doctor: Pick<ApiDoctor, "bookings_paused">,
+  doctor: Pick<ApiDoctor, "bookings_paused" | "instant_consultation">,
   schedule: PublicDoctorSchedule | undefined,
   now = new Date(),
 ) {
-  if (doctor.bookings_paused || !schedule) return false;
+  if (doctor.bookings_paused) return false;
+  if (doctor.instant_consultation) return true;
+  if (!schedule) return false;
 
   const { weekday, date, minutes } = kigaliNow(now);
   const windows = [
