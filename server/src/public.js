@@ -546,24 +546,20 @@ export function publicRoutes(router) {
       const params = [];
       let where = "WHERE 1=1";
       if (req.query.q || req.query.search) {
-        where += " AND (m.name LIKE ? OR m.generic_name LIKE ?)";
+        where += " AND m.name LIKE ?";
         const like = `%${req.query.q || req.query.search}%`;
-        params.push(like, like);
+        params.push(like);
       }
       const total = await countWhere("pharmacy_medicines m", where, params);
       const rows = await q(
-        `SELECT m.*, p.id AS pharmacy_id, p.slug AS pharmacy_slug, p.name AS pharmacy_name
+        `SELECT m.*
          FROM pharmacy_medicines m
-         LEFT JOIN pharmacies p ON p.id = m.pharmacy_id
          ${where}
-         ORDER BY m.name ASC
+         ORDER BY m.id DESC
          LIMIT ? OFFSET ?`,
         [...params, all ? Math.max(perPage, 500) : perPage, all ? 0 : offset],
       );
-      const data = rows.map((row) => ({
-        ...row,
-        pharmacy: row.pharmacy_id ? { id: row.pharmacy_id, slug: row.pharmacy_slug, name: row.pharmacy_name } : null,
-      }));
+      const data = rows.map((row) => ({ ...row, pharmacy: null }));
       if (all) return res.json(data);
       const last = Math.max(1, Math.ceil(total / perPage) || 1);
       res.json({ status: "success", data, meta: { current_page: page, last_page: last, per_page: perPage, total } });
@@ -674,24 +670,6 @@ export function publicRoutes(router) {
         [invoice, invoice, invoice, invoice],
       ).catch(() => null);
       res.json({ status: payment?.status || "pending", payment: payment ? await presentRow("payments", payment) : null });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.get(["/public/medicines", "/public/medicines/all"], async (req, res, next) => {
-    try {
-      const table = (await tableExists("pharmacy_medicines")) ? "pharmacy_medicines" : "medicines";
-      if (!(await tableExists(table))) return res.json({ data: [] });
-      const params = [];
-      let where = "WHERE 1=1";
-      if (req.query.search || req.query.q) {
-        where += " AND (name LIKE ? OR generic_name LIKE ?)";
-        const like = `%${req.query.search || req.query.q}%`;
-        params.push(like, like);
-      }
-      const rows = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY name LIMIT 200`, params).catch(() => []));
-      res.json({ data: rows });
     } catch (error) {
       next(error);
     }
