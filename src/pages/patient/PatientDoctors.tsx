@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 
 import { DoctorCard } from "@/components/DoctorCard";
@@ -30,6 +31,8 @@ import {
 import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { SpecializationSelect, type SpecializationValue } from "./components/SpecializationSelect";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiFetch } from "@/lib/api";
 import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-presence";
 
@@ -66,6 +69,88 @@ const INITIAL_FILTERS: FilterState = {
   insurance_id: "",
   sort: "rating",
 };
+
+function parseFilterDate(value: string): Date | undefined {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function toFilterDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function DoctorDateFilter({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = parseFilterDate(value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex h-8 w-full items-center justify-between gap-1.5 rounded-[6px] border bg-background px-2.5 text-[11px] outline-none transition-all",
+            open
+              ? "border-primary ring-2 ring-primary/20"
+              : "border-border/60 hover:border-primary/50",
+            selected ? "text-foreground" : "text-muted-foreground/50",
+          )}
+        >
+          <span className="truncate">
+            {selected
+              ? `${String(selected.getDate()).padStart(2, "0")}/${String(selected.getMonth() + 1).padStart(2, "0")}/${selected.getFullYear()}`
+              : "dd/mm/yyyy"}
+          </span>
+          <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={selected}
+          onSelect={(date) => {
+            onChange(date ? toFilterDate(date) : "");
+            if (date) setOpen(false);
+          }}
+          weekStartsOn={1}
+          initialFocus
+        />
+        <div className="flex items-center justify-between border-t border-border/60 px-3 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            {t("consult.notes.clear")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onChange(toFilterDate(new Date()));
+              setOpen(false);
+            }}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            {t("common.notifications.today")}
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const INITIAL_SPEC: SpecializationValue = { specialization: null, fee: null };
 
@@ -1110,11 +1195,9 @@ const PatientDoctors = () => {
                 key: "date",
                 label: t("pages.patient.date_label"),
                 render: () => (
-                  <input
-                    type="date"
+                  <DoctorDateFilter
                     value={filters.date}
-                    onChange={(e) => set("date", e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                    onChange={(value) => set("date", value)}
                   />
                 ),
               },
