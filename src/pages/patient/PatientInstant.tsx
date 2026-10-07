@@ -16,6 +16,7 @@ import {
   Sparkles,
   HeartPulse,
   CheckCircle2,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -35,6 +36,9 @@ import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
+import { DoctorActionModals, useDoctorActions } from "@/components/useDoctorActions";
+import { resolveMediaUrl } from "@/lib/image-url";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -331,10 +335,55 @@ function AppointmentCardItem({
   );
 }
 
+function InstantDoctorPick({ doctor }: { doctor: ApiDoctor }) {
+  const { t } = useTranslation();
+  const actions = useDoctorActions(doctor);
+  const current = actions.doctor;
+  const photo = resolveMediaUrl(current.image || current.user?.avatar);
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 rounded-[6px] border border-border/60 bg-card p-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">
+            {photo ? (
+              <img src={photo} alt={current.user?.name ?? ""} className="h-full w-full object-cover" />
+            ) : (
+              current.user?.name?.charAt(0)?.toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{current.user?.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{current.specialization || "—"}</p>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={actions.openConnect}
+          disabled={!actions.canConnect}
+          className="h-8 shrink-0 rounded-[6px] px-3 text-xs font-semibold"
+        >
+          <Zap className="mr-1.5 h-3.5 w-3.5" />
+          {actions.isConnected || actions.isCallInProgress
+            ? t("pages.patient.join")
+            : t("pages.cards.instant_consultation", "Instant Consultation")}
+        </Button>
+      </div>
+      <DoctorActionModals a={actions} />
+    </>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 const PatientInstant = () => {
   const { t, i18n } = useTranslation();
+  const { data: availableDoctorsData, isLoading: availableDoctorsLoading } = useGetSearchDoctors({
+    instant: true,
+    page: 1,
+    per_page: 50,
+  });
+  const availableDoctors = availableDoctorsData?.data ?? [];
 
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [view, setView] = useState<ViewMode>("table");
@@ -708,6 +757,32 @@ const PatientInstant = () => {
 
           <div className="p-4 space-y-4">
 
+            <section className="rounded-[6px] border border-border/70 bg-card shadow-sm">
+              <div className="border-b border-border/60 px-4 py-3">
+                <h2 className="text-sm font-bold text-foreground">
+                  {t("pages.patient.available_now_title")}
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {t("pages.patient.available_now_sub")}
+                </p>
+              </div>
+              <div className="grid gap-3 p-4 sm:grid-cols-2">
+                {availableDoctorsLoading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <div key={index} className="h-[68px] animate-pulse rounded-[6px] border border-border/40 bg-muted/40" />
+                  ))
+                ) : availableDoctors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground sm:col-span-2">
+                    {t("pages.patient.no_doctors_available_now")}
+                  </p>
+                ) : (
+                  availableDoctors.map((doctor) => (
+                    <InstantDoctorPick key={doctor.id} doctor={doctor} />
+                  ))
+                )}
+              </div>
+            </section>
+
             <div className="flex items-center border-b border-border/60 px-2 sm:px-4 bg-card/30 shrink-0 overflow-x-auto">
 
               <Link to='/patient/appointments' className="relative flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-3 text-[11px] sm:text-[12px] font-medium  transition-all duration-200 shrink-0 whitespace-nowrap">
@@ -777,7 +852,11 @@ const PatientInstant = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">No requests found</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">Try adjusting your filters</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    {hasActiveFilters
+                      ? "Try adjusting your filters"
+                      : "Choose one of the doctors above to start an instant consultation."}
+                  </p>
                 </div>
                 {hasActiveFilters && (
                   <button onClick={clearAll} className="text-xs text-primary hover:text-primary/80 font-semibold hover:underline mt-1">
