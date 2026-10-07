@@ -669,7 +669,7 @@ export const DashboardLayout = ({ role, children }: Props) => {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex-1 min-w-0"
+          className="flex flex-1 min-h-0 min-w-0 flex-col"
         >
           <RoleApprovalGate role={role}>{children}</RoleApprovalGate>
         </motion.main>

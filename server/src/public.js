@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists } from "./db.js";
+import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { broadcast } from "./realtime.js";
 
@@ -82,6 +82,26 @@ function kigaliDay(isoDate) {
     date: `${parts.year}-${parts.month}-${parts.day}`,
     weekday: String(parts.weekday || "").toLowerCase(),
   };
+}
+
+async function consultationAmount(row) {
+  const stored = Number(row?.amount || 0);
+  if (stored > 0) return stored;
+  const doctorId = Number(row?.doctor_id) || null;
+  if (!doctorId) return 0;
+  const doctor = await one(
+    "SELECT consultation_fee, specialization_fee_id FROM doctors WHERE id = ?",
+    [doctorId],
+  ).catch(() => null);
+  let amount = Number(doctor?.consultation_fee || 0);
+  if (!amount && doctor?.specialization_fee_id && await tableExists("specialization_fees")) {
+    const fee = await one(
+      "SELECT online_fee FROM specialization_fees WHERE id = ?",
+      [doctor.specialization_fee_id],
+    ).catch(() => null);
+    amount = Number(fee?.online_fee || 0);
+  }
+  return amount;
 }
 
 function scheduleOnDay() {
@@ -814,21 +834,47 @@ export function publicRoutes(router) {
       const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
       const paymentUuid = crypto.randomUUID();
-      const amount = Number(row.amount || row.fee || 0);
+      const amount = await consultationAmount(row);
+      const invoiceNumber = row.invoice_number || `MC-${row.id}`;
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
       if (await tableExists("payments")) {
+        const existing = await one(
+          "SELECT * FROM payments WHERE payable_type = ? AND payable_id = ? AND status IN ('initiated','pending') ORDER BY id DESC LIMIT 1",
+          ["instant_consultation", row.id],
+        ).catch(() => null);
+        if (existing?.uuid) {
+          const payable = Number(existing.amount || 0) > 0 ? Number(existing.amount) : amount;
+          if (existing.id && payable > 0 && Number(existing.amount || 0) !== payable) {
+            await update("payments", existing.id, { amount: payable });
+          }
+          return res.json({
+            message: "Payment started.",
+            invoice_number: existing.invoice_number || invoiceNumber,
+            public_key: process.env.PAYMENT_PUBLIC_KEY || "",
+            amount: payable,
+            currency: existing.currency || row.currency || "RWF",
+            payment_uuid: existing.uuid,
+          });
+        }
         await insert("payments", {
+          uuid: paymentUuid,
+          payment_uuid: paymentUuid,
+          payable_type: "instant_consultation",
+          payable_id: row.id,
+          invoice_number: invoiceNumber,
+          transaction_id: paymentUuid,
+          idempotency_key: paymentUuid,
           amount,
           currency: row.currency || "RWF",
           status: "pending",
-          uuid: paymentUuid,
-          payment_uuid: paymentUuid,
-          payable_id: row.id,
-          payable_type: "instant_consultation",
+          description: `Instant consultation ${row.id}`,
+          expires_at: expiresAt,
+          patient_id: row.patient_id || null,
         });
       }
       res.json({
         message: "Payment started.",
-        invoice_number: row.invoice_number || `MC-${row.id}`,
+        invoice_number: invoiceNumber,
         public_key: process.env.PAYMENT_PUBLIC_KEY || "",
         amount,
         currency: row.currency || "RWF",

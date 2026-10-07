@@ -1170,9 +1170,11 @@ export function appRoutes(router) {
         ).catch(() => []);
         queue = rows.map((row, index) => ({
           id: row.id,
+          guest_name: row.guest_name || row.patient_name || "",
           guest_phone: row.guest_phone || row.phone || "",
           description: row.description || row.reason || null,
           status: row.status || "pending",
+          payment_status: row.payment_status || null,
           queue_position: index + 1,
           waiting_seconds: 0,
           waiting_label: "Waiting",
@@ -1206,12 +1208,20 @@ export function appRoutes(router) {
       const appointment = await one("SELECT * FROM appointments WHERE id = ?", [req.params.id]);
       if (!appointment) return res.status(404).json({ message: "Appointment not found." });
       const paymentUuid = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
       await insert("payments", {
         patient_id: appointment.patient_id,
         appointment_id: appointment.id,
+        payable_type: "appointment",
+        payable_id: appointment.id,
+        invoice_number: `MC-${appointment.id}`,
+        transaction_id: paymentUuid,
+        idempotency_key: paymentUuid,
         amount: appointment.amount || appointment.fee || appointment.consultation_fee || 0,
         currency: appointment.currency || "RWF",
         status: "pending",
+        description: `Appointment ${appointment.id}`,
+        expires_at: expiresAt,
         uuid: paymentUuid,
         payment_uuid: paymentUuid,
       });

@@ -510,7 +510,7 @@ const DoctorOverview = () => {
                   icon: Zap,
                   tone: "text-violet-500 bg-violet-500/10 border-violet-500/20",
                   action: t("pages.doctor.manage_queue"),
-                  to: "/doctor/appointments",
+                  to: "/doctor/appointments?tab=instant",
                 },
                 {
                   label: t("pages.doctor.wallet"),
@@ -687,13 +687,13 @@ const DoctorOverview = () => {
 
                         <div className="grid sm:grid-cols-3 gap-3">
                           {[
-                            { label: t("pages.doctor.waiting"), value: todayPending, hint: t("pages.doctor.pending_or_confirmed"), icon: Clock, tone: "text-warning bg-warning/10" },
-                            { label: t("pages.doctor.completed"), value: todayCompleted, hint: t("pages.doctor.done_today"), icon: CheckCircle2, tone: "text-success bg-success/10" },
-                            { label: t("pages.doctor.instant_queue"), value: instantQueue, hint: t("pages.doctor.current_queue"), icon: Zap, tone: "text-violet-500 bg-violet-500/10" },
+                            { label: t("pages.doctor.waiting"), value: todayPending, hint: t("pages.doctor.pending_or_confirmed"), icon: Clock, tone: "text-warning bg-warning/10", to: "/doctor/appointments" },
+                            { label: t("pages.doctor.completed"), value: todayCompleted, hint: t("pages.doctor.done_today"), icon: CheckCircle2, tone: "text-success bg-success/10", to: "/doctor/appointments" },
+                            { label: t("pages.doctor.instant_queue"), value: instantQueue, hint: t("pages.doctor.current_queue"), icon: Zap, tone: "text-violet-500 bg-violet-500/10", to: "/doctor/appointments?tab=instant" },
                           ].map((item) => {
                             const Icon = item.icon;
                             return (
-                              <div key={item.label} className="rounded-[6px] border border-border/60 bg-secondary/20 p-3">
+                              <Link key={item.label} to={item.to} className="rounded-[6px] border border-border/60 bg-secondary/20 p-3 hover:border-primary/40 transition-colors">
                                 <div className={cn("h-8 w-8 rounded-[6px] flex items-center justify-center", item.tone)}>
                                   <Icon className="h-4 w-4" />
                                 </div>
@@ -706,7 +706,7 @@ const DoctorOverview = () => {
                                 <p className="text-[11px] text-muted-foreground mt-0.5">
                                   {item.hint}
                                 </p>
-                              </div>
+                              </Link>
                             );
                           })}
                         </div>

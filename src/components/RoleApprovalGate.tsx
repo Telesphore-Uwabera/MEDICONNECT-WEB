@@ -356,7 +356,7 @@ export function RoleApprovalGate({
   );
 
   if (!shouldProtectRoute) {
-    return <>{children}</>;
+    return <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
   }
 
   if (isCheckingAccess) {
@@ -535,7 +535,7 @@ export function RoleApprovalGate({
   }
 
   if (accessState?.isApproved) {
-    return <>{children}</>;
+    return <div className="flex min-h-0 flex-1 flex-col">{children}</div>;
   }
 
   const profileExists =

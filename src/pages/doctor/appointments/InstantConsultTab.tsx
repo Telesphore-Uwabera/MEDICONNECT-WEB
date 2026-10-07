@@ -158,11 +158,14 @@ export function InstantConsultTab() {
   const visibleQueue = queue.filter((i) => i.status !== "expired");
   const completed = visibleQueue.filter((i) => i.status === "completed");
   const activeItems = visibleQueue.filter((i) => i.status !== "completed");
+  const waiting = activeItems.filter((i) =>
+    ["pending", "queued", "waiting"].includes(i.status),
+  );
   const confirmed = activeItems.filter((i) => i.status === "confirmed");
   const accepted = activeItems.filter((i) => i.status === "accepted");
   const joined = activeItems.filter((i) => i.status === "in_progress");
   const others = activeItems.filter((i) =>
-    ["pending", "declined", "withdrawn"].includes(i.status),
+    ["declined", "withdrawn"].includes(i.status),
   );
 
   const handleAccept = (item: InstantConsultQueueItem) => {
@@ -356,10 +359,10 @@ export function InstantConsultTab() {
   const activeCount = activeItems.length;
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
+    <div className="flex min-h-[calc(100dvh-12rem)] flex-1 overflow-hidden bg-background">
 
       {/* Main queue */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-5">
 
         {/* Rejoin in-progress consultation */}
         {liveTarget && (
@@ -395,9 +398,11 @@ export function InstantConsultTab() {
             <span className="truncate text-sm text-muted-foreground">
               {queueLoading
                 ? t("consult.bookings.loading_queue")
-                : actionableCount === 0
-                  ? t("consult.bookings.no_active_patients")
-                  : `${actionableCount} ${actionableCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`}
+                : actionableCount > 0
+                  ? `${actionableCount} ${actionableCount > 1 ? t("consult.bookings.patients_need_attentions") : t("consult.bookings.patient_need_attention")}`
+                  : waiting.length > 0
+                    ? t("pages.doctor.waiting_count", { count: waiting.length })
+                    : t("consult.bookings.no_active_patients")}
             </span>
           </div>
 
@@ -470,6 +475,24 @@ export function InstantConsultTab() {
 
         {!queueLoading && queueTab === "active" && (
           <div className="space-y-5">
+
+            {waiting.length > 0 && (
+              <section className="space-y-2">
+                <SectionLabel
+                  dotCls="bg-[hsl(var(--warning))]"
+                  label={t("consult.bookings.awaiting_payment", { defaultValue: "Awaiting payment" })}
+                  count={waiting.length}
+                />
+                <p className="text-xs text-muted-foreground px-0.5">
+                  {t("consult.bookings.awaiting_payment_hint", {
+                    defaultValue: "These patients requested a consult but have not finished payment yet. Accept becomes available after payment.",
+                  })}
+                </p>
+                {waiting.map((item) => (
+                  <IncomingCard key={item.id} item={item} />
+                ))}
+              </section>
+            )}
 
             {/* Confirmed — success (green) */}
             {confirmed.length > 0 && (

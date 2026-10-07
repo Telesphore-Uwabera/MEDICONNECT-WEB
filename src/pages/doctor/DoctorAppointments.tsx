@@ -52,6 +52,7 @@ const DoctorAppointmentsPage = () => {
 
   return (
     <DashboardLayout role="doctor">
+      <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title={t("pages.doctor.overview_title")}
         subtitle={t("pages.doctor.overview_sub", { date: new Date().toLocaleDateString(i18n.language, { weekday: "long", month: "long", day: "numeric" }) })}
@@ -116,7 +117,7 @@ const DoctorAppointmentsPage = () => {
       </div>
 
       {/* Tab content */}
-      <div className="flex flex-col flex-1 min-h-0 ">
+      <div className="flex min-h-0 flex-1 flex-col">
         {tab === "appointments" ? (
           <AppointmentsTab />
         ) : tab === "instant" ? (
@@ -124,6 +125,7 @@ const DoctorAppointmentsPage = () => {
         ) : (
           <ServiceBookingsTab />
         )}
+      </div>
       </div>
     </DashboardLayout>
   );

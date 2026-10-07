@@ -42,7 +42,17 @@ function phoneAvatar(phone: string): string {
 
 const STATUS_BADGE: Record<string, { label: string; dotCls: string; cls: string }> = {
   pending: {
-    label: "Pending",
+    label: "Awaiting payment",
+    dotCls: "bg-[hsl(var(--warning))]",
+    cls: "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.25)]",
+  },
+  queued: {
+    label: "Awaiting payment",
+    dotCls: "bg-[hsl(var(--warning))]",
+    cls: "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.25)]",
+  },
+  waiting: {
+    label: "Awaiting payment",
     dotCls: "bg-[hsl(var(--warning))]",
     cls: "bg-[hsl(var(--warning)/0.1)] text-[hsl(var(--warning))] border-[hsl(var(--warning)/0.25)]",
   },
@@ -280,9 +290,14 @@ export function IncomingCard({
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-[11px] font-semibold text-foreground font-mono tracking-wide">
-                {item.guest_phone}
+              <p className="text-[11px] font-semibold text-foreground tracking-wide">
+                {item.guest_name || item.guest_phone}
               </p>
+              {item.guest_name && item.guest_phone && (
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {item.guest_phone}
+                </span>
+              )}
               {/* Status badge with dot */}
               <span className={cn(
                 "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] text-[9px] font-semibold border leading-none",

@@ -405,9 +405,11 @@ const IC = "/doctor/instant-consultations";
 
 export interface InstantConsultQueueItem {
     id: number;
+    guest_name?: string | null;
     guest_phone: string;
     description: string | null;
     status: "pending" | "confirmed" | "accepted" | "in_progress" | "declined" | "withdrawn" | "expired" | "completed";
+    payment_status?: string | null;
     queue_position: number;
     waiting_seconds: number;
     waiting_label: string;
