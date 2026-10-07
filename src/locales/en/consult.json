@@ -292,7 +292,11 @@
     "service_bookings_short": "Bookings",
     "accepted_ready": "Accepted · join when ready",
     "in_session": "In session",
-    "ready_to_accept": "Ready to accept"
+    "ready_to_accept": "Ready to accept",
+    "waiting_in_queue": "Waiting in queue",
+    "busy_title": "In an instant consultation",
+    "busy_hint": "You cannot accept another instant request until this one is finished. New patients stay in the queue. Scheduled bookings are still available.",
+    "busy_cannot_accept": "Finish your current instant consultation first. Other patients stay in the queue. Bookings are still available."
   },
   "medical_info": {
     "title": "Medical information",
@@ -574,6 +578,8 @@
     "err_could_not_join_active": "Could not join your active consultation.",
     "err_payment_processing_failed": "Payment could not be processed. Please try again.",
     "err_payment_initiate_failed": "Payment could not be initiated.",
+    "err_payment_not_configured": "Payment gateway is not configured on the server.",
+    "err_payment_widget_missing": "Payment widget failed to load. Refresh and try again.",
     "please_try_again_suffix": "Please try again.",
     "err_request_failed": "Request failed. Please try again.",
     "err_join_failed": "Failed to join consultation."

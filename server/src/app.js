@@ -1154,20 +1154,51 @@ export function appRoutes(router) {
     }
   });
 
+  async function instantTable() {
+    if (await tableExists("instant_consultation_requests")) return "instant_consultation_requests";
+    if (await tableExists("instant_consultations")) return "instant_consultations";
+    return null;
+  }
+
+  async function doctorActiveInstant(doctorId, exceptId = null) {
+    const table = await instantTable();
+    if (!table || !(await hasColumn(table, "doctor_id"))) return null;
+    const params = [doctorId];
+    let sql = `SELECT * FROM \`${table}\` WHERE doctor_id = ? AND status IN ('accepted','in_progress')`;
+    if (exceptId != null) {
+      sql += " AND id <> ?";
+      params.push(exceptId);
+    }
+    sql += " ORDER BY id DESC LIMIT 1";
+    return one(sql, params).catch(() => null);
+  }
+
+  function instantDoctorToken(row, roomName) {
+    const payload = {
+      consultation_id: Number(row.id),
+      role: "doctor",
+      room: roomName,
+      doctor_id: row.doctor_id ?? null,
+    };
+    return encodeURIComponent(Buffer.from(JSON.stringify(payload)).toString("base64"));
+  }
+
   router.get("/doctor/instant-consultations/queue", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId, doctor } = await currentDoctor(req);
-      const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : (await tableExists("instant_consultations")) ? "instant_consultations" : null;
+      const table = await instantTable();
       let queue = [];
       let seenToday = 0;
       let resolved = 0;
+      let active = null;
       if (table) {
         const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
         const params = owner.includes("?") ? [doctorId] : [];
         const rows = await q(
-          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed') ORDER BY id ASC LIMIT 50`,
+          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed','accepted','in_progress','completed') ORDER BY id ASC LIMIT 50`,
           params,
         ).catch(() => []);
+        active = await doctorActiveInstant(doctorId);
         queue = rows.map((row, index) => ({
           id: row.id,
           guest_name: row.guest_name || row.patient_name || "",
@@ -1191,13 +1222,125 @@ export function appRoutes(router) {
       res.json({
         queue,
         stats: {
-          in_queue: queue.length,
+          in_queue: queue.filter((item) => ["pending", "queued", "waiting", "confirmed"].includes(item.status)).length,
           seen_today: seenToday,
           avg_duration: "0 min",
           resolved,
           is_online: Boolean(Number(doctor?.instant_consultation ?? 0)),
+          doctor_busy: Boolean(active),
+          active_instant_id: active?.id ?? null,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/instant-consultations/:id/accept", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const table = await instantTable();
+      if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
+        return res.status(403).json({ message: "This request belongs to another doctor." });
+      }
+      const busy = await doctorActiveInstant(doctorId, row.id);
+      if (busy) {
+        return res.status(409).json({
+          message: "Finish your current instant consultation before accepting another. Other patients will wait in the queue. Bookings remain available.",
+          active_instant_id: busy.id,
+        });
+      }
+      const patch = { status: "accepted" };
+      if (await hasColumn(table, "doctor_id")) patch.doctor_id = doctorId;
+      if (await hasColumn(table, "accepted_at")) patch.accepted_at = new Date();
+      await update(table, row.id, patch);
+      const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
+      const roomName = updated.daily_room_name || updated.room_name || `instant-${updated.id}`;
+      const roomUrl = updated.daily_room_url || updated.room_url || `/consultation/${roomName}`;
+      const doctorToken = updated.daily_doctor_token || instantDoctorToken(updated, roomName);
+      res.json({
+        message: "Request accepted.",
+        room_url: roomUrl,
+        room_name: roomName,
+        doctor_token: doctorToken,
+        data: await presentRow(table, updated),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/instant-consultations/:id/decline", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const table = await instantTable();
+      if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
+        return res.status(403).json({ message: "This request belongs to another doctor." });
+      }
+      await update(table, row.id, { status: "declined" });
+      res.json({ message: "Request declined." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/instant-consultations/:id/join", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const table = await instantTable();
+      if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
+        return res.status(403).json({ message: "This request belongs to another doctor." });
+      }
+      const busy = await doctorActiveInstant(doctorId, row.id);
+      if (busy) {
+        return res.status(409).json({
+          message: "You already have an active instant consultation. Finish it before joining another.",
+          active_instant_id: busy.id,
+        });
+      }
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      const roomUrl = row.daily_room_url || row.room_url || `/consultation/${roomName}`;
+      const doctorToken = row.daily_doctor_token || instantDoctorToken(row, roomName);
+      const patch = { status: "in_progress" };
+      if (await hasColumn(table, "doctor_id")) patch.doctor_id = doctorId;
+      if (await hasColumn(table, "daily_room_name")) patch.daily_room_name = roomName;
+      if (await hasColumn(table, "daily_room_url")) patch.daily_room_url = roomUrl;
+      if (await hasColumn(table, "daily_doctor_token")) patch.daily_doctor_token = doctorToken;
+      await update(table, row.id, patch);
+      res.json({
+        message: "Session ready.",
+        room_url: roomUrl,
+        room_name: roomName,
+        doctor_token: doctorToken,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/doctor/instant-consultations/:id/complete", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const { doctorId } = await currentDoctor(req);
+      const table = await instantTable();
+      if (!table) return res.status(404).json({ message: "Instant consultations are not available." });
+      const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
+      if (!row) return res.status(404).json({ message: "Consultation not found." });
+      if (row.doctor_id && Number(row.doctor_id) !== Number(doctorId)) {
+        return res.status(403).json({ message: "This request belongs to another doctor." });
+      }
+      const patch = { status: "completed" };
+      if (await hasColumn(table, "completed_at")) patch.completed_at = new Date();
+      await update(table, row.id, patch);
+      res.json({ message: "Session completed." });
     } catch (error) {
       next(error);
     }

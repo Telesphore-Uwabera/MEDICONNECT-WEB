@@ -104,6 +104,91 @@ async function consultationAmount(row) {
   return amount;
 }
 
+function paymentPublicKey() {
+  return String(process.env.PAYMENT_PUBLIC_KEY || process.env.IPAY_PUBLIC_KEY || "").trim();
+}
+
+function paymentSecretKey() {
+  return String(process.env.PAYMENT_SECRET_KEY || process.env.IPAY_SECRET_KEY || "").trim();
+}
+
+function paymentApiBase() {
+  const env = String(process.env.PAYMENT_ENVIRONMENT || process.env.IPAY_ENVIRONMENT || "production").toLowerCase();
+  if (env === "sandbox") return "https://api.sandbox.irembopay.com/payments";
+  if (env === "checkout") return "https://api.checkout.irembopay.com/payments";
+  return "https://api.irembopay.com/payments";
+}
+
+function isLocalInvoiceNumber(value) {
+  return !value || /^MC-/i.test(String(value));
+}
+
+async function createIremboInvoice({ transactionId, amount, customer, description }) {
+  const secret = paymentSecretKey();
+  const publicKey = paymentPublicKey();
+  const account = String(process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF").trim();
+  const productCode = String(process.env.PAYMENT_PRODUCT_CODE || "").trim();
+  if (!publicKey || !secret || !productCode) {
+    const error = new Error(
+      "Payment gateway is not configured. Add PAYMENT_PUBLIC_KEY, PAYMENT_SECRET_KEY, and PAYMENT_PRODUCT_CODE on the API server.",
+    );
+    error.status = 503;
+    throw error;
+  }
+  const expiryAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const response = await fetch(`${paymentApiBase()}/invoices`, {
+    method: "POST",
+    headers: {
+      "irembopay-secretkey": secret,
+      "X-API-Version": "2",
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      transactionId: String(transactionId),
+      paymentAccountIdentifier: account,
+      customer: {
+        email: customer.email || undefined,
+        phoneNumber: customer.phone || undefined,
+        name: customer.name || "Patient",
+      },
+      paymentItems: [
+        {
+          unitAmount: Number(amount),
+          quantity: 1,
+          code: productCode,
+        },
+      ],
+      description: description || `Payment ${transactionId}`,
+      expiryAt,
+      language: "EN",
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail =
+      payload?.errors?.[0]?.detail ||
+      payload?.message ||
+      payload?.error ||
+      `IremboPay invoice create failed (${response.status})`;
+    const error = new Error(String(detail));
+    error.status = response.status >= 400 && response.status < 600 ? response.status : 502;
+    throw error;
+  }
+  const invoiceNumber =
+    payload?.data?.invoiceNumber ||
+    payload?.data?.invoice_number ||
+    payload?.invoiceNumber ||
+    payload?.invoice_number ||
+    null;
+  if (!invoiceNumber) {
+    const error = new Error("IremboPay did not return an invoice number.");
+    error.status = 502;
+    throw error;
+  }
+  return { invoiceNumber: String(invoiceNumber), publicKey };
+}
+
 function scheduleOnDay() {
   return `(
     EXISTS (
@@ -833,52 +918,84 @@ export function publicRoutes(router) {
       const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
       const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
-      const paymentUuid = crypto.randomUUID();
       const amount = await consultationAmount(row);
-      const invoiceNumber = row.invoice_number || `MC-${row.id}`;
+      if (!(amount > 0)) {
+        return res.status(422).json({ message: "This consultation has no payable fee." });
+      }
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+      const customer = {
+        name: row.guest_name || row.patient_name || "Patient",
+        phone: row.guest_phone || row.phone || "",
+        email: row.guest_email || row.email || "",
+      };
+
+      let payment = null;
       if (await tableExists("payments")) {
-        const existing = await one(
+        payment = await one(
           "SELECT * FROM payments WHERE payable_type = ? AND payable_id = ? AND status IN ('initiated','pending') ORDER BY id DESC LIMIT 1",
           ["instant_consultation", row.id],
         ).catch(() => null);
-        if (existing?.uuid) {
-          const payable = Number(existing.amount || 0) > 0 ? Number(existing.amount) : amount;
-          if (existing.id && payable > 0 && Number(existing.amount || 0) !== payable) {
-            await update("payments", existing.id, { amount: payable });
-          }
-          return res.json({
-            message: "Payment started.",
-            invoice_number: existing.invoice_number || invoiceNumber,
-            public_key: process.env.PAYMENT_PUBLIC_KEY || "",
-            amount: payable,
-            currency: existing.currency || row.currency || "RWF",
-            payment_uuid: existing.uuid,
-          });
+        if (payment?.id && Number(payment.amount || 0) !== amount) {
+          await update("payments", payment.id, { amount });
+          payment.amount = amount;
         }
-        await insert("payments", {
-          uuid: paymentUuid,
-          payment_uuid: paymentUuid,
-          payable_type: "instant_consultation",
-          payable_id: row.id,
-          invoice_number: invoiceNumber,
-          transaction_id: paymentUuid,
-          idempotency_key: paymentUuid,
+      }
+
+      let invoiceNumber = payment?.invoice_number || null;
+      let publicKey = paymentPublicKey();
+      if (isLocalInvoiceNumber(invoiceNumber)) {
+        const created = await createIremboInvoice({
+          transactionId: payment?.transaction_id || payment?.uuid || `IC-${row.id}-${Date.now()}`,
           amount,
-          currency: row.currency || "RWF",
-          status: "pending",
+          customer,
           description: `Instant consultation ${row.id}`,
-          expires_at: expiresAt,
-          patient_id: row.patient_id || null,
+        });
+        invoiceNumber = created.invoiceNumber;
+        publicKey = created.publicKey;
+      }
+      if (!publicKey) {
+        return res.status(503).json({
+          message: "Payment gateway is not configured. Add PAYMENT_PUBLIC_KEY on the API server.",
         });
       }
+
+      if (await tableExists("payments")) {
+        if (payment?.id) {
+          await update("payments", payment.id, {
+            invoice_number: invoiceNumber,
+            amount,
+            expires_at: expiresAt,
+            description: `Instant consultation ${row.id}`,
+          });
+        } else {
+          const paymentUuid = crypto.randomUUID();
+          await insert("payments", {
+            uuid: paymentUuid,
+            payment_uuid: paymentUuid,
+            payable_type: "instant_consultation",
+            payable_id: row.id,
+            invoice_number: invoiceNumber,
+            transaction_id: paymentUuid,
+            idempotency_key: paymentUuid,
+            amount,
+            currency: row.currency || "RWF",
+            status: "pending",
+            description: `Instant consultation ${row.id}`,
+            expires_at: expiresAt,
+            patient_id: row.patient_id || null,
+            payment_account_identifier: process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF",
+          });
+          payment = { uuid: paymentUuid };
+        }
+      }
+
       res.json({
         message: "Payment started.",
         invoice_number: invoiceNumber,
-        public_key: process.env.PAYMENT_PUBLIC_KEY || "",
+        public_key: publicKey,
         amount,
         currency: row.currency || "RWF",
-        payment_uuid: paymentUuid,
+        payment_uuid: payment?.uuid || null,
       });
     } catch (error) {
       next(error);

@@ -827,7 +827,26 @@ export const ConnectDialogContent = ({
 
     try {
       const payRes = await payMutation.mutateAsync(consultationId);
-      console.info("[Pay] payRes:", JSON.stringify(payRes));
+      console.info("[Pay] payRes:", JSON.stringify({
+        ...payRes,
+        public_key: payRes?.public_key ? "[set]" : "",
+        payment_uuid: payRes?.payment_uuid ? "[set]" : null,
+      }));
+
+      if (!payRes?.public_key || !payRes?.invoice_number) {
+        throw new Error(
+          t("consult.connect.err_payment_not_configured", {
+            defaultValue: "Payment gateway is not configured on the server.",
+          }),
+        );
+      }
+      if (!(window as any).IremboPay?.initiate) {
+        throw new Error(
+          t("consult.connect.err_payment_widget_missing", {
+            defaultValue: "Payment widget failed to load. Refresh and try again.",
+          }),
+        );
+      }
 
       (window as any).IremboPay.initiate({
         publicKey: payRes.public_key,

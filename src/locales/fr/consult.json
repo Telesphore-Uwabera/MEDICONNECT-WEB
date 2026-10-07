@@ -292,7 +292,11 @@
     "service_bookings_short": "Réservations",
     "accepted_ready": "Consultation acceptée · rejoignez quand vous êtes prêt",
     "in_session": "Consultation en cours",
-    "ready_to_accept": "Prêt à accepter"
+    "ready_to_accept": "Prêt à accepter",
+    "waiting_in_queue": "En file d'attente",
+    "busy_title": "En consultation instantanée",
+    "busy_hint": "Vous ne pouvez pas accepter une autre demande instantanée avant la fin de celle-ci. Les nouveaux patients restent en file. Les réservations restent disponibles.",
+    "busy_cannot_accept": "Terminez d'abord votre consultation instantanée. Les autres patients restent en file. Les réservations restent disponibles."
   },
   "medical_info": {
     "title": "Informations médicales",
@@ -574,6 +578,8 @@
     "err_could_not_join_active": "Impossible de rejoindre votre consultation active.",
     "err_payment_processing_failed": "Le paiement n'a pas pu être traité. Veuillez réessayer.",
     "err_payment_initiate_failed": "Le paiement n'a pas pu être lancé.",
+    "err_payment_not_configured": "La passerelle de paiement n'est pas configurée sur le serveur.",
+    "err_payment_widget_missing": "Le widget de paiement n'a pas pu se charger. Actualisez et réessayez.",
     "please_try_again_suffix": "Veuillez réessayer.",
     "err_request_failed": "Échec de la demande. Veuillez réessayer.",
     "err_join_failed": "Échec de la connexion à la consultation."

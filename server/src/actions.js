@@ -537,6 +537,24 @@ async function fillGap(req, res, parts) {
 
   const status = action ? (EXTRA_STATUS[action] || STATUS_ACTIONS[action]) : null;
   if (action && id && status && await hasColumn(table, "status")) {
+    const isInstantTable = ["instant_consultation_requests", "instant_consultations"].includes(table);
+    if (isInstantTable && action === "accept" && await hasColumn(table, "doctor_id")) {
+      const target = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]).catch(() => null);
+      const doctorId = target?.doctor_id || (await loadOwnedId(req.user.id, "doctors"));
+      if (doctorId) {
+        const busy = await one(
+          `SELECT id FROM \`${table}\` WHERE doctor_id = ? AND id <> ? AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,
+          [doctorId, id],
+        ).catch(() => null);
+        if (busy) {
+          res.status(409).json({
+            message: "Finish your current instant consultation before accepting another. Other patients will wait in the queue. Bookings remain available.",
+            active_instant_id: busy.id,
+          });
+          return true;
+        }
+      }
+    }
     await update(table, id, { status });
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });

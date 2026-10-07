@@ -167,8 +167,20 @@ export function InstantConsultTab() {
   const others = activeItems.filter((i) =>
     ["declined", "withdrawn"].includes(i.status),
   );
+  const doctorBusy = Boolean(
+    stats?.doctor_busy
+    || accepted.length > 0
+    || joined.length > 0
+    || (call.phase === "connected" && call.role === "doctor"),
+  );
 
   const handleAccept = (item: InstantConsultQueueItem) => {
+    if (doctorBusy) {
+      toast.message(t("consult.bookings.busy_cannot_accept", {
+        defaultValue: "Finish your current instant consultation first. Other patients stay in the queue. Bookings are still available.",
+      }));
+      return;
+    }
     setActiveAction({ id: item.id, action: "accepting" });
     acceptInstant.mutate(item.id, {
       onSuccess: () => toast.success(t("consult.bookings.request_accepted")),
@@ -386,6 +398,21 @@ export function InstantConsultTab() {
           </div>
         )}
 
+        {doctorBusy && (
+          <div className="rounded-[6px] border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">
+              {t("consult.bookings.busy_title", {
+                defaultValue: "In an instant consultation",
+              })}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {t("consult.bookings.busy_hint", {
+                defaultValue: "You cannot accept another instant request until this one is finished. New patients stay in the queue. Scheduled bookings are still available.",
+              })}
+            </p>
+          </div>
+        )}
+
         {/* Online header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -499,14 +526,16 @@ export function InstantConsultTab() {
               <section className="space-y-2">
                 <SectionLabel
                   dotCls="bg-[hsl(var(--success))]"
-                  label={t("consult.bookings.ready_to_accept")}
+                  label={doctorBusy
+                    ? t("consult.bookings.waiting_in_queue", { defaultValue: "Waiting in queue" })
+                    : t("consult.bookings.ready_to_accept")}
                   count={confirmed.length}
                 />
                 {confirmed.map((item) => (
                   <IncomingCard
                     key={item.id}
                     item={item}
-                    onAccept={() => handleAccept(item)}
+                    onAccept={doctorBusy ? undefined : () => handleAccept(item)}
                     onDecline={() => handleDecline(item)}
                     isAccepting={activeAction?.id === item.id && activeAction.action === "accepting"}
                     isDeclining={activeAction?.id === item.id && activeAction.action === "declining"}

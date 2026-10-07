@@ -421,6 +421,8 @@ export interface InstantConsultStats {
     avg_duration: string;
     resolved: number;
     is_online: boolean;
+    doctor_busy?: boolean;
+    active_instant_id?: number | null;
 }
 
 export interface InstantConsultQueueResponse {
