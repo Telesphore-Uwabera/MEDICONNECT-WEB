@@ -61,6 +61,54 @@ async function attachDoctorRelations(doctors) {
   }));
 }
 
+function kigaliDay(isoDate) {
+  if (isoDate && /^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    const date = new Date(`${isoDate}T00:00:00Z`);
+    return {
+      date: isoDate,
+      weekday: date.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }).toLowerCase(),
+    };
+  }
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Kigali",
+      weekday: "long",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date()).map((part) => [part.type, part.value]),
+  );
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    weekday: String(parts.weekday || "").toLowerCase(),
+  };
+}
+
+function scheduleOnDay() {
+  return `(
+    EXISTS (
+      SELECT 1 FROM appointment_slots s
+      WHERE s.doctor_id = d.id
+        AND s.slot_date = ?
+        AND (s.is_active = 1 OR s.is_active IS NULL)
+        AND (s.status IS NULL OR s.status IN ('available', 'open'))
+    )
+    OR EXISTS (
+      SELECT 1 FROM doctor_availability_periods p
+      WHERE p.doctor_id = d.id
+        AND (p.is_active = 1 OR p.is_active IS NULL)
+        AND (p.deleted_at IS NULL)
+        AND ? BETWEEN DATE(p.from_date) AND DATE(p.to_date)
+        AND (
+          p.days_of_week IS NULL
+          OR p.days_of_week = ''
+          OR p.days_of_week = '[]'
+          OR LOWER(CAST(p.days_of_week AS CHAR)) LIKE ?
+        )
+    )
+  )`;
+}
+
 async function doctorStats(whereSql, params) {
   const total = await countWhere("doctors d JOIN users u ON u.id = d.user_id", whereSql, params);
   const online = await countWhere(
@@ -83,65 +131,127 @@ export function publicRoutes(router) {
       const filters = ["(" + (await whereActive("doctors", "d")) + ")"];
       const params = [];
       if (req.query.q) {
-        filters.push("(u.name LIKE ? OR d.specialization LIKE ? OR d.city LIKE ? OR d.slug LIKE ?)");
-        const like = `%${req.query.q}%`;
-        params.push(like, like, like, like);
+        const like = `%${String(req.query.q).trim()}%`;
+        const parts = ["u.name LIKE ?", "d.specialization LIKE ?", "d.slug LIKE ?"];
+        params.push(like, like, like);
+        if (await hasColumn("doctors", "city")) {
+          parts.push("d.city LIKE ?");
+          params.push(like);
+        }
+        if (await tableExists("specialization_fees")) {
+          parts.push(`EXISTS (
+            SELECT 1 FROM specialization_fees sf
+            WHERE sf.id = d.specialization_fee_id
+              AND (sf.sub_specialization LIKE ? OR sf.sub_specialization_fr LIKE ? OR sf.sub_specialization_kiny LIKE ? OR sf.slug LIKE ?)
+          )`);
+          params.push(like, like, like, like);
+        }
+        filters.push(`(${parts.join(" OR ")})`);
       }
       const specialtyName = String(req.query.specialization || "").trim();
       const subName = String(req.query.sub_specialization || "").trim();
       const feeId = Number(req.query.specialization_fee_id);
-      if (specialtyName || subName || (Number.isFinite(feeId) && feeId > 0)) {
+      if (Number.isFinite(feeId) && feeId > 0) {
+        filters.push("d.specialization_fee_id = ?");
+        params.push(feeId);
+      } else if (specialtyName || subName) {
         const clauses = [];
-        if (Number.isFinite(feeId) && feeId > 0) {
-          clauses.push("d.specialization_fee_id = ?");
-          params.push(feeId);
-        }
         for (const name of [...new Set([specialtyName, subName].filter(Boolean))]) {
           const like = `%${name}%`;
           clauses.push("(d.specialization = ? OR d.specialization LIKE ?)");
           params.push(name, like);
-          clauses.push(`EXISTS (
-            SELECT 1 FROM specialization_fees sf
-            WHERE sf.id = d.specialization_fee_id
-              AND (
-                sf.sub_specialization = ? OR sf.sub_specialization LIKE ?
-                OR sf.sub_specialization_fr = ? OR sf.sub_specialization_fr LIKE ?
-                OR sf.sub_specialization_kiny = ? OR sf.sub_specialization_kiny LIKE ?
-                OR sf.slug = ?
-              )
-          )`);
-          params.push(name, like, name, like, name, like, name);
-          clauses.push(`EXISTS (
-            SELECT 1 FROM doctor_specialization ds
-            JOIN specializations s ON s.id = ds.specialization_id
-            WHERE ds.doctor_id = d.id AND (s.name = ? OR s.name LIKE ? OR s.slug = ?)
-          )`);
-          params.push(name, like, name);
+          if (await tableExists("specialization_fees")) {
+            clauses.push(`EXISTS (
+              SELECT 1 FROM specialization_fees sf
+              WHERE sf.id = d.specialization_fee_id
+                AND (
+                  sf.sub_specialization = ? OR sf.sub_specialization LIKE ?
+                  OR sf.sub_specialization_fr = ? OR sf.sub_specialization_fr LIKE ?
+                  OR sf.sub_specialization_kiny = ? OR sf.sub_specialization_kiny LIKE ?
+                  OR sf.slug = ?
+                )
+            )`);
+            params.push(name, like, name, like, name, like, name);
+          }
         }
         if (clauses.length) filters.push(`(${clauses.join(" OR ")})`);
       }
-      if (req.query.type) {
+      const consultationType = String(req.query.type || "").toLowerCase();
+      if (consultationType === "instant" || req.query.instant === "true") {
+        filters.push("d.instant_consultation = 1");
+      } else if (consultationType === "booking") {
+        filters.push("d.consultation_type IN ('online', 'in_person', 'both', 'booking')");
+        filters.push("(d.bookings_paused = 0 OR d.bookings_paused IS NULL)");
+      } else if (consultationType) {
         filters.push("d.consultation_type = ?");
-        params.push(req.query.type);
+        params.push(consultationType);
       }
       if (req.query.language) {
-        filters.push("d.preferred_language = ?");
-        params.push(req.query.language);
+        const language = String(req.query.language).toLowerCase();
+        const aliases = {
+          en: ["en", "english"],
+          fr: ["fr", "french"],
+          kiny: ["kiny", "rw", "kin", "kinyarwanda"],
+          rw: ["kiny", "rw", "kin", "kinyarwanda"],
+        };
+        const values = aliases[language] || [language];
+        filters.push(`LOWER(d.preferred_language) IN (${values.map(() => "?").join(", ")})`);
+        params.push(...values);
       }
       if (req.query.city) {
-        filters.push("d.city = ?");
-        params.push(req.query.city);
+        const like = `%${String(req.query.city).trim().toLowerCase()}%`;
+        const cityParts = [];
+        if (await hasColumn("doctors", "city")) {
+          cityParts.push("LOWER(d.city) LIKE ?");
+          params.push(like);
+        }
+        if (await tableExists("hospitals") && await hasColumn("hospitals", "city") && await tableExists("hospital_doctors")) {
+          cityParts.push(`EXISTS (
+            SELECT 1 FROM hospital_doctors hd
+            JOIN hospitals h ON h.id = hd.hospital_id
+            WHERE hd.doctor_id = d.id AND LOWER(h.city) LIKE ?
+          )`);
+          params.push(like);
+        }
+        filters.push(cityParts.length ? `(${cityParts.join(" OR ")})` : "1 = 0");
       }
       if (req.query.gender && (await hasColumn("users", "gender"))) {
-        filters.push("u.gender = ?");
-        params.push(req.query.gender);
+        filters.push("LOWER(u.gender) = ?");
+        params.push(String(req.query.gender).toLowerCase());
       }
       if (req.query.hospital_id) {
         filters.push("EXISTS (SELECT 1 FROM hospital_doctors hd WHERE hd.doctor_id = d.id AND hd.hospital_id = ?)");
         params.push(req.query.hospital_id);
       }
-      if (req.query.instant === "true") {
-        filters.push("d.instant_consultation = 1");
+      if (req.query.insurance_id) {
+        const insuranceId = Number(req.query.insurance_id);
+        const insuranceParts = [];
+        if (await tableExists("doctor_insurances")) {
+          insuranceParts.push("EXISTS (SELECT 1 FROM doctor_insurances di WHERE di.doctor_id = d.id AND di.insurance_id = ?)");
+          params.push(insuranceId);
+        }
+        if (await tableExists("hospital_insurances") && await tableExists("hospital_doctors")) {
+          insuranceParts.push(`EXISTS (
+            SELECT 1 FROM hospital_doctors hd
+            JOIN hospital_insurances hi ON hi.hospital_id = hd.hospital_id
+            WHERE hd.doctor_id = d.id AND hi.insurance_id = ?
+          )`);
+          params.push(insuranceId);
+        }
+        filters.push(insuranceParts.length ? `(${insuranceParts.join(" OR ")})` : "1 = 0");
+      }
+      const scheduleDays = [];
+      if (req.query.available_today === "true") scheduleDays.push(kigaliDay());
+      if (req.query.date) scheduleDays.push(kigaliDay(String(req.query.date).slice(0, 10)));
+      const seenDays = new Set();
+      for (const day of scheduleDays) {
+        const key = `${day.date}|${day.weekday}`;
+        if (!day.date || seenDays.has(key)) continue;
+        seenDays.add(key);
+        filters.push("(d.is_available = 1 OR d.is_available IS NULL)");
+        filters.push("(d.bookings_paused = 0 OR d.bookings_paused IS NULL)");
+        filters.push(scheduleOnDay());
+        params.push(day.date, day.date, `%${day.weekday}%`);
       }
       if (req.user?.id && req.user.active_role === "patient") {
         filters.push("d.user_id <> ?");

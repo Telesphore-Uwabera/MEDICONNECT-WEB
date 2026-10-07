@@ -13,6 +13,12 @@ export interface DoctorProfile {
   designations?: string;                          // ← add
   consultation_type: "online" | "in_person" | "both";
   preferred_language: string;
+  city?: string | null;
+  gender?: string | null;
+  instant_consultation?: boolean | number;
+  insurance_ids?: number[];
+  insurances?: Array<{ id: number; name: string }>;
+  working_days?: string[];
   status: "approved" | "pending" | "rejected" | "active" | "action_requested" | "suspended";
   review_message?: string | null;
   license_expires_at?: string | null;
@@ -115,6 +121,11 @@ export interface UpsertProfilePayload {
   consultation_type?: "online" | "in_person" | "both";
   preferred_language?: string;
   is_available?: boolean;
+  city?: string;
+  gender?: string;
+  instant_consultation?: boolean;
+  insurance_ids?: number[];
+  working_days?: string[];
   consultation_fee?: number;
   currency?: string;
   bio_fr?: string;

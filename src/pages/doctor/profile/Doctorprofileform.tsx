@@ -19,7 +19,9 @@ import {
 import { Check, Loader2, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-import { STEPS, CURRENCIES, CONSULTATION_TYPES, LANGUAGES } from "./Constants";
+import { STEPS, CONSULTATION_TYPES, LANGUAGES } from "./Constants";
+import { Switch } from "@/components/ui/switch";
+import { useGetPublicInsurances } from "@/hooks/hospital/use-hopital-insurances";
 import { FormField } from "./UiPrimitives";
 import { SpecializationsStep } from "./Specializationsstep";
 import { EducationStep } from "./Educationstep";
@@ -93,6 +95,8 @@ export function DoctorProfileForm({
   licenseExpiresAt,
 }: DoctorProfileFormProps) {
   const { t } = useTranslation();
+  const { data: insuranceCatalog } = useGetPublicInsurances();
+  const weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
   const [specializations, setSpecializations] = useState<SpecializationsInfo>(
     defaultData?.specializations ?? DEFAULT_SPECIALIZATIONS,
   );
@@ -120,9 +124,18 @@ export function DoctorProfileForm({
     trigger,
     setValue,
     watch,
+    getValues,
     formState: { errors },
   } = useForm<PersonalInfo>({
-    defaultValues: defaultData?.personal,
+    defaultValues: {
+      consultation_type: "online",
+      instant_consultation: false,
+      insurance_ids: [],
+      working_days: [],
+      city: "",
+      gender: "",
+      ...defaultData?.personal,
+    },
     shouldUnregister: false,
   });
 
@@ -133,7 +146,13 @@ export function DoctorProfileForm({
     register("bio_en", { validate: requiredRichText });
     register("bio_fr", { validate: requiredRichText });
     register("bio_kiny", { validate: requiredRichText });
-  }, [register]);
+    register("consultation_type", { required: t("profile.required") });
+    register("gender");
+    register("instant_consultation");
+    register("insurance_ids");
+    register("working_days");
+    if (!getValues("consultation_type")) setValue("consultation_type", "online");
+  }, [getValues, register, setValue, t]);
 
   const step = STEPS[currentStep];
   const currentSaveState = stepSaveStates[step.id] ?? "idle";
@@ -287,6 +306,123 @@ export function DoctorProfileForm({
                 className="border-border focus-visible:ring-primary text-xs h-9"
               />
             </FormField>
+
+            <FormField label={`${t("doctorProfile.city")} *`} error={errors.city?.message}>
+              <Input
+                {...register("city", { required: t("profile.required") })}
+                placeholder="Kigali"
+                className="border-border focus-visible:ring-primary text-xs h-9"
+              />
+            </FormField>
+
+            <FormField label={t("doctorProfile.gender")}>
+              <Select
+                value={watch("gender") || undefined}
+                onValueChange={(v) => setValue("gender", v, { shouldDirty: true })}
+              >
+                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">{t("doctorProfile.gender_male")}</SelectItem>
+                  <SelectItem value="female">{t("doctorProfile.gender_female")}</SelectItem>
+                  <SelectItem value="other">{t("doctorProfile.gender_other")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label={`${t("doctorProfile.consultation_type")} *`} error={errors.consultation_type?.message}>
+              <Select
+                value={watch("consultation_type") || "online"}
+                onValueChange={(v) => setValue("consultation_type", v as PersonalInfo["consultation_type"], { shouldDirty: true, shouldValidate: true })}
+              >
+                <SelectTrigger className="border-border focus:ring-primary text-xs h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONSULTATION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {t(`doctorProfile.consultation_types.${type.value}`, type.label)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField label={t("doctorProfile.instant_consultation")}>
+              <div className="flex h-9 items-center justify-between gap-3 rounded-[6px] border border-border px-3">
+                <span className="text-[11px] text-muted-foreground">{t("doctorProfile.instant_consultation_hint")}</span>
+                <Switch
+                  checked={Boolean(watch("instant_consultation"))}
+                  onCheckedChange={(checked) => setValue("instant_consultation", checked, { shouldDirty: true })}
+                />
+              </div>
+            </FormField>
+
+            <div className="col-span-1 sm:col-span-2 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{t("doctorProfile.insurances")}</p>
+              {insuranceCatalog?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {insuranceCatalog.map((item) => {
+                    const selected = (watch("insurance_ids") ?? []).includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          const current = watch("insurance_ids") ?? [];
+                          setValue(
+                            "insurance_ids",
+                            selected ? current.filter((id) => id !== item.id) : [...current, item.id],
+                            { shouldDirty: true },
+                          );
+                        }}
+                        className={`rounded-[6px] border px-2.5 py-1 text-[11px] font-medium ${
+                          selected
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">{t("doctorProfile.no_insurances")}</p>
+              )}
+            </div>
+
+            <div className="col-span-1 sm:col-span-2 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{t("doctorProfile.working_days")}</p>
+              <div className="flex flex-wrap gap-2">
+                {weekdays.map((day) => {
+                  const selected = (watch("working_days") ?? []).includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        const current = watch("working_days") ?? [];
+                        setValue(
+                          "working_days",
+                          selected ? current.filter((item) => item !== day) : [...current, day],
+                          { shouldDirty: true },
+                        );
+                      }}
+                      className={`rounded-[6px] border px-2.5 py-1 text-[11px] font-medium ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-primary/40"
+                      }`}
+                    >
+                      {t(`doctorProfile.days.${day}`)}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground">{t("doctorProfile.working_days_hint")}</p>
+            </div>
 
             <FormField label={t("doctorProfile.preferred_language")}>
               <Select

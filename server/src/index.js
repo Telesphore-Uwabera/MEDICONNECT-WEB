@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import express from "express";
 import cors from "cors";
 import { appRoutes } from "./app.js";
-import { pool } from "./db.js";
+import { ensureDoctorSearchFields, pool } from "./db.js";
 import { publicRoutes } from "./public.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";
@@ -103,7 +103,10 @@ app.use((error, _req, res, _next) => {
 const port = Number(process.env.PORT || 4000);
 const wsPort = Number(process.env.WS_PORT || 8080);
 
-pool.query("SELECT 1").then(() => {
+pool.query("SELECT 1").then(async () => {
+  await ensureDoctorSearchFields().catch((error) => {
+    console.error("Could not prepare doctor search fields", error.message);
+  });
   const server = app.listen(port, "127.0.0.1", () => {
     console.log(`MediConnect API listening on ${port}`);
   });

@@ -159,6 +159,24 @@ export async function update(table, id, data) {
   await pool.query(sql, [...keys.map((key) => payload[key]), id]);
 }
 
+export async function ensureDoctorSearchFields() {
+  if (await tableExists("doctors") && !(await hasColumn("doctors", "city"))) {
+    await pool.query("ALTER TABLE doctors ADD COLUMN city VARCHAR(120) NULL");
+    forgetColumns("doctors");
+  }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS doctor_insurances (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      doctor_id BIGINT UNSIGNED NOT NULL,
+      insurance_id BIGINT UNSIGNED NOT NULL,
+      created_at TIMESTAMP NULL DEFAULT NULL,
+      updated_at TIMESTAMP NULL DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY doctor_insurance_unique (doctor_id, insurance_id)
+    )
+  `);
+}
+
 export async function countWhere(table, whereSql, params) {
   const from = /\s/.test(table) ? table : `\`${table}\``;
   const row = await one(`SELECT COUNT(*) AS total FROM ${from} ${whereSql}`, params);

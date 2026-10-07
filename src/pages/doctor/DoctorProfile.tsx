@@ -130,6 +130,12 @@ const getProfileSaveErrorMessage = (err: unknown): string => {
       bio_fr: doc.bio_fr ?? "",
       bio_kiny: doc.bio_kiny ?? "",
       preferred_language: doc.preferred_language ?? "en",
+      city: doc.city ?? "",
+      gender: doc.gender ?? "",
+      consultation_type: doc.consultation_type ?? "online",
+      instant_consultation: Boolean(doc.instant_consultation),
+      insurance_ids: doc.insurance_ids ?? [],
+      working_days: doc.working_days ?? [],
     },
 
     specializations: {
@@ -505,6 +511,11 @@ const ViewPersonal = React.memo(function ViewPersonal({
         <ViewField label={t("doctorProfile.medical_license")} value={p.medical_license} mono />
         <ViewField label={t("doctorProfile.designation")} value={p.designations} />
         <ViewField label={t("doctorProfile.preferred_language")} value={languageLabel} />
+        <ViewField label={t("doctorProfile.city")} value={p.city} />
+        <ViewField label={t("doctorProfile.gender")} value={p.gender ? t(`doctorProfile.gender_${p.gender}`, p.gender) : ""} />
+        <ViewField label={t("doctorProfile.consultation_type")} value={p.consultation_type ? t(`doctorProfile.consultation_types.${p.consultation_type}`, p.consultation_type) : ""} />
+        <ViewField label={t("doctorProfile.instant_consultation")} value={p.instant_consultation ? t("doctorProfile.instant_consultation") : ""} />
+        <ViewField label={t("doctorProfile.working_days")} value={(p.working_days ?? []).map((day) => t(`doctorProfile.days.${day}`, day)).join(", ")} />
       </div>
       {[
         { lang: t("pages.landing.lang_en"), value: p.bio_en },
@@ -1413,6 +1424,12 @@ const DoctorProfile = () => {
             bio_fr: sanitizeRichText(personal.bio_fr),
             bio_kiny: sanitizeRichText(personal.bio_kiny),
             preferred_language: personal.preferred_language,
+            city: personal.city,
+            gender: personal.gender,
+            consultation_type: personal.consultation_type,
+            instant_consultation: personal.instant_consultation,
+            insurance_ids: personal.insurance_ids ?? [],
+            working_days: personal.working_days ?? [],
             is_available: true,
             ...payload,
           };
@@ -1425,6 +1442,12 @@ const DoctorProfile = () => {
               medical_license: data.personal!.medical_license,
               bio_en: sanitizeRichText(data.personal!.bio_en),
               preferred_language: data.personal!.preferred_language,
+              city: data.personal!.city,
+              gender: data.personal!.gender,
+              consultation_type: data.personal!.consultation_type,
+              instant_consultation: data.personal!.instant_consultation,
+              insurance_ids: data.personal!.insurance_ids ?? [],
+              working_days: data.personal!.working_days ?? [],
               is_available: true,
               bio_fr: sanitizeRichText(data.personal!.bio_fr),
               bio_kiny: sanitizeRichText(data.personal!.bio_kiny),

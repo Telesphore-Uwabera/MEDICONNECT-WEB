@@ -910,6 +910,7 @@ const PatientDoctors = () => {
   }, [fellBackFrom, requestedSpecialization]);
 
   useEffect(() => {
+    if (searchParams.get("disease") !== "1") return;
     if (!hasSpecialty || isLoading || fellBackToGp || showingGeneralPractitioner) return;
     if (!isError && !data) return;
     if (!isError && (data?.total ?? 0) > 0) return;
@@ -923,6 +924,7 @@ const PatientDoctors = () => {
     isError,
     isLoading,
     requestedSpecialization,
+    searchParams,
     showingGeneralPractitioner,
     spec.specialization?.name,
   ]);

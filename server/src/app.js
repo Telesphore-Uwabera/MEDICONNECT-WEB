@@ -16,6 +16,7 @@ import { withTeamPhoto } from "./public.js";
 import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
+  ensureDoctorSearchFields,
   hasColumn,
   insert,
   laravelPage,
@@ -1482,8 +1483,67 @@ export function appRoutes(router) {
     "specialization", "doctor_degree", "medical_license", "designations",
     "consultation_type", "preferred_language", "bio_en", "bio_fr", "bio_kiny",
     "consultation_fee", "currency", "specialization_fee_id", "sub_specialization",
-    "sub_specializations", "years_of_experience", "is_available",
+    "sub_specializations", "years_of_experience", "is_available", "city",
+    "instant_consultation",
   ];
+
+  const WORKING_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+  function parseDayList(value) {
+    const source = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? (() => { try { return JSON.parse(value); } catch { return String(value).split(","); } })()
+        : [];
+    return [...new Set(source.map((day) => String(day).toLowerCase()).filter((day) => WORKING_DAYS.includes(day)))];
+  }
+
+  function kigaliIso(offsetDays = 0) {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Kigali",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date()).map((part) => [part.type, part.value]),
+    );
+    const date = new Date(`${parts.year}-${parts.month}-${parts.day}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + offsetDays);
+    return date.toISOString().slice(0, 10);
+  }
+
+  async function saveDoctorInsurances(doctorId, insuranceIds) {
+    await ensureDoctorSearchFields();
+    if (!(await tableExists("doctor_insurances"))) return;
+    const ids = [...new Set(insuranceIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+    await pool.query("DELETE FROM doctor_insurances WHERE doctor_id = ?", [doctorId]);
+    for (const insuranceId of ids) {
+      await insert("doctor_insurances", { doctor_id: doctorId, insurance_id: insuranceId });
+    }
+  }
+
+  async function saveWorkingDays(doctorId, days) {
+    if (!(await tableExists("doctor_availability_periods"))) return;
+    const clean = parseDayList(days);
+    await pool.query(
+      "DELETE FROM doctor_availability_periods WHERE doctor_id = ? AND label = 'registration'",
+      [doctorId],
+    );
+    if (!clean.length) return;
+    await insert("doctor_availability_periods", {
+      doctor_id: doctorId,
+      from_date: kigaliIso(0),
+      to_date: kigaliIso(365),
+      days_of_week: clean,
+      start_time: "08:00:00",
+      end_time: "17:00:00",
+      slot_duration_minutes: 30,
+      buffer_minutes: 0,
+      type: "online",
+      label: "registration",
+      is_active: 1,
+    });
+  }
 
   async function firstExistingTable(names) {
     for (const name of names) {
@@ -1521,7 +1581,7 @@ export function appRoutes(router) {
     const { doctorId } = await currentDoctor(req);
     if (!doctorId) return null;
     const row = await one(
-      `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar
+      `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar, u.gender AS user_gender
        FROM doctors d LEFT JOIN users u ON u.id = d.user_id WHERE d.id = ?`,
       [doctorId],
     );
@@ -1540,6 +1600,29 @@ export function appRoutes(router) {
       national_id_document: fileRef(doctor.national_id_document),
       signature: fileRef(doctor.signature),
     };
+    doctor.gender = row.user_gender ?? null;
+    const insuranceRows = await tableExists("doctor_insurances")
+      ? await q(
+        `SELECT i.id, i.name
+         FROM doctor_insurances di
+         JOIN insurances i ON i.id = di.insurance_id
+         WHERE di.doctor_id = ?
+         ORDER BY i.name`,
+        [doctorId],
+      ).catch(() => [])
+      : [];
+    doctor.insurance_ids = insuranceRows.map((item) => item.id);
+    doctor.insurances = insuranceRows;
+    const periods = await tableExists("doctor_availability_periods")
+      ? await q(
+        "SELECT days_of_week, label, to_date, is_active FROM doctor_availability_periods WHERE doctor_id = ?",
+        [doctorId],
+      ).catch(() => [])
+      : [];
+    const today = kigaliIso(0);
+    const activePeriods = periods.filter((period) => period.is_active !== 0 && (!period.to_date || String(period.to_date).slice(0, 10) >= today));
+    const labeled = activePeriods.filter((period) => period.label === "registration");
+    doctor.working_days = parseDayList((labeled.length ? labeled : activePeriods).flatMap((period) => parseDayList(period.days_of_week)));
     if (!Array.isArray(doctor.sub_specializations)) doctor.sub_specializations = [];
     if (doctor.specialization_fee_id && await tableExists("specialization_fees")) {
       doctor.specialization_fee = await presentRow(
@@ -1564,6 +1647,7 @@ export function appRoutes(router) {
     try {
       const { doctorId } = await currentDoctor(req);
       if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
+      await ensureDoctorSearchFields();
       const body = req.body ?? {};
       const fields = {};
       for (const key of PROFILE_WRITABLE) {
@@ -1571,7 +1655,13 @@ export function appRoutes(router) {
       }
       delete fields.license_expires_at;
       delete fields.license_expiry_reminded_for;
+      if (fields.instant_consultation != null) fields.instant_consultation = fields.instant_consultation ? 1 : 0;
       if (Object.keys(fields).length) await update("doctors", doctorId, fields);
+      if (body.gender && await hasColumn("users", "gender")) {
+        await update("users", req.user.id, { gender: String(body.gender).toLowerCase() });
+      }
+      if (Array.isArray(body.insurance_ids)) await saveDoctorInsurances(doctorId, body.insurance_ids);
+      if (Array.isArray(body.working_days)) await saveWorkingDays(doctorId, body.working_days);
       const review = await submitProfileForReview(doctorId);
       const doctor = await doctorProfileFor(req);
       res.json({

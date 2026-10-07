@@ -10,6 +10,12 @@ export interface PersonalInfo {
   bio_fr: string;
   bio_kiny: string;
   preferred_language: string;
+  city: string;
+  gender: string;
+  consultation_type: "online" | "in_person" | "both";
+  instant_consultation: boolean;
+  insurance_ids: number[];
+  working_days: string[];
 }
 
 export interface SpecializationsInfo {
