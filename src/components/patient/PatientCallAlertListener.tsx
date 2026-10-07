@@ -8,7 +8,7 @@
 // connected.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BellRing, CalendarClock, ShieldCheck, Video, X } from "lucide-react";
+import { CalendarClock, ShieldCheck, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
@@ -132,9 +132,6 @@ export function PatientCallAlertListener() {
   const [joining, setJoining] = useState(false);
 
   const notificationsSupported = typeof window !== "undefined" && "Notification" in window;
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    notificationsSupported ? Notification.permission : "denied",
-  );
 
   const seenCertKeysRef = useRef<Set<string>>(loadSeenStrings(CERT_SEEN_STORAGE_KEY));
   const seenAppointmentIdsRef = useRef<Set<number>>(loadSeenNumbers(APPOINTMENT_SEEN_STORAGE_KEY));
@@ -158,13 +155,6 @@ export function PatientCallAlertListener() {
       ),
     [appointmentData?.data],
   );
-
-  const requestNotificationPermission = useCallback(async () => {
-    if (!notificationsSupported) return "denied" as NotificationPermission;
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    return permission;
-  }, [notificationsSupported]);
 
   const showBrowserNotification = useCallback(
     (alert: SessionAlert) => {
@@ -333,19 +323,7 @@ export function PatientCallAlertListener() {
     }
   };
 
-  if (!activeAlert) {
-    if (notificationPermission !== "default") return null;
-    return (
-      <button
-        type="button"
-        onClick={requestNotificationPermission}
-        className="fixed bottom-5 right-5 z-[95] inline-flex h-10 items-center gap-2 rounded-[6px] border border-primary/30 bg-card px-3 text-xs font-semibold text-foreground shadow-lg hover:bg-muted"
-      >
-        <BellRing className="h-4 w-4 text-primary" />
-        Enable desktop alerts
-      </button>
-    );
-  }
+  if (!activeAlert) return null;
 
   const isAppointmentAlert = activeAlert.kind === "appointment";
 
@@ -387,15 +365,6 @@ export function PatientCallAlertListener() {
           </div>
 
           <div className="mt-3 flex items-center justify-end gap-2">
-            {notificationPermission === "default" && (
-              <button
-                type="button"
-                onClick={requestNotificationPermission}
-                className="h-9 rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
-              >
-                Enable desktop alerts
-              </button>
-            )}
             <button
               type="button"
               onClick={dismiss}

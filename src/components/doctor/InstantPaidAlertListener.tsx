@@ -76,9 +76,6 @@ export function InstantPaidAlertListener() {
   );
   const [activeAlert, setActiveAlert] = useState<PaidAlert | null>(null);
   const notificationsSupported = typeof window !== "undefined" && "Notification" in window;
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    notificationsSupported ? Notification.permission : "denied",
-  );
 
   const seenInstantIdsRef = useRef<Set<number>>(loadSeenIds(SEEN_STORAGE_KEY));
   const seenAppointmentIdsRef = useRef<Set<number>>(loadSeenIds(SEEN_APPOINTMENT_STORAGE_KEY));
@@ -102,13 +99,6 @@ export function InstantPaidAlertListener() {
     },
     [navigate],
   );
-
-  const requestNotificationPermission = useCallback(async () => {
-    if (!notificationsSupported) return "denied" as NotificationPermission;
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    return permission;
-  }, [notificationsSupported]);
 
   const showBrowserNotification = useCallback(
     (alert: PaidAlert) => {
@@ -220,20 +210,7 @@ export function InstantPaidAlertListener() {
     openAlertTarget(activeAlert);
   };
 
-  if (!activeAlert) {
-    if (notificationPermission !== "default") return null;
-
-    return (
-      <button
-        type="button"
-        onClick={requestNotificationPermission}
-        className="fixed bottom-5 right-5 z-[95] inline-flex h-10 items-center gap-2 rounded-[6px] border border-primary/30 bg-card px-3 text-xs font-semibold text-foreground shadow-lg hover:bg-muted"
-      >
-        <BellRing className="h-4 w-4 text-primary" />
-        Enable desktop alerts
-      </button>
-    );
-  }
+  if (!activeAlert) return null;
 
   return (
     <div className="fixed bottom-5 right-5 z-[95] w-[min(480px,calc(100vw-24px))] rounded-[6px] border border-primary/30 bg-card shadow-2xl">
@@ -283,15 +260,6 @@ export function InstantPaidAlertListener() {
           </div>
 
           <div className="mt-3 flex items-center justify-end gap-2">
-            {notificationPermission === "default" && (
-              <button
-                type="button"
-                onClick={requestNotificationPermission}
-                className="h-9 rounded-[6px] border border-primary/30 px-3 text-xs font-semibold text-primary hover:bg-primary/10"
-              >
-                Enable desktop alerts
-              </button>
-            )}
             <button
               type="button"
               onClick={dismiss}

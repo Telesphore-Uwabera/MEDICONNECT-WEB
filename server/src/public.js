@@ -604,21 +604,60 @@ export function publicRoutes(router) {
 
   router.post(["/public/instant-consultations/request", "/public/instant-consultations/request-any"], async (req, res, next) => {
     try {
-      const doctorId = req.body?.doctor_id;
-      if (doctorId) {
-        const doctor = await one("SELECT status FROM doctors WHERE id = ?", [doctorId]);
-        if (doctor && !doctorIsApproved(doctor.status)) {
-          return res.status(422).json({ message: "This doctor is not available for consultations yet." });
-        }
+      const body = { ...(req.body ?? {}) };
+      delete body.password;
+      delete body.token;
+      const doctorId = Number(body.doctor_id) || null;
+      const doctor = doctorId ? await one("SELECT * FROM doctors WHERE id = ?", [doctorId]) : null;
+      if (doctor && !doctorIsApproved(doctor.status)) {
+        return res.status(422).json({ message: "This doctor is not available for consultations yet." });
       }
+
+      let amount = Number(body.amount || doctor?.consultation_fee || 0);
+      if (!amount && doctor?.specialization_fee_id && await tableExists("specialization_fees")) {
+        const fee = await one("SELECT online_fee FROM specialization_fees WHERE id = ?", [doctor.specialization_fee_id]).catch(() => null);
+        amount = Number(fee?.online_fee || 0);
+      }
+
+      let patientId = Number(body.patient_id) || null;
+      if (!patientId && req.user?.id && await tableExists("patients")) {
+        const patient = await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [req.user.id]).catch(() => null);
+        patientId = patient?.id ?? null;
+      }
+
+      const ahead = await countWhere(
+        "instant_consultation_requests",
+        "WHERE status IN ('pending','queued','waiting')" + (doctorId ? " AND (doctor_id = ? OR doctor_id IS NULL)" : ""),
+        doctorId ? [doctorId] : [],
+      ).catch(() => 0);
+      const guestToken = crypto.randomBytes(24).toString("hex");
+
       const id = await insert("instant_consultation_requests", {
-        ...req.body,
-        guest_name: req.body?.name || req.body?.guest_name,
-        guest_email: req.body?.email || req.body?.guest_email,
+        ...body,
+        ...(doctorId ? { doctor_id: doctorId } : {}),
+        ...(patientId ? { patient_id: patientId } : {}),
+        guest_name: body.name || body.guest_name || req.user?.name,
+        guest_email: body.email || body.guest_email || req.user?.email,
+        guest_phone: body.phone || body.guest_phone || req.user?.phone,
+        guest_token: guestToken,
         status: "pending",
+        payment_status: "pending",
+        amount,
+        queue_position: Number(ahead) + 1,
+        people_ahead: Number(ahead),
       });
       const request = await presentRow("instant_consultation_requests", await one("SELECT * FROM instant_consultation_requests WHERE id = ?", [id]));
-      res.status(201).json({ message: "Request received.", data: request, id });
+      res.status(201).json({
+        message: "Request received.",
+        guest_token: request?.guest_token || guestToken,
+        queue_position: Number(request?.queue_position ?? Number(ahead) + 1),
+        people_ahead: Number(request?.people_ahead ?? ahead),
+        id,
+        amount: Number(request?.amount ?? amount),
+        payment_status: request?.payment_status || "pending",
+        status: request?.status || "pending",
+        data: request,
+      });
     } catch (error) {
       next(error);
     }

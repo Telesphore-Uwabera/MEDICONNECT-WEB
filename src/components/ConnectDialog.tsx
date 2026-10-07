@@ -20,6 +20,7 @@ import {
   useInstantConsultationPay,
   useInvoicePoller,
   type InstantConsultationRequestPayload,
+  type InstantConsultationRequestResponse,
 } from "@/hooks/patient/use-instant-consultations";
 import {
   Mic, MicOff, Video, VideoOff, PhoneOff, Phone,
@@ -764,15 +765,20 @@ export const ConnectDialogContent = ({
         }
       }
 
-      setConsultationToken(res.guest_token);
-      setGuestChatAuth(res.guest_token);
+      const responseData = (res as { data?: InstantConsultationRequestResponse }).data;
+      const guestToken = res.guest_token || responseData?.guest_token || null;
+      setConsultationToken(guestToken);
+      setGuestChatAuth(guestToken);
 
       // Fallback for different backend keys
-      const extractedId = res.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
+      const extractedId = res.id ?? responseData?.id ?? (res as any).instant_consultation_request_id ?? (res as any).instant_consultation_id ?? null;
       setConsultationId(extractedId);
 
 
-      setQueueInfo({ position: Number(res.queue_position), ahead: res.people_ahead ?? 0 });
+      setQueueInfo({
+        position: Number(res.queue_position ?? responseData?.queue_position ?? 1),
+        ahead: res.people_ahead ?? responseData?.people_ahead ?? 0,
+      });
 
       if (
         res.payment_status === "paid" ||
@@ -780,7 +786,7 @@ export const ConnectDialogContent = ({
         res.status === "accepted" ||
         res.status === "in_progress"
       ) {
-        session.save(res.guest_token, name, phone, extractedId);
+        session.save(guestToken, name, phone, extractedId);
         setAuthMode("register");
         setPhase(signedInRef.current ? "polling" : "create_account");
         return;
@@ -788,8 +794,8 @@ export const ConnectDialogContent = ({
 
       // Payment required — save session with pendingPayment so that if the
       // user closes before paying, reopening resumes at the payment step
-      const amount = Number(res.amount);
-      session.saveWithPendingPayment(res.guest_token, name, phone, res.id, amount, "RWF");
+      const amount = Number(res.amount ?? responseData?.amount ?? 0);
+      session.saveWithPendingPayment(guestToken, name, phone, extractedId, amount, "RWF");
       setPaymentInfo({ amount, currency: "RWF" });
       setPhase("payment");
     } catch (err: unknown) {
