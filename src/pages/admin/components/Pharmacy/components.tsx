@@ -21,6 +21,7 @@ import {
   usePharmacyPrescriptions,
   type PrescriptionStatus,
 } from "@/hooks/admin/use-pharmacy-prescriptions";
+import { DateField } from "@/components/ui/date-field";
 
  
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -775,8 +776,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                 <label className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 block mb-1">
                   Created from
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={fromDate}
                   onChange={(e) => setFrom(e.target.value)}
                   className="w-full h-7 rounded-[7px] border border-border/40 bg-background px-2 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
@@ -786,8 +786,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
                 <label className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 block mb-1">
                   Created to
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={toDate}
                   onChange={(e) => setTo(e.target.value)}
                   className="w-full h-7 rounded-[7px] border border-border/40 bg-background px-2 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
@@ -800,8 +799,7 @@ function PrescriptionsTab({ pharmacyId }: { pharmacyId: number }) {
               <label className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/40 block mb-1">
                 Exact expiry date
               </label>
-              <input
-                type="date"
+              <DateField
                 value={validUntil}
                 onChange={(e) => setVU(e.target.value)}
                 className="w-full h-7 rounded-[7px] border border-border/40 bg-background px-2 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"

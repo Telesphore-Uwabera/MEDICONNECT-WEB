@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -581,8 +582,6 @@ function StatCard({
     </div>
   );
 }
- // FIX: DateInput wraps <input type="date"> with a visible calendar icon
-// that works in dark mode by inverting the native picker indicator.
 function DateInput({
   value,
   onChange,
@@ -594,27 +593,7 @@ function DateInput({
   min?: string;
   className?: string;
 }) {
-  return (
-    <div className="relative">
-      <input
-        type="date"
-        value={value}
-        min={min}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          "w-full h-9 rounded-[6px] border border-border bg-background px-3 py-1 text-xs font-medium text-foreground",
-          "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all",
-          "[color-scheme:dark]",
-          // Make the native calendar icon always visible
-          "[&::-webkit-calendar-picker-indicator]:opacity-60",
-          "[&::-webkit-calendar-picker-indicator]:invert",
-          "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-          "[&::-webkit-calendar-picker-indicator]:hover:opacity-100",
-          className,
-        )}
-      />
-    </div>
-  );
+  return <DateField value={value} onValueChange={onChange} min={min} className={className} />;
 }
 
 // Sidebar

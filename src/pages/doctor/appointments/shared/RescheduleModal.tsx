@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useRescheduleAppointment, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { getErrMsg } from "./helpers";
 import { toLocalDateInputValue } from "@/lib/date";
+import { DateField } from "@/components/ui/date-field";
 
 interface Props {
   appt: Appointment;
@@ -58,8 +59,7 @@ export function RescheduleModal({ appt, onClose }: Props) {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1.5">{t("pages.doctor.date")}</p>
-            <input
-              type="date"
+            <DateField
               value={date}
               min={todayStr}
               onChange={(e) => setDate(e.target.value)}

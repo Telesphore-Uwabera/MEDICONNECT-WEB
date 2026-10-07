@@ -29,6 +29,7 @@ import {
   useGetAdminDashboard,
   type AdminDashboardFilters,
 } from "@/hooks/admin/use-admin-overview";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -167,8 +168,7 @@ function FilterBar({
           </label>
           <div className="relative">
             <CalendarDays className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-            <input
-              type="date"
+            <DateField
               value={filters.date ?? ""}
               onChange={(e) =>
                 onChange({ ...filters, date: e.target.value || undefined, date_from: undefined, date_to: undefined })
@@ -184,8 +184,7 @@ function FilterBar({
             Date range
           </label>
           <div className="flex items-center gap-1.5">
-            <input
-              type="date"
+            <DateField
               value={filters.date_from ?? ""}
               onChange={(e) =>
                 onChange({ ...filters, date_from: e.target.value || undefined, date: undefined })
@@ -193,8 +192,7 @@ function FilterBar({
               className="px-2 h-8 text-[11px] rounded-[6px] border border-border bg-muted/40 focus:outline-none focus:ring-1 focus:ring-primary/40 w-full"
             />
             <span className="text-[10px] text-muted-foreground shrink-0">→</span>
-            <input
-              type="date"
+            <DateField
               value={filters.date_to ?? ""}
               onChange={(e) =>
                 onChange({ ...filters, date_to: e.target.value || undefined, date: undefined })

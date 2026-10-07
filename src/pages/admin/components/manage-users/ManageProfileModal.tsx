@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2, Save, Upload, Check, AlertCircle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DateField } from "@/components/ui/date-field";
 import { getErrorMessage } from "@/lib/getErrorMessage";
 import {
   type ManagedRole,
@@ -53,6 +54,9 @@ const inputCls =
   "h-9 w-full rounded-[6px] border border-border bg-background px-3 text-[12px] outline-none focus:border-primary/50";
 
 function Text({ value, onChange, placeholder, type = "text" }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+  if (type === "date") {
+    return <DateField value={value} onValueChange={onChange} placeholder={placeholder} className={inputCls} />;
+  }
   return <input type={type} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className={inputCls} />;
 }
 

@@ -19,6 +19,7 @@ import { apiFetch } from "@/lib/api";
 import { useCreatePrescription } from "@/hooks/doctor/use-doctor-prescriptions";
 import { useGetAppointments, type Appointment } from "@/hooks/doctor/use-doctor-appointment";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DateField } from "@/components/ui/date-field";
 // import { useGetAppointments, type Appointment } from "@/hooks/useDoctorAppointments";
 // import { useCreatePrescription } from "@/hooks/useDoctorPrescriptions";
  
@@ -309,8 +310,7 @@ function DetailsStep({
       </Field>
 
       <Field label={t("pages.doctor.valid_until")}>
-        <input
-          type="date"
+        <DateField
           value={values.valid_until || defaultDateStr}
           min={toLocalDateInputValue()}
           onChange={(e) => onChange({ valid_until: e.target.value })}

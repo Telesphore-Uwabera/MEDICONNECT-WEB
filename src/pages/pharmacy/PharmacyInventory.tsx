@@ -62,6 +62,7 @@ import {
   type Category,
 } from "@/hooks/pharmacy/use-pharmacy-inventory-categories";
 import { t } from "i18next";
+import { DateField } from "@/components/ui/date-field";
 
  
 type StockStatus = "in-stock" | "low" | "out";
@@ -563,7 +564,7 @@ function MedicineFormDrawer({
                 </div>
                 <div>
                   <label className={labelCls}>{t("pages.pharmacy.expiry_date")}</label>
-                  <input type="date" value={form.expiry_date}
+                  <DateField value={form.expiry_date}
                     onChange={(e) => set("expiry_date", e.target.value)}
                     className={inputCls} />
                 </div>

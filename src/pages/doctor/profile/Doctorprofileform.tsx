@@ -17,12 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Check, Loader2, Save } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 import { STEPS, CURRENCIES, CONSULTATION_TYPES, LANGUAGES } from "./Constants";
 import { FormField } from "./UiPrimitives";
 import { SpecializationsStep } from "./Specializationsstep";
 import { EducationStep } from "./Educationstep";
-import { ExperienceStep } from "./Experiencestep";
+import { ExperienceStep, experienceCanSave } from "./Experiencestep";
 import { QualificationsStep } from "./Qualificationsstep";
 import { SocialLinksStep } from "./Sociallinksstep";
 import { FileUploadBox } from "./Fileuploadbox";
@@ -157,6 +158,14 @@ export function DoctorProfileForm({
       linksSection: { linksSection },
     };
 
+    if (step.id === "experience" && !experienceCanSave(experience)) {
+      toast({
+        variant: "destructive",
+        title: t("doctorProfile.experience_dates_invalid"),
+      });
+      return;
+    }
+
     if (payloads[step.id]) await onSaveStep(step.id, payloads[step.id]);
   }, [
     step.id,
@@ -169,6 +178,7 @@ export function DoctorProfileForm({
     qualifications,
     documents,
     linksSection,
+    t,
   ]);
 
   // ── Document handlers (stable refs) ─────────────────────────────────────────

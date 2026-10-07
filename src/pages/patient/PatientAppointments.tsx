@@ -35,6 +35,7 @@ import { Card } from "@/components/ui/card";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { PatientStatsGrid, type PatientStatItem } from "./components/PatientStatsGrid";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -482,15 +483,13 @@ const PatientAppointments = () => {
       label: t("pages.patient.appt_filter_date_range"),
       render: () => (
         <div className="flex items-center gap-1.5 mt-1">
-          <input
-            type="date"
+          <DateField
             value={filters.date_from}
             onChange={(e) => set("date_from", e.target.value)}
             className="w-full px-2 h-[28px] text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
           />
           <span className="text-muted-foreground/50 text-[10px]">-</span>
-          <input
-            type="date"
+          <DateField
             value={filters.date_to}
             min={filters.date_from}
             onChange={(e) => set("date_to", e.target.value)}

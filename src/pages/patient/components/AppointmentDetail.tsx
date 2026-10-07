@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import type { TFunction } from "i18next";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -539,8 +540,7 @@ function RescheduleDialog({
               <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70 mb-2 block">
                 {t("consult.booking.date")}
               </label>
-              <input
-                type="date"
+              <DateField
                 value={date}
                 min={todayStr}
                 onChange={(e) => setDate(e.target.value)}

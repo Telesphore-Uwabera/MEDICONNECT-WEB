@@ -3,6 +3,7 @@ import { X, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AppointmentApiStatus, AppointmentApiType } from "@/hooks/doctor/use-doctor-appointment";
 import { type FilterState, type SortOption, INITIAL_FILTERS, SORT_OPTIONS } from "./types";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 
@@ -132,8 +133,7 @@ export function FilterSidebar({ filters, setFilters, hasActiveFilters, clearAllF
           </div>
           <div>
             <p className="text-xs text-muted-foreground/70 mb-2 font-medium">{t("pages.doctor.specific_date")}</p>
-            <input
-              type="date"
+            <DateField
               value={filters.date}
               onChange={(e) => {
                 const d = e.target.value;

@@ -39,6 +39,7 @@ import {
   statusLabel, getErrMsg,
 } from "./shared/helpers";
 import { SkeletonRow } from "./shared/Skeletonrow";
+import { DateField } from "@/components/ui/date-field";
 
  
 const MOCK_DOCTOR = doctors?.[0] ?? {
@@ -330,8 +331,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
             <div>
               <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.specific_date")}</p>
               <div className="relative">
-                <input
-                  type="date"
+                <DateField
                   value={filters.date}
                   onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value, today: false, upcoming: false }))}
                   className="w-full px-2.5 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"

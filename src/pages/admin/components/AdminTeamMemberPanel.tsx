@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Bold, Italic, Link, List, Loader2, Palette, Save, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DateField } from "@/components/ui/date-field";
 import { Button } from "@/components/ui/button";
 import { FileUploader } from "@/components/ui/file-uploader";
 import { useTranslation } from "react-i18next";
@@ -51,6 +52,9 @@ function TextInput({
   placeholder?: string;
   type?: string;
 }) {
+  if (type === "date") {
+    return <DateField value={value} onValueChange={onChange} placeholder={placeholder} />;
+  }
   return (
     <input
       type={type}

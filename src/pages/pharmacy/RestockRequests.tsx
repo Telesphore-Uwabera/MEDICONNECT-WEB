@@ -54,6 +54,7 @@ import {
 } from "@/hooks/pharmacy/use-inventory-stock";
 import { useGetInventoryMedicines } from "@/hooks/pharmacy/use-inventory-medicines";
 import { MedicineCombobox } from "./components/MedicineCombobox";
+import { DateField } from "@/components/ui/date-field";
 
  
 type FullStockRequest = StockRequest & {
@@ -413,8 +414,7 @@ function ReceiveDrawer({
               </div>
               <div>
                 <label className={labelCls}>{t("pages.pharmacy.expiry_date")}</label>
-                <input
-                  type="date"
+                <DateField
                   value={form.expiry_date}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, expiry_date: e.target.value }))

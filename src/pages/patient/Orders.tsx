@@ -40,6 +40,7 @@ import {
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { MyMedicalInfoDrawer } from "./components/MyMedicalInfoDrawer";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DateField } from "@/components/ui/date-field";
 
  
 const ALL_STATUSES: OrderStatus[] = [
@@ -196,8 +197,7 @@ function DateRangeInput({
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-4">
         <span className="text-xs text-muted-foreground/50 w-5">{t("pages.patient.date_from_label")}</span>
-        <input
-          type="date"
+        <DateField
           value={from}
           onChange={(e) => onFrom(e.target.value)}
           className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-[6px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"
@@ -205,8 +205,7 @@ function DateRangeInput({
       </div>
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-muted-foreground/50 w-5">{t("pages.patient.date_to_label")}</span>
-        <input
-          type="date"
+        <DateField
           value={to}
           onChange={(e) => onTo(e.target.value)}
           className="flex-1 px-2 py-0.5 text-xs bg-background border border-border/50 rounded-[6px] outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 text-foreground"

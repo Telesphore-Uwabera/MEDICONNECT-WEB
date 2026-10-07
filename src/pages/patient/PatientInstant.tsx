@@ -39,6 +39,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { useGetSearchDoctors, type ApiDoctor } from "@/hooks/patient/use-patient-doctor";
 import { DoctorActionModals, useDoctorActions } from "@/components/useDoctorActions";
 import { resolveMediaUrl } from "@/lib/image-url";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -516,15 +517,13 @@ const PatientInstant = () => {
       label: "Date Range",
       render: () => (
         <div className="flex items-center gap-1.5 mt-1">
-          <input
-            type="date"
+          <DateField
             value={filters.date_from}
             onChange={(e) => set("date_from", e.target.value)}
             className="w-full px-2 h-[28px] text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
           />
           <span className="text-muted-foreground/50 text-[10px]">-</span>
-          <input
-            type="date"
+          <DateField
             value={filters.date_to}
             min={filters.date_from}
             onChange={(e) => set("date_to", e.target.value)}
@@ -622,8 +621,7 @@ const PatientInstant = () => {
           <div className="space-y-3">
             <div>
               <p className="text-xs text-muted-foreground/70 mb-1.5 font-medium">From</p>
-              <input
-                type="date"
+              <DateField
                 value={filters.date_from}
                 onChange={(e) => set("date_from", e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer"
@@ -631,8 +629,7 @@ const PatientInstant = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground/70 mb-1.5 font-medium">To</p>
-              <input
-                type="date"
+              <DateField
                 value={filters.date_to}
                 min={filters.date_from}
                 onChange={(e) => set("date_to", e.target.value)}

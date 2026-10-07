@@ -57,6 +57,7 @@ import {
 import { InfoTile, InstantToggleButton } from "./components";
 import moment from "moment";
 import { toast as sonnerToast } from "sonner";
+import { DateField } from "@/components/ui/date-field";
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 const fmtDate = (iso?: string | null) =>
@@ -1008,8 +1009,7 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
                 <label className="block text-[9px] text-muted-foreground/40 mb-1">
                   From
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={from}
                   onChange={(e) => {
                     setFrom(e.target.value);
@@ -1022,8 +1022,7 @@ function QuickConsultsContent({ doctorId }: { doctorId: number }) {
                 <label className="block text-[9px] text-muted-foreground/40 mb-1">
                   To
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={to}
                   onChange={(e) => {
                     setTo(e.target.value);

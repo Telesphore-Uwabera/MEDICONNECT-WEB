@@ -20,6 +20,7 @@ import {
 } from "@/hooks/admin/use-admin-legal-documents";
 import { prepareRichTextForSave, RichTextarea } from "@/components/ui/rich-textarea";
 import { Label } from "@/components/ui/label";
+import { DateField } from "@/components/ui/date-field";
 
 type FormState = LegalDocumentPayload;
 
@@ -375,7 +376,7 @@ export function LegalDocumentsManager() {
               <input value={form.version} onChange={(event) => setField("version", event.target.value)} className={inputClass} placeholder="1.0" />
             </Field>
             <Field label="Effective date">
-              <input type="date" value={form.effective_date} onChange={(event) => setField("effective_date", event.target.value)} className={inputClass} />
+              <DateField value={form.effective_date} onChange={(event) => setField("effective_date", event.target.value)} className={inputClass} />
             </Field>
           </div>
 

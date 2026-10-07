@@ -46,6 +46,7 @@ import {
   useGetServicesByDepartment,
 } from "@/hooks/hospital/use-hospital-departments";
 import { t } from "i18next";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1225,8 +1226,7 @@ const HospitalAppointments = () => {
       render: () => (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <input
-              type="date"
+            <DateField
               value={filters.dateFrom}
               onChange={(e) => set("dateFrom", e.target.value)}
               className="flex-1 px-2.5 py-1.5 text-[11px] bg-background border border-border/60 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 cursor-pointer"
@@ -1234,8 +1234,7 @@ const HospitalAppointments = () => {
             <span className="text-[11px] text-muted-foreground">
               {t('pages.doctor.to')}
             </span>
-            <input
-              type="date"
+            <DateField
               value={filters.dateTo}
               min={filters.dateFrom}
               onChange={(e) => set("dateTo", e.target.value)}

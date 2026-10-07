@@ -49,6 +49,7 @@ import {
   isExpired,
   getPdfUrl,
 } from "./prescription-constants";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -190,8 +191,7 @@ export function DateRangeInput({
     <div className="flex flex-col gap-1">
       <div>
         <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">{t("pages.patient.date_from_label")}</label>
-        <input
-          type="date"
+        <DateField
           value={from}
           onChange={(e) => onFrom(e.target.value)}
           className="w-full px-2 py-1 text-xs bg-background border border-border/50 rounded-[6px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
@@ -199,8 +199,7 @@ export function DateRangeInput({
       </div>
       <div>
         <label className="text-xs text-muted-foreground/60 mb-1 block uppercase tracking-wide">{t("pages.patient.date_to_label")}</label>
-        <input
-          type="date"
+        <DateField
           value={to}
           min={from || undefined}
           onChange={(e) => onTo(e.target.value)}

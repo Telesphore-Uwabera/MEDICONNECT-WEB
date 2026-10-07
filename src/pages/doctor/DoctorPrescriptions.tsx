@@ -41,6 +41,7 @@ import {
 import PrescriptionDetailDrawer from "./PrescriptionDetailDrawer";
 import { FilterBar, FilterToggleButton } from "@/components/FilterBar";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { DateField } from "@/components/ui/date-field";
 
  
 type ViewMode = "table" | "cards";
@@ -515,8 +516,7 @@ const DoctorPrescriptions = () => {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.from")}</p>
-              <input
-                type="date"
+              <DateField
                 value={filters.date_from}
                 onChange={(e) => set("date_from", e.target.value)}
                 className="w-full px-2 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"
@@ -524,8 +524,7 @@ const DoctorPrescriptions = () => {
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground/70 mb-1 font-medium">{t("pages.doctor.to")}</p>
-              <input
-                type="date"
+              <DateField
                 value={filters.date_to}
                 onChange={(e) => set("date_to", e.target.value)}
                 className="w-full px-2 py-1 text-[11px] bg-background border border-border/60 rounded-[4px] text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all cursor-pointer h-7"

@@ -32,6 +32,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { DateField } from "@/components/ui/date-field";
  
 export type DashboardPeriod = "today" | "week" | "month" | "year" | "custom";
 export type ChartGroup = "day" | "week" | "month";
@@ -596,8 +597,7 @@ const HospitalAnalytics = () => {
                         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                           {t("pages.hospital.start_date")}
                         </span>
-                        <input
-                          type="date"
+                        <DateField
                           value={filters.start_date ?? defaultCustomRange.start_date}
                           onChange={(event) =>
                             setFilters((prev) => ({
@@ -616,8 +616,7 @@ const HospitalAnalytics = () => {
                         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                           {t("pages.hospital.end_date")}
                         </span>
-                        <input
-                          type="date"
+                        <DateField
                           min={filters.start_date ?? defaultCustomRange.start_date}
                           value={filters.end_date ?? defaultCustomRange.end_date}
                           onChange={(event) =>
@@ -871,7 +870,7 @@ const HospitalAnalytics = () => {
                           <span className="text-sm font-normal ml-1">{t("pages.hospital.minutes_short")}</span>
                         </span>
                         <span className="text-[10px] text-muted-foreground">
-                          {periodAppts?.unique_doctors ?? 0} doctors ·{" "}
+                          {periodAppts?.unique_doctors ?? 0} doctors ï¿½{" "}
                           {periodAppts?.unique_patients ?? 0} patients
                         </span>
                       </Card>
@@ -1316,7 +1315,7 @@ const HospitalAnalytics = () => {
                                   "en-US",
                                   { month: "short", day: "numeric" },
                                 )}{" "}
-                                · {String(a.appointment_time).slice(0, 5)}
+                                ï¿½ {String(a.appointment_time).slice(0, 5)}
                               </span>
                               <span className="text-[9px] capitalize px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                                 {a.type}

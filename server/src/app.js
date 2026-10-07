@@ -1585,6 +1585,36 @@ export function appRoutes(router) {
     }
   });
 
+  const collectionUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
+
+  function saveCollectionFile(file, prefix) {
+    const dir = process.env.UPLOAD_DIR
+      ? path.join(process.env.UPLOAD_DIR, "doctors-webp")
+      : path.resolve("storage", "doctors-webp");
+    fs.mkdirSync(dir, { recursive: true });
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const safeExt = [".pdf", ".jpg", ".jpeg", ".png", ".webp"].includes(ext) ? ext : ".bin";
+    const filename = `${prefix}_${Date.now()}${safeExt}`;
+    fs.writeFileSync(path.join(dir, filename), file.buffer);
+    return `https://mediconnect.rw/api/v1/media/${filename}`;
+  }
+
+  function collectionPayload(req) {
+    const body = { ...(req.body ?? {}) };
+    const file = req.file
+      || (Array.isArray(req.files) ? req.files.find((item) => item.fieldname === "certificate_file") : null);
+    if (file) {
+      const url = saveCollectionFile(file, "qualification");
+      body.certificate_file = url;
+      body.certificate_url = url;
+    }
+    if (!String(body.title || "").trim()) {
+      body.title = body.certification_title || body.name || "";
+    }
+    if (body.expires_at === "") body.expires_at = null;
+    return body;
+  }
+
   function mountDoctorCollection(urlPath, tables, singular) {
     router.get(`/doctor/${urlPath}`, requireAuth, requireRole("doctor"), async (req, res, next) => {
       try {
@@ -1596,14 +1626,18 @@ export function appRoutes(router) {
       }
     });
 
-    router.post(`/doctor/${urlPath}`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+    router.post(`/doctor/${urlPath}`, requireAuth, requireRole("doctor"), collectionUpload.any(), async (req, res, next) => {
       try {
         const { doctorId } = await currentDoctor(req);
         const table = await firstExistingTable(tables);
         if (!table || !(await hasColumn(table, "doctor_id"))) {
           return res.status(422).json({ message: "This section cannot be saved yet." });
         }
-        const id = await insert(table, { ...(req.body ?? {}), doctor_id: doctorId });
+        const body = collectionPayload(req);
+        if (urlPath === "qualifications" && !String(body.title || "").trim()) {
+          return res.status(422).json({ message: "Certification title is required." });
+        }
+        const id = await insert(table, { ...body, doctor_id: doctorId });
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
         res.status(201).json({ message: "Saved.", [singular]: row, data: row });
       } catch (error) {
@@ -1611,7 +1645,7 @@ export function appRoutes(router) {
       }
     });
 
-    router.put(`/doctor/${urlPath}/:id`, requireAuth, requireRole("doctor"), async (req, res, next) => {
+    router.put(`/doctor/${urlPath}/:id`, requireAuth, requireRole("doctor"), collectionUpload.any(), async (req, res, next) => {
       try {
         const { doctorId } = await currentDoctor(req);
         const table = await firstExistingTable(tables);
@@ -1620,8 +1654,11 @@ export function appRoutes(router) {
         }
         const existing = await one(`SELECT id FROM \`${table}\` WHERE id = ? AND doctor_id = ?`, [req.params.id, doctorId]);
         if (!existing) return res.status(404).json({ message: "Record not found." });
-        const body = { ...(req.body ?? {}) };
+        const body = collectionPayload(req);
         delete body.doctor_id;
+        if (urlPath === "qualifications" && !String(body.title || "").trim()) {
+          return res.status(422).json({ message: "Certification title is required." });
+        }
         await update(table, existing.id, body);
         const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [existing.id]));
         res.json({ message: "Updated.", [singular]: row, data: row });

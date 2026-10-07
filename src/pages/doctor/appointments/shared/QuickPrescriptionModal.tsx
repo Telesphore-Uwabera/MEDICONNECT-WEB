@@ -30,6 +30,7 @@ import {
   type Pharmacy,
 } from "@/hooks/patient/use-patient-search-pharmacy";
 import type { ApiError } from "@/lib/api";
+import { DateField } from "@/components/ui/date-field";
 
 interface Props {
   /** Provide exactly one of appointmentId / instantConsultationId. */
@@ -310,8 +311,7 @@ function PrescriptionForm({
         </div>
         <div className="space-y-1">
           <label className={labelCls}>{t("pages.doctor.quick_rx.valid_until")}</label>
-          <input
-            type="date"
+          <DateField
             className={inputCls}
             value={validUntil}
             onChange={(e) => setValidUntil(e.target.value)}

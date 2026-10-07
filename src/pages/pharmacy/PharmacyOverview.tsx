@@ -42,6 +42,7 @@ import {
 import { useGetPharmacyProfile } from "@/hooks/pharmacy/use-pharmacy-profile";
 import { Link } from "react-router-dom";
 import { t } from "i18next";
+import { DateField } from "@/components/ui/date-field";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtRWF(n: number): string {
@@ -130,15 +131,13 @@ function PeriodBar({
       {/* Custom date range inputs */}
       {period === "custom" && (
         <div className="flex items-center gap-1.5">
-          <input
-            type="date"
+          <DateField
             value={dateRange.from}
             onChange={(e) => onDateRange({ ...dateRange, from: e.target.value })}
             className="px-2 py-1.5 text-[11px] border border-border/60 rounded-[6px] bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
           />
           <span className="text-[10px] text-muted-foreground">→</span>
-          <input
-            type="date"
+          <DateField
             value={dateRange.to}
             onChange={(e) => onDateRange({ ...dateRange, to: e.target.value })}
             className="px-2 py-1.5 text-[11px] border border-border/60 rounded-[6px] bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"

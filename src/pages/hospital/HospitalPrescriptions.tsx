@@ -27,6 +27,7 @@ import { PrescriptionWizard } from "@/components/PrescriptionWizard";
 import { usePrescriptions, type RxStatus } from "@/lib/prescription-store";
 import { useGetHospitalProfile } from "@/hooks/hospital/use-hospital-profile";
 import { cn } from "@/lib/utils";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -641,8 +642,7 @@ const HospitalPrescriptions = () => {
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                     {t("pages.hospital.from_date")}
                   </span>
-                  <input
-                    type="date"
+                  <DateField
                     value={filters.dateFrom}
                     onChange={(e) => set("dateFrom", e.target.value)}
                     className="h-8 w-full rounded-[6px] border border-border/60 bg-background px-2.5 text-[11px] text-foreground outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
@@ -652,8 +652,7 @@ const HospitalPrescriptions = () => {
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                     {t("pages.hospital.to_date")}
                   </span>
-                  <input
-                    type="date"
+                  <DateField
                     min={filters.dateFrom || undefined}
                     value={filters.dateTo}
                     onChange={(e) => set("dateTo", e.target.value)}

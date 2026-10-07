@@ -9,8 +9,47 @@ import { RichTextarea } from "@/components/ui/rich-textarea";
 import { Plus } from "lucide-react";
 import { FormField, EntryCard } from "./UiPrimitives";
 import type { ExperienceEntry } from "./Types";
+import type { TFunction } from "i18next";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
+
+function todayIso() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export function experienceDateErrors(entry: ExperienceEntry, t: TFunction) {
+  const today = todayIso();
+  const errors: { start?: string; end?: string } = {};
+
+  if (entry.start_date && entry.start_date > today) {
+    errors.start = t("doctorProfile.start_date_not_future");
+  }
+
+  if (entry.is_current) return errors;
+
+  if (!entry.end_date) {
+    if (entry.start_date) errors.end = t("doctorProfile.end_date_or_current");
+  } else if (entry.end_date > today) {
+    errors.end = t("doctorProfile.end_date_not_future");
+  } else if (entry.start_date && entry.end_date < entry.start_date) {
+    errors.end = t("doctorProfile.end_date_after_start");
+  }
+
+  return errors;
+}
+
+export function experienceCanSave(entries: ExperienceEntry[]) {
+  const today = todayIso();
+  return entries.every((entry) => {
+    if (!entry.start_date || entry.start_date > today) return false;
+    if (entry.is_current) return true;
+    if (!entry.end_date || entry.end_date > today) return false;
+    return entry.end_date >= entry.start_date;
+  });
+}
 
 interface ExperienceStepProps {
   entries: ExperienceEntry[];
@@ -114,10 +153,14 @@ export const ExperienceStep = React.memo(function ExperienceStep({
               />
             </FormField>
 
-            <FormField label={`${t("doctorProfile.start_date")} *`}>
+            <FormField
+              label={`${t("doctorProfile.start_date")} *`}
+              error={experienceDateErrors(entry, t).start}
+            >
               <Input
                 type="date"
                 value={entry.start_date}
+                max={todayIso()}
                 onChange={(e) =>
                   updateEntry(entry.id, { start_date: e.target.value })
                 }
@@ -125,23 +168,31 @@ export const ExperienceStep = React.memo(function ExperienceStep({
               />
             </FormField>
 
-            {!entry.is_current && (
-              <FormField label={t("doctorProfile.end_date")}>
+            <FormField
+              label={entry.is_current ? t("doctorProfile.end_date") : `${t("doctorProfile.end_date")} *`}
+              error={entry.is_current ? undefined : experienceDateErrors(entry, t).end}
+            >
+              {entry.is_current ? (
+                <div className="flex h-9 w-full items-center rounded-[6px] border border-primary/40 bg-primary/5 px-3 text-xs font-semibold text-primary">
+                  {t("doctorProfile.end_date_present")}
+                </div>
+              ) : (
                 <Input
                   type="date"
                   value={entry.end_date ?? ""}
+                  min={entry.start_date || undefined}
+                  max={todayIso()}
                   onChange={(e) =>
                     updateEntry(entry.id, { end_date: e.target.value || null })
                   }
                   className="border-border focus-visible:ring-primary text-xs h-9"
                 />
-              </FormField>
-            )}
+              )}
+            </FormField>
 
-            <div className="col-span-1 sm:col-span-2 flex items-center gap-2">
+            <label className="col-span-1 sm:col-span-2 flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                id={`current-${entry.id}`}
                 checked={entry.is_current}
                 onChange={(e) =>
                   updateEntry(entry.id, {
@@ -149,15 +200,12 @@ export const ExperienceStep = React.memo(function ExperienceStep({
                     end_date: e.target.checked ? null : entry.end_date,
                   })
                 }
-                className="accent-primary"
+                className="h-4 w-4 accent-primary"
               />
-              <label
-                htmlFor={`current-${entry.id}`}
-                className="text-xs text-muted-foreground"
-              >
+              <span className="text-xs text-muted-foreground">
                 {t("doctorProfile.currently_working")}
-              </label>
-            </div>
+              </span>
+            </label>
           </div>
         </EntryCard>
       ))}

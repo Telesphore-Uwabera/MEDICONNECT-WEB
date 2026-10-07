@@ -100,6 +100,7 @@ import {
   CONSULTATION_LABELS,
 } from "./Types";
 import { ConsultationIcon } from "./Constants";
+import { DateField } from "@/components/ui/date-field";
 
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 
@@ -687,8 +688,7 @@ function QuickConsultsTab({ doctorId }: { doctorId: number }) {
                 <label className="block text-[9px] text-muted-foreground/40 mb-1">
                   From
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={from}
                   onChange={(e) => {
                     setFrom(e.target.value);
@@ -701,8 +701,7 @@ function QuickConsultsTab({ doctorId }: { doctorId: number }) {
                 <label className="block text-[9px] text-muted-foreground/40 mb-1">
                   To
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={to}
                   onChange={(e) => {
                     setTo(e.target.value);
@@ -1151,8 +1150,7 @@ function LicenseExpiryEditor({ doctor }: { doctor: ApiDoctor }) {
         Only an admin can change this date. The doctor and admins are emailed when 30 days or fewer remain.
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="date"
+        <DateField
           value={date}
           onChange={(event) => setDate(event.target.value)}
           className="h-9 rounded-[6px] border border-border bg-background px-3 text-[12px]"
