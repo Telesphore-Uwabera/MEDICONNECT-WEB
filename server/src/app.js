@@ -1608,8 +1608,8 @@ export function appRoutes(router) {
       body.certificate_file = url;
       body.certificate_url = url;
     }
-    if (!String(body.title || "").trim()) {
-      body.title = body.certification_title || body.name || "";
+    if (!String(body.title || "").trim() && (body.certification_title || body.name)) {
+      body.title = body.certification_title || body.name;
     }
     if (body.expires_at === "") body.expires_at = null;
     return body;

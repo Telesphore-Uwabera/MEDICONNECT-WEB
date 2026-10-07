@@ -108,6 +108,8 @@ export function DateField({
             return false;
           }}
           weekStartsOn={1}
+          fromDate={minDate}
+          toDate={maxDate}
           initialFocus
         />
         <div className="flex items-center justify-between border-t border-border/60 px-3 py-2">
