@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useMe } from "@/hooks/useAuth";
 import { apiFetch } from "@/lib/api";
 
 const BASE = "/public/doctors";
@@ -102,7 +104,23 @@ export interface DoctorSearchParams {
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
+function withoutOwnDoctor(response: ApiDoctorListResponse, userId?: number) {
+  if (!userId || !Array.isArray(response?.data)) return response;
+  const data = response.data.filter(
+    (doctor) => doctor.user_id !== userId && doctor.user?.id !== userId,
+  );
+  const removed = response.data.length - data.length;
+  if (!removed) return response;
+  return {
+    ...response,
+    data,
+    total: Math.max(0, (response.total ?? data.length) - removed),
+  };
+}
+
 export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
+  const { data: me } = useMe();
+  const ownId = (me?.active_role ?? me?.role) === "patient" ? me?.id : undefined;
   const sp = new URLSearchParams();
 
   if (params.q && params.q.trim().length >= 2) sp.set("q", params.q.trim());
@@ -129,14 +147,18 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     ? `${BASE}/available-doctors?${queryString}`
     : available_doctors_url;
 
-  // /patient/search/doctors?instant=true&page=2&per_page=10
-  return useQuery({
+  const query = useQuery({
     queryKey: ["patient-search-doctors", url],
 
     queryFn: (): Promise<ApiDoctorListResponse> =>
       apiFetch(url).then((res) => res as ApiDoctorListResponse),
     staleTime: url === BASE ? 30_000 : 0,
   });
+  const data = useMemo(
+    () => (query.data ? withoutOwnDoctor(query.data, ownId) : query.data),
+    [ownId, query.data],
+  );
+  return { ...query, data };
 }
 
 export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {

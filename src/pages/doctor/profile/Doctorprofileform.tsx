@@ -24,6 +24,7 @@ import { FormField } from "./UiPrimitives";
 import { SpecializationsStep } from "./Specializationsstep";
 import { EducationStep } from "./Educationstep";
 import { ExperienceStep, experienceCanSave } from "./Experiencestep";
+import { checkSocialLinks } from "@/lib/social-link";
 import { QualificationsStep } from "./Qualificationsstep";
 import { SocialLinksStep } from "./Sociallinksstep";
 import { FileUploadBox } from "./Fileuploadbox";
@@ -164,6 +165,22 @@ export function DoctorProfileForm({
         title: t("doctorProfile.experience_dates_invalid"),
       });
       return;
+    }
+
+    if (step.id === "linksSection") {
+      const results = await checkSocialLinks({
+        linkedin: linksSection.linkedin,
+        twitter: linksSection.twitter,
+        facebook: linksSection.facebook,
+        instagram: linksSection.instagram,
+      });
+      if (Object.values(results).some((result) => result && !result.ok)) {
+        toast({
+          variant: "destructive",
+          title: t("doctorProfile.social_links_invalid"),
+        });
+        return;
+      }
     }
 
     if (payloads[step.id]) await onSaveStep(step.id, payloads[step.id]);

@@ -2,5 +2,7 @@
   "help": "Aide",
   "profile": "Profil",
   "settings": "Paramètres",
-  "signOut": "Déconnexion"
+  "signOut": "Déconnexion",
+  "login_as_patient": "Se connecter en tant que patient",
+  "login_as_doctor": "Se connecter en tant que médecin"
 }

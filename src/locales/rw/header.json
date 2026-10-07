@@ -2,5 +2,7 @@
   "help": "Ubufasha",
   "profile": "Umwirondoro",
   "settings": "Igenamiterere",
-  "signOut": "Gusohoka"
+  "signOut": "Gusohoka",
+  "login_as_patient": "Injira nk'umurwayi",
+  "login_as_doctor": "Injira nk'umuganga"
 }

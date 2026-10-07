@@ -143,6 +143,10 @@ export function publicRoutes(router) {
       if (req.query.instant === "true") {
         filters.push("d.instant_consultation = 1");
       }
+      if (req.user?.id && req.user.active_role === "patient") {
+        filters.push("d.user_id <> ?");
+        params.push(req.user.id);
+      }
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("doctors d JOIN users u ON u.id = d.user_id", where, params);
       const rows = await q(

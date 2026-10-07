@@ -13,6 +13,7 @@ import {
   submitProfileForReview,
 } from "./doctor-review.js";
 import { withTeamPhoto } from "./public.js";
+import { checkSocialLink } from "./social-links.js";
 import {
   countWhere,
   hasColumn,
@@ -1695,14 +1696,36 @@ export function appRoutes(router) {
     }
   });
 
+  router.post("/doctor/social-links/check", requireAuth, requireRole("doctor"), async (req, res, next) => {
+    try {
+      const platform = String(req.body?.platform || "");
+      const result = await checkSocialLink(platform, req.body?.url);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/doctor/social-links", requireAuth, requireRole("doctor"), async (req, res, next) => {
     try {
       const { doctorId } = await currentDoctor(req);
       if (!doctorId) return res.status(404).json({ message: "Doctor profile not found." });
       const body = req.body ?? {};
       const fields = {};
+      const errors = {};
       for (const key of ["facebook", "twitter", "linkedin", "instagram"]) {
-        if (Object.prototype.hasOwnProperty.call(body, key)) fields[key] = body[key] || null;
+        if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
+        const value = body[key] || null;
+        if (!value) {
+          fields[key] = null;
+          continue;
+        }
+        const result = await checkSocialLink(key, value);
+        if (!result.ok) errors[key] = [result.code];
+        else fields[key] = result.url || value;
+      }
+      if (Object.keys(errors).length) {
+        return res.status(422).json({ message: "Check the social links.", errors });
       }
       const onDoctor = {};
       for (const [key, value] of Object.entries(fields)) {

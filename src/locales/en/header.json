@@ -2,5 +2,7 @@
   "help": "Help",
   "profile": "Profile",
   "settings": "Settings",
-  "signOut": "Sign Out"
+  "signOut": "Sign Out",
+  "login_as_patient": "Log in as patient",
+  "login_as_doctor": "Log in as a doctor"
 }

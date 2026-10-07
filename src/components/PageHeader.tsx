@@ -171,8 +171,13 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
   );
 
   const logout = useLogout();
-  const { go: goToRole, isPending: switchingToPatient } = useGoToRole();
-  const isDoctor = (user?.role ?? "") === "doctor";
+  const { go: goToRole, isPending: switchingRole } = useGoToRole();
+  const activeRole = user?.active_role ?? user?.role ?? "";
+  const hasDoctorRole =
+    activeRole === "doctor" ||
+    user?.role === "doctor" ||
+    (user?.available_roles ?? []).includes("doctor");
+  const browsingAsPatient = activeRole === "patient" && hasDoctorRole;
 
   const unreadCount = isAuth ? (notificationsData?.unread ?? 0) : 0;
 
@@ -287,14 +292,20 @@ export const PageHeader = ({ title, subtitle, actions }: Props) => {
                   )}
                 </button>
 
-                {isDoctor && (
+                {hasDoctorRole && (activeRole === "doctor" || browsingAsPatient) && (
                   <button
                     type="button"
-                    disabled={switchingToPatient}
-                    onClick={() => void goToRole("patient", { to: "/patient/search-doctors" })}
+                    disabled={switchingRole}
+                    onClick={() =>
+                      void goToRole(browsingAsPatient ? "doctor" : "patient", {
+                        to: browsingAsPatient ? "/doctor" : "/patient/search-doctors",
+                      })
+                    }
                     className="shrink-0 whitespace-nowrap rounded-[6px] border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold leading-tight text-primary hover:bg-primary/15 disabled:opacity-60 sm:px-2.5 sm:text-[11px]"
                   >
-                    {t("header.login_as_patient", { defaultValue: "Log in as patient" })}
+                    {browsingAsPatient
+                      ? t("header.login_as_doctor", { defaultValue: "Log in as a doctor" })
+                      : t("header.login_as_patient", { defaultValue: "Log in as patient" })}
                   </button>
                 )}
 
