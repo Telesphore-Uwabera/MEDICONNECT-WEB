@@ -1064,8 +1064,8 @@ export function publicRoutes(router) {
   router.get("/public/legal-documents/:type", async (req, res, next) => {
     try {
       const row = await one(
-        "SELECT * FROM legal_documents WHERE type = ? OR slug = ? OR id = ? ORDER BY id DESC LIMIT 1",
-        [req.params.type, req.params.type, req.params.type],
+        "SELECT * FROM legal_documents WHERE (type = ? OR id = ?) AND deleted_at IS NULL ORDER BY is_current DESC, is_active DESC, id DESC LIMIT 1",
+        [req.params.type, req.params.type],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Document not found." });
       res.json(await presentRow("legal_documents", row));
@@ -1077,8 +1077,8 @@ export function publicRoutes(router) {
   router.get("/public/page-setup/terms/:type", async (req, res, next) => {
     try {
       const row = await one(
-        "SELECT * FROM legal_documents WHERE type = ? OR slug = ? ORDER BY id DESC LIMIT 1",
-        [req.params.type, req.params.type],
+        "SELECT * FROM legal_documents WHERE type = ? AND deleted_at IS NULL ORDER BY is_current DESC, is_active DESC, id DESC LIMIT 1",
+        [req.params.type],
       ).catch(() => null);
       res.json({
         title: row?.title || row?.title_en || req.params.type,
