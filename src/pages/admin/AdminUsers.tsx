@@ -248,8 +248,11 @@ function isRoleFilter(value: string | null): value is RoleFilter {
 
 // --- Helpers ------------------------------------------------------------------
 
+const ROLE_PRIORITY = ["admin", "doctor", "hospital", "pharmacy", "moderator", "finance", "help_desk", "patient"];
+
 function getRole(u: ApiUser): string {
-  return u.roles?.[0]?.name ?? "patient";
+  const names = (u.roles ?? []).map((role) => role.name);
+  return ROLE_PRIORITY.find((role) => names.includes(role)) ?? names[0] ?? "patient";
 }
 
 function getInitials(name: string) {

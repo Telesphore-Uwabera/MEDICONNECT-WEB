@@ -192,6 +192,57 @@ async function createIremboInvoice({ transactionId, amount, customer, descriptio
   return { invoiceNumber: String(invoiceNumber), publicKey };
 }
 
+async function iremboInvoiceStatus(invoiceNumber) {
+  const secret = paymentSecretKey();
+  if (!secret || isLocalInvoiceNumber(invoiceNumber)) return null;
+  const response = await fetch(`${paymentApiBase()}/invoices/${encodeURIComponent(invoiceNumber)}`, {
+    headers: {
+      "irembopay-secretkey": secret,
+      "X-API-Version": "2",
+      Accept: "application/json",
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) return null;
+  const data = payload?.data;
+  if (!data) return null;
+  return {
+    paymentStatus: String(data.paymentStatus || ""),
+    paidAt: data.paidAt || null,
+    paymentMethod: data.paymentMethod || null,
+    paymentReference: data.paymentReference || null,
+  };
+}
+
+async function confirmPaidInvoice(payment, remote) {
+  if (!payment?.id) return payment;
+  const patch = { status: "paid" };
+  if (remote?.paidAt) {
+    const paidAt = new Date(remote.paidAt);
+    if (!Number.isNaN(paidAt.getTime())) patch.paid_at = paidAt.toISOString().slice(0, 19).replace("T", " ");
+  }
+  if (remote?.paymentMethod) patch.payment_method = remote.paymentMethod;
+  if (remote?.paymentReference) patch.provider_reference = remote.paymentReference;
+  if (String(payment.status) !== "paid") await update("payments", payment.id, patch);
+
+  const payableId = payment.payable_id;
+  const payableType = String(payment.payable_type || "");
+  if (payableId && payableType.includes("instant")) {
+    const table = (await tableExists("instant_consultation_requests"))
+      ? "instant_consultation_requests"
+      : "instant_consultations";
+    const row = await one(`SELECT id, status FROM \`${table}\` WHERE id = ?`, [payableId]).catch(() => null);
+    if (row) {
+      const open = ["pending", "queued", "waiting", "payment_pending", ""].includes(String(row.status || ""));
+      await update(table, row.id, {
+        payment_status: "paid",
+        ...(open ? { status: "confirmed" } : {}),
+      });
+    }
+  }
+  return (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
+}
+
 function scheduleOnDay() {
   return `(
     EXISTS (
@@ -247,9 +298,16 @@ export function publicRoutes(router) {
           params.push(like);
         }
         if (await tableExists("specialization_fees")) {
+          const extraFee = await tableExists("doctor_specialization_fees")
+            ? `OR EXISTS (
+                SELECT 1 FROM doctor_specialization_fees dsf
+                WHERE dsf.doctor_id = d.id AND dsf.specialization_fee_id = sf.id
+                  AND (dsf.is_active = 1 OR dsf.is_active IS NULL)
+              )`
+            : "";
           parts.push(`EXISTS (
             SELECT 1 FROM specialization_fees sf
-            WHERE sf.id = d.specialization_fee_id
+            WHERE (sf.id = d.specialization_fee_id ${extraFee})
               AND (sf.sub_specialization LIKE ? OR sf.sub_specialization_fr LIKE ? OR sf.sub_specialization_kiny LIKE ? OR sf.slug LIKE ?)
           )`);
           params.push(like, like, like, like);
@@ -260,8 +318,21 @@ export function publicRoutes(router) {
       const subName = String(req.query.sub_specialization || "").trim();
       const feeId = Number(req.query.specialization_fee_id);
       if (Number.isFinite(feeId) && feeId > 0) {
-        filters.push("d.specialization_fee_id = ?");
-        params.push(feeId);
+        if (await tableExists("doctor_specialization_fees")) {
+          filters.push(`(
+            d.specialization_fee_id = ?
+            OR EXISTS (
+              SELECT 1 FROM doctor_specialization_fees dsf
+              WHERE dsf.doctor_id = d.id
+                AND dsf.specialization_fee_id = ?
+                AND (dsf.is_active = 1 OR dsf.is_active IS NULL)
+            )
+          )`);
+          params.push(feeId, feeId);
+        } else {
+          filters.push("d.specialization_fee_id = ?");
+          params.push(feeId);
+        }
       } else if (specialtyName || subName) {
         const clauses = [];
         for (const name of [...new Set([specialtyName, subName].filter(Boolean))]) {
@@ -269,9 +340,16 @@ export function publicRoutes(router) {
           clauses.push("(d.specialization = ? OR d.specialization LIKE ?)");
           params.push(name, like);
           if (await tableExists("specialization_fees")) {
+            const extraFee = await tableExists("doctor_specialization_fees")
+              ? `OR EXISTS (
+                  SELECT 1 FROM doctor_specialization_fees dsf
+                  WHERE dsf.doctor_id = d.id AND dsf.specialization_fee_id = sf.id
+                    AND (dsf.is_active = 1 OR dsf.is_active IS NULL)
+                )`
+              : "";
             clauses.push(`EXISTS (
               SELECT 1 FROM specialization_fees sf
-              WHERE sf.id = d.specialization_fee_id
+              WHERE (sf.id = d.specialization_fee_id ${extraFee})
                 AND (
                   sf.sub_specialization = ? OR sf.sub_specialization LIKE ?
                   OR sf.sub_specialization_fr = ? OR sf.sub_specialization_fr LIKE ?
@@ -810,7 +888,7 @@ export function publicRoutes(router) {
   router.get("/public/payments/:uuid/status", async (req, res, next) => {
     try {
       const payment = await one(
-        "SELECT * FROM payments WHERE uuid = ? OR payment_uuid = ? OR id = ? LIMIT 1",
+        "SELECT * FROM payments WHERE uuid = ? OR transaction_id = ? OR invoice_number = ? LIMIT 1",
         [req.params.uuid, req.params.uuid, req.params.uuid],
       );
       if (!payment) return res.status(404).json({ message: "Payment not found." });
@@ -972,9 +1050,8 @@ export function publicRoutes(router) {
           });
         } else {
           const paymentUuid = crypto.randomUUID();
-          await insert("payments", {
+          const paymentId = await insert("payments", {
             uuid: paymentUuid,
-            payment_uuid: paymentUuid,
             payable_type: "instant_consultation",
             payable_id: row.id,
             invoice_number: invoiceNumber,
@@ -988,12 +1065,28 @@ export function publicRoutes(router) {
             patient_id: row.patient_id || null,
             payment_account_identifier: process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF",
           });
-          payment = { uuid: paymentUuid };
+          payment = { id: paymentId, uuid: paymentUuid };
         }
+      }
+
+      const remote = await iremboInvoiceStatus(invoiceNumber).catch(() => null);
+      if (remote?.paymentStatus === "PAID") {
+        if (payment?.id) payment = await confirmPaidInvoice(payment, remote);
+        return res.json({
+          message: "Payment already completed.",
+          status: "paid",
+          already_paid: true,
+          invoice_number: invoiceNumber,
+          public_key: publicKey,
+          amount,
+          currency: row.currency || "RWF",
+          payment_uuid: payment?.uuid || payment?.payment_uuid || null,
+        });
       }
 
       res.json({
         message: "Payment started.",
+        status: "pending",
         invoice_number: invoiceNumber,
         public_key: publicKey,
         amount,
@@ -1008,10 +1101,14 @@ export function publicRoutes(router) {
   router.post("/public/payments/check-invoice/:invoice", async (req, res, next) => {
     try {
       const invoice = decodeURIComponent(req.params.invoice);
-      const payment = await one(
-        "SELECT * FROM payments WHERE invoice_number = ? OR uuid = ? OR payment_uuid = ? OR id = ? ORDER BY id DESC LIMIT 1",
-        [invoice, invoice, invoice, invoice],
+      let payment = await one(
+        "SELECT * FROM payments WHERE invoice_number = ? OR uuid = ? OR transaction_id = ? ORDER BY id DESC LIMIT 1",
+        [invoice, invoice, invoice],
       ).catch(() => null);
+      if (payment && String(payment.status) !== "paid") {
+        const remote = await iremboInvoiceStatus(payment.invoice_number || invoice).catch(() => null);
+        if (remote?.paymentStatus === "PAID") payment = await confirmPaidInvoice(payment, remote);
+      }
       res.json({ status: payment?.status || "pending", payment: payment ? await presentRow("payments", payment) : null });
     } catch (error) {
       next(error);

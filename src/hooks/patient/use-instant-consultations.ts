@@ -66,6 +66,8 @@ export interface InstantConsultationPayResponse {
   amount: number;
   currency: string;
   payment_uuid: string;
+  status?: "paid" | "pending" | string;
+  already_paid?: boolean;
 }
 
 export interface CheckInvoiceResponse {

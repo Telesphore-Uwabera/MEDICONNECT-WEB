@@ -67,6 +67,13 @@ export const BROWSE_SPECIALTIES: BrowseSpecialty[] = [
     slug: "general-practitioner-standard",
   },
   {
+    key: "sports-medicine",
+    label: "Sports Medicine",
+    subSpecializationName: "Sports Medicine",
+    feeId: 31,
+    slug: "sports-medicine-standard",
+  },
+  {
     key: "orthopedics",
     label: "Orthopedics",
     subSpecializationName: "Orthopedics",

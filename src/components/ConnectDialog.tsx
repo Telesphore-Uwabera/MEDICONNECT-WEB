@@ -833,6 +833,19 @@ export const ConnectDialogContent = ({
         payment_uuid: payRes?.payment_uuid ? "[set]" : null,
       }));
 
+      const finishPaid = () => {
+        const name = me?.name ?? guestName;
+        const phone = me?.phone ?? guestPhone;
+        if (consultationToken) session.save(consultationToken, name, phone, consultationId);
+        setAuthMode("register");
+        setPhase(signedInRef.current ? "polling" : "create_account");
+      };
+
+      if (payRes.status === "paid" || payRes.already_paid) {
+        finishPaid();
+        return;
+      }
+
       if (!payRes?.public_key || !payRes?.invoice_number) {
         throw new Error(
           t("consult.connect.err_payment_not_configured", {
@@ -848,31 +861,27 @@ export const ConnectDialogContent = ({
         );
       }
 
+      setPhase("payment_verifying");
+      invoicePoller.start(
+        payRes.invoice_number,
+        finishPaid,
+        (msg) => { setErrorMsg(msg); setPhase("payment"); },
+        { maxAttempts: 40, intervalMs: 3_000 },
+      );
+
       (window as any).IremboPay.initiate({
         publicKey: payRes.public_key,
         invoiceNumber: payRes.invoice_number,
         locale: window.IremboPay.locale.EN,
-        callback: (err: Error | null) => {
+        callback: (err: { message?: string } | null) => {
           window.IremboPay.closeModal?.();
-          if (err) {
+          const text = String(err?.message || err || "");
+          const alreadyPaid = /already been paid|already paid|BAD_INVOICES_PAID/i.test(text);
+          if (err && !alreadyPaid) {
+            invoicePoller.cancel();
             setErrorMsg(t("consult.connect.err_payment_processing_failed"));
             setPhase("payment");
-            return;
           }
-          setPhase("payment_verifying");
-          invoicePoller.start(
-            payRes.invoice_number,
-            () => {
-              const name = me?.name ?? guestName;
-              const phone = me?.phone ?? guestPhone;
-              // Payment confirmed — upgrade session: remove pendingPayment block
-              // so that if the user closes during polling, resume goes to polling
-              if (consultationToken) session.save(consultationToken, name, phone, consultationId);
-              setAuthMode("register");
-              setPhase(signedInRef.current ? "polling" : "create_account");
-            },
-            (msg) => { setErrorMsg(msg); setPhase("payment"); },
-          );
         },
       });
     } catch (err: unknown) {

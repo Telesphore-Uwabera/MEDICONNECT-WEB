@@ -8,6 +8,16 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
+const ROLE_PRIORITY = ["admin", "doctor", "hospital", "pharmacy", "moderator", "finance", "help_desk", "patient"];
+
+export function sortRoleNames(names) {
+  return [...names].sort((a, b) => {
+    const ai = ROLE_PRIORITY.indexOf(a);
+    const bi = ROLE_PRIORITY.indexOf(b);
+    return (ai === -1 ? ROLE_PRIORITY.length : ai) - (bi === -1 ? ROLE_PRIORITY.length : bi);
+  });
+}
+
 export async function roleNames(userId) {
   const rows = await q(
     `SELECT r.name
@@ -16,7 +26,7 @@ export async function roleNames(userId) {
      WHERE m.model_id = ?`,
     [userId],
   );
-  return rows.map((row) => row.name);
+  return sortRoleNames(rows.map((row) => row.name));
 }
 
 export async function toUser(row, activeRole) {

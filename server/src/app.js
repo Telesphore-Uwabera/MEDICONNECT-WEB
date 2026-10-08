@@ -1507,7 +1507,19 @@ export function appRoutes(router) {
       const page = await listTable(req, "users", "admin");
       page.data = await Promise.all(page.data.map(async (user) => {
         const roles = await q(
-          `SELECT r.id, r.name FROM model_has_roles m JOIN roles r ON r.id = m.role_id WHERE m.model_id = ?`,
+          `SELECT r.id, r.name FROM model_has_roles m JOIN roles r ON r.id = m.role_id
+           WHERE m.model_id = ?
+           ORDER BY CASE r.name
+             WHEN 'admin' THEN 1
+             WHEN 'doctor' THEN 2
+             WHEN 'hospital' THEN 3
+             WHEN 'pharmacy' THEN 4
+             WHEN 'moderator' THEN 5
+             WHEN 'finance' THEN 6
+             WHEN 'help_desk' THEN 7
+             WHEN 'patient' THEN 9
+             ELSE 8
+           END, r.id`,
           [user.id],
         );
         return { ...user, roles };

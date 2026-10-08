@@ -73,6 +73,11 @@ const SPECIALTY_ICONS: Record<string, Pick<ServiceDefinition, "fallbackIcon" | "
     searchUrl:
       '/patient/search-doctors?type=booking&specialization=General+Practitioner&specialization_fee_id=1',
   },
+  "sports-medicine": {
+    fallbackIcon: HeartPulse,
+    searchUrl:
+      '/patient/search-doctors?type=booking&specialization=Sports+Medicine&specialization_fee_id=31',
+  },
   orthopedics: { fallbackIcon: Bone },
   "mental-counseling": { fallbackIcon: Brain },
 };
