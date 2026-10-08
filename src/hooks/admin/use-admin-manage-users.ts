@@ -186,6 +186,8 @@ export function useUploadDoctorDocument(userId: number) {
 
 export interface SavePatientProfilePayload {
   name?: string;
+  email?: string;
+  phone?: string;
   date_of_birth?: string;
   gender?: string;
   blood_type?: string;
@@ -207,7 +209,15 @@ export interface PatientProfile {
   avatar?: string | null;
   insurance?: unknown;
   medicalInfo?: unknown;
-  user?: { id: number; name: string; avatar?: string | null; preferred_language?: string };
+  user?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    avatar?: string | null;
+    preferred_language?: string;
+  };
   [key: string]: unknown;
 }
 

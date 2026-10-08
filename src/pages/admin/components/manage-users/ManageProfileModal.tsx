@@ -316,6 +316,9 @@ function PatientProfileForm({ userId }: { userId: number }) {
   const { data: publicInsurances = [], isLoading: isLoadingPublicInsurances } = useGetPublicInsurances();
 
   const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
     date_of_birth: "",
     gender: "",
     national_id: "",
@@ -340,21 +343,25 @@ function PatientProfileForm({ userId }: { userId: number }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!data?.patient) return;
-    const patient = data.patient;
+    const patient = data?.patient;
+    if (!patient) return;
+    const text = (value: unknown) => (value == null ? "" : String(value));
     setForm({
-      date_of_birth: (patient.date_of_birth as string) ?? "",
-      gender: (patient.gender as string) ?? "",
-      national_id: (patient.national_id as string) ?? "",
-      blood_type: (patient.blood_type as string) ?? "",
-      address: (patient.address as string) ?? "",
-      city: (patient.city as string) ?? "",
-      province: (patient.province as string) ?? "",
-      country: (patient.country as string) ?? "",
-      emergency_contact_name: (patient.emergency_contact_name as string) ?? "",
-      emergency_contact_phone: (patient.emergency_contact_phone as string) ?? "",
-      emergency_contact_relation: (patient.emergency_contact_relation as string) ?? "",
-      preferred_language: (patient.user?.preferred_language as string) ?? (patient.preferred_language as string) ?? "",
+      name: text(patient.name || patient.user?.name),
+      email: text(patient.email || patient.user?.email),
+      phone: text(patient.phone || patient.user?.phone),
+      date_of_birth: text(patient.date_of_birth).slice(0, 10),
+      gender: text(patient.gender || patient.user?.gender),
+      national_id: text(patient.national_id),
+      blood_type: text(patient.blood_type),
+      address: text(patient.address),
+      city: text(patient.city),
+      province: text(patient.province),
+      country: text(patient.country),
+      emergency_contact_name: text(patient.emergency_contact_name),
+      emergency_contact_phone: text(patient.emergency_contact_phone),
+      emergency_contact_relation: text(patient.emergency_contact_relation),
+      preferred_language: text(patient.user?.preferred_language || patient.preferred_language),
     });
     setAvatarPreview(patient.avatar ?? patient.user?.avatar ?? null);
   }, [data]);
@@ -382,6 +389,9 @@ function PatientProfileForm({ userId }: { userId: number }) {
     <>
       {isError && <NotFoundBanner />}
       <div className="grid grid-cols-2 gap-3">
+        <Field label="Name"><Text value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} /></Field>
+        <Field label="Email"><Text type="email" value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} /></Field>
+        <Field label="Phone"><Text value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} /></Field>
         <Field label="Date of birth"><Text type="date" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} /></Field>
         <Field label="Gender">
           <CustomSelect
@@ -551,8 +561,23 @@ function PharmacyProfileForm({ userId }: { userId: number }) {
   });
 
   useEffect(() => {
-    if (!data?.pharmacy) return;
-    setForm((f) => ({ ...f, name_en: data.pharmacy.name_en ?? "" }));
+    const pharmacy = data?.pharmacy;
+    if (!pharmacy) return;
+    const text = (value: unknown) => (value == null ? "" : String(value));
+    setForm({
+      name_en: text(pharmacy.name_en || pharmacy.name),
+      description_en: text(pharmacy.description_en || pharmacy.description),
+      registration_number: text(pharmacy.registration_number),
+      address: text(pharmacy.address),
+      city: text(pharmacy.city),
+      phone: text(pharmacy.phone),
+      email: text(pharmacy.email),
+      opens_at: text(pharmacy.opens_at).slice(0, 5),
+      closes_at: text(pharmacy.closes_at).slice(0, 5),
+      is_open_24h: Boolean(pharmacy.is_open_24h),
+      offers_delivery: Boolean(pharmacy.offers_delivery),
+      offers_pickup: Boolean(pharmacy.offers_pickup),
+    });
   }, [data]);
 
   if (isLoading) return <LoadingState />;
@@ -638,8 +663,20 @@ function HospitalProfileForm({ userId }: { userId: number }) {
   });
 
   useEffect(() => {
-    if (!data?.hospital) return;
-    setForm((f) => ({ ...f, name_en: data.hospital.name_en ?? "", type: data.hospital.type ?? "hospital" }));
+    const hospital = data?.hospital;
+    if (!hospital) return;
+    const text = (value: unknown) => (value == null ? "" : String(value));
+    setForm({
+      name_en: text(hospital.name_en || hospital.name),
+      description_en: text(hospital.description_en || hospital.description),
+      type: text(hospital.type || "hospital"),
+      registration_number: text(hospital.registration_number),
+      address: text(hospital.address),
+      city: text(hospital.city),
+      phone: text(hospital.phone),
+      email: text(hospital.email),
+      is_open_24h: Boolean(hospital.is_open_24h),
+    });
   }, [data]);
 
   if (isLoading) return <LoadingState />;

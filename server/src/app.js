@@ -2164,6 +2164,138 @@ export function appRoutes(router) {
     }
   });
 
+  const MANAGED_PROFILES = {
+    patients: "patient",
+    doctors: "doctor",
+    pharmacies: "pharmacy",
+    hospitals: "hospital",
+  };
+
+  async function managedProfile(userId, table) {
+    const user = await one("SELECT * FROM users WHERE id = ?", [userId]);
+    if (!user) return null;
+    const profile = await tableExists(table) && await hasColumn(table, "user_id")
+      ? await one(`SELECT * FROM \`${table}\` WHERE user_id = ? ORDER BY id DESC LIMIT 1`, [userId]).catch(() => null)
+      : null;
+    const presentedUser = await presentRow("users", user);
+    const presentedProfile = profile ? await presentRow(table, profile) : {};
+    const merged = {
+      ...presentedProfile,
+      id: presentedProfile.id ?? null,
+      user_id: user.id,
+      name: presentedProfile.name || presentedUser.name || "",
+      name_en: presentedProfile.name_en || presentedProfile.name || presentedUser.name || "",
+      email: presentedProfile.email || presentedUser.email || "",
+      phone: presentedProfile.phone || presentedUser.phone || "",
+      gender: presentedProfile.gender || presentedUser.gender || "",
+      preferred_language: presentedProfile.preferred_language || presentedUser.preferred_language || "",
+      avatar: presentedProfile.avatar || presentedUser.avatar || null,
+      user: {
+        id: user.id,
+        name: presentedUser.name || "",
+        email: presentedUser.email || "",
+        phone: presentedUser.phone || "",
+        avatar: presentedUser.avatar || null,
+        gender: presentedUser.gender || "",
+        preferred_language: presentedUser.preferred_language || "",
+      },
+    };
+    if (merged.date_of_birth) merged.date_of_birth = String(merged.date_of_birth).slice(0, 10);
+    return { user, profile, merged };
+  }
+
+  function filledProfilePatch(body) {
+    const patch = {};
+    for (const [key, value] of Object.entries(body ?? {})) {
+      if (["password", "id", "user", "user_id"].includes(key)) continue;
+      if (value == null) continue;
+      if (typeof value === "string" && value.trim() === "") continue;
+      patch[key] = value;
+    }
+    return patch;
+  }
+
+  router.get("/admin/manageusers/:profiles/:userId/get-profile", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const key = MANAGED_PROFILES[req.params.profiles];
+      const table = req.params.profiles;
+      if (!key) return next();
+      const found = await managedProfile(req.params.userId, table);
+      if (!found) return res.status(404).json({ message: "User not found." });
+      const extra = key === "doctor"
+        ? {
+            sub_specializations: [],
+            specializations: await tableExists("specializations")
+              ? await q("SELECT id, name FROM specializations ORDER BY name LIMIT 200").catch(() => [])
+              : [],
+          }
+        : {};
+      res.json({ [key]: found.merged, data: found.merged, ...extra });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/admin/manageusers/:profiles/:userId/save-profile", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const key = MANAGED_PROFILES[req.params.profiles];
+      const table = req.params.profiles;
+      if (!key) return next();
+      const found = await managedProfile(req.params.userId, table);
+      if (!found) return res.status(404).json({ message: "User not found." });
+      const patch = filledProfilePatch(req.body);
+      const userPatch = {};
+      for (const field of ["name", "email", "phone", "gender", "preferred_language"]) {
+        if (patch[field] != null) userPatch[field] = patch[field];
+      }
+      if (Object.keys(userPatch).length) await update("users", found.user.id, userPatch);
+      if (await tableExists(table)) {
+        if (found.profile?.id) await update(table, found.profile.id, patch);
+        else if (Object.keys(patch).length) {
+          await insert(table, { ...patch, user_id: found.user.id });
+        }
+      }
+      const saved = await managedProfile(req.params.userId, table);
+      res.json({ message: "Profile saved.", [key]: saved.merged, data: saved.merged });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/admin/manageusers/patients/:userId/medical", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const found = await managedProfile(req.params.userId, "patients");
+      if (!found) return res.status(404).json({ message: "User not found." });
+      let medical = null;
+      if (found.profile?.id && await tableExists("patient_medical_infos")) {
+        medical = await one("SELECT * FROM patient_medical_infos WHERE patient_id = ? ORDER BY id DESC LIMIT 1", [found.profile.id]).catch(() => null);
+      } else if (found.profile?.id && await tableExists("medical_infos")) {
+        medical = await one("SELECT * FROM medical_infos WHERE patient_id = ? ORDER BY id DESC LIMIT 1", [found.profile.id]).catch(() => null);
+      }
+      res.json({
+        medical_info: medical,
+        patient: {
+          id: found.profile?.id ?? null,
+          full_name: found.merged.name,
+          email: found.merged.email,
+          blood_type: found.merged.blood_type ?? null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/admin/manageusers/patients/:userId/insurance", requireAuth, requireRole("admin", "moderator"), async (req, res, next) => {
+    try {
+      const found = await managedProfile(req.params.userId, "patients");
+      if (!found) return res.status(404).json({ message: "User not found." });
+      res.json({ insurance: found.merged.insurance ?? null });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   registerActions(router, RESOURCES);
 }
 
