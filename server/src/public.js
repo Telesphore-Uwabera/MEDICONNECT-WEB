@@ -127,7 +127,10 @@ async function createIremboInvoice({ transactionId, amount, customer, descriptio
   const secret = paymentSecretKey();
   const publicKey = paymentPublicKey();
   const account = String(process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF").trim();
-  const productCode = String(process.env.PAYMENT_PRODUCT_CODE || "").trim();
+  const amountKey = String(Math.round(Number(amount) || 0));
+  const productCode = String(
+    process.env[`PAYMENT_PRODUCT_CODE_${amountKey}`] || process.env.PAYMENT_PRODUCT_CODE || "",
+  ).trim();
   if (!publicKey || !secret || !productCode) {
     const error = new Error(
       "Payment gateway is not configured. Add PAYMENT_PUBLIC_KEY, PAYMENT_SECRET_KEY, and PAYMENT_PRODUCT_CODE on the API server.",
