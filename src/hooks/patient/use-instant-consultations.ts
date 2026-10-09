@@ -34,6 +34,7 @@ export interface InstantConsultationRequestResponse {
   amount: number;
   payment_status: string;
   status?: string;
+  doctor_busy?: boolean;
   account_created?: boolean;
   token?: string;
   user?: User;
@@ -55,6 +56,9 @@ export interface InstantConsultationStatusResponse {
   status: ConsultationStatus;
   queue_position: number;
   people_ahead: number;
+  payment_status?: string | null;
+  doctor_busy?: boolean;
+  message?: string | null;
   room_url?: string;
   daily_guest_token?: string;
 }

@@ -218,6 +218,24 @@ async function iremboInvoiceStatus(invoiceNumber) {
   };
 }
 
+const DOCTOR_BUSY_MESSAGE = "The doctor is in another consultation. You stay in the queue and can pay when they are free.";
+
+async function doctorBusyInstant(doctorId, exceptId = null) {
+  if (!doctorId) return null;
+  const table = (await tableExists("instant_consultation_requests"))
+    ? "instant_consultation_requests"
+    : "instant_consultations";
+  if (!(await tableExists(table)) || !(await hasColumn(table, "doctor_id"))) return null;
+  const params = [doctorId];
+  let sql = `SELECT id FROM \`${table}\` WHERE doctor_id = ? AND status IN ('accepted','in_progress')`;
+  if (exceptId != null) {
+    sql += " AND id <> ?";
+    params.push(exceptId);
+  }
+  sql += " ORDER BY id DESC LIMIT 1";
+  return one(sql, params).catch(() => null);
+}
+
 async function confirmPaidInvoice(payment, remote) {
   if (!payment?.id) return payment;
   const patch = { status: "paid" };
@@ -1070,8 +1088,10 @@ export function publicRoutes(router) {
         people_ahead: Number(ahead),
       });
       const request = await presentRow("instant_consultation_requests", await one("SELECT * FROM instant_consultation_requests WHERE id = ?", [id]));
+      const doctorBusy = Boolean(await doctorBusyInstant(doctorId, id));
       res.status(201).json({
-        message: "Request received.",
+        message: doctorBusy ? DOCTOR_BUSY_MESSAGE : "Request received.",
+        doctor_busy: doctorBusy,
         guest_token: request?.guest_token || guestToken,
         queue_position: Number(request?.queue_position ?? Number(ahead) + 1),
         people_ahead: Number(request?.people_ahead ?? ahead),
@@ -1105,6 +1125,8 @@ export function publicRoutes(router) {
         [req.params.token, req.params.token],
       ).catch(() => null);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
+      const ownCall = ["accepted", "in_progress"].includes(String(row.status || ""));
+      const doctorBusy = !ownCall && Boolean(await doctorBusyInstant(row.doctor_id, row.id));
       const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
       const guestToken = row.daily_guest_token || callToken({
         room: roomName,
@@ -1118,6 +1140,8 @@ export function publicRoutes(router) {
         payment_status: row.payment_status || null,
         queue_position: Number(row.queue_position || 1),
         people_ahead: Number(row.people_ahead || 0),
+        doctor_busy: doctorBusy,
+        message: doctorBusy ? DOCTOR_BUSY_MESSAGE : null,
         room_url: row.daily_room_url || row.room_url || `/consultation/${roomName}`,
         daily_room_name: roomName,
         daily_guest_token: guestToken,
@@ -1133,6 +1157,14 @@ export function publicRoutes(router) {
       const table = (await tableExists("instant_consultation_requests")) ? "instant_consultation_requests" : "instant_consultations";
       const row = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]);
       if (!row) return res.status(404).json({ message: "Consultation not found." });
+      const busy = await doctorBusyInstant(row.doctor_id, row.id);
+      if (busy) {
+        return res.status(409).json({
+          message: DOCTOR_BUSY_MESSAGE,
+          doctor_busy: true,
+          stays_in_queue: true,
+        });
+      }
       const amount = await consultationAmount(row);
       if (!(amount > 0)) {
         return res.status(422).json({ message: "This consultation has no payable fee." });

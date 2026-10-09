@@ -8,13 +8,14 @@
 // connected.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarClock, ShieldCheck, Video, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CalendarClock, Phone, ShieldCheck, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { formatAppointmentDateTime } from "@/lib/display-dates";
 import { useCallContext } from "@/context/CallContext";
-import { startInAppCallFromJoin } from "@/lib/scheduled-call";
+import { startInAppCallFromJoin, decodeCallToken } from "@/lib/scheduled-call";
 import {
   useGetPatientCertificates,
   type Certificate,
@@ -28,14 +29,25 @@ import {
 const ALERT_AUDIO_SRC = "/audio/new-notification-057-494255.mp3";
 const CERT_SEEN_STORAGE_KEY = "patient_confirmation_session_seen";
 const APPOINTMENT_SEEN_STORAGE_KEY = "patient_appointment_call_alert_seen_ids";
+const INSTANT_SEEN_STORAGE_KEY = "patient_instant_call_alert_seen_ids";
 const POLL_INTERVAL_MS = 10_000;
 const APPOINTMENT_GRACE_MS = 30_000;
 const ALERT_DURATION_MS = 60_000;
 const SPEECH_INTERVAL_MS = 12_000;
 
+type ReadyInstant = {
+  id: number;
+  status: string;
+  guest_name?: string;
+  room_name: string;
+  room_url?: string;
+  daily_guest_token?: string;
+};
+
 type SessionAlert =
   | { kind: "certificate"; cert: Certificate }
-  | { kind: "appointment"; appointment: ApiAppointment };
+  | { kind: "appointment"; appointment: ApiAppointment }
+  | { kind: "instant"; instant: ReadyInstant };
 
 interface AppointmentJoinResponse {
   message?: string;
@@ -89,12 +101,18 @@ const getAppointmentProviderLabel = (appointment: ApiAppointment) =>
   appointment.hospital?.name_en?.trim() ||
   "Your doctor";
 
-const getAlertTitle = (alert: SessionAlert) =>
-  alert.kind === "certificate" ? "Video identity check started" : "Doctor started your appointment call";
+const getAlertTitle = (alert: SessionAlert) => {
+  if (alert.kind === "certificate") return "Video identity check started";
+  if (alert.kind === "instant") return "Your doctor accepted your consultation";
+  return "Doctor started your appointment call";
+};
 
 const getAlertBody = (alert: SessionAlert) => {
   if (alert.kind === "certificate") {
     return `${getDoctorLabel(alert.cert)} started a verification call for certificate #${alert.cert.certificate_number}.`;
+  }
+  if (alert.kind === "instant") {
+    return "Your doctor accepted the consultation and is waiting in the video call. Join now.";
   }
   return `${getAppointmentProviderLabel(alert.appointment)} is waiting for you to join your video appointment.`;
 };
@@ -102,6 +120,9 @@ const getAlertBody = (alert: SessionAlert) => {
 const getAlertSpeech = (alert: SessionAlert) => {
   if (alert.kind === "certificate") {
     return `${getDoctorLabel(alert.cert)} has started your identity verification call. Please join now.`;
+  }
+  if (alert.kind === "instant") {
+    return "Your doctor accepted your consultation. Please join the call now.";
   }
   return `${getAppointmentProviderLabel(alert.appointment)} has started your appointment call. Please join now.`;
 };
@@ -128,6 +149,12 @@ export function PatientCallAlertListener() {
     { status: "in_progress", type: "online" },
     { refetchInterval: POLL_INTERVAL_MS },
   );
+  const { data: readyInstantData } = useQuery({
+    queryKey: ["patient-instant-ready"],
+    queryFn: () => apiFetch<{ data: ReadyInstant | null }>("/patient/instant-consultations/ready"),
+    refetchInterval: POLL_INTERVAL_MS,
+  });
+  const readyInstant = readyInstantData?.data ?? null;
   const [activeAlert, setActiveAlert] = useState<SessionAlert | null>(null);
   const [joining, setJoining] = useState(false);
 
@@ -135,6 +162,7 @@ export function PatientCallAlertListener() {
 
   const seenCertKeysRef = useRef<Set<string>>(loadSeenStrings(CERT_SEEN_STORAGE_KEY));
   const seenAppointmentIdsRef = useRef<Set<number>>(loadSeenNumbers(APPOINTMENT_SEEN_STORAGE_KEY));
+  const seenInstantIdsRef = useRef<Set<number>>(loadSeenNumbers(INSTANT_SEEN_STORAGE_KEY));
   const appointmentFirstSeenRef = useRef<Map<number, number>>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,7 +187,11 @@ export function PatientCallAlertListener() {
   const showBrowserNotification = useCallback(
     (alert: SessionAlert) => {
       if (!notificationsSupported || Notification.permission !== "granted") return;
-      const tag = alert.kind === "certificate" ? `confirmation-session-${alert.cert.id}` : `appointment-call-${alert.appointment.id}`;
+      const tag = alert.kind === "certificate"
+        ? `confirmation-session-${alert.cert.id}`
+        : alert.kind === "instant"
+          ? `instant-call-${alert.instant.id}`
+          : `appointment-call-${alert.appointment.id}`;
       const notification = new Notification(getAlertTitle(alert), {
         body: getAlertBody(alert),
         icon: "/favicon.ico",
@@ -241,6 +273,21 @@ export function PatientCallAlertListener() {
   }, [activeAlert, pendingSessions, raiseAlert]);
 
   useEffect(() => {
+    if (!readyInstant || activeAlert) return;
+    if (seenInstantIdsRef.current.has(readyInstant.id)) return;
+    const room = activeCall?.roomName || "";
+    if (room && (room === readyInstant.room_name || room.endsWith(String(readyInstant.id)))) return;
+    seenInstantIdsRef.current.add(readyInstant.id);
+    saveSeenNumbers(INSTANT_SEEN_STORAGE_KEY, seenInstantIdsRef.current);
+    raiseAlert({ kind: "instant", instant: readyInstant });
+  }, [activeAlert, activeCall, raiseAlert, readyInstant]);
+
+  useEffect(() => {
+    if (activeAlert?.kind !== "instant") return;
+    if (!readyInstant || readyInstant.id !== activeAlert.instant.id) dismiss();
+  }, [activeAlert, dismiss, readyInstant]);
+
+  useEffect(() => {
     const now = Date.now();
     const currentIds = new Set(inProgressAppointments.map((appointment) => appointment.id));
 
@@ -299,6 +346,25 @@ export function PatientCallAlertListener() {
         return;
       }
 
+      if (activeAlert.kind === "instant") {
+        const instant = activeAlert.instant;
+        dismiss();
+        const decoded = decodeCallToken(instant.daily_guest_token);
+        if (decoded && instant.room_name) {
+          decoded.consultation_id = instant.id;
+          decoded.is_owner = false;
+          startCall(instant.room_name, decoded);
+          toast.success("Joining the video consultation...");
+          return;
+        }
+        if (instant.room_url) {
+          window.open(instant.room_url, "_blank", "noopener,noreferrer");
+          return;
+        }
+        toast.error("The video consultation isn't ready yet.");
+        return;
+      }
+
       const appointment = activeAlert.appointment;
       const res = await apiFetch<AppointmentJoinResponse>(`/patient/appointments/${appointment.id}/join`, {
         method: "POST",
@@ -352,9 +418,11 @@ export function PatientCallAlertListener() {
 
           <div className="mt-3 grid gap-2 rounded-[6px] border border-border/70 bg-background p-3 text-xs">
             <div className="flex items-center gap-2 text-foreground">
-              {isAppointmentAlert ? <CalendarClock className="h-3.5 w-3.5 text-primary" /> : <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
+              {activeAlert.kind === "instant" ? <Phone className="h-3.5 w-3.5 text-primary" /> : isAppointmentAlert ? <CalendarClock className="h-3.5 w-3.5 text-primary" /> : <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
               <span className="truncate">
-                {isAppointmentAlert
+                {activeAlert.kind === "instant"
+                  ? "Instant consultation"
+                  : isAppointmentAlert
                   ? formatAppointmentDateTime(
                       activeAlert.appointment.appointment_date,
                       activeAlert.appointment.appointment_time,

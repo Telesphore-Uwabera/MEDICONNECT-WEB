@@ -393,6 +393,8 @@ export const ConnectDialogContent = ({
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [dailyToken, setDailyToken] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [doctorBusy, setDoctorBusy] = useState(false);
+  const callAlertedRef = useRef(false);
   // Set when the backend rejects a new request because one is already active —
   // holds the in-progress consultation so we can offer a one-click rejoin.
   const [activeRejoin, setActiveRejoin] = useState<{ roomName: string; token: any } | null>(null);
@@ -467,15 +469,32 @@ export const ConnectDialogContent = ({
 
         if (existing.pendingPayment) {
           // Request succeeded before but user left before paying.
-          // Restore payment context and skip straight to payment — no re-request.
-          setConsultationId(existing.pendingPayment.consultationId);
-          setPaymentInfo({
-            amount: existing.pendingPayment.amount,
-            currency: existing.pendingPayment.currency,
-          });
-          // Don't show the resume banner — jump directly to the payment step
-          setSavedSession(null);
-          setPhase("payment");
+          // If the doctor already accepted, or payment is done, open the visit
+          // instead of asking for money again.
+          let alreadyInVisit = false;
+          try {
+            const live = await apiFetch<{ status?: string; payment_status?: string | null }>(
+              `/public/instant-consultations/${existing.token}/status`,
+            );
+            const liveStatus = String(live?.status || "");
+            alreadyInVisit = live?.payment_status === "paid"
+              || ["confirmed", "accepted", "in_progress"].includes(liveStatus);
+          } catch {
+            alreadyInVisit = false;
+          }
+          if (cancelled) return;
+          if (alreadyInVisit) {
+            setSavedSession(null);
+            setPhase("polling");
+          } else {
+            setConsultationId(existing.pendingPayment.consultationId);
+            setPaymentInfo({
+              amount: existing.pendingPayment.amount,
+              currency: existing.pendingPayment.currency,
+            });
+            setSavedSession(null);
+            setPhase("payment");
+          }
         } else {
           // Payment confirmed (or free) — show resume banner, polling on confirm
           setSavedSession(existing);
@@ -547,10 +566,12 @@ export const ConnectDialogContent = ({
     setQueueInfo({ position: Number(statusData.queue_position), ahead: statusData.people_ahead });
     console.info("[Poll] statusData:", JSON.stringify(statusData));
 
+    setDoctorBusy(Boolean(statusData.doctor_busy));
     if (statusData.status === "accepted" || statusData.status === "in_progress") {
       setRoomUrl(statusData.room_url ?? null);
       setDailyToken(statusData.daily_guest_token ?? null);
       setPhase(statusData.status === "in_progress" ? "in_progress" : "accepted");
+      setDoctorBusy(false);
       session.clear();
     } else if (
       statusData.status === "declined" ||
@@ -565,6 +586,18 @@ export const ConnectDialogContent = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusData]);
+
+  useEffect(() => {
+    if (phase !== "accepted" && phase !== "in_progress") return;
+    if (callAlertedRef.current) return;
+    callAlertedRef.current = true;
+    const audio = new Audio("/audio/new-notification-057-494255.mp3");
+    audio.volume = 0.85;
+    void audio.play().catch(() => null);
+    toast.message(t("consult.connect.doctor_waiting", { defaultValue: "Your doctor is waiting" }), {
+      description: t("consult.connect.doctor_waiting_hint", { defaultValue: "Join the video call now." }),
+    });
+  }, [phase, t]);
 
   // ── Resume saved session ──────────────────────────────────────────────────
   //
@@ -639,7 +672,7 @@ export const ConnectDialogContent = ({
         const match = list.find(
           (a) =>
             a?.booking_type === "instant" &&
-            (a?.status === "in_progress" || a?.status === "confirmed") &&
+            (a?.status === "in_progress" || a?.status === "confirmed" || a?.status === "accepted") &&
             (isGeneral || a?.doctor?.id === doctor?.id),
         );
         setActiveInstant(match ? { id: Number(match.id) } : null);
@@ -793,11 +826,18 @@ export const ConnectDialogContent = ({
         return;
       }
 
+      const amount = Number(res.amount ?? responseData?.amount ?? 0);
+      setPaymentInfo({ amount, currency: "RWF" });
+      if (res.doctor_busy) {
+        session.save(guestToken, name, phone, extractedId);
+        setDoctorBusy(true);
+        setPhase("polling");
+        return;
+      }
+
       // Payment required — save session with pendingPayment so that if the
       // user closes before paying, reopening resumes at the payment step
-      const amount = Number(res.amount ?? responseData?.amount ?? 0);
       session.saveWithPendingPayment(guestToken, name, phone, extractedId, amount, "RWF");
-      setPaymentInfo({ amount, currency: "RWF" });
       setPhase("payment");
     } catch (err: unknown) {
       // Wrong-role rejection → offer a one-click switch to patient.
@@ -895,6 +935,13 @@ export const ConnectDialogContent = ({
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t("consult.connect.err_payment_initiate_failed");
+      const busy = (err as { status?: number })?.status === 409 || /another consultation/i.test(msg);
+      if (busy) {
+        setDoctorBusy(true);
+        setErrorMsg(null);
+        setPhase("polling");
+        return;
+      }
       console.error("[Pay] error:", msg);
       setErrorMsg(`${msg} ${t("consult.connect.please_try_again_suffix")}`);
       setPhase("payment");
@@ -1724,6 +1771,20 @@ export const ConnectDialogContent = ({
           {/* ── Polling ── */}
           {phase === "polling" && (
             <div className="space-y-3">
+              {doctorBusy && (
+                <div className="p-3 rounded-[6px] bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-200">
+                  {t("consult.connect.doctor_busy_queue", {
+                    defaultValue: "The doctor is in another consultation. You stay in the queue and can pay when they are free.",
+                  })}
+                </div>
+              )}
+              {!doctorBusy && statusData?.payment_status !== "paid" && paymentInfo && (
+                <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
+                  {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {t("consult.connect.pay_now")}
+                </Button>
+              )}
               <DeviceToggles compact={true} />
               <div className="space-y-2 pt-1">
                 <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">

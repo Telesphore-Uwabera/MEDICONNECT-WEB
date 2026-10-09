@@ -1318,6 +1318,8 @@ export function appRoutes(router) {
       if (await hasColumn(table, "daily_room_url")) patch.daily_room_url = roomUrl;
       if (await hasColumn(table, "daily_doctor_token")) patch.daily_doctor_token = doctorToken;
       await update(table, row.id, patch);
+      const updated = await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [row.id]);
+      notifyDoctorReady(updated || row).catch(() => null);
       res.json({
         message: "Session ready.",
         room_url: roomUrl,
@@ -1430,6 +1432,50 @@ export function appRoutes(router) {
         room_name: room,
         token,
         join_url: `/consultation/${room}`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/patient/instant-consultations/ready", requireAuth, async (req, res, next) => {
+    try {
+      const table = await instantTable();
+      if (!table) return res.json({ data: null });
+      const patient = await tableExists("patients")
+        ? await one("SELECT id FROM patients WHERE user_id = ? LIMIT 1", [req.user.id]).catch(() => null)
+        : null;
+      const clauses = [];
+      const params = [];
+      if (patient?.id && await hasColumn(table, "patient_id")) {
+        clauses.push("patient_id = ?");
+        params.push(patient.id);
+      }
+      if (req.user.email && await hasColumn(table, "guest_email")) {
+        clauses.push("guest_email = ?");
+        params.push(req.user.email);
+      }
+      if (!clauses.length) return res.json({ data: null });
+      const row = await one(
+        `SELECT * FROM \`${table}\` WHERE (${clauses.join(" OR ")}) AND status IN ('accepted','in_progress') ORDER BY id DESC LIMIT 1`,
+        params,
+      ).catch(() => null);
+      if (!row) return res.json({ data: null });
+      const roomName = row.daily_room_name || row.room_name || `instant-${row.id}`;
+      res.json({
+        data: {
+          id: row.id,
+          status: row.status,
+          guest_name: row.guest_name || req.user.name || "Patient",
+          room_name: roomName,
+          room_url: row.daily_room_url || row.room_url || `/consultation/${roomName}`,
+          daily_guest_token: callToken({
+            room: roomName,
+            role: "patient",
+            consultationId: row.id,
+            name: row.guest_name || req.user.name || "Patient",
+          }),
+        },
       });
     } catch (error) {
       next(error);

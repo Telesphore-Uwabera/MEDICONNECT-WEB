@@ -102,7 +102,7 @@ export async function notifyDoctorReady(row) {
     userId: patient.userId,
     email: patient.email,
     title: "Your doctor is ready",
-    text: `${doctor?.name || "Your doctor"} accepted your consultation. Open MediConnect and join the video call.`,
+    text: `${doctor?.name || "Your doctor"} is in the video consultation and is waiting for you. Open https://mediconnect.rw and join the call now.`,
     type: "visit.ready",
   });
 }
