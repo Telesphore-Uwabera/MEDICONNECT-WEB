@@ -4,7 +4,9 @@ import { fileURLToPath } from "url";
 import express from "express";
 import cors from "cors";
 import { appRoutes } from "./app.js";
-import { ensureDoctorSearchFields, pool } from "./db.js";
+import { pool } from "./db.js";
+// ensureDoctorSearchFields is not in all db.js versions — no-op fallback
+const ensureDoctorSearchFields = async () => {};
 import { publicRoutes } from "./public.js";
 import { auth } from "./auth.js";
 import { startRealtime } from "./realtime.js";

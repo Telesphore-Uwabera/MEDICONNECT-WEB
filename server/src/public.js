@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
-import crypto from "crypto";
 import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
 import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
