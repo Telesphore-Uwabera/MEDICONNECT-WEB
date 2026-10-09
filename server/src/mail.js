@@ -240,3 +240,83 @@ export async function sendMail({ to, subject, text, html }) {
     return false;
   }
 }
+
+// ─── Auth email builders ──────────────────────────────────────────────────────
+
+function greeting(name) {
+  const first = String(name || "").split(" ")[0] || "there";
+  return `Hello, ${first}!`;
+}
+
+/**
+ * Branded OTP email for password reset and phone/email verification.
+ * Called from app.js for forgot-password and send-otp flows.
+ */
+export function buildOtpEmail({ code, type = "verification", recipientName }) {
+  const isReset = String(type).includes("reset") || String(type).includes("password");
+  const title = isReset ? "Reset your password" : "Your verification code";
+  const preheader = `Your MediConnect ${isReset ? "password reset" : "verification"} code is ${code}`;
+  const accentHex = isReset ? "#d97706" : BRAND.primary;
+
+  const body = `
+    ${emailP(greeting(recipientName))}
+    ${emailP(isReset
+      ? "We received a request to reset the password on your MediConnect account. Use the 6-digit code below — it expires in <strong>10 minutes</strong>."
+      : "Use the one-time code below to verify your MediConnect account. This code expires in <strong>10 minutes</strong>."
+    )}
+    ${emailOtpBlock(code)}
+    ${emailP("If you did not request this, you can safely ignore this email — your account remains secure.", "font-size:12px;color:#6b7280;")}
+    ${isReset
+      ? `<p style="margin:0;font-size:12px;color:#9ca3af;font-family:'Segoe UI',Arial,sans-serif;">For your security, never share this code with anyone — MediConnect staff will never ask for it.</p>`
+      : ""}
+  `;
+
+  return buildEmailHtml({ title, preheader, body, accentHex });
+}
+
+/**
+ * Welcome email sent right after account creation.
+ */
+export function buildWelcomeEmail({ name, role, loginUrl = "https://mediconnect.rw/auth" }) {
+  const roleLabel = {
+    patient: "Patient",
+    doctor: "Doctor",
+    hospital: "Hospital / Facility",
+    pharmacy: "Pharmacy",
+    admin: "Administrator",
+  }[role] || "Member";
+
+  const title = "Welcome to MediConnect!";
+  const preheader = `Your ${roleLabel} account is ready. Sign in to get started.`;
+
+  const body = `
+    ${emailP(greeting(name))}
+    ${emailP(`Your MediConnect <strong>${roleLabel}</strong> account has been successfully created. You can now sign in and start using the platform.`)}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">What you can do on MediConnect</p>
+          ${role === "patient" ? `
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Book appointments with verified doctors</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Start instant video consultations</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ View prescriptions and medical records</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Order medications from partnered pharmacies</p>
+          ` : role === "doctor" ? `
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Complete your profile to get approved</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Manage your schedule and appointments</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Conduct video consultations with patients</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Issue prescriptions and fitness certificates</p>
+          ` : `
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Complete your profile to get approved</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Manage your services and team</p>
+            <p style="margin:2px 0;font-size:12px;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;">✓ Connect with patients across Rwanda</p>
+          `}
+        </td>
+      </tr>
+    </table>
+    ${emailBtn("Sign In to MediConnect", loginUrl)}
+    ${emailP("If you have any questions, our support team is always happy to help.", "font-size:12px;color:#6b7280;")}
+  `;
+
+  return buildEmailHtml({ title, preheader, body });
+}

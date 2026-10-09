@@ -64,28 +64,6 @@ function greeting(name) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  OTP / auth emails  (called from app.js)
-// ─────────────────────────────────────────────────────────────────────────────
-export function buildOtpEmail({ code, type = "verification", recipientName }) {
-  const isReset = String(type).includes("reset") || String(type).includes("password");
-  const title = isReset ? "Reset your password" : "Your verification code";
-  const preheader = `Your MediConnect ${isReset ? "password reset" : "verification"} code is ${code}`;
-
-  const body = `
-    ${emailP(greeting(recipientName))}
-    ${emailP(isReset
-      ? "We received a request to reset the password on your MediConnect account. Use the code below to proceed. This code expires in <strong>10 minutes</strong>."
-      : "Use the one-time code below to verify your MediConnect account. This code expires in <strong>10 minutes</strong>."
-    )}
-    ${emailOtpBlock(code)}
-    ${emailP("If you did not request this, you can safely ignore this email — your account remains secure.")}
-    ${isReset ? `<p style="margin:0;font-size:12px;color:#9ca3af;font-family:'Segoe UI',Arial,sans-serif;">For security, never share this code with anyone, including MediConnect support.</p>` : ""}
-  `;
-
-  return buildEmailHtml({ title, preheader, body });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  notifyPaidVisit
 // ─────────────────────────────────────────────────────────────────────────────
 export async function notifyPaidVisit(payment) {

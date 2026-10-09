@@ -47,8 +47,7 @@ import {
   toUser,
   verifyPassword,
 } from "./auth.js";
-import { sendMail } from "./mail.js";
-import { buildOtpEmail } from "./mail.js";
+import { sendMail, buildOtpEmail, buildWelcomeEmail, buildEmailHtml, emailP, emailBtn } from "./mail.js";
 
 const PROFILE_TABLE = {
   patient: "patients",
@@ -413,6 +412,18 @@ export function appRoutes(router) {
       await ensureRole(id, role);
       const created = await one("SELECT * FROM users WHERE id = ?", [id]);
       await createProfile(created, role);
+
+      // Send welcome email (best-effort — never block the response)
+      if (created?.email) {
+        const html = buildWelcomeEmail({ name: created.name, role });
+        sendMail({
+          to: created.email,
+          subject: "Welcome to MediConnect!",
+          text: `Hi ${created.name || "there"},\n\nYour MediConnect account has been created. Sign in at https://mediconnect.rw/auth to get started.\n\nThe MediConnect Team`,
+          html,
+        }).catch(() => null);
+      }
+
       res.status(201).json({ message: "Account created.", user_id: id });
     } catch (error) {
       next(error);
@@ -511,16 +522,49 @@ export function appRoutes(router) {
       const row = await findUserByLogin(req.body ?? {});
       if (!row) return res.status(422).json({ message: "Account not found." });
       const otp = await one(
-        "SELECT id FROM otps WHERE code = ? AND (email = ? OR phone = ?) ORDER BY id DESC LIMIT 1",
+        "SELECT id, expires_at FROM otps WHERE code = ? AND (email = ? OR phone = ?) AND type = 'password_reset' ORDER BY id DESC LIMIT 1",
         [req.body?.otp, req.body?.email ?? "", req.body?.phone ?? ""],
       );
       if (!otp) return res.status(422).json({ message: "That code is not valid." });
+      // Check expiry
+      if (otp.expires_at && new Date(otp.expires_at).getTime() < Date.now()) {
+        await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
+        return res.status(422).json({ message: "That code has expired. Please request a new one." });
+      }
       if (req.body?.password !== req.body?.password_confirmation) {
         return res.status(422).json({ message: "Password confirmation does not match." });
       }
       await update("users", row.id, { password: await hashPassword(req.body.password) });
       await pool.query("DELETE FROM otps WHERE id = ?", [otp.id]);
-      res.json({ message: "Password updated." });
+
+      // Send confirmation email
+      if (row.email) {
+        sendMail({
+          to: row.email,
+          subject: "MediConnect — Your password has been changed",
+          text: `Hi ${row.name || "there"},\n\nYour MediConnect password was successfully changed.\n\nIf you did not make this change, contact us immediately at admin@mediconnect.rw.\n\nThe MediConnect Team`,
+          html: buildEmailHtml({
+            title: "Password changed successfully",
+            preheader: "Your MediConnect password has been updated.",
+            accentHex: "#38a169",
+            body: `
+              ${emailP(row.name ? `Hello, ${row.name.split(" ")[0]}!` : "Hello!")}
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+                <tr>
+                  <td style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;border-left:4px solid #38a169;">
+                    <p style="margin:0;font-size:15px;font-weight:700;color:#166534;font-family:'Segoe UI',Arial,sans-serif;">✓ Your password has been updated</p>
+                  </td>
+                </tr>
+              </table>
+              ${emailP("Your MediConnect password was successfully changed. You can now sign in with your new password.")}
+              ${emailBtn("Sign In", "https://mediconnect.rw/auth", "#38a169")}
+              ${emailP("If you did not make this change, contact us immediately at admin@mediconnect.rw before someone gains access to your account.", "font-size:12px;color:#dc2626;")}
+            `,
+          }),
+        }).catch(() => null);
+      }
+
+      res.json({ message: "Password updated successfully." });
     } catch (error) {
       next(error);
     }
