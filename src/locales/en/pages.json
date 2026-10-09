@@ -584,6 +584,8 @@
     "clear_all_filters_link": "Clear all filters",
     "page_of": "Page {{current}} of {{last}}",
     "showing_range": "Showing {{from}}-{{to}} of {{total}} doctors",
+    "view_more": "View more",
+    "view_less": "View less",
     "prev_link": "Prev",
     "grid_view_aria": "grid view",
     "list_view_aria": "list view",

@@ -14,8 +14,6 @@ import {
   MapPin,
   AlertCircle,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight,
   User,
   Calendar as CalendarIcon,
 } from "lucide-react";
@@ -178,12 +176,14 @@ const GENERAL_PRACTITIONER_SPEC: SpecializationValue = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const INITIAL_VISIBLE = 9;
+const VISIBLE_STEP = 3;
+
 function buildApiParams(
   filters: FilterState,
   spec: SpecializationValue,
-  page: number,
 ): DoctorSearchParams {
-  const params: DoctorSearchParams = { page };
+  const params: DoctorSearchParams = { page: 1, per_page: 100 };
   if (filters.q.trim().length >= 2) params.q = filters.q.trim();
 
   // Specialization: pass name; if sub-spec (fee) selected, also pass its id
@@ -632,160 +632,6 @@ function SearchStats({
   );
 }
 
-function Pagination({
-  currentPage,
-  lastPage,
-  total,
-  perPage,
-  onPageChange,
-}: {
-  currentPage: number;
-  lastPage: number;
-  total: number;
-  perPage: number;
-  onPageChange: (p: number) => void;
-}) {
-  if (lastPage <= 1) return null;
-
-  const from = (currentPage - 1) * perPage + 1;
-  const to = Math.min(currentPage * perPage, total);
-
-  return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-border/60 bg-card/50">
-      <p className="text-[10px] text-muted-foreground">
-        Showing{" "}
-        <span className="font-semibold text-foreground">
-          {from}–{to}
-        </span>{" "}
-        of <span className="font-semibold text-foreground">{total}</span>{" "}
-        doctors
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
-          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-        </button>
-        {Array.from({ length: Math.min(lastPage, 5) }, (_, i) => {
-          const page = i + 1;
-          return (
-            <button
-              key={page}
-              onClick={() => onPageChange(page)}
-              className={cn(
-                "w-7 h-7 flex items-center justify-center rounded-[6px] border text-[11px] font-medium transition-all",
-                currentPage === page
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40",
-              )}
-            >
-              {page}
-            </button>
-          );
-        })}
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= lastPage}
-          className="w-7 h-7 flex items-center justify-center rounded-[6px] border border-border/60 text-muted-foreground hover:text-foreground hover:border-primary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PaginationV2({
-  currentPage,
-  lastPage,
-  total,
-  perPage,
-  onPageChange,
-}: {
-  currentPage: number;
-  lastPage: number;
-  total: number;
-  perPage: number;
-  onPageChange: (p: number) => void;
-}) {
-  if (total <= 0) return null;
-
-  const safeLastPage = Math.max(1, lastPage);
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), safeLastPage);
-  const from = (safeCurrentPage - 1) * perPage + 1;
-  const to = Math.min(safeCurrentPage * perPage, total);
-  const goToPage = (nextPage: number) =>
-    onPageChange(Math.min(Math.max(1, nextPage), safeLastPage));
-
-  const pageNumbers = (() => {
-    const pages = new Set<number>([1, safeLastPage, safeCurrentPage]);
-    for (let p = safeCurrentPage - 1; p <= safeCurrentPage + 1; p += 1) {
-      if (p >= 1 && p <= safeLastPage) pages.add(p);
-    }
-    return Array.from(pages).sort((a, b) => a - b);
-  })();
-
-  return (
-    <div className="border-t border-border/70 bg-card px-4 py-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold text-foreground">
-            {t("pages.patient.page_of", { current: safeCurrentPage, last: safeLastPage })}
-          </p>
-          <p className="text-[10px] text-muted-foreground">
-            {t("pages.patient.showing_range", { from, to, total })}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <button
-            onClick={() => goToPage(safeCurrentPage - 1)}
-            disabled={safeCurrentPage <= 1}
-            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            {t("pages.patient.prev_link")}
-          </button>
-
-          {pageNumbers.map((pageNumber, index) => {
-            const previous = pageNumbers[index - 1];
-            return (
-              <span key={pageNumber} className="inline-flex items-center gap-1.5">
-                {previous != null && pageNumber - previous > 1 && (
-                  <span className="px-1 text-xs text-muted-foreground">...</span>
-                )}
-                <button
-                  onClick={() => goToPage(pageNumber)}
-                  aria-current={safeCurrentPage === pageNumber ? "page" : undefined}
-                  className={cn(
-                    "h-9 min-w-9 px-3 flex items-center justify-center rounded-[6px] border text-xs font-bold transition-all",
-                    safeCurrentPage === pageNumber
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:border-primary/50",
-                  )}
-                >
-                  {pageNumber}
-                </button>
-              </span>
-            );
-          })}
-
-          <button
-            onClick={() => goToPage(safeCurrentPage + 1)}
-            disabled={safeCurrentPage >= safeLastPage}
-            className="h-9 px-3 flex items-center gap-1.5 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-          >
-            {t("common.next")}
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 const PatientDoctors = () => {
@@ -797,10 +643,7 @@ const PatientDoctors = () => {
   const [debouncedQ, setDebouncedQ] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [page, setPage] = useState(() => {
-    const fromUrl = Number(searchParams.get("page"));
-    return Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1;
-  });
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didMountSearchRef = useRef(false);
   const didMountSpecRef = useRef(false);
@@ -843,7 +686,7 @@ const PatientDoctors = () => {
     debounceRef.current = setTimeout(() => {
       setDebouncedQ(filters.q);
       if (didMountSearchRef.current) {
-        setPage(1);
+        setVisibleCount(INITIAL_VISIBLE);
       } else {
         didMountSearchRef.current = true;
       }
@@ -853,10 +696,9 @@ const PatientDoctors = () => {
     };
   }, [filters.q]);
 
-  // Reset page when spec changes
   useEffect(() => {
     if (didMountSpecRef.current) {
-      setPage(1);
+      setVisibleCount(INITIAL_VISIBLE);
     } else {
       didMountSpecRef.current = true;
     }
@@ -882,14 +724,13 @@ const PatientDoctors = () => {
     if (spec.fee?.id) params.set("specialization_fee_id", String(spec.fee.id));
     if (searchParams.get("disease") === "1") params.set("disease", "1");
     if (searchParams.get("concern")) params.set("concern", searchParams.get("concern") || "");
-    if (page > 1) params.set("page", String(page));
 
     setSearchParams(params, { replace: true });
-  }, [debouncedQ, filters, page, setSearchParams, spec]);
+  }, [debouncedQ, filters, setSearchParams, spec]);
 
   const apiParams = useMemo<DoctorSearchParams>(
-    () => buildApiParams({ ...filters, q: debouncedQ }, spec, page),
-    [filters, debouncedQ, spec, page],
+    () => buildApiParams({ ...filters, q: debouncedQ }, spec),
+    [filters, debouncedQ, spec],
   );
 
   const { data, isLoading, isError, refetch } = useGetSearchDoctors(apiParams);
@@ -935,16 +776,14 @@ const PatientDoctors = () => {
     if (!data?.data) return [];
     return sortDoctors(data.data, filters.sort);
   }, [data, filters.sort]);
-
-  useEffect(() => {
-    if (!data || data.last_page < 1) return;
-    if (page > data.last_page) setPage(data.last_page);
-  }, [data, page]);
+  const visibleDoctors = doctors.slice(0, visibleCount);
+  const canViewMore = visibleCount < doctors.length;
+  const canViewLess = visibleCount > INITIAL_VISIBLE;
 
   const set = useCallback(
     <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
-      if (key !== "q" && key !== "sort") setPage(1);
+      if (key !== "q" && key !== "sort") setVisibleCount(INITIAL_VISIBLE);
     },
     [],
   );
@@ -955,22 +794,21 @@ const PatientDoctors = () => {
     setFellBackToGp(false);
     setFellBackFrom("");
     setDebouncedQ("");
-    setPage(1);
+    setVisibleCount(INITIAL_VISIBLE);
     setSearchParams({}, { replace: true });
   }, [setSearchParams]);
 
   const hasActiveFilters = useMemo(
     () =>
       JSON.stringify(filters) !== JSON.stringify(INITIAL_FILTERS) ||
-      spec.specialization !== null ||
-      page > 1,
-    [filters, page, spec],
+      spec.specialization !== null,
+    [filters, spec],
   );
 
   // (no body overflow lock needed — filters are inline top panel)
 
   const scheduleQueries = useQueries({
-    queries: doctors.map((doctor) => ({
+    queries: visibleDoctors.map((doctor) => ({
       queryKey: ["doctor-availability", doctor.slug],
       queryFn: () => apiFetch<PublicDoctorSchedule>(`/public/doctors/${doctor.slug}/availability`),
       enabled: !!doctor.slug,
@@ -978,21 +816,10 @@ const PatientDoctors = () => {
       refetchInterval: 60_000,
     })),
   });
-  const instantCount = doctors.filter((doctor, index) =>
+  const instantCount = visibleDoctors.filter((doctor, index) =>
     doctorOffersInstant(doctor, scheduleQueries[index]?.data),
   ).length;
-  const availableCount = doctors.filter((d) => d.is_available).length;
-  const featuredCount = doctors.filter((d) => d.is_featured).length;
-
-  const handlePageChange = useCallback((nextPage: number) => {
-    setPage(nextPage);
-    requestAnimationFrame(() => {
-      document.querySelector("[data-doctor-results]")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-  }, []);
+  const availableCount = visibleDoctors.filter((d) => d.is_available).length;
 
 
   return (
@@ -1016,7 +843,7 @@ const PatientDoctors = () => {
             <SearchStats
               isLoading={isLoading}
               total={data?.total ?? 0}
-              shown={doctors.length}
+              shown={visibleDoctors.length}
               instant={instantCount}
               available={availableCount}
             />
@@ -1263,7 +1090,7 @@ const PatientDoctors = () => {
                       : "flex flex-col gap-2",
                   )}
                 >
-                  {Array.from({ length: 6 }).map((_, i) => (
+                  {Array.from({ length: INITIAL_VISIBLE }).map((_, i) => (
                     <DoctorCardSkeleton key={i} />
                   ))}
                 </div>
@@ -1291,28 +1118,57 @@ const PatientDoctors = () => {
                 </div>
               ) : view === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-2">
-                  {doctors.map((d) => (
+                  {visibleDoctors.map((d) => (
                     <DoctorGridCard key={d.id} doctor={d} />
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {doctors.map((d) => (
+                  {visibleDoctors.map((d) => (
                     <DoctorListItem key={d.id} doctor={d} />
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Pagination */}
-            {data && (
-              <PaginationV2
-                currentPage={data.current_page}
-                lastPage={data.last_page}
-                total={data.total}
-                perPage={data.per_page}
-                onPageChange={handlePageChange}
-              />
+            {(canViewMore || canViewLess) && (
+              <div className="border-t border-border/70 bg-card px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[11px] text-muted-foreground">
+                  {t("pages.patient.showing_range", {
+                    from: 1,
+                    to: visibleDoctors.length,
+                    total: doctors.length,
+                  })}
+                </p>
+                <div className="flex items-center gap-2">
+                  {canViewLess && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleCount((count) => {
+                          const remainder = doctors.length % VISIBLE_STEP;
+                          if (count >= doctors.length && remainder !== 0) {
+                            return Math.max(INITIAL_VISIBLE, doctors.length - remainder);
+                          }
+                          return Math.max(INITIAL_VISIBLE, count - VISIBLE_STEP);
+                        })
+                      }
+                      className="h-9 px-4 rounded-[6px] border border-border/70 bg-background text-xs font-semibold text-foreground hover:border-primary/50"
+                    >
+                      {t("pages.patient.view_less")}
+                    </button>
+                  )}
+                  {canViewMore && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount((count) => Math.min(doctors.length, count + VISIBLE_STEP))}
+                      className="h-9 px-4 rounded-[6px] bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      {t("pages.patient.view_more")}
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
           </main>
         </div>

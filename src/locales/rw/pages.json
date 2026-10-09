@@ -582,6 +582,8 @@
     "clear_all_filters_link": "Siba ibyo washakaga byose",
     "page_of": "Urupapuro {{current}} kuri {{last}}",
     "showing_range": "Kwerekana {{from}}-{{to}} kuri {{total}} abaganga",
+    "view_more": "Reba ibindi",
+    "view_less": "Reba bike",
     "prev_link": "Ibanjirije",
     "grid_view_aria": "kureba mu byuma",
     "list_view_aria": "kureba mu rutonde",

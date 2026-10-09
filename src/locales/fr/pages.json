@@ -582,6 +582,8 @@
     "clear_all_filters_link": "Effacer tous les filtres",
     "page_of": "Page {{current}} sur {{last}}",
     "showing_range": "Affichage de {{from}}-{{to}} sur {{total}} médecins",
+    "view_more": "Voir plus",
+    "view_less": "Voir moins",
     "prev_link": "Préc.",
     "grid_view_aria": "vue grille",
     "list_view_aria": "vue liste",
