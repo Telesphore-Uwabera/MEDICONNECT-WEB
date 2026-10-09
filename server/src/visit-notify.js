@@ -88,22 +88,28 @@ export async function notifyPaidVisit(payment) {
   const patient = await patientContact(row);
   const when = [row.appointment_date, row.appointment_time].filter(Boolean).join(" ") || "now";
   const kind = instant ? "instant consultation" : "appointment";
+  const amount = Number(payment?.amount || row.patient_pays || row.consultation_fee || 0);
+  const money = amount > 0 ? ` (${amount} RWF)` : "";
   if (doctor?.email || doctor?.user_id) {
     await deliver({
       userId: doctor?.user_id,
       email: doctor?.email,
-      title: `New ${kind} on MediConnect`,
-      text: `${patient.name} paid for a ${kind}${instant ? "" : ` on ${when}`}. Open your MediConnect dashboard to accept and join.`,
-      type: "visit.booked",
+      title: instant ? "New instant consultation on MediConnect" : "Paid appointment waiting for your confirmation",
+      text: instant
+        ? `${patient.name} paid for an instant consultation${money}. Open your MediConnect dashboard to accept and join.`
+        : `${patient.name} paid ${amount > 0 ? `${amount} RWF ` : ""}for an appointment on ${when}. Open your appointments, review the patient details, and confirm the visit. Email: ${patient.email || "not provided"}. Phone: ${patient.phone || "not provided"}.`,
+      type: "visit.paid",
     });
   }
   if (patient.email || patient.userId) {
     await deliver({
       userId: patient.userId,
       email: patient.email,
-      title: "Your MediConnect visit is confirmed",
-      text: `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in at https://mediconnect.rw to join when the doctor is ready.`,
-      type: "visit.confirmed",
+      title: instant ? "Your MediConnect visit is confirmed" : "Payment received for your appointment",
+      text: instant
+        ? `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in at https://mediconnect.rw to join when the doctor is ready.`
+        : `Your payment${money} is received${doctor?.name ? ` for ${doctor.name}` : ""} on ${when}. The doctor still needs to confirm the appointment. You will get another email when they do. Sign in at https://mediconnect.rw/patient/appointments.`,
+      type: "visit.paid",
     });
   }
 }
@@ -112,22 +118,48 @@ export async function notifyBookedVisit(row) {
   const doctor = await doctorContact(row?.doctor_id);
   const patient = await patientContact(row);
   const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" ") || "the scheduled time";
-  if (doctor?.email || doctor?.user_id) {
-    await deliver({
-      userId: doctor?.user_id,
-      email: doctor?.email,
-      title: "New appointment on MediConnect",
-      text: `${patient.name} booked an appointment on ${when}. Open your MediConnect dashboard to prepare for the visit.`,
-      type: "visit.booked",
-    });
-  }
+  const amount = Number(row?.patient_pays || row?.consultation_fee || row?.amount || 0);
+  const money = amount > 0 ? `${amount} RWF` : "the consultation fee";
   if (patient.email || patient.userId) {
     await deliver({
       userId: patient.userId,
       email: patient.email,
-      title: "Your MediConnect appointment is booked",
-      text: `Your appointment${doctor?.name ? ` with ${doctor.name}` : ""} is booked for ${when}. Sign in at https://mediconnect.rw before the visit. You will get another reminder when it is about to start.`,
+      title: "Pay to hold your MediConnect appointment",
+      text: `Your appointment${doctor?.name ? ` with ${doctor.name}` : ""} is reserved for ${when}. Pay ${money} at https://mediconnect.rw/patient/appointments before the doctor can confirm it. The visit stays pending until that payment is complete.`,
       type: "visit.booked",
+    });
+  }
+  if (doctor?.email || doctor?.user_id) {
+    await deliver({
+      userId: doctor?.user_id,
+      email: doctor?.email,
+      title: "New appointment request on MediConnect",
+      text: `${patient.name} requested an appointment on ${when}. It stays pending until they pay ${money}. After payment you can open the appointment, review their details, and confirm it.`,
+      type: "visit.booked",
+    });
+  }
+}
+
+export async function notifyAppointmentConfirmed(row) {
+  const doctor = await doctorContact(row?.doctor_id);
+  const patient = await patientContact(row);
+  const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" ") || "the scheduled time";
+  if (patient.email || patient.userId) {
+    await deliver({
+      userId: patient.userId,
+      email: patient.email,
+      title: "Your appointment is confirmed",
+      text: `${doctor?.name || "Your doctor"} confirmed your appointment for ${when}. Sign in at https://mediconnect.rw/patient/appointments. You will get a reminder before it starts.`,
+      type: "visit.confirmed",
+    });
+  }
+  if (doctor?.email || doctor?.user_id) {
+    await deliver({
+      userId: doctor?.user_id,
+      email: doctor?.email,
+      title: "Appointment confirmed",
+      text: `You confirmed ${patient.name}'s appointment for ${when}. Their email is ${patient.email || "not provided"} and their phone is ${patient.phone || "not provided"}.`,
+      type: "visit.confirmed",
     });
   }
 }

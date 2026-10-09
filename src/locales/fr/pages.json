@@ -1303,6 +1303,8 @@
     "ready_to_join": "Pret a rejoindre",
     "live_now": "En direct",
     "awaiting_confirmation": "En attente de confirmation",
+    "awaiting_payment": "En attente de paiement",
+    "confirm_appointment": "Confirmer le rendez-vous",
     "on_schedule": "A l heure",
     "oldest_first": "Plus ancien d abord",
     "latest_first": "Plus recent d abord",

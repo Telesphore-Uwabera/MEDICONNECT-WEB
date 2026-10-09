@@ -431,17 +431,23 @@ export const BookingDialog = ({
       setShouldRefetchDoctor(true);
 
       setConfirmed({ date: dateKey, time });
-      toast.success(t("booking.doctorAppointment.appointmentBooked"), {
-        description: t("booking.doctorAppointment.appointmentBookedDesc", {
-          name: doctorName,
-          date: moment(dateKey).format("ddd MMM D"),
-          time,
-        }),
-      });
 
-      // Initiate payment if fee > 0
-      if (fee > 0) {
-        // Handle different response structures
+      const bookedFee = Number(
+        (res as { amount?: number }).amount
+        ?? (res as { consultation_fee?: number }).consultation_fee
+        ?? (res as { data?: { consultation_fee?: number } }).data?.consultation_fee
+        ?? fee,
+      ) || 0;
+      toast.success(t("booking.doctorAppointment.appointmentBooked"), {
+        description: bookedFee > 0
+          ? t("booking.doctorAppointment.payToConfirm", "Pay now. The doctor confirms the appointment after payment.")
+          : t("booking.doctorAppointment.appointmentBookedDesc", {
+            name: doctorName,
+            date: moment(dateKey).format("ddd MMM D"),
+            time,
+          }),
+      });
+      if (bookedFee > 0) {
         const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).data?.appointment?.id ?? (res as any).appointment?.id;
 
         if (!appointmentId) {

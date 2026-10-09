@@ -94,7 +94,12 @@ export function AppointmentCard({ appt, onStart, onRejoin, onView, hasNotes }: P
         {/* Notes — completed */}
         {status === "pending" && (
           <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-            {t("pages.doctor.awaiting_confirmation")}
+            {t(
+              Number((appt as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (appt as Appointment & { consultation_fee?: string }).consultation_fee || 0) > 0
+              && String((appt as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() !== "paid"
+                ? "pages.doctor.awaiting_payment"
+                : "pages.doctor.awaiting_confirmation",
+            )}
           </span>
         )}
 

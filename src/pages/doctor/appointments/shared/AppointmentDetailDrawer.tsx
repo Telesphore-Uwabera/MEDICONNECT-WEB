@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RichTextRenderer } from "@/components/ui/rich-textarea";
 import { cn } from "@/lib/utils";
-import { type Appointment } from "@/hooks/doctor/use-doctor-appointment";
+import { type Appointment, useConfirmAppointment } from "@/hooks/doctor/use-doctor-appointment";
 import { STATUS_STYLES, STATUS_DOT, type UIStatus } from "./types";
 import { fmtDate, fmtDateTime, fmtTime, fmtRelative, apptLabel, statusLabel, getErrMsg } from "./helpers";
 import { toast } from "sonner";
@@ -47,6 +47,7 @@ export function AppointmentDetailDrawer({
   appt, onClose, onStart, onRejoin, onRunningLate, onReadyNext, onReschedule, isReadyNextPending, isJoining,
 }: Props) {
   const { t } = useTranslation();
+  const confirmAppointment = useConfirmAppointment();
   const status = appt.status as UIStatus;
   const canStart = status === "confirmed";
   const isInProgress = status === "in_progress";
@@ -73,6 +74,9 @@ export function AppointmentDetailDrawer({
   };
 
   const raw = appt as ExtendedAppointment;
+  const due = Number(raw.patient_pays || raw.consultation_fee || 0);
+  const paid = String(raw.payment_status || "").toLowerCase() === "paid" || !(due > 0);
+  const canConfirm = status === "pending" && paid;
 
   const formatPaymentMethod = (m?: string) => {
     if (!m) return "—";
@@ -122,9 +126,27 @@ export function AppointmentDetailDrawer({
           )}
 
           {/* ── REJOIN button: only for in_progress ── */}
-          {status === "pending" && (
+          {canConfirm && (
+            <Button
+              size="sm"
+              onClick={() => confirmAppointment.mutate(appt.id, {
+                onSuccess: () => {
+                  toast.success(t("pages.doctor.confirm_appointment"));
+                  onClose();
+                },
+                onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_appointment"))),
+              })}
+              disabled={confirmAppointment.isPending}
+              className="h-9 px-4 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm flex items-center gap-2"
+            >
+              {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {t("pages.doctor.confirm_appointment")}
+            </Button>
+          )}
+
+          {status === "pending" && !paid && (
             <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-              {t("pages.doctor.awaiting_confirmation")}
+              {t("pages.doctor.awaiting_payment")}
             </span>
           )}
 

@@ -276,6 +276,17 @@ export function useGetAppointment(id: number) {
    9.3  useAcceptQuick  →  POST /appointments/:id/accept
 ───────────────────────────────────────────── */
 
+export function useConfirmAppointment() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) =>
+            apiFetch<{ message: string; appointment: Appointment }>(`${BASE}/${id}/confirm`, { method: "POST" }),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: appointmentKeys.all() });
+        },
+    });
+}
+
 export function useAcceptQuick() {
     const qc = useQueryClient();
     return useMutation({

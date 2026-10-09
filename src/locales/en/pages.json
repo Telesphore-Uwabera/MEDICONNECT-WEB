@@ -1305,6 +1305,8 @@
     "ready_to_join": "Ready to join",
     "live_now": "Live now",
     "awaiting_confirmation": "Awaiting confirmation",
+    "awaiting_payment": "Awaiting payment",
+    "confirm_appointment": "Confirm appointment",
     "on_schedule": "On schedule",
     "oldest_first": "Oldest first",
     "latest_first": "Latest first",

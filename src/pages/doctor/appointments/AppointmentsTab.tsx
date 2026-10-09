@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import {
   useGetAppointments,
   useAcceptQuick,
+  useConfirmAppointment,
   useJoinSession,
   useReadyNext,
   useCompleteAppointment,
@@ -130,6 +131,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const acceptQuick = useAcceptQuick();
   const readyNext = useReadyNext();
   const completeAppointment = useCompleteAppointment();
+  const confirmAppointment = useConfirmAppointment();
 
   const appointments: Appointment[] = data?.data ?? [];
 
@@ -727,9 +729,24 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
 
                               {/* Notes  completed */}
                               {status === "pending" && (
-                                <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
-                                  {t("pages.doctor.awaiting_confirmation")}
-                                </span>
+                                Number((a as Appointment & { patient_pays?: string; consultation_fee?: string }).patient_pays || (a as Appointment & { consultation_fee?: string }).consultation_fee || 0) > 0
+                                && String((a as Appointment & { payment_status?: string }).payment_status || "").toLowerCase() !== "paid" ? (
+                                  <span className="h-9 px-3 rounded-[6px] border border-amber-200 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 flex items-center">
+                                    {t("pages.doctor.awaiting_payment")}
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => confirmAppointment.mutate(a.id, {
+                                      onSuccess: () => toast.success(t("pages.doctor.confirm_appointment")),
+                                      onError: (err: unknown) => toast.error(getErrMsg(err, t("pages.doctor.confirm_appointment"))),
+                                    })}
+                                    disabled={confirmAppointment.isPending}
+                                    className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-[6px] shadow-sm"
+                                  >
+                                    {confirmAppointment.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("pages.doctor.confirm_appointment")}
+                                  </Button>
+                                )
                               )}
 
                               {!canStart && !isInProgress && status !== "pending" && (

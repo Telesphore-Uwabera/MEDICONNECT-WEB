@@ -13,7 +13,8 @@ import {
   submitProfileForReview,
 } from "./doctor-review.js";
 import { callToken } from "./call-token.js";
-import { notifyBookedVisit, notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
+import { notifyDoctorReady, notifyVisitCompleted } from "./visit-notify.js";
+import { attachAppointmentRoutes, decorateAppointments } from "./appointments.js";
 import { verifierNames } from "./verification.js";
 import { withTeamPhoto } from "./public.js";
 import { checkSocialLink } from "./social-links.js";
@@ -81,6 +82,9 @@ async function ownedFilter(req, table, scope) {
   if (scope === "admin" || scope === "notifications") return { sql: "1=1", params: [] };
   const profile = PROFILE_TABLE[scope];
   const ownerId = profile ? await loadOwnedId(req.user.id, profile) : null;
+  if (table === "appointments" && scope === "patient") {
+    return { sql: "(`patient_id` = ? OR `patient_id` = ?)", params: [req.user.id, ownerId ?? 0] };
+  }
   if (await hasColumn(table, `${scope}_id`)) {
     return { sql: `\`${scope}_id\` = ?`, params: [ownerId ?? 0] };
   }
@@ -110,6 +114,7 @@ async function listTable(req, table, scope) {
   const where = `WHERE ${filters.join(" AND ")}`;
   const total = await countWhere(table, where, params);
   let data = await presentRows(table, await q(`SELECT * FROM \`${table}\` ${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [...params, perPage, offset]));
+  if (table === "appointments") data = await decorateAppointments(data);
   if (["doctors", "hospitals", "pharmacies", "patients", "users"].includes(table)) {
     data = await verifierNames(data);
   }
@@ -340,6 +345,7 @@ const DOCTOR_PROFILE_PREFIXES = [
 const DOCTOR_SCHEDULE_PREFIXES = ["/doctor/availability", "/doctor/slots"];
 
 export function appRoutes(router) {
+  attachAppointmentRoutes(router, { requireAuth, requireRole });
   router.use(async (req, res, next) => {
     try {
       if (!req.user || req.user.active_role !== "doctor" || !req.path.startsWith("/doctor")) return next();
@@ -2410,6 +2416,7 @@ export function appRoutes(router) {
       const table = await resolveResourceTable(req.params.scope, req.params.resource);
       if (!table) return next();
       let row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [req.params.id]));
+      if (table === "appointments") row = await decorateAppointments(row);
       if (!row) return res.status(404).json({ message: "Record not found." });
       if (["doctors", "hospitals", "pharmacies", "patients", "users"].includes(table)) {
         [row] = await verifierNames([row]);
@@ -2820,47 +2827,6 @@ export function appRoutes(router) {
         last_page: Math.max(1, Math.ceil(total / perPage) || 1),
         from: total ? offset + 1 : null,
         to: total ? Math.min(offset + data.length, total) : null,
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post("/patient/appointments", requireAuth, requireRole("patient"), async (req, res, next) => {
-    try {
-      const body = req.body ?? {};
-      const doctorId = Number(body.doctor_id);
-      if (!doctorId || !body.appointment_date || !body.appointment_time) {
-        return res.status(422).json({ message: "Choose a doctor, date, and time." });
-      }
-      const doctor = await one("SELECT * FROM doctors WHERE id = ?", [doctorId]);
-      if (!doctor || !doctorIsApproved(doctor.status)) {
-        return res.status(422).json({ message: "This doctor is not available for appointments yet." });
-      }
-      const amount = await doctorOnlineFee(doctorId);
-      const id = await insert("appointments", {
-        doctor_id: doctorId,
-        patient_id: req.user.id,
-        user_id: req.user.id,
-        type: body.type || "online",
-        appointment_type: body.type || "online",
-        consultation_type: body.type || "online",
-        appointment_date: body.appointment_date,
-        appointment_time: body.appointment_time,
-        status: "pending",
-        amount,
-        fee: amount,
-        consultation_fee: amount,
-        currency: "RWF",
-      });
-      const row = await presentRow("appointments", await one("SELECT * FROM appointments WHERE id = ?", [id]));
-      notifyBookedVisit({ ...row, patient_id: req.user.id, doctor_id: doctorId }).catch(() => null);
-      res.status(201).json({
-        message: "Appointment booked.",
-        id,
-        amount,
-        data: row,
-        ...(row ?? {}),
       });
     } catch (error) {
       next(error);

@@ -1303,6 +1303,8 @@
     "ready_to_join": "Byiteguye kujyamo",
     "live_now": "Birimo kuba",
     "awaiting_confirmation": "Bitegereje kwemezwa",
+    "awaiting_payment": "Bitegereje kwishyura",
+    "confirm_appointment": "Emeza gahunda",
     "on_schedule": "Ku gihe",
     "oldest_first": "Ibya kera mbere",
     "latest_first": "Ibishya mbere",

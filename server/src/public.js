@@ -132,7 +132,7 @@ function isLocalInvoiceNumber(value) {
   return !value || /^MC-/i.test(String(value));
 }
 
-async function createIremboInvoice({ transactionId, amount, customer, description }) {
+export async function createIremboInvoice({ transactionId, amount, customer, description }) {
   const secret = paymentSecretKey();
   const publicKey = paymentPublicKey();
   const account = String(process.env.PAYMENT_ACCOUNT_IDENTIFIER || "Mediconnect_RWF").trim();
@@ -270,11 +270,7 @@ async function confirmPaidInvoice(payment, remote) {
   if (payableId && payableType.toLowerCase().includes("appointment") && await tableExists("appointments")) {
     const appointment = await one("SELECT id, status, payment_status FROM appointments WHERE id = ?", [payableId]).catch(() => null);
     if (appointment && String(appointment.payment_status || "").toLowerCase() !== "paid") {
-      const open = ["pending", "payment_pending", "unpaid", ""].includes(String(appointment.status || "").toLowerCase());
-      await update("appointments", appointment.id, {
-        payment_status: "paid",
-        ...(open ? { status: "confirmed" } : {}),
-      });
+      await update("appointments", appointment.id, { payment_status: "paid" });
     }
   }
   const saved = (await one("SELECT * FROM payments WHERE id = ?", [payment.id])) || payment;
