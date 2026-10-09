@@ -98,11 +98,16 @@ async function consultationAmount(row) {
     [doctorId],
   ).catch(() => null);
   let amount = Number(doctor?.consultation_fee || 0);
-  if (!amount && doctor?.specialization_fee_id && await tableExists("specialization_fees")) {
-    const fee = await one(
-      "SELECT online_fee FROM specialization_fees WHERE id = ?",
-      [doctor.specialization_fee_id],
-    ).catch(() => null);
+  if (!amount && await tableExists("specialization_fees")) {
+    const fee = doctor?.specialization_fee_id
+      ? await one(
+        "SELECT online_fee FROM specialization_fees WHERE id = ?",
+        [doctor.specialization_fee_id],
+      ).catch(() => null)
+      : await one(
+        "SELECT online_fee FROM specialization_fees WHERE sub_specialization = ? ORDER BY id ASC LIMIT 1",
+        [doctor?.specialization || ""],
+      ).catch(() => null);
     amount = Number(fee?.online_fee || 0);
   }
   return amount;
@@ -586,13 +591,14 @@ export function publicRoutes(router) {
       }
       const where = `WHERE ${filters.join(" AND ")}`;
       const total = await countWhere("doctors d JOIN users u ON u.id = d.user_id", where, params);
+      const rotationSlot = Math.floor(Date.now() / (10 * 60 * 1000));
       const rows = await q(
         `SELECT d.*, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar
          FROM doctors d JOIN users u ON u.id = d.user_id
          ${where}
-         ORDER BY d.is_featured DESC, d.id DESC
+         ORDER BY CRC32(CONCAT(d.id, ':', ?)), d.id
          LIMIT ? OFFSET ?`,
-        [...params, perPage, offset],
+        [...params, rotationSlot, perPage, offset],
       );
       const shaped = await presentRows("doctors", rows);
       const data = await attachDoctorRelations(shaped);
@@ -1054,11 +1060,10 @@ export function publicRoutes(router) {
         return res.status(422).json({ message: "This doctor is not available for consultations yet." });
       }
 
-      let amount = Number(body.amount || doctor?.consultation_fee || 0);
-      if (!amount && doctor?.specialization_fee_id && await tableExists("specialization_fees")) {
-        const fee = await one("SELECT online_fee FROM specialization_fees WHERE id = ?", [doctor.specialization_fee_id]).catch(() => null);
-        amount = Number(fee?.online_fee || 0);
-      }
+      const amount = await consultationAmount({
+        amount: body.amount,
+        doctor_id: doctorId,
+      });
 
       let patientId = Number(body.patient_id) || null;
       if (!patientId && req.user?.id && await tableExists("patients")) {

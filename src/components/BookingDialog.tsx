@@ -27,7 +27,8 @@ import {
   type ApiSlot,
 } from "@/hooks/patient/use-patient-booking";
 import { useInvoicePoller } from "@/hooks/patient/use-instant-consultations";
-import { useMe } from "@/hooks/useAuth";
+import { useLogin, useMe, useRegister } from "@/hooks/useAuth";
+import { Input } from "@/components/ui/input";
 
 // ─── Doctor type ───────────────────────────────────────────────────────────────
 
@@ -281,6 +282,12 @@ export const BookingDialog = ({
   const [confirmed, setConfirmed] = useState<{ date: string; time: string } | null>(null);
   const [shouldRefetchDoctor, setShouldRefetchDoctor] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [needsAccount, setNeedsAccount] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   const dateKey = date ? moment(date).format("YYYY-MM-DD") : null;
 
@@ -291,6 +298,8 @@ export const BookingDialog = ({
       setTime(null);
       setConfirmed(null);
       setShouldRefetchDoctor(false);
+      setNeedsAccount(false);
+      setAccountError(null);
       queryClient.removeQueries({ queryKey: ["doctor", doctor.slug] });
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -312,6 +321,8 @@ export const BookingDialog = ({
   // ── 3. Mutations ────────────────────────────────────────────────────────────
   const bookAppointment = useBookAppointment();
   const payAppointment = usePayAppointment();
+  const registerAccount = useRegister();
+  const loginAccount = useLogin();
   const invoicePoller = useInvoicePoller();
   const { data: me } = useMe();
 
@@ -380,12 +391,7 @@ export const BookingDialog = ({
     // ── Gate: only a signed-in patient can book ──────────────────────────────
     const token = localStorage.getItem("auth_token");
     if (!token) {
-      // Not signed in → send them to login rather than failing with "Unauthorized".
-      toast.message(t("booking.doctorAppointment.signInToBook"), {
-        description: t("booking.doctorAppointment.signInDesc"),
-      });
-      onOpenChange(false);
-      navigate("/auth", { state: { from: window.location.pathname + window.location.search } });
+      setNeedsAccount(true);
       return;
     }
     const activeRole = (me?.active_role ?? me?.role) as string | undefined;
@@ -403,6 +409,7 @@ export const BookingDialog = ({
 
     const slot = daySlots.find((s) => s.time === time);
     const appointmentTime = slot ? toTimeLabel(slot.rawTime) : time;
+    const fee = Number(doctor.consultation_fee) || 0;
 
     try {
       const res = await bookAppointment.mutateAsync({
@@ -410,6 +417,7 @@ export const BookingDialog = ({
         type: consultationType,
         appointment_date: dateKey,
         appointment_time: appointmentTime,
+        ...(fee > 0 ? { amount: fee, fee, consultation_fee: fee } : {}),
       });
 
       // Invalidate stale queries
@@ -432,7 +440,7 @@ export const BookingDialog = ({
       });
 
       // Initiate payment if fee > 0
-      if (doctor.consultation_fee && Number(doctor.consultation_fee) > 0) {
+      if (fee > 0) {
         // Handle different response structures
         const appointmentId = res.id ?? (res as any).data?.id ?? (res as any).data?.appointment?.id ?? (res as any).appointment?.id;
 
@@ -519,11 +527,43 @@ export const BookingDialog = ({
     }
   };
 
+  const handleCreateAccount = async () => {
+    if (!guestName.trim() || !guestEmail.trim() || guestPassword.length < 8) {
+      setAccountError("Enter your name, email, and a password of at least 8 characters.");
+      return;
+    }
+    setAccountError(null);
+    try {
+      await registerAccount.mutateAsync({
+        name: guestName.trim(),
+        email: guestEmail.trim(),
+        phone: guestPhone.trim(),
+        country_code: "+250",
+        role: "patient",
+        password: guestPassword,
+        password_confirmation: guestPassword,
+        accepted_terms: true,
+        gender: "",
+      });
+      await loginAccount.mutateAsync({
+        email: guestEmail.trim(),
+        auth_method: "password",
+        password: guestPassword,
+      });
+      setNeedsAccount(false);
+      await handleConfirm();
+    } catch (err) {
+      setAccountError(err instanceof Error ? err.message : "Could not create the account.");
+    }
+  };
+
   const reset = () => {
     setTime(null);
     setConfirmed(null);
     setDate(undefined);
     setShouldRefetchDoctor(false);
+    setNeedsAccount(false);
+    setAccountError(null);
     queryClient.removeQueries({ queryKey: ["doctor", doctor.slug] });
   };
 
@@ -706,7 +746,20 @@ export const BookingDialog = ({
             </div>
 
             {/* Footer */}
-            <div className="px-4 sm:px-6 py-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 flex-shrink-0">
+            <div className="px-4 sm:px-6 py-4 border-t border-border/60 flex flex-col gap-3 bg-muted/20 flex-shrink-0">
+              {needsAccount && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <p className="sm:col-span-2 text-sm text-muted-foreground">
+                    Add your details to book without an existing account. You can sign in with this email afterward.
+                  </p>
+                  <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Full name" />
+                  <Input value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="Email" type="email" />
+                  <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="Phone" />
+                  <Input value={guestPassword} onChange={(e) => setGuestPassword(e.target.value)} placeholder="Password" type="password" />
+                  {accountError && <p className="sm:col-span-2 text-sm text-destructive">{accountError}</p>}
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="text-sm text-muted-foreground min-w-0">
                 {date && time ? (
                   <span className="font-medium text-foreground truncate">
@@ -729,15 +782,18 @@ export const BookingDialog = ({
                 </Button>
                 <Button
                   size="sm"
-                  disabled={!date || !time || bookAppointment.isPending}
-                  onClick={handleConfirm}
+                  disabled={!date || !time || bookAppointment.isPending || registerAccount.isPending || loginAccount.isPending}
+                  onClick={needsAccount ? handleCreateAccount : handleConfirm}
                   className="h-8 px-5 text-sm rounded-[6px] bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
                 >
-                  {bookAppointment.isPending
+                  {bookAppointment.isPending || registerAccount.isPending || loginAccount.isPending
                     ? <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> {t("booking.doctorAppointment.booking")}</>
-                    : t("booking.doctorAppointment.confirmAppointment")}
+                    : needsAccount
+                      ? "Create account and book"
+                      : t("booking.doctorAppointment.confirmAppointment")}
                 </Button>
               </div>
+            </div>
             </div>
           </div>
         )}

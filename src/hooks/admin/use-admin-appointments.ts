@@ -179,7 +179,7 @@ export function useGetAdminAppointments(params: GetAdminAppointmentsParams = {})
         return record;
       };
       const [patients, doctors] = await Promise.all([
-        Promise.all(missingPatients.map(async (id) => [id, await withUserName(`/admin/patients/${id}`)] as const)),
+        Promise.all(missingPatients.map(async (id) => [id, await withUserName(`/admin/users/${id}`)] as const)),
         Promise.all(missingDoctors.map(async (id) => [id, await withUserName(`/admin/doctors/${id}`)] as const)),
       ]);
       const patientById = new Map(patients);

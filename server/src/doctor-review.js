@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import * as db from "./db.js";
 import { sendMail } from "./mail.js";
+import { ensureVerifierColumns } from "./verification.js";
 
 const { columns, hasColumn, insert, one, pool, q, update } = db;
 const forgetColumns = db.forgetColumns || (() => {});
@@ -132,8 +133,9 @@ export async function submitProfileForReview(doctorId) {
   return { review_submitted: was !== "pending" };
 }
 
-export async function reviewDoctor(id, action, message) {
+export async function reviewDoctor(id, action, message, adminUserId = null) {
   await ensureReviewColumn();
+  await ensureVerifierColumns("doctors");
   const doctor = await one("SELECT * FROM doctors WHERE id = ?", [id]);
   if (!doctor) return null;
   const note = plainText(message);
@@ -148,6 +150,7 @@ export async function reviewDoctor(id, action, message) {
     if (await hasColumn("doctors", "is_active")) patch.is_active = 1;
     if (await hasColumn("doctors", "review_message")) patch.review_message = null;
     if (await hasColumn("doctors", "verified_at")) patch.verified_at = new Date();
+    if (adminUserId && await hasColumn("doctors", "verified_by")) patch.verified_by = adminUserId;
   } else if (action === "reject") {
     patch.status = "rejected";
     if (await hasColumn("doctors", "is_active")) patch.is_active = 0;

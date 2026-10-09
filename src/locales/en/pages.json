@@ -564,6 +564,7 @@
     "insurance_any": "Any insurance",
     "date_label": "Date",
     "specialization_label": "Specialization",
+    "sort_rotating": "Rotating list",
     "sort_best_rating": "Best Rating",
     "sort_fee_asc": "Fee: Low → High",
     "sort_fee_desc": "Fee: High → Low",

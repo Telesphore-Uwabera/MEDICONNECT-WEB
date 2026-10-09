@@ -442,6 +442,7 @@ function OverviewTab({ p }: { p: ApiPharmacy }) {
             {p.verified_at && (
               <PanelInfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={formatDateOnly(p.verified_at)} />
             )}
+            <PanelInfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified by" value={p.verified_by_name || (p.verified_at ? "Admin" : "Not verified yet")} />
             {/* Bilingual names */}
             {p.name_rw && p.name_rw !== p.name_en && (
               <PanelInfoTile icon={<Languages className="w-2.5 h-2.5" />} label="Name (Kinyarwanda)" value={p.name_rw} full />

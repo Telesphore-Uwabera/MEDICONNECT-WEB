@@ -202,6 +202,7 @@ function OverviewTab({ h }: { h: ApiHospital }) {
             {h.verified_at && (
               <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified at" value={formatDateOnly(h.verified_at)} />
             )}
+            <InfoTile icon={<BadgeCheck className="w-2.5 h-2.5" />} label="Verified by" value={h.verified_by_name || (h.verified_at ? "Admin" : "Not verified yet")} />
             {h.opens_at && h.closes_at && !h.is_open_24h && (
               <InfoTile icon={<Clock className="w-2.5 h-2.5" />} label="Hours" value={`${h.opens_at.slice(0, 5)} - ${h.closes_at.slice(0, 5)}`} />
             )}

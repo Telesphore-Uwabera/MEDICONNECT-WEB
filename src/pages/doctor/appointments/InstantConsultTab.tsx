@@ -575,7 +575,8 @@ export function InstantConsultTab() {
                   <IncomingCard
                     key={item.id}
                     item={item}
-                    onComplete={() => handleComplete(item)}
+                    onComplete={() => completeConsult(item)}
+                    onOpenFile={() => handleComplete(item)}
                     onJoin={() => handleJoin(item)}
                     isCompleting={activeAction?.id === item.id && activeAction.action === "completing"}
                     isJoining={activeAction?.id === item.id && activeAction.action === "joining"}

@@ -826,9 +826,21 @@ export const ConnectDialogContent = ({
         return;
       }
 
-      const amount = Number(res.amount ?? responseData?.amount ?? 0);
+      let amount = Number(res.amount ?? responseData?.amount ?? 0);
+      let busy = Boolean(res.doctor_busy);
+      if (guestToken) {
+        try {
+          const status = await apiFetch<{ doctor_busy?: boolean; amount?: number }>(
+            `/public/instant-consultations/${guestToken}/status`,
+          );
+          busy = busy || Boolean(status?.doctor_busy);
+          if (!(amount > 0) && Number(status?.amount) > 0) amount = Number(status.amount);
+        } catch {
+          // The payment step still works from the request response.
+        }
+      }
       setPaymentInfo({ amount, currency: "RWF" });
-      if (res.doctor_busy) {
+      if (busy) {
         session.save(guestToken, name, phone, extractedId);
         setDoctorBusy(true);
         setPhase("polling");
@@ -1823,11 +1835,19 @@ export const ConnectDialogContent = ({
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />{errorMsg}
                 </div>
               )}
-              <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
-                className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
-                {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                {paymentLoading ? t("consult.connect.payment_initiating") : t("consult.connect.pay_now")}
-              </Button>
+              {Number(paymentInfo?.amount) > 0 ? (
+                <Button onClick={handlePay} disabled={paymentLoading || !consultationId}
+                  className="w-full h-10 text-sm font-semibold gap-2 rounded-[6px]">
+                  {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {paymentLoading ? t("consult.connect.payment_initiating") : t("consult.connect.pay_now")}
+                </Button>
+              ) : (
+                <div className="p-3 rounded-[6px] bg-amber-500/10 border border-amber-500/30 text-sm text-amber-800 dark:text-amber-200">
+                  {t("consult.connect.no_fee", {
+                    defaultValue: "This doctor has no consultation fee set, so payment cannot start. Choose another doctor.",
+                  })}
+                </div>
+              )}
               <Button variant="outline" onClick={onMinimize} className="w-full h-9 text-sm rounded-[6px]">{t("consult.connect.minimize")}</Button>
             </div>
           )}

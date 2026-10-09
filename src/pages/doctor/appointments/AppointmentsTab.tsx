@@ -15,6 +15,7 @@ import {
   useAcceptQuick,
   useJoinSession,
   useReadyNext,
+  useCompleteAppointment,
   type Appointment,
   type GetAppointmentsParams,
 } from "@/hooks/doctor/use-doctor-appointment";
@@ -128,6 +129,7 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
   const joinSession = useJoinSession();
   const acceptQuick = useAcceptQuick();
   const readyNext = useReadyNext();
+  const completeAppointment = useCompleteAppointment();
 
   const appointments: Appointment[] = data?.data ?? [];
 
@@ -239,6 +241,13 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
     },
     [call, acceptQuick, joinSession, startCall, t]
   );
+
+  const handleCompleteAppointment = useCallback((appt: Appointment) => {
+    completeAppointment.mutate(appt.id, {
+      onSuccess: () => toast.success(t("consult.bookings.session_completed")),
+      onError: (err: unknown) => toast.error(getErrMsg(err, t("consult.bookings.failed_to_complete"))),
+    });
+  }, [completeAppointment, t]);
 
   const handleStart = useCallback((appt: Appointment) => startOrRejoin(appt, false), [startOrRejoin]);
   const handleRejoin = useCallback((appt: Appointment) => startOrRejoin(appt, true), [startOrRejoin]);
@@ -673,6 +682,20 @@ const queryParams = useMemo(() => filtersToParams(filters), [filters]);
                               )}
 
                             
+                              {isInProgress && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleCompleteAppointment(a)}
+                                  disabled={completeAppointment.isPending}
+                                  className="h-9 px-4 text-xs font-semibold rounded-[6px] bg-sky-600 hover:bg-sky-500 text-white border-0 shadow-sm flex items-center gap-1.5"
+                                >
+                                  {completeAppointment.isPending
+                                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                                    : <CheckCheck className="h-4 w-4" />}
+                                  <span>{t("consult.bookings.complete")}</span>
+                                </Button>
+                              )}
+
                               {isInProgress && (
                                 <Button
                                   size="sm"

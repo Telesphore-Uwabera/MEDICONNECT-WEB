@@ -3,6 +3,7 @@ import path from "path";
 import multer from "multer";
 import { hasColumn, insert, one, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
 import { hashPassword, loadOwnedId, roleNames } from "./auth.js";
+import { recordVerifier } from "./verification.js";
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } });
 
@@ -85,7 +86,7 @@ function emptyDashboard(query) {
   };
 }
 
-async function applyStatus(table, id, action, body = {}) {
+async function applyStatus(table, id, action, body = {}, adminUserId = null) {
   if (action === "toggle-active" && await hasColumn(table, "is_active")) {
     const row = await one(`SELECT is_active FROM \`${table}\` WHERE id = ?`, [id]);
     if (!row) return false;
@@ -106,9 +107,22 @@ async function applyStatus(table, id, action, body = {}) {
       return true;
     }
   }
+  if (table === "doctors" && ["approve", "reject", "request-action"].includes(action)) {
+    const { reviewDoctor } = await import("./doctor-review.js");
+    const reviewed = await reviewDoctor(
+      id,
+      action === "request-action" ? "request" : action,
+      body.reason || body.message || "",
+      adminUserId,
+    );
+    return Boolean(reviewed);
+  }
   const status = STATUS_ACTIONS[action];
   if (!status || !(await hasColumn(table, "status"))) return false;
   await update(table, id, { status });
+  if (["approve", "activate"].includes(action)) {
+    await recordVerifier(table, id, adminUserId).catch(() => null);
+  }
   return true;
 }
 
@@ -299,7 +313,10 @@ async function ownedExtra(scope, userId, table) {
   const ownerTable = PROFILE_TABLES[scope];
   const ownerId = ownerTable ? await loadOwnedId(userId, ownerTable) : null;
   const ownerCol = `${scope}_id`;
-  if (ownerId && await hasColumn(table, ownerCol)) extra[ownerCol] = ownerId;
+  if (ownerId && await hasColumn(table, ownerCol)) {
+    // appointments.patient_id references users.id, not the patients profile id.
+    extra[ownerCol] = table === "appointments" && scope === "patient" ? userId : ownerId;
+  }
   if (await hasColumn(table, "user_id")) extra.user_id = userId;
   return extra;
 }
@@ -550,6 +567,9 @@ async function fillGap(req, res, parts) {
       }
     }
     await update(table, id, { status });
+    if (["approve", "activate"].includes(action)) {
+      await recordVerifier(table, id, req.user?.id).catch(() => null);
+    }
     const row = await presentRow(table, await one(`SELECT * FROM \`${table}\` WHERE id = ?`, [id]));
     res.json({ message: "Updated.", data: row, ...(row ?? {}) });
     return true;
@@ -663,7 +683,7 @@ export function registerActions(router, RESOURCES) {
         return res.json({ message: "Image saved.", [column]: url, photo_url: url, image: url, avatar: url, logo: url, data: row });
       }
 
-      if (await applyStatus(table, id, action, req.body)) {
+      if (await applyStatus(table, id, action, req.body, req.user?.id)) {
         if (table === "pharmacy_orders") {
           const order = await shapeOrder(await one("SELECT * FROM pharmacy_orders WHERE id = ?", [id]));
           return res.json({ message: "Updated.", order, data: order });

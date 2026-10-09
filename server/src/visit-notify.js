@@ -31,15 +31,28 @@ async function patientContact(row) {
   const phone = String(row?.guest_phone || row?.phone || row?.patient_phone || "").trim();
   const name = String(row?.guest_name || row?.patient_name || row?.name || "Patient").trim();
   let userId = row?.user_id || null;
-  if (!userId && row?.patient_id && await tableExists("patients")) {
-    const patient = await one("SELECT user_id, name, email, phone FROM patients WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
-    userId = patient?.user_id || null;
-    return {
-      userId,
-      name: name || patient?.name || "Patient",
-      email: email || patient?.email || "",
-      phone: phone || patient?.phone || "",
-    };
+  if (!userId && row?.patient_id) {
+    const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
+    if (user) {
+      return {
+        userId: user.id,
+        name: name || user.name || "Patient",
+        email: email || user.email || "",
+        phone: phone || user.phone || "",
+      };
+    }
+    if (await tableExists("patients")) {
+      const patient = await one("SELECT user_id, name, email, phone FROM patients WHERE id = ? LIMIT 1", [row.patient_id]).catch(() => null);
+      userId = patient?.user_id || null;
+      if (!userId) {
+        return {
+          userId: null,
+          name: name || patient?.name || "Patient",
+          email: email || patient?.email || "",
+          phone: phone || patient?.phone || "",
+        };
+      }
+    }
   }
   if (userId) {
     const user = await one("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1", [userId]).catch(() => null);
@@ -91,6 +104,53 @@ export async function notifyPaidVisit(payment) {
       title: "Your MediConnect visit is confirmed",
       text: `Your payment is confirmed${doctor?.name ? ` with ${doctor.name}` : ""}. Sign in at https://mediconnect.rw to join when the doctor is ready.`,
       type: "visit.confirmed",
+    });
+  }
+}
+
+export async function notifyBookedVisit(row) {
+  const doctor = await doctorContact(row?.doctor_id);
+  const patient = await patientContact(row);
+  const when = [row?.appointment_date, row?.appointment_time].filter(Boolean).join(" ") || "the scheduled time";
+  if (doctor?.email || doctor?.user_id) {
+    await deliver({
+      userId: doctor?.user_id,
+      email: doctor?.email,
+      title: "New appointment on MediConnect",
+      text: `${patient.name} booked an appointment on ${when}. Open your MediConnect dashboard to prepare for the visit.`,
+      type: "visit.booked",
+    });
+  }
+  if (patient.email || patient.userId) {
+    await deliver({
+      userId: patient.userId,
+      email: patient.email,
+      title: "Your MediConnect appointment is booked",
+      text: `Your appointment${doctor?.name ? ` with ${doctor.name}` : ""} is booked for ${when}. Sign in at https://mediconnect.rw before the visit. You will get another reminder when it is about to start.`,
+      type: "visit.booked",
+    });
+  }
+}
+
+export async function notifyVisitCompleted(row, kind = "consultation") {
+  const doctor = await doctorContact(row?.doctor_id);
+  const patient = await patientContact(row);
+  if (patient.email || patient.userId) {
+    await deliver({
+      userId: patient.userId,
+      email: patient.email,
+      title: "Your MediConnect consultation is complete",
+      text: `Your ${kind}${doctor?.name ? ` with ${doctor.name}` : ""} is marked complete. Sign in at https://mediconnect.rw to see notes, prescriptions, or a follow-up booking.`,
+      type: "visit.completed",
+    });
+  }
+  if (doctor?.email || doctor?.user_id) {
+    await deliver({
+      userId: doctor?.user_id,
+      email: doctor?.email,
+      title: "Consultation marked complete",
+      text: `${patient.name}'s ${kind} is marked complete. The next patient in the queue can now be accepted.`,
+      type: "visit.completed",
     });
   }
 }

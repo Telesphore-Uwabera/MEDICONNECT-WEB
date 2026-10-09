@@ -15,6 +15,7 @@ interface Props {
   onDecline?: () => void;
   onJoin?: () => void;
   onComplete?: () => void;
+  onOpenFile?: () => void;
   isAccepting?: boolean;
   isDeclining?: boolean;
   isJoining?: boolean;
@@ -218,6 +219,7 @@ export function IncomingCard({
   onDecline,
   onJoin,
   onComplete,
+  onOpenFile,
   isAccepting,
   isDeclining,
   isJoining,
@@ -359,9 +361,18 @@ export function IncomingCard({
               </button>
             )}
 
-            {/* IN_PROGRESS → Complete & Rejoin */}
+            {/* IN_PROGRESS → patient file, then mark the visit complete */}
             {item.status === "in_progress" && (
               <>
+                {onOpenFile && (
+                  <button
+                    onClick={onOpenFile}
+                    disabled={isBusy}
+                    className="h-8 px-3 rounded-[5px] border border-border bg-card text-[10px] font-semibold text-foreground hover:bg-muted transition-smooth disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {t("consult.bookings.patient_file", "Patient file")}
+                  </button>
+                )}
                 <button
                   onClick={onComplete}
                   disabled={isBusy}
@@ -371,8 +382,6 @@ export function IncomingCard({
                     ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     : <CheckCircle2 className="h-3.5 w-3.5" />}
                   {t("consult.bookings.complete")}
-
-                  
                 </button>
               </>
             )}

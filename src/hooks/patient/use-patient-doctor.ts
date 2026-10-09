@@ -104,6 +104,40 @@ export interface DoctorSearchParams {
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
+let specializationFees: Promise<Map<number, number>> | null = null;
+
+function loadSpecializationFees() {
+  if (!specializationFees) {
+    specializationFees = apiFetch<Array<{ id: number; online_fee?: string | number }>>(
+      "/public/dropdowns/specialization-fees",
+    )
+      .then((rows) => {
+        const list = Array.isArray(rows) ? rows : [];
+        return new Map(list.map((fee) => [Number(fee.id), Number(fee.online_fee) || 0]));
+      })
+      .catch(() => new Map<number, number>());
+  }
+  return specializationFees;
+}
+
+async function withResolvedFees(response: ApiDoctorListResponse) {
+  if (!Array.isArray(response?.data)) return response;
+  const missing = response.data.some(
+    (doctor) => !(Number(doctor.consultation_fee) > 0) && Number((doctor as { specialization_fee_id?: number }).specialization_fee_id) > 0,
+  );
+  if (!missing) return response;
+  const fees = await loadSpecializationFees();
+  return {
+    ...response,
+    data: response.data.map((doctor) => {
+      if (Number(doctor.consultation_fee) > 0) return doctor;
+      const online = fees.get(Number((doctor as { specialization_fee_id?: number }).specialization_fee_id));
+      if (!online) return doctor;
+      return { ...doctor, consultation_fee: String(online), currency: doctor.currency || "RWF" };
+    }),
+  };
+}
+
 function withoutOwnDoctor(response: ApiDoctorListResponse, userId?: number) {
   if (!userId || !Array.isArray(response?.data)) return response;
   const data = response.data.filter(
@@ -151,8 +185,9 @@ export function useGetSearchDoctors(params: DoctorSearchParams = {}) {
     queryKey: ["patient-search-doctors", url],
 
     queryFn: (): Promise<ApiDoctorListResponse> =>
-      apiFetch(url).then((res) => res as ApiDoctorListResponse),
-    staleTime: url === BASE ? 30_000 : 0,
+      apiFetch(url).then((res) => withResolvedFees(res as ApiDoctorListResponse)),
+    staleTime: 60_000,
+    refetchInterval: 10 * 60 * 1000,
   });
   const data = useMemo(
     () => (query.data ? withoutOwnDoctor(query.data, ownId) : query.data),
@@ -192,7 +227,7 @@ export function useInfiniteSearchDoctors(params: DoctorSearchParams = {}) {
         ? `${BASE}/available-doctors?${queryString}`
         : available_doctors_url;
 
-      return apiFetch(url).then((res) => res as ApiDoctorListResponse);
+      return apiFetch(url).then((res) => withResolvedFees(res as ApiDoctorListResponse));
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.current_page < lastPage.last_page) {

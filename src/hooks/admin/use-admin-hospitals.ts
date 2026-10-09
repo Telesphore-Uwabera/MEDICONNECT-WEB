@@ -73,6 +73,8 @@ export interface ApiHospital {
   show_homepage?:         boolean;
   agreement_status?:      string;
   verified_at?:           string | null;
+  verified_by?:           number | null;
+  verified_by_name?:      string | null;
   created_at:             string;
   updated_at?:            string;
   deleted_at?:            string | null;

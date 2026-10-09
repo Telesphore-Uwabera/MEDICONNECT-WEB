@@ -284,6 +284,7 @@ interface ExtendedDoctor {
   seo_title?: string;
   seo_description?: string;
   verified_at?: string;
+  verified_by_name?: string | null;
   image?: string;
   degree_document?: string;
   medical_license_document?: string;
@@ -305,6 +306,7 @@ interface ExtendedPatient {
   status?: string;
   phone_verified_at?: string;
   email_verified_at?: string;
+  verified_by_name?: string | null;
   created_at?: string;
 }
 
@@ -548,6 +550,10 @@ export default function AdminReviewDetail({
             {formatDate(patient.email_verified_at)}
           </Row>
         )}
+        <Row label="Verified by" icon={BadgeCheck}>
+          {patient.verified_by_name
+            || (patient.email_verified_at ? "Email confirmation" : patient.phone_verified_at ? "Phone confirmation" : "Not verified yet")}
+        </Row>
         <Row label="Joined" icon={CalendarDays}>
           {formatDate(patient.created_at)}
         </Row>
@@ -727,6 +733,9 @@ export default function AdminReviewDetail({
             {formatDate(doctor.verified_at)}
           </Row>
         )}
+        <Row label="Verified by" icon={BadgeCheck}>
+          {doctor.verified_by_name || (doctor.verified_at ? "Admin" : "Not verified yet")}
+        </Row>
         {doctor.created_at && (
           <Row label="Doctor Joined" icon={CalendarDays}>
             {formatDate(doctor.created_at)}

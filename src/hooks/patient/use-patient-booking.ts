@@ -28,6 +28,9 @@ export interface BookAppointmentPayload {
   appointment_date: string; // "yyyy-MM-dd"
   appointment_time: string; // "HH:mm"
   insurance_id?: number;
+  amount?: number;
+  fee?: number;
+  consultation_fee?: number;
 }
 
 export interface BookAppointmentResponse {

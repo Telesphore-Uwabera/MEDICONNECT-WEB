@@ -59,6 +59,8 @@ export interface ApiPharmacy {
 
   // ── Timestamps ──
   verified_at?: string | null;
+  verified_by?: number | null;
+  verified_by_name?: string | null;
   created_at: string;
   updated_at?: string;
 

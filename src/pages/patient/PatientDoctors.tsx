@@ -38,7 +38,7 @@ import { doctorOffersInstant, type PublicDoctorSchedule } from "@/lib/doctor-pre
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-type SortOption = "rating" | "fee-asc" | "fee-desc";
+type SortOption = "mixed" | "rating" | "fee-asc" | "fee-desc";
 type ConsultationType = "all" | "instant" | "booking" | "both";
 type ViewMode = "grid" | "list";
 
@@ -67,7 +67,7 @@ const INITIAL_FILTERS: FilterState = {
   date: "",
   hospital_id: "",
   insurance_id: "",
-  sort: "rating",
+  sort: "mixed",
 };
 
 function parseFilterDate(value: string): Date | undefined {
@@ -250,7 +250,7 @@ function readInitialFilters(searchParams: URLSearchParams): FilterState {
     date: searchParams.get("date") ?? INITIAL_FILTERS.date,
     hospital_id: searchParams.get("hospital_id") ?? INITIAL_FILTERS.hospital_id,
     insurance_id: searchParams.get("insurance_id") ?? INITIAL_FILTERS.insurance_id,
-    sort: pickParam(searchParams.get("sort"), ["rating", "fee-asc", "fee-desc"], INITIAL_FILTERS.sort),
+    sort: pickParam(searchParams.get("sort"), ["mixed", "rating", "fee-asc", "fee-desc"], INITIAL_FILTERS.sort),
   };
 }
 
@@ -290,6 +290,7 @@ function readInitialSpec(searchParams: URLSearchParams): SpecializationValue {
 }
 
 function sortDoctors(doctors: ApiDoctor[], sort: SortOption): ApiDoctor[] {
+  if (sort === "mixed") return doctors;
   return [...doctors].sort((a, b) => {
     switch (sort) {
       case "fee-asc":
@@ -820,6 +821,7 @@ const PatientDoctors = () => {
   ];
 
   const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
+    { value: "mixed", label: t("pages.patient.sort_rotating") },
     { value: "rating", label: t("pages.patient.sort_best_rating") },
     { value: "fee-asc", label: t("pages.patient.sort_fee_asc") },
     { value: "fee-desc", label: t("pages.patient.sort_fee_desc") },

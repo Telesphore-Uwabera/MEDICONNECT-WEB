@@ -150,7 +150,7 @@ export function useGetSpecializationFees() {
   return useQuery({
     queryKey: FEES_KEY,
     queryFn: () =>
-      apiFetch<unknown>("/admin/specialization-fees").then((res) =>
+      apiFetch<unknown>("/admin/specialization-fees?per_page=100").then((res) =>
         listFrom<ApiSpecializationFee>(res, "specialization_fees"),
       ),
   });
