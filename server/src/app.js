@@ -1494,7 +1494,20 @@ export function appRoutes(router) {
         const owner = (await hasColumn(table, "doctor_id")) ? "(doctor_id = ? OR doctor_id IS NULL)" : "1=1";
         const params = owner.includes("?") ? [doctorId] : [];
         const rows = await q(
-          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed','accepted','in_progress','completed') ORDER BY id ASC LIMIT 50`,
+          `SELECT * FROM \`${table}\` WHERE ${owner} AND status IN ('pending','queued','waiting','confirmed','accepted','in_progress','completed')
+           ORDER BY
+             CASE WHEN LOWER(payment_status) = 'paid' THEN 0 ELSE 1 END ASC,
+             CASE status
+               WHEN 'in_progress' THEN 0
+               WHEN 'accepted'    THEN 1
+               WHEN 'confirmed'   THEN 2
+               WHEN 'pending'     THEN 3
+               WHEN 'queued'      THEN 3
+               WHEN 'waiting'     THEN 3
+               ELSE 4
+             END ASC,
+             id ASC
+           LIMIT 50`,
           params,
         ).catch(() => []);
         active = await doctorActiveInstant(doctorId);
@@ -1508,6 +1521,7 @@ export function appRoutes(router) {
           queue_position: index + 1,
           waiting_seconds: 0,
           waiting_label: "Waiting",
+          created_at: row.created_at || null,
         }));
         seenToday = Number((await one(
           `SELECT COUNT(*) AS total FROM \`${table}\` WHERE ${owner.includes("?") ? "doctor_id = ?" : "1=1"} AND status IN ('completed','done','in_progress') AND DATE(created_at) = CURDATE()`,

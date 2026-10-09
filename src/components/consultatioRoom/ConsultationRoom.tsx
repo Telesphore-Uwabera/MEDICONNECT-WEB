@@ -437,7 +437,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
       }
       else if (payload.type === "answer") {
         if (pc.signalingState !== "have-local-offer") {
-          // Benign: a duplicate/late answer arrived while already stable. Ignore.
+          // Benign: a duplicate/late answer arrived while already stable (e.g.
+          // the owner sent repeated offers during connection setup and got back
+          // multiple answers). Safe to discard — the connection is already up.
           console.debug("[WebRTC] Dropping answer in unexpected signalingState:", pc.signalingState);
           return;
         }
@@ -479,7 +481,9 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         if (Number.isFinite(id) && id > 0) setPeerConsultationId(id);
       }
     } catch (e) {
-      console.error("[WebRTC] Signal handling error", e);
+      // Log benign errors (duplicate answers, late ICE) at debug level only.
+      // Genuine errors will still surface during development.
+      console.debug("[WebRTC] Signal handling error", e);
     }
   };
 
@@ -594,25 +598,33 @@ const ConsultationRoom = ({ roomName, token }: ConsultationRoomProps) => {
         // setTimeout(announceLoop, 1000);
 
         const announceLoop = () => {
-        if (cancelled) return;
-        const pc = pcRef.current;
-        const st = pc?.connectionState;
-        const needsAnnounce =
-          !pc ||
-          ["new", "failed", "closed"].includes(st as string) ||
-          (st === "disconnected" &&
-            Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+          if (cancelled) return;
+          const pc = pcRef.current;
+          const st = pc?.connectionState;
 
-        if (needsAnnounce) {
-          // Owner tries to send offer directly instead of waiting for guest's ready
-          if (pcRef.current) {
-            createAndSendOfferRef.current?.();
-          } else {
-            sendSignalRef.current?.("ready");
+          // Never re-offer if already connected or currently connecting —
+          // that would cause the peer to receive a new offer, send an answer,
+          // and crash with "setRemoteDescription: Called in wrong state: stable".
+          if (st === "connected" || st === "connecting") {
+            // Already live or negotiating — stop the loop entirely.
+            return;
           }
-        }
-        setTimeout(announceLoop, 3000);
-      };
+
+          const needsAnnounce =
+            !pc ||
+            ["new", "failed", "closed"].includes(st as string) ||
+            (st === "disconnected" &&
+              Date.now() - (disconnectedSinceRef.current ?? 0) > 4000);
+
+          if (needsAnnounce) {
+            if (pcRef.current) {
+              createAndSendOfferRef.current?.();
+            } else {
+              sendSignalRef.current?.("ready");
+            }
+          }
+          setTimeout(announceLoop, 3000);
+        };
       setTimeout(announceLoop, 1000);
       }
     };

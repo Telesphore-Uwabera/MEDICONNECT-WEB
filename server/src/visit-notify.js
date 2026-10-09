@@ -392,7 +392,6 @@ export async function remindUpcomingVisits() {
 
   const now = new Date();
   for (const row of rows) {
-    if (reminded.has(`appt-${row.id}`)) continue;
     const dateText = row.appointment_date instanceof Date
       ? `${row.appointment_date.getFullYear()}-${String(row.appointment_date.getMonth() + 1).padStart(2, "0")}-${String(row.appointment_date.getDate()).padStart(2, "0")}`
       : String(row.appointment_date).slice(0, 10);
@@ -400,62 +399,119 @@ export async function remindUpcomingVisits() {
     const start = new Date(`${dateText}T${time.length === 5 ? `${time}:00` : time}`);
     if (Number.isNaN(start.getTime())) continue;
     const minutes = (start.getTime() - now.getTime()) / 60000;
-    if (minutes < 5 || minutes > 90) continue;
 
-    reminded.add(`appt-${row.id}`);
+    // ── 1-hour reminder: fire once in the 55–65 min window ──
+    const want60 = minutes >= 55 && minutes <= 65;
+    // ── 30-minute reminder: fire once in the 25–35 min window ──
+    const want30 = minutes >= 25 && minutes <= 35;
+
+    if (!want60 && !want30) continue;
+
     const doctor = await doctorContact(row.doctor_id);
     const patient = await patientContact(row);
-    const minutesLabel = Math.round(minutes);
 
-    // ── Patient reminder ──
-    if (patient.email || patient.userId) {
-      const subject = `Reminder: your appointment starts in ${minutesLabel} minutes`;
-      const text = `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`;
+    // ── 1-hour reminder ──────────────────────────────────────────────────
+    if (want60 && !reminded.has(`appt-60-${row.id}`)) {
+      reminded.add(`appt-60-${row.id}`);
 
-      const html = buildEmailHtml({
-        title: `Appointment in ${minutesLabel} minutes`,
-        preheader: text,
-        accentHex: "#d97706",
-        body: `
-          ${emailP(greeting(patient.name))}
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
-            <tr>
-              <td style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px 20px;border-left:4px solid #d97706;">
-                <p style="margin:0;font-size:15px;font-weight:700;color:#92400e;font-family:'Segoe UI',Arial,sans-serif;">⏰ Starting in ${minutesLabel} minutes</p>
-              </td>
-            </tr>
-          </table>
-          ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> today.`)}
-          ${emailP("Please ensure you have a stable internet connection and your camera/microphone are working.")}
-          ${emailBtn("Join Appointment", "https://mediconnect.rw/patient/appointments", "#d97706")}
-        `,
-      });
+      if (patient.email || patient.userId) {
+        const subject = "Reminder: your appointment starts in 1 hour";
+        const text = `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in to join.`;
+        const html = buildEmailHtml({
+          title: "Appointment in 1 hour",
+          preheader: text,
+          accentHex: "#0BA59B",
+          body: `
+            ${emailP(greeting(patient.name))}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td style="background:#f0fafa;border:1px solid #d0ecea;border-radius:8px;padding:16px 20px;border-left:4px solid #0BA59B;">
+                  <p style="margin:0;font-size:15px;font-weight:700;color:#0d3533;font-family:'Segoe UI',Arial,sans-serif;">🕐 Your appointment starts in 1 hour</p>
+                </td>
+              </tr>
+            </table>
+            ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is scheduled at <strong>${time}</strong> today.`)}
+            ${emailP("Please make sure you have a stable internet connection and your camera and microphone are ready.")}
+            ${emailInfoBox([
+              doctor?.name && ["Doctor", `Dr. ${doctor.name}`],
+              ["Time", time],
+            ].filter(Boolean), "#0BA59B")}
+            ${emailBtn("View My Appointments", "https://mediconnect.rw/patient/appointments", "#0BA59B")}
+          `,
+        });
+        await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.reminder" });
+      }
 
-      await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.reminder" });
+      if (doctor?.email || doctor?.user_id) {
+        const subject = `Appointment with ${patient.name} in 1 hour`;
+        const text = `${patient.name} has an appointment at ${time}.`;
+        const html = buildEmailHtml({
+          title: "Appointment in 1 hour",
+          preheader: text,
+          accentHex: "#0BA59B",
+          body: `
+            ${emailP(greeting(doctor?.name))}
+            ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you at <strong>${time}</strong> today — in approximately 1 hour.`)}
+            ${emailInfoBox([
+              ["Patient", patient.name],
+              ["Time", time],
+              patient.phone && ["Patient phone", patient.phone],
+            ].filter(Boolean), "#0BA59B")}
+            ${emailBtn("Open Appointments", "https://mediconnect.rw/doctor/appointments", "#0BA59B")}
+          `,
+        });
+        await deliver({ userId: doctor?.user_id, email: doctor?.email, subject, text, html, type: "visit.reminder" });
+      }
     }
 
-    // ── Doctor reminder ──
-    if (doctor?.email || doctor?.user_id) {
-      const subject = `Upcoming appointment with ${patient.name} in ${minutesLabel} minutes`;
-      const text = `${patient.name} has an appointment at ${time}.`;
+    // ── 30-minute reminder ───────────────────────────────────────────────
+    if (want30 && !reminded.has(`appt-30-${row.id}`)) {
+      reminded.add(`appt-30-${row.id}`);
 
-      const html = buildEmailHtml({
-        title: `Upcoming appointment in ${minutesLabel} minutes`,
-        preheader: text,
-        accentHex: "#d97706",
-        body: `
-          ${emailP(greeting(doctor?.name))}
-          ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you starting at <strong>${time}</strong> today.`)}
-          ${emailInfoBox([
-            ["Patient", patient.name],
-            ["Time", time],
-            patient.phone && ["Patient phone", patient.phone],
-          ].filter(Boolean), "#d97706")}
-          ${emailBtn("Open Appointments", "https://mediconnect.rw/doctor/appointments", "#d97706")}
-        `,
-      });
+      if (patient.email || patient.userId) {
+        const subject = "Reminder: your appointment starts in 30 minutes";
+        const text = `Your MediConnect appointment${doctor?.name ? ` with ${doctor.name}` : ""} starts at ${time}. Sign in and get ready.`;
+        const html = buildEmailHtml({
+          title: "Appointment in 30 minutes",
+          preheader: text,
+          accentHex: "#d97706",
+          body: `
+            ${emailP(greeting(patient.name))}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:16px 20px;border-left:4px solid #d97706;">
+                  <p style="margin:0;font-size:15px;font-weight:700;color:#92400e;font-family:'Segoe UI',Arial,sans-serif;">⏰ Starting in 30 minutes</p>
+                </td>
+              </tr>
+            </table>
+            ${emailHtml(`Your appointment${doctor?.name ? ` with <strong>Dr. ${doctor.name}</strong>` : ""} is starting at <strong>${time}</strong> — in about 30 minutes.`)}
+            ${emailP("Please ensure you have a stable internet connection and your camera/microphone are working.")}
+            ${emailBtn("Join Appointment Now", "https://mediconnect.rw/patient/appointments", "#d97706")}
+          `,
+        });
+        await deliver({ userId: patient.userId, email: patient.email, subject, text, html, type: "visit.reminder" });
+      }
 
-      await deliver({ userId: doctor?.user_id, email: doctor?.email, subject, text, html, type: "visit.reminder" });
+      if (doctor?.email || doctor?.user_id) {
+        const subject = `Appointment with ${patient.name} in 30 minutes`;
+        const text = `${patient.name} has an appointment at ${time} — starting in 30 minutes.`;
+        const html = buildEmailHtml({
+          title: "Appointment in 30 minutes",
+          preheader: text,
+          accentHex: "#d97706",
+          body: `
+            ${emailP(greeting(doctor?.name))}
+            ${emailHtml(`<strong>${patient.name}</strong> has an appointment with you at <strong>${time}</strong> — starting in approximately 30 minutes.`)}
+            ${emailInfoBox([
+              ["Patient", patient.name],
+              ["Time", time],
+              patient.phone && ["Patient phone", patient.phone],
+            ].filter(Boolean), "#d97706")}
+            ${emailBtn("Open Appointments", "https://mediconnect.rw/doctor/appointments", "#d97706")}
+          `,
+        });
+        await deliver({ userId: doctor?.user_id, email: doctor?.email, subject, text, html, type: "visit.reminder" });
+      }
     }
   }
 }

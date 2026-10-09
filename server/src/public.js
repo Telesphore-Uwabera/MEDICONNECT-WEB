@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { countWhere, hasColumn, insert, laravelPage, one, pageArgs, pool, presentRow, presentRows, q, tableExists, update } from "./db.js";
+import crypto from "crypto";
 import { ensureRole, hashPassword } from "./auth.js";
 import { doctorIsApproved } from "./doctor-review.js";
-import { sendMail } from "./mail.js";
+import { sendMail, buildEmailHtml, emailP, emailHtml, emailBtn, emailOtpBlock } from "./mail.js";
 import { publishSignal, signalsSince } from "./realtime.js";
 import { callToken } from "./call-token.js";
 import { notifyPaidVisit } from "./visit-notify.js";
@@ -489,19 +490,44 @@ async function attachPayerAccount(payment) {
   }
 
   if (created && plain) {
+    const firstName = String(name || "").split(" ")[0] || "there";
+    const html = buildEmailHtml({
+      title: "Your MediConnect account is ready",
+      preheader: "Your payment is confirmed. Sign in with your temporary credentials to join.",
+      accentHex: "#0BA59B",
+      body: `
+        ${emailP(`Hello, ${firstName}!`)}
+        ${emailP("Your payment is confirmed. We created a MediConnect account so you can sign in, join your consultation, and access your medical records.")}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;border-radius:8px;border:1px solid #d0ecea;background:#f0fafa;overflow:hidden;">
+          <tr>
+            <td style="padding:20px 24px;border-left:4px solid #0BA59B;">
+              <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#4a6360;font-family:'Segoe UI',Arial,sans-serif;text-transform:uppercase;letter-spacing:.5px;">Your sign-in credentials</p>
+              <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Email:</strong> ${email}</p>
+              <p style="margin:4px 0;font-size:13px;color:#1a2e2d;font-family:'Segoe UI',Arial,sans-serif;"><strong>Temporary password:</strong></p>
+              <p style="margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:4px;color:#0BA59B;font-family:'Courier New',monospace;">${plain}</p>
+            </td>
+          </tr>
+        </table>
+        ${emailHtml("You can change this password from your <strong>Account Settings</strong> after signing in.")}
+        ${emailBtn("Sign In & Join Consultation", "https://mediconnect.rw/auth")}
+        ${emailP("If you did not make this payment, contact us immediately at admin@mediconnect.rw.", "font-size:12px;color:#dc2626;")}
+      `,
+    });
     const sent = await sendMail({
       to: email,
-      subject: "Your MediConnect account",
+      subject: "Your MediConnect account — sign in to join your consultation",
       text: [
         `Hello ${name},`,
         "",
-        "Your payment is confirmed. We created an account so your doctor can keep your visit details.",
+        "Your payment is confirmed. We created a MediConnect account so your doctor can keep your visit details.",
         "",
         `Email: ${email}`,
         `Temporary password: ${plain}`,
         "",
-        "Sign in at https://mediconnect.rw with these details to follow your instant consultation or appointment. You can change the password after you sign in.",
+        "Sign in at https://mediconnect.rw/auth with these credentials to join your consultation or appointment.",
+        "You can change the password from Account Settings after signing in.",
       ].join("\n"),
+      html,
     });
     if (!sent) {
       console.error("Payer account email was not sent.");
@@ -1570,6 +1596,88 @@ export function publicRoutes(router) {
       });
     } catch (error) {
       next(error);
+    }
+  });
+
+  // ── IremboPay payment webhook ──────────────────────────────────────────────
+  // IremboPay POSTs to this URL when a payment status changes.
+  // Configure this URL in the IremboPay dashboard:
+  //   https://api.mediconnect.rw/api/v1/public/payment/webhook
+  //
+  // Signature verification: IremboPay sends an HMAC-SHA256 signature in the
+  // `irembopay-signature` header, computed over the raw request body using the
+  // PAYMENT_SECRET_KEY. We verify it before processing.
+  router.post("/public/payment/webhook", async (req, res, next) => {
+    try {
+      const secret = paymentSecretKey();
+      const sigHeader = req.headers["irembopay-signature"] || req.headers["x-irembopay-signature"] || "";
+
+      // Verify signature when secret is configured
+      if (secret && sigHeader) {
+        const rawBody = JSON.stringify(req.body);
+        const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+        const sigToCheck = sigHeader.replace(/^sha256=/i, "");
+        const bufA = Buffer.from(expected, "hex");
+        const bufB = Buffer.from(sigToCheck.length === expected.length ? sigToCheck : expected, "hex");
+        if (!crypto.timingSafeEqual(bufA, bufB)) {
+          return res.status(401).json({ message: "Webhook signature mismatch." });
+        }
+      }
+
+      const payload = req.body ?? {};
+      // IremboPay webhook payload shape (v2):
+      // { invoiceNumber, transactionId, paymentStatus, paidAt, paymentMethod, paymentReference, ... }
+      const invoiceNumber = payload.invoiceNumber || payload.invoice_number || payload.invoice || null;
+      const paymentStatus = String(payload.paymentStatus || payload.payment_status || payload.status || "").toUpperCase();
+
+      if (!invoiceNumber) {
+        // Acknowledge but do nothing — not a payment notification we can handle
+        return res.json({ received: true, processed: false });
+      }
+
+      // Only process confirmed payments
+      if (paymentStatus !== "PAID" && paymentStatus !== "SUCCESS" && paymentStatus !== "SUCCESSFUL" && paymentStatus !== "COMPLETED") {
+        return res.json({ received: true, processed: false, status: paymentStatus });
+      }
+
+      // Find the payment record by invoice number
+      const payment = await one(
+        "SELECT * FROM payments WHERE invoice_number = ? OR transaction_id = ? ORDER BY id DESC LIMIT 1",
+        [invoiceNumber, payload.transactionId || invoiceNumber],
+      ).catch(() => null);
+
+      if (!payment) {
+        // Payment not in our DB yet — acknowledge IremboPay and let the next poll handle it
+        return res.json({ received: true, processed: false, reason: "invoice_not_found" });
+      }
+
+      if (String(payment.status).toLowerCase() === "paid") {
+        // Already confirmed — idempotent acknowledgement
+        return res.json({ received: true, processed: false, reason: "already_paid" });
+      }
+
+      // Confirm the payment, update statuses, and notify
+      const remote = {
+        paymentStatus: "PAID",
+        paidAt: payload.paidAt || payload.paid_at || null,
+        paymentMethod: payload.paymentMethod || payload.payment_method || null,
+        paymentReference: payload.paymentReference || payload.payment_reference || null,
+      };
+      const confirmed = await confirmPaidInvoice(payment, remote);
+      const account = await attachPayerAccount(confirmed).catch(() => null);
+
+      res.json({
+        received: true,
+        processed: true,
+        payment_id: confirmed.id,
+        account_created: Boolean(account?.created),
+        account_email: account?.email || null,
+      });
+    } catch (error) {
+      // Always return 200 to IremboPay so it doesn't retry forever;
+      // log the error internally.
+      console.error("[webhook] IremboPay webhook processing error:", error?.message || error);
+      res.json({ received: true, processed: false, error: String(error?.message || "internal error") });
     }
   });
 
